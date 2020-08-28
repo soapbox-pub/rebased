@@ -34,18 +34,22 @@ config :pleroma, :instance,
 To use `SimplePolicy`, you must enable it. Do so by adding the following to your `:instance` config object, so that it looks like this:
 
 ```elixir
-config :pleroma, :instance,
+config :pleroma, :mrf,
   [...]
-  rewrite_policy: Pleroma.Web.ActivityPub.MRF.SimplePolicy
+  policies: Pleroma.Web.ActivityPub.MRF.SimplePolicy
 ```
 
 Once `SimplePolicy` is enabled, you can configure various groups in the `:mrf_simple` config object. These groups are:
 
-* `media_removal`: Servers in this group will have media stripped from incoming messages.
-* `media_nsfw`: Servers in this group will have the #nsfw tag and sensitive setting injected into incoming messages which contain media.
 * `reject`: Servers in this group will have their messages rejected.
-* `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
+* `accept`: If not empty, only messages from these instances will be accepted (whitelist federation).
+* `media_nsfw`: Servers in this group will have the #nsfw tag and sensitive setting injected into incoming messages which contain media.
+* `media_removal`: Servers in this group will have media stripped from incoming messages.
+* `avatar_removal`: Avatars from these servers will be stripped from incoming messages.
+* `banner_removal`: Banner images from these servers will be stripped from incoming messages.
 * `report_removal`: Servers in this group will have their reports (flags) rejected.
+* `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
+* `reject_deletes`: Deletion requests will be rejected from these servers.
 
 Servers should be configured as lists.
 
@@ -54,8 +58,8 @@ Servers should be configured as lists.
 This example will enable `SimplePolicy`, block media from `illegalporn.biz`, mark media as NSFW from `porn.biz` and `porn.business`, reject messages from `spam.com`, remove messages from `spam.university` from the federated timeline and block reports (flags) from `whiny.whiner`:
 
 ```elixir
-config :pleroma, :instance,
-  rewrite_policy: [Pleroma.Web.ActivityPub.MRF.SimplePolicy]
+config :pleroma, :mrf,
+  policies: [Pleroma.Web.ActivityPub.MRF.SimplePolicy]
 
 config :pleroma, :mrf_simple,
   media_removal: ["illegalporn.biz"],
@@ -71,7 +75,7 @@ The effects of MRF policies can be very drastic. It is important to use this fun
 
 ## Writing your own MRF Policy
 
-As discussed above, the MRF system is a modular system that supports pluggable policies. This means that an admin may write a custom MRF policy in Elixir or any other language that runs on the Erlang VM, by specifying the module name in the `rewrite_policy` config setting.
+As discussed above, the MRF system is a modular system that supports pluggable policies. This means that an admin may write a custom MRF policy in Elixir or any other language that runs on the Erlang VM, by specifying the module name in the `policies` config setting.
 
 For example, here is a sample policy module which rewrites all messages to "new message content":
 
@@ -113,7 +117,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
 
   @impl true
   def describe do
-    {:ok, %{mrf_sample: %{content: "new message content"}}}`
+    {:ok, %{mrf_sample: %{content: "new message content"}}}
   end
 end
 ```
@@ -121,8 +125,8 @@ end
 If you save this file as `lib/pleroma/web/activity_pub/mrf/rewrite_policy.ex`, it will be included when you next rebuild Pleroma.  You can enable it in the configuration like so:
 
 ```elixir
-config :pleroma, :instance,
-  rewrite_policy: [
+config :pleroma, :mrf,
+  policies: [
     Pleroma.Web.ActivityPub.MRF.SimplePolicy,
     Pleroma.Web.ActivityPub.MRF.RewritePolicy
   ]

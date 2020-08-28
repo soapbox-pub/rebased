@@ -8,7 +8,7 @@ defmodule Pleroma.Plugs.UserEnabledPlugTest do
   alias Pleroma.Plugs.UserEnabledPlug
   import Pleroma.Factory
 
-  clear_config([:instance, :account_activation_required])
+  setup do: clear_config([:instance, :account_activation_required])
 
   test "doesn't do anything if the user isn't set", %{conn: conn} do
     ret_conn =

@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
-  clear_config([ScheduledActivity, :enabled])
+  setup do: clear_config([ScheduledActivity, :enabled])
 
   test "creates a status from the scheduled activity" do
     Pleroma.Config.put([ScheduledActivity, :enabled], true)
@@ -32,10 +32,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
         params: %{status: "hi"}
       )
 
-    ScheduledActivityWorker.perform(
-      %{"activity_id" => scheduled_activity.id},
-      :pid
-    )
+    ScheduledActivityWorker.perform(%Oban.Job{args: %{"activity_id" => scheduled_activity.id}})
 
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     activity = Repo.all(Pleroma.Activity) |> Enum.find(&(&1.actor == user.ap_id))
@@ -46,7 +43,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
     Pleroma.Config.put([ScheduledActivity, :enabled], true)
 
     assert capture_log([level: :error], fn ->
-             ScheduledActivityWorker.perform(%{"activity_id" => 42}, :pid)
+             ScheduledActivityWorker.perform(%Oban.Job{args: %{"activity_id" => 42}})
            end) =~ "Couldn't find scheduled activity"
   end
 end

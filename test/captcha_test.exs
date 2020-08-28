@@ -12,8 +12,7 @@ defmodule Pleroma.CaptchaTest do
   alias Pleroma.Captcha.Native
 
   @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
-
-  clear_config([Pleroma.Captcha, :enabled])
+  setup do: clear_config([Pleroma.Captcha, :enabled])
 
   describe "Kocaptcha" do
     setup do
@@ -42,7 +41,8 @@ defmodule Pleroma.CaptchaTest do
                answer_data: answer,
                token: ^token,
                url: ^url,
-               type: :kocaptcha
+               type: :kocaptcha,
+               seconds_valid: 300
              } = new
 
       assert Kocaptcha.validate(token, "7oEy8c", answer) == :ok
@@ -57,12 +57,13 @@ defmodule Pleroma.CaptchaTest do
                answer_data: answer,
                token: token,
                type: :native,
-               url: "data:image/png;base64," <> _
+               url: "data:image/png;base64," <> _,
+               seconds_valid: 300
              } = new
 
       assert is_binary(answer)
       assert :ok = Native.validate(token, answer, answer)
-      assert {:error, "Invalid CAPTCHA"} == Native.validate(token, answer, answer <> "foobar")
+      assert {:error, :invalid} == Native.validate(token, answer, answer <> "foobar")
     end
   end
 
@@ -79,6 +80,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
       assert :ok = Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer)
+      Cachex.del(:used_captcha_cache, token)
     end
 
     test "doesn't validate invalid answer" do
@@ -93,7 +95,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
 
-      assert {:error, "Invalid answer data"} =
+      assert {:error, :invalid_answer_data} =
                Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer <> "foobar")
     end
 
@@ -109,7 +111,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
 
-      assert {:error, "Invalid answer data"} =
+      assert {:error, :invalid_answer_data} =
                Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", nil)
     end
   end

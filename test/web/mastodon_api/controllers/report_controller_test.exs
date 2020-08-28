@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   setup do
     target_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(target_user, %{"status" => "foobar"})
+    {:ok, activity} = CommonAPI.post(target_user, %{status: "foobar"})
 
     [target_user: target_user, activity: activity]
   end
@@ -22,8 +22,9 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   test "submit a basic report", %{conn: conn, target_user: target_user} do
     assert %{"action_taken" => false, "id" => _} =
              conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/reports", %{"account_id" => target_user.id})
-             |> json_response(200)
+             |> json_response_and_validate_schema(200)
   end
 
   test "submit a report with statuses and comment", %{
@@ -33,23 +34,25 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   } do
     assert %{"action_taken" => false, "id" => _} =
              conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/reports", %{
                "account_id" => target_user.id,
                "status_ids" => [activity.id],
                "comment" => "bad status!",
                "forward" => "false"
              })
-             |> json_response(200)
+             |> json_response_and_validate_schema(200)
   end
 
   test "account_id is required", %{
     conn: conn,
     activity: activity
   } do
-    assert %{"error" => "Valid `account_id` required"} =
+    assert %{"error" => "Missing field: account_id."} =
              conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/reports", %{"status_ids" => [activity.id]})
-             |> json_response(400)
+             |> json_response_and_validate_schema(400)
   end
 
   test "comment must be up to the size specified in the config", %{
@@ -63,17 +66,21 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
 
     assert ^error =
              conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/reports", %{"account_id" => target_user.id, "comment" => comment})
-             |> json_response(400)
+             |> json_response_and_validate_schema(400)
   end
 
   test "returns error when account is not exist", %{
     conn: conn,
     activity: activity
   } do
-    conn = post(conn, "/api/v1/reports", %{"status_ids" => [activity.id], "account_id" => "foo"})
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/reports", %{"status_ids" => [activity.id], "account_id" => "foo"})
 
-    assert json_response(conn, 400) == %{"error" => "Account not found"}
+    assert json_response_and_validate_schema(conn, 400) == %{"error" => "Account not found"}
   end
 
   test "doesn't fail if an admin has no email", %{conn: conn, target_user: target_user} do
@@ -81,7 +88,8 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
 
     assert %{"action_taken" => false, "id" => _} =
              conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/reports", %{"account_id" => target_user.id})
-             |> json_response(200)
+             |> json_response_and_validate_schema(200)
   end
 end

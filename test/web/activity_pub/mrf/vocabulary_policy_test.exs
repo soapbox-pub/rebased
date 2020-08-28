@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
   alias Pleroma.Web.ActivityPub.MRF.VocabularyPolicy
 
   describe "accept" do
-    clear_config([:mrf_vocabulary, :accept])
+    setup do: clear_config([:mrf_vocabulary, :accept])
 
     test "it accepts based on parent activity type" do
       Pleroma.Config.put([:mrf_vocabulary, :accept], ["Like"])
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         }
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
 
     test "it does not accept disallowed parent types" do
@@ -60,12 +60,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         }
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
   end
 
   describe "reject" do
-    clear_config([:mrf_vocabulary, :reject])
+    setup do: clear_config([:mrf_vocabulary, :reject])
 
     test "it rejects based on parent activity type" do
       Pleroma.Config.put([:mrf_vocabulary, :reject], ["Like"])
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         "object" => "whatever"
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
 
     test "it rejects based on child object type" do
@@ -89,7 +89,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         }
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
 
     test "it passes through objects that aren't disallowed" do

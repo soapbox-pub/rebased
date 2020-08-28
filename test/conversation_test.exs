@@ -11,16 +11,14 @@ defmodule Pleroma.ConversationTest do
 
   import Pleroma.Factory
 
-  clear_config_all([:instance, :federating]) do
-    Pleroma.Config.put([:instance, :federating], true)
-  end
+  setup_all do: clear_config([:instance, :federating], true)
 
   test "it goes through old direct conversations" do
     user = insert(:user)
     other_user = insert(:user)
 
     {:ok, _activity} =
-      CommonAPI.post(user, %{"visibility" => "direct", "status" => "hey @#{other_user.nickname}"})
+      CommonAPI.post(user, %{visibility: "direct", status: "hey @#{other_user.nickname}"})
 
     Pleroma.Tests.ObanHelpers.perform_all()
 
@@ -48,7 +46,7 @@ defmodule Pleroma.ConversationTest do
 
   test "public posts don't create conversations" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "Hey"})
 
     object = Pleroma.Object.normalize(activity)
     context = object.data["context"]
@@ -64,7 +62,7 @@ defmodule Pleroma.ConversationTest do
     tridi = insert(:user)
 
     {:ok, activity} =
-      CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "direct"})
+      CommonAPI.post(har, %{status: "Hey @#{jafnhar.nickname}", visibility: "direct"})
 
     object = Pleroma.Object.normalize(activity)
     context = object.data["context"]
@@ -83,9 +81,9 @@ defmodule Pleroma.ConversationTest do
 
     {:ok, activity} =
       CommonAPI.post(jafnhar, %{
-        "status" => "Hey @#{har.nickname}",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => activity.id
+        status: "Hey @#{har.nickname}",
+        visibility: "direct",
+        in_reply_to_status_id: activity.id
       })
 
     object = Pleroma.Object.normalize(activity)
@@ -107,9 +105,9 @@ defmodule Pleroma.ConversationTest do
 
     {:ok, activity} =
       CommonAPI.post(tridi, %{
-        "status" => "Hey @#{har.nickname}",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => activity.id
+        status: "Hey @#{har.nickname}",
+        visibility: "direct",
+        in_reply_to_status_id: activity.id
       })
 
     object = Pleroma.Object.normalize(activity)
@@ -151,14 +149,14 @@ defmodule Pleroma.ConversationTest do
     jafnhar = insert(:user, local: false)
 
     {:ok, activity} =
-      CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "direct"})
+      CommonAPI.post(har, %{status: "Hey @#{jafnhar.nickname}", visibility: "direct"})
 
     {:ok, conversation} = Conversation.create_or_bump_for(activity)
 
     assert length(conversation.participations) == 2
 
     {:ok, activity} =
-      CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "public"})
+      CommonAPI.post(har, %{status: "Hey @#{jafnhar.nickname}", visibility: "public"})
 
     assert {:error, _} = Conversation.create_or_bump_for(activity)
   end

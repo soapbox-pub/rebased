@@ -13,8 +13,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
 
   defp delist_message(message, threshold) when threshold > 0 do
     follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
+    to = message["to"] || []
+    cc = message["cc"] || []
 
-    follower_collection? = Enum.member?(message["to"] ++ message["cc"], follower_collection)
+    follower_collection? = Enum.member?(to ++ cc, follower_collection)
 
     message =
       case get_recipient_count(message) do
@@ -41,7 +43,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   defp reject_message(message, threshold) when threshold > 0 do
     with {_, recipients} <- get_recipient_count(message) do
       if recipients > threshold do
-        {:reject, nil}
+        {:reject, "[HellthreadPolicy] #{recipients} recipients is over the limit of #{threshold}"}
       else
         {:ok, message}
       end
@@ -71,7 +73,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   end
 
   @impl true
-  def filter(%{"type" => "Create"} = message) do
+  def filter(%{"type" => "Create", "object" => %{"type" => object_type}} = message)
+      when object_type in ~w{Note Article} do
     reject_threshold =
       Pleroma.Config.get(
         [:mrf_hellthread, :reject_threshold],
@@ -84,7 +87,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
          {:ok, message} <- delist_message(message, delist_threshold) do
       {:ok, message}
     else
-      _e -> {:reject, nil}
+      e -> e
     end
   end
 

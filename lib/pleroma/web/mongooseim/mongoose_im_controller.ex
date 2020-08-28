@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   use Pleroma.Web, :controller
 
-  alias Comeonin.Pbkdf2
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   plug(RateLimiter, [name: :authentication, params: ["user"]] when action == :check_password)
 
   def user_exists(conn, %{"user" => username}) do
-    with %User{} <- Repo.get_by(User, nickname: username, local: true) do
+    with %User{} <- Repo.get_by(User, nickname: username, local: true, deactivated: false) do
       conn
       |> json(true)
     else
@@ -26,9 +26,9 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   end
 
   def check_password(conn, %{"user" => username, "pass" => password}) do
-    with %User{password_hash: password_hash} <-
+    with %User{password_hash: password_hash, deactivated: false} <-
            Repo.get_by(User, nickname: username, local: true),
-         true <- Pbkdf2.checkpw(password, password_hash) do
+         true <- AuthenticationPlug.checkpw(password, password_hash) do
       conn
       |> json(true)
     else

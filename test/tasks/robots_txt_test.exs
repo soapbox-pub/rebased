@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Pleroma.RobotsTxtTest do
   use Pleroma.Tests.Helpers
   alias Mix.Tasks.Pleroma.RobotsTxt
 
-  clear_config([:instance, :static_dir])
+  setup do: clear_config([:instance, :static_dir])
 
   test "creates new dir" do
     path = "test/fixtures/new_dir/"

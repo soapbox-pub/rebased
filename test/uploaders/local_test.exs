@@ -14,6 +14,7 @@ defmodule Pleroma.Uploaders.LocalTest do
 
   describe "put_file/1" do
     test "put file to local folder" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
       file_path = "local_upload/files/image.jpg"
 
       file = %Pleroma.Upload{
@@ -32,6 +33,7 @@ defmodule Pleroma.Uploaders.LocalTest do
 
   describe "delete_file/1" do
     test "deletes local file" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
       file_path = "local_upload/files/image.jpg"
 
       file = %Pleroma.Upload{

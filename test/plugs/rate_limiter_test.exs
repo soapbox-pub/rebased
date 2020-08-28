@@ -5,21 +5,21 @@
 defmodule Pleroma.Plugs.RateLimiterTest do
   use Pleroma.Web.ConnCase
 
+  alias Phoenix.ConnTest
   alias Pleroma.Config
   alias Pleroma.Plugs.RateLimiter
+  alias Plug.Conn
 
   import Pleroma.Factory
   import Pleroma.Tests.Helpers, only: [clear_config: 1, clear_config: 2]
 
   # Note: each example must work with separate buckets in order to prevent concurrency issues
-
-  clear_config([Pleroma.Web.Endpoint, :http, :ip])
-  clear_config(:rate_limit)
+  setup do: clear_config([Pleroma.Web.Endpoint, :http, :ip])
+  setup do: clear_config(:rate_limit)
 
   describe "config" do
     @limiter_name :test_init
-
-    clear_config([Pleroma.Plugs.RemoteIp, :enabled])
+    setup do: clear_config([Pleroma.Plugs.RemoteIp, :enabled])
 
     test "config is required for plug to work" do
       Config.put([:rate_limit, @limiter_name], {1, 1})
@@ -38,8 +38,15 @@ defmodule Pleroma.Plugs.RateLimiterTest do
   end
 
   test "it is disabled if it remote ip plug is enabled but no remote ip is found" do
-    Config.put([Pleroma.Web.Endpoint, :http, :ip], {127, 0, 0, 1})
-    assert RateLimiter.disabled?(Plug.Conn.assign(build_conn(), :remote_ip_found, false))
+    assert RateLimiter.disabled?(Conn.assign(build_conn(), :remote_ip_found, false))
+  end
+
+  test "it is enabled if remote ip found" do
+    refute RateLimiter.disabled?(Conn.assign(build_conn(), :remote_ip_found, true))
+  end
+
+  test "it is enabled if remote_ip_found flag doesn't exist" do
+    refute RateLimiter.disabled?(build_conn())
   end
 
   test "it restricts based on config values" do
@@ -51,7 +58,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     Config.put([:rate_limit, limiter_name], {scale, limit})
 
     plug_opts = RateLimiter.init(name: limiter_name)
-    conn = conn(:get, "/")
+    conn = build_conn(:get, "/")
 
     for i <- 1..5 do
       conn = RateLimiter.call(conn, plug_opts)
@@ -60,17 +67,17 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     end
 
     conn = RateLimiter.call(conn, plug_opts)
-    assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+    assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
     assert conn.halted
 
     Process.sleep(50)
 
-    conn = conn(:get, "/")
+    conn = build_conn(:get, "/")
 
     conn = RateLimiter.call(conn, plug_opts)
     assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
 
-    refute conn.status == Plug.Conn.Status.code(:too_many_requests)
+    refute conn.status == Conn.Status.code(:too_many_requests)
     refute conn.resp_body
     refute conn.halted
   end
@@ -85,7 +92,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       base_bucket_name = "#{limiter_name}:group1"
       plug_opts = RateLimiter.init(name: limiter_name, bucket_name: base_bucket_name)
 
-      conn = conn(:get, "/")
+      conn = build_conn(:get, "/")
 
       RateLimiter.call(conn, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn, base_bucket_name, plug_opts)
@@ -99,9 +106,9 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       plug_opts = RateLimiter.init(name: limiter_name, params: ["id"])
 
-      conn = conn(:get, "/?id=1")
-      conn = Plug.Conn.fetch_query_params(conn)
-      conn_2 = conn(:get, "/?id=2")
+      conn = build_conn(:get, "/?id=1")
+      conn = Conn.fetch_query_params(conn)
+      conn_2 = build_conn(:get, "/?id=2")
 
       RateLimiter.call(conn, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
@@ -120,9 +127,9 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       id = "100"
 
-      conn = conn(:get, "/?id=#{id}")
-      conn = Plug.Conn.fetch_query_params(conn)
-      conn_2 = conn(:get, "/?id=#{101}")
+      conn = build_conn(:get, "/?id=#{id}")
+      conn = Conn.fetch_query_params(conn)
+      conn_2 = build_conn(:get, "/?id=#{101}")
 
       RateLimiter.call(conn, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn, base_bucket_name, plug_opts)
@@ -138,8 +145,8 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       plug_opts = RateLimiter.init(name: limiter_name)
 
-      conn = %{conn(:get, "/") | remote_ip: {127, 0, 0, 2}}
-      conn_2 = %{conn(:get, "/") | remote_ip: {127, 0, 0, 3}}
+      conn = %{build_conn(:get, "/") | remote_ip: {127, 0, 0, 2}}
+      conn_2 = %{build_conn(:get, "/") | remote_ip: {127, 0, 0, 3}}
 
       for i <- 1..5 do
         conn = RateLimiter.call(conn, plug_opts)
@@ -149,13 +156,13 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       conn = RateLimiter.call(conn, plug_opts)
 
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
 
       conn_2 = RateLimiter.call(conn_2, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn_2, limiter_name, plug_opts)
 
-      refute conn_2.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn_2.status == Conn.Status.code(:too_many_requests)
       refute conn_2.resp_body
       refute conn_2.halted
     end
@@ -179,7 +186,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       plug_opts = RateLimiter.init(name: limiter_name)
 
       user = insert(:user)
-      conn = conn(:get, "/") |> assign(:user, user)
+      conn = build_conn(:get, "/") |> assign(:user, user)
 
       for i <- 1..5 do
         conn = RateLimiter.call(conn, plug_opts)
@@ -189,7 +196,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       conn = RateLimiter.call(conn, plug_opts)
 
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
     end
 
@@ -201,10 +208,10 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       plug_opts = RateLimiter.init(name: limiter_name)
 
       user = insert(:user)
-      conn = conn(:get, "/") |> assign(:user, user)
+      conn = build_conn(:get, "/") |> assign(:user, user)
 
       user_2 = insert(:user)
-      conn_2 = conn(:get, "/") |> assign(:user, user_2)
+      conn_2 = build_conn(:get, "/") |> assign(:user, user_2)
 
       for i <- 1..5 do
         conn = RateLimiter.call(conn, plug_opts)
@@ -212,12 +219,12 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       end
 
       conn = RateLimiter.call(conn, plug_opts)
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
 
       conn_2 = RateLimiter.call(conn_2, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn_2, limiter_name, plug_opts)
-      refute conn_2.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn_2.status == Conn.Status.code(:too_many_requests)
       refute conn_2.resp_body
       refute conn_2.halted
     end
@@ -230,8 +237,8 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
     opts = RateLimiter.init(name: limiter_name)
 
-    conn = conn(:get, "/")
-    conn_2 = conn(:get, "/")
+    conn = build_conn(:get, "/")
+    conn_2 = build_conn(:get, "/")
 
     %Task{pid: pid1} =
       task1 =

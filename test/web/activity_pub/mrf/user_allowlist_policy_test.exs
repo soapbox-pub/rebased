@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicyTest do
 
   alias Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy
 
-  clear_config([:mrf_user_allowlist, :localhost])
+  setup do: clear_config(:mrf_user_allowlist)
 
   test "pass filter if allow list is empty" do
     actor = insert(:user)
@@ -26,6 +26,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicyTest do
     actor = insert(:user)
     Pleroma.Config.put([:mrf_user_allowlist], %{"localhost" => ["test-ap-id"]})
     message = %{"actor" => actor.ap_id}
-    assert UserAllowListPolicy.filter(message) == {:reject, nil}
+    assert {:reject, _} = UserAllowListPolicy.filter(message)
   end
 end

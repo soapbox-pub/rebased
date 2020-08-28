@@ -16,9 +16,12 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       filename: "sound.mp3"
     }
 
-    ret_conn = put(conn, "/api/v1/pleroma/mascot", %{"file" => non_image_file})
+    ret_conn =
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/pleroma/mascot", %{"file" => non_image_file})
 
-    assert json_response(ret_conn, 415)
+    assert json_response_and_validate_schema(ret_conn, 415)
 
     file = %Plug.Upload{
       content_type: "image/jpg",
@@ -26,9 +29,12 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       filename: "an_image.jpg"
     }
 
-    conn = put(conn, "/api/v1/pleroma/mascot", %{"file" => file})
+    conn =
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/pleroma/mascot", %{"file" => file})
 
-    assert %{"id" => _, "type" => image} = json_response(conn, 200)
+    assert %{"id" => _, "type" => image} = json_response_and_validate_schema(conn, 200)
   end
 
   test "mascot retrieving" do
@@ -37,7 +43,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
     # When user hasn't set a mascot, we should just get pleroma tan back
     ret_conn = get(conn, "/api/v1/pleroma/mascot")
 
-    assert %{"url" => url} = json_response(ret_conn, 200)
+    assert %{"url" => url} = json_response_and_validate_schema(ret_conn, 200)
     assert url =~ "pleroma-fox-tan-smol"
 
     # When a user sets their mascot, we should get that back
@@ -47,9 +53,12 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       filename: "an_image.jpg"
     }
 
-    ret_conn = put(conn, "/api/v1/pleroma/mascot", %{"file" => file})
+    ret_conn =
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/pleroma/mascot", %{"file" => file})
 
-    assert json_response(ret_conn, 200)
+    assert json_response_and_validate_schema(ret_conn, 200)
 
     user = User.get_cached_by_id(user.id)
 
@@ -58,7 +67,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/pleroma/mascot")
 
-    assert %{"url" => url, "type" => "image"} = json_response(conn, 200)
+    assert %{"url" => url, "type" => "image"} = json_response_and_validate_schema(conn, 200)
     assert url =~ "an_image"
   end
 end

@@ -128,22 +128,19 @@ defmodule Pleroma.Conversation.Participation do
     |> Pleroma.Pagination.fetch_paginated(params)
   end
 
-  def restrict_recipients(query, user, %{"recipients" => user_ids}) do
-    user_ids =
+  def restrict_recipients(query, user, %{recipients: user_ids}) do
+    user_binary_ids =
       [user.id | user_ids]
       |> Enum.uniq()
-      |> Enum.reduce([], fn user_id, acc ->
-        {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
-        [user_id | acc]
-      end)
+      |> User.binary_id()
 
     conversation_subquery =
       __MODULE__
       |> group_by([p], p.conversation_id)
       |> having(
         [p],
-        count(p.user_id) == ^length(user_ids) and
-          fragment("array_agg(?) @> ?", p.user_id, ^user_ids)
+        count(p.user_id) == ^length(user_binary_ids) and
+          fragment("array_agg(?) @> ?", p.user_id, ^user_binary_ids)
       )
       |> select([p], %{id: p.conversation_id})
 
@@ -165,17 +162,20 @@ defmodule Pleroma.Conversation.Participation do
     for_user(user, params)
     |> Enum.map(fn participation ->
       activity_id =
-        ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
-          "user" => user,
-          "blocking_user" => user
-        })
+        ActivityPub.fetch_latest_direct_activity_id_for_context(
+          participation.conversation.ap_id,
+          %{
+            user: user,
+            blocking_user: user
+          }
+        )
 
       %{
         participation
         | last_activity_id: activity_id
       }
     end)
-    |> Enum.filter(& &1.last_activity_id)
+    |> Enum.reject(&is_nil(&1.last_activity_id))
   end
 
   def get(_, _ \\ [])

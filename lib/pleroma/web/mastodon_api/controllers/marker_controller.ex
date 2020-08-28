@@ -6,6 +6,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerController do
   use Pleroma.Web, :controller
   alias Pleroma.Plugs.OAuthScopesPlug
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"]}
@@ -13,17 +15,21 @@ defmodule Pleroma.Web.MastodonAPI.MarkerController do
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action == :upsert)
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MarkerOperation
 
   # GET /api/v1/markers
   def index(%{assigns: %{user: user}} = conn, params) do
-    markers = Pleroma.Marker.get_markers(user, params["timeline"])
+    markers = Pleroma.Marker.get_markers(user, params[:timeline])
     render(conn, "markers.json", %{markers: markers})
   end
 
   # POST /api/v1/markers
-  def upsert(%{assigns: %{user: user}} = conn, params) do
+  def upsert(%{assigns: %{user: user}, body_params: params} = conn, _) do
+    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
+
     with {:ok, result} <- Pleroma.Marker.upsert(user, params),
          markers <- Map.values(result) do
       render(conn, "markers.json", %{markers: markers})

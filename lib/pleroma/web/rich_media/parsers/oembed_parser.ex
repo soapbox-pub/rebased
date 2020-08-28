@@ -7,9 +7,9 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
     with elements = [_ | _] <- get_discovery_data(html),
          oembed_url when is_binary(oembed_url) <- get_oembed_url(elements),
          {:ok, oembed_data} <- get_oembed_data(oembed_url) do
-      {:ok, oembed_data}
+      oembed_data
     else
-      _e -> {:error, "No OEmbed data found"}
+      _e -> %{}
     end
   end
 
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   end
 
   defp get_oembed_data(url) do
-    with {:ok, %Tesla.Env{body: json}} <- Pleroma.HTTP.get(url, [], adapter: [pool: :media]) do
+    with {:ok, %Tesla.Env{body: json}} <- Pleroma.Web.RichMedia.Helpers.rich_media_get(url) do
       Jason.decode(json)
     end
   end

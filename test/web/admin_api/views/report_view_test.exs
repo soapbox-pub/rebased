@@ -4,30 +4,36 @@
 
 defmodule Pleroma.Web.AdminAPI.ReportViewTest do
   use Pleroma.DataCase
+
   import Pleroma.Factory
+
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
   test "renders a report" do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.report(user, %{"account_id" => other_user.id})
+    {:ok, activity} = CommonAPI.report(user, %{account_id: other_user.id})
 
     expected = %{
       content: nil,
       actor:
         Map.merge(
-          AccountView.render("show.json", %{user: user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
+          MastodonAPI.AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
+          AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          AccountView.render("show.json", %{user: other_user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
+          MastodonAPI.AccountView.render("show.json", %{
+            user: other_user,
+            skip_visibility_check: true
+          }),
+          AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [],
       notes: [],
@@ -45,10 +51,10 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
   test "includes reported statuses" do
     user = insert(:user)
     other_user = insert(:user)
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "toot"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "toot"})
 
     {:ok, report_activity} =
-      CommonAPI.report(user, %{"account_id" => other_user.id, "status_ids" => [activity.id]})
+      CommonAPI.report(user, %{account_id: other_user.id, status_ids: [activity.id]})
 
     other_user = Pleroma.User.get_by_id(other_user.id)
 
@@ -56,13 +62,16 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          AccountView.render("show.json", %{user: user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
+          MastodonAPI.AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
+          AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          AccountView.render("show.json", %{user: other_user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
+          MastodonAPI.AccountView.render("show.json", %{
+            user: other_user,
+            skip_visibility_check: true
+          }),
+          AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [StatusView.render("show.json", %{activity: activity})],
       state: "open",
@@ -81,7 +90,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.report(user, %{"account_id" => other_user.id})
+    {:ok, activity} = CommonAPI.report(user, %{account_id: other_user.id})
     {:ok, activity} = CommonAPI.update_report_state(activity.id, "closed")
 
     assert %{state: "closed"} =
@@ -94,8 +103,8 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     {:ok, activity} =
       CommonAPI.report(user, %{
-        "account_id" => other_user.id,
-        "comment" => "posts are too good for this instance"
+        account_id: other_user.id,
+        comment: "posts are too good for this instance"
       })
 
     assert %{content: "posts are too good for this instance"} =
@@ -108,8 +117,8 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     {:ok, activity} =
       CommonAPI.report(user, %{
-        "account_id" => other_user.id,
-        "comment" => ""
+        account_id: other_user.id,
+        comment: ""
       })
 
     data = Map.put(activity.data, "content", "<script> alert('hecked :D:D:D:D:D:D:D') </script>")
@@ -125,8 +134,8 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     {:ok, activity} =
       CommonAPI.report(user, %{
-        "account_id" => other_user.id,
-        "comment" => ""
+        account_id: other_user.id,
+        comment: ""
       })
 
     Pleroma.User.delete(other_user)

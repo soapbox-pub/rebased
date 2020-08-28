@@ -6,6 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
+  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
 
@@ -17,8 +18,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     :ok
   end
 
-  clear_config([:instance])
-  clear_config([:frontend_configurations, :pleroma_fe])
+  setup do: clear_config([:instance])
+  setup do: clear_config([:frontend_configurations, :pleroma_fe])
 
   describe "POST /api/pleroma/follow_import" do
     setup do: oauth_access(["follow"])
@@ -190,7 +191,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings", %{user: user, conn: conn} do
       conn
       |> put("/api/pleroma/notification_settings", %{
-        "followers" => false,
+        "block_from_strangers" => true,
         "bar" => 1
       })
       |> json_response(:ok)
@@ -198,127 +199,22 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user = refresh_record(user)
 
       assert %Pleroma.User.NotificationSetting{
-               followers: false,
-               follows: true,
-               non_follows: true,
-               non_followers: true,
-               privacy_option: false
+               block_from_strangers: true,
+               hide_notification_contents: false
              } == user.notification_settings
     end
 
-    test "it updates notification privacy option", %{user: user, conn: conn} do
+    test "it updates notification settings to enable hiding contents", %{user: user, conn: conn} do
       conn
-      |> put("/api/pleroma/notification_settings", %{"privacy_option" => "1"})
+      |> put("/api/pleroma/notification_settings", %{"hide_notification_contents" => "1"})
       |> json_response(:ok)
 
       user = refresh_record(user)
 
       assert %Pleroma.User.NotificationSetting{
-               followers: true,
-               follows: true,
-               non_follows: true,
-               non_followers: true,
-               privacy_option: true
+               block_from_strangers: false,
+               hide_notification_contents: true
              } == user.notification_settings
-    end
-  end
-
-  describe "GET /api/statusnet/config" do
-    test "it returns config in xml format", %{conn: conn} do
-      instance = Pleroma.Config.get(:instance)
-
-      response =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get("/api/statusnet/config")
-        |> response(:ok)
-
-      assert response ==
-               "<config>\n<site>\n<name>#{Keyword.get(instance, :name)}</name>\n<site>#{
-                 Pleroma.Web.base_url()
-               }</site>\n<textlimit>#{Keyword.get(instance, :limit)}</textlimit>\n<closed>#{
-                 !Keyword.get(instance, :registrations_open)
-               }</closed>\n</site>\n</config>\n"
-    end
-
-    test "it returns config in json format", %{conn: conn} do
-      instance = Pleroma.Config.get(:instance)
-      Pleroma.Config.put([:instance, :managed_config], true)
-      Pleroma.Config.put([:instance, :registrations_open], false)
-      Pleroma.Config.put([:instance, :invites_enabled], true)
-      Pleroma.Config.put([:instance, :public], false)
-      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
-
-      response =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/api/statusnet/config")
-        |> json_response(:ok)
-
-      expected_data = %{
-        "site" => %{
-          "accountActivationRequired" => "0",
-          "closed" => "1",
-          "description" => Keyword.get(instance, :description),
-          "invitesEnabled" => "1",
-          "name" => Keyword.get(instance, :name),
-          "pleromafe" => %{"theme" => "asuka-hospital"},
-          "private" => "1",
-          "safeDMMentionsEnabled" => "0",
-          "server" => Pleroma.Web.base_url(),
-          "textlimit" => to_string(Keyword.get(instance, :limit)),
-          "uploadlimit" => %{
-            "avatarlimit" => to_string(Keyword.get(instance, :avatar_upload_limit)),
-            "backgroundlimit" => to_string(Keyword.get(instance, :background_upload_limit)),
-            "bannerlimit" => to_string(Keyword.get(instance, :banner_upload_limit)),
-            "uploadlimit" => to_string(Keyword.get(instance, :upload_limit))
-          },
-          "vapidPublicKey" => Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
-        }
-      }
-
-      assert response == expected_data
-    end
-
-    test "returns the state of safe_dm_mentions flag", %{conn: conn} do
-      Pleroma.Config.put([:instance, :safe_dm_mentions], true)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["safeDMMentionsEnabled"] == "1"
-
-      Pleroma.Config.put([:instance, :safe_dm_mentions], false)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["safeDMMentionsEnabled"] == "0"
-    end
-
-    test "it returns the managed config", %{conn: conn} do
-      Pleroma.Config.put([:instance, :managed_config], false)
-      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      refute response["site"]["pleromafe"]
-
-      Pleroma.Config.put([:instance, :managed_config], true)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["pleromafe"] == %{"theme" => "asuka-hospital"}
     end
   end
 
@@ -334,7 +230,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         }
       ]
 
-      Pleroma.Config.put(:frontend_configurations, config)
+      Config.put(:frontend_configurations, config)
 
       response =
         conn
@@ -364,10 +260,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "GET /api/pleroma/healthcheck" do
-    clear_config([:instance, :healthcheck])
+    setup do: clear_config([:instance, :healthcheck])
 
     test "returns 503 when healthcheck disabled", %{conn: conn} do
-      Pleroma.Config.put([:instance, :healthcheck], false)
+      Config.put([:instance, :healthcheck], false)
 
       response =
         conn
@@ -378,7 +274,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 200 when healthcheck enabled and all ok", %{conn: conn} do
-      Pleroma.Config.put([:instance, :healthcheck], true)
+      Config.put([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: true} end do
@@ -398,7 +294,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 503 when healthcheck enabled and health is false", %{conn: conn} do
-      Pleroma.Config.put([:instance, :healthcheck], true)
+      Config.put([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: false} end do
@@ -450,29 +346,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
-  describe "GET /api/statusnet/version" do
-    test "it returns version in xml format", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get("/api/statusnet/version")
-        |> response(:ok)
-
-      assert response == "<version>#{Pleroma.Application.named_version()}</version>"
-    end
-
-    test "it returns version in json format", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/api/statusnet/version")
-        |> json_response(:ok)
-
-      assert response == "#{Pleroma.Application.named_version()}"
-    end
-  end
-
   describe "POST /main/ostatus - remote_subscribe/2" do
+    setup do: clear_config([:instance, :federating], true)
+
     test "renders subscribe form", %{conn: conn} do
       user = insert(:user)
 
@@ -685,7 +561,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert json_response(conn, 200) == %{"status" => "success"}
       fetched_user = User.get_cached_by_id(user.id)
-      assert Comeonin.Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
+      assert Pbkdf2.verify_pass("newpass", fetched_user.password_hash) == true
     end
   end
 
@@ -710,10 +586,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       end
     end
 
-    test "with proper permissions and valid password", %{conn: conn} do
+    test "with proper permissions and valid password", %{conn: conn, user: user} do
       conn = post(conn, "/api/pleroma/delete_account", %{"password" => "test"})
-
+      ObanHelpers.perform_all()
       assert json_response(conn, 200) == %{"status" => "success"}
+
+      user = User.get_by_id(user.id)
+      assert user.deactivated == true
+      assert user.name == nil
+      assert user.bio == nil
+      assert user.password_hash == nil
     end
   end
 end

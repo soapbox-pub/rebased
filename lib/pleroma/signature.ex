@@ -5,6 +5,7 @@
 defmodule Pleroma.Signature do
   @behaviour HTTPSignatures.Adapter
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -21,14 +22,16 @@ defmodule Pleroma.Signature do
         uri
       end
 
-    case uri do
-      %URI{scheme: scheme} when scheme in ["https", "http"] ->
-        {:ok, URI.to_string(uri)}
+    maybe_ap_id = URI.to_string(uri)
+
+    case ObjectValidators.ObjectID.cast(maybe_ap_id) do
+      {:ok, ap_id} ->
+        {:ok, ap_id}
 
       _ ->
-        case Pleroma.Web.WebFinger.finger(URI.to_string(uri)) do
+        case Pleroma.Web.WebFinger.finger(maybe_ap_id) do
           %{"ap_id" => ap_id} -> {:ok, ap_id}
-          _ -> {:error, URI.to_string(uri)}
+          _ -> {:error, maybe_ap_id}
         end
     end
   end

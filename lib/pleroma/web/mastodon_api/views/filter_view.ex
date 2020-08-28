@@ -7,11 +7,11 @@ defmodule Pleroma.Web.MastodonAPI.FilterView do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.FilterView
 
-  def render("filters.json", %{filters: filters} = opts) do
-    render_many(filters, FilterView, "filter.json", opts)
+  def render("index.json", %{filters: filters}) do
+    render_many(filters, FilterView, "show.json")
   end
 
-  def render("filter.json", %{filter: filter}) do
+  def render("show.json", %{filter: filter}) do
     expires_at =
       if filter.expires_at do
         Utils.to_masto_date(filter.expires_at)
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterView do
       context: filter.context,
       expires_at: expires_at,
       irreversible: filter.hide,
-      whole_word: false
+      whole_word: filter.whole_word
     }
   end
 end

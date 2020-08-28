@@ -7,15 +7,12 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 
 * `postgresql` (9.6+, Ubuntu 16.04 comes with 9.5, you can get a newer version from [here](https://www.postgresql.org/download/linux/ubuntu/))
 * `postgresql-contrib` (9.6+, same situtation as above)
-* `elixir` (1.5+, [install from here, Debian and Ubuntu ship older versions](https://elixir-lang.org/install.html#unix-and-unix-like) or use [asdf](https://github.com/asdf-vm/asdf) as the pleroma user)
+* `elixir` (1.8+, Follow the guide to install from the Erlang Solutions repo or use [asdf](https://github.com/asdf-vm/asdf) as the pleroma user)
 * `erlang-dev`
-* `erlang-tools`
-* `erlang-parsetools`
-* `erlang-eldap`, if you want to enable ldap authenticator
-* `erlang-ssh`
-* `erlang-xmerl`
+* `erlang-nox`
 * `git`
 * `build-essential`
+* `cmake`
 
 #### Optional packages used in this guide
 
@@ -34,7 +31,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib
+sudo apt install git build-essential postgresql postgresql-contrib cmake
 ```
 
 ### Install Elixir and Erlang
@@ -42,15 +39,15 @@ sudo apt install git build-essential postgresql postgresql-contrib
 * Download and add the Erlang repository:
 
 ```shell
-wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
-sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
+wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb
+sudo dpkg -i /tmp/erlang-solutions_2.0_all.deb
 ```
 
 * Install Elixir and Erlang:
 
 ```shell
 sudo apt update
-sudo apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
+sudo apt install elixir erlang-dev erlang-nox
 ```
 
 ### Install PleromaBE
@@ -190,10 +187,7 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 
 #### Further reading
 
-* [Backup your instance](../administration/backup.md)
-* [Hardening your instance](../configuration/hardening.md)
-* [How to activate mediaproxy](../configuration/howto_mediaproxy.md)
-* [Updating your instance](../administration/updating.md)
+{! backend/installation/further_reading.include !}
 
 ## Questions
 

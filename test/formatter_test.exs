@@ -10,6 +10,7 @@ defmodule Pleroma.FormatterTest do
   import Pleroma.Factory
 
   setup_all do
+    clear_config(Pleroma.Formatter)
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
@@ -140,7 +141,7 @@ defmodule Pleroma.FormatterTest do
       archaeme =
         insert(:user,
           nickname: "archa_eme_",
-          source_data: %{"url" => "https://archeme/@archa_eme_"}
+          uri: "https://archeme/@archa_eme_"
         )
 
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
@@ -150,13 +151,13 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 3
 
       expected_text =
-        ~s(<span class="h-card"><a data-user="#{gsimg.id}" class="u-url mention" href="#{
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{gsimg.id}" href="#{
           gsimg.ap_id
-        }" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a data-user="#{
+        }" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a class="u-url mention" data-user="#{
           archaeme.id
-        }" class="u-url mention" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a data-user="#{
+        }" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a class="u-url mention" data-user="#{
           archaeme_remote.id
-        }" class="u-url mention" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
+        }" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
 
       assert expected_text == text
     end
@@ -171,7 +172,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        ~s(<span class="h-card"><a data-user="#{mike.id}" class="u-url mention" href="#{
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{mike.id}" href="#{
           mike.ap_id
         }" rel="ugc">@<span>mike</span></a></span> test)
 
@@ -187,7 +188,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        ~s(<span class="h-card"><a data-user="#{o.id}" class="u-url mention" href="#{o.ap_id}" rel="ugc">@<span>o</span></a></span> hi)
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{o.id}" href="#{o.ap_id}" rel="ugc">@<span>o</span></a></span> hi)
 
       assert expected_text == text
     end
@@ -209,17 +210,13 @@ defmodule Pleroma.FormatterTest do
       assert mentions == [{"@#{user.nickname}", user}, {"@#{other_user.nickname}", other_user}]
 
       assert expected_text ==
-               ~s(<span class="h-card"><a data-user="#{user.id}" class="u-url mention" href="#{
+               ~s(<span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="#{
                  user.ap_id
-               }" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a data-user="#{
+               }" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
                  other_user.id
-               }" class="u-url mention" href="#{other_user.ap_id}" rel="ugc">@<span>#{
-                 other_user.nickname
-               }</span></a></span> hey dudes i hate <span class="h-card"><a data-user="#{
+               }" href="#{other_user.ap_id}" rel="ugc">@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class="h-card"><a class="u-url mention" data-user="#{
                  third_user.id
-               }" class="u-url mention" href="#{third_user.ap_id}" rel="ugc">@<span>#{
-                 third_user.nickname
-               }</span></a></span>)
+               }" href="#{third_user.ap_id}" rel="ugc">@<span>#{third_user.nickname}</span></a></span>)
     end
 
     test "given the 'safe_mention' option, it will still work without any mention" do
@@ -258,6 +255,36 @@ defmodule Pleroma.FormatterTest do
       ]
 
       assert {_text, ^expected_mentions, []} = Formatter.linkify(text)
+    end
+
+    test "it parses URL containing local mention" do
+      _user = insert(:user, %{nickname: "lain"})
+
+      text = "https://example.com/@lain"
+
+      expected = ~S(<a href="https://example.com/@lain" rel="ugc">https://example.com/@lain</a>)
+
+      assert {^expected, [], []} = Formatter.linkify(text)
+    end
+
+    test "it correctly parses angry face D:< with mention" do
+      lain =
+        insert(:user, %{
+          nickname: "lain@lain.com",
+          ap_id: "https://lain.com/users/lain",
+          id: "9qrWmR0cKniB0YU0TA"
+        })
+
+      text = "@lain@lain.com D:<"
+
+      expected_text =
+        ~S(<span class="h-card"><a class="u-url mention" data-user="9qrWmR0cKniB0YU0TA" href="https://lain.com/users/lain" rel="ugc">@<span>lain</span></a></span> D:<)
+
+      expected_mentions = [
+        {"@lain@lain.com", lain}
+      ]
+
+      assert {^expected_text, ^expected_mentions, []} = Formatter.linkify(text)
     end
   end
 

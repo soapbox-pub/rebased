@@ -5,16 +5,18 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Push.Impl
   alias Pleroma.Web.Push.Subscription
 
   import Pleroma.Factory
 
-  setup_all do
-    Tesla.Mock.mock_global(fn
+  setup do
+    Tesla.Mock.mock(fn
       %{method: :post, url: "https://example.com/example/1234"} ->
         %Tesla.Env{status: 200}
 
@@ -55,20 +57,21 @@ defmodule Pleroma.Web.Push.ImplTest do
       data: %{alerts: %{"follow" => true, "mention" => false}}
     )
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "<Lorem ipsum dolor sit amet."})
+    {:ok, activity} = CommonAPI.post(user, %{status: "<Lorem ipsum dolor sit amet."})
 
     notif =
       insert(:notification,
         user: user,
-        activity: activity
+        activity: activity,
+        type: "mention"
       )
 
-    assert Impl.perform(notif) == [:ok, :ok]
+    assert Impl.perform(notif) == {:ok, [:ok, :ok]}
   end
 
   @tag capture_log: true
   test "returns error if notif does not match " do
-    assert Impl.perform(%{}) == :error
+    assert Impl.perform(%{}) == {:error, :unknown_type}
   end
 
   test "successful message sending" do
@@ -111,7 +114,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" =>
+        status:
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
@@ -126,7 +129,7 @@ defmodule Pleroma.Web.Push.ImplTest do
            ) ==
              "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
 
-    assert Impl.format_title(%{activity: activity}) ==
+    assert Impl.format_title(%{activity: activity, type: "mention"}) ==
              "New Mention"
   end
 
@@ -134,11 +137,12 @@ defmodule Pleroma.Web.Push.ImplTest do
     user = insert(:user, nickname: "Bob")
     other_user = insert(:user)
     {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
 
-    assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has followed you"
+    assert Impl.format_body(%{activity: activity, type: "follow"}, user, object) ==
+             "@Bob has followed you"
 
-    assert Impl.format_title(%{activity: activity}) ==
+    assert Impl.format_title(%{activity: activity, type: "follow"}) ==
              "New Follower"
   end
 
@@ -147,17 +151,17 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" =>
+        status:
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
+    {:ok, announce_activity} = CommonAPI.repeat(activity.id, user)
     object = Object.normalize(activity)
 
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==
              "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
 
-    assert Impl.format_title(%{activity: announce_activity}) ==
+    assert Impl.format_title(%{activity: announce_activity, type: "reblog"}) ==
              "New Repeat"
   end
 
@@ -166,16 +170,17 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" =>
+        status:
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    {:ok, activity, _} = CommonAPI.favorite(activity.id, user)
+    {:ok, activity} = CommonAPI.favorite(user, activity.id)
     object = Object.normalize(activity)
 
-    assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has favorited your post"
+    assert Impl.format_body(%{activity: activity, type: "favourite"}, user, object) ==
+             "@Bob has favorited your post"
 
-    assert Impl.format_title(%{activity: activity}) ==
+    assert Impl.format_title(%{activity: activity, type: "favourite"}) ==
              "New Favorite"
   end
 
@@ -184,8 +189,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "visibility" => "direct",
-        "status" => "This is just between you and me, pal"
+        visibility: "direct",
+        status: "This is just between you and me, pal"
       })
 
     assert Impl.format_title(%{activity: activity}) ==
@@ -193,14 +198,56 @@ defmodule Pleroma.Web.Push.ImplTest do
   end
 
   describe "build_content/3" do
-    test "returns info content for direct message with enabled privacy option" do
+    test "builds content for chat messages" do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, chat} = CommonAPI.post_chat_message(user, recipient, "hey")
+      object = Object.normalize(chat, false)
+      [notification] = Notification.for_user(recipient)
+
+      res = Impl.build_content(notification, user, object)
+
+      assert res == %{
+               body: "@#{user.nickname}: hey",
+               title: "New Chat Message"
+             }
+    end
+
+    test "builds content for chat messages with no content" do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      {:ok, chat} = CommonAPI.post_chat_message(user, recipient, nil, media_id: upload.id)
+      object = Object.normalize(chat, false)
+      [notification] = Notification.for_user(recipient)
+
+      res = Impl.build_content(notification, user, object)
+
+      assert res == %{
+               body: "@#{user.nickname}: (Attachment)",
+               title: "New Chat Message"
+             }
+    end
+
+    test "hides contents of notifications when option enabled" do
       user = insert(:user, nickname: "Bob")
-      user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: true})
+
+      user2 =
+        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: true})
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "visibility" => "direct",
-          "status" => "<Lorem ipsum dolor sit amet."
+          visibility: "direct",
+          status: "<Lorem ipsum dolor sit amet."
         })
 
       notif = insert(:notification, user: user2, activity: activity)
@@ -209,19 +256,46 @@ defmodule Pleroma.Web.Push.ImplTest do
       object = Object.normalize(activity)
 
       assert Impl.build_content(notif, actor, object) == %{
-               body: "@Bob",
-               title: "New Direct Message"
+               body: "New Direct Message"
              }
-    end
-
-    test "returns regular content for direct message with disabled privacy option" do
-      user = insert(:user, nickname: "Bob")
-      user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: false})
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "visibility" => "direct",
-          "status" =>
+          visibility: "public",
+          status: "<Lorem ipsum dolor sit amet."
+        })
+
+      notif = insert(:notification, user: user2, activity: activity, type: "mention")
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "New Mention"
+             }
+
+      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+
+      notif = insert(:notification, user: user2, activity: activity, type: "favourite")
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "New Favorite"
+             }
+    end
+
+    test "returns regular content when hiding contents option disabled" do
+      user = insert(:user, nickname: "Bob")
+
+      user2 =
+        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: false})
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          visibility: "direct",
+          status:
             "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
         })
 
@@ -234,6 +308,36 @@ defmodule Pleroma.Web.Push.ImplTest do
                body:
                  "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
                title: "New Direct Message"
+             }
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          visibility: "public",
+          status:
+            "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
+        })
+
+      notif = insert(:notification, user: user2, activity: activity, type: "mention")
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body:
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+               title: "New Mention"
+             }
+
+      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+
+      notif = insert(:notification, user: user2, activity: activity, type: "favourite")
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "@Bob has favorited your post",
+               title: "New Favorite"
              }
     end
   end

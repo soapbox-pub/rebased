@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
-  @hackney_options [
-    pool: :media,
-    recv_timeout: 2_000,
-    max_body: 2_000_000,
-    with_body: true
-  ]
-
   defp parsers do
     Pleroma.Config.get([:rich_media, :parsers])
   end
@@ -78,7 +71,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   defp parse_url(url) do
     try do
-      {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
+      {:ok, %Tesla.Env{body: html}} = Pleroma.Web.RichMedia.Helpers.rich_media_get(url)
 
       html
       |> parse_html()
@@ -97,8 +90,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
   defp maybe_parse(html) do
     Enum.reduce_while(parsers(), %{}, fn parser, acc ->
       case parser.parse(html, acc) do
-        {:ok, data} -> {:halt, data}
-        {:error, _msg} -> {:cont, acc}
+        data when data != %{} -> {:halt, data}
+        _ -> {:cont, acc}
       end
     end)
   end

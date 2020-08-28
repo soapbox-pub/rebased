@@ -5,19 +5,25 @@
 defmodule Pleroma.Web.MastoFEController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :put_settings)
 
   # Note: :index action handles attempt of unauthenticated access to private instance with redirect
+  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action == :index)
+
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"], fallback: :proceed_unauthenticated, skip_instance_privacy_check: true}
+    %{scopes: ["read"], fallback: :proceed_unauthenticated}
     when action == :index
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action not in [:index, :manifest])
+  plug(
+    :skip_plug,
+    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :manifest
+  )
 
   @doc "GET /web/*path"
   def index(%{assigns: %{user: user, token: token}} = conn, _params)
@@ -43,7 +49,7 @@ defmodule Pleroma.Web.MastoFEController do
     |> render("manifest.json")
   end
 
-  @doc "PUT /api/web/settings"
+  @doc "PUT /api/web/settings: Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere"
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
     with {:ok, _} <- User.mastodon_settings_update(user, settings) do
       json(conn, %{})

@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
   test "get instance information", %{conn: conn} do
     conn = get(conn, "/api/v1/instance")
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     email = Pleroma.Config.get([:instance, :email])
     # Note: not checking for "max_toot_chars" since it's optional
@@ -27,12 +27,22 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "thumbnail" => _,
              "languages" => _,
              "registrations" => _,
+             "approval_required" => _,
              "poll_limits" => _,
              "upload_limit" => _,
              "avatar_upload_limit" => _,
              "background_upload_limit" => _,
-             "banner_upload_limit" => _
+             "banner_upload_limit" => _,
+             "background_image" => _,
+             "chat_limit" => _,
+             "description_limit" => _
            } = result
+
+    assert result["pleroma"]["metadata"]["account_activation_required"] != nil
+    assert result["pleroma"]["metadata"]["features"]
+    assert result["pleroma"]["metadata"]["federation"]
+    assert result["pleroma"]["metadata"]["fields_limits"]
+    assert result["pleroma"]["vapid_public_key"]
 
     assert email == from_config_email
   end
@@ -46,13 +56,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
-    {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
+    {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
 
     Pleroma.Stats.force_update()
 
     conn = get(conn, "/api/v1/instance")
 
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     stats = result["stats"]
 
@@ -70,7 +80,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     conn = get(conn, "/api/v1/instance/peers")
 
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     assert ["peer1.com", "peer2.com"] == Enum.sort(result)
   end

@@ -7,11 +7,14 @@ defmodule Pleroma.ActivityExpirationTest do
   alias Pleroma.ActivityExpiration
   import Pleroma.Factory
 
-  clear_config([ActivityExpiration, :enabled])
+  setup do: clear_config([ActivityExpiration, :enabled])
 
   test "finds activities due to be deleted only" do
     activity = insert(:note_activity)
-    expiration_due = insert(:expiration_in_the_past, %{activity_id: activity.id})
+
+    expiration_due =
+      insert(:expiration_in_the_past, %{activity_id: activity.id}) |> Repo.preload(:activity)
+
     activity2 = insert(:note_activity)
     insert(:expiration_in_the_future, %{activity_id: activity2.id})
 
@@ -44,7 +47,7 @@ defmodule Pleroma.ActivityExpirationTest do
         %{activity_id: activity.id, scheduled_at: naive_datetime}
       )
 
-    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(:ops, :pid)
+    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(%Oban.Job{})
 
     refute Pleroma.Repo.get(Pleroma.Activity, activity.id)
     refute Pleroma.Repo.get(Pleroma.ActivityExpiration, expiration.id)

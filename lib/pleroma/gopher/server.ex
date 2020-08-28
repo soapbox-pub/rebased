@@ -96,16 +96,18 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
   def response("/main/public") do
     posts =
-      ActivityPub.fetch_public_activities(%{"type" => ["Create"], "local_only" => true})
-      |> render_activities
+      %{type: ["Create"], local_only: true}
+      |> ActivityPub.fetch_public_activities()
+      |> render_activities()
 
     info("Welcome to the Public Timeline!") <> posts <> ".\r\n"
   end
 
   def response("/main/all") do
     posts =
-      ActivityPub.fetch_public_activities(%{"type" => ["Create"]})
-      |> render_activities
+      %{type: ["Create"]}
+      |> ActivityPub.fetch_public_activities()
+      |> render_activities()
 
     info("Welcome to the Federated Timeline!") <> posts <> ".\r\n"
   end
@@ -130,13 +132,14 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   def response("/users/" <> nickname) do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       params = %{
-        "type" => ["Create"],
-        "actor_id" => user.ap_id
+        type: ["Create"],
+        actor_id: user.ap_id
       }
 
       activities =
-        ActivityPub.fetch_public_activities(params)
-        |> render_activities
+        params
+        |> ActivityPub.fetch_public_activities()
+        |> render_activities()
 
       info("Posts by #{user.nickname}") <> activities <> ".\r\n"
     else

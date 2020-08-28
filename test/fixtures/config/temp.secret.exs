@@ -7,3 +7,7 @@ config :pleroma, :second_setting, key: "value2", key2: ["Activity"]
 config :quack, level: :info
 
 config :pleroma, Pleroma.Repo, pool: Ecto.Adapters.SQL.Sandbox
+
+config :postgrex, :json_library, Poison
+
+config :pleroma, :database, rum_enabled: true

@@ -1,16 +1,16 @@
 # Pleroma Clients
-Note: Additionnal clients may be working but theses are officially supporting Pleroma.
+Note: Additional clients may be working but theses are officially supporting Pleroma.
 Feel free to contact us to be added to this list!
 
 ## Desktop
 ### Roma for Desktop
 - Homepage: <https://www.pleroma.com/#desktopApp>
 - Source Code: <https://github.com/roma-apps/roma-desktop>
-- Platforms: Windows, Mac, (Linux?)
+- Platforms: Windows, Mac, Linux
 - Features: Streaming Ready
 
 ### Social
-- Source Code: <https://gitlab.gnome.org/BrainBlasted/Social>
+- Source Code: <https://gitlab.gnome.org/World/Social>
 - Contact: [@brainblasted@social.libre.fi](https://social.libre.fi/users/brainblasted)
 - Platforms: Linux (GNOME)
 - Note(2019-01-28): Not at a pre-alpha stage yet
@@ -35,25 +35,24 @@ Feel free to contact us to be added to this list!
 - Source Code: <https://framagit.org/tom79/fedilab/>
 - Contact: [@fedilab@framapiaf.org](https://framapiaf.org/users/fedilab)
 - Platforms: Android
-- Features: Streaming Ready, Moderation, Text Formatting 
+- Features: Streaming Ready, Moderation, Text Formatting
 
 ### Kyclos
 - Source Code: <https://git.pleroma.social/pleroma/harbour-kyclos>
 - Platforms: SailfishOS
 - Features: No Streaming
 
-### Nekonium
-- Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)
-- Source: <https://gogs.gdgd.jp.net/lin/nekonium>
-- Contact: [@lin@pleroma.gdgd.jp.net](https://pleroma.gdgd.jp.net/users/lin)
+### Husky
+- Source code: <https://git.mentality.rip/FWGS/Husky>
+- Contact: [@Husky@enigmatic.observer](https://enigmatic.observer/users/Husky)
 - Platforms: Android
-- Features: Streaming Ready
+- Features: No Streaming, Emoji Reactions, Text Formatting, FE Stickers
 
-### Roma
-- Homepage: <https://www.pleroma.com/#mobileApps>
-- Source Code: [iOS](https://github.com/roma-apps/roma-ios), [Android](https://github.com/roma-apps/roma-android)
+### Fedi
+- Homepage: <https://www.fediapp.com/>
+- Source Code: Proprietary, but gratis
 - Platforms: iOS, Android
-- Features: No Streaming
+- Features: Pleroma-specific features like Reactions
 
 ### Tusky
 - Homepage: <https://tuskyapp.github.io/>
@@ -64,9 +63,16 @@ Feel free to contact us to be added to this list!
 
 ### Twidere
 - Homepage: <https://twidere.mariotaku.org/>
-- Source Code: <https://github.com/TwidereProject/Twidere-Android/>, <https://github.com/TwidereProject/Twidere-iOS/>
+- Source Code: <https://github.com/TwidereProject/Twidere-Android/>
 - Contact: <me@mariotaku.org>
-- Platform: Android, iOS
+- Platform: Android
+- Features: No Streaming
+
+### Indigenous
+- Homepage: <https://indigenous.realize.be/>
+- Source Code: <https://github.com/swentel/indigenous-android/>
+- Contact: [@realize.be@realize.be](@realize.be@realize.be)
+- Platforms: Android
 - Features: No Streaming
 
 ## Alternative Web Interfaces
@@ -74,11 +80,6 @@ Feel free to contact us to be added to this list!
 - Homepage: <https://jfm.carcosa.net/projects/software/brutaldon/>
 - Source Code: <https://git.carcosa.net/jmcbray/brutaldon>
 - Contact: [@gcupc@glitch.social](https://glitch.social/users/gcupc)
-- Features: No Streaming
-
-### Feather
-- Source Code: <https://github.com/kaniini/feather>
-- Contact: [@kaniini@pleroma.site](https://pleroma.site/kaniini)
 - Features: No Streaming
 
 ### Halcyon
@@ -94,6 +95,15 @@ Feel free to contact us to be added to this list!
 - Features: No Streaming
 
 ### Sengi
+- Homepage: <https://nicolasconstant.github.io/sengi/>
 - Source Code: <https://github.com/NicolasConstant/sengi>
 - Contact: [@sengi_app@mastodon.social](https://mastodon.social/users/sengi_app)
-- Note(2019-01-28): The development is currently in a early stage.
+
+### DashFE
+- Source Code: <https://notabug.org/daisuke/DashboardFE>
+- Contact: [@dashfe@stereophonic.space](https://stereophonic.space/users/dashfe)
+
+### BloatFE
+- Source Code: <https://git.freesoftwareextremist.com/bloat/>
+- Contact: [@r@freesoftwareextremist.com](https://freesoftwareextremist.com/users/r)
+- Features: Does not requires JavaScript

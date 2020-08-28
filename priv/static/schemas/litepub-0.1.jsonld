@@ -13,6 +13,7 @@
             },
             "discoverable": "toot:discoverable",
             "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+            "capabilities": "litepub:capabilities",
             "ostatus": "http://ostatus.org#",
             "schema": "http://schema.org#",
             "toot": "http://joinmastodon.org/ns#",
@@ -30,6 +31,7 @@
                 "@type": "@id"
             },
             "EmojiReact": "litepub:EmojiReact",
+            "ChatMessage": "litepub:ChatMessage",
             "alsoKnownAs": {
                 "@id": "as:alsoKnownAs",
                 "@type": "@id"

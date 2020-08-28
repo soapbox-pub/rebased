@@ -12,16 +12,13 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth
 
+  @moduletag needs_streamer: true, capture_log: true
+
   @path Pleroma.Web.Endpoint.url()
         |> URI.parse()
         |> Map.put(:scheme, "ws")
         |> Map.put(:path, "/api/v1/streaming")
         |> URI.to_string()
-
-  setup_all do
-    start_supervised(Pleroma.Web.Streamer.supervisor())
-    :ok
-  end
 
   def start_socket(qs \\ nil, headers \\ []) do
     path =
@@ -58,7 +55,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   test "receives well formatted events" do
     user = insert(:user)
     {:ok, _} = start_socket("?stream=public")
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "nice echo chamber"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "nice echo chamber"})
 
     assert_receive {:text, raw_json}, 1_000
     assert {:ok, json} = Jason.decode(raw_json)

@@ -16,11 +16,12 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   def get_user(%Plug.Conn{} = conn) do
     with {:ok, {name, password}} <- fetch_credentials(conn),
          {_, %User{} = user} <- {:user, fetch_user(name)},
-         {_, true} <- {:checkpw, AuthenticationPlug.checkpw(password, user.password_hash)} do
+         {_, true} <- {:checkpw, AuthenticationPlug.checkpw(password, user.password_hash)},
+         {:ok, user} <- AuthenticationPlug.maybe_update_password(user, password) do
       {:ok, user}
     else
-      error ->
-        {:error, error}
+      {:error, _reason} = error -> error
+      error -> {:error, error}
     end
   end
 

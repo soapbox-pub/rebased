@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.UUID
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -244,7 +245,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Inserts a full object if it is contained in an activity.
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data} = map)
-      when is_map(object_data) and type in @supported_object_types do
+      when type in @supported_object_types do
     with {:ok, object} <- Object.create(object_data) do
       map = Map.put(map, "object", object.data["id"])
 
@@ -307,7 +308,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => cc,
       "context" => object.data["context"]
     }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   def make_emoji_reaction_data(user, object, emoji, activity_id) do
@@ -444,22 +445,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
     |> Repo.update_all([])
 
-    User.set_follow_state_cache(actor, object, state)
-
     activity = Activity.get_by_id(activity.id)
 
     {:ok, activity}
   end
 
   def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        %Activity{} = activity,
         state
       ) do
     new_data = Map.put(activity.data, "state", state)
     changeset = Changeset.change(activity, data: new_data)
 
     with {:ok, activity} <- Repo.update(changeset) do
-      User.set_follow_state_cache(actor, object, state)
       {:ok, activity}
     end
   end
@@ -480,7 +478,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "object" => followed_id,
       "state" => "pending"
     }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   def fetch_latest_follow(%User{ap_id: follower_id}, %User{ap_id: followed_id}) do
@@ -519,7 +517,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Announce-related helpers
 
   @doc """
-  Retruns an existing announce activity if the notice has already been announced
+  Returns an existing announce activity if the notice has already been announced
   """
   @spec get_existing_announce(String.t(), map()) :: Activity.t() | nil
   def get_existing_announce(actor, %{data: %{"id" => ap_id}}) do
@@ -549,7 +547,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [],
       "context" => object.data["context"]
     }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   def make_announce_data(
@@ -566,46 +564,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [Pleroma.Constants.as_public()],
       "context" => object.data["context"]
     }
-    |> maybe_put("id", activity_id)
-  end
-
-  @doc """
-  Make unannounce activity data for the given actor and object
-  """
-  def make_unannounce_data(
-        %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context, "object" => object}} = activity,
-        activity_id
-      ) do
-    object = Object.normalize(object)
-
-    %{
-      "type" => "Undo",
-      "actor" => ap_id,
-      "object" => activity.data,
-      "to" => [user.follower_address, object.data["actor"]],
-      "cc" => [Pleroma.Constants.as_public()],
-      "context" => context
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  def make_unlike_data(
-        %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context, "object" => object}} = activity,
-        activity_id
-      ) do
-    object = Object.normalize(object)
-
-    %{
-      "type" => "Undo",
-      "actor" => ap_id,
-      "object" => activity.data,
-      "to" => [user.follower_address, object.data["actor"]],
-      "cc" => [Pleroma.Constants.as_public()],
-      "context" => context
-    }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   def make_undo_data(
@@ -624,7 +583,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   @spec add_announce_to_object(Activity.t(), Object.t()) ::
@@ -669,7 +628,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [followed.ap_id],
       "object" => follow_activity.data
     }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   #### Block-related helpers
@@ -692,17 +651,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [blocked.ap_id],
       "object" => blocked.ap_id
     }
-    |> maybe_put("id", activity_id)
-  end
-
-  def make_unblock_data(blocker, blocked, block_activity, activity_id) do
-    %{
-      "type" => "Undo",
-      "actor" => blocker.ap_id,
-      "to" => [blocked.ap_id],
-      "object" => block_activity.data
-    }
-    |> maybe_put("id", activity_id)
+    |> Maps.put_if_present("id", activity_id)
   end
 
   #### Create-related helpers
@@ -770,15 +719,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     case Activity.get_by_ap_id_with_object(id) do
       %Activity{} = activity ->
+        activity_actor = User.get_by_ap_id(activity.object.data["actor"])
+
         %{
           "type" => "Note",
           "id" => activity.data["id"],
           "content" => activity.object.data["content"],
           "published" => activity.object.data["published"],
           "actor" =>
-            AccountView.render("show.json", %{
-              user: User.get_by_ap_id(activity.object.data["actor"])
-            })
+            AccountView.render(
+              "show.json",
+              %{user: activity_actor, skip_visibility_check: true}
+            )
         }
 
       _ ->
@@ -792,110 +744,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def get_reports(params, page, page_size) do
     params =
       params
-      |> Map.put("type", "Flag")
-      |> Map.put("skip_preload", true)
-      |> Map.put("preload_report_notes", true)
-      |> Map.put("total", true)
-      |> Map.put("limit", page_size)
-      |> Map.put("offset", (page - 1) * page_size)
+      |> Map.put(:type, "Flag")
+      |> Map.put(:skip_preload, true)
+      |> Map.put(:preload_report_notes, true)
+      |> Map.put(:total, true)
+      |> Map.put(:limit, page_size)
+      |> Map.put(:offset, (page - 1) * page_size)
 
     ActivityPub.fetch_activities([], params, :offset)
-  end
-
-  def parse_report_group(activity) do
-    reports = get_reports_by_status_id(activity["id"])
-    max_date = Enum.max_by(reports, &NaiveDateTime.from_iso8601!(&1.data["published"]))
-    actors = Enum.map(reports, & &1.user_actor)
-    [%{data: %{"object" => [account_id | _]}} | _] = reports
-
-    account =
-      AccountView.render("show.json", %{
-        user: User.get_by_ap_id(account_id)
-      })
-
-    status = get_status_data(activity)
-
-    %{
-      date: max_date.data["published"],
-      account: account,
-      status: status,
-      actors: Enum.uniq(actors),
-      reports: reports
-    }
-  end
-
-  defp get_status_data(status) do
-    case status["deleted"] do
-      true ->
-        %{
-          "id" => status["id"],
-          "deleted" => true
-        }
-
-      _ ->
-        Activity.get_by_ap_id(status["id"])
-    end
-  end
-
-  def get_reports_by_status_id(ap_id) do
-    from(a in Activity,
-      where: fragment("(?)->>'type' = 'Flag'", a.data),
-      where: fragment("(?)->'object' @> ?", a.data, ^[%{id: ap_id}]),
-      or_where: fragment("(?)->'object' @> ?", a.data, ^[ap_id])
-    )
-    |> Activity.with_preloaded_user_actor()
-    |> Repo.all()
-  end
-
-  @spec get_reports_grouped_by_status([String.t()]) :: %{
-          required(:groups) => [
-            %{
-              required(:date) => String.t(),
-              required(:account) => %{},
-              required(:status) => %{},
-              required(:actors) => [%User{}],
-              required(:reports) => [%Activity{}]
-            }
-          ]
-        }
-  def get_reports_grouped_by_status(activity_ids) do
-    parsed_groups =
-      activity_ids
-      |> Enum.map(fn id ->
-        id
-        |> build_flag_object()
-        |> parse_report_group()
-      end)
-
-    %{
-      groups: parsed_groups
-    }
-  end
-
-  @spec get_reported_activities() :: [
-          %{
-            required(:activity) => String.t(),
-            required(:date) => String.t()
-          }
-        ]
-  def get_reported_activities do
-    reported_activities_query =
-      from(a in Activity,
-        where: fragment("(?)->>'type' = 'Flag'", a.data),
-        select: %{
-          activity: fragment("jsonb_array_elements((? #- '{object,0}')->'object')", a.data)
-        },
-        group_by: fragment("activity")
-      )
-
-    from(a in subquery(reported_activities_query),
-      distinct: true,
-      select: %{
-        id: fragment("COALESCE(?->>'id'::text, ? #>> '{}')", a.activity, a.activity)
-      }
-    )
-    |> Repo.all()
-    |> Enum.map(& &1.id)
   end
 
   def update_report_state(%Activity{} = activity, state)
@@ -1018,7 +874,4 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where([a, object: o], fragment("(?)->>'type' = 'Answer'", o.data))
     |> Repo.all()
   end
-
-  def maybe_put(map, _key, nil), do: map
-  def maybe_put(map, key, value), do: Map.put(map, key, value)
 end

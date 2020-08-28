@@ -17,6 +17,8 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
     :ok
   end
 
+  setup do: clear_config([Pleroma.Emails.Mailer, :enabled], true)
+
   describe "pleroma.digest test" do
     test "Sends digest to the given user" do
       user1 = insert(:user)
@@ -25,7 +27,7 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
       Enum.each(0..10, fn i ->
         {:ok, _activity} =
           CommonAPI.post(user1, %{
-            "status" => "hey ##{i} @#{user2.nickname}!"
+            status: "hey ##{i} @#{user2.nickname}!"
           })
       end)
 

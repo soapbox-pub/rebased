@@ -26,10 +26,49 @@ defmodule Pleroma.Object.FetcherTest do
     :ok
   end
 
+  describe "error cases" do
+    setup do
+      mock(fn
+        %{method: :get, url: "https://social.sakamoto.gq/notice/9wTkLEnuq47B25EehM"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/fetch_mocks/9wTkLEnuq47B25EehM.json")
+          }
+
+        %{method: :get, url: "https://social.sakamoto.gq/users/eal"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/fetch_mocks/eal.json")
+          }
+
+        %{method: :get, url: "https://busshi.moe/users/tuxcrafting/statuses/104410921027210069"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/fetch_mocks/104410921027210069.json")
+          }
+
+        %{method: :get, url: "https://busshi.moe/users/tuxcrafting"} ->
+          %Tesla.Env{
+            status: 500
+          }
+      end)
+
+      :ok
+    end
+
+    @tag capture_log: true
+    test "it works when fetching the OP actor errors out" do
+      # Here we simulate a case where the author of the OP can't be read
+      assert {:ok, _} =
+               Fetcher.fetch_object_from_id(
+                 "https://social.sakamoto.gq/notice/9wTkLEnuq47B25EehM"
+               )
+    end
+  end
+
   describe "max thread distance restriction" do
     @ap_id "http://mastodon.example.org/@admin/99541947525187367"
-
-    clear_config([:instance, :federation_incoming_replies_max_depth])
+    setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     test "it returns thread depth exceeded error if thread depth is exceeded" do
       Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
@@ -138,6 +177,13 @@ defmodule Pleroma.Object.FetcherTest do
                  "https://mastodon.example.org/users/userisgone404"
                )
     end
+
+    test "it can fetch pleroma polls with attachments" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id("https://patch.cx/objects/tesla_mock/poll_attachment")
+
+      assert object
+    end
   end
 
   describe "pruning" do
@@ -160,7 +206,7 @@ defmodule Pleroma.Object.FetcherTest do
   end
 
   describe "signed fetches" do
-    clear_config([:activitypub, :sign_object_fetches])
+    setup do: clear_config([:activitypub, :sign_object_fetches])
 
     test_with_mock "it signs fetches when configured to do so",
                    Pleroma.Signature,

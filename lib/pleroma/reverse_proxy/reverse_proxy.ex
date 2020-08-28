@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
-  alias Pleroma.HTTP
-
+  @range_headers ~w(range if-range)
   @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
-                      ~w(if-unmodified-since if-none-match if-range range)
+                      ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-type content-disposition content-encoding content-range) ++
-                       ~w(accept-ranges vary)
+                       ~w(content-length content-type content-disposition content-encoding) ++
+                       ~w(content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
   @max_read_duration :timer.seconds(30)
@@ -58,10 +57,10 @@ defmodule Pleroma.ReverseProxy do
 
   * `req_headers`, `resp_headers` additional headers.
 
-  * `http`: options for [hackney](https://github.com/benoitc/hackney).
+  * `http`: options for [hackney](https://github.com/benoitc/hackney) or [gun](https://github.com/ninenines/gun).
 
   """
-  @default_hackney_options [pool: :media]
+  @default_options [pool: :media]
 
   @inline_content_types [
     "image/gif",
@@ -94,11 +93,7 @@ defmodule Pleroma.ReverseProxy do
   def call(_conn, _url, _opts \\ [])
 
   def call(conn = %{method: method}, url, opts) when method in @methods do
-    hackney_opts =
-      Pleroma.HTTP.Connection.hackney_options([])
-      |> Keyword.merge(@default_hackney_options)
-      |> Keyword.merge(Keyword.get(opts, :http, []))
-      |> HTTP.process_request_options()
+    client_opts = Keyword.merge(@default_options, Keyword.get(opts, :http, []))
 
     req_headers = build_req_headers(conn.req_headers, opts)
 
@@ -110,7 +105,7 @@ defmodule Pleroma.ReverseProxy do
       end
 
     with {:ok, nil} <- Cachex.get(:failed_proxy_url_cache, url),
-         {:ok, code, headers, client} <- request(method, url, req_headers, hackney_opts),
+         {:ok, code, headers, client} <- request(method, url, req_headers, client_opts),
          :ok <-
            header_length_constraint(
              headers,
@@ -156,11 +151,11 @@ defmodule Pleroma.ReverseProxy do
     |> halt()
   end
 
-  defp request(method, url, headers, hackney_opts) do
+  defp request(method, url, headers, opts) do
     Logger.debug("#{__MODULE__} #{method} #{url} #{inspect(headers)}")
     method = method |> String.downcase() |> String.to_existing_atom()
 
-    case client().request(method, url, headers, "", hackney_opts) do
+    case client().request(method, url, headers, "", opts) do
       {:ok, code, headers, client} when code in @valid_resp_codes ->
         {:ok, code, downcase_headers(headers), client}
 
@@ -170,12 +165,17 @@ defmodule Pleroma.ReverseProxy do
       {:ok, code, _, _} ->
         {:error, {:invalid_http_response, code}}
 
+      {:ok, code, _} ->
+        {:error, {:invalid_http_response, code}}
+
       {:error, error} ->
         {:error, error}
     end
   end
 
   defp response(conn, client, url, status, headers, opts) do
+    Logger.debug("#{__MODULE__} #{status} #{url} #{inspect(headers)}")
+
     result =
       conn
       |> put_resp_headers(build_resp_headers(headers, opts))
@@ -210,7 +210,7 @@ defmodule Pleroma.ReverseProxy do
              duration,
              Keyword.get(opts, :max_read_duration, @max_read_duration)
            ),
-         {:ok, data} <- client().stream_body(client),
+         {:ok, data, client} <- client().stream_body(client),
          {:ok, duration} <- increase_read_duration(duration),
          sent_so_far = sent_so_far + byte_size(data),
          :ok <-
@@ -226,7 +226,9 @@ defmodule Pleroma.ReverseProxy do
     end
   end
 
-  defp head_response(conn, _url, code, headers, opts) do
+  defp head_response(conn, url, code, headers, opts) do
+    Logger.debug("#{__MODULE__} #{code} #{url} #{inspect(headers)}")
+
     conn
     |> put_resp_headers(build_resp_headers(headers, opts))
     |> send_resp(code, "")
@@ -268,20 +270,33 @@ defmodule Pleroma.ReverseProxy do
     headers
     |> downcase_headers()
     |> Enum.filter(fn {k, _} -> k in @keep_req_headers end)
-    |> (fn headers ->
-          headers = headers ++ Keyword.get(opts, :req_headers, [])
+    |> build_req_range_or_encoding_header(opts)
+    |> build_req_user_agent_header(opts)
+    |> Keyword.merge(Keyword.get(opts, :req_headers, []))
+  end
 
-          if Keyword.get(opts, :keep_user_agent, false) do
-            List.keystore(
-              headers,
-              "user-agent",
-              0,
-              {"user-agent", Pleroma.Application.user_agent()}
-            )
-          else
-            headers
-          end
-        end).()
+  # Disable content-encoding if any @range_headers are requested (see #1823).
+  defp build_req_range_or_encoding_header(headers, _opts) do
+    range? = Enum.any?(headers, fn {header, _} -> Enum.member?(@range_headers, header) end)
+
+    if range? && List.keymember?(headers, "accept-encoding", 0) do
+      List.keydelete(headers, "accept-encoding", 0)
+    else
+      headers
+    end
+  end
+
+  defp build_req_user_agent_header(headers, opts) do
+    if Keyword.get(opts, :keep_user_agent, false) do
+      List.keystore(
+        headers,
+        "user-agent",
+        0,
+        {"user-agent", Pleroma.Application.user_agent()}
+      )
+    else
+      headers
+    end
   end
 
   defp build_resp_headers(headers, opts) do
@@ -289,7 +304,7 @@ defmodule Pleroma.ReverseProxy do
     |> Enum.filter(fn {k, _} -> k in @keep_resp_headers end)
     |> build_resp_cache_headers(opts)
     |> build_resp_content_disposition_header(opts)
-    |> (fn headers -> headers ++ Keyword.get(opts, :resp_headers, []) end).()
+    |> Keyword.merge(Keyword.get(opts, :resp_headers, []))
   end
 
   defp build_resp_cache_headers(headers, _opts) do

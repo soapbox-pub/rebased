@@ -9,11 +9,13 @@ defmodule Pleroma.Object do
   import Ecto.Changeset
 
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Workers.AttachmentsCleanupWorker
 
   require Logger
 
@@ -138,12 +140,17 @@ defmodule Pleroma.Object do
 
   def normalize(_, _, _), do: nil
 
-  # Owned objects can only be mutated by their owner
-  def authorize_mutation(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}),
-    do: actor == ap_id
+  # Owned objects can only be accessed by their owner
+  def authorize_access(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}) do
+    if actor == ap_id do
+      :ok
+    else
+      {:error, :forbidden}
+    end
+  end
 
-  # Legacy objects can be mutated by anybody
-  def authorize_mutation(%Object{}, %User{}), do: true
+  # Legacy objects can be accessed by anybody
+  def authorize_access(%Object{}, %User{}), do: :ok
 
   @spec get_cached_by_ap_id(String.t()) :: Object.t() | nil
   def get_cached_by_ap_id(ap_id) do
@@ -183,24 +190,34 @@ defmodule Pleroma.Object do
   def delete(%Object{data: %{"id" => id}} = object) do
     with {:ok, _obj} = swap_object_with_tombstone(object),
          deleted_activity = Activity.delete_all_by_object_ap_id(id),
-         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
-         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
-      with true <- Pleroma.Config.get([:instance, :cleanup_attachments]) do
-        {:ok, _} =
-          Pleroma.Workers.AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{
-            "object" => object
-          })
-      end
+         {:ok, _} <- invalid_object_cache(object) do
+      cleanup_attachments(
+        Config.get([:instance, :cleanup_attachments]),
+        %{"object" => object}
+      )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  def prune(%Object{data: %{"id" => id}} = object) do
+  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+          {:ok, Oban.Job.t() | nil}
+  def cleanup_attachments(true, %{"object" => _} = params) do
+    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  end
+
+  def cleanup_attachments(_, _), do: {:ok, nil}
+
+  def prune(%Object{data: %{"id" => _id}} = object) do
     with {:ok, object} <- Repo.delete(object),
-         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
-         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
+         {:ok, _} <- invalid_object_cache(object) do
       {:ok, object}
+    end
+  end
+
+  def invalid_object_cache(%Object{data: %{"id" => id}}) do
+    with {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
+      Cachex.del(:web_resp_cache, URI.parse(id).path)
     end
   end
 
@@ -238,6 +255,10 @@ defmodule Pleroma.Object do
     end
   end
 
+  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
+
+  defp poll_is_multiple?(_), do: false
+
   def decrease_replies_count(ap_id) do
     Object
     |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
@@ -261,13 +282,13 @@ defmodule Pleroma.Object do
     end
   end
 
-  def increase_vote_count(ap_id, name) do
+  def increase_vote_count(ap_id, name, actor) do
     with %Object{} = object <- Object.normalize(ap_id),
          "Question" <- object.data["type"] do
-      multiple = Map.has_key?(object.data, "anyOf")
+      key = if poll_is_multiple?(object), do: "anyOf", else: "oneOf"
 
       options =
-        (object.data["anyOf"] || object.data["oneOf"] || [])
+        object.data[key]
         |> Enum.map(fn
           %{"name" => ^name} = option ->
             Kernel.update_in(option["replies"]["totalItems"], &(&1 + 1))
@@ -276,12 +297,12 @@ defmodule Pleroma.Object do
             option
         end)
 
+      voters = [actor | object.data["voters"] || []] |> Enum.uniq()
+
       data =
-        if multiple do
-          Map.put(object.data, "anyOf", options)
-        else
-          Map.put(object.data, "oneOf", options)
-        end
+        object.data
+        |> Map.put(key, options)
+        |> Map.put("voters", voters)
 
       object
       |> Object.change(%{data: data})

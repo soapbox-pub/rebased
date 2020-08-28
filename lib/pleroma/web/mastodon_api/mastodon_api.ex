@@ -6,7 +6,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   import Ecto.Query
   import Ecto.Changeset
 
-  alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Pagination
   alias Pleroma.ScheduledActivity
@@ -55,6 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     user
     |> Notification.for_user_query(options)
+    |> restrict(:include_types, options)
     |> restrict(:exclude_types, options)
     |> restrict(:account_ap_id, options)
     |> Pagination.fetch_paginated(params)
@@ -69,10 +69,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
+      include_types: {:array, :string},
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean,
-      with_move: :boolean,
       account_ap_id: :string
     }
 
@@ -80,14 +80,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     changeset.changes
   end
 
-  defp restrict(query, :exclude_types, %{exclude_types: mastodon_types = [_ | _]}) do
-    ap_types =
-      mastodon_types
-      |> Enum.map(&Activity.from_mastodon_notification_type/1)
-      |> Enum.filter(& &1)
+  defp restrict(query, :include_types, %{include_types: mastodon_types = [_ | _]}) do
+    where(query, [n], n.type in ^mastodon_types)
+  end
 
-    query
-    |> where([q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+  defp restrict(query, :exclude_types, %{exclude_types: mastodon_types = [_ | _]}) do
+    where(query, [n], n.type not in ^mastodon_types)
   end
 
   defp restrict(query, :account_ap_id, %{account_ap_id: account_ap_id}) do

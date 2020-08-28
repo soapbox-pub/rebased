@@ -4,16 +4,13 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 ## Flake IDs
 
-Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are sortable strings
-
-## Attachment cap
-
-Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
+Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
 
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
 Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+Adding the parameter `reply_visibility` to the public and home timelines queries will filter replies. Possible values: without parameter (default) shows all replies, `following` - replies directed to you or users you follow, `self` - replies directed to you.
 
 ## Statuses
 
@@ -30,12 +27,21 @@ Has these additional fields under the `pleroma` object:
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
+- `parent_visible`: If the parent of this post is visible to the user or not.
 
-## Attachments
+## Media Attachments
 
 Has these additional fields under the `pleroma` object:
 
 - `mime_type`: mime type of the attachment.
+
+### Attachment cap
+
+Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
+
+### Limitations
+
+Pleroma does not process remote images and therefore cannot include fields such as `meta` and `blurhash`. It does not support focal points or aspect ratios. The frontend is expected to handle it.
 
 ## Accounts
 
@@ -46,20 +52,27 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 
 Has these additional fields under the `pleroma` object:
 
+- `ap_id`: nullable URL string, ActivityPub id of the user
+- `background_image`: nullable URL string, background image of the user
 - `tags`: Lists an array of tags for the user
-- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
+- `relationship` (object): Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
 - `is_moderator`: boolean, nullable,  true if user is a moderator
 - `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
+- `hide_favorites`: boolean, true when the user has hiding favorites enabled
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
 - `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
-- `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
-- `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
+- `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `/api/v1/accounts/verify_credentials` and `/api/v1/accounts/update_credentials`
+- `chat_token`: The token needed for Pleroma chat. Only returned in `/api/v1/accounts/verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
+- `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
+- `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
+- `accepts_chat_messages`: boolean, but can be null if we don't have that information about a user
+- `favicon`: nullable URL string, Favicon image of the user's instance
 
 ### Source
 
@@ -117,7 +130,19 @@ The `type` value is `pleroma:emoji_reaction`. Has these fields:
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
-- `with_move`: boolean, when set to `true` will include Move notifications. `false` by default.
+- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
+
+## DELETE `/api/v1/notifications/destroy_multiple`
+
+An endpoint to delete multiple statuses by IDs.
+
+Required parameters:
+
+- `ids`: array of activity ids
+
+Usage example: `DELETE /api/v1/notifications/destroy_multiple/?ids[]=1&ids[]=2`.
+
+Returns on success: 200 OK `{}`
 
 ## POST `/api/v1/statuses`
 
@@ -144,7 +169,7 @@ Returns: array of Status.
 
 The maximum number of statuses is limited to 100 per request.
 
-## PATCH `/api/v1/update_credentials`
+## PATCH `/api/v1/accounts/update_credentials`
 
 Additional parameters can be added to the JSON body/Form data:
 
@@ -159,30 +184,107 @@ Additional parameters can be added to the JSON body/Form data:
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
-- `pleroma_background_image` - sets the background image of the user.
+- `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
 - `discoverable` - if true, discovery of this account in search results and other services is allowed.
 - `actor_type` - the type of this account.
+- `accepts_chat_messages` - if false, this account will reject all chat messages.
+
+All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 
 ### Pleroma Settings Store
+
 Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.
 
 The parameter should have a form of `{frontend_name: {...}}`, with `frontend_name` identifying your type of client, e.g. `pleroma_fe`. It will overwrite everything under this property, but will not overwrite other frontend's settings.
 
-This information is returned in the `verify_credentials` endpoint.
+This information is returned in the `/api/v1/accounts/verify_credentials` endpoint.
 
 ## Authentication
 
-*Pleroma supports refreshing tokens.
+*Pleroma supports refreshing tokens.*
 
 `POST /oauth/token`
-Post here request with grant_type=refresh_token to obtain new access token. Returns an access token.
+
+Post here request with `grant_type=refresh_token` to obtain new access token. Returns an access token.
 
 ## Account Registration
+
 `POST /api/v1/accounts`
 
-Has theses additionnal parameters (which are the same as in Pleroma-API):
-    * `fullname`: optional
-    * `bio`: optional
-    * `captcha_solution`: optional, contains provider-specific captcha solution,
-    * `captcha_token`: optional, contains provider-specific captcha token
-    * `token`: invite token required when the registerations aren't public.
+Has theses additional parameters (which are the same as in Pleroma-API):
+
+- `fullname`: optional
+- `bio`: optional
+- `captcha_solution`: optional, contains provider-specific captcha solution,
+- `captcha_token`: optional, contains provider-specific captcha token
+- `captcha_answer_data`: optional, contains provider-specific captcha data
+- `token`: invite token required when the registrations aren't public.
+
+## Instance
+
+`GET /api/v1/instance` has additional fields
+
+- `max_toot_chars`: The maximum characters per post
+- `chat_limit`: The maximum characters per chat message
+- `description_limit`: The maximum characters per image description
+- `poll_limits`: The limits of polls
+- `upload_limit`: The maximum upload file size
+- `avatar_upload_limit`: The same for avatars
+- `background_upload_limit`: The same for backgrounds
+- `banner_upload_limit`: The same for banners
+- `background_image`: A background image that frontends can use
+- `pleroma.metadata.features`: A list of supported features
+- `pleroma.metadata.federation`: The federation restrictions of this instance
+- `pleroma.metadata.fields_limits`: A list of values detailing the length and count limitation for various instance-configurable fields.
+- `pleroma.metadata.post_formats`: A list of the allowed post format types
+- `vapid_public_key`: The public key needed for push messages
+
+## Markers
+
+Has these additional fields under the `pleroma` object:
+
+- `unread_count`: contains number unread notifications
+
+## Streaming
+
+There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+## Not implemented
+
+Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer features and non-essential features are omitted. These features usually return an HTTP 200 status code, but with an empty response. While they may be added in the future, they are considered low priority.
+
+### Suggestions
+
+*Added in Mastodon 2.4.3*
+
+- `GET /api/v1/suggestions`: Returns an empty array, `[]`
+
+### Trends
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/trends`: Returns an empty array, `[]`
+
+### Identity proofs
+
+*Added in Mastodon 2.8.0*
+
+- `GET /api/v1/identity_proofs`: Returns an empty array, `[]`
+
+### Endorsements
+
+*Added in Mastodon 2.5.0*
+
+- `GET /api/v1/endorsements`: Returns an empty array, `[]`
+
+### Profile directory
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/directory`: Returns HTTP 404
+
+### Featured tags
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/featured_tags`: Returns HTTP 404

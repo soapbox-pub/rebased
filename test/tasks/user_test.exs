@@ -3,15 +3,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.UserTest do
+  alias Pleroma.Activity
+  alias Pleroma.MFA
+  alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import ExUnit.CaptureIO
+  import Mock
+  import Pleroma.Factory
 
   setup_all do
     Mix.shell(Mix.Shell.Process)
@@ -85,14 +92,61 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running rm" do
     test "user is deleted" do
+      clear_config([:instance, :federating], true)
       user = insert(:user)
 
-      Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+        ObanHelpers.perform_all()
 
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " deleted"
+        assert_received {:mix_shell, :info, [message]}
+        assert message =~ " deleted"
+        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
 
-      assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
+    end
+
+    test "a remote user's create activity is deleted when the object has been pruned" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
+      {:ok, post2} = CommonAPI.post(user2, %{status: "test"})
+      obj = Object.normalize(post2)
+
+      {:ok, like_object, meta} = Pleroma.Web.ActivityPub.Builder.like(user, obj)
+
+      {:ok, like_activity, _meta} =
+        Pleroma.Web.ActivityPub.Pipeline.common_pipeline(
+          like_object,
+          Keyword.put(meta, :local, true)
+        )
+
+      like_activity.data["object"]
+      |> Pleroma.Object.get_by_ap_id()
+      |> Repo.delete()
+
+      clear_config([:instance, :federating], true)
+
+      object = Object.normalize(post)
+      Object.prune(object)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+        ObanHelpers.perform_all()
+
+        assert_received {:mix_shell, :info, [message]}
+        assert message =~ " deleted"
+        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+
+        assert called(Pleroma.Web.Federator.publish(:_))
+        refute Pleroma.Repo.get(Pleroma.Activity, like_activity.id)
+      end
+
+      refute Activity.get_by_id(post.id)
     end
 
     test "no user to delete" do
@@ -136,31 +190,31 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running unsubscribe" do
+  describe "running deactivate" do
     test "user is unsubscribed" do
       followed = insert(:user)
+      remote_followed = insert(:user, local: false)
       user = insert(:user)
-      User.follow(user, followed, :follow_accept)
 
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
+      User.follow(user, followed, :follow_accept)
+      User.follow(user, remote_followed, :follow_accept)
+
+      Mix.Tasks.Pleroma.User.run(["deactivate", user.nickname])
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Deactivating"
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Unsubscribing"
 
       # Note that the task has delay :timer.sleep(500)
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Successfully unsubscribed"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert Enum.empty?(User.get_friends(user))
+      assert Enum.empty?(Enum.filter(User.get_friends(user), & &1.local))
       assert user.deactivated
     end
 
-    test "no user to unsubscribe" do
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", "nonexistent"])
+    test "no user to deactivate" do
+      Mix.Tasks.Pleroma.User.run(["deactivate", "nonexistent"])
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No user"
@@ -235,6 +289,35 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to reset password" do
+      Mix.Tasks.Pleroma.User.run(["reset_password", "nonexistent"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No local user"
+    end
+  end
+
+  describe "running reset_mfa" do
+    test "disables MFA" do
+      user =
+        insert(:user,
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: "xx", confirmed: true}
+          }
+        )
+
+      Mix.Tasks.Pleroma.User.run(["reset_mfa", user.nickname])
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "Multi-Factor Authentication disabled for #{user.nickname}"
+
+      assert %{enabled: false, totp: false} ==
+               user.nickname
+               |> User.get_cached_by_nickname()
+               |> MFA.mfa_settings()
+    end
+
+    test "no user to reset MFA" do
       Mix.Tasks.Pleroma.User.run(["reset_password", "nonexistent"])
 
       assert_received {:mix_shell, :error, [message]}
@@ -398,17 +481,17 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       moot = insert(:user, nickname: "moot")
       kawen = insert(:user, nickname: "kawen", name: "fediverse expert moon")
 
-      {:ok, user} = User.follow(user, kawen)
+      {:ok, user} = User.follow(user, moon)
 
       assert [moon.id, kawen.id] == User.Search.search("moon") |> Enum.map(& &1.id)
-      res = User.search("moo") |> Enum.map(& &1.id)
-      assert moon.id in res
-      assert moot.id in res
-      assert kawen.id in res
-      assert [moon.id, kawen.id] == User.Search.search("moon fediverse") |> Enum.map(& &1.id)
 
-      assert [kawen.id, moon.id] ==
-               User.Search.search("moon fediverse", for_user: user) |> Enum.map(& &1.id)
+      res = User.search("moo") |> Enum.map(& &1.id)
+      assert Enum.sort([moon.id, moot.id, kawen.id]) == Enum.sort(res)
+
+      assert [kawen.id, moon.id] == User.Search.search("expert fediverse") |> Enum.map(& &1.id)
+
+      assert [moon.id, kawen.id] ==
+               User.Search.search("expert fediverse", for_user: user) |> Enum.map(& &1.id)
     end
   end
 

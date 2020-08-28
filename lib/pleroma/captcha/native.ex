@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha.Native do
-  import Pleroma.Web.Gettext
   alias Pleroma.Captcha.Service
   @behaviour Service
 
@@ -11,21 +10,22 @@ defmodule Pleroma.Captcha.Native do
   def new do
     case Captcha.get() do
       :error ->
-        %{error: dgettext("errors", "Captcha error")}
+        %{error: :captcha_error}
 
       {:ok, answer_data, img_binary} ->
         %{
           type: :native,
           token: token(),
           url: "data:image/png;base64," <> Base.encode64(img_binary),
-          answer_data: answer_data
+          answer_data: answer_data,
+          seconds_valid: Pleroma.Config.get([Pleroma.Captcha, :seconds_valid])
         }
     end
   end
 
   @impl Service
   def validate(_token, captcha, captcha) when not is_nil(captcha), do: :ok
-  def validate(_token, _captcha, _answer), do: {:error, dgettext("errors", "Invalid CAPTCHA")}
+  def validate(_token, _captcha, _answer), do: {:error, :invalid}
 
   defp token do
     10

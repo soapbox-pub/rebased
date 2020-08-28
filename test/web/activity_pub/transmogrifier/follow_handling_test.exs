@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -12,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
   import Pleroma.Factory
   import Ecto.Query
+  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -19,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   end
 
   describe "handle_incoming" do
-    clear_config([:user, :deny_follow_blocked])
+    setup do: clear_config([:user, :deny_follow_blocked])
 
     test "it works for osada follow request" do
       user = insert(:user)
@@ -57,9 +59,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       activity = Repo.get(Activity, activity.id)
       assert activity.data["state"] == "accept"
       assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+
+      [notification] = Notification.for_user(user)
+      assert notification.type == "follow"
     end
 
-    test "with locked accounts, it does not create a follow or an accept" do
+    test "with locked accounts, it does create a Follow, but not an Accept" do
       user = insert(:user, locked: true)
 
       data =
@@ -81,6 +86,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         |> Repo.all()
 
       assert Enum.empty?(accepts)
+
+      [notification] = Notification.for_user(user)
+      assert notification.type == "follow_request"
     end
 
     test "it works for follow requests when you are already followed, creating a new accept activity" do
@@ -144,6 +152,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       assert activity.data["state"] == "reject"
     end
 
+    test "it rejects incoming follow requests if the following errors for some reason" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      with_mock Pleroma.User, [:passthrough], follow: fn _, _, _ -> {:error, :testing} end do
+        {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
+
+        %Activity{} = activity = Activity.get_by_ap_id(id)
+
+        assert activity.data["state"] == "reject"
+      end
+    end
+
     test "it works for incoming follow requests from hubzilla" do
       user = insert(:user)
 
@@ -159,6 +184,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       assert data["type"] == "Follow"
       assert data["id"] == "https://hubzilla.example.org/channel/kaniini#follows/2"
       assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
+    test "it works for incoming follows to locked account" do
+      pending_follower = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      user = insert(:user, locked: true)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Follow"
+      assert data["object"] == user.ap_id
+      assert data["state"] == "pending"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+
+      assert [^pending_follower] = User.get_follow_requests(user)
     end
   end
 end

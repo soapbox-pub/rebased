@@ -1,6 +1,6 @@
 # Updating your instance
 
-You should **always check the release notes/changelog** in case there are config deprecations, special update special update steps, etc.
+You should **always check the [release notes/changelog](https://git.pleroma.social/pleroma/pleroma/-/releases)** in case there are config deprecations, special update steps, etc.
 
 Besides that, doing the following is generally enough:
 

@@ -4,11 +4,13 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Conversation
+  alias Pleroma.Maintenance
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   require Logger
   require Pleroma.Constants
+  import Ecto.Query
   import Mix.Pleroma
   use Mix.Task
 
@@ -34,13 +36,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL")
-
-      Repo.query!(
-        "vacuum full;",
-        [],
-        timeout: :infinity
-      )
+      Maintenance.vacuum("full")
     end
   end
 
@@ -58,8 +54,6 @@ defmodule Mix.Tasks.Pleroma.Database do
   end
 
   def run(["prune_objects" | args]) do
-    import Ecto.Query
-
     {options, [], []} =
       OptionParser.parse(
         args,
@@ -94,19 +88,11 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Repo.delete_all(timeout: :infinity)
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL")
-
-      Repo.query!(
-        "vacuum full;",
-        [],
-        timeout: :infinity
-      )
+      Maintenance.vacuum("full")
     end
   end
 
   def run(["fix_likes_collections"]) do
-    import Ecto.Query
-
     start_pleroma()
 
     from(object in Object,
@@ -132,6 +118,41 @@ defmodule Mix.Tasks.Pleroma.Database do
         ]
       )
       |> Repo.update_all([], timeout: :infinity)
+    end)
+    |> Stream.run()
+  end
+
+  def run(["vacuum", args]) do
+    start_pleroma()
+
+    Maintenance.vacuum(args)
+  end
+
+  def run(["ensure_expiration"]) do
+    start_pleroma()
+    days = Pleroma.Config.get([:mrf_activity_expiration, :days], 365)
+
+    Pleroma.Activity
+    |> join(:left, [a], u in assoc(a, :expiration))
+    |> join(:inner, [a, _u], o in Object,
+      on:
+        fragment(
+          "(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
+          o.data,
+          a.data,
+          a.data
+        )
+    )
+    |> where(local: true)
+    |> where([a, u], is_nil(u))
+    |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
+    |> where([_a, _u, o], fragment("?->>'type' = 'Note'", o.data))
+    |> Pleroma.RepoStreamer.chunk_stream(100)
+    |> Stream.each(fn activities ->
+      Enum.each(activities, fn activity ->
+        expires_at = Timex.shift(activity.inserted_at, days: days)
+        Pleroma.ActivityExpiration.create(activity, expires_at, false)
+      end)
     end)
     |> Stream.run()
   end

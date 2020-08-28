@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
   describe "running remove_embedded_objects" do
     test "it replaces objects with references" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
       new_data = Map.put(activity.data, "object", activity.object.data)
 
       {:ok, activity} =
@@ -99,10 +99,10 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
     test "it turns OrderedCollection likes into empty arrays" do
       [user, user2] = insert_pair(:user)
 
-      {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{"status" => "test"})
-      {:ok, %{object: object2}} = CommonAPI.post(user, %{"status" => "test test"})
+      {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{status: "test"})
+      {:ok, %{object: object2}} = CommonAPI.post(user, %{status: "test test"})
 
-      CommonAPI.favorite(id, user2)
+      CommonAPI.favorite(user2, id)
 
       likes = %{
         "first" =>
@@ -125,6 +125,45 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
 
       assert length(Object.get_by_id(object.id).data["likes"]) == 1
       assert Enum.empty?(Object.get_by_id(object2.id).data["likes"])
+    end
+  end
+
+  describe "ensure_expiration" do
+    test "it adds to expiration old statuses" do
+      %{id: activity_id1} = insert(:note_activity)
+
+      %{id: activity_id2} =
+        insert(:note_activity, %{inserted_at: NaiveDateTime.from_iso8601!("2015-01-23 23:50:07")})
+
+      %{id: activity_id3} = activity3 = insert(:note_activity)
+
+      expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(60 * 61, :second)
+        |> NaiveDateTime.truncate(:second)
+
+      Pleroma.ActivityExpiration.create(activity3, expires_at)
+
+      Mix.Tasks.Pleroma.Database.run(["ensure_expiration"])
+
+      expirations =
+        Pleroma.ActivityExpiration
+        |> order_by(:activity_id)
+        |> Repo.all()
+
+      assert [
+               %Pleroma.ActivityExpiration{
+                 activity_id: ^activity_id1
+               },
+               %Pleroma.ActivityExpiration{
+                 activity_id: ^activity_id2,
+                 scheduled_at: ~N[2016-01-23 23:50:07]
+               },
+               %Pleroma.ActivityExpiration{
+                 activity_id: ^activity_id3,
+                 scheduled_at: ^expires_at
+               }
+             ] = expirations
     end
   end
 end

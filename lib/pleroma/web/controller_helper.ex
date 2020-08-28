@@ -9,8 +9,20 @@ defmodule Pleroma.Web.ControllerHelper do
 
   # As in Mastodon API, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
   @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
-  def truthy_param?(blank_value) when blank_value in [nil, ""], do: nil
-  def truthy_param?(value), do: value not in @falsy_param_values
+
+  def explicitly_falsy_param?(value), do: value in @falsy_param_values
+
+  # Note: `nil` and `""` are considered falsy values in Pleroma
+  def falsy_param?(value),
+    do: explicitly_falsy_param?(value) or value in [nil, ""]
+
+  def truthy_param?(value), do: not falsy_param?(value)
+
+  def json_response(conn, status, _) when status in [204, :no_content] do
+    conn
+    |> put_resp_header("content-type", "application/json")
+    |> send_resp(status, "")
+  end
 
   def json_response(conn, status, json) do
     conn
@@ -51,43 +63,44 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
+  @id_keys Pagination.page_keys() -- ["limit", "order"]
+  defp build_pagination_fields(conn, min_id, max_id, extra_params) do
+    params =
+      conn.params
+      |> Map.drop(Map.keys(conn.path_params))
+      |> Map.merge(extra_params)
+      |> Map.drop(@id_keys)
+
+    %{
+      "next" => current_url(conn, Map.put(params, :max_id, max_id)),
+      "prev" => current_url(conn, Map.put(params, :min_id, min_id)),
+      "id" => current_url(conn)
+    }
+  end
+
   def get_pagination_fields(conn, activities, extra_params \\ %{}) do
     case List.last(activities) do
-      %{id: max_id} ->
-        params =
-          conn.params
-          |> Map.drop(Map.keys(conn.path_params))
-          |> Map.merge(extra_params)
-          |> Map.drop(Pagination.page_keys() -- ["limit", "order"])
-
-        min_id =
+      %{pagination_id: max_id} when not is_nil(max_id) ->
+        %{pagination_id: min_id} =
           activities
           |> List.first()
-          |> Map.get(:id)
 
-        fields = %{
-          "next" => current_url(conn, Map.put(params, :max_id, max_id)),
-          "prev" => current_url(conn, Map.put(params, :min_id, min_id))
-        }
+        build_pagination_fields(conn, min_id, max_id, extra_params)
 
-        #  Generating an `id` without already present pagination keys would
-        # need a query-restriction with an `q.id >= ^id` or `q.id <= ^id`
-        # instead of the `q.id > ^min_id` and `q.id < ^max_id`.
-        #  This is because we only have ids present inside of the page, while
-        # `min_id`, `since_id` and `max_id` requires to know one outside of it.
-        if Map.take(conn.params, Pagination.page_keys() -- ["limit", "order"]) != [] do
-          Map.put(fields, "id", current_url(conn, conn.params))
-        else
-          fields
-        end
+      %{id: max_id} ->
+        %{id: min_id} =
+          activities
+          |> List.first()
+
+        build_pagination_fields(conn, min_id, max_id, extra_params)
 
       _ ->
         %{}
     end
   end
 
-  def assign_account_by_id(%{params: %{"id" => id}} = conn, _) do
-    case Pleroma.User.get_cached_by_id(id) do
+  def assign_account_by_id(conn, _) do
+    case Pleroma.User.get_cached_by_id(conn.params.id) do
       %Pleroma.User{} = account -> assign(conn, :account, account)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
@@ -104,7 +117,16 @@ defmodule Pleroma.Web.ControllerHelper do
     render_error(conn, :not_implemented, "Can't display this activity")
   end
 
-  @spec put_in_if_exist(map(), atom() | String.t(), any) :: map()
-  def put_in_if_exist(map, _key, nil), do: map
-  def put_in_if_exist(map, key, value), do: put_in(map, key, value)
+  @doc """
+  Returns true if request specifies to include embedded relationships in account objects.
+  May only be used in selected account-related endpoints; has no effect for status- or
+    notification-related endpoints.
+  """
+  # Intended for PleromaFE: https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838
+  def embed_relationships?(params) do
+    # To do once OpenAPI transition mess is over: just `truthy_param?(params[:with_relationships])`
+    params
+    |> Map.get(:with_relationships, params["with_relationships"])
+    |> truthy_param?()
+  end
 end

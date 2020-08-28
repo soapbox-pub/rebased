@@ -11,12 +11,11 @@ defmodule Pleroma.Uploaders.S3Test do
   import Mock
   import ExUnit.CaptureLog
 
-  clear_config([Pleroma.Uploaders.S3]) do
-    Config.put([Pleroma.Uploaders.S3],
-      bucket: "test_bucket",
-      public_endpoint: "https://s3.amazonaws.com"
-    )
-  end
+  setup do:
+          clear_config(Pleroma.Uploaders.S3,
+            bucket: "test_bucket",
+            public_endpoint: "https://s3.amazonaws.com"
+          )
 
   describe "get_file/1" do
     test "it returns path to local folder for files" do
@@ -59,7 +58,7 @@ defmodule Pleroma.Uploaders.S3Test do
         name: "image-tet.jpg",
         content_type: "image/jpg",
         path: "test_folder/image-tet.jpg",
-        tempfile: Path.absname("test/fixtures/image_tmp.jpg")
+        tempfile: Path.absname("test/instance_static/add/shortcode.png")
       }
 
       [file_upload: file_upload]

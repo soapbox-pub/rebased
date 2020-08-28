@@ -6,10 +6,9 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.CommonAPI
 
   import ExUnit.CaptureLog
   import Pleroma.Factory
@@ -54,8 +53,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
     test "returns activity" do
       user = insert(:user)
       service_actor = Relay.get_actor()
-      ActivityPub.follow(service_actor, user)
-      Pleroma.User.follow(service_actor, user)
+      CommonAPI.follow(service_actor, user)
       assert "#{user.ap_id}/followers" in User.following(service_actor)
       assert {:ok, %Activity{} = activity} = Relay.unfollow(user.ap_id)
       assert activity.actor == "#{Pleroma.Web.Endpoint.url()}/relay"
@@ -68,13 +66,14 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   end
 
   describe "publish/1" do
-    clear_config([:instance, :federating])
+    setup do: clear_config([:instance, :federating])
 
     test "returns error when activity not `Create` type" do
       activity = insert(:like_activity)
       assert Relay.publish(activity) == {:error, "Not implemented"}
     end
 
+    @tag capture_log: true
     test "returns error when activity not public" do
       activity = insert(:direct_note_activity)
       assert Relay.publish(activity) == {:error, false}
@@ -89,22 +88,27 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
           }
         )
 
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://mastodon.example.org/eee/99541947525187367"} ->
+          %Tesla.Env{status: 500, body: ""}
+      end)
+
       assert capture_log(fn ->
-               assert Relay.publish(activity) == {:error, nil}
-             end) =~ "[error] error: nil"
+               assert Relay.publish(activity) == {:error, false}
+             end) =~ "[error] error: false"
     end
 
     test_with_mock "returns announce activity and publish to federate",
                    Pleroma.Web.Federator,
                    [:passthrough],
                    [] do
-      Pleroma.Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
       service_actor = Relay.get_actor()
       note = insert(:note_activity)
-      assert {:ok, %Activity{} = activity, %Object{} = obj} = Relay.publish(note)
+      assert {:ok, %Activity{} = activity} = Relay.publish(note)
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
-      assert activity.data["object"] == obj.data["id"]
+      assert activity.data["to"] == [service_actor.follower_address]
       assert called(Pleroma.Web.Federator.publish(activity))
     end
 
@@ -112,13 +116,12 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
                    Pleroma.Web.Federator,
                    [:passthrough],
                    [] do
-      Pleroma.Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
       service_actor = Relay.get_actor()
       note = insert(:note_activity)
-      assert {:ok, %Activity{} = activity, %Object{} = obj} = Relay.publish(note)
+      assert {:ok, %Activity{} = activity} = Relay.publish(note)
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
-      assert activity.data["object"] == obj.data["id"]
       refute called(Pleroma.Web.Federator.publish(activity))
     end
   end

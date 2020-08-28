@@ -5,14 +5,18 @@
 defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug do
   import Pleroma.Web.TranslationHelpers
   import Plug.Conn
+
   alias Pleroma.Config
   alias Pleroma.User
+
+  use Pleroma.Web, :plug
 
   def init(options) do
     options
   end
 
-  def call(conn, _) do
+  @impl true
+  def perform(conn, _) do
     public? = Config.get!([:instance, :public])
 
     case {public?, conn} do

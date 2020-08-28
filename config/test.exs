@@ -21,7 +21,10 @@ config :logger, :console,
 
 config :pleroma, :auth, oauth_consumer_strategies: []
 
-config :pleroma, Pleroma.Upload, filters: [], link_name: false
+config :pleroma, Pleroma.Upload,
+  filters: [],
+  link_name: false,
+  default_description: :filename
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
@@ -56,6 +59,19 @@ config :pleroma, :rich_media,
   ignore_hosts: [],
   ignore_tld: ["local", "localdomain", "lan"]
 
+config :pleroma, :instance,
+  multi_factor_authentication: [
+    totp: [
+      # digits 6 or 8
+      digits: 6,
+      period: 30
+    ],
+    backup_codes: [
+      number: 2,
+      length: 6
+    ]
+  ]
+
 config :web_push_encryption, :vapid_details,
   subject: "mailto:administrator@example.com",
   public_key:
@@ -66,8 +82,8 @@ config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
 config :pleroma, Oban,
   queues: false,
-  prune: :disabled,
-  crontab: false
+  crontab: false,
+  plugins: false
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
@@ -90,9 +106,24 @@ config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
 config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
 
+config :pleroma, Pleroma.Gun, Pleroma.GunMock
+
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+
+config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
+
+config :pleroma, :instances_favicons, enabled: true
+
+config :pleroma, Pleroma.Uploaders.S3,
+  bucket: nil,
+  streaming_enabled: true,
+  public_endpoint: nil
+
+config :tzdata, :autoupdate, :disabled
+
+config :pleroma, :mrf, policies: []
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

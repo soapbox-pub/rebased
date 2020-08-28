@@ -6,6 +6,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
 
+  alias Pleroma.MFA
+  alias Pleroma.MFA.TOTP
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Authorization
@@ -17,8 +19,10 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     key: "_test",
     signing_salt: "cooldude"
   ]
-
-  clear_config([:instance, :account_activation_required])
+  setup do
+    clear_config([:instance, :account_activation_required])
+    clear_config([:instance, :account_approval_required])
+  end
 
   describe "in OAuth consumer mode, " do
     setup do
@@ -31,12 +35,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       ]
     end
 
-    clear_config([:auth, :oauth_consumer_strategies]) do
-      Pleroma.Config.put(
-        [:auth, :oauth_consumer_strategies],
-        ~w(twitter facebook)
-      )
-    end
+    setup do: clear_config([:auth, :oauth_consumer_strategies], ~w(twitter facebook))
 
     test "GET /oauth/authorize renders auth forms, including OAuth consumer form", %{
       app: app,
@@ -315,7 +314,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       redirect_uri = OAuthController.default_redirect_uri(app)
 
@@ -346,7 +345,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       unlisted_redirect_uri = "http://cross-site-request.com"
 
@@ -610,6 +609,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       end
     end
 
+    test "redirect to on two-factor auth page" do
+      otp_secret = TOTP.generate_secret()
+
+      user =
+        insert(:user,
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
+          }
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write", "follow"])
+
+      conn =
+        build_conn()
+        |> post("/oauth/authorize", %{
+          "authorization" => %{
+            "name" => user.nickname,
+            "password" => "test",
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "scope" => "read write",
+            "state" => "statepassed"
+          }
+        })
+
+      result = html_response(conn, 200)
+
+      mfa_token = Repo.get_by(MFA.Token, user_id: user.id)
+      assert result =~ app.redirect_uris
+      assert result =~ "statepassed"
+      assert result =~ mfa_token.token
+      assert result =~ "Two-factor authentication"
+    end
+
     test "returns 401 for wrong credentials", %{conn: conn} do
       user = insert(:user)
       app = insert(:oauth_app)
@@ -719,7 +753,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do
       password = "testpassword"
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
 
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -739,6 +773,46 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       token = Repo.get_by(Token, token: token)
       assert token
       assert token.scopes == app.scopes
+    end
+
+    test "issues a mfa token for `password` grant_type, when MFA enabled" do
+      password = "testpassword"
+      otp_secret = TOTP.generate_secret()
+
+      user =
+        insert(:user,
+          password_hash: Pbkdf2.hash_pwd_salt(password),
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
+          }
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(403)
+
+      assert match?(
+               %{
+                 "supported_challenge_types" => "totp",
+                 "mfa_token" => _,
+                 "error" => "mfa_required"
+               },
+               response
+             )
+
+      token = Repo.get_by(MFA.Token, token: response["mfa_token"])
+      assert token.user_id == user.id
+      assert token.authorization_id
     end
 
     test "issues a token for request with HTTP basic auth client credentials" do
@@ -816,7 +890,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       password = "testpassword"
 
       {:ok, user} =
-        insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+        insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
         |> User.confirmation_changeset(need_confirmation: true)
         |> User.update_and_set_cache()
 
@@ -844,7 +918,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           deactivated: true
         )
 
@@ -872,7 +946,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           password_reset_pending: true
         )
 
@@ -901,7 +975,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           confirmation_pending: true
         )
 
@@ -924,6 +998,30 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
              }
     end
 
+    test "rejects token exchange for valid credentials belonging to an unapproved user" do
+      password = "testpassword"
+
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password), approval_pending: true)
+
+      refute Pleroma.User.account_status(user) == :active
+
+      app = insert(:oauth_app)
+
+      conn =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+
+      assert resp = json_response(conn, 403)
+      assert %{"error" => _} = resp
+      refute Map.has_key?(resp, "access_token")
+    end
+
     test "rejects an invalid authorization code" do
       app = insert(:oauth_app)
 
@@ -944,7 +1042,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   end
 
   describe "POST /oauth/token - refresh token" do
-    clear_config([:oauth2, :issue_new_refresh_token])
+    setup do: clear_config([:oauth2, :issue_new_refresh_token])
 
     test "issues a new access token with keep fresh token" do
       Pleroma.Config.put([:oauth2, :issue_new_refresh_token], true)

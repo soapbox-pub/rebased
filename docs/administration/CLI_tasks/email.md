@@ -4,21 +4,29 @@
 
 ## Send test email (instance email by default)
 
-```sh tab="OTP"
- ./bin/pleroma_ctl email test [--to <destination email address>]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.email test [--to <destination email address>]
-```
+    ```sh
+     ./bin/pleroma_ctl email test [--to <destination email address>]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.email test [--to <destination email address>]
+    ```
 
 
 Example: 
 
-```sh tab="OTP"
-./bin/pleroma_ctl email test --to root@example.org
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.email test --to root@example.org
-```
+    ```sh
+    ./bin/pleroma_ctl email test --to root@example.org
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.email test --to root@example.org
+    ```

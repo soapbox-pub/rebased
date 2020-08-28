@@ -9,7 +9,7 @@ defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlugTest do
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.User
 
-  clear_config([:instance, :public])
+  setup do: clear_config([:instance, :public])
 
   test "it halts if not public and no user is assigned", %{conn: conn} do
     Config.put([:instance, :public], false)
@@ -29,7 +29,7 @@ defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlugTest do
       conn
       |> EnsurePublicOrAuthenticatedPlug.call(%{})
 
-    assert ret_conn == conn
+    refute ret_conn.halted
   end
 
   test "it continues if a user is assigned, even if not public", %{conn: conn} do
@@ -43,6 +43,6 @@ defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlugTest do
       conn
       |> EnsurePublicOrAuthenticatedPlug.call(%{})
 
-    assert ret_conn == conn
+    refute ret_conn.halted
   end
 end

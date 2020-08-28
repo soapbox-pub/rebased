@@ -17,7 +17,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
   require Logger
 
   @impl Oban.Worker
-  def perform(%{"activity_id" => activity_id}, _job) do
+  def perform(%Job{args: %{"activity_id" => activity_id}}) do
     if Config.get([ScheduledActivity, :enabled]) do
       case Pleroma.Repo.get(ScheduledActivity, activity_id) do
         %ScheduledActivity{} = scheduled_activity ->
@@ -30,6 +30,8 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
   end
 
   defp post_activity(%ScheduledActivity{user_id: user_id, params: params} = scheduled_activity) do
+    params = Map.new(params, fn {key, value} -> {String.to_existing_atom(key), value} end)
+
     with {:delete, {:ok, _}} <- {:delete, ScheduledActivity.delete(scheduled_activity)},
          {:user, %User{} = user} <- {:user, User.get_cached_by_id(user_id)},
          {:post, {:ok, _}} <- {:post, CommonAPI.post(user, params)} do

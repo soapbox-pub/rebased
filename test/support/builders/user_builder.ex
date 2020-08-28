@@ -7,10 +7,11 @@ defmodule Pleroma.Builders.UserBuilder do
       email: "test@example.org",
       name: "Test Name",
       nickname: "testname",
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
+      password_hash: Pbkdf2.hash_pwd_salt("test"),
       bio: "A tester.",
       ap_id: "some id",
       last_digest_emailed_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+      multi_factor_authentication_settings: %Pleroma.MFA.Settings{},
       notification_settings: %Pleroma.User.NotificationSetting{}
     }
 

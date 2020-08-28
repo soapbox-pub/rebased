@@ -37,16 +37,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
   end
 
   describe "note activity's `replies` collection rendering" do
-    clear_config([:activitypub, :note_replies_output_limit]) do
-      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
-    end
+    setup do: clear_config([:activitypub, :note_replies_output_limit], 5)
 
     test "renders `replies` collection for a note activity" do
       user = insert(:user)
       activity = insert(:note_activity, user: user)
 
       {:ok, self_reply1} =
-        CommonAPI.post(user, %{"status" => "self-reply 1", "in_reply_to_status_id" => activity.id})
+        CommonAPI.post(user, %{status: "self-reply 1", in_reply_to_status_id: activity.id})
 
       replies_uris = [self_reply1.object.data["id"]]
       result = ObjectView.render("object.json", %{object: refresh_record(activity)})
@@ -61,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     object = Object.normalize(note)
     user = insert(:user)
 
-    {:ok, like_activity, _} = CommonAPI.favorite(note.id, user)
+    {:ok, like_activity} = CommonAPI.favorite(user, note.id)
 
     result = ObjectView.render("object.json", %{object: like_activity})
 
@@ -75,7 +73,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     object = Object.normalize(note)
     user = insert(:user)
 
-    {:ok, announce_activity, _} = CommonAPI.repeat(note.id, user)
+    {:ok, announce_activity} = CommonAPI.repeat(note.id, user)
 
     result = ObjectView.render("object.json", %{object: announce_activity})
 

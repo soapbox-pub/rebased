@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ChatChannelTest do
   end
 
   describe "message lengths" do
-    clear_config([:instance, :chat_limit])
+    setup do: clear_config([:instance, :chat_limit])
 
     test "it ignores messages of length zero", %{socket: socket} do
       push(socket, "new_msg", %{"text" => ""})

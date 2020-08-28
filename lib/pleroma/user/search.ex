@@ -52,6 +52,7 @@ defmodule Pleroma.User.Search do
     |> base_query(following)
     |> filter_blocked_user(for_user)
     |> filter_invisible_users()
+    |> filter_internal_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
     |> trigram_rank(query_string)
@@ -68,11 +69,15 @@ defmodule Pleroma.User.Search do
       u in query,
       where:
         fragment(
+          # The fragment must _exactly_ match `users_fts_index`, otherwise the index won't work
           """
-          (to_tsvector('simple', ?) || to_tsvector('simple', ?)) @@ to_tsquery('simple', ?)
+          (
+            setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+            setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B')
+          ) @@ to_tsquery('simple', ?)
           """,
-          u.name,
           u.nickname,
+          u.name,
           ^query_string
         )
     )
@@ -87,15 +92,23 @@ defmodule Pleroma.User.Search do
     |> Enum.join(" | ")
   end
 
+  # Considers nickname match, localized nickname match, name match; preferences nickname match
   defp trigram_rank(query, query_string) do
     from(
       u in query,
       select_merge: %{
         search_rank:
           fragment(
-            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
+            """
+            similarity(?, ?) +
+            similarity(?, regexp_replace(?, '@.+', '')) +
+            similarity(?, trim(coalesce(?, '')))
+            """,
             ^query_string,
             u.nickname,
+            ^query_string,
+            u.nickname,
+            ^query_string,
             u.name
           )
       }
@@ -107,6 +120,10 @@ defmodule Pleroma.User.Search do
 
   defp filter_invisible_users(query) do
     from(q in query, where: q.invisible == false)
+  end
+
+  defp filter_internal_users(query) do
+    from(q in query, where: q.actor_type != "Application")
   end
 
   defp filter_blocked_user(query, %User{} = blocker) do

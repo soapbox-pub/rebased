@@ -74,8 +74,8 @@ defmodule Pleroma.ObjectTest do
   end
 
   describe "delete attachments" do
-    clear_config([Pleroma.Upload])
-    clear_config([:instance, :cleanup_attachments])
+    setup do: clear_config([Pleroma.Upload])
+    setup do: clear_config([:instance, :cleanup_attachments])
 
     test "Disabled via config" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
@@ -380,7 +380,8 @@ defmodule Pleroma.ObjectTest do
 
       user = insert(:user)
       activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      {:ok, _activity, object} = CommonAPI.favorite(activity.id, user)
+      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      object = Object.get_by_ap_id(activity.data["object"])
 
       assert object.data["like_count"] == 1
 

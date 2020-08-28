@@ -34,10 +34,18 @@ defmodule Pleroma.Filter do
     Repo.one(query)
   end
 
-  def get_filters(%User{id: user_id} = _user) do
+  def get_active(query) do
+    from(f in query, where: is_nil(f.expires_at) or f.expires_at > ^NaiveDateTime.utc_now())
+  end
+
+  def get_irreversible(query) do
+    from(f in query, where: f.hide)
+  end
+
+  def get_filters(query \\ __MODULE__, %User{id: user_id}) do
     query =
       from(
-        f in Pleroma.Filter,
+        f in query,
         where: f.user_id == ^user_id,
         order_by: [desc: :id]
       )
@@ -89,11 +97,40 @@ defmodule Pleroma.Filter do
     |> Repo.delete()
   end
 
-  def update(%Pleroma.Filter{} = filter) do
-    destination = Map.from_struct(filter)
-
-    Pleroma.Filter.get(filter.filter_id, %{id: filter.user_id})
-    |> cast(destination, [:phrase, :context, :hide, :expires_at, :whole_word])
+  def update(%Pleroma.Filter{} = filter, params) do
+    filter
+    |> cast(params, [:phrase, :context, :hide, :expires_at, :whole_word])
+    |> validate_required([:phrase, :context])
     |> Repo.update()
   end
+
+  def compose_regex(user_or_filters, format \\ :postgres)
+
+  def compose_regex(%User{} = user, format) do
+    __MODULE__
+    |> get_active()
+    |> get_irreversible()
+    |> get_filters(user)
+    |> compose_regex(format)
+  end
+
+  def compose_regex([_ | _] = filters, format) do
+    phrases =
+      filters
+      |> Enum.map(& &1.phrase)
+      |> Enum.join("|")
+
+    case format do
+      :postgres ->
+        "\\y(#{phrases})\\y"
+
+      :re ->
+        ~r/\b#{phrases}\b/i
+
+      _ ->
+        nil
+    end
+  end
+
+  def compose_regex(_, _), do: nil
 end

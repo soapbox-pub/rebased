@@ -91,26 +91,17 @@ defmodule Pleroma.Stats do
       peers: peers,
       stats: %{
         domain_count: domain_count,
-        status_count: status_count,
+        status_count: status_count || 0,
         user_count: user_count
       }
     }
   end
 
-  def get_status_visibility_count do
-    counter_cache =
-      CounterCache.get_as_map([
-        "status_visibility_public",
-        "status_visibility_private",
-        "status_visibility_unlisted",
-        "status_visibility_direct"
-      ])
-
-    %{
-      public: counter_cache["status_visibility_public"] || 0,
-      unlisted: counter_cache["status_visibility_unlisted"] || 0,
-      private: counter_cache["status_visibility_private"] || 0,
-      direct: counter_cache["status_visibility_direct"] || 0
-    }
+  def get_status_visibility_count(instance \\ nil) do
+    if is_nil(instance) do
+      CounterCache.get_sum()
+    else
+      CounterCache.get_by_instance(instance)
+    end
   end
 end

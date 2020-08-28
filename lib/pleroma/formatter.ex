@@ -10,11 +10,15 @@ defmodule Pleroma.Formatter do
   @link_regex ~r"((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+"ui
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
 
-  @auto_linker_config hashtag: true,
-                      hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
-                      mention: true,
-                      mention_handler: &Pleroma.Formatter.mention_handler/4,
-                      scheme: true
+  defp linkify_opts do
+    Pleroma.Config.get(Pleroma.Formatter) ++
+      [
+        hashtag: true,
+        hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
+        mention: true,
+        mention_handler: &Pleroma.Formatter.mention_handler/4
+      ]
+  end
 
   def escape_mention_handler("@" <> nickname = mention, buffer, _, _) do
     case User.get_cached_by_nickname(nickname) do
@@ -31,13 +35,23 @@ defmodule Pleroma.Formatter do
   def mention_handler("@" <> nickname, buffer, opts, acc) do
     case User.get_cached_by_nickname(nickname) do
       %User{id: id} = user ->
-        ap_id = get_ap_id(user)
+        user_url = user.uri || user.ap_id
         nickname_text = get_nickname_text(nickname, opts)
 
         link =
-          ~s(<span class="h-card"><a data-user="#{id}" class="u-url mention" href="#{ap_id}" rel="ugc">@<span>#{
-            nickname_text
-          }</span></a></span>)
+          Phoenix.HTML.Tag.content_tag(
+            :span,
+            Phoenix.HTML.Tag.content_tag(
+              :a,
+              ["@", Phoenix.HTML.Tag.content_tag(:span, nickname_text)],
+              "data-user": id,
+              class: "u-url mention",
+              href: user_url,
+              rel: "ugc"
+            ),
+            class: "h-card"
+          )
+          |> Phoenix.HTML.safe_to_string()
 
         {link, %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
 
@@ -49,7 +63,15 @@ defmodule Pleroma.Formatter do
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
     tag = String.downcase(tag)
     url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
-    link = ~s(<a class="hashtag" data-tag="#{tag}" href="#{url}" rel="tag ugc">#{tag_text}</a>)
+
+    link =
+      Phoenix.HTML.Tag.content_tag(:a, tag_text,
+        class: "hashtag",
+        "data-tag": tag,
+        href: url,
+        rel: "tag ugc"
+      )
+      |> Phoenix.HTML.safe_to_string()
 
     {link, %{acc | tags: MapSet.put(acc.tags, {tag_text, tag})}}
   end
@@ -62,19 +84,19 @@ defmodule Pleroma.Formatter do
   @spec linkify(String.t(), keyword()) ::
           {String.t(), [{String.t(), User.t()}], [{String.t(), String.t()}]}
   def linkify(text, options \\ []) do
-    options = options ++ @auto_linker_config
+    options = linkify_opts() ++ options
 
     if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
       %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
       acc = %{mentions: MapSet.new(), tags: MapSet.new()}
 
-      {text_mentions, %{mentions: mentions}} = AutoLinker.link_map(mentions, acc, options)
-      {text_rest, %{tags: tags}} = AutoLinker.link_map(rest, acc, options)
+      {text_mentions, %{mentions: mentions}} = Linkify.link_map(mentions, acc, options)
+      {text_rest, %{tags: tags}} = Linkify.link_map(rest, acc, options)
 
       {text_mentions <> text_rest, MapSet.to_list(mentions), MapSet.to_list(tags)}
     else
       acc = %{mentions: MapSet.new(), tags: MapSet.new()}
-      {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
+      {text, %{mentions: mentions, tags: tags}} = Linkify.link_map(text, acc, options)
 
       {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
     end
@@ -93,9 +115,9 @@ defmodule Pleroma.Formatter do
 
     if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
       %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
-      AutoLinker.link(mentions, options) <> AutoLinker.link(rest, options)
+      Linkify.link(mentions, options) <> Linkify.link(rest, options)
     else
-      AutoLinker.link(text, options)
+      Linkify.link(text, options)
     end
   end
 
@@ -127,9 +149,6 @@ defmodule Pleroma.Formatter do
       String.slice(text, 0, length_with_omission) <> omission
     end
   end
-
-  defp get_ap_id(%User{source_data: %{"url" => url}}) when is_binary(url), do: url
-  defp get_ap_id(%User{ap_id: ap_id}), do: ap_id
 
   defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)
   defp get_nickname_text(nickname, _), do: User.local_nickname(nickname)

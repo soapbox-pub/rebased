@@ -7,8 +7,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
   alias Pleroma.Web.RichMedia.Parsers.TwitterCard
 
   test "returns error when html not contains twitter card" do
-    assert TwitterCard.parse([{"html", [], [{"head", [], []}, {"body", [], []}]}], %{}) ==
-             {:error, "No twitter card metadata found"}
+    assert TwitterCard.parse([{"html", [], [{"head", [], []}, {"body", [], []}]}], %{}) == %{}
   end
 
   test "parses twitter card with only name attributes" do
@@ -17,15 +16,21 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
-             {:ok,
-              %{
-                "app:id:googleplay" => "com.nytimes.android",
-                "app:name:googleplay" => "NYTimes",
-                "app:url:googleplay" => "nytimes://reader/id/100000006583622",
-                "site" => nil,
-                "title" =>
-                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times"
-              }}
+             %{
+               "app:id:googleplay" => "com.nytimes.android",
+               "app:name:googleplay" => "NYTimes",
+               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
+               "site" => nil,
+               "description" =>
+                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+               "image" =>
+                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
+               "type" => "article",
+               "url" =>
+                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
+               "title" =>
+                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database."
+             }
   end
 
   test "parses twitter card with only property attributes" do
@@ -34,19 +39,19 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
-             {:ok,
-              %{
-                "card" => "summary_large_image",
-                "description" =>
-                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-                "image" =>
-                  "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
-                "image:alt" => "",
-                "title" =>
-                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-                "url" =>
-                  "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
-              }}
+             %{
+               "card" => "summary_large_image",
+               "description" =>
+                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+               "image" =>
+                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
+               "image:alt" => "",
+               "title" =>
+                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+               "url" =>
+                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
+               "type" => "article"
+             }
   end
 
   test "parses twitter card with name & property attributes" do
@@ -55,23 +60,23 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
-             {:ok,
-              %{
-                "app:id:googleplay" => "com.nytimes.android",
-                "app:name:googleplay" => "NYTimes",
-                "app:url:googleplay" => "nytimes://reader/id/100000006583622",
-                "card" => "summary_large_image",
-                "description" =>
-                  "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-                "image" =>
-                  "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
-                "image:alt" => "",
-                "site" => nil,
-                "title" =>
-                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-                "url" =>
-                  "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
-              }}
+             %{
+               "app:id:googleplay" => "com.nytimes.android",
+               "app:name:googleplay" => "NYTimes",
+               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
+               "card" => "summary_large_image",
+               "description" =>
+                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+               "image" =>
+                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
+               "image:alt" => "",
+               "site" => nil,
+               "title" =>
+                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+               "url" =>
+                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
+               "type" => "article"
+             }
   end
 
   test "respect only first title tag on the page" do
@@ -84,14 +89,17 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       File.read!("test/fixtures/margaret-corbin-grave-west-point.html") |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
-             {:ok,
-              %{
-                "site" => "@atlasobscura",
-                "title" =>
-                  "The Missing Grave of Margaret Corbin, Revolutionary War Veteran - Atlas Obscura",
-                "card" => "summary_large_image",
-                "image" => image_path
-              }}
+             %{
+               "site" => "@atlasobscura",
+               "title" => "The Missing Grave of Margaret Corbin, Revolutionary War Veteran",
+               "card" => "summary_large_image",
+               "image" => image_path,
+               "description" =>
+                 "She's the only woman veteran honored with a monument at West Point. But where was she buried?",
+               "site_name" => "Atlas Obscura",
+               "type" => "article",
+               "url" => "http://www.atlasobscura.com/articles/margaret-corbin-grave-west-point"
+             }
   end
 
   test "takes first founded title in html head if there is html markup error" do
@@ -100,14 +108,20 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
-             {:ok,
-              %{
-                "site" => nil,
-                "title" =>
-                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times",
-                "app:id:googleplay" => "com.nytimes.android",
-                "app:name:googleplay" => "NYTimes",
-                "app:url:googleplay" => "nytimes://reader/id/100000006583622"
-              }}
+             %{
+               "site" => nil,
+               "title" =>
+                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+               "app:id:googleplay" => "com.nytimes.android",
+               "app:name:googleplay" => "NYTimes",
+               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
+               "description" =>
+                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+               "image" =>
+                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
+               "type" => "article",
+               "url" =>
+                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
+             }
   end
 end

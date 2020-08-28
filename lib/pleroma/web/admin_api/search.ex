@@ -21,6 +21,7 @@ defmodule Pleroma.Web.AdminAPI.Search do
     query =
       params
       |> Map.drop([:page, :page_size])
+      |> Map.put(:invisible, false)
       |> User.Query.build()
       |> order_by([u], u.nickname)
 
@@ -30,7 +31,6 @@ defmodule Pleroma.Web.AdminAPI.Search do
     count = Repo.aggregate(query, :count, :id)
 
     results = Repo.all(paginated_query)
-
     {:ok, results, count}
   end
 end

@@ -15,9 +15,12 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       context: ["home"]
     }
 
-    conn = post(conn, "/api/v1/filters", %{"phrase" => filter.phrase, context: filter.context})
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/filters", %{"phrase" => filter.phrase, context: filter.context})
 
-    assert response = json_response(conn, 200)
+    assert response = json_response_and_validate_schema(conn, 200)
     assert response["phrase"] == filter.phrase
     assert response["context"] == filter.context
     assert response["irreversible"] == false
@@ -48,12 +51,12 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     response =
       conn
       |> get("/api/v1/filters")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert response ==
              render_json(
                FilterView,
-               "filters.json",
+               "index.json",
                filters: [filter_two, filter_one]
              )
   end
@@ -61,18 +64,39 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
   test "get a filter" do
     %{user: user, conn: conn} = oauth_access(["read:filters"])
 
+    # check whole_word false
     query = %Pleroma.Filter{
       user_id: user.id,
       filter_id: 2,
       phrase: "knight",
-      context: ["home"]
+      context: ["home"],
+      whole_word: false
     }
 
     {:ok, filter} = Pleroma.Filter.create(query)
 
     conn = get(conn, "/api/v1/filters/#{filter.filter_id}")
 
-    assert _response = json_response(conn, 200)
+    assert response = json_response_and_validate_schema(conn, 200)
+    assert response["whole_word"] == false
+
+    # check whole_word true
+    %{user: user, conn: conn} = oauth_access(["read:filters"])
+
+    query = %Pleroma.Filter{
+      user_id: user.id,
+      filter_id: 3,
+      phrase: "knight",
+      context: ["home"],
+      whole_word: true
+    }
+
+    {:ok, filter} = Pleroma.Filter.create(query)
+
+    conn = get(conn, "/api/v1/filters/#{filter.filter_id}")
+
+    assert response = json_response_and_validate_schema(conn, 200)
+    assert response["whole_word"] == true
   end
 
   test "update a filter" do
@@ -82,7 +106,9 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       user_id: user.id,
       filter_id: 2,
       phrase: "knight",
-      context: ["home"]
+      context: ["home"],
+      hide: true,
+      whole_word: true
     }
 
     {:ok, _filter} = Pleroma.Filter.create(query)
@@ -93,14 +119,18 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     }
 
     conn =
-      put(conn, "/api/v1/filters/#{query.filter_id}", %{
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/filters/#{query.filter_id}", %{
         phrase: new.phrase,
         context: new.context
       })
 
-    assert response = json_response(conn, 200)
+    assert response = json_response_and_validate_schema(conn, 200)
     assert response["phrase"] == new.phrase
     assert response["context"] == new.context
+    assert response["irreversible"] == true
+    assert response["whole_word"] == true
   end
 
   test "delete a filter" do
@@ -117,7 +147,6 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
     conn = delete(conn, "/api/v1/filters/#{filter.filter_id}")
 
-    assert response = json_response(conn, 200)
-    assert response == %{}
+    assert json_response_and_validate_schema(conn, 200) == %{}
   end
 end

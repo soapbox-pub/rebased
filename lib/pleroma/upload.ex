@@ -56,6 +56,15 @@ defmodule Pleroma.Upload do
         }
   defstruct [:id, :name, :tempfile, :content_type, :path]
 
+  defp get_description(opts, upload) do
+    case {opts[:description], Pleroma.Config.get([Pleroma.Upload, :default_description])} do
+      {description, _} when is_binary(description) -> description
+      {_, :filename} -> upload.name
+      {_, str} when is_binary(str) -> str
+      _ -> ""
+    end
+  end
+
   @spec store(source, options :: [option()]) :: {:ok, Map.t()} | {:error, any()}
   def store(upload, opts \\ []) do
     opts = get_opts(opts)
@@ -63,10 +72,15 @@ defmodule Pleroma.Upload do
     with {:ok, upload} <- prepare_upload(upload, opts),
          upload = %__MODULE__{upload | path: upload.path || "#{upload.id}/#{upload.name}"},
          {:ok, upload} <- Pleroma.Upload.Filter.filter(opts.filters, upload),
+         description = get_description(opts, upload),
+         {_, true} <-
+           {:description_limit,
+            String.length(description) <= Pleroma.Config.get([:instance, :description_limit])},
          {:ok, url_spec} <- Pleroma.Uploaders.Uploader.put_file(opts.uploader, upload) do
       {:ok,
        %{
          "type" => opts.activity_type,
+         "mediaType" => upload.content_type,
          "url" => [
            %{
              "type" => "Link",
@@ -74,9 +88,12 @@ defmodule Pleroma.Upload do
              "href" => url_from_spec(upload, opts.base_url, url_spec)
            }
          ],
-         "name" => Map.get(opts, :description) || upload.name
+         "name" => description
        }}
     else
+      {:description_limit, _} ->
+        {:error, :description_too_long}
+
       {:error, error} ->
         Logger.error(
           "#{__MODULE__} store (using #{inspect(opts.uploader)}) failed: #{inspect(error)}"
@@ -134,7 +151,7 @@ defmodule Pleroma.Upload do
     end
   end
 
-  defp prepare_upload(%{"img" => "data:image/" <> image_data}, opts) do
+  defp prepare_upload(%{img: "data:image/" <> image_data}, opts) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
     hash = String.downcase(Base.encode16(:crypto.hash(:sha256, data)))

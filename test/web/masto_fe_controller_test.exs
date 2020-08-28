@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEController do
 
   import Pleroma.Factory
 
-  clear_config([:instance, :public])
+  setup do: clear_config([:instance, :public])
 
   test "put settings", %{conn: conn} do
     user = insert(:user)
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEController do
     assert _result = json_response(conn, 200)
 
     user = User.get_cached_by_ap_id(user.ap_id)
-    assert user.settings == %{"programming" => "socks"}
+    assert user.mastofe_settings == %{"programming" => "socks"}
   end
 
   describe "index/2 redirections" do

@@ -1,0 +1,10 @@
+{
+  "local": {
+    "src_sha256": "384025A1AC6314473863A11AC7AB38A12C01B851A3F82359B89B4D4211D3291D",
+    "src": "test/fixtures/emoji/packs/blank.png.zip",
+    "license": "Apache 2.0",
+    "homepage": "https://example.com",
+    "files": "files.json",
+    "description": "Some local pack"
+  }
+}

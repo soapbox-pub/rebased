@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
 
   alias Pleroma.Web.ActivityPub.MRF.RejectNonPublic
 
-  clear_config([:mrf_rejectnonpublic])
+  setup do: clear_config([:mrf_rejectnonpublic])
 
   describe "public message" do
     test "it's allowed when address is public" do
@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
       }
 
       Pleroma.Config.put([:mrf_rejectnonpublic, :allow_followersonly], false)
-      assert {:reject, nil} = RejectNonPublic.filter(message)
+      assert {:reject, _} = RejectNonPublic.filter(message)
     end
   end
 
@@ -94,7 +94,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
       }
 
       Pleroma.Config.put([:mrf_rejectnonpublic, :allow_direct], false)
-      assert {:reject, nil} = RejectNonPublic.filter(message)
+      assert {:reject, _} = RejectNonPublic.filter(message)
     end
   end
 end

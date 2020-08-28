@@ -23,10 +23,13 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     last_activity_id =
       with nil <- participation.last_activity_id do
-        ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
-          "user" => user,
-          "blocking_user" => user
-        })
+        ActivityPub.fetch_latest_direct_activity_id_for_context(
+          participation.conversation.ap_id,
+          %{
+            user: user,
+            blocking_user: user
+          }
+        )
       end
 
     activity = Activity.get_by_id_with_object(last_activity_id)
@@ -35,7 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     %{
       id: participation.id |> to_string(),
-      accounts: render(AccountView, "index.json", users: users, as: :user),
+      accounts: render(AccountView, "index.json", users: users, for: user),
       unread: !participation.read,
       last_status:
         render(StatusView, "show.json",

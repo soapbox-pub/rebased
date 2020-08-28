@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       expired: expired,
       multiple: multiple,
       votes_count: votes_count,
+      voters_count: (multiple || nil) && voters_count(object),
       options: options,
       voted: voted?(params),
       emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"])
@@ -27,10 +28,10 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
 
   def render("show.json", %{object: object} = params) do
     case object.data do
-      %{"anyOf" => options} when is_list(options) ->
+      %{"anyOf" => [_ | _] = options} ->
         render(__MODULE__, "show.json", Map.merge(params, %{multiple: true, options: options}))
 
-      %{"oneOf" => options} when is_list(options) ->
+      %{"oneOf" => [_ | _] = options} ->
         render(__MODULE__, "show.json", Map.merge(params, %{multiple: false, options: options}))
 
       _ ->
@@ -39,15 +40,13 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
   end
 
   defp end_time_and_expired(object) do
-    case object.data["closed"] || object.data["endTime"] do
-      end_time when is_binary(end_time) ->
-        end_time = NaiveDateTime.from_iso8601!(end_time)
-        expired = NaiveDateTime.compare(end_time, NaiveDateTime.utc_now()) == :lt
+    if object.data["closed"] do
+      end_time = NaiveDateTime.from_iso8601!(object.data["closed"])
+      expired = NaiveDateTime.compare(end_time, NaiveDateTime.utc_now()) == :lt
 
-        {Utils.to_masto_date(end_time), expired}
-
-      _ ->
-        {nil, false}
+      {Utils.to_masto_date(end_time), expired}
+    else
+      {nil, false}
     end
   end
 
@@ -61,6 +60,12 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
        }, current_count + count}
     end)
   end
+
+  defp voters_count(%{data: %{"voters" => [_ | _] = voters}}) do
+    length(voters)
+  end
+
+  defp voters_count(_), do: 0
 
   defp voted?(%{object: object} = opts) do
     if opts[:for] do

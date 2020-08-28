@@ -6,11 +6,12 @@ defmodule Pleroma.Web.MastodonAPI.CustomEmojiControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
   test "with tags", %{conn: conn} do
-    [emoji | _body] =
-      conn
-      |> get("/api/v1/custom_emojis")
-      |> json_response(200)
+    assert resp =
+             conn
+             |> get("/api/v1/custom_emojis")
+             |> json_response_and_validate_schema(200)
 
+    assert [emoji | _body] = resp
     assert Map.has_key?(emoji, "shortcode")
     assert Map.has_key?(emoji, "static_url")
     assert Map.has_key?(emoji, "tags")

@@ -8,12 +8,17 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
+## :chat
+
+* `enabled` - Enables the backend chat. Defaults to `true`.
+
 ## :instance
 * `name`: The instance’s name.
 * `email`: Email used to reach an Administrator/Moderator of the instance.
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
+* `discription_limit`: The character limit for image descriptions.
 * `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
@@ -28,36 +33,20 @@ To add configuration to your config file, you can copy it from the base config. 
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
+* `account_approval_required`: Require users to be manually approved by an admin before signing in.
 * `federating`: Enable federation with other instances.
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
-* `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
-    * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default).
-    * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production.
-    * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See [`:mrf_simple`](#mrf_simple)).
-    * `Pleroma.Web.ActivityPub.MRF.TagPolicy`: Applies policies to individual users based on tags, which can be set using pleroma-fe/admin-fe/any other app that supports Pleroma Admin API. For example it allows marking posts from individual users nsfw (sensitive).
-    * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (See [`:mrf_subchain`](#mrf_subchain)).
-    * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See [`:mrf_rejectnonpublic`](#mrf_rejectnonpublic)).
-    * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
-    * `Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy`: Rejects posts from likely spambots by rejecting posts from new users that contain links.
-    * `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`: Crawls attachments using their MediaProxy URLs so that the MediaProxy cache is primed.
-    * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
-    * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
-    * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-* `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
-* `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
+* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
+* `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
-* `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
-* `mrf_transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
-* `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses.
-* `welcome_message`: A message that will be send to a newly registered users as a direct message.
-* `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
+* `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
@@ -70,14 +59,70 @@ To add configuration to your config file, you can copy it from the base config. 
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`).
 * `account_field_name_length`: An account field name maximum length (default: `512`).
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
+* `registration_reason_length`: Maximum registration reason length (default: `500`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
+* `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
+
+## Welcome
+* `direct_message`: - welcome message sent as a direct message.
+  * `enabled`: Enables the send a direct message to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome message.
+  * `message`: A message that will be send to a newly registered users as a direct message.
+* `chat_message`: - welcome message sent as a chat message.
+  * `enabled`: Enables the send a chat message to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome message.
+  * `message`: A message that will be send to a newly registered users as a chat message.
+* `email`: - welcome message sent as a email.
+  * `enabled`: Enables the send a welcome email to a newly registered user. Defaults to `false`.
+  * `sender`: The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.
+  * `subject`: A subject of welcome email.
+  * `html`: A html that will be send to a newly registered users as a email.
+  * `text`: A text that will be send to a newly registered users as a email.
+
+    Example:
+
+  ```elixir
+  config :pleroma, :welcome,
+      direct_message: [
+        enabled: true,
+        sender_nickname: "lain",
+        message: "Hi! Welcome on board!"
+        ],
+      email: [
+        enabled: true,
+        sender: {"Pleroma App", "welcome@pleroma.app"},
+        subject: "Welcome to <%= instance_name %>",
+        html: "Welcome to <%= instance_name %>",
+        text: "Welcome to <%= instance_name %>"
+    ]
+  ```
+
+## Message rewrite facility
+
+### :mrf
+* `policies`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
+    * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default).
+    * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production.
+    * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See [`:mrf_simple`](#mrf_simple)).
+    * `Pleroma.Web.ActivityPub.MRF.TagPolicy`: Applies policies to individual users based on tags, which can be set using pleroma-fe/admin-fe/any other app that supports Pleroma Admin API. For example it allows marking posts from individual users nsfw (sensitive).
+    * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (See [`:mrf_subchain`](#mrf_subchain)).
+    * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See [`:mrf_rejectnonpublic`](#mrf_rejectnonpublic)).
+    * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
+    * `Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy`: Rejects posts from likely spambots by rejecting posts from new users that contain links.
+    * `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`: Crawls attachments using their MediaProxy URLs so that the MediaProxy cache is primed.
+    * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
+    * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
+    * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.ActivityExpiration` to be enabled for processing the scheduled delections.
+* `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
+* `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
 ## Federation
 ### MRF policies
 
 !!! note
-    Configuring MRF policies is not enough for them to take effect. You have to enable them by specifying their module in `rewrite_policy` under [:instance](#instance) section.
+    Configuring MRF policies is not enough for them to take effect. You have to enable them by specifying their module in `policies` under [:mrf](#mrf) section.
 
 #### :mrf_simple
 * `media_removal`: List of instances to remove media from.
@@ -85,6 +130,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
 * `reject`: List of instances to reject any activities from.
 * `accept`: List of instances to accept any activities from.
+* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
 * `report_removal`: List of instances to reject reports from.
 * `avatar_removal`: List of instances to strip avatars from.
 * `banner_removal`: List of instances to strip banners from.
@@ -146,12 +192,26 @@ config :pleroma, :mrf_user_allowlist, %{
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
   * `:reject` rejects the message entirely
 
+#### :mrf_steal_emoji
+* `hosts`: List of hosts to steal emojis from
+* `rejected_shortcodes`: Regex-list of shortcodes to reject
+* `size_limit`: File size limit (in bytes), checked before an emoji is saved to the disk
+
+#### :mrf_activity_expiration
+
+* `days`: Default global expiration time for all local Create activities (in days)
+
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
+
+## Pleroma.User
+
+* `restricted_nicknames`: List of nicknames users may not register with.
+* `email_blacklist`: List of email domains users may not register with.
 
 ## Pleroma.ScheduledActivity
 
@@ -160,6 +220,8 @@ config :pleroma, :mrf_user_allowlist, %{
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
 
 ## Pleroma.ActivityExpiration
+
+Enables the worker which processes posts scheduled for deletion. Pinned posts are exempt from expiration.
 
 * `enabled`: whether expired activities will be sent to the job queue to be deleted
 
@@ -234,6 +296,7 @@ This section describe PWA manifest instance-specific values. Currently this opti
 * `background_color`: Describe the background color of the app. (Example: `"#191b22"`, `"aliceblue"`).
 
 ## :emoji
+
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
 * `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
@@ -242,10 +305,46 @@ This section describe PWA manifest instance-specific values. Currently this opti
   memory for this amount of seconds multiplied by the number of files.
 
 ## :media_proxy
+
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
-* `whitelist`: List of domains to bypass the mediaproxy
+* `whitelist`: List of hosts with scheme to bypass the mediaproxy (e.g. `https://example.com`)
+* `invalidation`: options for remove media from cache after delete object:
+  * `enabled`: Enables purge cache
+  * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
+
+### Purge cache strategy
+
+#### Pleroma.Web.MediaProxy.Invalidation.Script
+
+This strategy allow perform external shell script to purge cache.
+Urls of attachments pass to script as arguments.
+
+* `script_path`: path to external script.
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: "./installation/nginx-cache-purge.example"
+```
+
+#### Pleroma.Web.MediaProxy.Invalidation.Http
+
+This strategy allow perform custom http request to purge cache.
+
+* `method`: http method. default is `purge`
+* `headers`: http headers.
+* `options`: request options.
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
+  method: :purge,
+  headers: [],
+  options: []
+```
 
 ## Link previews
 
@@ -370,8 +469,7 @@ Available caches:
 * `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
 * `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
 * `user_agent`: what user agent should we use? (default: `:default`), must be string or `:default`
-* `adapter`: array of hackney options
-
+* `adapter`: array of adapter options
 
 ### :hackney_pools
 
@@ -390,6 +488,37 @@ For each pool, the options are:
 * `timeout` - retention duration for connections
 
 
+### :connections_pool
+
+*For `gun` adapter*
+
+Settings for HTTP connection pool.
+
+* `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
+* `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
+* `:max_connections` - Maximum number of connections in the pool.
+* `:await_up_timeout` - Timeout to connect to the host.
+* `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
+
+### :pools
+
+*For `gun` adapter*
+
+Settings for request pools. These pools are limited on top of `:connections_pool`.
+
+There are four pools used:
+
+* `:federation` for the federation jobs. You may want this pool's max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` - for rich media, media proxy.
+* `:upload` - for proxying media when a remote uploader is used and `proxy_remote: true`.
+* `:default` - for other requests.
+
+For each pool, the options are:
+
+* `:size` - limit to how much requests can be concurrently executed.
+* `:timeout` - timeout while `gun` will wait for response
+* `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
+
 ## Captcha
 
 ### Pleroma.Captcha
@@ -407,7 +536,7 @@ A built-in captcha provider. Enabled by default.
 #### Pleroma.Captcha.Kocaptcha
 
 Kocaptcha is a very simple captcha service with a single API endpoint,
-the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
+the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). The default endpoint
 `https://captcha.kotobank.ch` is hosted by the developer.
 
 * `endpoint`: the Kocaptcha endpoint to use.
@@ -415,21 +544,29 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 ## Uploads
 
 ### Pleroma.Upload
+
 * `uploader`: Which one of the [uploaders](#uploaders) to use.
 * `filters`: List of [upload filters](#upload-filters) to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
+* `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
+* `default_description`: Sets which default description an image has if none is set explicitly. Options: nil (default) - Don't set a default, :filename - use the filename of the file, a string (e.g. "attachment") - Use this string
 
 !!! warning
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ### Uploaders
+
 #### Pleroma.Uploaders.Local
+
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory.
 
 #### Pleroma.Uploaders.S3
+
+Don't forget to configure [Ex AWS S3](#ex-aws-s3-settings)
+
 * `bucket`: S3 bucket name.
 * `bucket_namespace`: S3 bucket namespace.
 * `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
@@ -438,16 +575,22 @@ For example, when using CDN to S3 virtual host format, set "".
 At this time, write CNAME to CDN in public_endpoint.
 * `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
+#### Ex AWS S3 settings
+
+* `access_key_id`: Access key ID
+* `secret_access_key`: Secret access key
+* `host`: S3 host
+
+Example:
+
+```elixir
+config :ex_aws, :s3,
+  access_key_id: "xxxxxxxxxx",
+  secret_access_key: "yyyyyyyyyy",
+  host: "s3.eu-central-1.amazonaws.com"
+```
 
 ### Upload filters
-
-#### Pleroma.Upload.Filter.Mogrify
-
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
-
-#### Pleroma.Upload.Filter.Dedupe
-
-No specific configuration.
 
 #### Pleroma.Upload.Filter.AnonymizeFilename
 
@@ -455,6 +598,20 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 `Pleroma.Upload.Filter.Dedupe` before AnonymizeFilename.
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used. You can get the original filename extension by using `{extension}`, for example `custom-file-name.{extension}`.
+
+#### Pleroma.Upload.Filter.Dedupe
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Exiftool
+
+This filter only strips the GPS and location metadata with Exiftool leaving color profiles and attributes intact.
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Mogrify
+
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
 
 ## Email
 
@@ -516,8 +673,7 @@ Email notifications settings.
 Configuration options described in [Oban readme](https://github.com/sorentwo/oban#usage):
 
 * `repo` - app's Ecto repo (`Pleroma.Repo`)
-* `verbose` - logs verbosity
-* `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
+* `log` - logs verbosity
 * `queues` - job queues (see below)
 * `crontab` - periodic jobs, see [`Oban.Cron`](#obancron)
 
@@ -580,24 +736,6 @@ config :pleroma, :workers,
 * `max_retries` is replaced with `config :pleroma, :workers, retries: [federator_outgoing: 5]`
 * `enabled: false` corresponds to `config :pleroma, :workers, retries: [federator_outgoing: 1]`
 * deprecated options: `max_jobs`, `initial_timeout`
-
-### Pleroma.Scheduler
-
-Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
-
-See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options.
-
-Example:
-
-```elixir
-config :pleroma, Pleroma.Scheduler,
-  global: true,
-  overlap: true,
-  timezone: :utc,
-  jobs: [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
-```
-
-The above example defines a single job which invokes `Pleroma.Web.Websub.refresh_subscriptions()` every 6 hours ("0 */6 * * * *", [crontab format](https://en.wikipedia.org/wiki/Cron)).
 
 ## :web_push_encryption, :vapid_details
 
@@ -720,10 +858,9 @@ or
 curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
 ```
 
-### :auth
+Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
 
-* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator.
-* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication.
+### :auth
 
 Authentication / authorization settings.
 
@@ -753,6 +890,9 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `tlsopts`: additional TLS options
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
+OpenLDAP server the value may be `uid: "uid"`.
 
 ### OAuth consumer mode
 
@@ -839,37 +979,115 @@ Configure OAuth 2 provider capabilities:
 ### :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL.
 
-### :auto_linker
+### Pleroma.Formatter
 
-Configuration for the `auto_linker` library:
+Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.
 
-* `class: "auto-linker"` - specify the class to be added to the generated link. false to clear.
-* `rel: "noopener noreferrer"` - override the rel attribute. false to clear.
-* `new_window: true` - set to false to remove `target='_blank'` attribute.
-* `scheme: false` - Set to true to link urls with schema `http://google.com`.
-* `truncate: false` - Set to a number to truncate urls longer then the number. Truncated urls will end in `..`.
-* `strip_prefix: true` - Strip the scheme prefix.
-* `extra: false` - link urls with rarely used schemes (magnet, ipfs, irc, etc.).
+* `class` - specify the class to be added to the generated link (default: `false`)
+* `rel` - specify the rel attribute (default: `ugc`)
+* `new_window` - adds `target="_blank"` attribute (default: `false`)
+* `truncate` - Set to a number to truncate URLs longer then the number. Truncated URLs will end in `...` (default: `false`)
+* `strip_prefix` - Strip the scheme prefix (default: `false`)
+* `extra` - link URLs with rarely used schemes (magnet, ipfs, irc, etc.) (default: `true`)
+* `validate_tld` - Set to false to disable TLD validation for URLs/emails. Can be set to :no_scheme to validate TLDs only for urls without a scheme (e.g `example.com` will be validated, but `http://example.loki` won't) (default: `:no_scheme`)
 
 Example:
 
 ```elixir
-config :auto_linker,
-  opts: [
-    scheme: true,
-    extra: true,
-    class: false,
-    strip_prefix: false,
-    new_window: false,
-    rel: "ugc"
-  ]
+config :pleroma, Pleroma.Formatter,
+  class: false,
+  rel: "ugc",
+  new_window: false,
+  truncate: false,
+  strip_prefix: false,
+  extra: true,
+  validate_tld: :no_scheme
 ```
 
 ## Custom Runtime Modules (`:modules`)
 
 * `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
 
-
 ## :configurable_from_database
 
 Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
+
+## :database_config_whitelist
+
+List of valid configuration sections which are allowed to be configured from the
+database. Settings stored in the database before the whitelist is configured are
+still applied, so it is suggested to only use the whitelist on instances that
+have not migrated the config to the database.
+
+Example:
+```elixir
+config :pleroma, :database_config_whitelist, [
+  {:pleroma, :instance},
+  {:pleroma, Pleroma.Web.Metadata},
+  {:auto_linker}
+]
+```
+
+### Multi-factor authentication -  :two_factor_authentication
+* `totp` - a list containing TOTP configuration
+  - `digits` - Determines the length of a one-time pass-code in characters. Defaults to 6 characters.
+  - `period` - a period for which the TOTP code will be valid in seconds. Defaults to 30 seconds.
+* `backup_codes` - a list containing backup codes configuration
+  - `number` - number of backup codes to generate.
+  - `length` - backup code length. Defaults to 16 characters.
+
+## Restrict entities access for unauthenticated users
+
+### :restrict_unauthenticated
+
+Restrict access for unauthenticated users to timelines (public and federated), user profiles and statuses.
+
+* `timelines`: public and federated timelines
+  * `local`: public timeline
+  * `federated`: federated timeline (includes public timeline)
+* `profiles`: user profiles
+  * `local`
+  * `remote`
+* `activities`: statuses
+  * `local`
+  * `remote`
+
+Note: when `:instance, :public` is set to `false`, all `:restrict_unauthenticated` items be effectively set to `true` by default. If you'd like to allow unauthenticated access to specific API endpoints on a private instance, please explicitly set `:restrict_unauthenticated` to non-default value in `config/prod.secret.exs`.
+
+Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline).
+
+## Pleroma.Web.ApiSpec.CastAndValidate
+
+* `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.
+
+## :instances_favicons
+
+Control favicons for instances.
+
+* `enabled`: Allow/disallow displaying and getting instances favicons
+
+## Frontend management
+
+Frontends in Pleroma are swappable - you can specify which one to use here.
+
+You can set a frontends for the key `primary` and `admin` and the options of `name` and `ref`. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
+
+The key `primary` refers to the frontend that will be served by default for general requests. The key `admin` refers to the frontend that will be served at the `/pleroma/admin` path.
+
+If you don't set anything here, the bundled frontends will be used.
+
+Example:
+
+```
+config :pleroma, :frontends,
+  primary: %{
+    "name" => "pleroma",
+    "ref" => "stable"
+  },
+  admin: %{
+    "name" => "admin",
+    "ref" => "develop"
+  }
+```
+
+This would serve the frontend from the the folder at `$instance_static/frontends/pleroma/stable`. You have to copy the frontend into this folder yourself. You can choose the name and ref any way you like, but they will be used by mix tasks to automate installation in the future, the name referring to the project and the ref referring to a commit.

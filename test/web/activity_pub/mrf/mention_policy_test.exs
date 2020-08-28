@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
 
   alias Pleroma.Web.ActivityPub.MRF.MentionPolicy
 
-  clear_config(:mrf_mention)
+  setup do: clear_config(:mrf_mention)
 
   test "pass filter if allow list is empty" do
     Pleroma.Config.delete([:mrf_mention])
@@ -76,7 +76,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
         "to" => ["https://example.com/blocked"]
       }
 
-      assert MentionPolicy.filter(message) == {:reject, nil}
+      assert MentionPolicy.filter(message) ==
+               {:reject, "[MentionPolicy] Rejected for mention of https://example.com/blocked"}
     end
 
     test "cc" do
@@ -88,7 +89,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
         "cc" => ["https://example.com/blocked"]
       }
 
-      assert MentionPolicy.filter(message) == {:reject, nil}
+      assert MentionPolicy.filter(message) ==
+               {:reject, "[MentionPolicy] Rejected for mention of https://example.com/blocked"}
     end
   end
 end

@@ -17,8 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
     test "returns error when followed user is deactivated" do
       follower = insert(:user)
       user = insert(:user, local: true, deactivated: true)
-      {:error, error} = MastodonAPI.follow(follower, user)
-      assert error == "Could not follow user: #{user.nickname} is deactivated."
+      assert {:error, _error} = MastodonAPI.follow(follower, user)
     end
 
     test "following for user" do
@@ -75,9 +74,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
 
       User.subscribe(subscriber, user)
 
-      {:ok, status} = CommonAPI.post(user, %{"status" => "Akariiiin"})
+      {:ok, status} = CommonAPI.post(user, %{status: "Akariiiin"})
 
-      {:ok, status1} = CommonAPI.post(user, %{"status" => "Magi"})
+      {:ok, status1} = CommonAPI.post(user, %{status: "Magi"})
       {:ok, [notification]} = Notification.create_notifications(status)
       {:ok, [notification1]} = Notification.create_notifications(status1)
       res = MastodonAPI.get_notifications(subscriber)

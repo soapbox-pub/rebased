@@ -52,6 +52,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp do_migrate_to_db(config_file) do
     if File.exists?(config_file) do
+      shell_info("Migrating settings from file: #{Path.expand(config_file)}")
       Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
       Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
 
@@ -72,8 +73,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     group
     |> Pleroma.Config.Loader.filter_group(settings)
     |> Enum.each(fn {key, value} ->
-      key = inspect(key)
-      {:ok, _} = ConfigDB.update_or_create(%{group: inspect(group), key: key, value: value})
+      {:ok, _} = ConfigDB.update_or_create(%{group: group, key: key, value: value})
 
       shell_info("Settings for key #{key} migrated.")
     end)
@@ -83,7 +83,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp migrate_from_db(opts) do
     if Pleroma.Config.get([:configurable_from_database]) do
-      env = opts[:env] || "prod"
+      env = opts[:env] || Pleroma.Config.get(:env)
 
       config_path =
         if Pleroma.Config.get(:release) do
@@ -105,6 +105,10 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       :ok = File.close(file)
       System.cmd("mix", ["format", config_path])
+
+      shell_info(
+        "Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs"
+      )
     else
       migration_error()
     end
@@ -112,7 +116,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp migration_error do
     shell_error(
-      "Migration is not allowed in config. You can change this behavior by setting `configurable_from_database` to true."
+      "Migration is not allowed in config. You can change this behavior by setting `config :pleroma, configurable_from_database: true`"
     )
   end
 
@@ -131,12 +135,9 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp write(config, file) do
-    value =
-      config.value
-      |> ConfigDB.from_binary()
-      |> inspect(limit: :infinity)
+    value = inspect(config.value, limit: :infinity)
 
-    IO.write(file, "config #{config.group}, #{config.key}, #{value}\r\n\r\n")
+    IO.write(file, "config #{inspect(config.group)}, #{inspect(config.key)}, #{value}\r\n\r\n")
 
     config
   end

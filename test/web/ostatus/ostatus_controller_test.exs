@@ -7,31 +7,77 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
+
+  require Pleroma.Constants
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
 
-  clear_config_all([:instance, :federating]) do
-    Pleroma.Config.put([:instance, :federating], true)
+  setup do: clear_config([:instance, :federating], true)
+
+  describe "Mastodon compatibility routes" do
+    setup %{conn: conn} do
+      conn = put_req_header(conn, "accept", "text/html")
+
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      {:ok, activity, _} =
+        %{
+          "id" => object.data["id"] <> "/activity",
+          "type" => "Create",
+          "object" => object.data["id"],
+          "actor" => object.data["actor"],
+          "to" => object.data["to"]
+        }
+        |> ActivityPub.persist(local: true)
+
+      %{conn: conn, activity: activity}
+    end
+
+    test "redirects to /notice/:id for html format", %{conn: conn, activity: activity} do
+      conn = get(conn, "/users/raymoo/statuses/999999999")
+      assert redirected_to(conn) == "/notice/#{activity.id}"
+    end
+
+    test "redirects to /notice/:id for html format for activity", %{
+      conn: conn,
+      activity: activity
+    } do
+      conn = get(conn, "/users/raymoo/statuses/999999999/activity")
+      assert redirected_to(conn) == "/notice/#{activity.id}"
+    end
   end
 
-  describe "GET object/2" do
+  # Note: see ActivityPubControllerTest for JSON format tests
+  describe "GET /objects/:uuid (text/html)" do
+    setup %{conn: conn} do
+      conn = put_req_header(conn, "accept", "text/html")
+      %{conn: conn}
+    end
+
     test "redirects to /notice/id for html format", %{conn: conn} do
       note_activity = insert(:note_activity)
       object = Object.normalize(note_activity)
       [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
       url = "/objects/#{uuid}"
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get(url)
-
+      conn = get(conn, url)
       assert redirected_to(conn) == "/notice/#{note_activity.id}"
     end
 
@@ -45,23 +91,25 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> response(404)
     end
 
-    test "404s on nonexisting objects", %{conn: conn} do
+    test "404s on non-existing objects", %{conn: conn} do
       conn
       |> get("/objects/123")
       |> response(404)
     end
   end
 
-  describe "GET activity/2" do
+  # Note: see ActivityPubControllerTest for JSON format tests
+  describe "GET /activities/:uuid (text/html)" do
+    setup %{conn: conn} do
+      conn = put_req_header(conn, "accept", "text/html")
+      %{conn: conn}
+    end
+
     test "redirects to /notice/id for html format", %{conn: conn} do
       note_activity = insert(:note_activity)
       [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/activities/#{uuid}")
-
+      conn = get(conn, "/activities/#{uuid}")
       assert redirected_to(conn) == "/notice/#{note_activity.id}"
     end
 
@@ -78,19 +126,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       conn
       |> get("/activities/123")
       |> response(404)
-    end
-
-    test "gets an activity in AS2 format", %{conn: conn} do
-      note_activity = insert(:note_activity)
-      [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
-      url = "/activities/#{uuid}"
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/activity+json")
-        |> get(url)
-
-      assert json_response(conn, 200)
     end
   end
 
@@ -146,7 +181,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
       user = insert(:user)
 
-      {:ok, like_activity, _} = CommonAPI.favorite(note_activity.id, user)
+      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
 
       assert like_activity.data["type"] == "Like"
 
@@ -170,7 +205,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       assert response(conn, 404)
     end
 
-    test "404s a nonexisting notice", %{conn: conn} do
+    test "404s a non-existing notice", %{conn: conn} do
       url = "/notice/123"
 
       conn =
@@ -179,10 +214,21 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
       assert response(conn, 404)
     end
+
+    test "it requires authentication if instance is NOT federating", %{
+      conn: conn
+    } do
+      user = insert(:user)
+      note_activity = insert(:note_activity)
+
+      conn = put_req_header(conn, "accept", "text/html")
+
+      ensure_federating_or_authenticated(conn, "/notice/#{note_activity.id}", user)
+    end
   end
 
   describe "GET /notice/:id/embed_player" do
-    test "render embed player", %{conn: conn} do
+    setup do
       note_activity = insert(:note_activity)
       object = Pleroma.Object.normalize(note_activity)
 
@@ -204,9 +250,11 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> Ecto.Changeset.change(data: object_data)
       |> Pleroma.Repo.update()
 
-      conn =
-        conn
-        |> get("/notice/#{note_activity.id}/embed_player")
+      %{note_activity: note_activity}
+    end
+
+    test "renders embed player", %{conn: conn, note_activity: note_activity} do
+      conn = get(conn, "/notice/#{note_activity.id}/embed_player")
 
       assert Plug.Conn.get_resp_header(conn, "x-frame-options") == ["ALLOW"]
 
@@ -272,9 +320,19 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> Ecto.Changeset.change(data: object_data)
       |> Pleroma.Repo.update()
 
-      assert conn
-             |> get("/notice/#{note_activity.id}/embed_player")
-             |> response(404)
+      conn
+      |> get("/notice/#{note_activity.id}/embed_player")
+      |> response(404)
+    end
+
+    test "it requires authentication if instance is NOT federating", %{
+      conn: conn,
+      note_activity: note_activity
+    } do
+      user = insert(:user)
+      conn = put_req_header(conn, "accept", "text/html")
+
+      ensure_federating_or_authenticated(conn, "/notice/#{note_activity.id}/embed_player", user)
     end
   end
 end
