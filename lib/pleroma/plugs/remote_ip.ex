@@ -7,6 +7,8 @@ defmodule Pleroma.Plugs.RemoteIp do
   This is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
   """
 
+  import Plug.Conn
+
   @behaviour Plug
 
   @headers ~w[
@@ -26,11 +28,12 @@ defmodule Pleroma.Plugs.RemoteIp do
 
   def init(_), do: nil
 
-  def call(conn, _) do
+  def call(%{remote_ip: original_remote_ip} = conn, _) do
     config = Pleroma.Config.get(__MODULE__, [])
 
     if Keyword.get(config, :enabled, false) do
-      RemoteIp.call(conn, remote_ip_opts(config))
+      %{remote_ip: new_remote_ip} = conn = RemoteIp.call(conn, remote_ip_opts(config))
+      assign(conn, :remote_ip_found, original_remote_ip != new_remote_ip)
     else
       conn
     end
