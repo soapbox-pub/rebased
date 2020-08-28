@@ -14,8 +14,7 @@ defmodule Pleroma.Helpers.MediaHelper do
          {:ok, args} <- prepare_image_resize_args(options),
          url = Pleroma.Web.MediaProxy.url(url),
          {:ok, env} <- Pleroma.HTTP.get(url),
-         {:ok, fifo_path} <- mkfifo()
-    do
+         {:ok, fifo_path} <- mkfifo() do
       args = List.flatten([fifo_path, args])
       run_fifo(fifo_path, env, executable, args)
     else
@@ -27,12 +26,17 @@ defmodule Pleroma.Helpers.MediaHelper do
   defp prepare_image_resize_args(%{max_width: max_width, max_height: max_height} = options) do
     quality = options[:quality] || 85
     resize = Enum.join([max_width, "x", max_height, ">"])
+
     args = [
-    "-interlace", "Plane",
-    "-resize", resize,
-    "-quality", to_string(quality),
-    "jpg:-"
+      "-interlace",
+      "Plane",
+      "-resize",
+      resize,
+      "-quality",
+      to_string(quality),
+      "jpg:-"
     ]
+
     {:ok, args}
   end
 
@@ -45,11 +49,15 @@ defmodule Pleroma.Helpers.MediaHelper do
          {:ok, fifo_path} <- mkfifo(),
          args = [
            "-y",
-           "-i", fifo_path,
-           "-vframes", "1",
-           "-f", "mjpeg",
-           "-loglevel", "error",
-           "pipe:"
+           "-i",
+           fifo_path,
+           "-vframes",
+           "1",
+           "-f",
+           "mjpeg",
+           "-loglevel",
+           "error",
+           "-"
          ] do
       run_fifo(fifo_path, env, executable, args)
     else
@@ -59,9 +67,18 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   defp run_fifo(fifo_path, env, executable, args) do
-    pid = Port.open({:spawn_executable, executable}, [:use_stdio, :stream, :exit_status, :binary, args: args])
+    pid =
+      Port.open({:spawn_executable, executable}, [
+        :use_stdio,
+        :stream,
+        :exit_status,
+        :binary,
+        args: args
+      ])
+
     fifo = Port.open(to_charlist(fifo_path), [:eof, :binary, :stream, :out])
-    true = Port.command(fifo, env.body)
+    fix = Pleroma.Helpers.QtFastStart.fix(env.body)
+    true = Port.command(fifo, fix)
     :erlang.port_close(fifo)
     loop_recv(pid)
   after
@@ -70,10 +87,12 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   defp mkfifo() do
     path = "#{@tmp_base}#{to_charlist(:erlang.phash2(self()))}"
+
     case System.cmd("mkfifo", [path]) do
       {_, 0} ->
         spawn(fifo_guard(path))
         {:ok, path}
+
       {_, err} ->
         {:error, {:fifo_failed, err}}
     end
@@ -81,8 +100,10 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   defp fifo_guard(path) do
     pid = self()
-    fn() ->
+
+    fn ->
       ref = Process.monitor(pid)
+
       receive do
         {:DOWN, ^ref, :process, ^pid, _} ->
           File.rm(path)
@@ -98,14 +119,16 @@ defmodule Pleroma.Helpers.MediaHelper do
     receive do
       {^pid, {:data, data}} ->
         loop_recv(pid, acc <> data)
+
       {^pid, {:exit_status, 0}} ->
         {:ok, acc}
+
       {^pid, {:exit_status, status}} ->
         {:error, status}
-     after
-       5000 ->
-         :erlang.port_close(pid)
-         {:error, :timeout}
+    after
+      5000 ->
+        :erlang.port_close(pid)
+        {:error, :timeout}
     end
   end
 end
