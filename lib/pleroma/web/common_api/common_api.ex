@@ -452,7 +452,8 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def add_mute(user, activity) do
-    with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]) do
+    with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),
+         _ <- Pleroma.Notification.mark_as_read(user, activity) do
       {:ok, activity}
     else
       {:error, _} -> {:error, dgettext("errors", "conversation is already muted")}
