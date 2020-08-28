@@ -182,11 +182,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     with %Pleroma.List{title: _title, following: following} <- Pleroma.List.get(id, user) do
       params =
         params
-        |> Map.new(fn {key, value} -> {to_string(key), value} end)
-        |> Map.put("type", "Create")
-        |> Map.put("blocking_user", user)
-        |> Map.put("user", user)
-        |> Map.put("muting_user", user)
+        |> Map.put(:type, "Create")
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:user, user)
+        |> Map.put(:muting_user, user)
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).
