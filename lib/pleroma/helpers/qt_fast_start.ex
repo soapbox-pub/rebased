@@ -13,10 +13,11 @@ defmodule Pleroma.Helpers.QtFastStart do
   #               ISO/IEC 14496-12:2015, ISO/IEC 15444-12:2015
   #               Paracetamol
 
-  def fix(binary = <<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70, _::binary>>) do
-    index = fix(binary, binary, 0, [])
+  def fix(binary = <<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70, _::bits>>) do
+    index = fix(binary, 0, nil, nil, [])
 
     case index do
+      :abort -> binary
       [{"ftyp", _, _, _, _}, {"mdat", _, _, _, _} | _] -> faststart(index)
       [{"ftyp", _, _, _, _}, {"free", _, _, _, _}, {"mdat", _, _, _, _} | _] -> faststart(index)
       _ -> binary
@@ -27,37 +28,32 @@ defmodule Pleroma.Helpers.QtFastStart do
     binary
   end
 
-  defp fix(<<>>, _bin, _pos, acc) do
-    :lists.reverse(acc)
+  # MOOV have been seen before MDAT- abort
+  defp fix(<<_::bits>>, _, true, false, _) do
+    :abort
   end
 
   defp fix(
-         <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4), rest::binary>>,
-         bin,
+         <<size::integer-big-size(32), fourcc::bits-size(32), rest::bits>>,
          pos,
+         got_moov,
+         got_mdat,
          acc
        ) do
-    if fourcc == "mdat" && size == 0 do
-      # mdat with 0 size means "seek to the end" -- also, in that case the file is probably OK.
-      acc = [
-        {fourcc, pos, byte_size(bin) - pos, byte_size(bin) - pos,
-         <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4), rest::binary>>}
-        | acc
-      ]
+    full_size = (size - 8) * 8
+    <<data::bits-size(full_size), rest::bits>> = rest
 
-      fix(<<>>, bin, byte_size(bin), acc)
-    else
-      full_size = size - 8
-      <<data::binary-size(full_size), rest::binary>> = rest
+    acc = [
+      {fourcc, pos, pos + size, size,
+       <<size::integer-big-size(32), fourcc::bits-size(32), data::bits>>}
+      | acc
+    ]
 
-      acc = [
-        {fourcc, pos, pos + size, size,
-         <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4), data::binary>>}
-        | acc
-      ]
+    fix(rest, pos + size, got_moov || fourcc == "moov", got_mdat || fourcc == "mdat", acc)
+  end
 
-      fix(rest, bin, pos + size, acc)
-    end
+  defp fix(<<>>, _pos, _, _, acc) do
+    :lists.reverse(acc)
   end
 
   defp faststart(index) do
@@ -72,60 +68,63 @@ defmodule Pleroma.Helpers.QtFastStart do
 
     {{_moov, _, _, moov_size, moov}, index} = List.keytake(index, "moov", 0)
     offset = -free_size + moov_size
-    rest = for {_, _, _, _, data} <- index, do: data, into: <<>>
-    <<moov_head::binary-size(8), moov_data::binary>> = moov
-    new_moov = fix_moov(moov_data, offset)
-    <<ftyp::binary, moov_head::binary, new_moov::binary, rest::binary>>
+    rest = for {_, _, _, _, data} <- index, do: data, into: []
+    <<moov_head::bits-size(64), moov_data::bits>> = moov
+    [ftyp, moov_head, fix_moov(moov_data, offset, []), rest]
   end
-
-  defp fix_moov(moov, offset) do
-    fix_moov(moov, offset, <<>>)
-  end
-
-  defp fix_moov(<<>>, _, acc), do: acc
 
   defp fix_moov(
-         <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4), rest::binary>>,
+         <<size::integer-big-size(32), fourcc::bits-size(32), rest::bits>>,
          offset,
          acc
        ) do
-    full_size = size - 8
-    <<data::binary-size(full_size), rest::binary>> = rest
+    full_size = (size - 8) * 8
+    <<data::bits-size(full_size), rest::bits>> = rest
 
     data =
       cond do
         fourcc in ["trak", "mdia", "minf", "stbl"] ->
           # Theses contains sto or co64 part
-          <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4),
-            fix_moov(data, offset, <<>>)::binary>>
+          [<<size::integer-big-size(32), fourcc::bits-size(32)>>, fix_moov(data, offset, [])]
 
         fourcc in ["stco", "co64"] ->
           # fix the damn thing
-          <<version::integer-big-size(4)-unit(8), count::integer-big-size(4)-unit(8),
-            rest::binary>> = data
+          <<version::integer-big-size(32), count::integer-big-size(32), rest::bits>> = data
 
           entry_size =
             case fourcc do
-              "stco" -> 4
-              "co64" -> 8
+              "stco" -> 32
+              "co64" -> 64
             end
 
-          {_, result} =
-            Enum.reduce(1..count, {rest, <<>>}, fn _,
-                                                   {<<pos::integer-big-size(entry_size)-unit(8),
-                                                      rest::binary>>, acc} ->
-              {rest, <<acc::binary, pos + offset::integer-big-size(entry_size)-unit(8)>>}
-            end)
-
-          <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4),
-            version::integer-big-size(4)-unit(8), count::integer-big-size(4)-unit(8),
-            result::binary>>
+          [
+            <<size::integer-big-size(32), fourcc::bits-size(32), version::integer-big-size(32),
+              count::integer-big-size(32)>>,
+            rewrite_entries(entry_size, offset, rest, [])
+          ]
 
         true ->
-          <<size::integer-big-size(4)-unit(8), fourcc::binary-size(4), data::binary>>
+          [<<size::integer-big-size(32), fourcc::bits-size(32)>>, data]
       end
 
-    acc = <<acc::binary, data::binary>>
+    acc = [acc | data]
     fix_moov(rest, offset, acc)
   end
+
+  defp fix_moov(<<>>, _, acc), do: acc
+
+  for size <- [32, 64] do
+    defp rewrite_entries(
+           unquote(size),
+           offset,
+           <<pos::integer-big-size(unquote(size)), rest::bits>>,
+           acc
+         ) do
+      rewrite_entries(unquote(size), offset, rest, [
+        acc | <<pos + offset::integer-big-size(unquote(size))>>
+      ])
+    end
+  end
+
+  defp rewrite_entries(_, _, <<>>, acc), do: acc
 end
