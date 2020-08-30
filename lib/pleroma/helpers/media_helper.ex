@@ -23,6 +23,23 @@ defmodule Pleroma.Helpers.MediaHelper do
     end
   end
 
+  defp prepare_image_resize_args(
+         %{max_width: max_width, max_height: max_height, format: "png"} = options
+       ) do
+    quality = options[:quality] || 85
+    resize = Enum.join([max_width, "x", max_height, ">"])
+
+    args = [
+      "-resize",
+      resize,
+      "-quality",
+      to_string(quality),
+      "png:-"
+    ]
+
+    {:ok, args}
+  end
+
   defp prepare_image_resize_args(%{max_width: max_width, max_height: max_height} = options) do
     quality = options[:quality] || 85
     resize = Enum.join([max_width, "x", max_height, ">"])
