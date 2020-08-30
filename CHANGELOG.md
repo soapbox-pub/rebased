@@ -41,6 +41,12 @@ switched to a new configuration mechanism, however it was not officially removed
 ### Added
 - Rich media failure tracking (along with `:failure_backoff` option).
 
+<details>
+  <summary>Admin API Changes</summary>
+
+- Add `PATCH /api/pleroma/admin/instance_document/:document_name` to modify the Terms of Service and Instance Panel HTML pages via Admin API
+</details>
+
 ### Fixed
 - Default HTTP adapter not respecting pool setting, leading to possible OOM.
 - Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
