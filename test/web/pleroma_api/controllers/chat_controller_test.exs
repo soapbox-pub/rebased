@@ -267,6 +267,21 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   describe "GET /api/v1/pleroma/chats" do
     setup do: oauth_access(["read:chats"])
 
+    test "it does not return chats with deleted users", %{conn: conn, user: user} do
+      recipient = insert(:user)
+      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+
+      Pleroma.Repo.delete(recipient)
+      User.invalidate_cache(recipient)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 0
+    end
+
     test "it does not return chats with users you blocked", %{conn: conn, user: user} do
       recipient = insert(:user)
 
