@@ -13,7 +13,7 @@ defmodule Pleroma.Helpers.QtFastStart do
   #               ISO/IEC 14496-12:2015, ISO/IEC 15444-12:2015
   #               Paracetamol
 
-  def fix(binary = <<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70, _::bits>>) do
+  def fix(<<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70, _::bits>> = binary) do
     index = fix(binary, 0, nil, nil, [])
 
     case index do
@@ -59,7 +59,8 @@ defmodule Pleroma.Helpers.QtFastStart do
   defp faststart(index) do
     {{_ftyp, _, _, _, ftyp}, index} = List.keytake(index, "ftyp", 0)
 
-    # Skip re-writing the free fourcc as it's kind of useless. Why stream useless bytes when you can do without?
+    # Skip re-writing the free fourcc as it's kind of useless.
+    # Why stream useless bytes when you can do without?
     {free_size, index} =
       case List.keytake(index, "free", 0) do
         {{_, _, _, size, _}, index} -> {size, index}

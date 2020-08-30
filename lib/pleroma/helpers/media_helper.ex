@@ -102,7 +102,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     File.rm(fifo_path)
   end
 
-  defp mkfifo() do
+  defp mkfifo do
     path = "#{@tmp_base}#{to_charlist(:erlang.phash2(self()))}"
 
     case System.cmd("mkfifo", [path]) do
