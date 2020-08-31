@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## unreleased-patch - ???
 
+### Security
+- Fix metadata leak for accounts and statuses on private instances
+
 ### Added
 
 - Rich media failure tracking (along with `:failure_backoff` option)
