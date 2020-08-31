@@ -11,13 +11,17 @@ defmodule Pleroma.Web.Metadata.Providers.Feed do
 
   @impl Provider
   def build_tags(%{user: user}) do
-    [
-      {:link,
-       [
-         rel: "alternate",
-         type: "application/atom+xml",
-         href: Helpers.user_feed_path(Endpoint, :feed, user.nickname) <> ".atom"
-       ], []}
-    ]
+    if Pleroma.Config.get!([:instance, :public]) do
+      [
+        {:link,
+         [
+           rel: "alternate",
+           type: "application/atom+xml",
+           href: Helpers.user_feed_path(Endpoint, :feed, user.nickname) <> ".atom"
+         ], []}
+      ]
+    else
+      []
+    end
   end
 end

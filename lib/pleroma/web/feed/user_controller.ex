@@ -37,7 +37,15 @@ defmodule Pleroma.Web.Feed.UserController do
     end
   end
 
-  def feed(conn, %{"nickname" => nickname} = params) do
+  def feed(conn, params) do
+    if Pleroma.Config.get!([:instance, :public]) do
+      render_feed(conn, params)
+    else
+      errors(conn, {:error, :not_found})
+    end
+  end
+
+  def render_feed(conn, %{"nickname" => nickname} = params) do
     format = get_format(conn)
 
     format =

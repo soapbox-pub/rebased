@@ -9,7 +9,15 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Feed.FeedView
 
-  def feed(conn, %{"tag" => raw_tag} = params) do
+  def feed(conn, params) do
+    if Pleroma.Config.get!([:instance, :public]) do
+      render_feed(conn, params)
+    else
+      render_error(conn, :not_found, "Not found")
+    end
+  end
+
+  def render_feed(conn, %{"tag" => raw_tag} = params) do
     {format, tag} = parse_tag(raw_tag)
 
     activities =

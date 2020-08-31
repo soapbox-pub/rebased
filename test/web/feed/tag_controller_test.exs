@@ -181,4 +181,17 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              'yeah #PleromaArt'
            ]
   end
+
+  describe "private instance" do
+    setup do: clear_config([:instance, :public])
+
+    test "returns 404 for tags feed", %{conn: conn} do
+      Config.put([:instance, :public], false)
+
+      conn
+      |> put_req_header("accept", "application/rss+xml")
+      |> get(tag_feed_path(conn, :feed, "pleromaart"))
+      |> response(404)
+    end
+  end
 end

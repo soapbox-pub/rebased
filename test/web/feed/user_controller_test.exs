@@ -246,4 +246,20 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
       assert response == ~S({"error":"Not found"})
     end
   end
+
+  describe "private instance" do
+    setup do: clear_config([:instance, :public])
+
+    test "returns 404 for user feed", %{conn: conn} do
+      Config.put([:instance, :public], false)
+      user = insert(:user)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      assert conn
+             |> put_req_header("accept", "application/atom+xml")
+             |> get(user_feed_path(conn, :feed, user.nickname))
+             |> response(404)
+    end
+  end
 end
