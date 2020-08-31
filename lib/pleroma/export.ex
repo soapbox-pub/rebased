@@ -22,7 +22,25 @@ defmodule Pleroma.Export do
          :ok <- bookmarks(path, user),
          {:ok, zip_path} <- :zip.create('#{path}.zip', @files, cwd: path),
          {:ok, _} <- File.rm_rf(path) do
-      {:ok, zip_path}
+      {:ok, :binary.list_to_bin(zip_path)}
+    end
+  end
+
+  def upload(zip_path) do
+    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+    file_name = zip_path |> String.split("/") |> List.last()
+    id = Ecto.UUID.generate()
+
+    upload = %Pleroma.Upload{
+      id: id,
+      name: file_name,
+      tempfile: zip_path,
+      content_type: "application/zip",
+      path: id <> "/" <> file_name
+    }
+
+    with :ok <- uploader.put_file(upload), :ok <- File.rm(zip_path) do
+      {:ok, upload}
     end
   end
 

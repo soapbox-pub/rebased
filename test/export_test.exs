@@ -28,7 +28,7 @@ defmodule Pleroma.ExportTest do
     Bookmark.create(user.id, status3.id)
 
     assert {:ok, path} = Pleroma.Export.run(user)
-    assert {:ok, zipfile} = :zip.zip_open(path, [:memory])
+    assert {:ok, zipfile} = :zip.zip_open(String.to_charlist(path), [:memory])
     assert {:ok, {'actor.json', json}} = :zip.zip_get('actor.json', zipfile)
 
     assert %{
@@ -107,5 +107,20 @@ defmodule Pleroma.ExportTest do
 
     :zip.zip_close(zipfile)
     File.rm!(path)
+  end
+
+  test "it uploads an exported backup archive" do
+    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+    {:ok, status1} = CommonAPI.post(user, %{status: "status1"})
+    {:ok, status2} = CommonAPI.post(user, %{status: "status2"})
+    {:ok, status3} = CommonAPI.post(user, %{status: "status3"})
+    CommonAPI.favorite(user, status1.id)
+    CommonAPI.favorite(user, status2.id)
+    Bookmark.create(user.id, status2.id)
+    Bookmark.create(user.id, status3.id)
+
+    assert {:ok, path} = Pleroma.Export.run(user)
+    assert {:ok, %Pleroma.Upload{}} = Pleroma.Export.upload(path)
   end
 end
