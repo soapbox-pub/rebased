@@ -454,8 +454,7 @@ config :pleroma, :gopher,
 config :pleroma, Pleroma.Web.Metadata,
   providers: [
     Pleroma.Web.Metadata.Providers.OpenGraph,
-    Pleroma.Web.Metadata.Providers.TwitterCard,
-    Pleroma.Web.Metadata.Providers.Feed
+    Pleroma.Web.Metadata.Providers.TwitterCard
   ],
   unfurl_nsfw: false
 
