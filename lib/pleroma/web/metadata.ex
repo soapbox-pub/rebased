@@ -7,7 +7,8 @@ defmodule Pleroma.Web.Metadata do
 
   def build_tags(params) do
     providers = [
-      Pleroma.Web.Metadata.Providers.RestrictIndexing
+      Pleroma.Web.Metadata.Providers.RestrictIndexing,
+      Pleroma.Web.Metadata.Providers.RelMe,
       | Pleroma.Config.get([__MODULE__, :providers], [])
     ]
 
