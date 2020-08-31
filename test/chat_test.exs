@@ -26,6 +26,28 @@ defmodule Pleroma.ChatTest do
       assert chat.id
     end
 
+    test "deleting the user deletes the chat" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+
+      Repo.delete(user)
+
+      refute Chat.get_by_id(chat.id)
+    end
+
+    test "deleting the recipient deletes the chat" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+
+      Repo.delete(other_user)
+
+      refute Chat.get_by_id(chat.id)
+    end
+
     test "it returns and bumps a chat for a user and recipient if it already exists" do
       user = insert(:user)
       other_user = insert(:user)
