@@ -649,8 +649,8 @@ defmodule Pleroma.Notification do
     |> Repo.one()
   end
 
-  @spec mark_as_read(User.t(), Activity.t()) :: {integer(), nil | [term()]}
-  def mark_as_read(%User{id: id}, %Activity{data: %{"context" => context}}) do
+  @spec mark_context_as_read(User.t(), String.t()) :: {integer(), nil | [term()]}
+  def mark_context_as_read(%User{id: id}, context) do
     from(
       n in Notification,
       join: a in assoc(n, :activity),
