@@ -39,7 +39,8 @@ defmodule Pleroma.Export do
       path: id <> "/" <> file_name
     }
 
-    with :ok <- uploader.put_file(upload), :ok <- File.rm(zip_path) do
+    with {:ok, _} <- Pleroma.Uploaders.Uploader.put_file(uploader, upload),
+         :ok <- File.rm(zip_path) do
       {:ok, upload}
     end
   end

@@ -5,6 +5,7 @@
 defmodule Pleroma.ExportTest do
   use Pleroma.DataCase
   import Pleroma.Factory
+  import Mock
 
   alias Pleroma.Bookmark
   alias Pleroma.Web.CommonAPI
@@ -109,18 +110,42 @@ defmodule Pleroma.ExportTest do
     File.rm!(path)
   end
 
-  test "it uploads an exported backup archive" do
-    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+  describe "it uploads an exported backup archive" do
+    setup do
+      clear_config(Pleroma.Uploaders.S3,
+        bucket: "test_bucket",
+        public_endpoint: "https://s3.amazonaws.com"
+      )
 
-    {:ok, status1} = CommonAPI.post(user, %{status: "status1"})
-    {:ok, status2} = CommonAPI.post(user, %{status: "status2"})
-    {:ok, status3} = CommonAPI.post(user, %{status: "status3"})
-    CommonAPI.favorite(user, status1.id)
-    CommonAPI.favorite(user, status2.id)
-    Bookmark.create(user.id, status2.id)
-    Bookmark.create(user.id, status3.id)
+      clear_config([Pleroma.Upload, :uploader])
 
-    assert {:ok, path} = Pleroma.Export.run(user)
-    assert {:ok, %Pleroma.Upload{}} = Pleroma.Export.upload(path)
+      user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+      {:ok, status1} = CommonAPI.post(user, %{status: "status1"})
+      {:ok, status2} = CommonAPI.post(user, %{status: "status2"})
+      {:ok, status3} = CommonAPI.post(user, %{status: "status3"})
+      CommonAPI.favorite(user, status1.id)
+      CommonAPI.favorite(user, status2.id)
+      Bookmark.create(user.id, status2.id)
+      Bookmark.create(user.id, status3.id)
+
+      assert {:ok, path} = Pleroma.Export.run(user)
+
+      [path: path]
+    end
+
+    test "S3", %{path: path} do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
+
+      with_mock ExAws, request: fn _ -> {:ok, :ok} end do
+        assert {:ok, %Pleroma.Upload{}} = Pleroma.Export.upload(path)
+      end
+    end
+
+    test "Local", %{path: path} do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+
+      assert {:ok, %Pleroma.Upload{}} = Pleroma.Export.upload(path)
+    end
   end
 end
