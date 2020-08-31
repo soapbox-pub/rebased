@@ -107,8 +107,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
              }
            ) do
       conn
-      |> put_resp_header("content-type", "image/png")
-      |> put_resp_header("content-disposition", "inline; filename=\"preview.png\"")
+      |> put_preview_response_headers()
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
@@ -126,8 +125,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
              %{max_width: thumbnail_max_width, max_height: thumbnail_max_height, quality: quality}
            ) do
       conn
-      |> put_resp_header("content-type", "image/jpeg")
-      |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")
+      |> put_preview_response_headers()
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
@@ -139,13 +137,19 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     with {:ok, thumbnail_binary} <-
            MediaHelper.video_framegrab(url) do
       conn
-      |> put_resp_header("content-type", "image/jpeg")
-      |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")
+      |> put_preview_response_headers()
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
         send_resp(conn, :failed_dependency, "Can't handle preview.")
     end
+  end
+
+  defp put_preview_response_headers(conn) do
+    conn
+    |> put_resp_header("content-type", "image/jpeg")
+    |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")
+    |> put_resp_header("cache-control", "max-age=0, private, must-revalidate")
   end
 
   defp thumbnail_max_dimensions(params) do
