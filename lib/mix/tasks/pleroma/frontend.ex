@@ -69,7 +69,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
     fe_label = "#{frontend} (#{ref})"
 
-    tmp_dir = Path.join(dest, "tmp")
+    tmp_dir = Path.join([instance_static_dir, "frontends", "tmp"])
 
     with {_, :ok} <-
            {:download_or_unzip, download_or_unzip(frontend_info, tmp_dir, options[:file])},
@@ -133,6 +133,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
   defp install_frontend(frontend_info, source, dest) do
     from = frontend_info["build_dir"] || "dist"
+    File.rm_rf!(dest)
     File.mkdir_p!(dest)
     File.cp_r!(Path.join([source, from]), dest)
     :ok
