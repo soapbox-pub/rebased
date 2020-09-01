@@ -109,22 +109,22 @@ defmodule Pleroma.UserSearchTest do
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
     end
 
-    test "finds followers of user by partial name" do
-      u1 = insert(:user)
-      u2 = insert(:user, %{name: "Jimi"})
-      follower_jimi = insert(:user, %{name: "Jimi Hendrix"})
-      follower_lizz = insert(:user, %{name: "Lizz Wright"})
-      friend = insert(:user, %{name: "Jimi"})
+    test "finds followings of user by partial name" do
+      lizz = insert(:user, %{name: "Lizz"})
+      jimi = insert(:user, %{name: "Jimi"})
+      following_lizz = insert(:user, %{name: "Jimi Hendrix"})
+      following_jimi = insert(:user, %{name: "Lizz Wright"})
+      follower_lizz = insert(:user, %{name: "Jimi"})
 
-      {:ok, follower_jimi} = User.follow(follower_jimi, u1)
-      {:ok, _follower_lizz} = User.follow(follower_lizz, u2)
-      {:ok, u1} = User.follow(u1, friend)
+      {:ok, lizz} = User.follow(lizz, following_lizz)
+      {:ok, _jimi} = User.follow(jimi, following_jimi)
+      {:ok, _follower_lizz} = User.follow(follower_lizz, lizz)
 
-      assert Enum.map(User.search("jimi", following: true, for_user: u1), & &1.id) == [
-               follower_jimi.id
+      assert Enum.map(User.search("jimi", following: true, for_user: lizz), & &1.id) == [
+               following_lizz.id
              ]
 
-      assert User.search("lizz", following: true, for_user: u1) == []
+      assert User.search("lizz", following: true, for_user: lizz) == []
     end
 
     test "find local and remote users for authenticated users" do
