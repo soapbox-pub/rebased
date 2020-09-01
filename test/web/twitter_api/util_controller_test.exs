@@ -594,7 +594,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user = User.get_by_id(user.id)
       assert user.deactivated == true
       assert user.name == nil
-      assert user.bio == nil
+      assert user.bio == ""
       assert user.password_hash == nil
     end
   end
