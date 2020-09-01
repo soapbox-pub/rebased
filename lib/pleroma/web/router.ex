@@ -214,6 +214,8 @@ defmodule Pleroma.Web.Router do
     get("/media_proxy_caches", MediaProxyCacheController, :index)
     post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
     post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
+
+    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
