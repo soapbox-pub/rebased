@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.RichMedia.ParserTest do
   use ExUnit.Case, async: true
 
+  alias Pleroma.Web.RichMedia.Parser
+
   setup do
     Tesla.Mock.mock(fn
       %{
@@ -48,23 +50,29 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
       %{method: :get, url: "http://example.com/empty"} ->
         %Tesla.Env{status: 200, body: "hello"}
+
+      %{method: :get, url: "http://example.com/malformed"} ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}
+
+      %{method: :get, url: "http://example.com/error"} ->
+        {:error, :overload}
     end)
 
     :ok
   end
 
   test "returns error when no metadata present" do
-    assert {:error, _} = Pleroma.Web.RichMedia.Parser.parse("http://example.com/empty")
+    assert {:error, _} = Parser.parse("http://example.com/empty")
   end
 
   test "doesn't just add a title" do
-    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/non-ogp") ==
+    assert Parser.parse("http://example.com/non-ogp") ==
              {:error,
               "Found metadata was invalid or incomplete: %{\"url\" => \"http://example.com/non-ogp\"}"}
   end
 
   test "parses ogp" do
-    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp") ==
+    assert Parser.parse("http://example.com/ogp") ==
              {:ok,
               %{
                 "image" => "http://ia.media-imdb.com/images/rock.jpg",
@@ -77,7 +85,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "falls back to <title> when ogp:title is missing" do
-    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp-missing-title") ==
+    assert Parser.parse("http://example.com/ogp-missing-title") ==
              {:ok,
               %{
                 "image" => "http://ia.media-imdb.com/images/rock.jpg",
@@ -90,7 +98,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "parses twitter card" do
-    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/twitter-card") ==
+    assert Parser.parse("http://example.com/twitter-card") ==
              {:ok,
               %{
                 "card" => "summary",
@@ -103,7 +111,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "parses OEmbed" do
-    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/oembed") ==
+    assert Parser.parse("http://example.com/oembed") ==
              {:ok,
               %{
                 "author_name" => "‮‭‬bees‬",
@@ -132,6 +140,10 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "rejects invalid OGP data" do
-    assert {:error, _} = Pleroma.Web.RichMedia.Parser.parse("http://example.com/malformed")
+    assert {:error, _} = Parser.parse("http://example.com/malformed")
+  end
+
+  test "returns error if getting page was not successful" do
+    assert {:error, :overload} = Parser.parse("http://example.com/error")
   end
 end
