@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.Feed.FeedView
 
   def feed(conn, params) do
-    if Pleroma.Config.get!([:instance, :public]) do
+    unless Pleroma.Config.restrict_unauthenticated_access?(:activities, :local) do
       render_feed(conn, params)
     else
       render_error(conn, :not_found, "Not found")

@@ -38,7 +38,7 @@ defmodule Pleroma.Web.Feed.UserController do
   end
 
   def feed(conn, params) do
-    if Pleroma.Config.get!([:instance, :public]) do
+    unless Pleroma.Config.restrict_unauthenticated_access?(:profiles, :local) do
       render_feed(conn, params)
     else
       errors(conn, {:error, :not_found})

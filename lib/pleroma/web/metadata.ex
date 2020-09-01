@@ -46,7 +46,7 @@ defmodule Pleroma.Web.Metadata do
   end
 
   defp activated_providers do
-    if Pleroma.Config.get!([:instance, :public]) do
+    unless Pleroma.Config.restrict_unauthenticated_access?(:activities, :local) do
       Pleroma.Config.get([__MODULE__, :providers], [])
     else
       []
