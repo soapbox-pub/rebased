@@ -39,6 +39,9 @@ defmodule Pleroma.Application do
     # every time the application is restarted, so we disable module
     # conflicts at runtime
     Code.compiler_options(ignore_module_conflict: true)
+    # Disable warnings_as_errors at runtime, it breaks Phoenix live reload
+    # due to protocol consolidation warnings
+    Code.compiler_options(warnings_as_errors: false)
     Pleroma.Telemetry.Logger.attach()
     Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
