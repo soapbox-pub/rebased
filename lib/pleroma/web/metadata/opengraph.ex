@@ -61,7 +61,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
   @impl Provider
   def build_tags(%{user: user}) do
-    with truncated_bio = Utils.scrub_html_and_truncate(user.bio || "") do
+    with truncated_bio = Utils.scrub_html_and_truncate(user.bio) do
       [
         {:meta,
          [
