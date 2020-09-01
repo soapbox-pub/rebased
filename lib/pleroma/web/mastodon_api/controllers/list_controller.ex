@@ -86,6 +86,19 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
     json(conn, %{})
   end
 
+  def remove_from_list(
+        %{assigns: %{list: list}, params: %{account_ids: account_ids}} = conn,
+        _
+      ) do
+    Enum.each(account_ids, fn account_id ->
+      with %User{} = followed <- User.get_cached_by_id(account_id) do
+        Pleroma.List.unfollow(list, followed)
+      end
+    end)
+
+    json(conn, %{})
+  end
+
   defp list_by_id_and_user(%{assigns: %{user: user}, params: %{id: id}} = conn, _) do
     case Pleroma.List.get(id, user) do
       %Pleroma.List{} = list -> assign(conn, :list, list)
