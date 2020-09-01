@@ -67,7 +67,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  # TODO: find a workaround so avatar_static and banner_static can work.
+  # TODO: find a workaround so avatar_static and header_static can work.
   # Those only permit GIFs for animation, so we have to permit a way to
   # allow those to get real static variants.
   defp handle_preview("image/gif" = _content_type, conn, url) do
@@ -107,7 +107,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
              }
            ) do
       conn
-      |> put_preview_response_headers()
+      |> put_preview_response_headers("image/png", "preview.png")
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
@@ -145,10 +145,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  defp put_preview_response_headers(conn) do
+  defp put_preview_response_headers(conn, content_type \\ "image/jpeg", filename \\ "preview.jpg") do
     conn
-    |> put_resp_header("content-type", "image/jpeg")
-    |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")
+    |> put_resp_header("content-type", content_type)
+    |> put_resp_header("content-disposition", "inline; filename=\"#{filename}\"")
     |> put_resp_header("cache-control", "max-age=0, private, must-revalidate")
   end
 
