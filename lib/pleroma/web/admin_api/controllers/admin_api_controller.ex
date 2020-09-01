@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
 
+  import Ecto.Query
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Pleroma.Config
@@ -21,6 +22,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.ModerationLogView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.PleromaAPI
   alias Pleroma.Web.Router
 
   require Logger
@@ -66,6 +68,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
     when action in [:list_user_statuses, :list_instance_statuses]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:chats"], admin: true}
+    when action in [:list_user_chats]
   )
 
   plug(
@@ -251,6 +259,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       conn
       |> put_view(AdminAPI.StatusView)
       |> render("index.json", %{activities: activities, as: :activity})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def list_user_chats(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = _params) do
+    with %User{id: user_id} <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
+      chats =
+        from(c in Pleroma.Chat,
+          where: c.user_id == ^user_id,
+          order_by: [desc: c.updated_at],
+          inner_join: u in User,
+          on: u.ap_id == c.recipient
+        )
+        |> Pleroma.Repo.all()
+
+      conn
+      |> put_view(PleromaAPI.ChatView)
+      |> render("index.json", chats: chats)
     else
       _ -> {:error, :not_found}
     end

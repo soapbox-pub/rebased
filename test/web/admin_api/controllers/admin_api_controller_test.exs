@@ -1510,6 +1510,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "GET /api/pleroma/admin/users/:nickname/chats" do
+    setup do
+      user = insert(:user)
+
+      insert(:chat, user: user)
+      insert(:chat, user: user)
+      insert(:chat, user: user)
+
+      %{user: user}
+    end
+
+    test "renders user's statuses", %{conn: conn, user: user} do
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
+
+      assert json_response(conn, 200) |> length() == 3
+    end
+  end
+
   describe "GET /api/pleroma/admin/moderation_log" do
     setup do
       moderator = insert(:user, is_moderator: true)

@@ -178,6 +178,7 @@ defmodule Pleroma.Web.Router do
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
+    get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
     get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
 
@@ -215,6 +216,8 @@ defmodule Pleroma.Web.Router do
     post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
     post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
 
+    # get("/chats/:id", ChatController, :show)
+    # get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
