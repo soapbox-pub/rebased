@@ -129,7 +129,6 @@ defmodule Pleroma.User do
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
-    field(:unread_conversation_count, :integer, default: 0)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:email_notifications, :map, default: %{"digest" => false})
     field(:mascot, :map, default: nil)
@@ -1294,47 +1293,6 @@ defmodule Pleroma.User do
     |> follow_information_changeset(%{following_count: following_count})
     |> update_and_set_cache()
   end
-
-  def set_unread_conversation_count(%User{local: true} = user) do
-    unread_query = Participation.unread_conversation_count_for_user(user)
-
-    User
-    |> join(:inner, [u], p in subquery(unread_query))
-    |> update([u, p],
-      set: [unread_conversation_count: p.count]
-    )
-    |> where([u], u.id == ^user.id)
-    |> select([u], u)
-    |> Repo.update_all([])
-    |> case do
-      {1, [user]} -> set_cache(user)
-      _ -> {:error, user}
-    end
-  end
-
-  def set_unread_conversation_count(user), do: {:ok, user}
-
-  def increment_unread_conversation_count(conversation, %User{local: true} = user) do
-    unread_query =
-      Participation.unread_conversation_count_for_user(user)
-      |> where([p], p.conversation_id == ^conversation.id)
-
-    User
-    |> join(:inner, [u], p in subquery(unread_query))
-    |> update([u, p],
-      inc: [unread_conversation_count: 1]
-    )
-    |> where([u], u.id == ^user.id)
-    |> where([u, p], p.count == 0)
-    |> select([u], u)
-    |> Repo.update_all([])
-    |> case do
-      {1, [user]} -> set_cache(user)
-      _ -> {:error, user}
-    end
-  end
-
-  def increment_unread_conversation_count(_, user), do: {:ok, user}
 
   @spec get_users_from_set([String.t()], keyword()) :: [User.t()]
   def get_users_from_set(ap_ids, opts \\ []) do

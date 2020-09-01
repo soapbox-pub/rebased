@@ -386,7 +386,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     data
     |> Kernel.put_in(
       [:pleroma, :unread_conversation_count],
-      user.unread_conversation_count
+      Pleroma.Conversation.Participation.unread_count(user)
     )
   end
 
