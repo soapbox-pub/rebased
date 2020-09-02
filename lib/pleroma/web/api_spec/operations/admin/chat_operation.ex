@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
 
   def delete_message_operation do
     %Operation{
-      tags: ["Admin", "Chats"],
+      tags: ["admin", "chat"],
       summary: "Delete an individual chat message",
       operationId: "AdminAPI.ChatController.delete",
       parameters: [id_param(), message_id_param()] ++ admin_api_params(),
@@ -25,6 +25,30 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
         200 => empty_object_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
+    }
+  end
+
+  def messages_operation do
+    %Operation{
+      tags: ["admin", "chat"],
+      summary: "Get the most recent messages of the chat",
+      operationId: "AdminAPI.ChatController.messages",
+      parameters:
+        [Operation.parameter(:id, :path, :string, "The ID of the Chat")] ++
+          pagination_params(),
+      responses: %{
+        200 =>
+          Operation.response(
+            "The messages in the chat",
+            "application/json",
+            Pleroma.Web.ApiSpec.ChatOperation.chat_messages_response()
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["read:chats"]
+        }
+      ]
     }
   end
 

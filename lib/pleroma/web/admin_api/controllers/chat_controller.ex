@@ -6,13 +6,22 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Activity
+  alias Pleroma.Chat
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.ModerationLog
+  alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:chats"], admin: true} when action in [:messages]
+  )
 
   plug(
     OAuthScopesPlug,
@@ -32,6 +41,24 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
       })
 
       json(conn, %{})
+    end
+  end
+
+  def messages(conn, %{id: id} = params) do
+    with %Chat{} = chat <- Chat.get_by_id(id) do
+      cm_refs =
+        chat
+        |> MessageReference.for_chat_query()
+        |> Pagination.fetch_paginated(params)
+
+      conn
+      |> put_view(MessageReferenceView)
+      |> render("index.json", chat_message_references: cm_refs)
+    else
+      _ ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "not found"})
     end
   end
 end
