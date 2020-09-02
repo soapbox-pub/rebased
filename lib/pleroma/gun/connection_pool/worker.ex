@@ -83,17 +83,25 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       end)
 
     {ref, state} = pop_in(state.client_monitors[client_pid])
-    Process.demonitor(ref)
-
-    timer =
-      if used_by == [] do
-        max_idle = Pleroma.Config.get([:connections_pool, :max_idle_time], 30_000)
-        Process.send_after(self(), :idle_close, max_idle)
+    # DOWN message can receive right after `remove_client` call and cause worker to terminate
+    state =
+      if is_nil(ref) do
+        state
       else
-        nil
+        Process.demonitor(ref)
+
+        timer =
+          if used_by == [] do
+            max_idle = Pleroma.Config.get([:connections_pool, :max_idle_time], 30_000)
+            Process.send_after(self(), :idle_close, max_idle)
+          else
+            nil
+          end
+
+        %{state | timer: timer}
       end
 
-    {:reply, :ok, %{state | timer: timer}, :hibernate}
+    {:reply, :ok, state, :hibernate}
   end
 
   @impl true
@@ -103,16 +111,21 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
     {:stop, :normal, state}
   end
 
+  @impl true
+  def handle_info({:gun_up, _pid, _protocol}, state) do
+    {:noreply, state, :hibernate}
+  end
+
   # Gracefully shutdown if the connection got closed without any streams left
   @impl true
   def handle_info({:gun_down, _pid, _protocol, _reason, []}, state) do
     {:stop, :normal, state}
   end
 
-  # Otherwise, shutdown with an error
+  # Otherwise, wait for retry
   @impl true
-  def handle_info({:gun_down, _pid, _protocol, _reason, _killed_streams} = down_message, state) do
-    {:stop, {:error, down_message}, state}
+  def handle_info({:gun_down, _pid, _protocol, _reason, _killed_streams}, state) do
+    {:noreply, state, :hibernate}
   end
 
   @impl true

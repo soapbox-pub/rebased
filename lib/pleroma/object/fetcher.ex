@@ -164,12 +164,12 @@ defmodule Pleroma.Object.Fetcher do
         date: date
       })
 
-    [{"signature", signature}]
+    {"signature", signature}
   end
 
   defp sign_fetch(headers, id, date) do
     if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
-      headers ++ make_signature(id, date)
+      [make_signature(id, date) | headers]
     else
       headers
     end
@@ -177,7 +177,7 @@ defmodule Pleroma.Object.Fetcher do
 
   defp maybe_date_fetch(headers, date) do
     if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
-      headers ++ [{"date", date}]
+      [{"date", date} | headers]
     else
       headers
     end
