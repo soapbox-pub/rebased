@@ -1334,3 +1334,114 @@ Loads json generated from `config/descriptions.exs`.
 { }
 
 ```
+
+## GET /api/pleroma/admin/users/:nickname/chats
+
+### List a user's chats
+
+- Params: None
+
+- Response:
+
+```json
+[
+   {
+      "account": {
+        "id": "someflakeid",
+        "username": "somenick",
+        ...
+      },
+      "id" : "1",
+      "unread" : 2,
+      "last_message" : {...}, // The last message in that chat
+      "updated_at": "2020-04-21T15:11:46.000Z"
+   }
+]
+```
+
+## GET /api/pleroma/admin/chats/:chat_id
+
+### View a single chat
+
+- Params: None
+
+- Response:
+
+```json
+{
+  "account": {
+    "id": "someflakeid",
+    "username": "somenick",
+    ...
+  },
+  "id" : "1",
+  "unread" : 2,
+  "last_message" : {...}, // The last message in that chat
+  "updated_at": "2020-04-21T15:11:46.000Z"
+}
+```
+
+## GET /api/pleroma/admin/chats/:chat_id/messages
+
+### List the messages in a chat
+
+- Params: None
+
+- Response:
+
+```json
+[
+  {
+    "account_id": "someflakeid",
+    "chat_id": "1",
+    "content": "Check this out :firefox:",
+    "created_at": "2020-04-21T15:11:46.000Z",
+    "emojis": [
+      {
+        "shortcode": "firefox",
+        "static_url": "https://dontbulling.me/emoji/Firefox.gif",
+        "url": "https://dontbulling.me/emoji/Firefox.gif",
+        "visible_in_picker": false
+      }
+    ],
+    "id": "13",
+    "unread": true
+  },
+  {
+    "account_id": "someflakeid",
+    "chat_id": "1",
+    "content": "Whats' up?",
+    "created_at": "2020-04-21T15:06:45.000Z",
+    "emojis": [],
+    "id": "12",
+    "unread": false
+  }
+]
+```
+
+## DELETE /api/pleroma/admin/chats/:chat_id/messages/:message_id
+
+### Delete a single message
+
+- Params: None
+
+- Response:
+
+```json
+{
+  "account_id": "someflakeid",
+  "chat_id": "1",
+  "content": "Check this out :firefox:",
+  "created_at": "2020-04-21T15:11:46.000Z",
+  "emojis": [
+    {
+      "shortcode": "firefox",
+      "static_url": "https://dontbulling.me/emoji/Firefox.gif",
+      "url": "https://dontbulling.me/emoji/Firefox.gif",
+      "visible_in_picker": false
+    }
+  ],
+  "id": "13",
+  "unread": false
+}
+```
