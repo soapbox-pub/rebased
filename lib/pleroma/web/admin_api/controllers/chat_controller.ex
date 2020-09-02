@@ -33,15 +33,27 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ChatOperation
 
-  def delete_message(%{assigns: %{user: user}} = conn, %{message_id: id}) do
-    with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
+  def delete_message(%{assigns: %{user: user}} = conn, %{
+        message_id: message_id,
+        id: chat_id
+      }) do
+    with %MessageReference{object: %{data: %{"id" => object_ap_id}}} = cm_ref <-
+           MessageReference.get_by_id(message_id),
+         ^chat_id <- to_string(cm_ref.chat_id),
+         %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(object_ap_id),
+         {:ok, _} <- CommonAPI.delete(activity_id, user) do
       ModerationLog.insert_log(%{
         action: "chat_message_delete",
         actor: user,
-        subject_id: id
+        subject_id: message_id
       })
 
-      json(conn, %{})
+      conn
+      |> put_view(MessageReferenceView)
+      |> render("show.json", chat_message_reference: cm_ref)
+    else
+      _e ->
+        {:error, :could_not_delete}
     end
   end
 

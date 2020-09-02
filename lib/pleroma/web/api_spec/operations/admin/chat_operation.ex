@@ -4,9 +4,8 @@
 
 defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
   alias OpenApiSpex.Operation
-  alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.Chat
-  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
 
   import Pleroma.Web.ApiSpec.Helpers
 
@@ -19,13 +18,24 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
     %Operation{
       tags: ["admin", "chat"],
       summary: "Delete an individual chat message",
-      operationId: "AdminAPI.ChatController.delete",
-      parameters: [id_param(), message_id_param()] ++ admin_api_params(),
-      security: [%{"oAuth" => ["write:chats"]}],
+      operationId: "AdminAPI.ChatController.delete_message",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "The ID of the Chat"),
+        Operation.parameter(:message_id, :path, :string, "The ID of the message")
+      ],
       responses: %{
-        200 => empty_object_response(),
-        404 => Operation.response("Not Found", "application/json", ApiError)
-      }
+        200 =>
+          Operation.response(
+            "The deleted ChatMessage",
+            "application/json",
+            ChatMessage
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["write:chats"]
+        }
+      ]
     }
   end
 
@@ -82,19 +92,5 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
         }
       ]
     }
-  end
-
-  def id_param do
-    Operation.parameter(:id, :path, FlakeID, "Chat ID",
-      example: "9umDrYheeY451cQnEe",
-      required: true
-    )
-  end
-
-  def message_id_param do
-    Operation.parameter(:message_id, :path, FlakeID, "Chat message ID",
-      example: "9umDrYheeY451cQnEe",
-      required: true
-    )
   end
 end

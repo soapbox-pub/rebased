@@ -7,9 +7,10 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Activity
   alias Pleroma.Chat
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Config
+  alias Pleroma.Object
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
@@ -27,29 +28,33 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "DELETE /api/pleroma/admin/chats/:id/messages/:message_id" do
-    setup do
-      chat = insert(:chat)
-      message = insert(:chat_message_activity, chat: chat)
-      %{chat: chat, message: message}
-    end
+    test "it deletes a message from the chat", %{conn: conn, admin: admin} do
+      user = insert(:user)
+      recipient = insert(:user)
 
-    test "deletes chat message", %{conn: conn, chat: chat, message: message, admin: admin} do
-      conn
-      |> delete("/api/pleroma/admin/chats/#{chat.id}/messages/#{message.id}")
-      |> json_response_and_validate_schema(:ok)
+      {:ok, message} =
+        CommonAPI.post_chat_message(user, recipient, "Hello darkness my old friend")
 
-      refute Activity.get_by_id(message.id)
+      object = Object.normalize(message, false)
+
+      chat = Chat.get(user.id, recipient.ap_id)
+
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/pleroma/admin/chats/#{chat.id}/messages/#{cm_ref.id}")
+        |> json_response_and_validate_schema(200)
 
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted chat message ##{message.id}"
-    end
+               "@#{admin.nickname} deleted chat message ##{cm_ref.id}"
 
-    test "returns 404 when the chat message does not exist", %{conn: conn} do
-      conn = delete(conn, "/api/pleroma/admin/chats/test/messages/test")
-
-      assert json_response_and_validate_schema(conn, :not_found) == %{"error" => "Not found"}
+      assert result["id"] == cm_ref.id
+      refute MessageReference.get_by_id(cm_ref.id)
+      assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
     end
   end
 
