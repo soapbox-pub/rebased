@@ -739,19 +739,23 @@ config :pleroma, :connections_pool,
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_waiting: 10
+    max_waiting: 10,
+    timeout: 10_000
   ],
   media: [
     size: 50,
-    max_waiting: 10
+    max_waiting: 10,
+    timeout: 10_000
   ],
   upload: [
     size: 25,
-    max_waiting: 5
+    max_waiting: 5,
+    timeout: 15_000
   ],
   default: [
     size: 10,
-    max_waiting: 2
+    max_waiting: 2,
+    timeout: 5_000
   ]
 
 config :pleroma, :hackney_pools,
