@@ -1350,11 +1350,11 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/relay/relay.json")}}
   end
 
-  def get("http://localhost:4001/", _, "", Accept: "text/html") do
+  def get("http://localhost:4001/", _, "", [{"accept", "text/html"}]) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/7369654.html")}}
   end
 
-  def get("https://osada.macgirvin.com/", _, "", Accept: "text/html") do
+  def get("https://osada.macgirvin.com/", _, "", [{"accept", "text/html"}]) do
     {:ok,
      %Tesla.Env{
        status: 200,

@@ -96,6 +96,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
         @rich_media_options
       end
 
-    Pleroma.HTTP.get(url, headers, options)
+    Pleroma.HTTP.get(url, headers, adapter: options)
   end
 end

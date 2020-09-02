@@ -136,12 +136,12 @@ defmodule Pleroma.Web.WebFinger do
 
   def find_lrdd_template(domain) do
     with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           HTTP.get("http://#{domain}/.well-known/host-meta", []) do
+           HTTP.get("http://#{domain}/.well-known/host-meta") do
       get_template_from_xml(body)
     else
       _ ->
         with {:ok, %{body: body, status: status}} when status in 200..299 <-
-               HTTP.get("https://#{domain}/.well-known/host-meta", []) do
+               HTTP.get("https://#{domain}/.well-known/host-meta") do
           get_template_from_xml(body)
         else
           e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
