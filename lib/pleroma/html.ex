@@ -109,8 +109,9 @@ defmodule Pleroma.HTML do
       result =
         content
         |> Floki.parse_fragment!()
-        |> Floki.filter_out("a.mention,a.hashtag,a.attachment,a[rel~=\"tag\"]")
-        |> Floki.attribute("a", "href")
+        |> Floki.find("a:not(.mention,.hashtag,.attachment,[rel~=\"tag\"])")
+        |> Enum.take(1)
+        |> Floki.attribute("href")
         |> Enum.at(0)
 
       {:commit, {:ok, result}}
