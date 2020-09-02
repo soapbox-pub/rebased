@@ -104,4 +104,20 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       assert length(result) == 3
     end
   end
+
+  describe "GET /api/pleroma/admin/chats/:id" do
+    test "it returns a chat", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> get("/api/pleroma/admin/chats/#{chat.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert result["id"] == to_string(chat.id)
+    end
+  end
 end

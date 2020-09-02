@@ -13,6 +13,7 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
+  alias Pleroma.Web.PleromaAPI.ChatView
 
   require Logger
 
@@ -20,7 +21,7 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"], admin: true} when action in [:messages]
+    %{scopes: ["read:chats"], admin: true} when action in [:show, :messages]
   )
 
   plug(
@@ -59,6 +60,14 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
         conn
         |> put_status(:not_found)
         |> json(%{error: "not found"})
+    end
+  end
+
+  def show(conn, %{id: id}) do
+    with %Chat{} = chat <- Chat.get_by_id(id) do
+      conn
+      |> put_view(ChatView)
+      |> render("show.json", chat: chat)
     end
   end
 end

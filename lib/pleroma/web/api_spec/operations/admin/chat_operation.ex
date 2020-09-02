@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
   alias OpenApiSpex.Operation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.Chat
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
 
   import Pleroma.Web.ApiSpec.Helpers
@@ -47,6 +48,37 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       security: [
         %{
           "oAuth" => ["read:chats"]
+        }
+      ]
+    }
+  end
+
+  def show_operation do
+    %Operation{
+      tags: ["chat"],
+      summary: "Create a chat",
+      operationId: "AdminAPI.ChatController.show",
+      parameters: [
+        Operation.parameter(
+          :id,
+          :path,
+          :string,
+          "The id of the chat",
+          required: true,
+          example: "1234"
+        )
+      ],
+      responses: %{
+        200 =>
+          Operation.response(
+            "The existing chat",
+            "application/json",
+            Chat
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["read"]
         }
       ]
     }

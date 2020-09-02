@@ -216,7 +216,7 @@ defmodule Pleroma.Web.Router do
     post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
     post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
 
-    # get("/chats/:id", ChatController, :show)
+    get("/chats/:id", ChatController, :show)
     get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
