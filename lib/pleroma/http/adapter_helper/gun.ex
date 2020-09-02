@@ -20,6 +20,8 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     await_up_timeout: 5_000
   ]
 
+  @type pool() :: :federation | :upload | :media | :default
+
   @spec options(keyword(), URI.t()) :: keyword()
   def options(incoming_opts \\ [], %URI{} = uri) do
     proxy =
@@ -34,12 +36,25 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     |> add_scheme_opts(uri)
     |> AdapterHelper.maybe_add_proxy(proxy)
     |> Keyword.merge(incoming_opts)
+    |> put_timeout()
   end
 
   defp add_scheme_opts(opts, %{scheme: "http"}), do: opts
 
   defp add_scheme_opts(opts, %{scheme: "https"}) do
     Keyword.put(opts, :certificates_verification, true)
+  end
+
+  defp put_timeout(opts) do
+    # this is the timeout to receive a message from Gun
+    Keyword.put_new(opts, :timeout, pool_timeout(opts[:pool]))
+  end
+
+  @spec pool_timeout(pool()) :: non_neg_integer()
+  def pool_timeout(pool) do
+    default = Config.get([:pools, :default, :timeout], 5_000)
+
+    Config.get([:pools, pool, :timeout], default)
   end
 
   @spec get_conn(URI.t(), keyword()) :: {:ok, keyword()} | {:error, atom()}

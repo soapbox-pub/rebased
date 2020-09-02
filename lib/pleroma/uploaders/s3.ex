@@ -54,11 +54,15 @@ defmodule Pleroma.Uploaders.S3 do
             {:content_type, upload.content_type}
           ])
 
-        # set s3 upload timeout to respect :upload pool timeout
-        # timeout should be slightly larger, so s3 can retry upload on fail
-        timeout = Pleroma.HTTP.AdapterHelper.pool_timeout(:upload) + 1_000
-        opts = Keyword.put(op.opts, :timeout, timeout)
-        Map.put(op, :opts, opts)
+        if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Gun do
+          # set s3 upload timeout to respect :upload pool timeout
+          # timeout should be slightly larger, so s3 can retry upload on fail
+          timeout = Pleroma.HTTP.AdapterHelper.Gun.pool_timeout(:upload) + 1_000
+          opts = Keyword.put(op.opts, :timeout, timeout)
+          Map.put(op, :opts, opts)
+        else
+          op
+        end
       else
         {:ok, file_data} = File.read(upload.tempfile)
 
