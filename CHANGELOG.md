@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## unreleased-patch - ???
 
+### Added
+- Rich media failure tracking (along with `:failure_backoff` option)
+
 ### Fixed
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 

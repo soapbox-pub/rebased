@@ -55,7 +55,7 @@ defmodule Pleroma.Web.RichMedia.TTL.AwsSignedUrlTest do
 
     Cachex.put(:rich_media_cache, url, metadata)
 
-    Pleroma.Web.RichMedia.Parser.set_ttl_based_on_image({:ok, metadata}, url)
+    Pleroma.Web.RichMedia.Parser.set_ttl_based_on_image(metadata, url)
 
     {:ok, cache_ttl} = Cachex.ttl(:rich_media_cache, url)
 
