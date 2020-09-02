@@ -6,7 +6,9 @@ defmodule Pleroma.Chat do
   use Ecto.Schema
 
   import Ecto.Changeset
+  import Ecto.Query
 
+  alias Pleroma.Chat
   alias Pleroma.Repo
   alias Pleroma.User
 
@@ -67,6 +69,16 @@ defmodule Pleroma.Chat do
       on_conflict: [set: [updated_at: NaiveDateTime.utc_now()]],
       returning: true,
       conflict_target: [:user_id, :recipient]
+    )
+  end
+
+  @spec for_user_query(FlakeId.Ecto.CompatType.t()) :: Ecto.Query.t()
+  def for_user_query(user_id) do
+    from(c in Chat,
+      where: c.user_id == ^user_id,
+      order_by: [desc: c.updated_at],
+      inner_join: u in User,
+      on: u.ap_id == c.recipient
     )
   end
 end

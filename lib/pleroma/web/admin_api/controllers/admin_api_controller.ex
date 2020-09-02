@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
 
-  import Ecto.Query
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Pleroma.Config
@@ -267,12 +266,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_user_chats(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = _params) do
     with %User{id: user_id} <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       chats =
-        from(c in Pleroma.Chat,
-          where: c.user_id == ^user_id,
-          order_by: [desc: c.updated_at],
-          inner_join: u in User,
-          on: u.ap_id == c.recipient
-        )
+        Pleroma.Chat.for_user_query(user_id)
         |> Pleroma.Repo.all()
 
       conn
