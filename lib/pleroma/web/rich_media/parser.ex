@@ -17,14 +17,25 @@ defmodule Pleroma.Web.RichMedia.Parser do
   else
     @spec parse(String.t()) :: {:ok, map()} | {:error, any()}
     def parse(url) do
-      Cachex.fetch!(:rich_media_cache, url, fn _ ->
-        with {:ok, data} <- parse_url(url) do
-          {:commit, {:ok, data}}
-        else
-          error -> {:ignore, error}
-        end
-      end)
-      |> set_ttl_based_on_image(url)
+      with {:ok, data} <- get_cached_or_parse(url),
+           {:ok, _} <- set_ttl_based_on_image(data, url) do
+        {:ok, data}
+      else
+        error ->
+          Logger.error(fn -> "Rich media error: #{inspect(error)}" end)
+      end
+    end
+
+    defp get_cached_or_parse(url) do
+      case Cachex.fetch!(:rich_media_cache, url, fn _ -> {:commit, parse_url(url)} end) do
+        {:ok, _data} = res ->
+          res
+
+        {:error, _} = e ->
+          ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
+          Cachex.expire(:rich_media_cache, url, ttl)
+          e
+      end
     end
   end
 
@@ -50,22 +61,21 @@ defmodule Pleroma.Web.RichMedia.Parser do
       config :pleroma, :rich_media,
         ttl_setters: [MyModule]
   """
-  @spec set_ttl_based_on_image({:ok, map()} | {:error, any()}, String.t()) ::
-          {:ok, map()} | {:error, any()}
-  def set_ttl_based_on_image({:ok, data}, url) do
-    with {:ok, nil} <- Cachex.ttl(:rich_media_cache, url),
-         {:ok, ttl} when is_number(ttl) <- get_ttl_from_image(data, url) do
-      Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
-      {:ok, data}
-    else
-      _ ->
-        {:ok, data}
-    end
-  end
+  @spec set_ttl_based_on_image(map(), String.t()) ::
+          {:ok, Integer.t() | :noop} | {:error, :no_key}
+  def set_ttl_based_on_image(data, url) do
+    case get_ttl_from_image(data, url) do
+      {:ok, ttl} when is_number(ttl) ->
+        ttl = ttl * 1000
 
-  def set_ttl_based_on_image({:error, _} = error, _) do
-    Logger.error("parsing error: #{inspect(error)}")
-    error
+        case Cachex.expire_at(:rich_media_cache, url, ttl) do
+          {:ok, true} -> {:ok, ttl}
+          {:ok, false} -> {:error, :no_key}
+        end
+
+      _ ->
+        {:ok, :noop}
+    end
   end
 
   defp get_ttl_from_image(data, url) do
