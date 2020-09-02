@@ -2,41 +2,110 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Export do
+defmodule Pleroma.Backup do
+  use Ecto.Schema
+
+  import Ecto.Changeset
+  import Ecto.Query
+
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
 
-  import Ecto.Query
+  schema "backups" do
+    field(:content_type, :string)
+    field(:file_name, :string)
+    field(:file_size, :integer, default: 0)
+    field(:processed, :boolean, default: false)
+
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
+
+    timestamps()
+  end
+
+  def create(user) do
+    with :ok <- validate_limit(user),
+         {:ok, backup} <- user |> new() |> Repo.insert() do
+      {:ok, backup}
+    end
+  end
+
+  def new(user) do
+    rand_str = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+    datetime = Calendar.NaiveDateTime.Format.iso8601_basic(NaiveDateTime.utc_now())
+    name = "archive-#{user.nickname}-#{datetime}-#{rand_str}.zip"
+
+    %__MODULE__{
+      user_id: user.id,
+      content_type: "application/zip",
+      file_name: name
+    }
+  end
+
+  defp validate_limit(user) do
+    case get_last(user.id) do
+      %__MODULE__{inserted_at: inserted_at} ->
+        days = 7
+        diff = Timex.diff(NaiveDateTime.utc_now(), inserted_at, :days)
+
+        if diff > days do
+          :ok
+        else
+          {:error, "Last export was less than #{days} days ago"}
+        end
+
+      nil ->
+        :ok
+    end
+  end
+
+  def get_last(user_id) do
+    __MODULE__
+    |> where(user_id: ^user_id)
+    |> order_by(desc: :id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  def process(%__MODULE__{} = backup) do
+    with {:ok, zip_file} <- zip(backup),
+         {:ok, %{size: size}} <- File.stat(zip_file),
+         {:ok, _upload} <- upload(backup, zip_file) do
+      backup
+      |> cast(%{file_size: size, processed: true}, [:file_size, :processed])
+      |> Repo.update()
+    end
+  end
 
   @files ['actor.json', 'outbox.json', 'likes.json', 'bookmarks.json']
+  def zip(%__MODULE__{} = backup) do
+    backup = Repo.preload(backup, :user)
+    name = String.trim_trailing(backup.file_name, ".zip")
+    dir = Path.join(System.tmp_dir!(), name)
 
-  def run(user) do
-    with {:ok, path} <- create_dir(user),
-         :ok <- actor(path, user),
-         :ok <- statuses(path, user),
-         :ok <- likes(path, user),
-         :ok <- bookmarks(path, user),
-         {:ok, zip_path} <- :zip.create('#{path}.zip', @files, cwd: path),
-         {:ok, _} <- File.rm_rf(path) do
+    with :ok <- File.mkdir(dir),
+         :ok <- actor(dir, backup.user),
+         :ok <- statuses(dir, backup.user),
+         :ok <- likes(dir, backup.user),
+         :ok <- bookmarks(dir, backup.user),
+         {:ok, zip_path} <- :zip.create(String.to_charlist(dir <> ".zip"), @files, cwd: dir),
+         {:ok, _} <- File.rm_rf(dir) do
       {:ok, :binary.list_to_bin(zip_path)}
     end
   end
 
-  def upload(zip_path) do
+  def upload(%__MODULE__{} = backup, zip_path) do
     uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
-    file_name = zip_path |> String.split("/") |> List.last()
-    id = Ecto.UUID.generate()
 
     upload = %Pleroma.Upload{
-      id: id,
-      name: file_name,
+      name: backup.file_name,
       tempfile: zip_path,
-      content_type: "application/zip",
-      path: id <> "/" <> file_name
+      content_type: backup.content_type,
+      path: "backups/" <> backup.file_name
     }
 
     with {:ok, _} <- Pleroma.Uploaders.Uploader.put_file(uploader, upload),
@@ -52,13 +121,6 @@ defmodule Pleroma.Export do
            |> Jason.encode() do
       File.write(dir <> "/actor.json", json)
     end
-  end
-
-  defp create_dir(user) do
-    datetime = Calendar.NaiveDateTime.Format.iso8601_basic(NaiveDateTime.utc_now())
-    dir = Path.join(System.tmp_dir!(), "archive-#{user.id}-#{datetime}")
-
-    with :ok <- File.mkdir(dir), do: {:ok, dir}
   end
 
   defp write_header(file, name) do

@@ -2,15 +2,41 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.ExportTest do
+defmodule Pleroma.BackupTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   import Mock
 
+  alias Pleroma.Backup
   alias Pleroma.Bookmark
   alias Pleroma.Web.CommonAPI
 
-  test "it exports user data" do
+  test "it creates a backup record" do
+    %{id: user_id} = user = insert(:user)
+    assert {:ok, backup} = Backup.create(user)
+
+    assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup
+  end
+
+  test "it return an error if the export limit is over" do
+    %{id: user_id} = user = insert(:user)
+    limit_days = 7
+
+    assert {:ok, backup} = Backup.create(user)
+    assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup
+
+    assert Backup.create(user) == {:error, "Last export was less than #{limit_days} days ago"}
+  end
+
+  test "it process a backup record" do
+    %{id: user_id} = user = insert(:user)
+    assert {:ok, %{id: backup_id} = backup} = Backup.create(user)
+    assert {:ok, %Backup{} = backup} = Backup.process(backup)
+    assert backup.file_size > 0
+    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
+  end
+
+  test "it creates a zip archive with user data" do
     user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
 
     {:ok, %{object: %{data: %{"id" => id1}}} = status1} =
@@ -28,7 +54,8 @@ defmodule Pleroma.ExportTest do
     Bookmark.create(user.id, status2.id)
     Bookmark.create(user.id, status3.id)
 
-    assert {:ok, path} = Pleroma.Export.run(user)
+    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
+    assert {:ok, path} = Backup.zip(backup)
     assert {:ok, zipfile} = :zip.zip_open(String.to_charlist(path), [:memory])
     assert {:ok, {'actor.json', json}} = :zip.zip_get('actor.json', zipfile)
 
@@ -110,7 +137,7 @@ defmodule Pleroma.ExportTest do
     File.rm!(path)
   end
 
-  describe "it uploads an exported backup archive" do
+  describe "it uploads a backup archive" do
     setup do
       clear_config(Pleroma.Uploaders.S3,
         bucket: "test_bucket",
@@ -129,23 +156,24 @@ defmodule Pleroma.ExportTest do
       Bookmark.create(user.id, status2.id)
       Bookmark.create(user.id, status3.id)
 
-      assert {:ok, path} = Pleroma.Export.run(user)
+      assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
+      assert {:ok, path} = Backup.zip(backup)
 
-      [path: path]
+      [path: path, backup: backup]
     end
 
-    test "S3", %{path: path} do
+    test "S3", %{path: path, backup: backup} do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
 
       with_mock ExAws, request: fn _ -> {:ok, :ok} end do
-        assert {:ok, %Pleroma.Upload{}} = Pleroma.Export.upload(path)
+        assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
       end
     end
 
-    test "Local", %{path: path} do
+    test "Local", %{path: path, backup: backup} do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
 
-      assert {:ok, %Pleroma.Upload{}} = Pleroma.Export.upload(path)
+      assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
     end
   end
 end
