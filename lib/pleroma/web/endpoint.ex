@@ -29,7 +29,7 @@ defmodule Pleroma.Web.Endpoint do
   )
 
   # Careful! No `only` restriction here, as we don't know what frontends contain.
-  plug(Pleroma.Plugs.FrontendStatic,
+  plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/",
     frontend_type: :primary,
     gzip: true,
@@ -41,7 +41,7 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Plug.Static.IndexHtml, at: "/pleroma/admin/")
 
-  plug(Pleroma.Plugs.FrontendStatic,
+  plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/pleroma/admin",
     frontend_type: :admin,
     gzip: true,
