@@ -3,35 +3,43 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.BackupTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase
+
   import Pleroma.Factory
   import Mock
 
   alias Pleroma.Backup
   alias Pleroma.Bookmark
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.BackupWorker
 
-  test "it creates a backup record" do
+  setup do: clear_config([Pleroma.Upload, :uploader])
+
+  test "it creates a backup record and an Oban job" do
     %{id: user_id} = user = insert(:user)
-    assert {:ok, backup} = Backup.create(user)
+    assert {:ok, %Oban.Job{args: args}} = Backup.create(user)
+    assert_enqueued(worker: BackupWorker, args: args)
 
+    backup = Backup.get(args["backup_id"])
     assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup
   end
 
   test "it return an error if the export limit is over" do
     %{id: user_id} = user = insert(:user)
     limit_days = 7
-
-    assert {:ok, backup} = Backup.create(user)
+    assert {:ok, %Oban.Job{args: args}} = Backup.create(user)
+    backup = Backup.get(args["backup_id"])
     assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup
 
     assert Backup.create(user) == {:error, "Last export was less than #{limit_days} days ago"}
   end
 
   test "it process a backup record" do
+    Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
     %{id: user_id} = user = insert(:user)
-    assert {:ok, %{id: backup_id} = backup} = Backup.create(user)
-    assert {:ok, %Backup{} = backup} = Backup.process(backup)
+    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id}} = job} = Backup.create(user)
+    assert {:ok, backup} = BackupWorker.perform(job)
     assert backup.file_size > 0
     assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
   end

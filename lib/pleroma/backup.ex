@@ -30,7 +30,7 @@ defmodule Pleroma.Backup do
   def create(user) do
     with :ok <- validate_limit(user),
          {:ok, backup} <- user |> new() |> Repo.insert() do
-      {:ok, backup}
+      Pleroma.Workers.BackupWorker.enqueue("process", %{"backup_id" => backup.id})
     end
   end
 
@@ -70,6 +70,15 @@ defmodule Pleroma.Backup do
     |> limit(1)
     |> Repo.one()
   end
+
+  def remove_outdated(%__MODULE__{id: latest_id, user_id: user_id}) do
+    __MODULE__
+    |> where(user_id: ^user_id)
+    |> where([b], b.id != ^latest_id)
+    |> Repo.delete_all()
+  end
+
+  def get(id), do: Repo.get(__MODULE__, id)
 
   def process(%__MODULE__{} = backup) do
     with {:ok, zip_file} <- zip(backup),

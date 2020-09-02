@@ -551,6 +551,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     token_expiration: 5,
+    backup: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
     ingestion_queue: 50,

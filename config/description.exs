@@ -2289,6 +2289,12 @@ config :pleroma, :config_description, [
             suggestions: [10]
           },
           %{
+            key: :backup,
+            type: :integer,
+            description: "Backup queue",
+            suggestions: [1]
+          },
+          %{
             key: :attachments_cleanup,
             type: :integer,
             description: "Attachment deletion queue",
