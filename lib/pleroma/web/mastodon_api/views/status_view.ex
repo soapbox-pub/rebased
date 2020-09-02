@@ -23,6 +23,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
+  # This is a naive way to do this, just spawning a process per activity
+  # to fetch the preview. However it should be fine considering
+  # pagination is restricted to 40 activities at a time
+  defp fetch_rich_media_for_activities(activities) do
+    Enum.each(activities, fn activity ->
+      spawn(fn ->
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      end)
+    end)
+  end
+
   # TODO: Add cached version.
   defp get_replied_to_activities([]), do: %{}
 
@@ -80,6 +91,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
     activities = Enum.filter(opts.activities, & &1)
+
+    # Start fetching rich media before doing anything else, so that later calls to get the cards
+    # only block for timeout in the worst case, as opposed to
+    # length(activities_with_links) * timeout
+    fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
 
     parent_activities =
