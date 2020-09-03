@@ -83,7 +83,7 @@ defmodule Pleroma.User do
   ]
 
   schema "users" do
-    field(:bio, :string)
+    field(:bio, :string, default: "")
     field(:raw_bio, :string)
     field(:email, :string)
     field(:name, :string)
@@ -1587,7 +1587,7 @@ defmodule Pleroma.User do
     # "Right to be forgotten"
     # https://gdpr.eu/right-to-be-forgotten/
     change(user, %{
-      bio: nil,
+      bio: "",
       raw_bio: nil,
       email: nil,
       name: nil,

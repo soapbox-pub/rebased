@@ -1466,7 +1466,7 @@ defmodule Pleroma.UserTest do
     user = User.get_by_id(user.id)
 
     assert %User{
-             bio: nil,
+             bio: "",
              raw_bio: nil,
              email: nil,
              name: nil,

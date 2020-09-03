@@ -48,11 +48,18 @@ defmodule Pleroma.FrontendTest do
       }
     })
 
+    folder = Path.join([@dir, "frontends", "pleroma", "fantasy"])
+    previously_existing = Path.join([folder, "temp"])
+    File.mkdir_p!(folder)
+    File.write!(previously_existing, "yey")
+    assert File.exists?(previously_existing)
+
     capture_io(fn ->
       Frontend.run(["install", "pleroma", "--file", "test/fixtures/tesla_mock/frontend.zip"])
     end)
 
-    assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
+    assert File.exists?(Path.join([folder, "test.txt"]))
+    refute File.exists?(previously_existing)
   end
 
   test "it downloads and unzips unknown frontends" do

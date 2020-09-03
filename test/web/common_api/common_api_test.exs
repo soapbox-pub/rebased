@@ -9,6 +9,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -18,6 +19,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
   import Pleroma.Factory
   import Mock
+  import Ecto.Query, only: [from: 2]
 
   require Pleroma.Constants
 
@@ -806,6 +808,69 @@ defmodule Pleroma.Web.CommonAPITest do
       activity = insert(:note_activity)
 
       [user: user, activity: activity]
+    end
+
+    test "marks notifications as read after mute" do
+      author = insert(:user)
+      activity = insert(:note_activity, user: author)
+
+      friend1 = insert(:user)
+      friend2 = insert(:user)
+
+      {:ok, reply_activity} =
+        CommonAPI.post(
+          friend2,
+          %{
+            status: "@#{author.nickname} @#{friend1.nickname} test reply",
+            in_reply_to_status_id: activity.id
+          }
+        )
+
+      {:ok, favorite_activity} = CommonAPI.favorite(friend2, activity.id)
+      {:ok, repeat_activity} = CommonAPI.repeat(activity.id, friend1)
+
+      assert Repo.aggregate(
+               from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
+               :count
+             ) == 1
+
+      unread_notifications =
+        Repo.all(from(n in Notification, where: n.seen == false, where: n.user_id == ^author.id))
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "favourite" && n.activity_id == favorite_activity.id
+             end)
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "reblog" && n.activity_id == repeat_activity.id
+             end)
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "mention" && n.activity_id == reply_activity.id
+             end)
+
+      {:ok, _} = CommonAPI.add_mute(author, activity)
+      assert CommonAPI.thread_muted?(author, activity)
+
+      assert Repo.aggregate(
+               from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
+               :count
+             ) == 1
+
+      read_notifications =
+        Repo.all(from(n in Notification, where: n.seen == true, where: n.user_id == ^author.id))
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "favourite" && n.activity_id == favorite_activity.id
+             end)
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "reblog" && n.activity_id == repeat_activity.id
+             end)
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "mention" && n.activity_id == reply_activity.id
+             end)
     end
 
     test "add mute", %{user: user, activity: activity} do

@@ -36,8 +36,7 @@ defmodule Pleroma.Object.Fetcher do
   defp reinject_object(%Object{data: %{"type" => "Question"}} = object, new_data) do
     Logger.debug("Reinjecting object #{new_data["id"]}")
 
-    with new_data <- Transmogrifier.fix_object(new_data),
-         data <- maybe_reinject_internal_fields(object, new_data),
+    with data <- maybe_reinject_internal_fields(object, new_data),
          {:ok, data, _} <- ObjectValidator.validate(data, %{}),
          changeset <- Object.change(object, %{data: data}),
          changeset <- touch_changeset(changeset),
@@ -164,12 +163,12 @@ defmodule Pleroma.Object.Fetcher do
         date: date
       })
 
-    [{"signature", signature}]
+    {"signature", signature}
   end
 
   defp sign_fetch(headers, id, date) do
     if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
-      headers ++ make_signature(id, date)
+      [make_signature(id, date) | headers]
     else
       headers
     end
@@ -177,7 +176,7 @@ defmodule Pleroma.Object.Fetcher do
 
   defp maybe_date_fetch(headers, date) do
     if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
-      headers ++ [{"date", date}]
+      [{"date", date} | headers]
     else
       headers
     end

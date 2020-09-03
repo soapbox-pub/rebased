@@ -648,4 +648,16 @@ defmodule Pleroma.Notification do
     )
     |> Repo.one()
   end
+
+  @spec mark_context_as_read(User.t(), String.t()) :: {integer(), nil | [term()]}
+  def mark_context_as_read(%User{id: id}, context) do
+    from(
+      n in Notification,
+      join: a in assoc(n, :activity),
+      where: n.user_id == ^id,
+      where: n.seen == false,
+      where: fragment("?->>'context'", a.data) == ^context
+    )
+    |> Repo.update_all(set: [seen: true])
+  end
 end

@@ -2441,6 +2441,13 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
         ]
+      },
+      %{
+        key: :failure_backoff,
+        type: :integer,
+        description:
+          "Amount of milliseconds after request failure, during which the request will not be retried.",
+        suggestions: [60_000]
       }
     ]
   },

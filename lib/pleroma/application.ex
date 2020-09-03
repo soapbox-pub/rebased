@@ -22,13 +22,18 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    case Config.get([:http, :user_agent], :default) do
-      :default ->
-        info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
-        named_version() <> "; " <> info
+    if Process.whereis(Pleroma.Web.Endpoint) do
+      case Config.get([:http, :user_agent], :default) do
+        :default ->
+          info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
+          named_version() <> "; " <> info
 
-      custom ->
-        custom
+        custom ->
+          custom
+      end
+    else
+      # fallback, if endpoint is not started yet
+      "Pleroma Data Loader"
     end
   end
 
@@ -39,6 +44,9 @@ defmodule Pleroma.Application do
     # every time the application is restarted, so we disable module
     # conflicts at runtime
     Code.compiler_options(ignore_module_conflict: true)
+    # Disable warnings_as_errors at runtime, it breaks Phoenix live reload
+    # due to protocol consolidation warnings
+    Code.compiler_options(warnings_as_errors: false)
     Pleroma.Telemetry.Logger.attach()
     Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()

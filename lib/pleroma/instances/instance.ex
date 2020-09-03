@@ -150,7 +150,9 @@ defmodule Pleroma.Instances.Instance do
   defp scrape_favicon(%URI{} = instance_uri) do
     try do
       with {:ok, %Tesla.Env{body: html}} <-
-             Pleroma.HTTP.get(to_string(instance_uri), [{:Accept, "text/html"}]),
+             Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}],
+               adapter: [pool: :media]
+             ),
            favicon_rel <-
              html
              |> Floki.parse_document!()

@@ -122,17 +122,27 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
       {:ok, user: user}
     end
 
-    test "it returns 404 when user is not found", %{conn: conn, user: user} do
+    test "it returns 204 when user is not found", %{conn: conn, user: user} do
       conn = post(conn, "/auth/password?email=nonexisting_#{user.email}")
-      assert conn.status == 404
-      assert conn.resp_body == ""
+
+      assert conn
+             |> json_response(:no_content)
     end
 
-    test "it returns 400 when user is not local", %{conn: conn, user: user} do
+    test "it returns 204 when user is not local", %{conn: conn, user: user} do
       {:ok, user} = Repo.update(Ecto.Changeset.change(user, local: false))
       conn = post(conn, "/auth/password?email=#{user.email}")
-      assert conn.status == 400
-      assert conn.resp_body == ""
+
+      assert conn
+             |> json_response(:no_content)
+    end
+
+    test "it returns 204 when user is deactivated", %{conn: conn, user: user} do
+      {:ok, user} = Repo.update(Ecto.Changeset.change(user, deactivated: true, local: true))
+      conn = post(conn, "/auth/password?email=#{user.email}")
+
+      assert conn
+             |> json_response(:no_content)
     end
   end
 
