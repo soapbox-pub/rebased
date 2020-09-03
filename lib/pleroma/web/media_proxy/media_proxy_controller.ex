@@ -33,8 +33,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   def preview(conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.preview_enabled?()},
-         {:ok, url} <- MediaProxy.decode_url(sig64, url64),
-         :ok <- MediaProxy.verify_request_path_and_url(conn, url) do
+         {:ok, url} <- MediaProxy.decode_url(sig64, url64) do
       handle_preview(conn, url)
     else
       {:enabled, false} ->
@@ -50,9 +49,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   defp handle_preview(conn, url) do
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
-           Tesla.head(url,
-             opts: [adapter: [timeout: preview_head_request_timeout(), follow_redirect: true]]
-           ) do
+           Pleroma.HTTP.request("head", MediaProxy.url(url), [], [], [adapter: [pool: :preview]]) do
       content_type = Tesla.get_header(head_response, "content-type")
       handle_preview(content_type, conn, url)
     else
@@ -172,17 +169,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     {thumbnail_max_width, thumbnail_max_height}
   end
 
-  defp preview_head_request_timeout do
-    Keyword.get(media_preview_proxy_opts(), :head_request_max_read_duration) ||
-      Keyword.get(media_proxy_opts(), :max_read_duration) ||
-      ReverseProxy.max_read_duration_default()
-  end
-
   defp media_proxy_opts do
     Config.get([:media_proxy, :proxy_opts], [])
-  end
-
-  defp media_preview_proxy_opts do
-    Config.get([:media_preview_proxy, :proxy_opts], [])
   end
 end

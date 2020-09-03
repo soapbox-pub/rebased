@@ -1978,27 +1978,6 @@ config :pleroma, :config_description, [
         key: :image_quality,
         type: :integer,
         description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
-      },
-      %{
-        key: :proxy_opts,
-        type: :keyword,
-        description: "Media proxy options",
-        suggestions: [
-          head_request_max_read_duration: 5_000
-        ],
-        children: [
-          %{
-            key: :head_request_max_read_duration,
-            type: :integer,
-            description: "Timeout (in milliseconds) of HEAD request to remote URI."
-          }
-        ]
-      },
-      %{
-        key: :whitelist,
-        type: {:list, :string},
-        description: "List of hosts with scheme to bypass the mediaproxy",
-        suggestions: ["http://example.com"]
       }
     ]
   },
