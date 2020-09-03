@@ -318,9 +318,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         Map.put(mapping, name, data["icon"]["url"])
       end)
 
-    # we merge mastodon and pleroma emoji into a single mapping, to allow for both wire formats
-    emoji = Map.merge(object["emoji"] || %{}, emoji)
-
     Map.put(object, "emoji", emoji)
   end
 
