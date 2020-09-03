@@ -760,8 +760,8 @@ config :pleroma, :pools,
   ],
   preview: [
     size: 50,
-    max_waiting: 10,
-    timeout: 10_000
+    max_waiting: 20,
+    timeout: 15_000
   ],
   upload: [
     size: 25,
