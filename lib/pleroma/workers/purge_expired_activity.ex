@@ -23,7 +23,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
       {scheduled_at, args} = Map.pop(args, :expires_at)
 
       args
-      |> __MODULE__.new(scheduled_at: scheduled_at)
+      |> new(scheduled_at: scheduled_at)
       |> Oban.insert()
     end
   end
