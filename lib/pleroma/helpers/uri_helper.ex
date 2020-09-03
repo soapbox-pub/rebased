@@ -15,6 +15,7 @@ defmodule Pleroma.Helpers.UriHelper do
     uri
     |> Map.put(:query, URI.encode_query(updated_params))
     |> URI.to_string()
+    |> String.replace_suffix("?", "")
   end
 
   def maybe_add_base("/" <> uri, base), do: Path.join([base, uri])
