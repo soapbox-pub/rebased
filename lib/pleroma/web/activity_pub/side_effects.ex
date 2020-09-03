@@ -187,13 +187,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Object.increase_replies_count(in_reply_to)
       end
 
-      if expires_at = activity.data["expires_at"] do
-        Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
-          activity_id: activity.id,
-          expires_at: expires_at
-        })
-      end
-
       BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       meta =
