@@ -6,7 +6,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
   @behaviour Pleroma.HTTP.AdapterHelper
 
   alias Pleroma.Config
-  alias Pleroma.Gun.ConnectionPool
   alias Pleroma.HTTP.AdapterHelper
 
   require Logger
@@ -55,14 +54,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     default = Config.get([:pools, :default, :timeout], 5_000)
 
     Config.get([:pools, pool, :timeout], default)
-  end
-
-  @spec get_conn(URI.t(), keyword()) :: {:ok, keyword()} | {:error, atom()}
-  def get_conn(uri, opts) do
-    case ConnectionPool.get_conn(uri, opts) do
-      {:ok, conn_pid} -> {:ok, Keyword.merge(opts, conn: conn_pid, close_conn: false)}
-      err -> err
-    end
   end
 
   @prefix Pleroma.Gun.ConnectionPool
