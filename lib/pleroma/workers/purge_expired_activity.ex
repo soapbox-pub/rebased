@@ -13,6 +13,10 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
 
   alias Pleroma.Activity
 
+  @spec enqueue(map()) ::
+          {:ok, Oban.Job.t()}
+          | {:error, :expired_activities_disabled}
+          | {:error, :expiration_too_close}
   def enqueue(args) do
     with true <- enabled?(),
          args when is_map(args) <- validate_expires_at(args) do
