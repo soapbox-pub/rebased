@@ -67,9 +67,14 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  # TODO: find a workaround so avatar_static and header_static can work.
-  # Those only permit GIFs for animation, so we have to permit a way to
-  # allow those to get real static variants.
+  defp handle_preview(
+         "image/" <> _ = _content_type,
+         %{params: %{"output_format" => "jpeg"}} = conn,
+         url
+       ) do
+    handle_jpeg_preview(conn, url)
+  end
+
   defp handle_preview("image/gif" = _content_type, conn, url) do
     mediaproxy_url = url |> MediaProxy.url()
 

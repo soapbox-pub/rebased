@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MediaProxy do
   alias Pleroma.Config
+  alias Pleroma.Helpers.UriHelper
   alias Pleroma.Upload
   alias Pleroma.Web
   alias Pleroma.Web.MediaProxy.Invalidation
@@ -58,9 +59,9 @@ defmodule Pleroma.Web.MediaProxy do
 
   # Note: routing all URLs to preview handler (even local and whitelisted).
   #   Preview handler will call url/1 on decoded URLs, and applicable ones will detour media proxy.
-  def preview_url(url) do
+  def preview_url(url, preview_params \\ []) do
     if preview_enabled?() do
-      encode_preview_url(url)
+      encode_preview_url(url, preview_params)
     else
       url
     end
@@ -116,10 +117,10 @@ defmodule Pleroma.Web.MediaProxy do
     build_url(sig64, base64, filename(url))
   end
 
-  def encode_preview_url(url) do
+  def encode_preview_url(url, preview_params \\ []) do
     {base64, sig64} = base64_sig64(url)
 
-    build_preview_url(sig64, base64, filename(url))
+    build_preview_url(sig64, base64, filename(url), preview_params)
   end
 
   def decode_url(sig, url) do
@@ -155,8 +156,10 @@ defmodule Pleroma.Web.MediaProxy do
     proxy_url("proxy", sig_base64, url_base64, filename)
   end
 
-  def build_preview_url(sig_base64, url_base64, filename \\ nil) do
-    proxy_url("proxy/preview", sig_base64, url_base64, filename)
+  def build_preview_url(sig_base64, url_base64, filename \\ nil, preview_params \\ []) do
+    uri = proxy_url("proxy/preview", sig_base64, url_base64, filename)
+
+    UriHelper.append_uri_params(uri, preview_params)
   end
 
   def verify_request_path_and_url(
