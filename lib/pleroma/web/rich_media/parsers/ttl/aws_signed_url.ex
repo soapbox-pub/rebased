@@ -10,20 +10,15 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
       |> parse_query_params()
       |> format_query_params()
       |> get_expiration_timestamp()
+    else
+      {:error, "Not aws signed url #{inspect(image)}"}
     end
   end
 
-  defp is_aws_signed_url(""), do: nil
-  defp is_aws_signed_url(nil), do: nil
-
-  defp is_aws_signed_url(image) when is_binary(image) do
+  defp is_aws_signed_url(image) when is_binary(image) and image != "" do
     %URI{host: host, query: query} = URI.parse(image)
 
-    if String.contains?(host, "amazonaws.com") and String.contains?(query, "X-Amz-Expires") do
-      image
-    else
-      nil
-    end
+    String.contains?(host, "amazonaws.com") and String.contains?(query, "X-Amz-Expires")
   end
 
   defp is_aws_signed_url(_), do: nil
@@ -46,6 +41,6 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
       |> Map.get("X-Amz-Date")
       |> Timex.parse("{ISO:Basic:Z}")
 
-    Timex.to_unix(date) + String.to_integer(Map.get(params, "X-Amz-Expires"))
+    {:ok, Timex.to_unix(date) + String.to_integer(Map.get(params, "X-Amz-Expires"))}
   end
 end
