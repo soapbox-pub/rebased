@@ -498,7 +498,7 @@ Settings for HTTP connection pool.
 * `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
 * `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
 * `:max_connections` - Maximum number of connections in the pool.
-* `:await_up_timeout` - Timeout to connect to the host.
+* `:connect_timeout` - Timeout to connect to the host.
 * `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
 
 ### :pools
@@ -517,7 +517,7 @@ There are four pools used:
 For each pool, the options are:
 
 * `:size` - limit to how much requests can be concurrently executed.
-* `:timeout` - timeout while `gun` will wait for response
+* `:recv_timeout` - timeout while `gun` will wait for response
 * `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
 
 ## Captcha
