@@ -13,8 +13,12 @@ defmodule Pleroma.BackupTest do
   alias Pleroma.Bookmark
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.BackupWorker
+  alias Pleroma.Tests.ObanHelpers
 
-  setup do: clear_config([Pleroma.Upload, :uploader])
+  setup do
+    clear_config([Pleroma.Upload, :uploader])
+    clear_config([Pleroma.Backup, :limit_days])
+  end
 
   test "it creates a backup record and an Oban job" do
     %{id: user_id} = user = insert(:user)
@@ -38,10 +42,34 @@ defmodule Pleroma.BackupTest do
   test "it process a backup record" do
     Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
     %{id: user_id} = user = insert(:user)
-    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id}} = job} = Backup.create(user)
-    assert {:ok, backup} = BackupWorker.perform(job)
+
+    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
+    assert {:ok, backup} = perform_job(BackupWorker, args)
     assert backup.file_size > 0
     assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
+
+    delete_job_args = %{"op" => "delete", "backup_id" => backup_id}
+
+    assert_enqueued(worker: BackupWorker, args: delete_job_args)
+    assert {:ok, backup} = perform_job(BackupWorker, delete_job_args)
+    refute Backup.get(backup_id)
+  end
+
+  test "it removes outdated backups after creating a fresh one" do
+    Pleroma.Config.put([Pleroma.Backup, :limit_days], -1)
+    Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    user = insert(:user)
+
+    assert {:ok, job1} = Backup.create(user)
+
+    assert {:ok, %Backup{id: backup1_id}} = ObanHelpers.perform(job1)
+    assert {:ok, job2} = Backup.create(user)
+    assert Pleroma.Repo.aggregate(Backup, :count) == 2
+    assert {:ok, backup2} = ObanHelpers.perform(job2)
+
+    ObanHelpers.perform_all()
+
+    assert [^backup2] = Pleroma.Repo.all(Backup)
   end
 
   test "it creates a zip archive with user data" do
@@ -145,7 +173,7 @@ defmodule Pleroma.BackupTest do
     File.rm!(path)
   end
 
-  describe "it uploads a backup archive" do
+  describe "it uploads and deletes a backup archive" do
     setup do
       clear_config(Pleroma.Uploaders.S3,
         bucket: "test_bucket",
@@ -173,8 +201,16 @@ defmodule Pleroma.BackupTest do
     test "S3", %{path: path, backup: backup} do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
 
-      with_mock ExAws, request: fn _ -> {:ok, :ok} end do
+      with_mock ExAws,
+        request: fn
+          %{http_method: :put} -> {:ok, :ok}
+          %{http_method: :delete} -> {:ok, %{status_code: 204}}
+        end do
         assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
+        assert {:ok, _backup} = Backup.delete(backup)
+      end
+
+      with_mock ExAws, request: fn %{http_method: :delete} -> {:ok, %{status_code: 204}} end do
       end
     end
 
@@ -182,6 +218,7 @@ defmodule Pleroma.BackupTest do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
 
       assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
+      assert {:ok, _backup} = Backup.delete(backup)
     end
   end
 end

@@ -15,6 +15,7 @@ defmodule Pleroma.Backup do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
+  alias Pleroma.Workers.BackupWorker
 
   schema "backups" do
     field(:content_type, :string)
@@ -30,7 +31,7 @@ defmodule Pleroma.Backup do
   def create(user) do
     with :ok <- validate_limit(user),
          {:ok, backup} <- user |> new() |> Repo.insert() do
-      Pleroma.Workers.BackupWorker.enqueue("process", %{"backup_id" => backup.id})
+      BackupWorker.process(backup)
     end
   end
 
@@ -44,6 +45,14 @@ defmodule Pleroma.Backup do
       content_type: "application/zip",
       file_name: name
     }
+  end
+
+  def delete(backup) do
+    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+
+    with :ok <- uploader.delete_file("backups/" <> backup.file_name) do
+      Repo.delete(backup)
+    end
   end
 
   defp validate_limit(user) do
@@ -75,7 +84,8 @@ defmodule Pleroma.Backup do
     __MODULE__
     |> where(user_id: ^user_id)
     |> where([b], b.id != ^latest_id)
-    |> Repo.delete_all()
+    |> Repo.all()
+    |> Enum.each(&BackupWorker.delete/1)
   end
 
   def get(id), do: Repo.get(__MODULE__, id)
