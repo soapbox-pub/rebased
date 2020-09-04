@@ -62,28 +62,21 @@ defmodule Pleroma.HTTP do
     uri = URI.parse(url)
     adapter_opts = AdapterHelper.options(uri, options[:adapter] || [])
 
-    case AdapterHelper.get_conn(uri, adapter_opts) do
-      {:ok, adapter_opts} ->
-        options = put_in(options[:adapter], adapter_opts)
-        params = options[:params] || []
-        request = build_request(method, headers, options, url, body, params)
+    options = put_in(options[:adapter], adapter_opts)
+    params = options[:params] || []
+    request = build_request(method, headers, options, url, body, params)
 
-        adapter = Application.get_env(:tesla, :adapter)
+    adapter = Application.get_env(:tesla, :adapter)
 
-        client = Tesla.client(adapter_middlewares(adapter), adapter)
+    client = Tesla.client(adapter_middlewares(adapter), adapter)
 
-        maybe_limit(
-          fn ->
-            request(client, request)
-          end,
-          adapter,
-          adapter_opts
-        )
-
-      # Connection release is handled in a custom FollowRedirects middleware
-      err ->
-        err
-    end
+    maybe_limit(
+      fn ->
+        request(client, request)
+      end,
+      adapter,
+      adapter_opts
+    )
   end
 
   @spec request(Client.t(), keyword()) :: {:ok, Env.t()} | {:error, any()}
@@ -110,7 +103,7 @@ defmodule Pleroma.HTTP do
   end
 
   defp adapter_middlewares(Tesla.Adapter.Gun) do
-    [Pleroma.HTTP.Middleware.FollowRedirects]
+    [Tesla.Middleware.FollowRedirects, Pleroma.Tesla.Middleware.ConnectionPool]
   end
 
   defp adapter_middlewares(_), do: []
