@@ -115,8 +115,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "expires_in" => expires_in
         })
 
-      assert fourth_response =
-               %{"id" => fourth_id} = json_response_and_validate_schema(conn_four, 200)
+      assert %{"id" => fourth_id} = json_response_and_validate_schema(conn_four, 200)
 
       assert Activity.get_by_id(fourth_id)
 
@@ -1141,6 +1140,52 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity_two.id}/pin")
                |> json_response_and_validate_schema(400)
+    end
+
+    test "on pin removes deletion job, on unpin reschedule deletion" do
+      %{conn: conn} = oauth_access(["write:accounts", "write:statuses"])
+      expires_in = 2 * 60 * 60
+
+      expires_at = DateTime.add(DateTime.utc_now(), expires_in)
+
+      assert %{"id" => id} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("api/v1/statuses", %{
+                 "status" => "oolong",
+                 "expires_in" => expires_in
+               })
+               |> json_response_and_validate_schema(200)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: id},
+        scheduled_at: expires_at
+      )
+
+      assert %{"id" => ^id, "pinned" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses/#{id}/pin")
+               |> json_response_and_validate_schema(200)
+
+      refute_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: id},
+        scheduled_at: expires_at
+      )
+
+      assert %{"id" => ^id, "pinned" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses/#{id}/unpin")
+               |> json_response_and_validate_schema(200)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: id},
+        scheduled_at: expires_at
+      )
     end
   end
 

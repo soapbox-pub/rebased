@@ -44,25 +44,4 @@ defmodule Pleroma.Workers.PurgeExpiredActivityTest do
 
     assert %Oban.Job{} = Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id)
   end
-
-  test "don't delete pinned posts, schedule deletion on next day" do
-    activity = insert(:note_activity)
-
-    assert {:ok, _} =
-             PurgeExpiredActivity.enqueue(%{
-               activity_id: activity.id,
-               expires_at: DateTime.utc_now(),
-               validate: false
-             })
-
-    user = Pleroma.User.get_by_ap_id(activity.actor)
-    {:ok, activity} = Pleroma.Web.CommonAPI.pin(activity.id, user)
-
-    assert %{success: 1, failure: 0} ==
-             Oban.drain_queue(queue: :activity_expiration, with_scheduled: true)
-
-    job = Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id)
-
-    assert DateTime.diff(job.scheduled_at, DateTime.add(DateTime.utc_now(), 24 * 3600)) in [0, 1]
-  end
 end
