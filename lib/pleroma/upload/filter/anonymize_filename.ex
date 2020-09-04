@@ -16,8 +16,10 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilename do
   def filter(%Upload{name: name} = upload) do
     extension = List.last(String.split(name, "."))
     name = predefined_name(extension) || random(extension)
-    {:ok, %Upload{upload | name: name}}
+    {:ok, :filtered, %Upload{upload | name: name}}
   end
+
+  def filter(_), do: {:ok, :noop}
 
   @spec predefined_name(String.t()) :: String.t() | nil
   defp predefined_name(extension) do

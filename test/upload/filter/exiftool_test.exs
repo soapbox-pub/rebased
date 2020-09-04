@@ -21,7 +21,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
       tempfile: Path.absname("test/fixtures/DSCN0010_tmp.jpg")
     }
 
-    assert Filter.Exiftool.filter(upload) == :ok
+    assert Filter.Exiftool.filter(upload) == {:ok, :filtered}
 
     {exif_original, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010.jpg"])
     {exif_filtered, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010_tmp.jpg"])
