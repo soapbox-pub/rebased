@@ -27,7 +27,7 @@ defmodule Pleroma.BackupTest do
 
   test "it return an error if the export limit is over" do
     %{id: user_id} = user = insert(:user)
-    limit_days = 7
+    limit_days = Pleroma.Config.get([Pleroma.Backup, :limit_days])
     assert {:ok, %Oban.Job{args: args}} = Backup.create(user)
     backup = Backup.get(args["backup_id"])
     assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup

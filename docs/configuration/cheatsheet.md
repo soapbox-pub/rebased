@@ -1083,6 +1083,11 @@ Control favicons for instances.
 
 * `enabled`: Allow/disallow displaying and getting instances favicons
 
+## Account Backup
+
+* `:purge_after_days` an integer, remove backup achives after N days.
+* `:limit_days` an integer, limit user to export not more often than once per N days.
+
 ## Frontend management
 
 Frontends in Pleroma are swappable - you can specify which one to use here.

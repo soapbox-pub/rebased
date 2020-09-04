@@ -818,6 +818,10 @@ config :floki, :html_parser, Floki.HTMLParser.FastHtml
 
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
 
+config :pleroma, Pleroma.Backup,
+  purge_after_days: 30,
+  limit_days: 7
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

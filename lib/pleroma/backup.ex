@@ -49,7 +49,7 @@ defmodule Pleroma.Backup do
   defp validate_limit(user) do
     case get_last(user.id) do
       %__MODULE__{inserted_at: inserted_at} ->
-        days = 7
+        days = Pleroma.Config.get([Pleroma.Backup, :limit_days])
         diff = Timex.diff(NaiveDateTime.utc_now(), inserted_at, :days)
 
         if diff > days do
