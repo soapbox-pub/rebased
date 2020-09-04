@@ -10,8 +10,11 @@ defmodule Pleroma.Upload.Filter.Exiftool do
   @behaviour Pleroma.Upload.Filter
 
   @spec filter(Pleroma.Upload.t()) :: {:ok, any()} | {:error, String.t()}
+
+  # webp is not compatible with exiftool at this time
+  def filter(%Pleroma.Upload{content_type: "image/webp"}), do: {:ok, :noop}
+
   def filter(%Pleroma.Upload{name: file, tempfile: path, content_type: "image" <> _}) do
-    # webp is not compatible with exiftool at this time
     if Regex.match?(~r/\.(webp)$/i, file) do
       {:ok, :noop}
     else
