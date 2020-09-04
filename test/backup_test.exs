@@ -11,9 +11,9 @@ defmodule Pleroma.BackupTest do
 
   alias Pleroma.Backup
   alias Pleroma.Bookmark
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.BackupWorker
-  alias Pleroma.Tests.ObanHelpers
 
   setup do
     clear_config([Pleroma.Upload, :uploader])
