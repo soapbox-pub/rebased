@@ -145,6 +145,8 @@ defmodule Pleroma.Instances.Instance do
 
       favicon
     end
+  rescue
+    _ -> nil
   end
 
   defp scrape_favicon(%URI{} = instance_uri) do
@@ -159,7 +161,8 @@ defmodule Pleroma.Instances.Instance do
              |> Floki.attribute("link[rel=icon]", "href")
              |> List.first(),
            favicon <- URI.merge(instance_uri, favicon_rel) |> to_string(),
-           true <- is_binary(favicon) do
+           true <- is_binary(favicon),
+           true <- String.length(favicon) <= 255 do
         favicon
       else
         _ -> nil
