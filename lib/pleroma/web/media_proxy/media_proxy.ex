@@ -41,20 +41,16 @@ defmodule Pleroma.Web.MediaProxy do
   def url("/" <> _ = url), do: url
 
   def url(url) do
-    if not enabled?() or not url_proxiable?(url) do
-      url
-    else
+    if enabled?() and url_proxiable?(url) do
       encode_url(url)
+    else
+      url
     end
   end
 
   @spec url_proxiable?(String.t()) :: boolean()
   def url_proxiable?(url) do
-    if local?(url) or whitelisted?(url) do
-      false
-    else
-      true
-    end
+    not local?(url) and not whitelisted?(url)
   end
 
   def preview_url(url, preview_params \\ []) do
@@ -69,7 +65,7 @@ defmodule Pleroma.Web.MediaProxy do
 
   # Note: media proxy must be enabled for media preview proxy in order to load all
   #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
-  def preview_enabled?, do: enabled?() and Config.get([:media_preview_proxy, :enabled], false)
+  def preview_enabled?, do: enabled?() and !!Config.get([:media_preview_proxy, :enabled])
 
   def local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
 
@@ -138,9 +134,13 @@ defmodule Pleroma.Web.MediaProxy do
     if path = URI.parse(url_or_path).path, do: Path.basename(path)
   end
 
+  def base_url do
+    Config.get([:media_proxy, :base_url], Web.base_url())
+  end
+
   defp proxy_url(path, sig_base64, url_base64, filename) do
     [
-      Config.get([:media_proxy, :base_url], Web.base_url()),
+      base_url(),
       path,
       sig_base64,
       url_base64,

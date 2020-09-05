@@ -18,6 +18,7 @@ defmodule Pleroma.ReverseProxy do
   @methods ~w(GET HEAD)
 
   def max_read_duration_default, do: @max_read_duration
+  def default_cache_control_header, do: @default_cache_control_header
 
   @moduledoc """
   A reverse proxy.

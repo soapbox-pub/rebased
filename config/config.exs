@@ -755,11 +755,6 @@ config :pleroma, :pools,
   ],
   media: [
     size: 50,
-    max_waiting: 10,
-    timeout: 10_000
-  ],
-  preview: [
-    size: 50,
     max_waiting: 20,
     timeout: 15_000
   ],

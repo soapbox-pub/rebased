@@ -51,7 +51,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     media_proxy_url = MediaProxy.url(url)
 
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
-           Pleroma.HTTP.request("head", media_proxy_url, [], [], adapter: [pool: :preview]) do
+           Pleroma.HTTP.request("head", media_proxy_url, [], [], adapter: [pool: :media]) do
       content_type = Tesla.get_header(head_response, "content-type")
       handle_preview(content_type, conn, media_proxy_url)
     else
@@ -154,8 +154,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     conn
     |> put_resp_header("content-type", content_type)
     |> put_resp_header("content-disposition", "inline; filename=\"#{filename}\"")
-    # TODO: enable caching
-    |> put_resp_header("cache-control", "max-age=0, private, must-revalidate")
+    |> put_resp_header("cache-control", ReverseProxy.default_cache_control_header())
   end
 
   defp thumbnail_max_dimensions(params) do
