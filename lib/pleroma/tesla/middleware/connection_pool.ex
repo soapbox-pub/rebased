@@ -42,6 +42,9 @@ defmodule Pleroma.Tesla.Middleware.ConnectionPool do
             ConnectionPool.release_conn(conn_pid)
             err
         end
+
+      err ->
+        err
     end
   end
 end
