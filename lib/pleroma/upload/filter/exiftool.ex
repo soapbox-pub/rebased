@@ -14,19 +14,9 @@ defmodule Pleroma.Upload.Filter.Exiftool do
   # webp is not compatible with exiftool at this time
   def filter(%Pleroma.Upload{content_type: "image/webp"}), do: {:ok, :noop}
 
-  def filter(%Pleroma.Upload{name: file, tempfile: path, content_type: "image" <> _}) do
-    if Regex.match?(~r/\.(webp)$/i, file) do
-      {:ok, :noop}
-    else
-      strip_exif(path)
-    end
-  end
-
-  def filter(_), do: {:ok, :noop}
-
-  defp strip_exif(path) do
+  def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     try do
-      case System.cmd("exiftool", ["-overwrite_original", "-gps:all=", path], parallelism: true) do
+      case System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true) do
         {_response, 0} -> {:ok, :filtered}
         {error, 1} -> {:error, error}
       end
@@ -35,4 +25,6 @@ defmodule Pleroma.Upload.Filter.Exiftool do
         {:error, "exiftool command not found"}
     end
   end
+
+  def filter(_), do: {:ok, :noop}
 end

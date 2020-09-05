@@ -37,12 +37,6 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
       content_type: "image/webp"
     }
 
-    bad_type = %Pleroma.Upload{
-      name: "sample.webp",
-      content_type: "image/jpeg"
-    }
-
     assert Filter.Exiftool.filter(upload) == {:ok, :noop}
-    assert Filter.Exiftool.filter(bad_type) == {:ok, :noop}
   end
 end
