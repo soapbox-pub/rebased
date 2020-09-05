@@ -227,7 +227,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
           }
         )
 
-      {:ok, %{token: token}} = MFA.Token.create_token(user)
+      {:ok, %{token: token}} = MFA.Token.create(user)
 
       user2 = insert(:user)
       otp_token = TOTP.generate_token(otp_secret)
@@ -256,7 +256,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
           }
         )
 
-      {:ok, %{token: token}} = MFA.Token.create_token(user)
+      {:ok, %{token: token}} = MFA.Token.create(user)
 
       user2 = insert(:user)
       otp_token = TOTP.generate_token(TOTP.generate_secret())

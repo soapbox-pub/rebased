@@ -530,7 +530,7 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
-    oauth_token_expiration: 1,
+    token_expiration: 5,
     federator_incoming: 50,
     federator_outgoing: 50,
     web_push: 50,
