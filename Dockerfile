@@ -31,7 +31,7 @@ LABEL maintainer="ops@pleroma.social" \
 ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
-RUN echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
+RUN echo "https://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
 	apk update &&\
 	apk add exiftool imagemagick ncurses postgresql-client &&\
 	adduser --system --shell /bin/false --home ${HOME} pleroma &&\
