@@ -32,7 +32,8 @@ defmodule Pleroma.Tesla.Middleware.ConnectionPool do
           {:ok, env} ->
             unless opts[:adapter][:body_as] == :chunks do
               ConnectionPool.release_conn(conn_pid)
-              {:ok, pop_in(env.opts[:adapter][:conn])}
+              {_, res} = pop_in(env.opts[:adapter][:conn])
+              {:ok, res}
             else
               {:ok, env}
             end
