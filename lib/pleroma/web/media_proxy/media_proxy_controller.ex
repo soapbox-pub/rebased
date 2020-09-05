@@ -48,10 +48,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp handle_preview(conn, url) do
+    media_proxy_url = MediaProxy.url(url)
+
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
-           Pleroma.HTTP.request("head", MediaProxy.url(url), [], [], [adapter: [pool: :preview]]) do
+           Pleroma.HTTP.request("head", media_proxy_url, [], [], adapter: [pool: :preview]) do
       content_type = Tesla.get_header(head_response, "content-type")
-      handle_preview(content_type, conn, url)
+      handle_preview(content_type, conn, media_proxy_url)
     else
       {_, %{status: status}} ->
         send_resp(conn, :failed_dependency, "Can't fetch HTTP headers (HTTP #{status}).")
@@ -67,40 +69,38 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   defp handle_preview(
          "image/" <> _ = _content_type,
          %{params: %{"output_format" => "jpeg"}} = conn,
-         url
+         media_proxy_url
        ) do
-    handle_jpeg_preview(conn, url)
+    handle_jpeg_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview("image/gif" = _content_type, conn, url) do
-    mediaproxy_url = url |> MediaProxy.url()
-
-    redirect(conn, external: mediaproxy_url)
+  defp handle_preview("image/gif" = _content_type, conn, media_proxy_url) do
+    redirect(conn, external: media_proxy_url)
   end
 
-  defp handle_preview("image/png" <> _ = _content_type, conn, url) do
-    handle_png_preview(conn, url)
+  defp handle_preview("image/png" <> _ = _content_type, conn, media_proxy_url) do
+    handle_png_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview("image/" <> _ = _content_type, conn, url) do
-    handle_jpeg_preview(conn, url)
+  defp handle_preview("image/" <> _ = _content_type, conn, media_proxy_url) do
+    handle_jpeg_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview("video/" <> _ = _content_type, conn, url) do
-    handle_video_preview(conn, url)
+  defp handle_preview("video/" <> _ = _content_type, conn, media_proxy_url) do
+    handle_video_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview(content_type, conn, _url) do
+  defp handle_preview(content_type, conn, _media_proxy_url) do
     send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
   end
 
-  defp handle_png_preview(%{params: params} = conn, url) do
+  defp handle_png_preview(%{params: params} = conn, media_proxy_url) do
     quality = Config.get!([:media_preview_proxy, :image_quality])
 
     with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
          {:ok, thumbnail_binary} <-
            MediaHelper.image_resize(
-             url,
+             media_proxy_url,
              %{
                max_width: thumbnail_max_width,
                max_height: thumbnail_max_height,
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
              }
            ) do
       conn
-      |> put_preview_response_headers("image/png", "preview.png")
+      |> put_preview_response_headers(["image/png", "preview.png"])
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
@@ -117,13 +117,13 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  defp handle_jpeg_preview(%{params: params} = conn, url) do
+  defp handle_jpeg_preview(%{params: params} = conn, media_proxy_url) do
     quality = Config.get!([:media_preview_proxy, :image_quality])
 
     with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
          {:ok, thumbnail_binary} <-
            MediaHelper.image_resize(
-             url,
+             media_proxy_url,
              %{max_width: thumbnail_max_width, max_height: thumbnail_max_height, quality: quality}
            ) do
       conn
@@ -135,9 +135,9 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  defp handle_video_preview(conn, url) do
+  defp handle_video_preview(conn, media_proxy_url) do
     with {:ok, thumbnail_binary} <-
-           MediaHelper.video_framegrab(url) do
+           MediaHelper.video_framegrab(media_proxy_url) do
       conn
       |> put_preview_response_headers()
       |> send_resp(200, thumbnail_binary)
@@ -147,10 +147,14 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  defp put_preview_response_headers(conn, content_type \\ "image/jpeg", filename \\ "preview.jpg") do
+  defp put_preview_response_headers(
+         conn,
+         [content_type, filename] = _content_info \\ ["image/jpeg", "preview.jpg"]
+       ) do
     conn
     |> put_resp_header("content-type", content_type)
     |> put_resp_header("content-disposition", "inline; filename=\"#{filename}\"")
+    # TODO: enable caching
     |> put_resp_header("cache-control", "max-age=0, private, must-revalidate")
   end
 

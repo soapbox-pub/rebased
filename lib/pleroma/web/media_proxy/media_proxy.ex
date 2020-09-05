@@ -57,13 +57,11 @@ defmodule Pleroma.Web.MediaProxy do
     end
   end
 
-  # Note: routing all URLs to preview handler (even local and whitelisted).
-  #   Preview handler will call url/1 on decoded URLs, and applicable ones will detour media proxy.
   def preview_url(url, preview_params \\ []) do
     if preview_enabled?() do
       encode_preview_url(url, preview_params)
     else
-      url
+      url(url)
     end
   end
 

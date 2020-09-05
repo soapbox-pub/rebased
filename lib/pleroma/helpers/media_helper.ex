@@ -7,12 +7,14 @@ defmodule Pleroma.Helpers.MediaHelper do
   Handles common media-related operations.
   """
 
+  alias Pleroma.HTTP
+
   @tmp_base "/tmp/pleroma-media_preview-pipe"
 
   def image_resize(url, options) do
     with executable when is_binary(executable) <- System.find_executable("convert"),
          {:ok, args} <- prepare_image_resize_args(options),
-         {:ok, env} <- Pleroma.HTTP.get(url, [], [adapter: [pool: :preview]]),
+         {:ok, env} <- HTTP.get(url, [], adapter: [pool: :preview]),
          {:ok, fifo_path} <- mkfifo() do
       args = List.flatten([fifo_path, args])
       run_fifo(fifo_path, env, executable, args)
@@ -60,7 +62,7 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
-         {:ok, env} <- Pleroma.HTTP.get(url, [], [adapter: [pool: :preview]]),
+         {:ok, env} <- HTTP.get(url, [], adapter: [pool: :preview]),
          {:ok, fifo_path} <- mkfifo(),
          args = [
            "-y",
