@@ -23,7 +23,4 @@ defmodule Pleroma.HTTP.AdapterHelper.Hackney do
   end
 
   defp add_scheme_opts(opts, _), do: opts
-
-  @spec get_conn(URI.t(), keyword()) :: {:ok, keyword()}
-  def get_conn(_uri, opts), do: {:ok, opts}
 end
