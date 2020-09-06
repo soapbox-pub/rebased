@@ -6,15 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## unreleased-patch - ???
 
 ### Added
+
 - Rich media failure tracking (along with `:failure_backoff` option)
 
 ### Fixed
+
 - Possible OOM errors with the default HTTP adapter
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 - Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
   Reduced to just rich media timeout.
 - Mastodon API: Cards being wrong for preview statuses due to cache key collision
 - Password resets no longer processed for deactivated accounts
+
+## Unreleased
+
+### Removed
+
+- **Breaking:** Removed `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab`.
 
 ## [2.1.0] - 2020-08-28
 
