@@ -260,13 +260,14 @@ defmodule Pleroma.Web.Router do
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
-
-    post("/blocks_import", UtilController, :blocks_import)
-    post("/follow_import", UtilController, :follow_import)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:authenticated_api)
+
+    post("/mutes_import", UserImportController, :mutes)
+    post("/blocks_import", UserImportController, :blocks)
+    post("/follow_import", UserImportController, :follow)
 
     get("/accounts/mfa", TwoFactorAuthenticationController, :settings)
     get("/accounts/mfa/backup_codes", TwoFactorAuthenticationController, :backup_codes)

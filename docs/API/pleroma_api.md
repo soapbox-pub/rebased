@@ -44,6 +44,23 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: HTTP 200 on success, 500 on error
 * Note: Users that can't be followed are silently skipped.
 
+## `/api/pleroma/blocks_import`
+### Imports your blocks.
+* Method: `POST`
+* Authentication: required
+* Params:
+    * `list`: STRING or FILE containing a whitespace-separated list of accounts to follow
+* Response: HTTP 200 on success, 500 on error
+
+## `/api/pleroma/mutes_import`
+### Imports your mutes.
+* Method: `POST`
+* Authentication: required
+* Params:
+    * `list`: STRING or FILE containing a whitespace-separated list of accounts to follow
+* Response: HTTP 200 on success, 500 on error
+
+
 ## `/api/pleroma/captcha`
 ### Get a new captcha
 * Method: `GET`
