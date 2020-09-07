@@ -2,7 +2,7 @@ defmodule Pleroma.Repo.Migrations.RemoveCronClearOauthTokenWorkerFromObanConfig 
   use Ecto.Migration
 
   def change do
-     with %Pleroma.ConfigDB{} = config <-
+    with %Pleroma.ConfigDB{} = config <-
            Pleroma.ConfigDB.get_by_params(%{group: :pleroma, key: Oban}),
          crontab when is_list(crontab) <- config.value[:crontab],
          index when is_integer(index) <-
@@ -15,6 +15,5 @@ defmodule Pleroma.Repo.Migrations.RemoveCronClearOauthTokenWorkerFromObanConfig 
       |> Ecto.Changeset.change(value: updated_value)
       |> Pleroma.Repo.update()
     end
-
   end
 end
