@@ -58,7 +58,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     with true <- Config.get([:rich_media, :enabled]),
          false <- object.data["sensitive"] || false,
          {:ok, page_url} <-
-           HTML.extract_first_external_url(object, object.data["content"]),
+           HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
