@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich media failure tracking (along with `:failure_backoff` option)
 
 ### Fixed
+- Possible OOM errors with the default HTTP adapter
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 - Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
   Reduced to just rich media timeout.
