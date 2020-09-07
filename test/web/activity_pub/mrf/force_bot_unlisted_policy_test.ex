@@ -10,18 +10,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicyTest do
 
   defp generate_messages(actor) do
     {%{
-      "actor" => actor.ap_id,
-      "type" => "Create",
-      "object" => %{},
-      "to" => [@public, "f"],
-      "cc" => [actor.follower_address, "d"]
-    }, %{
-      "actor" => actor.ap_id,
-      "type" => "Create",
-      "object" => %{"to" => ["f", actor.follower_address], "cc" => ["d", @public]},
-      "to" => ["f", actor.follower_address],
-      "cc" => ["d", @public]
-    }}
+       "actor" => actor.ap_id,
+       "type" => "Create",
+       "object" => %{},
+       "to" => [@public, "f"],
+       "cc" => [actor.follower_address, "d"]
+     },
+     %{
+       "actor" => actor.ap_id,
+       "type" => "Create",
+       "object" => %{"to" => ["f", actor.follower_address], "cc" => ["d", @public]},
+       "to" => ["f", actor.follower_address],
+       "cc" => ["d", @public]
+     }}
   end
 
   test "removes from the federated timeline by nickname heuristics 1" do

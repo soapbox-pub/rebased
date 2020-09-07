@@ -21,14 +21,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
 
   @impl true
   def filter(
-         %{
-           "type" => "Create",
-           "to" => to,
-           "cc" => cc,
-           "actor" => actor,
-           "object" => object
-         } = message
-       ) do
+        %{
+          "type" => "Create",
+          "to" => to,
+          "cc" => cc,
+          "actor" => actor,
+          "object" => object
+        } = message
+      ) do
     user = User.get_cached_by_ap_id(actor)
     isbot = 0.8 < botness_score(user)
 
