@@ -8,6 +8,7 @@ defmodule Pleroma.Instances.InstanceTest do
 
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
 
   setup_all do: clear_config([:instance, :federation_reachability_timeout_days], 1)
@@ -96,5 +97,37 @@ defmodule Pleroma.Instances.InstanceTest do
       instance = Repo.get(Instance, instance.id)
       assert initial_value == instance.unreachable_since
     end
+  end
+
+  test "Scrapes favicon URLs" do
+    Tesla.Mock.mock(fn %{url: "https://favicon.example.org/"} ->
+      %Tesla.Env{
+        status: 200,
+        body: ~s[<html><head><link rel="icon" href="/favicon.png"></head></html>]
+      }
+    end)
+
+    assert "https://favicon.example.org/favicon.png" ==
+             Instance.get_or_update_favicon(URI.parse("https://favicon.example.org/"))
+  end
+
+  test "Returns nil on too long favicon URLs" do
+    long_favicon_url =
+      "https://Lorem.ipsum.dolor.sit.amet/consecteturadipiscingelit/Praesentpharetrapurusutaliquamtempus/Mauriseulaoreetarcu/atfacilisisorci/Nullamporttitor/nequesedfeugiatmollis/dolormagnaefficiturlorem/nonpretiumsapienorcieurisus/Nullamveleratsem/Maecenassedaccumsanexnam/favicon.png"
+
+    Tesla.Mock.mock(fn %{url: "https://long-favicon.example.org/"} ->
+      %Tesla.Env{
+        status: 200,
+        body: ~s[<html><head><link rel="icon" href="] <> long_favicon_url <> ~s["></head></html>]
+      }
+    end)
+
+    assert capture_log(fn ->
+             assert nil ==
+                      Instance.get_or_update_favicon(
+                        URI.parse("https://long-favicon.example.org/")
+                      )
+           end) =~
+             "Instance.get_or_update_favicon(\"long-favicon.example.org\") error: %Postgrex.Error{"
   end
 end
