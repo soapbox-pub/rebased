@@ -24,10 +24,8 @@ defmodule Pleroma.Web.MetadataTest do
   end
 
   describe "no metadata for private instances" do
-    setup do: clear_config([:instance, :public])
-
     test "for local user" do
-      Pleroma.Config.put([:instance, :public], false)
+      clear_config([:instance, :public], false)
       user = insert(:user, bio: "This is my secret fedi account bio")
 
       assert "" = Pleroma.Web.Metadata.build_tags(%{user: user})

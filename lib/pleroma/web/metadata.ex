@@ -7,7 +7,6 @@ defmodule Pleroma.Web.Metadata do
 
   def build_tags(params) do
     providers = [
-      Pleroma.Web.Metadata.Providers.Feed,
       Pleroma.Web.Metadata.Providers.RelMe,
       Pleroma.Web.Metadata.Providers.RestrictIndexing
       | activated_providers()
@@ -47,7 +46,7 @@ defmodule Pleroma.Web.Metadata do
 
   defp activated_providers do
     unless Pleroma.Config.restrict_unauthenticated_access?(:activities, :local) do
-      Pleroma.Config.get([__MODULE__, :providers], [])
+      [Pleroma.Web.Metadata.Providers.Feed | Pleroma.Config.get([__MODULE__, :providers], [])]
     else
       []
     end
