@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicyTest do
   use Pleroma.DataCase
   import Pleroma.Factory
 
-  import Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy
+  alias Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy
 
   defp generate_messages(actor) do
     {%{
