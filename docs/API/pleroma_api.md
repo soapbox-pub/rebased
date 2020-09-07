@@ -49,7 +49,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Method: `POST`
 * Authentication: required
 * Params:
-    * `list`: STRING or FILE containing a whitespace-separated list of accounts to follow
+    * `list`: STRING or FILE containing a whitespace-separated list of accounts to block
 * Response: HTTP 200 on success, 500 on error
 
 ## `/api/pleroma/mutes_import`
@@ -57,7 +57,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Method: `POST`
 * Authentication: required
 * Params:
-    * `list`: STRING or FILE containing a whitespace-separated list of accounts to follow
+    * `list`: STRING or FILE containing a whitespace-separated list of accounts to mute
 * Response: HTTP 200 on success, 500 on error
 
 

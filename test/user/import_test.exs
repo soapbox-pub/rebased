@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.ImportTest do
-
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
@@ -36,7 +35,6 @@ defmodule Pleroma.User.ImportTest do
       assert User.following?(user1, user3)
     end
   end
-
 
   describe "blocks_import" do
     test "it imports user blocks from list" do
