@@ -195,7 +195,9 @@ defmodule Pleroma.Mixfile do
       {:ex_machina, "~> 2.4", only: :test},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
-      {:excoveralls, "~> 0.13.1", only: :test},
+      # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
+      {:excoveralls, "0.12.3", only: :test},
+      {:hackney, "1.15.2", override: true},
       {:mox, "~> 0.5", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()
