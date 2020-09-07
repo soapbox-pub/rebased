@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Breaking:** Removed `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab`.
 - **Breaking:** Removed `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` config.
+- **Breaking:** Removed `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab`.
 
 ## [2.1.1] - 2020-09-08
 
