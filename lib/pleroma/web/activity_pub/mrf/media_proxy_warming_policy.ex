@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
     url
     |> MediaProxy.url()
-    |> HTTP.get([], adapter: @options)
+    |> HTTP.get([], @options)
   end
 
   def perform(:preload, %{"object" => %{"attachment" => attachments}} = _message) do

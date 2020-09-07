@@ -87,6 +87,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def rich_media_get(url) do
     headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
-    Pleroma.HTTP.get(url, headers, adapter: @options)
+    Pleroma.HTTP.get(url, headers, @options)
   end
 end

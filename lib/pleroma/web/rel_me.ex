@@ -25,7 +25,7 @@ defmodule Pleroma.Web.RelMe do
 
   defp parse_url(url) do
     with {:ok, %Tesla.Env{body: html, status: status}} when status in 200..299 <-
-           Pleroma.HTTP.get(url, [], adapter: @options),
+           Pleroma.HTTP.get(url, [], @options),
          {:ok, html_tree} <- Floki.parse_document(html),
          data <-
            Floki.attribute(html_tree, "link[rel~=me]", "href") ++
