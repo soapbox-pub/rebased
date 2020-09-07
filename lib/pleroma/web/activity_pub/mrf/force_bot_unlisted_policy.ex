@@ -9,15 +9,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
 
   require Pleroma.Constants
 
-  defp check_by_actor_type(user) do
-    if user.actor_type in ["Application", "Service"], do: 1.0, else: 0.0
-  end
+  defp check_by_actor_type(user), do: user.actor_type in ["Application", "Service"]
+  defp check_by_nickname(user), do: Regex.match?(~r/bot@|ebooks@/i, user.nickname)
 
-  defp check_by_nickname(user) do
-    if Regex.match?(~r/bot@|ebooks@/i, user.nickname), do: 1.0, else: 0.0
-  end
-
-  defp botness_score(user), do: check_by_actor_type(user) + check_by_nickname(user)
+  defp check_if_bot(user), do: check_by_actor_type(user) or check_by_nickname(user)
 
   @impl true
   def filter(
@@ -30,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
         } = message
       ) do
     user = User.get_cached_by_ap_id(actor)
-    isbot = 0.8 < botness_score(user)
+    isbot = check_if_bot(user)
 
     if isbot and Enum.member?(to, Pleroma.Constants.as_public()) do
       to = List.delete(to, Pleroma.Constants.as_public()) ++ [user.follower_address]
