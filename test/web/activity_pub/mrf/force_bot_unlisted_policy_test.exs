@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicyTest do
   import Pleroma.Factory
 
   alias Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy
+  @public "https://www.w3.org/ns/activitystreams#Public"
 
   defp generate_messages(actor) do
     {%{
