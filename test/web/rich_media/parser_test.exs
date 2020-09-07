@@ -66,9 +66,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "doesn't just add a title" do
-    assert Parser.parse("http://example.com/non-ogp") ==
-             {:error,
-              "Found metadata was invalid or incomplete: %{\"url\" => \"http://example.com/non-ogp\"}"}
+    assert {:error, {:invalid_metadata, _}} = Parser.parse("http://example.com/non-ogp")
   end
 
   test "parses ogp" do
