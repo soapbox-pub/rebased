@@ -5,7 +5,11 @@ defmodule Pleroma.Config.Oban do
     oban_config = Pleroma.Config.get(Oban)
 
     crontab =
-      [Pleroma.Workers.Cron.StatsWorker, Pleroma.Workers.Cron.ClearOauthTokenWorker]
+      [
+        Pleroma.Workers.Cron.StatsWorker,
+        Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker,
+        Pleroma.Workers.Cron.ClearOauthTokenWorker
+      ]
       |> Enum.reduce(oban_config[:crontab], fn removed_worker, acc ->
         with acc when is_list(acc) <- acc,
              setting when is_tuple(setting) <-
