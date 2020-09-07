@@ -2480,6 +2480,12 @@ config :pleroma, :config_description, [
         key: :enabled,
         type: :boolean,
         description: "Enables expired activities addition & deletion"
+      },
+      %{
+        key: :min_lifetime,
+        type: :integer,
+        description: "Minimum lifetime for ephemeral activity (in seconds)",
+        suggestions: [600]
       }
     ]
   },

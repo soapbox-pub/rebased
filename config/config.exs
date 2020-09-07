@@ -654,7 +654,7 @@ config :pleroma, :rate_limit,
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
 
-config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true
+config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
 

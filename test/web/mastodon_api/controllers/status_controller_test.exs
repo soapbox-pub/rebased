@@ -129,8 +129,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
-      # 1 hour
-      expires_in = 60 * 60
+      # 1 minute
+      expires_in = 1 * 60
 
       assert %{"error" => "Expiry date is too soon"} =
                conn
@@ -141,8 +141,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                })
                |> json_response_and_validate_schema(422)
 
-      # 30 minutes
-      expires_in = 30 * 60
+      # 5 minutes
+      expires_in = 5 * 60
 
       assert %{"error" => "Expiry date is too soon"} =
                conn

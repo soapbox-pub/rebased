@@ -77,6 +77,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   def expires_late_enough?(scheduled_at) do
     now = DateTime.utc_now()
     diff = DateTime.diff(scheduled_at, now, :millisecond)
-    diff > :timer.hours(1)
+    min_lifetime = Pleroma.Config.get([__MODULE__, :min_lifetime], 600)
+    diff > :timer.seconds(min_lifetime)
   end
 end
