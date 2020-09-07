@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Removed
+
+- **Breaking:** Removed `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab`.
+
+
 ## unreleased-patch - ???
 
 ### Added
@@ -18,11 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Cards being wrong for preview statuses due to cache key collision
 - Password resets no longer processed for deactivated accounts
 
-## Unreleased
-
-### Removed
-
-- **Breaking:** Removed `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab`.
 
 ## [2.1.0] - 2020-08-28
 
