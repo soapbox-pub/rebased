@@ -14,6 +14,8 @@ defmodule Pleroma.Instances.Instance do
   import Ecto.Query
   import Ecto.Changeset
 
+  require Logger
+
   schema "instances" do
     field(:host, :string)
     field(:unreachable_since, :naive_datetime_usec)
@@ -145,6 +147,10 @@ defmodule Pleroma.Instances.Instance do
 
       favicon
     end
+  rescue
+    e ->
+      Logger.warn("Instance.get_or_update_favicon(\"#{host}\") error: #{inspect(e)}")
+      nil
   end
 
   defp scrape_favicon(%URI{} = instance_uri) do
@@ -165,7 +171,12 @@ defmodule Pleroma.Instances.Instance do
         _ -> nil
       end
     rescue
-      _ -> nil
+      e ->
+        Logger.warn(
+          "Instance.scrape_favicon(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
+        )
+
+        nil
     end
   end
 end
