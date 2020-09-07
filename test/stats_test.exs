@@ -4,7 +4,10 @@
 
 defmodule Pleroma.StatsTest do
   use Pleroma.DataCase
+
   import Pleroma.Factory
+
+  alias Pleroma.Stats
   alias Pleroma.Web.CommonAPI
 
   describe "user count" do
@@ -13,7 +16,7 @@ defmodule Pleroma.StatsTest do
       _internal = insert(:user, local: true, nickname: nil)
       _internal = Pleroma.Web.ActivityPub.Relay.get_actor()
 
-      assert match?(%{stats: %{user_count: 1}}, Pleroma.Stats.calculate_stat_data())
+      assert match?(%{stats: %{user_count: 1}}, Stats.calculate_stat_data())
     end
   end
 
@@ -47,23 +50,23 @@ defmodule Pleroma.StatsTest do
       end)
 
       assert %{"direct" => 3, "private" => 4, "public" => 1, "unlisted" => 2} =
-               Pleroma.Stats.get_status_visibility_count()
+               Stats.get_status_visibility_count()
     end
 
     test "on status delete" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{visibility: "public", status: "hey"})
-      assert %{"public" => 1} = Pleroma.Stats.get_status_visibility_count()
+      assert %{"public" => 1} = Stats.get_status_visibility_count()
       CommonAPI.delete(activity.id, user)
-      assert %{"public" => 0} = Pleroma.Stats.get_status_visibility_count()
+      assert %{"public" => 0} = Stats.get_status_visibility_count()
     end
 
     test "on status visibility update" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{visibility: "public", status: "hey"})
-      assert %{"public" => 1, "private" => 0} = Pleroma.Stats.get_status_visibility_count()
+      assert %{"public" => 1, "private" => 0} = Stats.get_status_visibility_count()
       {:ok, _} = CommonAPI.update_activity_scope(activity.id, %{visibility: "private"})
-      assert %{"public" => 0, "private" => 1} = Pleroma.Stats.get_status_visibility_count()
+      assert %{"public" => 0, "private" => 1} = Stats.get_status_visibility_count()
     end
 
     test "doesn't count unrelated activities" do
@@ -75,7 +78,7 @@ defmodule Pleroma.StatsTest do
       CommonAPI.repeat(activity.id, other_user)
 
       assert %{"direct" => 0, "private" => 0, "public" => 1, "unlisted" => 0} =
-               Pleroma.Stats.get_status_visibility_count()
+               Stats.get_status_visibility_count()
     end
   end
 
@@ -110,10 +113,10 @@ defmodule Pleroma.StatsTest do
       end)
 
       assert %{"direct" => 10, "private" => 0, "public" => 1, "unlisted" => 5} =
-               Pleroma.Stats.get_status_visibility_count(local_instance)
+               Stats.get_status_visibility_count(local_instance)
 
       assert %{"direct" => 0, "private" => 20, "public" => 0, "unlisted" => 0} =
-               Pleroma.Stats.get_status_visibility_count(instance2)
+               Stats.get_status_visibility_count(instance2)
     end
   end
 end

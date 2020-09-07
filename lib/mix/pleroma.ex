@@ -18,6 +18,7 @@ defmodule Mix.Pleroma do
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Pleroma.Config.Holder.save_default()
+    Pleroma.Config.Oban.warn()
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
 
     if Pleroma.Config.get(:env) != :test do
