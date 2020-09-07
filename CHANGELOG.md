@@ -5,10 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+- Settings renaming: `:await_up_timeout` in `:connections_pool` namespace to `connect_timeout`, `timeout` in `pools` namespace to `recv_timeout`.
+
 ### Removed
 
 - **Breaking:** Removed `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab`.
-
 
 ## unreleased-patch - ???
 
@@ -24,7 +27,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Reduced to just rich media timeout.
 - Mastodon API: Cards being wrong for preview statuses due to cache key collision
 - Password resets no longer processed for deactivated accounts
-
 
 ## [2.1.0] - 2020-08-28
 
