@@ -116,9 +116,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
   end
 
-  test "Favicon when :instance_favicons is enabled" do
-  end
-
   test "Represent the user account for the account owner" do
     user = insert(:user)
 
