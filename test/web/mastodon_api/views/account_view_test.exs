@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -18,8 +17,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
-
-  setup do: clear_config([:instances_favicons, :enabled])
 
   test "Represent a user account" do
     background_image = %{
@@ -78,8 +75,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       pleroma: %{
         ap_id: user.ap_id,
         background_image: "https://example.com/images/asuka_hospital.png",
-        favicon:
-          "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
+        favicon: nil,
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -98,22 +94,29 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("show.json", %{user: user, skip_visibility_check: true})
   end
 
-  test "Favicon is nil when :instances_favicons is disabled" do
-    user = insert(:user)
+  describe "favicon" do
+    setup do
+      [user: insert(:user)]
+    end
 
-    Config.put([:instances_favicons, :enabled], true)
+    test "is parsed when :instance_favicons is enabled", %{user: user} do
+      clear_config([:instances_favicons, :enabled], true)
 
-    assert %{
-             pleroma: %{
-               favicon:
-                 "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png"
-             }
-           } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+      assert %{
+               pleroma: %{
+                 favicon:
+                   "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png"
+               }
+             } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+    end
 
-    Config.put([:instances_favicons, :enabled], false)
+    test "is nil when :instances_favicons is disabled", %{user: user} do
+      assert %{pleroma: %{favicon: nil}} =
+               AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+    end
+  end
 
-    assert %{pleroma: %{favicon: nil}} =
-             AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+  test "Favicon when :instance_favicons is enabled" do
   end
 
   test "Represent the user account for the account owner" do
@@ -173,8 +176,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       pleroma: %{
         ap_id: user.ap_id,
         background_image: nil,
-        favicon:
-          "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
+        favicon: nil,
         confirmation_pending: false,
         tags: [],
         is_admin: false,

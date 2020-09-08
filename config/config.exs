@@ -547,7 +547,6 @@ config :pleroma, Oban,
   plugins: [Oban.Plugins.Pruner],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-    {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
     {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
@@ -737,28 +736,28 @@ config :pleroma, :connections_pool,
   max_connections: 250,
   max_idle_time: 30_000,
   retry: 0,
-  await_up_timeout: 5_000
+  connect_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
     max_waiting: 10,
-    timeout: 10_000
+    recv_timeout: 10_000
   ],
   media: [
     size: 50,
     max_waiting: 10,
-    timeout: 10_000
+    recv_timeout: 10_000
   ],
   upload: [
     size: 25,
     max_waiting: 5,
-    timeout: 15_000
+    recv_timeout: 15_000
   ],
   default: [
     size: 10,
     max_waiting: 2,
-    timeout: 5_000
+    recv_timeout: 5_000
   ]
 
 config :pleroma, :hackney_pools,

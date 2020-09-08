@@ -112,6 +112,8 @@ defmodule Pleroma.Instances.InstanceTest do
   end
 
   test "Returns nil on too long favicon URLs" do
+    clear_config([:instances_favicons, :enabled], true)
+
     long_favicon_url =
       "https://Lorem.ipsum.dolor.sit.amet/consecteturadipiscingelit/Praesentpharetrapurusutaliquamtempus/Mauriseulaoreetarcu/atfacilisisorci/Nullamporttitor/nequesedfeugiatmollis/dolormagnaefficiturlorem/nonpretiumsapienorcieurisus/Nullamveleratsem/Maecenassedaccumsanexnam/favicon.png"
 

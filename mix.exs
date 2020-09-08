@@ -134,8 +134,8 @@ defmodule Pleroma.Mixfile do
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
       {:tesla,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/tesla.git",
-       ref: "3a2789d8535f7b520ebbadc4494227e5ba0e5365",
+       git: "https://github.com/teamon/tesla/",
+       ref: "9f7261ca49f9f901ceb73b60219ad6f8a9f6aa30",
        override: true},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
@@ -197,7 +197,9 @@ defmodule Pleroma.Mixfile do
       {:ex_machina, "~> 2.4", only: :test},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
-      {:excoveralls, "~> 0.13.1", only: :test},
+      # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
+      {:excoveralls, "0.12.3", only: :test},
+      {:hackney, "1.15.2", override: true},
       {:mox, "~> 0.5", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()
