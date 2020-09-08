@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## unreleased-patch - ???
 
+### Security
+- Fix metadata leak for accounts and statuses on private instances
+
+### Changed
+
+- **Breaking:** The metadata providers RelMe and Feed are no longer configurable. RelMe should always be activated and Feed only provides a <link> header tag for the actual RSS/Atom feed when the instance is public.
+
+### Added
+
+- Rich media failure tracking (along with `:failure_backoff` option)
+
 ### Fixed
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 
