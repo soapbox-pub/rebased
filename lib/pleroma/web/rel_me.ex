@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.RelMe do
   @options [
     pool: :media,
-    max_body: 2_000_000
+    max_body: 2_000_000,
+    recv_timeout: 2_000
   ]
 
   if Pleroma.Config.get(:env) == :test do
@@ -23,18 +24,8 @@ defmodule Pleroma.Web.RelMe do
   def parse(_), do: {:error, "No URL provided"}
 
   defp parse_url(url) do
-    opts =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
-        Keyword.merge(@options,
-          recv_timeout: 2_000,
-          with_body: true
-        )
-      else
-        @options
-      end
-
     with {:ok, %Tesla.Env{body: html, status: status}} when status in 200..299 <-
-           Pleroma.HTTP.get(url, [], adapter: opts),
+           Pleroma.HTTP.get(url, [], @options),
          {:ok, html_tree} <- Floki.parse_document(html),
          data <-
            Floki.attribute(html_tree, "link[rel~=me]", "href") ++
