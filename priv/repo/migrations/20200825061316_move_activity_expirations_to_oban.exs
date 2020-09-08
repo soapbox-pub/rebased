@@ -17,8 +17,7 @@ defmodule Pleroma.Repo.Migrations.MoveActivityExpirationsToOban do
       with {:ok, expires_at} <- DateTime.from_naive(expiration.scheduled_at, "Etc/UTC") do
         Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
           activity_id: FlakeId.to_string(expiration.activity_id),
-          expires_at: expires_at,
-          validate: false
+          expires_at: expires_at
         })
       end
     end)

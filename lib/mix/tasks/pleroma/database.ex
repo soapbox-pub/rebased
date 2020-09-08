@@ -155,8 +155,7 @@ defmodule Mix.Tasks.Pleroma.Database do
 
         Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
           activity_id: activity.id,
-          expires_at: expires_at,
-          validate: false
+          expires_at: expires_at
         })
       end)
     end)

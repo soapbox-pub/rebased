@@ -18,8 +18,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
           | {:error, :expired_activities_disabled}
           | {:error, :expiration_too_close}
   def enqueue(args) do
-    with true <- enabled?(),
-         args when is_map(args) <- validate_expires_at(args) do
+    with true <- enabled?() do
       {scheduled_at, args} = Map.pop(args, :expires_at)
 
       args
@@ -39,16 +38,6 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   defp enabled? do
     with false <- Pleroma.Config.get([__MODULE__, :enabled], false) do
       {:error, :expired_activities_disabled}
-    end
-  end
-
-  defp validate_expires_at(%{validate: false} = args), do: Map.delete(args, :validate)
-
-  defp validate_expires_at(args) do
-    if expires_late_enough?(args[:expires_at]) do
-      args
-    else
-      {:error, :expiration_too_close}
     end
   end
 
