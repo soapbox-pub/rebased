@@ -225,47 +225,64 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     test "All statuses set" do
       user = insert(:user)
 
-      Mix.Tasks.Pleroma.User.run(["set", user.nickname, "--moderator", "--admin", "--locked"])
+      Mix.Tasks.Pleroma.User.run([
+        "set",
+        user.nickname,
+        "--admin",
+        "--confirmed",
+        "--locked",
+        "--moderator"
+      ])
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Moderator status .* true/
+      assert message =~ ~r/Admin status .* true/
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ ~r/Confirmation pending .* false/
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ ~r/Locked status .* true/
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Admin status .* true/
+      assert message =~ ~r/Moderator status .* true/
 
       user = User.get_cached_by_nickname(user.nickname)
       assert user.is_moderator
       assert user.locked
       assert user.is_admin
+      refute user.confirmation_pending
     end
 
     test "All statuses unset" do
-      user = insert(:user, locked: true, is_moderator: true, is_admin: true)
+      user =
+        insert(:user, locked: true, is_moderator: true, is_admin: true, confirmation_pending: true)
 
       Mix.Tasks.Pleroma.User.run([
         "set",
         user.nickname,
-        "--no-moderator",
         "--no-admin",
-        "--no-locked"
+        "--no-confirmed",
+        "--no-locked",
+        "--no-moderator"
       ])
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Moderator status .* false/
+      assert message =~ ~r/Admin status .* false/
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ ~r/Confirmation pending .* true/
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ ~r/Locked status .* false/
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Admin status .* false/
+      assert message =~ ~r/Moderator status .* false/
 
       user = User.get_cached_by_nickname(user.nickname)
       refute user.is_moderator
       refute user.locked
       refute user.is_admin
+      assert user.confirmation_pending
     end
 
     test "no user to set status" do
