@@ -107,12 +107,12 @@ defmodule Pleroma.User.Query do
     where(query, [u], fragment("? && ?", u.tags, ^tags))
   end
 
-  defp compose_query({:is_admin, _}, query) do
-    where(query, [u], u.is_admin)
+  defp compose_query({:is_admin, bool}, query) do
+    where(query, [u], u.is_admin == ^bool)
   end
 
-  defp compose_query({:is_moderator, _}, query) do
-    where(query, [u], u.is_moderator)
+  defp compose_query({:is_moderator, bool}, query) do
+    where(query, [u], u.is_moderator == ^bool)
   end
 
   defp compose_query({:super_users, _}, query) do

@@ -2123,6 +2123,13 @@ defmodule Pleroma.User do
     Enum.map(users, &toggle_confirmation/1)
   end
 
+  @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def need_confirmation(%User{} = user, bool) do
+    user
+    |> confirmation_changeset(need_confirmation: bool)
+    |> update_and_set_cache()
+  end
+
   def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do
     mascot
   end
