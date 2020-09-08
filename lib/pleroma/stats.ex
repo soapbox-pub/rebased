@@ -23,6 +23,7 @@ defmodule Pleroma.Stats do
 
   @impl true
   def init(_args) do
+    if Pleroma.Config.get(:env) == :test, do: :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
     {:ok, nil, {:continue, :calculate_stats}}
   end
 
