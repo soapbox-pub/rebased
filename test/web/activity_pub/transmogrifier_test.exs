@@ -116,7 +116,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
                )
 
-      assert returned_object.data["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+      assert returned_object.data["inReplyTo"] ==
+               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
     end
 
     test "it does not fetch reply-to activities beyond max replies depth limit" do
@@ -140,8 +141,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
                )
 
-        assert returned_object.data["inReplyToAtomUri"] ==
-                 "https://shitposter.club/notice/2827873"
+        assert returned_object.data["inReplyTo"] == "https://shitposter.club/notice/2827873"
       end
     end
 
@@ -1072,7 +1072,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Transmogrifier.fix_in_reply_to(data) == data
     end
 
-    test "returns object with inReplyToAtomUri when denied incoming reply", %{data: data} do
+    test "returns object with inReplyTo when denied incoming reply", %{data: data} do
       Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
 
       object_with_reply =
@@ -1080,26 +1080,22 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == "https://shitposter.club/notice/2827873"
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       object_with_reply =
         Map.put(data["object"], "inReplyTo", %{"id" => "https://shitposter.club/notice/2827873"})
 
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == %{"id" => "https://shitposter.club/notice/2827873"}
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       object_with_reply =
         Map.put(data["object"], "inReplyTo", ["https://shitposter.club/notice/2827873"])
 
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == ["https://shitposter.club/notice/2827873"]
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       object_with_reply = Map.put(data["object"], "inReplyTo", [])
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == []
-      assert modified_object["inReplyToAtomUri"] == ""
     end
 
     @tag capture_log: true
@@ -1116,8 +1112,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified_object["inReplyTo"] ==
                "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       assert modified_object["context"] ==
                "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
