@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Removed `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` config.
 - **Breaking:** Removed `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab`.
 
+### Changed
+- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+
 ## [2.1.1] - 2020-09-08
 
 ### Security
