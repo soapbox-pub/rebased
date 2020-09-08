@@ -814,7 +814,8 @@ defmodule Pleroma.User do
   def send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{confirmation_pending: true} = user) do
+  def try_send_confirmation_email(%User{confirmation_pending: true, email: email} = user)
+      when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
       {:ok, :enqueued}

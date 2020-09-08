@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Pleroma.Email do
     |> Pleroma.RepoStreamer.chunk_stream(500)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> Pleroma.User.send_confirmation_email(user) end)
+      |> Enum.each(fn user -> Pleroma.User.try_send_confirmation_email(user) end)
     end)
     |> Stream.run()
   end
