@@ -412,6 +412,7 @@ config :pleroma, :rich_media,
     Pleroma.Web.RichMedia.Parsers.TwitterCard,
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ],
+  failure_backoff: 60_000,
   ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
 
 config :pleroma, :media_proxy,
@@ -453,9 +454,7 @@ config :pleroma, :gopher,
 config :pleroma, Pleroma.Web.Metadata,
   providers: [
     Pleroma.Web.Metadata.Providers.OpenGraph,
-    Pleroma.Web.Metadata.Providers.TwitterCard,
-    Pleroma.Web.Metadata.Providers.RelMe,
-    Pleroma.Web.Metadata.Providers.Feed
+    Pleroma.Web.Metadata.Providers.TwitterCard
   ],
   unfurl_nsfw: false
 
@@ -740,19 +739,23 @@ config :pleroma, :connections_pool,
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_waiting: 10
+    max_waiting: 10,
+    timeout: 10_000
   ],
   media: [
     size: 50,
-    max_waiting: 10
+    max_waiting: 10,
+    timeout: 10_000
   ],
   upload: [
     size: 25,
-    max_waiting: 5
+    max_waiting: 5,
+    timeout: 15_000
   ],
   default: [
     size: 10,
-    max_waiting: 2
+    max_waiting: 2,
+    timeout: 5_000
   ]
 
 config :pleroma, :hackney_pools,

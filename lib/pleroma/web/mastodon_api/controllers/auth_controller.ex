@@ -59,17 +59,11 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   def password_reset(conn, params) do
     nickname_or_email = params["email"] || params["nickname"]
 
-    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
-      conn
-      |> put_status(:no_content)
-      |> json("")
-    else
-      {:error, "unknown user"} ->
-        send_resp(conn, :not_found, "")
+    TwitterAPI.password_reset(nickname_or_email)
 
-      {:error, _} ->
-        send_resp(conn, :bad_request, "")
-    end
+    conn
+    |> put_status(:no_content)
+    |> json("")
   end
 
   defp local_mastodon_root_path(conn) do

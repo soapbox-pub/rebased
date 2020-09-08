@@ -296,9 +296,45 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert real_status == fake_status
     end
 
+    test "fake statuses' preview card is not cached", %{conn: conn} do
+      clear_config([:rich_media, :enabled], true)
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://example.com/twitter-card"
+        } ->
+          %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
+
+        env ->
+          apply(HttpRequestMock, :request, [env])
+      end)
+
+      conn1 =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "https://example.com/ogp",
+          "preview" => true
+        })
+
+      conn2 =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "https://example.com/twitter-card",
+          "preview" => true
+        })
+
+      assert %{"card" => %{"title" => "The Rock"}} = json_response_and_validate_schema(conn1, 200)
+
+      assert %{"card" => %{"title" => "Small Island Developing States Photo Submission"}} =
+               json_response_and_validate_schema(conn2, 200)
+    end
+
     test "posting a status with OGP link preview", %{conn: conn} do
       Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
-      Config.put([:rich_media, :enabled], true)
+      clear_config([:rich_media, :enabled], true)
 
       conn =
         conn

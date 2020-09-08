@@ -352,8 +352,6 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `providers`: a list of metadata providers to enable. Providers available:
     * `Pleroma.Web.Metadata.Providers.OpenGraph`
     * `Pleroma.Web.Metadata.Providers.TwitterCard`
-    * `Pleroma.Web.Metadata.Providers.RelMe` - add links from user bio with rel=me into the `<header>` as `<link rel=me>`.
-    * `Pleroma.Web.Metadata.Providers.Feed` - add a link to a user's Atom feed into the `<header>` as `<link rel=alternate>`.
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews.
 
 ### :rich_media (consumer)
@@ -361,6 +359,7 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"].
 * `parsers`: list of Rich Media parsers.
+* `failure_backoff`: Amount of milliseconds after request failure, during which the request will not be retried.
 
 ## HTTP server
 

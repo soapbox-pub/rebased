@@ -3,6 +3,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.1.1] - 2020-09-08
+
+### Security
+- Fix possible DoS in Mastodon API user search due to an error in match clauses, leading to an infinite recursion and subsequent OOM with certain inputs.
+- Fix metadata leak for accounts and statuses on private instances.
+- Fix possible DoS in Admin API search using an atom leak vulnerability. Authentication with admin rights was required to exploit.
+
+### Changed
+
+- **Breaking:** The metadata providers RelMe and Feed are no longer configurable. RelMe should always be activated and Feed only provides a <link> header tag for the actual RSS/Atom feed when the instance is public.
+- Improved error message when cmake is not available at build stage.
+
+### Added
+- Rich media failure tracking (along with `:failure_backoff` option).
+
+### Fixed
+- Default HTTP adapter not respecting pool setting, leading to possible OOM.
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
+- Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
+- Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
+  Reduced to just rich media timeout.
+- Mastodon API: Cards being wrong for preview statuses due to cache key collision.
+- Password resets no longer processed for deactivated accounts.
+- Favicon scraper raising exceptions on URLs longer than 255 characters.
+
 ## [2.1.0] - 2020-08-28
 
 ### Changed

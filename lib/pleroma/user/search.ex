@@ -115,8 +115,8 @@ defmodule Pleroma.User.Search do
     )
   end
 
-  defp base_query(_user, false), do: User
-  defp base_query(user, true), do: User.get_followers_query(user)
+  defp base_query(%User{} = user, true), do: User.get_friends_query(user)
+  defp base_query(_user, _following), do: User
 
   defp filter_invisible_users(query) do
     from(q in query, where: q.invisible == false)
