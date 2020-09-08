@@ -224,10 +224,10 @@
     ```
 
 ### Options
-- `--admin`/`--no-admin` - the user account admin status
-- `--confirmed`/`--no-confirmed` - the user account confirmation status
-- `--locked`/`--no-locked` - the user account locked status
-- `--moderator`/`--no-moderator` - the user account moderator status
+- `--admin`/`--no-admin` - whether the user should be an admin
+- `--confirmed`/`--no-confirmed` - whether the user account is confirmed
+- `--locked`/`--no-locked` - whether the user should be locked
+- `--moderator`/`--no-moderator` - whether the user should be a moderator
 
 ## Add tags to a user
 
