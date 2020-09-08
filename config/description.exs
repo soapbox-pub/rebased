@@ -1671,15 +1671,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :mrf_force_bot_unlisted,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy",
-    label: "MRF Force Bot Unlisted Policy",
-    type: :boolean,
-    description: "Makes bot posts to disappear from public timelines"
-  },
-  %{
-    group: :pleroma,
     key: :mrf_subchain,
     tab: :mrf,
     related_policy: "Pleroma.Web.ActivityPub.MRF.SubchainPolicy",
