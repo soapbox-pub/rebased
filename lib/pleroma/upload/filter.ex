@@ -15,7 +15,11 @@ defmodule Pleroma.Upload.Filter do
 
   require Logger
 
-  @callback filter(Pleroma.Upload.t()) :: :ok | {:ok, Pleroma.Upload.t()} | {:error, any()}
+  @callback filter(Pleroma.Upload.t()) ::
+              {:ok, :filtered}
+              | {:ok, :noop}
+              | {:ok, :filtered, Pleroma.Upload.t()}
+              | {:error, any()}
 
   @spec filter([module()], Pleroma.Upload.t()) :: {:ok, Pleroma.Upload.t()} | {:error, any()}
 
@@ -25,10 +29,13 @@ defmodule Pleroma.Upload.Filter do
 
   def filter([filter | rest], upload) do
     case filter.filter(upload) do
-      :ok ->
+      {:ok, :filtered} ->
         filter(rest, upload)
 
-      {:ok, upload} ->
+      {:ok, :filtered, upload} ->
+        filter(rest, upload)
+
+      {:ok, :noop} ->
         filter(rest, upload)
 
       error ->
