@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Possible OOM errors with the default HTTP adapter
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 - Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
   Reduced to just rich media timeout.
@@ -138,7 +139,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix whole_word always returning false on filter get requests
 - Migrations not working on OTP releases if the database was connected over ssl
 - Fix relay following
-- Fixed uploading webp images when the Exiftool Upload Filter is enabled
 
 ## [2.0.7] - 2020-06-13
 
