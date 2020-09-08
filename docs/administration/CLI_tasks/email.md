@@ -1,4 +1,4 @@
-# E-Mail administration tasks
+# EMail administration tasks
 
 {! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
