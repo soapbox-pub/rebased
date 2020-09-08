@@ -105,7 +105,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       object =
         data["object"]
-        |> Map.put("inReplyTo", "https://shitposter.club/notice/2827873")
+        |> Map.put("inReplyTo", "https://mstdn.io/users/mayuutann/statuses/99568293732299394")
 
       data = Map.put(data, "object", object)
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
@@ -113,11 +113,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity =
                Activity.get_create_by_object_ap_id(
-                 "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+                 "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
                )
 
       assert returned_object.data["inReplyTo"] ==
-               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+               "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
     end
 
     test "it does not fetch reply-to activities beyond max replies depth limit" do
@@ -1104,17 +1104,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         Map.put(
           data["object"],
           "inReplyTo",
-          "https://shitposter.club/notice/2827873"
+          "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
         )
 
       Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 5)
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
 
       assert modified_object["inReplyTo"] ==
-               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+               "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
 
       assert modified_object["context"] ==
-               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
+               "tag:shitposter.club,2018-02-22:objectType=thread:nonce=e5a7c72d60a9c0e4"
     end
   end
 
@@ -1216,7 +1216,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     @tag capture_log: true
     test "returns {:ok, %Object{}} for success case" do
       assert {:ok, %Object{}} =
-               Transmogrifier.get_obj_helper("https://shitposter.club/notice/2827873")
+               Transmogrifier.get_obj_helper(
+                 "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
+               )
     end
   end
 
