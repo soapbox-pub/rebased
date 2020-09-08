@@ -3386,7 +3386,7 @@ config :pleroma, :config_description, [
         suggestions: [250]
       },
       %{
-        key: :await_up_timeout,
+        key: :connect_timeout,
         type: :integer,
         description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
         suggestions: [5000]
@@ -3424,6 +3424,12 @@ config :pleroma, :config_description, [
               description:
                 "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
               suggestions: [10]
+            },
+            %{
+              key: :recv_timeout,
+              type: :integer,
+              description: "Timeout for the pool while gun will wait for response",
+              suggestions: [10_000]
             }
           ]
         }

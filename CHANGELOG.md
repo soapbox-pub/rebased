@@ -5,30 +5,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
-### Added
+### Changed
 
-- MRF policy to rewrite bot posts scope from public to unlisted
+- Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
+- Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 
 ### Removed
 
 - **Breaking:** Removed `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab`.
-
 
 ## unreleased-patch - ???
 
 ### Added
 
 - Rich media failure tracking (along with `:failure_backoff` option)
+- MRF policy to rewrite bot posts scope from public to unlisted
 
 ### Fixed
 
 - Possible OOM errors with the default HTTP adapter
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 - Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
   Reduced to just rich media timeout.
 - Mastodon API: Cards being wrong for preview statuses due to cache key collision
 - Password resets no longer processed for deactivated accounts
-
 
 ## [2.1.0] - 2020-08-28
 
