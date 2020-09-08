@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Rich media failure tracking (along with `:failure_backoff` option)
+- MRF policy to rewrite bot posts scope from public to unlisted
 
 ### Fixed
 
