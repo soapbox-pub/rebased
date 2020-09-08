@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Default HTTP adapter not respecting pool setting, leading to possible OOM.
-- Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers.
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
+- Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 - Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
   Reduced to just rich media timeout.
 - Mastodon API: Cards being wrong for preview statuses due to cache key collision.
