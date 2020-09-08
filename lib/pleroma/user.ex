@@ -1366,10 +1366,10 @@ defmodule Pleroma.User do
          {:ok, user_notification_mute} <-
            (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
              {:ok, nil} do
-      with seconds when seconds > 0 <- expires_in do
+      if expires_in > 0 do
         Pleroma.Workers.MuteExpireWorker.enqueue(
-          "unmute",
-          %{"muter" => muter.id, "mutee" => mutee.id},
+          "unmute_user",
+          %{"muter_id" => muter.id, "mutee_id" => mutee.id},
           schedule_in: expires_in
         )
       end

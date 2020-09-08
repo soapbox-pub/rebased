@@ -8,15 +8,19 @@ defmodule Pleroma.Workers.MuteExpireWorker do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Job{args: %{"op" => "unmute", "muter" => muter_id, "mutee" => mutee_id}}) do
+  def perform(%Job{args: %{"op" => "unmute_user", "muter_id" => muter_id, "mutee_id" => mutee_id}}) do
     muter = Pleroma.User.get_by_id(muter_id)
     mutee = Pleroma.User.get_by_id(mutee_id)
     Pleroma.User.unmute(muter, mutee)
     :ok
   end
 
-  def perform(any) do
-    Logger.error("Got call to perform(#{inspect(any)})")
+  def perform(%Job{
+        args: %{"op" => "unmute_conversation", "user_id" => user_id, "activity_id" => activity_id}
+      }) do
+    user = Pleroma.User.get_by_id(user_id)
+    activity = Pleroma.Activity.get_by_id(activity_id)
+    Pleroma.Web.CommonAPI.remove_mute(user, activity)
     :ok
   end
 end

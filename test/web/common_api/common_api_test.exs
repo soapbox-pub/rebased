@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPITest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase
+
   alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
@@ -876,6 +878,22 @@ defmodule Pleroma.Web.CommonAPITest do
     test "add mute", %{user: user, activity: activity} do
       {:ok, _} = CommonAPI.add_mute(user, activity)
       assert CommonAPI.thread_muted?(user, activity)
+    end
+
+    test "add expiring mute", %{user: user, activity: activity} do
+      {:ok, _} = CommonAPI.add_mute(user, activity, %{expires_in: 60})
+      assert CommonAPI.thread_muted?(user, activity)
+
+      worker = Pleroma.Workers.MuteExpireWorker
+      args = %{"op" => "unmute_conversation", "user_id" => user.id, "activity_id" => activity.id}
+
+      assert_enqueued(
+        worker: worker,
+        args: args
+      )
+
+      assert :ok = perform_job(worker, args)
+      refute CommonAPI.thread_muted?(user, activity)
     end
 
     test "remove mute", %{user: user, activity: activity} do
