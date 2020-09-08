@@ -148,6 +148,10 @@ defmodule Pleroma.User.Query do
     |> where([u], not is_nil(u.nickname))
   end
 
+  defp compose_query({:confirmation_pending, bool}, query) do
+    where(query, [u], u.confirmation_pending == ^bool)
+  end
+
   defp compose_query({:need_approval, _}, query) do
     where(query, [u], u.approval_pending)
   end
