@@ -963,6 +963,19 @@ defmodule Pleroma.UserTest do
       assert User.muted_notifications?(user, muted_user)
     end
 
+    test "expiring" do
+      user = insert(:user)
+      muted_user = insert(:user)
+
+      {:ok, _user_relationships} = User.mute(user, muted_user, %{expires_in: 60})
+      assert User.mutes?(user, muted_user)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.MuteExpireWorker,
+        args: %{"op" => "unmute", "muter" => user.id, "mutee" => muted_user.id}
+      )
+    end
+
     test "it unmutes users" do
       user = insert(:user)
       muted_user = insert(:user)
