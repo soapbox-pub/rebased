@@ -7,7 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Settings renaming: `:await_up_timeout` in `:connections_pool` namespace to `connect_timeout`, `timeout` in `pools` namespace to `recv_timeout`.
+- Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
+- Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 
 ### Removed
 
