@@ -981,7 +981,7 @@ defmodule Pleroma.UserTest do
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
 
-      {:ok, _user_relationships} = User.mute(user, muted_user, false)
+      {:ok, _user_relationships} = User.mute(user, muted_user, %{notifications: false})
 
       assert User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)

@@ -541,7 +541,8 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 5,
-    new_users_digest: 1
+    new_users_digest: 1,
+    mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -672,7 +673,7 @@ config :pleroma, :static_fe, enabled: false
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
 #
-# config :pleroma, :frontends, 
+# config :pleroma, :frontends,
 # primary: %{"name" => "pleroma-fe", "ref" => "develop"},
 # admin: %{"name" => "admin-fe", "ref" => "stable"},
 # available: %{...}

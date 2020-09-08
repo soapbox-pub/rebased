@@ -1356,14 +1356,34 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  @spec mute(User.t(), User.t(), boolean()) ::
+  @spec mute(User.t(), User.t(), map()) ::
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
-  def mute(%User{} = muter, %User{} = mutee, notifications? \\ true) do
-    add_to_mutes(muter, mutee, notifications?)
+  def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
+    notifications? = Map.get(params, :notifications, true)
+    expires_in = Map.get(params, :expires_in, 0)
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+         {:ok, user_notification_mute} <-
+           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+             {:ok, nil} do
+      with seconds when seconds > 0 <- expires_in do
+        Pleroma.Workers.MuteExpireWorker.enqueue(
+          "unmute",
+          %{"muter" => muter.id, "mutee" => mutee.id},
+          schedule_in: expires_in
+        )
+      end
+
+      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
+    end
   end
 
   def unmute(%User{} = muter, %User{} = mutee) do
-    remove_from_mutes(muter, mutee)
+    with {:ok, user_mute} <- UserRelationship.delete_mute(muter, mutee),
+         {:ok, user_notification_mute} <-
+           UserRelationship.delete_notification_mute(muter, mutee) do
+      {:ok, [user_mute, user_notification_mute]}
+    end
   end
 
   def subscribe(%User{} = subscriber, %User{} = target) do
@@ -2377,23 +2397,6 @@ defmodule Pleroma.User do
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
     UserRelationship.delete_block(user, blocked)
-  end
-
-  defp add_to_mutes(%User{} = user, %User{} = muted_user, notifications?) do
-    with {:ok, user_mute} <- UserRelationship.create_mute(user, muted_user),
-         {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(user, muted_user)) ||
-             {:ok, nil} do
-      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
-    end
-  end
-
-  defp remove_from_mutes(user, %User{} = muted_user) do
-    with {:ok, user_mute} <- UserRelationship.delete_mute(user, muted_user),
-         {:ok, user_notification_mute} <-
-           UserRelationship.delete_notification_mute(user, muted_user) do
-      {:ok, [user_mute, user_notification_mute]}
-    end
   end
 
   def set_invisible(user, invisible) do

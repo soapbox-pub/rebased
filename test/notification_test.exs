@@ -227,7 +227,7 @@ defmodule Pleroma.NotificationTest do
       muter = insert(:user)
       muted = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(muter, muted, false)
+      {:ok, _user_relationships} = User.mute(muter, muted, %{notifications: false})
 
       {:ok, activity} = CommonAPI.post(muted, %{status: "Hi @#{muter.nickname}"})
 
@@ -1013,7 +1013,7 @@ defmodule Pleroma.NotificationTest do
 
     test "it returns notifications for muted user without notifications", %{user: user} do
       muted = insert(:user)
-      {:ok, _user_relationships} = User.mute(user, muted, false)
+      {:ok, _user_relationships} = User.mute(user, muted, %{notifications: false})
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
 
