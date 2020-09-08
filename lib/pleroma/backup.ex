@@ -80,6 +80,13 @@ defmodule Pleroma.Backup do
     |> Repo.one()
   end
 
+  def list(%User{id: user_id}) do
+    __MODULE__
+    |> where(user_id: ^user_id)
+    |> order_by(desc: :id)
+    |> Repo.all()
+  end
+
   def remove_outdated(%__MODULE__{id: latest_id, user_id: user_id}) do
     __MODULE__
     |> where(user_id: ^user_id)
