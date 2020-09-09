@@ -114,8 +114,6 @@ config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
-config :pleroma, :instances_favicons, enabled: true
-
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
   streaming_enabled: true,

@@ -9,14 +9,15 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
-  @rich_media_options [
+  @options [
     pool: :media,
-    max_body: 2_000_000
+    max_body: 2_000_000,
+    recv_timeout: 2_000
   ]
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Pleroma.Config.get([Pleroma.Formatter, :validate_tld])
+    validate_tld = Config.get([Pleroma.Formatter, :validate_tld])
 
     page_url
     |> Linkify.Parser.url?(validate_tld: validate_tld)
@@ -58,7 +59,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     with true <- Config.get([:rich_media, :enabled]),
          false <- object.data["sensitive"] || false,
          {:ok, page_url} <-
-           HTML.extract_first_external_url(object, object.data["content"]),
+           HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
@@ -86,16 +87,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def rich_media_get(url) do
     headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
-    options =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
-        Keyword.merge(@rich_media_options,
-          recv_timeout: 2_000,
-          with_body: true
-        )
-      else
-        @rich_media_options
-      end
-
-    Pleroma.HTTP.get(url, headers, adapter: options)
+    Pleroma.HTTP.get(url, headers, @options)
   end
 end

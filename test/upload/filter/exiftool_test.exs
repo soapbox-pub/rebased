@@ -21,7 +21,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
       tempfile: Path.absname("test/fixtures/DSCN0010_tmp.jpg")
     }
 
-    assert Filter.Exiftool.filter(upload) == :ok
+    assert Filter.Exiftool.filter(upload) == {:ok, :filtered}
 
     {exif_original, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010.jpg"])
     {exif_filtered, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010_tmp.jpg"])
@@ -29,5 +29,14 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
     refute exif_original == exif_filtered
     assert String.match?(exif_original, ~r/GPS/)
     refute String.match?(exif_filtered, ~r/GPS/)
+  end
+
+  test "verify webp files are skipped" do
+    upload = %Pleroma.Upload{
+      name: "sample.webp",
+      content_type: "image/webp"
+    }
+
+    assert Filter.Exiftool.filter(upload) == {:ok, :noop}
   end
 end

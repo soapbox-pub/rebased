@@ -8,18 +8,18 @@ defmodule Pleroma.Upload.Filter.Mogrify do
   @type conversion :: action :: String.t() | {action :: String.t(), opts :: String.t()}
   @type conversions :: conversion() | [conversion()]
 
-  @spec filter(Pleroma.Upload.t()) :: :ok | {:error, String.t()}
+  @spec filter(Pleroma.Upload.t()) :: {:ok, :atom} | {:error, String.t()}
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     try do
       do_filter(file, Pleroma.Config.get!([__MODULE__, :args]))
-      :ok
+      {:ok, :filtered}
     rescue
       _e in ErlangError ->
         {:error, "mogrify command not found"}
     end
   end
 
-  def filter(_), do: :ok
+  def filter(_), do: {:ok, :noop}
 
   def do_filter(file, filters) do
     file

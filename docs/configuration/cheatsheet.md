@@ -115,6 +115,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
     * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.ActivityExpiration` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -352,8 +353,6 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `providers`: a list of metadata providers to enable. Providers available:
     * `Pleroma.Web.Metadata.Providers.OpenGraph`
     * `Pleroma.Web.Metadata.Providers.TwitterCard`
-    * `Pleroma.Web.Metadata.Providers.RelMe` - add links from user bio with rel=me into the `<header>` as `<link rel=me>`.
-    * `Pleroma.Web.Metadata.Providers.Feed` - add a link to a user's Atom feed into the `<header>` as `<link rel=alternate>`.
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews.
 
 ### :rich_media (consumer)
@@ -498,7 +497,7 @@ Settings for HTTP connection pool.
 * `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
 * `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
 * `:max_connections` - Maximum number of connections in the pool.
-* `:await_up_timeout` - Timeout to connect to the host.
+* `:connect_timeout` - Timeout to connect to the host.
 * `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
 
 ### :pools
@@ -517,7 +516,7 @@ There are four pools used:
 For each pool, the options are:
 
 * `:size` - limit to how much requests can be concurrently executed.
-* `:timeout` - timeout while `gun` will wait for response
+* `:recv_timeout` - timeout while `gun` will wait for response
 * `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
 
 ## Captcha
