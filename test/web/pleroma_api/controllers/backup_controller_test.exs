@@ -6,6 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Backup
+  alias Pleroma.Web.PleromaAPI.BackupView
 
   setup do
     clear_config([Pleroma.Upload, :uploader])
@@ -26,20 +27,20 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
     assert [
              %{
                "content_type" => "application/zip",
-               "file_name" => file_name,
+               "url" => url,
                "file_size" => 0,
                "processed" => false,
                "inserted_at" => _
              }
            ] = response
 
-    assert file_name == backup.file_name
+    assert url == BackupView.download_url(backup)
 
     Pleroma.Tests.ObanHelpers.perform_all()
 
     assert [
              %{
-               "file_name" => ^file_name,
+               "url" => ^url,
                "processed" => true
              }
            ] =
@@ -52,7 +53,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
     assert [
              %{
                "content_type" => "application/zip",
-               "file_name" => file_name,
+               "url" => url,
                "file_size" => 0,
                "processed" => false,
                "inserted_at" => _
@@ -66,7 +67,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
 
     assert [
              %{
-               "file_name" => ^file_name,
+               "url" => ^url,
                "processed" => true
              }
            ] =

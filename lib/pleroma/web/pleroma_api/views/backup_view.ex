@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupView do
   def render("show.json", %{backup: %Backup{} = backup}) do
     %{
       content_type: backup.content_type,
-      file_name: backup.file_name,
+      url: download_url(backup),
       file_size: backup.file_size,
       processed: backup.processed,
       inserted_at: Utils.to_masto_date(backup.inserted_at)
@@ -20,5 +20,9 @@ defmodule Pleroma.Web.PleromaAPI.BackupView do
 
   def render("index.json", %{backups: backups}) do
     render_many(backups, __MODULE__, "show.json")
+  end
+
+  def download_url(%Backup{file_name: file_name}) do
+    Pleroma.Web.Endpoint.url() <> "/media/backups/" <> file_name
   end
 end
