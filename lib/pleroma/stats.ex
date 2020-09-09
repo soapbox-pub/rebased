@@ -23,18 +23,12 @@ defmodule Pleroma.Stats do
 
   @impl true
   def init(_args) do
-    if Pleroma.Config.get(:env) == :test, do: :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
     {:ok, nil, {:continue, :calculate_stats}}
   end
 
   @doc "Performs update stats"
   def force_update do
     GenServer.call(__MODULE__, :force_update)
-  end
-
-  @doc "Performs collect stats"
-  def do_collect do
-    GenServer.cast(__MODULE__, :run_update)
   end
 
   @doc "Returns stats data"
@@ -111,7 +105,11 @@ defmodule Pleroma.Stats do
   @impl true
   def handle_continue(:calculate_stats, _) do
     stats = calculate_stat_data()
-    Process.send_after(self(), :run_update, @interval)
+
+    unless Pleroma.Config.get(:env) == :test do
+      Process.send_after(self(), :run_update, @interval)
+    end
+
     {:noreply, stats}
   end
 
@@ -124,13 +122,6 @@ defmodule Pleroma.Stats do
   @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
-  end
-
-  @impl true
-  def handle_cast(:run_update, _state) do
-    new_stats = calculate_stat_data()
-
-    {:noreply, new_stats}
   end
 
   @impl true
