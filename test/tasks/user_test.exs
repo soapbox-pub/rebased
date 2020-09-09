@@ -571,4 +571,44 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Could not change user tags"
     end
   end
+
+  describe "bulk confirm and unconfirm" do
+    test "confirm all" do
+      user1 = insert(:user, confirmation_pending: true)
+      user2 = insert(:user, confirmation_pending: true)
+
+      assert user1.confirmation_pending
+      assert user2.confirmation_pending
+
+      Mix.Tasks.Pleroma.User.run(["confirm_all"])
+
+      user1 = User.get_cached_by_nickname(user1.nickname)
+      user2 = User.get_cached_by_nickname(user2.nickname)
+
+      refute user1.confirmation_pending
+      refute user2.confirmation_pending
+    end
+
+    test "unconfirm all" do
+      user1 = insert(:user, confirmation_pending: false)
+      user2 = insert(:user, confirmation_pending: false)
+      admin = insert(:user, is_admin: true, confirmation_pending: false)
+      mod = insert(:user, is_moderator: true, confirmation_pending: false)
+
+      refute user1.confirmation_pending
+      refute user2.confirmation_pending
+
+      Mix.Tasks.Pleroma.User.run(["unconfirm_all"])
+
+      user1 = User.get_cached_by_nickname(user1.nickname)
+      user2 = User.get_cached_by_nickname(user2.nickname)
+      admin = User.get_cached_by_nickname(admin.nickname)
+      mod = User.get_cached_by_nickname(mod.nickname)
+
+      assert user1.confirmation_pending
+      assert user2.confirmation_pending
+      refute admin.confirmation_pending
+      refute mod.confirmation_pending
+    end
+  end
 end
