@@ -157,7 +157,7 @@ defmodule Pleroma.Instances.Instance do
     try do
       with {:ok, %Tesla.Env{body: html}} <-
              Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}],
-               adapter: [pool: :media]
+               pool: :media
              ),
            favicon_rel <-
              html
