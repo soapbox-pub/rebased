@@ -64,7 +64,9 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     {:ok, %{state | timer: timer()}}
   end
 
-  # We never receive messages.
+  # We only receive pings for now
+  def websocket_handle(:ping, state), do: {:ok, state}
+
   def websocket_handle(frame, state) do
     Logger.error("#{__MODULE__} received frame: #{inspect(frame)}")
     {:ok, state}
