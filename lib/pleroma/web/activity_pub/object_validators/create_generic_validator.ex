@@ -10,8 +10,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
 
@@ -23,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     field(:type, :string)
     field(:to, ObjectValidators.Recipients, default: [])
     field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     field(:object, ObjectValidators.ObjectID)
     field(:expires_at, ObjectValidators.DateTime)
 
@@ -54,29 +58,38 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     |> cast(data, __schema__(:fields))
   end
 
-  defp fix_context(data, meta) do
-    if object = meta[:object_data] do
-      Map.put_new(data, "context", object["context"])
-    else
-      data
-    end
+  # CommonFixes.fix_activity_addressing adapted for Create specific behavior
+  defp fix_addressing(data, object) do
+    %User{follower_address: follower_collection} = User.get_cached_by_ap_id(data["actor"])
+
+    data
+    |> CommonFixes.cast_recipients("to", object["to"])
+    |> CommonFixes.cast_recipients("cc", object["cc"])
+    |> CommonFixes.cast_recipients("bto", object["bto"])
+    |> CommonFixes.cast_recipients("bcc", object["bcc"])
+    |> Transmogrifier.fix_explicit_addressing(follower_collection)
+    |> Transmogrifier.fix_implicit_addressing(follower_collection)
   end
 
-  defp fix(data, meta) do
+  def fix(data, meta) do
+    object = meta[:object_data]
+
     data
-    |> fix_context(meta)
     |> CommonFixes.fix_actor()
-    |> CommonFixes.fix_activity_defaults(meta)
+    |> Map.put_new("context", object["context"])
+    |> fix_addressing(object)
   end
 
   defp validate_data(cng, meta) do
+    object = meta[:object_data]
+
     cng
-    |> validate_required([:actor, :type, :object])
+    |> validate_required([:actor, :type, :object, :to, :cc])
     |> validate_inclusion(:type, ["Create"])
     |> CommonValidations.validate_actor_presence()
-    |> CommonValidations.validate_any_presence([:to, :cc])
-    |> validate_actors_match(meta)
-    |> validate_context_match(meta)
+    |> validate_actors_match(object)
+    |> validate_context_match(object)
+    |> validate_addressing_match(object)
     |> validate_object_nonexistence()
     |> validate_object_containment()
   end
@@ -108,8 +121,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     end)
   end
 
-  def validate_actors_match(cng, meta) do
-    attributed_to = meta[:object_data]["attributedTo"] || meta[:object_data]["actor"]
+  def validate_actors_match(cng, object) do
+    attributed_to = object["attributedTo"] || object["actor"]
 
     cng
     |> validate_change(:actor, fn :actor, actor ->
@@ -121,7 +134,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     end)
   end
 
-  def validate_context_match(cng, %{object_data: %{"context" => object_context}}) do
+  def validate_context_match(cng, %{"context" => object_context}) do
     cng
     |> validate_change(:context, fn :context, context ->
       if context == object_context do
@@ -132,5 +145,18 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     end)
   end
 
-  def validate_context_match(cng, _), do: cng
+  def validate_addressing_match(cng, object) do
+    [:to, :cc, :bcc, :bto]
+    |> Enum.reduce(cng, fn field, cng ->
+      object_data = object[to_string(field)]
+
+      validate_change(cng, field, fn field, data ->
+        if data == object_data do
+          []
+        else
+          [{field, "field doesn't match with object (#{inspect(object_data)})"}]
+        end
+      end)
+    end)
+  end
 end

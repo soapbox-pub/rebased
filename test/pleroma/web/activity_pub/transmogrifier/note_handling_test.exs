@@ -171,8 +171,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       assert data["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
 
       assert data["cc"] == [
-               "http://mastodon.example.org/users/admin/followers",
-               "http://localtesting.pleroma.lol/users/lain"
+               "http://localtesting.pleroma.lol/users/lain",
+               "http://mastodon.example.org/users/admin/followers"
              ]
 
       assert data["actor"] == "http://mastodon.example.org/users/admin"
@@ -185,8 +185,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       assert object_data["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
 
       assert object_data["cc"] == [
-               "http://mastodon.example.org/users/admin/followers",
-               "http://localtesting.pleroma.lol/users/lain"
+               "http://localtesting.pleroma.lol/users/lain",
+               "http://mastodon.example.org/users/admin/followers"
              ]
 
       assert object_data["actor"] == "http://mastodon.example.org/users/admin"
@@ -350,8 +350,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       assert {:ok, activity} = Transmogrifier.handle_incoming(data)
 
       assert [
-               "http://mastodon.example.org/users/admin/followers",
-               "http://localtesting.pleroma.lol/users/lain"
+               "http://localtesting.pleroma.lol/users/lain",
+               "http://mastodon.example.org/users/admin/followers"
              ] == activity.data["cc"]
 
       assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
