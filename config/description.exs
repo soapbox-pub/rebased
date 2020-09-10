@@ -2290,7 +2290,6 @@ config :pleroma, :config_description, [
         type: {:list, :tuple},
         description: "Settings for cron background jobs",
         suggestions: [
-          {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
           {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
           {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
         ]
@@ -2473,14 +2472,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.ActivityExpiration,
+    key: Pleroma.Workers.PurgeExpiredActivity,
     type: :group,
-    description: "Expired activity settings",
+    description: "Expired activities settings",
     children: [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether expired activities will be sent to the job queue to be deleted"
+        description: "Enables expired activities addition & deletion"
+      },
+      %{
+        key: :min_lifetime,
+        type: :integer,
+        description: "Minimum lifetime for ephemeral activity (in seconds)",
+        suggestions: [600]
       }
     ]
   },

@@ -544,7 +544,6 @@ config :pleroma, Oban,
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
-    {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
@@ -655,7 +654,7 @@ config :pleroma, :rate_limit,
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
 
-config :pleroma, Pleroma.ActivityExpiration, enabled: true
+config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
 
