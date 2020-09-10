@@ -120,9 +120,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
 
   defp fix(data) do
     data
-    |> CommonFixes.fix_defaults()
-    |> CommonFixes.fix_attribution()
     |> CommonFixes.fix_actor()
+    |> CommonFixes.fix_object_defaults()
     |> Transmogrifier.fix_emoji()
     |> fix_url()
     |> fix_content()

@@ -15,19 +15,23 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.Recipients do
 
   def cast(data) when is_list(data) do
     data
-    |> Enum.reduce_while({:ok, []}, fn element, {:ok, list} ->
-      case ObjectID.cast(element) do
-        {:ok, id} ->
-          {:cont, {:ok, [id | list]}}
+    |> Enum.reduce_while({:ok, []}, fn
+      nil, {:ok, list} ->
+        {:cont, {:ok, list}}
 
-        _ ->
-          {:halt, :error}
-      end
+      element, {:ok, list} ->
+        case ObjectID.cast(element) do
+          {:ok, id} ->
+            {:cont, {:ok, [id | list]}}
+
+          _ ->
+            {:halt, {:error, element}}
+        end
     end)
   end
 
-  def cast(_) do
-    :error
+  def cast(data) do
+    {:error, data}
   end
 
   def dump(data) do

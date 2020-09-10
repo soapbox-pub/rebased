@@ -62,21 +62,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     end
   end
 
-  defp fix_addressing(data, meta) do
-    if object = meta[:object_data] do
-      data
-      |> Map.put_new("to", object["to"] || [])
-      |> Map.put_new("cc", object["cc"] || [])
-    else
-      data
-    end
-  end
-
   defp fix(data, meta) do
     data
     |> fix_context(meta)
-    |> fix_addressing(meta)
     |> CommonFixes.fix_actor()
+    |> CommonFixes.fix_activity_defaults(meta)
   end
 
   defp validate_data(cng, meta) do

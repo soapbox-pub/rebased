@@ -9,7 +9,7 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.RecipientsTest do
   test "it asserts that all elements of the list are object ids" do
     list = ["https://lain.com/users/lain", "invalid"]
 
-    assert :error == Recipients.cast(list)
+    assert {:error, "invalid"} == Recipients.cast(list)
   end
 
   test "it works with a list" do

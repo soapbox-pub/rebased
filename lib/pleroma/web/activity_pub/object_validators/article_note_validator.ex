@@ -79,9 +79,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator do
 
   defp fix(data) do
     data
-    |> CommonFixes.fix_defaults()
-    |> CommonFixes.fix_attribution()
     |> CommonFixes.fix_actor()
+    |> CommonFixes.fix_object_defaults()
     |> fix_url()
     |> Transmogrifier.fix_emoji()
   end
