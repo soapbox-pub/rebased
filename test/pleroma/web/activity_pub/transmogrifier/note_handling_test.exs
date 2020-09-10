@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
   describe "handle_incoming" do
     test "it works for incoming notices with tag not being an array (kroeg)" do
-      data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"])
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
                "icon_e_smile" => "https://puckipedia.com/forum/images/smilies/icon_e_smile.png"
              }
 
-      data = File.read!("test/fixtures/kroeg-array-less-hashtag.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/kroeg-array-less-hashtag.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"])
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("to", to)
         |> Map.put("cc", [])
 
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", Object.normalize(activity).data)
 
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
@@ -89,7 +89,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     test "it fetches reply-to activities if we don't have them" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       object =
         data["object"]
@@ -111,7 +111,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     test "it does not fetch reply-to activities beyond max replies depth limit" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       object =
         data["object"]
@@ -136,7 +136,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     test "it does not crash if the object in inReplyTo can't be fetched" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       object =
         data["object"]
@@ -152,7 +152,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it does not work for deactivated users" do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
 
       insert(:user, ap_id: data["actor"], deactivated: true)
 
@@ -160,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it works for incoming notices" do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it works for incoming notices without the sensitive property but an nsfw hashtag" do
-      data = File.read!("test/fixtures/mastodon-post-activity-nsfw.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity-nsfw.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
@@ -215,7 +215,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it works for incoming notices with hashtags" do
-      data = File.read!("test/fixtures/mastodon-post-activity-hashtag.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity-hashtag.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"])
@@ -224,8 +224,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it works for incoming notices with contentMap" do
-      data =
-        File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"])
@@ -235,7 +234,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it works for incoming notices with to/cc not being an array (kroeg)" do
-      data = File.read!("test/fixtures/kroeg-post-activity.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/kroeg-post-activity.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"])
@@ -249,7 +248,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("actor", user.ap_id)
         |> Map.put("to", ["https://www.w3.org/ns/activitystreams#Public"])
         |> Map.put("cc", [])
@@ -273,7 +272,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("actor", user.ap_id)
         |> Map.put("to", nil)
         |> Map.put("cc", nil)
@@ -296,7 +295,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     test "it strips internal likes" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       likes = %{
         "first" =>
@@ -404,7 +403,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data =
         "test/fixtures/mastodon-post-activity.json"
         |> File.read!()
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       items = get_in(data, ["object", "replies", "first", "items"])
       assert length(items) > 0
@@ -543,7 +542,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     setup do
-      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      data = Jason.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
       [data: data]
     end
 
@@ -599,7 +598,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
   describe "fix_attachments/1" do
     test "returns not modified object" do
-      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      data = Jason.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
       assert Transmogrifier.fix_attachments(data) == data
     end
 
@@ -663,7 +662,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
   describe "fix_emoji/1" do
     test "returns not modified object when object not contains tags" do
-      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      data = Jason.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
       assert Transmogrifier.fix_emoji(data) == data
     end
 
@@ -696,7 +695,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     setup do: clear_config([:activitypub, :note_replies_output_limit], 2)
 
     test "returns unmodified object if activity doesn't have self-replies" do
-      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      data = Jason.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
       assert Transmogrifier.set_replies(data) == data
     end
 
