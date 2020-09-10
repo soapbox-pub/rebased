@@ -8,6 +8,8 @@ defmodule Pleroma.Backup do
   import Ecto.Changeset
   import Ecto.Query
 
+  require Pleroma.Constants
+
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Repo
@@ -158,6 +160,7 @@ defmodule Pleroma.Backup do
         "id": "#{name}.json",
         "type": "OrderedCollection",
         "orderedItems": [
+
       """
     )
   end
@@ -209,13 +212,13 @@ defmodule Pleroma.Backup do
     opts =
       %{}
       |> Map.put(:type, ["Create", "Announce"])
-      |> Map.put(:blocking_user, user)
-      |> Map.put(:muting_user, user)
-      |> Map.put(:reply_filtering_user, user)
-      |> Map.put(:announce_filtering_user, user)
-      |> Map.put(:user, user)
+      |> Map.put(:actor_id, user.ap_id)
 
-    [[user.ap_id], User.following(user), Pleroma.List.memberships(user)]
+    [
+      [Pleroma.Constants.as_public(), user.ap_id],
+      User.following(user),
+      Pleroma.List.memberships(user)
+    ]
     |> Enum.concat()
     |> ActivityPub.fetch_activities_query(opts)
     |> write(dir, "outbox", fn a ->
