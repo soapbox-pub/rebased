@@ -37,12 +37,12 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     else
       {:error, :bad_topic} ->
         Logger.debug("#{__MODULE__} bad topic #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(404, req)
+        req = :cowboy_req.reply(404, req)
         {:ok, req, state}
 
       {:error, :unauthorized} ->
         Logger.debug("#{__MODULE__} authentication error: #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(401, req)
+        req = :cowboy_req.reply(401, req)
         {:ok, req, state}
     end
   end
