@@ -446,7 +446,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           end)
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
       assert Enum.all?(explicitly_mentioned_actors, &(&1 in fixed_object["to"]))
       refute "https://social.beepboop.ga/users/dirb" in fixed_object["to"]
       assert "https://social.beepboop.ga/users/dirb" in fixed_object["cc"]
@@ -459,7 +459,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "cc" => []
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
       assert user.follower_address in fixed_object["to"]
       refute user.follower_address in fixed_object["cc"]
     end
@@ -473,7 +473,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "cc" => [user.follower_address, recipient.follower_address]
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
 
       assert user.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["cc"]

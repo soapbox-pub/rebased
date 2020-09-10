@@ -72,46 +72,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_explicit_addressing(
-        %{"to" => to, "cc" => cc} = object,
-        explicit_mentions,
-        follower_collection
-      ) do
-    explicit_to = Enum.filter(to, fn x -> x in explicit_mentions end)
+  # if directMessage flag is set to true, leave the addressing alone
+  def fix_explicit_addressing(%{"directMessage" => true} = object, _follower_collection),
+    do: object
 
+  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, follower_collection) do
+    explicit_mentions =
+      Utils.determine_explicit_mentions(object) ++
+        [Pleroma.Constants.as_public(), follower_collection]
+
+    explicit_to = Enum.filter(to, fn x -> x in explicit_mentions end)
     explicit_cc = Enum.filter(to, fn x -> x not in explicit_mentions end)
 
     final_cc =
       (cc ++ explicit_cc)
+      |> Enum.filter(& &1)
       |> Enum.reject(fn x -> String.ends_with?(x, "/followers") and x != follower_collection end)
       |> Enum.uniq()
 
     object
     |> Map.put("to", explicit_to)
     |> Map.put("cc", final_cc)
-  end
-
-  def fix_explicit_addressing(object, _explicit_mentions, _followers_collection), do: object
-
-  # if directMessage flag is set to true, leave the addressing alone
-  def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
-
-  def fix_explicit_addressing(object) do
-    explicit_mentions = Utils.determine_explicit_mentions(object)
-
-    %User{follower_address: follower_collection} =
-      object
-      |> Containment.get_actor()
-      |> User.get_cached_by_ap_id()
-
-    explicit_mentions =
-      explicit_mentions ++
-        [
-          Pleroma.Constants.as_public(),
-          follower_collection
-        ]
-
-    fix_explicit_addressing(object, explicit_mentions, follower_collection)
   end
 
   # if as:Public is addressed, then make sure the followers collection is also addressed
@@ -137,19 +118,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_implicit_addressing(object, _), do: object
-
   def fix_addressing(object) do
-    {:ok, %User{} = user} = User.get_or_fetch_by_ap_id(object["actor"])
-    followers_collection = User.ap_followers(user)
+    {:ok, %User{follower_address: follower_collection}} =
+      object
+      |> Containment.get_actor()
+      |> User.get_or_fetch_by_ap_id()
 
     object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
-    |> fix_explicit_addressing()
-    |> fix_implicit_addressing(followers_collection)
+    |> fix_explicit_addressing(follower_collection)
+    |> fix_implicit_addressing(follower_collection)
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
