@@ -11,9 +11,9 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
   alias Pleroma.ModerationLog
   alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
-  alias Pleroma.Web.PleromaAPI.ChatView
 
   require Logger
 
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
   def show(conn, %{id: id}) do
     with %Chat{} = chat <- Chat.get_by_id(id) do
       conn
-      |> put_view(ChatView)
+      |> put_view(AdminAPI.ChatView)
       |> render("show.json", chat: chat)
     end
   end

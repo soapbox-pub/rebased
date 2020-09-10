@@ -123,6 +123,9 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert result["id"] == to_string(chat.id)
+      assert %{} = result["sender"]
+      assert %{} = result["receiver"]
+      refute result["account"]
     end
   end
 end

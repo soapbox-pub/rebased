@@ -21,10 +21,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.ModerationLogView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.PleromaAPI
   alias Pleroma.Web.Router
-
-  require Logger
 
   @users_page_size 50
 
@@ -270,7 +267,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         |> Pleroma.Repo.all()
 
       conn
-      |> put_view(PleromaAPI.ChatView)
+      |> put_view(AdminAPI.ChatView)
       |> render("index.json", chats: chats)
     else
       _ -> {:error, :not_found}

@@ -1346,7 +1346,12 @@ Loads json generated from `config/descriptions.exs`.
 ```json
 [
    {
-      "account": {
+      "sender": {
+        "id": "someflakeid",
+        "username": "somenick",
+        ...
+      },
+      "receiver": {
         "id": "someflakeid",
         "username": "somenick",
         ...
@@ -1369,7 +1374,12 @@ Loads json generated from `config/descriptions.exs`.
 
 ```json
 {
-  "account": {
+  "sender": {
+    "id": "someflakeid",
+    "username": "somenick",
+    ...
+  },
+  "receiver": {
     "id": "someflakeid",
     "username": "somenick",
     ...
