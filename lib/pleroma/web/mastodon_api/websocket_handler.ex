@@ -100,6 +100,10 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     {:reply, :ping, %{state | timer: nil, count: 0}, :hibernate}
   end
 
+  # State can be `[]` only in case we terminate before switching to websocket,
+  # we already log errors for these cases in `init/1`, so just do nothing here
+  def terminate(_reason, _req, []), do: :ok
+
   def terminate(reason, _req, state) do
     Logger.debug(
       "#{__MODULE__} terminating websocket connection for user #{
