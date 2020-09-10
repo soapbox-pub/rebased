@@ -83,10 +83,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
     test "updates the user's bio", %{conn: conn} do
       user2 = insert(:user)
 
-      conn =
-        patch(conn, "/api/v1/accounts/update_credentials", %{
-          "note" => "I drink #cofe with @#{user2.nickname}\n\nsuya.."
-        })
+      raw_bio = "I drink #cofe with @#{user2.nickname}\n\nsuya.."
+
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"note" => raw_bio})
 
       assert user_data = json_response_and_validate_schema(conn, 200)
 
@@ -94,6 +93,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{
                  user2.id
                }" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
+
+      assert user_data["source"]["note"] == raw_bio
+
+      user = Repo.get(User, user_data["id"])
+
+      assert user.raw_bio == raw_bio
     end
 
     test "updates the user's locking status", %{conn: conn} do
@@ -101,6 +106,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert user_data = json_response_and_validate_schema(conn, 200)
       assert user_data["locked"] == true
+    end
+
+    test "updates the user's chat acceptance status", %{conn: conn} do
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{accepts_chat_messages: "false"})
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["pleroma"]["accepts_chat_messages"] == false
     end
 
     test "updates the user's allow_following_move", %{user: user, conn: conn} do
@@ -202,6 +214,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert user_data = json_response_and_validate_schema(conn, 200)
       assert user_data["display_name"] == "markorepairs"
+
+      update_activity = Repo.one(Pleroma.Activity)
+      assert update_activity.data["type"] == "Update"
+      assert update_activity.data["object"]["name"] == "markorepairs"
     end
 
     test "updates the user's avatar", %{user: user, conn: conn} do
@@ -211,10 +227,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         filename: "an_image.jpg"
       }
 
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+      assert user.avatar == %{}
 
-      assert user_response = json_response_and_validate_schema(conn, 200)
+      res = patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+
+      assert user_response = json_response_and_validate_schema(res, 200)
       assert user_response["avatar"] != User.avatar_url(user)
+
+      user = User.get_by_id(user.id)
+      refute user.avatar == %{}
+
+      # Also resets it
+      _res = patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => ""})
+
+      user = User.get_by_id(user.id)
+      assert user.avatar == nil
     end
 
     test "updates the user's banner", %{user: user, conn: conn} do
@@ -224,26 +251,39 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         filename: "an_image.jpg"
       }
 
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"header" => new_header})
+      res = patch(conn, "/api/v1/accounts/update_credentials", %{"header" => new_header})
 
-      assert user_response = json_response_and_validate_schema(conn, 200)
+      assert user_response = json_response_and_validate_schema(res, 200)
       assert user_response["header"] != User.banner_url(user)
+
+      # Also resets it
+      _res = patch(conn, "/api/v1/accounts/update_credentials", %{"header" => ""})
+
+      user = User.get_by_id(user.id)
+      assert user.banner == nil
     end
 
-    test "updates the user's background", %{conn: conn} do
+    test "updates the user's background", %{conn: conn, user: user} do
       new_header = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
 
-      conn =
+      res =
         patch(conn, "/api/v1/accounts/update_credentials", %{
           "pleroma_background_image" => new_header
         })
 
-      assert user_response = json_response_and_validate_schema(conn, 200)
+      assert user_response = json_response_and_validate_schema(res, 200)
       assert user_response["pleroma"]["background_image"]
+      #
+      # Also resets it
+      _res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{"pleroma_background_image" => ""})
+
+      user = User.get_by_id(user.id)
+      assert user.background == nil
     end
 
     test "requires 'write:accounts' permission" do
@@ -313,6 +353,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                },
                %{"name" => "link.io", "value" => "cofe.io"}
              ]
+    end
+
+    test "emojis in fields labels", %{conn: conn} do
+      fields = [
+        %{"name" => ":firefox:", "value" => "is best 2hu"},
+        %{"name" => "they wins", "value" => ":blank:"}
+      ]
+
+      account_data =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
+        |> json_response_and_validate_schema(200)
+
+      assert account_data["fields"] == [
+               %{"name" => ":firefox:", "value" => "is best 2hu"},
+               %{"name" => "they wins", "value" => ":blank:"}
+             ]
+
+      assert account_data["source"]["fields"] == [
+               %{"name" => ":firefox:", "value" => "is best 2hu"},
+               %{"name" => "they wins", "value" => ":blank:"}
+             ]
+
+      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = account_data["emojis"]
     end
 
     test "update fields via x-www-form-urlencoded", %{conn: conn} do
@@ -393,6 +457,73 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response_and_validate_schema(403)
+    end
+  end
+
+  describe "Mark account as bot" do
+    setup do: oauth_access(["write:accounts"])
+    setup :request_content_type
+
+    test "changing actor_type to Service makes account a bot", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Service"})
+        |> json_response_and_validate_schema(200)
+
+      assert account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Service"
+    end
+
+    test "changing actor_type to Person makes account a human", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Person"})
+        |> json_response_and_validate_schema(200)
+
+      refute account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Person"
+    end
+
+    test "changing actor_type to Application causes error", %{conn: conn} do
+      response =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Application"})
+        |> json_response_and_validate_schema(403)
+
+      assert %{"error" => "Invalid request"} == response
+    end
+
+    test "changing bot field to true changes actor_type to Service", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{bot: "true"})
+        |> json_response_and_validate_schema(200)
+
+      assert account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Service"
+    end
+
+    test "changing bot field to false changes actor_type to Person", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{bot: "false"})
+        |> json_response_and_validate_schema(200)
+
+      refute account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Person"
+    end
+
+    test "actor_type field has a higher priority than bot", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{
+          actor_type: "Person",
+          bot: "true"
+        })
+        |> json_response_and_validate_schema(200)
+
+      refute account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Person"
     end
   end
 end

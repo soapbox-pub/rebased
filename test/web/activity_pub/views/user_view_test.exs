@@ -158,4 +158,23 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
     end
   end
+
+  describe "acceptsChatMessages" do
+    test "it returns this value if it is set" do
+      true_user = insert(:user, accepts_chat_messages: true)
+      false_user = insert(:user, accepts_chat_messages: false)
+      nil_user = insert(:user, accepts_chat_messages: nil)
+
+      assert %{"capabilities" => %{"acceptsChatMessages" => true}} =
+               UserView.render("user.json", user: true_user)
+
+      assert %{"capabilities" => %{"acceptsChatMessages" => false}} =
+               UserView.render("user.json", user: false_user)
+
+      refute Map.has_key?(
+               UserView.render("user.json", user: nil_user)["capabilities"],
+               "acceptsChatMessages"
+             )
+    end
+  end
 end

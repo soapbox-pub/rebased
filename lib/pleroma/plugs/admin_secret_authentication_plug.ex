@@ -4,6 +4,9 @@
 
 defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
   import Plug.Conn
+
+  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
 
   def init(options) do
@@ -11,7 +14,10 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
   end
 
   def secret_token do
-    Pleroma.Config.get(:admin_token)
+    case Pleroma.Config.get(:admin_token) do
+      blank when blank in [nil, ""] -> nil
+      token -> token
+    end
   end
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
@@ -26,9 +32,9 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
 
   def authenticate(%{params: %{"admin_token" => admin_token}} = conn) do
     if admin_token == secret_token() do
-      assign(conn, :user, %User{is_admin: true})
+      assign_admin_user(conn)
     else
-      conn
+      handle_bad_token(conn)
     end
   end
 
@@ -36,8 +42,19 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
     token = secret_token()
 
     case get_req_header(conn, "x-admin-token") do
-      [^token] -> assign(conn, :user, %User{is_admin: true})
-      _ -> conn
+      blank when blank in [[], [""]] -> conn
+      [^token] -> assign_admin_user(conn)
+      _ -> handle_bad_token(conn)
     end
+  end
+
+  defp assign_admin_user(conn) do
+    conn
+    |> assign(:user, %User{is_admin: true})
+    |> OAuthScopesPlug.skip_plug()
+  end
+
+  defp handle_bad_token(conn) do
+    RateLimiter.call(conn, name: :authentication)
   end
 end

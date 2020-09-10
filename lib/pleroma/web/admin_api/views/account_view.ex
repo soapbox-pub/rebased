@@ -77,7 +77,10 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "roles" => User.roles(user),
       "tags" => user.tags || [],
       "confirmation_pending" => user.confirmation_pending,
-      "url" => user.uri || user.ap_id
+      "approval_pending" => user.approval_pending,
+      "url" => user.uri || user.ap_id,
+      "registration_reason" => user.registration_reason,
+      "actor_type" => user.actor_type
     }
   end
 
@@ -105,7 +108,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   end
 
   def merge_account_views(%User{} = user) do
-    MastodonAPI.AccountView.render("show.json", %{user: user})
+    MastodonAPI.AccountView.render("show.json", %{user: user, skip_visibility_check: true})
     |> Map.merge(AdminAPI.AccountView.render("show.json", %{user: user}))
   end
 

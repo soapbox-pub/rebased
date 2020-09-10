@@ -42,6 +42,7 @@ defmodule Pleroma.User.Query do
             external: boolean(),
             active: boolean(),
             deactivated: boolean(),
+            need_approval: boolean(),
             is_admin: boolean(),
             is_moderator: boolean(),
             super_users: boolean(),
@@ -129,6 +130,7 @@ defmodule Pleroma.User.Query do
   defp compose_query({:active, _}, query) do
     User.restrict_deactivated(query)
     |> where([u], not is_nil(u.nickname))
+    |> where([u], u.approval_pending == false)
   end
 
   defp compose_query({:legacy_active, _}, query) do
@@ -144,6 +146,10 @@ defmodule Pleroma.User.Query do
   defp compose_query({:deactivated, true}, query) do
     where(query, [u], u.deactivated == ^true)
     |> where([u], not is_nil(u.nickname))
+  end
+
+  defp compose_query({:need_approval, _}, query) do
+    where(query, [u], u.approval_pending)
   end
 
   defp compose_query({:followers, %User{id: id}}, query) do

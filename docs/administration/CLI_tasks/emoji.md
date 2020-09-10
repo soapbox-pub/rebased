@@ -4,13 +4,15 @@
 
 ## Lists emoji packs and metadata specified in the manifest
 
-```sh tab="OTP"
-./bin/pleroma_ctl emoji ls-packs [option ...]
-```
+=== "OTP"
+    ```sh
+    ./bin/pleroma_ctl emoji ls-packs [option ...]
+    ```
 
-```sh tab="From Source"
-mix pleroma.emoji ls-packs [option ...]
-```
+=== "From Source"
+    ```sh
+    mix pleroma.emoji ls-packs [option ...]
+    ```
 
 
 ### Options
@@ -18,26 +20,30 @@ mix pleroma.emoji ls-packs [option ...]
 
 ## Fetch, verify and install the specified packs from the manifest into `STATIC-DIR/emoji/PACK-NAME`
 
-```sh tab="OTP"
-./bin/pleroma_ctl emoji get-packs [option ...] <pack ...>
-```
+=== "OTP"
+    ```sh
+    ./bin/pleroma_ctl emoji get-packs [option ...] <pack ...>
+    ```
 
-```sh tab="From Source"
-mix pleroma.emoji get-packs [option ...] <pack ...>
-```
+=== "From Source"
+    ```sh
+    mix pleroma.emoji get-packs [option ...] <pack ...>
+    ```
 
 ### Options
 - `-m, --manifest PATH/URL` - same as [`ls-packs`](#ls-packs)
 
 ## Create a new manifest entry and a file list from the specified remote pack file
 
-```sh tab="OTP"
-./bin/pleroma_ctl emoji gen-pack PACK-URL
-```
+=== "OTP"
+    ```sh
+    ./bin/pleroma_ctl emoji gen-pack PACK-URL
+    ```
 
-```sh tab="From Source"
-mix pleroma.emoji gen-pack PACK-URL
-```
+=== "From Source"
+    ```sh
+    mix pleroma.emoji gen-pack PACK-URL
+    ```
 
 Currently, only .zip archives are recognized as remote pack files and packs are therefore assumed to be zip archives. This command is intended to run interactively and will first ask you some basic questions about the pack, then download the remote file and generate an SHA256 checksum for it, then generate an emoji file list for you.
 
@@ -47,8 +53,9 @@ Currently, only .zip archives are recognized as remote pack files and packs are 
 
 ## Reload emoji packs
 
-```sh tab="OTP"
-./bin/pleroma_ctl emoji reload
-```
+=== "OTP"
+    ```sh
+    ./bin/pleroma_ctl emoji reload
+    ```
 
 This command only works with OTP releases.

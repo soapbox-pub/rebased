@@ -5,6 +5,10 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
   import ExUnit.CaptureLog
   import Tesla.Mock
 
+  setup do
+    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
+  end
+
   test "logs hasn't error message when request is valid" do
     mock(fn
       %{method: :purge, url: "http://example.com/media/example.jpg"} ->
@@ -14,8 +18,8 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
     refute capture_log(fn ->
              assert Invalidation.Http.purge(
                       ["http://example.com/media/example.jpg"],
-                      %{}
-                    ) == {:ok, "success"}
+                      []
+                    ) == {:ok, ["http://example.com/media/example.jpg"]}
            end) =~ "Error while cache purge"
   end
 
@@ -28,8 +32,8 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
     assert capture_log(fn ->
              assert Invalidation.Http.purge(
                       ["http://example.com/media/example1.jpg"],
-                      %{}
-                    ) == {:ok, "success"}
+                      []
+                    ) == {:ok, ["http://example.com/media/example1.jpg"]}
            end) =~ "Error while cache purge: url - http://example.com/media/example1.jpg"
   end
 end

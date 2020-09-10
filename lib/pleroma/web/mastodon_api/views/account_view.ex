@@ -27,19 +27,38 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           UserRelationship.view_relationships_option(reading_user, users)
       end
 
-    opts = Map.put(opts, :relationships, relationships_opt)
+    opts =
+      opts
+      |> Map.merge(%{relationships: relationships_opt, as: :user})
+      |> Map.delete(:users)
 
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
   end
 
-  def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]) do
+  @doc """
+  Renders specified user account.
+    :skip_visibility_check option skips visibility check and renders any user (local or remote)
+      regardless of [:pleroma, :restrict_unauthenticated] setting.
+    :for option specifies the requester and can be a User record or nil.
+      Only use `user: user, for: user` when `user` is the actual requester of own profile.
+  """
+  def render("show.json", %{user: _user, skip_visibility_check: true} = opts) do
+    do_render("show.json", opts)
+  end
+
+  def render("show.json", %{user: user, for: for_user_or_nil} = opts) do
+    if User.visible_for(user, for_user_or_nil) == :visible do
       do_render("show.json", opts)
     else
       %{}
     end
+  end
+
+  def render("show.json", _) do
+    raise "In order to prevent account accessibility issues, " <>
+            ":skip_visibility_check or :for option is required."
   end
 
   def render("mention.json", %{user: user}) do
@@ -179,7 +198,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         0
       end
 
-    bot = user.actor_type in ["Application", "Service"]
+    bot = user.actor_type == "Service"
 
     emojis =
       Enum.map(user.emoji, fn {shortcode, raw_url} ->
@@ -204,6 +223,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         %{}
       end
 
+    favicon =
+      if Pleroma.Config.get([:instances_favicons, :enabled]) do
+        user
+        |> Map.get(:ap_id, "")
+        |> URI.parse()
+        |> URI.merge("/")
+        |> Pleroma.Instances.Instance.get_or_update_favicon()
+        |> MediaProxy.url()
+      else
+        nil
+      end
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -214,7 +245,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       followers_count: followers_count,
       following_count: following_count,
       statuses_count: user.note_count,
-      note: user.bio || "",
+      note: user.bio,
       url: user.uri || user.ap_id,
       avatar: image,
       avatar_static: image,
@@ -224,7 +255,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: prepare_user_bio(user),
+        note: user.raw_bio || "",
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
@@ -245,7 +276,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         hide_favorites: user.hide_favorites,
         relationship: relationship,
         skip_thread_containment: user.skip_thread_containment,
-        background_image: image_url(user.background) |> MediaProxy.url()
+        background_image: image_url(user.background) |> MediaProxy.url(),
+        accepts_chat_messages: user.accepts_chat_messages,
+        favicon: favicon
       }
     }
     |> maybe_put_role(user, opts[:for])
@@ -259,17 +292,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
   end
-
-  defp prepare_user_bio(%User{bio: ""}), do: ""
-
-  defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
-    bio
-    |> String.replace(~r(<br */?>), "\n")
-    |> Pleroma.HTML.strip_tags()
-    |> HtmlEntities.decode()
-  end
-
-  defp prepare_user_bio(_), do: ""
 
   defp username_from_nickname(string) when is_binary(string) do
     hd(String.split(string, "@"))

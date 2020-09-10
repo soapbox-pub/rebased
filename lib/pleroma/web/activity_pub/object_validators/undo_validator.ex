@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
   use Ecto.Schema
 
   alias Pleroma.Activity
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -14,12 +14,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:type, :string)
-    field(:object, Types.ObjectID)
-    field(:actor, Types.ObjectID)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
+    field(:object, ObjectValidators.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
   end
 
   def cast_and_validate(data) do

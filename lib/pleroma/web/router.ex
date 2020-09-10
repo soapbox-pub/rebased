@@ -138,6 +138,7 @@ defmodule Pleroma.Web.Router do
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     patch("/users/activate", AdminAPIController, :user_activate)
     patch("/users/deactivate", AdminAPIController, :user_deactivate)
+    patch("/users/approve", AdminAPIController, :user_approve)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
@@ -209,6 +210,10 @@ defmodule Pleroma.Web.Router do
     post("/oauth_app", OAuthAppController, :create)
     patch("/oauth_app/:id", OAuthAppController, :update)
     delete("/oauth_app/:id", OAuthAppController, :delete)
+
+    get("/media_proxy_caches", MediaProxyCacheController, :index)
+    post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
+    post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -323,10 +328,6 @@ defmodule Pleroma.Web.Router do
       put("/statuses/:id/reactions/:emoji", EmojiReactionController, :create)
       delete("/statuses/:id/reactions/:emoji", EmojiReactionController, :delete)
       post("/notifications/read", NotificationController, :mark_as_read)
-
-      patch("/accounts/update_avatar", AccountController, :update_avatar)
-      patch("/accounts/update_banner", AccountController, :update_banner)
-      patch("/accounts/update_background", AccountController, :update_background)
 
       get("/mascot", MascotController, :show)
       put("/mascot", MascotController, :update)
@@ -463,6 +464,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/web", Pleroma.Web do
     pipe_through(:authenticated_api)
 
+    # Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere
     put("/settings", MastoFEController, :put_settings)
   end
 
@@ -511,10 +513,6 @@ defmodule Pleroma.Web.Router do
   scope "/api", Pleroma.Web do
     pipe_through(:config)
 
-    get("/help/test", TwitterAPI.UtilController, :help_test)
-    post("/help/test", TwitterAPI.UtilController, :help_test)
-    get("/statusnet/config", TwitterAPI.UtilController, :config)
-    get("/statusnet/version", TwitterAPI.UtilController, :version)
     get("/pleroma/frontend_configurations", TwitterAPI.UtilController, :frontend_configurations)
   end
 
@@ -721,7 +719,7 @@ defmodule Pleroma.Web.Router do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
     get("/api*path", RedirectController, :api_not_implemented)
-    get("/*path", RedirectController, :redirector)
+    get("/*path", RedirectController, :redirector_with_preload)
 
     options("/*path", RedirectController, :empty)
   end

@@ -41,34 +41,34 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   end
 
   def fix_media_type(data) do
-    data =
-      data
-      |> Map.put_new("mediaType", data["mimeType"])
+    data = Map.put_new(data, "mediaType", data["mimeType"])
 
     if MIME.valid?(data["mediaType"]) do
       data
     else
-      data
-      |> Map.put("mediaType", "application/octet-stream")
+      Map.put(data, "mediaType", "application/octet-stream")
     end
   end
 
-  def fix_url(data) do
-    case data["url"] do
-      url when is_binary(url) ->
-        data
-        |> Map.put(
-          "url",
-          [
-            %{
-              "href" => url,
-              "type" => "Link",
-              "mediaType" => data["mediaType"]
-            }
-          ]
-        )
+  defp handle_href(href, mediaType) do
+    [
+      %{
+        "href" => href,
+        "type" => "Link",
+        "mediaType" => mediaType
+      }
+    ]
+  end
 
-      _ ->
+  defp fix_url(data) do
+    cond do
+      is_binary(data["url"]) ->
+        Map.put(data, "url", handle_href(data["url"], data["mediaType"]))
+
+      is_binary(data["href"]) and data["url"] == nil ->
+        Map.put(data, "url", handle_href(data["href"], data["mediaType"]))
+
+      true ->
         data
     end
   end

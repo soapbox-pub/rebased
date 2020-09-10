@@ -166,5 +166,16 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert total == 3
       assert count == 1
     end
+
+    test "it returns unapproved user" do
+      unapproved = insert(:user, approval_pending: true)
+      insert(:user)
+      insert(:user)
+
+      {:ok, _results, total} = Search.user()
+      {:ok, [^unapproved], count} = Search.user(%{need_approval: true})
+      assert total == 3
+      assert count == 1
+    end
   end
 end

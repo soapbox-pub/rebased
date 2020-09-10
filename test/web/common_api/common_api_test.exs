@@ -4,11 +4,14 @@
 
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -18,12 +21,59 @@ defmodule Pleroma.Web.CommonAPITest do
 
   import Pleroma.Factory
   import Mock
+  import Ecto.Query, only: [from: 2]
 
   require Pleroma.Constants
 
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
+
+  describe "blocking" do
+    setup do
+      blocker = insert(:user)
+      blocked = insert(:user)
+      User.follow(blocker, blocked)
+      User.follow(blocked, blocker)
+      %{blocker: blocker, blocked: blocked}
+    end
+
+    test "it blocks and federates", %{blocker: blocker, blocked: blocked} do
+      clear_config([:instance, :federating], true)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+
+        assert block.local
+        assert User.blocks?(blocker, blocked)
+        refute User.following?(blocker, blocked)
+        refute User.following?(blocked, blocker)
+
+        assert called(Pleroma.Web.Federator.publish(block))
+      end
+    end
+
+    test "it blocks and does not federate if outgoing blocks are disabled", %{
+      blocker: blocker,
+      blocked: blocked
+    } do
+      clear_config([:instance, :federating], true)
+      clear_config([:activitypub, :outgoing_blocks], false)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+
+        assert block.local
+        assert User.blocks?(blocker, blocked)
+        refute User.following?(blocker, blocked)
+        refute User.following?(blocked, blocker)
+
+        refute called(Pleroma.Web.Federator.publish(block))
+      end
+    end
+  end
 
   describe "posting chat messages" do
     setup do: clear_config([:instance, :chat_limit])
@@ -412,6 +462,11 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "posting" do
+    test "deactivated users can't post" do
+      user = insert(:user, deactivated: true)
+      assert {:error, _} = CommonAPI.post(user, %{status: "ye"})
+    end
+
     test "it supports explicit addressing" do
       user = insert(:user)
       user_two = insert(:user)
@@ -445,6 +500,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
+      assert object.data["source"] == post
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -461,6 +517,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
+      assert object.data["source"] == post
     end
 
     test "it does not allow replies to direct messages that are not direct messages themselves" do
@@ -543,15 +600,15 @@ defmodule Pleroma.Web.CommonAPITest do
     test "it can handle activities that expire" do
       user = insert(:user)
 
-      expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.truncate(:second)
-        |> NaiveDateTime.add(1_000_000, :second)
+      expires_at = DateTime.add(DateTime.utc_now(), 1_000_000)
 
       assert {:ok, activity} = CommonAPI.post(user, %{status: "chai", expires_in: 1_000_000})
 
-      assert expiration = Pleroma.ActivityExpiration.get_by_activity_id(activity.id)
-      assert expiration.scheduled_at == expires_at
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity.id},
+        scheduled_at: expires_at
+      )
     end
   end
 
@@ -576,14 +633,27 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
-      {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+      clear_config([:instance, :federating], true)
 
-      {:ok, unreaction} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
+        {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
 
-      assert unreaction.data["type"] == "Undo"
-      assert unreaction.data["object"] == reaction.data["id"]
-      assert unreaction.local
+        {:ok, unreaction} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+
+        assert unreaction.data["type"] == "Undo"
+        assert unreaction.data["object"] == reaction.data["id"]
+        assert unreaction.local
+
+        # On federation, it contains the undone (and deleted) object
+        unreaction_with_object = %{
+          unreaction
+          | data: Map.put(unreaction.data, "object", reaction.data)
+        }
+
+        assert called(Pleroma.Web.Federator.publish(unreaction_with_object))
+      end
     end
 
     test "repeating a status" do
@@ -742,6 +812,69 @@ defmodule Pleroma.Web.CommonAPITest do
       [user: user, activity: activity]
     end
 
+    test "marks notifications as read after mute" do
+      author = insert(:user)
+      activity = insert(:note_activity, user: author)
+
+      friend1 = insert(:user)
+      friend2 = insert(:user)
+
+      {:ok, reply_activity} =
+        CommonAPI.post(
+          friend2,
+          %{
+            status: "@#{author.nickname} @#{friend1.nickname} test reply",
+            in_reply_to_status_id: activity.id
+          }
+        )
+
+      {:ok, favorite_activity} = CommonAPI.favorite(friend2, activity.id)
+      {:ok, repeat_activity} = CommonAPI.repeat(activity.id, friend1)
+
+      assert Repo.aggregate(
+               from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
+               :count
+             ) == 1
+
+      unread_notifications =
+        Repo.all(from(n in Notification, where: n.seen == false, where: n.user_id == ^author.id))
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "favourite" && n.activity_id == favorite_activity.id
+             end)
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "reblog" && n.activity_id == repeat_activity.id
+             end)
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "mention" && n.activity_id == reply_activity.id
+             end)
+
+      {:ok, _} = CommonAPI.add_mute(author, activity)
+      assert CommonAPI.thread_muted?(author, activity)
+
+      assert Repo.aggregate(
+               from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
+               :count
+             ) == 1
+
+      read_notifications =
+        Repo.all(from(n in Notification, where: n.seen == true, where: n.user_id == ^author.id))
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "favourite" && n.activity_id == favorite_activity.id
+             end)
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "reblog" && n.activity_id == repeat_activity.id
+             end)
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "mention" && n.activity_id == reply_activity.id
+             end)
+    end
+
     test "add mute", %{user: user, activity: activity} do
       {:ok, _} = CommonAPI.add_mute(user, activity)
       assert CommonAPI.thread_muted?(user, activity)
@@ -886,6 +1019,15 @@ defmodule Pleroma.Web.CommonAPITest do
     end
   end
 
+  describe "follow/2" do
+    test "directly follows a non-locked local user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+
+      assert User.following?(follower, followed)
+    end
+  end
+
   describe "unfollow/2" do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
@@ -950,9 +1092,9 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       follower_two = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_three} = CommonAPI.follow(follower_two, user)
 
       assert follow_activity.data["state"] == "pending"
       assert follow_activity_two.data["state"] == "pending"
@@ -970,9 +1112,9 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       follower_two = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_three} = CommonAPI.follow(follower_two, user)
 
       assert follow_activity.data["state"] == "pending"
       assert follow_activity_two.data["state"] == "pending"

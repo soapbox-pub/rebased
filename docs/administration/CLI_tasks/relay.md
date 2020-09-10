@@ -4,30 +4,42 @@
 
 ## Follow a relay
 
-```sh tab="OTP"
-./bin/pleroma_ctl relay follow <relay_url>
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.relay follow <relay_url>
-```
+    ```sh
+    ./bin/pleroma_ctl relay follow <relay_url>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.relay follow <relay_url>
+    ```
 
 ## Unfollow a remote relay
 
-```sh tab="OTP"
-./bin/pleroma_ctl relay unfollow <relay_url>
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.relay unfollow <relay_url>
-```
+    ```sh
+    ./bin/pleroma_ctl relay unfollow <relay_url>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.relay unfollow <relay_url>
+    ```
 
 ## List relay subscriptions
 
-```sh tab="OTP"
-./bin/pleroma_ctl relay list
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.relay list
-```
+    ```sh
+    ./bin/pleroma_ctl relay list
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.relay list
+    ```

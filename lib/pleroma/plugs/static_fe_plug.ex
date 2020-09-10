@@ -9,7 +9,7 @@ defmodule Pleroma.Plugs.StaticFEPlug do
   def init(options), do: options
 
   def call(conn, _) do
-    if enabled?() and accepts_html?(conn) do
+    if enabled?() and requires_html?(conn) do
       conn
       |> StaticFEController.call(:show)
       |> halt()
@@ -20,10 +20,7 @@ defmodule Pleroma.Plugs.StaticFEPlug do
 
   defp enabled?, do: Pleroma.Config.get([:static_fe, :enabled], false)
 
-  defp accepts_html?(conn) do
-    case get_req_header(conn, "accept") do
-      [accept | _] -> String.contains?(accept, "text/html")
-      _ -> false
-    end
+  defp requires_html?(conn) do
+    Phoenix.Controller.get_format(conn) == "html"
   end
 end

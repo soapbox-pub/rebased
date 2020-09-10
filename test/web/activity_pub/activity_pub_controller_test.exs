@@ -533,9 +533,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       end)
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
-      assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
+      assert_receive {:mix_shell, :info, ["https://relay.mastodon.host/actor"]}
     end
 
+    @tag capture_log: true
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do
@@ -648,11 +649,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it accepts announces with to as string instead of array", %{conn: conn} do
       user = insert(:user)
 
+      {:ok, post} = CommonAPI.post(user, %{status: "hey"})
+      announcer = insert(:user, local: false)
+
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "actor" => "http://mastodon.example.org/users/admin",
-        "id" => "http://mastodon.example.org/users/admin/statuses/19512778738411822/activity",
-        "object" => "https://mastodon.social/users/emelie/statuses/101849165031453009",
+        "actor" => announcer.ap_id,
+        "id" => "#{announcer.ap_id}/statuses/19512778738411822/activity",
+        "object" => post.data["object"],
         "to" => "https://www.w3.org/ns/activitystreams#Public",
         "cc" => [user.ap_id],
         "type" => "Announce"
@@ -901,6 +905,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "POST /users/:nickname/outbox (C2S)" do
+    setup do: clear_config([:instance, :limit])
+
     setup do
       [
         activity: %{
@@ -1077,6 +1083,59 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert object = Object.get_by_ap_id(note_object.data["id"])
       assert object.data["like_count"] == 1
+    end
+
+    test "it doesn't spreads faulty attributedTo or actor fields", %{
+      conn: conn,
+      activity: activity
+    } do
+      reimu = insert(:user, nickname: "reimu")
+      cirno = insert(:user, nickname: "cirno")
+
+      assert reimu.ap_id
+      assert cirno.ap_id
+
+      activity =
+        activity
+        |> put_in(["object", "actor"], reimu.ap_id)
+        |> put_in(["object", "attributedTo"], reimu.ap_id)
+        |> put_in(["actor"], reimu.ap_id)
+        |> put_in(["attributedTo"], reimu.ap_id)
+
+      _reimu_outbox =
+        conn
+        |> assign(:user, cirno)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{reimu.nickname}/outbox", activity)
+        |> json_response(403)
+
+      cirno_outbox =
+        conn
+        |> assign(:user, cirno)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{cirno.nickname}/outbox", activity)
+        |> json_response(201)
+
+      assert cirno_outbox["attributedTo"] == nil
+      assert cirno_outbox["actor"] == cirno.ap_id
+
+      assert cirno_object = Object.normalize(cirno_outbox["object"])
+      assert cirno_object.data["actor"] == cirno.ap_id
+      assert cirno_object.data["attributedTo"] == cirno.ap_id
+    end
+
+    test "Character limitation", %{conn: conn, activity: activity} do
+      Pleroma.Config.put([:instance, :limit], 5)
+      user = insert(:user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", activity)
+        |> json_response(400)
+
+      assert result == "Note is over the character limit"
     end
   end
 

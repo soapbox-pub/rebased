@@ -12,16 +12,21 @@ defmodule Pleroma.Emails.UserEmail do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
-  defp instance_name, do: Config.get([:instance, :name])
-
-  defp sender do
-    email = Config.get([:instance, :notify_email]) || Config.get([:instance, :email])
-    {instance_name(), email}
-  end
+  import Pleroma.Config.Helpers, only: [instance_name: 0, sender: 0]
 
   defp recipient(email, nil), do: email
   defp recipient(email, name), do: {name, email}
   defp recipient(%User{} = user), do: recipient(user.email, user.name)
+
+  @spec welcome(User.t(), map()) :: Swoosh.Email.t()
+  def welcome(user, opts \\ %{}) do
+    new()
+    |> to(recipient(user))
+    |> from(Map.get(opts, :sender, sender()))
+    |> subject(Map.get(opts, :subject, "Welcome to #{instance_name()}!"))
+    |> html_body(Map.get(opts, :html, "Welcome to #{instance_name()}!"))
+    |> text_body(Map.get(opts, :text, "Welcome to #{instance_name()}!"))
+  end
 
   def password_reset_email(user, token) when is_binary(token) do
     password_reset_url = Router.Helpers.reset_password_url(Endpoint, :reset, token)
@@ -102,25 +107,34 @@ defmodule Pleroma.Emails.UserEmail do
       |> Enum.filter(&(&1.activity.data["type"] == "Create"))
       |> Enum.map(fn notification ->
         object = Pleroma.Object.normalize(notification.activity)
-        object = update_in(object.data["content"], &format_links/1)
 
-        %{
-          data: notification,
-          object: object,
-          from: User.get_by_ap_id(notification.activity.actor)
-        }
+        if not is_nil(object) do
+          object = update_in(object.data["content"], &format_links/1)
+
+          %{
+            data: notification,
+            object: object,
+            from: User.get_by_ap_id(notification.activity.actor)
+          }
+        end
       end)
+      |> Enum.filter(& &1)
 
     followers =
       notifications
       |> Enum.filter(&(&1.activity.data["type"] == "Follow"))
       |> Enum.map(fn notification ->
-        %{
-          data: notification,
-          object: Pleroma.Object.normalize(notification.activity),
-          from: User.get_by_ap_id(notification.activity.actor)
-        }
+        from = User.get_by_ap_id(notification.activity.actor)
+
+        if not is_nil(from) do
+          %{
+            data: notification,
+            object: Pleroma.Object.normalize(notification.activity),
+            from: User.get_by_ap_id(notification.activity.actor)
+          }
+        end
       end)
+      |> Enum.filter(& &1)
 
     unless Enum.empty?(mentions) do
       styling = Config.get([__MODULE__, :styling])

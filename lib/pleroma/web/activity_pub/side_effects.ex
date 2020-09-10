@@ -6,19 +6,156 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   collection, and so on.
   """
   alias Pleroma.Activity
+  alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
+  alias Pleroma.Workers.BackgroundWorker
+
+  require Logger
 
   def handle(object, meta \\ [])
+
+  # Task this handles
+  # - Follows
+  # - Sends a notification
+  def handle(
+        %{
+          data: %{
+            "actor" => actor,
+            "type" => "Accept",
+            "object" => follow_activity_id
+          }
+        } = object,
+        meta
+      ) do
+    with %Activity{actor: follower_id} = follow_activity <-
+           Activity.get_by_ap_id(follow_activity_id),
+         %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
+      Notification.update_notification_type(followed, follow_activity)
+      User.update_follower_count(followed)
+      User.update_following_count(follower)
+    end
+
+    {:ok, object, meta}
+  end
+
+  # Task this handles
+  # - Rejects all existing follow activities for this person
+  # - Updates the follow state
+  # - Dismisses notification
+  def handle(
+        %{
+          data: %{
+            "actor" => actor,
+            "type" => "Reject",
+            "object" => follow_activity_id
+          }
+        } = object,
+        meta
+      ) do
+    with %Activity{actor: follower_id} = follow_activity <-
+           Activity.get_by_ap_id(follow_activity_id),
+         %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
+      FollowingRelationship.update(follower, followed, :follow_reject)
+      Notification.dismiss(follow_activity)
+    end
+
+    {:ok, object, meta}
+  end
+
+  # Tasks this handle
+  # - Follows if possible
+  # - Sends a notification
+  # - Generates accept or reject if appropriate
+  def handle(
+        %{
+          data: %{
+            "id" => follow_id,
+            "type" => "Follow",
+            "object" => followed_user,
+            "actor" => following_user
+          }
+        } = object,
+        meta
+      ) do
+    with %User{} = follower <- User.get_cached_by_ap_id(following_user),
+         %User{} = followed <- User.get_cached_by_ap_id(followed_user),
+         {_, {:ok, _}, _, _} <-
+           {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
+      if followed.local && !followed.locked do
+        {:ok, accept_data, _} = Builder.accept(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+      end
+    else
+      {:following, {:error, _}, _follower, followed} ->
+        {:ok, reject_data, _} = Builder.reject(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
+
+      _ ->
+        nil
+    end
+
+    {:ok, notifications} = Notification.create_notifications(object, do_send: false)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
+
+    updated_object = Activity.get_by_ap_id(follow_id)
+
+    {:ok, updated_object, meta}
+  end
+
+  # Tasks this handles:
+  # - Unfollow and block
+  def handle(
+        %{data: %{"type" => "Block", "object" => blocked_user, "actor" => blocking_user}} =
+          object,
+        meta
+      ) do
+    with %User{} = blocker <- User.get_cached_by_ap_id(blocking_user),
+         %User{} = blocked <- User.get_cached_by_ap_id(blocked_user) do
+      User.block(blocker, blocked)
+    end
+
+    {:ok, object, meta}
+  end
+
+  # Tasks this handles:
+  # - Update the user
+  #
+  # For a local user, we also get a changeset with the full information, so we
+  # can update non-federating, non-activitypub settings as well.
+  def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
+    if changeset = Keyword.get(meta, :user_update_changeset) do
+      changeset
+      |> User.update_and_set_cache()
+    else
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+
+      User.get_by_ap_id(updated_object["id"])
+      |> User.remote_user_changeset(new_user_data)
+      |> User.update_and_set_cache()
+    end
+
+    {:ok, object, meta}
+  end
 
   # Tasks this handles:
   # - Add like to object
@@ -35,10 +172,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles
   # - Actually create object
   # - Rollback if we couldn't create it
+  # - Increase the user note count
+  # - Increase the reply count
+  # - Increase replies count
+  # - Set up ActivityExpiration
   # - Set up notifications
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
-    with {:ok, _object, meta} <- handle_object_creation(meta[:object_data], meta) do
+    with {:ok, object, meta} <- handle_object_creation(meta[:object_data], meta),
+         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
+      {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
+
+      if in_reply_to = object.data["inReplyTo"] do
+        Object.increase_replies_count(in_reply_to)
+      end
+
+      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       meta =
         meta
@@ -62,7 +211,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     if !User.is_internal_user?(user) do
       Notification.create_notifications(object)
-      ActivityPub.stream_out(object)
+
+      object
+      |> Topics.get_activity_topics()
+      |> Streamer.stream(object)
     end
 
     {:ok, object, meta}
@@ -96,13 +248,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Stream out the activity
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
-      Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)
+      Object.normalize(deleted_object, false) ||
+        User.get_cached_by_ap_id(deleted_object)
 
     result =
       case deleted_object do
         %Object{} ->
           with {:ok, deleted_object, activity} <- Object.delete(deleted_object),
-               %User{} = user <- User.get_cached_by_ap_id(deleted_object.data["actor"]) do
+               {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
+               %User{} = user <- User.get_cached_by_ap_id(actor) do
             User.remove_pinnned_activity(user, activity)
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
@@ -116,6 +270,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
             :ok
+          else
+            {:actor, _} ->
+              Logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
+              :no_object_actor
           end
 
         %User{} ->
@@ -165,17 +323,42 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_object_creation(%{"type" => "Answer"} = object_map, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object_map, meta) do
+      Object.increase_vote_count(
+        object.data["inReplyTo"],
+        object.data["name"],
+        object.data["actor"]
+      )
+
+      {:ok, object, meta}
+    end
+  end
+
+  def handle_object_creation(%{"type" => objtype} = object, meta)
+      when objtype in ~w[Audio Question Event] do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      {:ok, object, meta}
+    end
+  end
+
   # Nothing to do
-  def handle_object_creation(object) do
-    {:ok, object}
+  def handle_object_creation(object, meta) do
+    {:ok, object, meta}
+  end
+
+  defp undo_like(nil, object), do: delete_object(object)
+
+  defp undo_like(%Object{} = liked_object, object) do
+    with {:ok, _} <- Utils.remove_like_from_object(object, liked_object) do
+      delete_object(object)
+    end
   end
 
   def handle_undoing(%{data: %{"type" => "Like"}} = object) do
-    with %Object{} = liked_object <- Object.get_by_ap_id(object.data["object"]),
-         {:ok, _} <- Utils.remove_like_from_object(object, liked_object),
-         {:ok, _} <- Repo.delete(object) do
-      :ok
-    end
+    object.data["object"]
+    |> Object.get_by_ap_id()
+    |> undo_like(object)
   end
 
   def handle_undoing(%{data: %{"type" => "EmojiReact"}} = object) do
@@ -206,6 +389,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
+
+  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  defp delete_object(object) do
+    with {:ok, _} <- Repo.delete(object), do: :ok
+  end
 
   defp send_notifications(meta) do
     Keyword.get(meta, :notifications, [])

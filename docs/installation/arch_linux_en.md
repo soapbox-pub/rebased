@@ -9,6 +9,7 @@ This guide will assume that you have administrative rights, either as root or a 
 * `elixir`
 * `git`
 * `base-devel`
+* `cmake`
 * `file`
 
 #### Optional packages used in this guide
@@ -27,7 +28,7 @@ sudo pacman -Syu
 * Install some of the above mentioned programs:
 
 ```shell
-sudo pacman -S git base-devel elixir file
+sudo pacman -S git base-devel elixir cmake file
 ```
 
 ### Install PostgreSQL
@@ -201,10 +202,7 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 
 #### Further reading
 
-* [Backup your instance](../administration/backup.md)
-* [Hardening your instance](../configuration/hardening.md)
-* [How to activate mediaproxy](../configuration/howto_mediaproxy.md)
-* [Updating your instance](../administration/updating.md)
+{! backend/installation/further_reading.include !}
 
 ## Questions
 

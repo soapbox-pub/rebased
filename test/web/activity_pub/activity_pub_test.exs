@@ -184,36 +184,43 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert User.invisible?(user)
     end
 
-    test "it fetches the appropriate tag-restricted posts" do
-      user = insert(:user)
+    test "it returns a user that accepts chat messages" do
+      user_id = "http://mastodon.example.org/users/admin"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
 
-      {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
-      {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
-      {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
-
-      fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
-
-      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
-
-      fetch_three =
-        ActivityPub.fetch_activities([], %{
-          type: "Create",
-          tag: ["test", "essais"],
-          tag_reject: ["reject"]
-        })
-
-      fetch_four =
-        ActivityPub.fetch_activities([], %{
-          type: "Create",
-          tag: ["test"],
-          tag_all: ["test", "reject"]
-        })
-
-      assert fetch_one == [status_one, status_three]
-      assert fetch_two == [status_one, status_two, status_three]
-      assert fetch_three == [status_one, status_two]
-      assert fetch_four == [status_three]
+      assert user.accepts_chat_messages
     end
+  end
+
+  test "it fetches the appropriate tag-restricted posts" do
+    user = insert(:user)
+
+    {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
+    {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
+    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
+
+    fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
+
+    fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
+
+    fetch_three =
+      ActivityPub.fetch_activities([], %{
+        type: "Create",
+        tag: ["test", "essais"],
+        tag_reject: ["reject"]
+      })
+
+    fetch_four =
+      ActivityPub.fetch_activities([], %{
+        type: "Create",
+        tag: ["test"],
+        tag_all: ["test", "reject"]
+      })
+
+    assert fetch_one == [status_one, status_three]
+    assert fetch_two == [status_one, status_two, status_three]
+    assert fetch_three == [status_one, status_two]
+    assert fetch_four == [status_three]
   end
 
   describe "insertion" do
@@ -232,7 +239,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         }
       }
 
-      assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
+      assert {:error, :remote_limit} = ActivityPub.insert(data)
     end
 
     test "doesn't drop activities with content being null" do
@@ -379,9 +386,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "create activities" do
-    test "it reverts create" do
-      user = insert(:user)
+    setup do
+      [user: insert(:user)]
+    end
 
+    test "it reverts create", %{user: user} do
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} =
                  ActivityPub.create(%{
@@ -400,9 +409,47 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.aggregate(Object, :count, :id) == 0
     end
 
-    test "removes doubled 'to' recipients" do
-      user = insert(:user)
+    test "creates activity if expiration is not configured and expires_at is not passed", %{
+      user: user
+    } do
+      clear_config([Pleroma.Workers.PurgeExpiredActivity, :enabled], false)
 
+      assert {:ok, _} =
+               ActivityPub.create(%{
+                 to: ["user1", "user2"],
+                 actor: user,
+                 context: "",
+                 object: %{
+                   "to" => ["user1", "user2"],
+                   "type" => "Note",
+                   "content" => "testing"
+                 }
+               })
+    end
+
+    test "rejects activity if expires_at present but expiration is not configured", %{user: user} do
+      clear_config([Pleroma.Workers.PurgeExpiredActivity, :enabled], false)
+
+      assert {:error, :expired_activities_disabled} =
+               ActivityPub.create(%{
+                 to: ["user1", "user2"],
+                 actor: user,
+                 context: "",
+                 object: %{
+                   "to" => ["user1", "user2"],
+                   "type" => "Note",
+                   "content" => "testing"
+                 },
+                 additional: %{
+                   "expires_at" => DateTime.utc_now()
+                 }
+               })
+
+      assert Repo.aggregate(Activity, :count, :id) == 0
+      assert Repo.aggregate(Object, :count, :id) == 0
+    end
+
+    test "removes doubled 'to' recipients", %{user: user} do
       {:ok, activity} =
         ActivityPub.create(%{
           to: ["user1", "user1", "user2"],
@@ -420,9 +467,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.recipients == ["user1", "user2", user.ap_id]
     end
 
-    test "increases user note count only for public activities" do
-      user = insert(:user)
-
+    test "increases user note count only for public activities", %{user: user} do
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
           status: "1",
@@ -451,8 +496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert user.note_count == 2
     end
 
-    test "increases replies count" do
-      user = insert(:user)
+    test "increases replies count", %{user: user} do
       user2 = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})
@@ -506,6 +550,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities = ActivityPub.fetch_activities_for_context("2hu", %{blocking_user: user})
       assert activities == [activity_two, activity]
+    end
+
+    test "doesn't return activities with filtered words" do
+      user = insert(:user)
+      user_two = insert(:user)
+      insert(:filter, user: user, phrase: "test", hide: true)
+
+      {:ok, %{id: id1, data: %{"context" => context}}} = CommonAPI.post(user, %{status: "1"})
+
+      {:ok, %{id: id2}} = CommonAPI.post(user_two, %{status: "2", in_reply_to_status_id: id1})
+
+      {:ok, %{id: id3} = user_activity} =
+        CommonAPI.post(user, %{status: "3 test?", in_reply_to_status_id: id2})
+
+      {:ok, %{id: id4} = filtered_activity} =
+        CommonAPI.post(user_two, %{status: "4 test!", in_reply_to_status_id: id3})
+
+      {:ok, _} = CommonAPI.post(user, %{status: "5", in_reply_to_status_id: id4})
+
+      activities =
+        context
+        |> ActivityPub.fetch_activities_for_context(%{user: user})
+        |> Enum.map(& &1.id)
+
+      assert length(activities) == 4
+      assert user_activity.id in activities
+      refute filtered_activity.id in activities
     end
   end
 
@@ -642,7 +713,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute activity in activities
 
     followed_user = insert(:user)
-    ActivityPub.follow(user, followed_user)
+    CommonAPI.follow(user, followed_user)
     {:ok, repeat_activity} = CommonAPI.repeat(activity.id, followed_user)
 
     activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
@@ -785,6 +856,75 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert activity == expected_activity
   end
 
+  describe "irreversible filters" do
+    setup do
+      user = insert(:user)
+      user_two = insert(:user)
+
+      insert(:filter, user: user_two, phrase: "cofe", hide: true)
+      insert(:filter, user: user_two, phrase: "ok boomer", hide: true)
+      insert(:filter, user: user_two, phrase: "test", hide: false)
+
+      params = %{
+        type: ["Create", "Announce"],
+        user: user_two
+      }
+
+      {:ok, %{user: user, user_two: user_two, params: params}}
+    end
+
+    test "it returns statuses if they don't contain exact filter words", %{
+      user: user,
+      params: params
+    } do
+      {:ok, _} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, _} = CommonAPI.post(user, %{status: "got cofefe?"})
+      {:ok, _} = CommonAPI.post(user, %{status: "I am not a boomer"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ok boomers"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ccofee is not a word"})
+      {:ok, _} = CommonAPI.post(user, %{status: "this is a test"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.count(activities) == 6
+    end
+
+    test "it does not filter user's own statuses", %{user_two: user_two, params: params} do
+      {:ok, _} = CommonAPI.post(user_two, %{status: "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user_two, %{status: "ok boomer"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.count(activities) == 2
+    end
+
+    test "it excludes statuses with filter words", %{user: user, params: params} do
+      {:ok, _} = CommonAPI.post(user, %{status: "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ok boomer"})
+      {:ok, _} = CommonAPI.post(user, %{status: "is it a cOfE?"})
+      {:ok, _} = CommonAPI.post(user, %{status: "cofe is all I need"})
+      {:ok, _} = CommonAPI.post(user, %{status: "— ok BOOMER\n"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.empty?(activities)
+    end
+
+    test "it returns all statuses if user does not have any filters" do
+      another_user = insert(:user)
+      {:ok, _} = CommonAPI.post(another_user, %{status: "got cofe?"})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "test!"})
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          type: ["Create", "Announce"],
+          user: another_user
+        })
+
+      assert Enum.count(activities) == 2
+    end
+  end
+
   describe "public fetch activities" do
     test "doesn't retrieve unlisted activities" do
       user = insert(:user)
@@ -887,13 +1027,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "uploading files" do
-    test "copies the file to the configured folder" do
-      file = %Plug.Upload{
+    setup do
+      test_file = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
 
+      %{test_file: test_file}
+    end
+
+    test "sets a description if given", %{test_file: file} do
+      {:ok, %Object{} = object} = ActivityPub.upload(file, description: "a cool file")
+      assert object.data["name"] == "a cool file"
+    end
+
+    test "it sets the default description depending on the configuration", %{test_file: file} do
+      clear_config([Pleroma.Upload, :default_description])
+
+      Pleroma.Config.put([Pleroma.Upload, :default_description], nil)
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == ""
+
+      Pleroma.Config.put([Pleroma.Upload, :default_description], :filename)
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == "an_image.jpg"
+
+      Pleroma.Config.put([Pleroma.Upload, :default_description], "unnamed attachment")
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == "unnamed attachment"
+    end
+
+    test "copies the file to the configured folder", %{test_file: file} do
+      clear_config([Pleroma.Upload, :default_description], :filename)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "an_image.jpg"
     end
@@ -917,24 +1083,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "following / unfollowing" do
-    test "it reverts follow activity" do
-      follower = insert(:user)
-      followed = insert(:user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.follow(follower, followed)
-      end
-
-      assert Repo.aggregate(Activity, :count, :id) == 0
-      assert Repo.aggregate(Object, :count, :id) == 0
-    end
-
+  describe "unfollowing" do
     test "it reverts unfollow activity" do
       follower = insert(:user)
       followed = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} = ActivityPub.unfollow(follower, followed)
@@ -947,21 +1101,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["object"] == followed.ap_id
     end
 
-    test "creates a follow activity" do
-      follower = insert(:user)
-      followed = insert(:user)
-
-      {:ok, activity} = ActivityPub.follow(follower, followed)
-      assert activity.data["type"] == "Follow"
-      assert activity.data["actor"] == follower.ap_id
-      assert activity.data["object"] == followed.ap_id
-    end
-
     test "creates an undo activity for the last follow" do
       follower = insert(:user)
       followed = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
       assert activity.data["type"] == "Undo"
@@ -978,7 +1122,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       follower = insert(:user)
       followed = insert(:user, %{locked: true})
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
       assert activity.data["type"] == "Undo"
@@ -989,54 +1133,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert embedded_object["type"] == "Follow"
       assert embedded_object["object"] == followed.ap_id
       assert embedded_object["id"] == follow_activity.data["id"]
-    end
-  end
-
-  describe "blocking" do
-    test "reverts block activity on error" do
-      [blocker, blocked] = insert_list(2, :user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.block(blocker, blocked)
-      end
-
-      assert Repo.aggregate(Activity, :count, :id) == 0
-      assert Repo.aggregate(Object, :count, :id) == 0
-    end
-
-    test "creates a block activity" do
-      clear_config([:instance, :federating], true)
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end do
-        {:ok, activity} = ActivityPub.block(blocker, blocked)
-
-        assert activity.data["type"] == "Block"
-        assert activity.data["actor"] == blocker.ap_id
-        assert activity.data["object"] == blocked.ap_id
-
-        assert called(Pleroma.Web.Federator.publish(activity))
-      end
-    end
-
-    test "works with outgoing blocks disabled, but doesn't federate" do
-      clear_config([:instance, :federating], true)
-      clear_config([:activitypub, :outgoing_blocks], false)
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end do
-        {:ok, activity} = ActivityPub.block(blocker, blocked)
-
-        assert activity.data["type"] == "Block"
-        assert activity.data["actor"] == blocker.ap_id
-        assert activity.data["object"] == blocked.ap_id
-
-        refute called(Pleroma.Web.Federator.publish(:_))
-      end
     end
   end
 
@@ -1090,52 +1186,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert [public_activity.id, private_activity_1.id] == activities
       assert length(activities) == 2
     end
-  end
-
-  describe "update" do
-    setup do: clear_config([:instance, :max_pinned_statuses])
-
-    test "it creates an update activity with the new user data" do
-      user = insert(:user)
-      {:ok, user} = User.ensure_keys_present(user)
-      user_data = Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
-
-      {:ok, update} =
-        ActivityPub.update(%{
-          actor: user_data["id"],
-          to: [user.follower_address],
-          cc: [],
-          object: user_data
-        })
-
-      assert update.data["actor"] == user.ap_id
-      assert update.data["to"] == [user.follower_address]
-      assert embedded_object = update.data["object"]
-      assert embedded_object["id"] == user_data["id"]
-      assert embedded_object["type"] == user_data["type"]
-    end
-  end
-
-  test "returned pinned statuses" do
-    Config.put([:instance, :max_pinned_statuses], 3)
-    user = insert(:user)
-
-    {:ok, activity_one} = CommonAPI.post(user, %{status: "HI!!!"})
-    {:ok, activity_two} = CommonAPI.post(user, %{status: "HI!!!"})
-    {:ok, activity_three} = CommonAPI.post(user, %{status: "HI!!!"})
-
-    CommonAPI.pin(activity_one.id, user)
-    user = refresh_record(user)
-
-    CommonAPI.pin(activity_two.id, user)
-    user = refresh_record(user)
-
-    CommonAPI.pin(activity_three.id, user)
-    user = refresh_record(user)
-
-    activities = ActivityPub.fetch_user_activities(user, nil, %{pinned: true})
-
-    assert 3 = length(activities)
   end
 
   describe "flag/1" do
@@ -1192,7 +1242,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         "id" => activity_ap_id,
         "content" => content,
         "published" => activity_with_object.object.data["published"],
-        "actor" => AccountView.render("show.json", %{user: target_account})
+        "actor" =>
+          AccountView.render("show.json", %{user: target_account, skip_visibility_check: true})
       }
 
       assert %Activity{
@@ -1457,7 +1508,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
 
-      Pleroma.Workers.BackgroundWorker.perform(params, nil)
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
 
       refute User.following?(follower, old_user)
       assert User.following?(follower, new_user)
@@ -2055,18 +2106,67 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "global activity expiration" do
-    setup do: clear_config([:instance, :rewrite_policy])
-
     test "creates an activity expiration for local Create activities" do
-      Pleroma.Config.put(
-        [:instance, :rewrite_policy],
-        Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
+      clear_config([:mrf, :policies], Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy)
+
+      {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity.id},
+        scheduled_at:
+          activity.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
       )
 
-      {:ok, %{id: id_create}} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
-      {:ok, _follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+      refute_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: follow.id}
+      )
+    end
+  end
 
-      assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
+  describe "handling of clashing nicknames" do
+    test "renames an existing user with a clashing nickname and a different ap id" do
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/harinezumigari"
+        )
+
+      %{
+        nickname: orig_user.nickname,
+        ap_id: orig_user.ap_id <> "part_2"
+      }
+      |> ActivityPub.maybe_handle_clashing_nickname()
+
+      user = User.get_by_id(orig_user.id)
+
+      assert user.nickname == "#{orig_user.id}.admin@mastodon.example.org"
+    end
+
+    test "does nothing with a clashing nickname and the same ap id" do
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/harinezumigari"
+        )
+
+      %{
+        nickname: orig_user.nickname,
+        ap_id: orig_user.ap_id
+      }
+      |> ActivityPub.maybe_handle_clashing_nickname()
+
+      user = User.get_by_id(orig_user.id)
+
+      assert user.nickname == orig_user.nickname
     end
   end
 end

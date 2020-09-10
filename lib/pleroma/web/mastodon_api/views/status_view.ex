@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   require Pleroma.Constants
 
   alias Pleroma.Activity
-  alias Pleroma.ActivityExpiration
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -21,7 +20,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
-  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
+
+  # This is a naive way to do this, just spawning a process per activity
+  # to fetch the preview. However it should be fine considering
+  # pagination is restricted to 40 activities at a time
+  defp fetch_rich_media_for_activities(activities) do
+    Enum.each(activities, fn activity ->
+      spawn(fn ->
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      end)
+    end)
+  end
 
   # TODO: Add cached version.
   defp get_replied_to_activities([]), do: %{}
@@ -80,6 +90,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
     activities = Enum.filter(opts.activities, & &1)
+
+    # Start fetching rich media before doing anything else, so that later calls to get the cards
+    # only block for timeout in the worst case, as opposed to
+    # length(activities_with_links) * timeout
+    fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
 
     parent_activities =
@@ -229,8 +244,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     expires_at =
       with true <- client_posted_this_activity,
-           %ActivityExpiration{scheduled_at: scheduled_at} <-
-             ActivityExpiration.get_by_activity_id(activity.id) do
+           %Oban.Job{scheduled_at: scheduled_at} <-
+             Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id) do
         scheduled_at
       else
         _ -> nil
@@ -297,13 +312,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     emoji_reactions =
       with %{data: %{"reactions" => emoji_reactions}} <- object do
-        Enum.map(emoji_reactions, fn [emoji, users] ->
-          %{
-            name: emoji,
-            count: length(users),
-            me: !!(opts[:for] && opts[:for].ap_id in users)
-          }
+        Enum.map(emoji_reactions, fn
+          [emoji, users] when is_list(users) ->
+            build_emoji_map(emoji, users, opts[:for])
+
+          {emoji, users} when is_list(users) ->
+            build_emoji_map(emoji, users, opts[:for])
+
+          _ ->
+            nil
         end)
+        |> Enum.reject(&is_nil/1)
       else
         _ -> []
       end
@@ -333,6 +352,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblog: nil,
       card: card,
       content: content_html,
+      text: opts[:with_source] && object.data["source"],
       created_at: created_at,
       reblogs_count: announcement_count,
       replies_count: object.data["repliesCount"] || 0,
@@ -364,7 +384,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         expires_at: expires_at,
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
-        emoji_reactions: emoji_reactions
+        emoji_reactions: emoji_reactions,
+        parent_visible: visible_for_user?(reply_to, opts[:for])
       }
     }
   end
@@ -467,23 +488,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Video", "Event", "Audio"] do
-    with name when not is_nil(name) and name != "" <- object.data["name"] do
-      "<p><a href=\"#{object.data["id"]}\">#{name}</a></p>#{object.data["content"]}"
-    else
-      _ -> object.data["content"] || ""
-    end
-  end
+  def render_content(%{data: %{"name" => name}} = object) when not is_nil(name) and name != "" do
+    url = object.data["url"] || object.data["id"]
 
-  def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Article", "Page"] do
-    with summary when not is_nil(summary) and summary != "" <- object.data["name"],
-         url when is_bitstring(url) <- object.data["url"] do
-      "<p><a href=\"#{url}\">#{summary}</a></p>#{object.data["content"]}"
-    else
-      _ -> object.data["content"] || ""
-    end
+    "<p><a href=\"#{url}\">#{name}</a></p>#{object.data["content"]}"
   end
 
   def render_content(object), do: object.data["content"] || ""
@@ -543,4 +551,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp pinned?(%Activity{id: id}, %User{pinned_activities: pinned_activities}),
     do: id in pinned_activities
+
+  defp build_emoji_map(emoji, users, current_user) do
+    %{
+      name: emoji,
+      count: length(users),
+      me: !!(current_user && current_user.ap_id in users)
+    }
+  end
 end

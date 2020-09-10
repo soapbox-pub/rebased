@@ -52,6 +52,13 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
       do_not_federate = meta[:do_not_federate] || !Config.get([:instance, :federating])
 
       if !do_not_federate && local do
+        activity =
+          if object = Keyword.get(meta, :object_data) do
+            %{activity | data: Map.put(activity.data, "object", object)}
+          else
+            activity
+          end
+
         Federator.publish(activity)
         {:ok, :federated}
       else

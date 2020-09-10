@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.Transmogrifier, only: [fix_emoji: 1]
@@ -16,13 +16,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   @derive Jason.Encoder
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
-    field(:to, Types.Recipients, default: [])
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
+    field(:to, ObjectValidators.Recipients, default: [])
     field(:type, :string)
-    field(:content, Types.SafeText)
-    field(:actor, Types.ObjectID)
-    field(:published, Types.DateTime)
-    field(:emoji, :map, default: %{})
+    field(:content, ObjectValidators.SafeText)
+    field(:actor, ObjectValidators.ObjectID)
+    field(:published, ObjectValidators.DateTime)
+    field(:emoji, ObjectValidators.Emoji, default: %{})
 
     embeds_one(:attachment, AttachmentValidator)
   end
@@ -93,12 +93,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   - If both users are in our system
   - If at least one of the users in this ChatMessage is a local user
   - If the recipient is not blocking the actor
+  - If the recipient is explicitly not accepting chat messages
   """
   def validate_local_concern(cng) do
     with actor_ap <- get_field(cng, :actor),
          {_, %User{} = actor} <- {:find_actor, User.get_cached_by_ap_id(actor_ap)},
          {_, %User{} = recipient} <-
            {:find_recipient, User.get_cached_by_ap_id(get_field(cng, :to) |> hd())},
+         {_, false} <- {:not_accepting_chats?, recipient.accepts_chat_messages == false},
          {_, false} <- {:blocking_actor?, User.blocks?(recipient, actor)},
          {_, true} <- {:local?, Enum.any?([actor, recipient], & &1.local)} do
       cng
@@ -106,6 +108,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
       {:blocking_actor?, true} ->
         cng
         |> add_error(:actor, "actor is blocked by recipient")
+
+      {:not_accepting_chats?, true} ->
+        cng
+        |> add_error(:to, "recipient does not accept chat messages")
 
       {:local?, false} ->
         cng

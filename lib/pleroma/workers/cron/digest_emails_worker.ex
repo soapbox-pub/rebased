@@ -19,7 +19,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
   require Logger
 
   @impl Oban.Worker
-  def perform(_opts, _job) do
+  def perform(_job) do
     config = Config.get([:email_notifications, :digest])
 
     if config[:active] do
@@ -37,9 +37,9 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
       )
       |> Repo.all()
       |> send_emails
-    else
-      :ok
     end
+
+    :ok
   end
 
   def send_emails(users) do

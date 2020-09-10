@@ -32,10 +32,22 @@ defmodule Pleroma.LoadTesting.Fetcher do
     )
   end
 
+  defp create_filter(user) do
+    Pleroma.Filter.create(%Pleroma.Filter{
+      user_id: user.id,
+      phrase: "must be filtered",
+      hide: true
+    })
+  end
+
+  defp delete_filter(filter), do: Repo.delete(filter)
+
   defp fetch_timelines(user) do
     fetch_home_timeline(user)
+    fetch_home_timeline_with_filter(user)
     fetch_direct_timeline(user)
     fetch_public_timeline(user)
+    fetch_public_timeline_with_filter(user)
     fetch_public_timeline(user, :with_blocks)
     fetch_public_timeline(user, :local)
     fetch_public_timeline(user, :tag)
@@ -61,7 +73,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
     }
   end
 
-  defp fetch_home_timeline(user) do
+  defp fetch_home_timeline(user, title_end \\ "") do
     opts = opts_for_home_timeline(user)
 
     recipients = [user.ap_id | User.following(user)]
@@ -84,9 +96,11 @@ defmodule Pleroma.LoadTesting.Fetcher do
       |> Enum.reverse()
       |> List.last()
 
+    title = "home timeline " <> title_end
+
     Benchee.run(
       %{
-        "home timeline" => fn opts -> ActivityPub.fetch_activities(recipients, opts) end
+        title => fn opts -> ActivityPub.fetch_activities(recipients, opts) end
       },
       inputs: %{
         "1 page" => opts,
@@ -106,6 +120,14 @@ defmodule Pleroma.LoadTesting.Fetcher do
       },
       formatters: formatters()
     )
+  end
+
+  defp fetch_home_timeline_with_filter(user) do
+    {:ok, filter} = create_filter(user)
+
+    fetch_home_timeline(user, "with filters")
+
+    delete_filter(filter)
   end
 
   defp opts_for_direct_timeline(user) do
@@ -208,6 +230,14 @@ defmodule Pleroma.LoadTesting.Fetcher do
     opts = opts_for_public_timeline(user)
 
     fetch_public_timeline(opts, "public timeline")
+  end
+
+  defp fetch_public_timeline_with_filter(user) do
+    {:ok, filter} = create_filter(user)
+    opts = opts_for_public_timeline(user)
+
+    fetch_public_timeline(opts, "public timeline with filters")
+    delete_filter(filter)
   end
 
   defp fetch_public_timeline(user, :local) do

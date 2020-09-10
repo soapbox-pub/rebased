@@ -19,7 +19,8 @@ defmodule Pleroma.Gun.API do
     :tls_opts,
     :tcp_opts,
     :socks_opts,
-    :ws_opts
+    :ws_opts,
+    :supervise
   ]
 
   @impl Gun

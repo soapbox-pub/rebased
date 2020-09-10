@@ -22,26 +22,42 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    case Config.get([:http, :user_agent], :default) do
-      :default ->
-        info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
-        named_version() <> "; " <> info
+    if Process.whereis(Pleroma.Web.Endpoint) do
+      case Config.get([:http, :user_agent], :default) do
+        :default ->
+          info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
+          named_version() <> "; " <> info
 
-      custom ->
-        custom
+        custom ->
+          custom
+      end
+    else
+      # fallback, if endpoint is not started yet
+      "Pleroma Data Loader"
     end
   end
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
-    Pleroma.Config.Holder.save_default()
+    # Scrubbers are compiled at runtime and therefore will cause a conflict
+    # every time the application is restarted, so we disable module
+    # conflicts at runtime
+    Code.compiler_options(ignore_module_conflict: true)
+    # Disable warnings_as_errors at runtime, it breaks Phoenix live reload
+    # due to protocol consolidation warnings
+    Code.compiler_options(warnings_as_errors: false)
+    Pleroma.Telemetry.Logger.attach()
+    Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
+    Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
-    Pleroma.Repo.check_migrations_applied!()
+    Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
+    check_system_commands()
+    Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
 
@@ -149,7 +165,8 @@ defmodule Pleroma.Application do
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
-      build_cachex("failed_proxy_url", limit: 2500)
+      build_cachex("failed_proxy_url", limit: 2500),
+      build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000)
     ]
   end
 
@@ -162,7 +179,8 @@ defmodule Pleroma.Application do
   defp seconds_valid_interval,
     do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
 
-  defp build_cachex(type, opts),
+  @spec build_cachex(String.t(), keyword()) :: map()
+  def build_cachex(type, opts),
     do: %{
       id: String.to_atom("cachex_" <> type),
       start: {Cachex, :start_link, [String.to_atom(type <> "_cache"), opts]},
@@ -217,9 +235,7 @@ defmodule Pleroma.Application do
 
   # start hackney and gun pools in tests
   defp http_children(_, :test) do
-    hackney_options = Config.get([:hackney_pools, :federation])
-    hackney_pool = :hackney_pool.child_spec(:federation, hackney_options)
-    [hackney_pool, Pleroma.Pool.Supervisor]
+    http_children(Tesla.Adapter.Hackney, nil) ++ http_children(Tesla.Adapter.Gun, nil)
   end
 
   defp http_children(Tesla.Adapter.Hackney, _) do
@@ -238,7 +254,27 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children(Tesla.Adapter.Gun, _), do: [Pleroma.Pool.Supervisor]
+  defp http_children(Tesla.Adapter.Gun, _) do
+    Pleroma.Gun.ConnectionPool.children() ++
+      [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
+  end
 
   defp http_children(_, _), do: []
+
+  defp check_system_commands do
+    filters = Config.get([Pleroma.Upload, :filters])
+
+    check_filter = fn filter, command_required ->
+      with true <- filter in filters,
+           false <- Pleroma.Utils.command_available?(command_required) do
+        Logger.error(
+          "#{filter} is specified in list of Pleroma.Upload filters, but the #{command_required} command is not found"
+        )
+      end
+    end
+
+    check_filter.(Pleroma.Upload.Filters.Exiftool, "exiftool")
+    check_filter.(Pleroma.Upload.Filters.Mogrify, "mogrify")
+    check_filter.(Pleroma.Upload.Filters.Mogrifun, "mogrify")
+  end
 end

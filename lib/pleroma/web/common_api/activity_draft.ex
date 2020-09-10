@@ -186,6 +186,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         draft.poll
       )
       |> Map.put("emoji", emoji)
+      |> Map.put("source", draft.status)
 
     %__MODULE__{draft | object: object}
   end
@@ -201,7 +202,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
     additional =
       case draft.expires_at do
-        %NaiveDateTime{} = expires_at -> Map.put(additional, "expires_at", expires_at)
+        %DateTime{} = expires_at -> Map.put(additional, "expires_at", expires_at)
         _ -> additional
       end
 

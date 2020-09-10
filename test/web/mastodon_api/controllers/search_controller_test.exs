@@ -79,6 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert status["id"] == to_string(activity.id)
     end
 
+    @tag capture_log: true
     test "constructs hashtags from search query", %{conn: conn} do
       results =
         conn
@@ -148,6 +149,22 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
                  "url" =>
                    "#{Web.base_url()}/tag/NascarBanDisplayConfederateFlagAllEventsProperties"
                }
+             ]
+    end
+
+    test "supports pagination of hashtags search results", %{conn: conn} do
+      results =
+        conn
+        |> get(
+          "/api/v2/search?#{
+            URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})
+          }"
+        )
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "text", "url" => "#{Web.base_url()}/tag/text"},
+               %{"name" => "with", "url" => "#{Web.base_url()}/tag/with"}
              ]
     end
 
@@ -265,18 +282,18 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       capture_log(fn ->
         {:ok, %{id: activity_id}} =
           CommonAPI.post(insert(:user), %{
-            status: "check out https://shitposter.club/notice/2827873"
+            status: "check out http://mastodon.example.org/@admin/99541947525187367"
           })
 
         results =
           conn
-          |> get("/api/v1/search?q=https://shitposter.club/notice/2827873")
+          |> get("/api/v1/search?q=http://mastodon.example.org/@admin/99541947525187367")
           |> json_response_and_validate_schema(200)
 
-        [status, %{"id" => ^activity_id}] = results["statuses"]
-
-        assert status["uri"] ==
-                 "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+        assert [
+                 %{"url" => "http://mastodon.example.org/@admin/99541947525187367"},
+                 %{"id" => ^activity_id}
+               ] = results["statuses"]
       end)
     end
 
@@ -302,11 +319,13 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search fetches remote accounts", %{conn: conn} do
       user = insert(:user)
 
+      query = URI.encode_query(%{q: "       mike@osada.macgirvin.com          ", resolve: true})
+
       results =
         conn
         |> assign(:user, user)
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
-        |> get("/api/v1/search?q=mike@osada.macgirvin.com&resolve=true")
+        |> get("/api/v1/search?#{query}")
         |> json_response_and_validate_schema(200)
 
       [account] = results["accounts"]

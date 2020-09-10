@@ -300,11 +300,11 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "content" => "Check this out :firefox:",
           "id" => "13",
           "chat_id" => "1",
-          "actor_id" => "someflakeid",
+          "account_id" => "someflakeid",
           "unread" => false
         },
         %{
-          "actor_id" => "someflakeid",
+          "account_id" => "someflakeid",
           "content" => "Whats' up?",
           "id" => "12",
           "chat_id" => "1",

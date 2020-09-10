@@ -17,6 +17,12 @@ defmodule Pleroma.Web.AdminAPI.FallbackController do
     |> json(%{error: reason})
   end
 
+  def call(conn, {:errors, errors}) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{errors: errors})
+  end
+
   def call(conn, {:param_cast, _}) do
     conn
     |> put_status(:bad_request)

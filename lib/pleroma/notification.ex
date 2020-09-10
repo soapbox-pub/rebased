@@ -15,6 +15,7 @@ defmodule Pleroma.Notification do
   alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
@@ -130,6 +131,7 @@ defmodule Pleroma.Notification do
     |> preload([n, a, o], activity: {a, object: o})
     |> exclude_notification_muted(user, exclude_notification_muted_opts)
     |> exclude_blocked(user, exclude_blocked_opts)
+    |> exclude_filtered(user)
     |> exclude_visibility(opts)
   end
 
@@ -156,6 +158,20 @@ defmodule Pleroma.Notification do
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
     )
     |> where([n, a, o, tm], is_nil(tm.user_id))
+  end
+
+  defp exclude_filtered(query, user) do
+    case Pleroma.Filter.compose_regex(user) do
+      nil ->
+        query
+
+      regex ->
+        from([_n, a, o] in query,
+          where:
+            fragment("not(?->>'content' ~* ?)", o.data, ^regex) or
+              fragment("?->>'actor' = ?", o.data, ^user.ap_id)
+        )
+    end
   end
 
   @valid_visibilities ~w[direct unlisted public private]
@@ -337,6 +353,7 @@ defmodule Pleroma.Notification do
     end
   end
 
+  @spec create_notifications(Activity.t(), keyword()) :: {:ok, [Notification.t()] | []}
   def create_notifications(activity, options \\ [])
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity, options) do
@@ -367,6 +384,7 @@ defmodule Pleroma.Notification do
         do_send = do_send && user in enabled_receivers
         create_notification(activity, user, do_send)
       end)
+      |> Enum.reject(&is_nil/1)
 
     {:ok, notifications}
   end
@@ -424,6 +442,7 @@ defmodule Pleroma.Notification do
         |> Multi.insert(:notification, %Notification{
           user_id: user.id,
           activity: activity,
+          seen: mark_as_read?(activity, user),
           type: type_from_activity(activity)
         })
         |> Marker.multi_set_last_read_id(user, "notifications")
@@ -478,6 +497,10 @@ defmodule Pleroma.Notification do
       _ ->
         []
     end
+  end
+
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Follow", "object" => object_id}}) do
+    [object_id]
   end
 
   def get_potential_receiver_ap_ids(activity) do
@@ -550,11 +573,9 @@ defmodule Pleroma.Notification do
     [
       :self,
       :invisible,
-      :followers,
-      :follows,
-      :non_followers,
-      :non_follows,
-      :recently_followed
+      :block_from_strangers,
+      :recently_followed,
+      :filtered
     ]
     |> Enum.find(&skip?(&1, activity, user))
   end
@@ -573,43 +594,13 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(
-        :followers,
+        :block_from_strangers,
         %Activity{} = activity,
-        %User{notification_settings: %{followers: false}} = user
-      ) do
-    actor = activity.data["actor"]
-    follower = User.get_cached_by_ap_id(actor)
-    User.following?(follower, user)
-  end
-
-  def skip?(
-        :non_followers,
-        %Activity{} = activity,
-        %User{notification_settings: %{non_followers: false}} = user
+        %User{notification_settings: %{block_from_strangers: true}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
     !User.following?(follower, user)
-  end
-
-  def skip?(
-        :follows,
-        %Activity{} = activity,
-        %User{notification_settings: %{follows: false}} = user
-      ) do
-    actor = activity.data["actor"]
-    followed = User.get_cached_by_ap_id(actor)
-    User.following?(user, followed)
-  end
-
-  def skip?(
-        :non_follows,
-        %Activity{} = activity,
-        %User{notification_settings: %{non_follows: false}} = user
-      ) do
-    actor = activity.data["actor"]
-    followed = User.get_cached_by_ap_id(actor)
-    !User.following?(user, followed)
   end
 
   # To do: consider defining recency in hours and checking FollowingRelationship with a single SQL
@@ -623,7 +614,32 @@ defmodule Pleroma.Notification do
     end)
   end
 
+  def skip?(:filtered, %{data: %{"type" => type}}, _) when type in ["Follow", "Move"], do: false
+
+  def skip?(:filtered, activity, user) do
+    object = Object.normalize(activity)
+
+    cond do
+      is_nil(object) ->
+        false
+
+      object.data["actor"] == user.ap_id ->
+        false
+
+      not is_nil(regex = Pleroma.Filter.compose_regex(user, :re)) ->
+        Regex.match?(regex, object.data["content"])
+
+      true ->
+        false
+    end
+  end
+
   def skip?(_, _, _), do: false
+
+  def mark_as_read?(activity, target_user) do
+    user = Activity.user_actor(activity)
+    User.mutes_user?(target_user, user) || CommonAPI.thread_muted?(target_user, activity)
+  end
 
   def for_user_and_activity(user, activity) do
     from(n in __MODULE__,
@@ -631,5 +647,17 @@ defmodule Pleroma.Notification do
       where: n.activity_id == ^activity.id
     )
     |> Repo.one()
+  end
+
+  @spec mark_context_as_read(User.t(), String.t()) :: {integer(), nil | [term()]}
+  def mark_context_as_read(%User{id: id}, context) do
+    from(
+      n in Notification,
+      join: a in assoc(n, :activity),
+      where: n.user_id == ^id,
+      where: n.seen == false,
+      where: fragment("?->>'context'", a.data) == ^context
+    )
+    |> Repo.update_all(set: [seen: true])
   end
 end

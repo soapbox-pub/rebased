@@ -42,7 +42,8 @@ defmodule Pleroma.Factory do
       user
       | ap_id: User.ap_id(user),
         follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user)
+        following_address: User.ap_following(user),
+        raw_bio: user.bio
     }
   end
 
@@ -66,6 +67,7 @@ defmodule Pleroma.Factory do
     data = %{
       "type" => "Note",
       "content" => text,
+      "source" => text,
       "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
@@ -198,25 +200,6 @@ defmodule Pleroma.Factory do
     |> Map.merge(attrs)
   end
 
-  defp expiration_offset_by_minutes(attrs, minutes) do
-    scheduled_at =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.add(:timer.minutes(minutes), :millisecond)
-      |> NaiveDateTime.truncate(:second)
-
-    %Pleroma.ActivityExpiration{}
-    |> Map.merge(attrs)
-    |> Map.put(:scheduled_at, scheduled_at)
-  end
-
-  def expiration_in_the_past_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, -60)
-  end
-
-  def expiration_in_the_future_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, 61)
-  end
-
   def article_activity_factory do
     article = insert(:article)
 
@@ -292,6 +275,30 @@ defmodule Pleroma.Factory do
     %Pleroma.Activity{
       data: data,
       actor: follower.ap_id
+    }
+  end
+
+  def report_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    activity = attrs[:activity] || insert(:note_activity)
+    state = attrs[:state] || "open"
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "actor" => user.ap_id,
+      "type" => "Flag",
+      "object" => [activity.actor, activity.data["id"]],
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "to" => [],
+      "cc" => [activity.actor],
+      "context" => activity.data["context"],
+      "state" => state
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"] ++ data["cc"]
     }
   end
 
@@ -396,24 +403,17 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def config_factory do
+  def config_factory(attrs \\ %{}) do
     %Pleroma.ConfigDB{
-      key:
-        sequence(:key, fn key ->
-          # Atom dynamic registration hack in tests
-          "some_key_#{key}"
-          |> String.to_atom()
-          |> inspect()
-        end),
-      group: ":pleroma",
+      key: sequence(:key, &String.to_atom("some_key_#{&1}")),
+      group: :pleroma,
       value:
         sequence(
           :value,
-          fn key ->
-            :erlang.term_to_binary(%{another_key: "#{key}somevalue", another: "#{key}somevalue"})
-          end
+          &%{another_key: "#{&1}somevalue", another: "#{&1}somevalue"}
         )
     }
+    |> merge_attributes(attrs)
   end
 
   def marker_factory do
@@ -431,6 +431,14 @@ defmodule Pleroma.Factory do
       authorization: build(:oauth_authorization),
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
       user: build(:user)
+    }
+  end
+
+  def filter_factory do
+    %Pleroma.Filter{
+      user: build(:user),
+      filter_id: sequence(:filter_id, & &1),
+      phrase: "cofe"
     }
   end
 end

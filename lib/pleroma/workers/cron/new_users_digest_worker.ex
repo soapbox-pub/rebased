@@ -12,7 +12,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
   use Pleroma.Workers.WorkerHelper, queue: "new_users_digest"
 
   @impl Oban.Worker
-  def perform(_args, _job) do
+  def perform(_job) do
     if Pleroma.Config.get([Pleroma.Emails.NewUsersDigestEmail, :enabled]) do
       today = NaiveDateTime.utc_now() |> Timex.beginning_of_day()
 
@@ -55,11 +55,9 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
         |> Repo.all()
         |> Enum.map(&Pleroma.Emails.NewUsersDigestEmail.new_users(&1, users_and_statuses))
         |> Enum.each(&Pleroma.Emails.Mailer.deliver/1)
-      else
-        :ok
       end
-    else
-      :ok
     end
+
+    :ok
   end
 end

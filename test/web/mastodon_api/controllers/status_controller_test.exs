@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
@@ -22,13 +22,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
   setup do: clear_config([:rich_media, :enabled])
+  setup do: clear_config([:mrf, :policies])
+  setup do: clear_config([:mrf_keyword, :reject])
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
-      Pleroma.Config.put([:instance, :federating], true)
-      Pleroma.Config.get([:instance, :allow_relay], true)
+      Config.put([:instance, :federating], true)
+      Config.get([:instance, :allow_relay], true)
 
       response =
         conn
@@ -101,7 +103,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       # An activity that will expire:
       # 2 hours
-      expires_in = 120 * 60
+      expires_in = 2 * 60 * 60
+
+      expires_at = DateTime.add(DateTime.utc_now(), expires_in)
 
       conn_four =
         conn
@@ -111,29 +115,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "expires_in" => expires_in
         })
 
-      assert fourth_response =
-               %{"id" => fourth_id} = json_response_and_validate_schema(conn_four, 200)
+      assert %{"id" => fourth_id} = json_response_and_validate_schema(conn_four, 200)
 
-      assert activity = Activity.get_by_id(fourth_id)
-      assert expiration = ActivityExpiration.get_by_activity_id(fourth_id)
+      assert Activity.get_by_id(fourth_id)
 
-      estimated_expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(expires_in)
-        |> NaiveDateTime.truncate(:second)
-
-      # This assert will fail if the test takes longer than a minute. I sure hope it never does:
-      assert abs(NaiveDateTime.diff(expiration.scheduled_at, estimated_expires_at, :second)) < 60
-
-      assert fourth_response["pleroma"]["expires_at"] ==
-               NaiveDateTime.to_iso8601(expiration.scheduled_at)
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: fourth_id},
+        scheduled_at: expires_at
+      )
     end
 
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
-      # 1 hour
-      expires_in = 60 * 60
+      # 1 minute
+      expires_in = 1 * 60
 
       assert %{"error" => "Expiry date is too soon"} =
                conn
@@ -144,8 +141,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                })
                |> json_response_and_validate_schema(422)
 
-      # 30 minutes
-      expires_in = 30 * 60
+      # 5 minutes
+      expires_in = 5 * 60
 
       assert %{"error" => "Expiry date is too soon"} =
                conn
@@ -154,6 +151,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
+               |> json_response_and_validate_schema(422)
+    end
+
+    test "Get MRF reason when posting a status is rejected by one", %{conn: conn} do
+      Config.put([:mrf_keyword, :reject], ["GNO"])
+      Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("api/v1/statuses", %{"status" => "GNO/Linux"})
                |> json_response_and_validate_schema(422)
     end
 
@@ -283,9 +291,45 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert real_status == fake_status
     end
 
+    test "fake statuses' preview card is not cached", %{conn: conn} do
+      clear_config([:rich_media, :enabled], true)
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: "https://example.com/twitter-card"
+        } ->
+          %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
+
+        env ->
+          apply(HttpRequestMock, :request, [env])
+      end)
+
+      conn1 =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "https://example.com/ogp",
+          "preview" => true
+        })
+
+      conn2 =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "https://example.com/twitter-card",
+          "preview" => true
+        })
+
+      assert %{"card" => %{"title" => "The Rock"}} = json_response_and_validate_schema(conn1, 200)
+
+      assert %{"card" => %{"title" => "Small Island Developing States Photo Submission"}} =
+               json_response_and_validate_schema(conn2, 200)
+    end
+
     test "posting a status with OGP link preview", %{conn: conn} do
       Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
-      Config.put([:rich_media, :enabled], true)
+      clear_config([:rich_media, :enabled], true)
 
       conn =
         conn
@@ -760,13 +804,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "when you created it" do
       %{user: author, conn: conn} = oauth_access(["write:statuses"])
       activity = insert(:note_activity, user: author)
+      object = Object.normalize(activity)
 
-      conn =
+      content = object.data["content"]
+      source = object.data["source"]
+
+      result =
         conn
         |> assign(:user, author)
         |> delete("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(200)
 
-      assert %{} = json_response_and_validate_schema(conn, 200)
+      assert match?(%{"content" => ^content, "text" => ^source}, result)
 
       refute Activity.get_by_id(activity.id)
     end
@@ -789,7 +838,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       conn = delete(conn, "/api/v1/statuses/#{activity.id}")
 
-      assert %{"error" => _} = json_response_and_validate_schema(conn, 403)
+      assert %{"error" => "Record not found"} == json_response_and_validate_schema(conn, 404)
 
       assert Activity.get_by_id(activity.id) == activity
     end
@@ -1091,6 +1140,52 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity_two.id}/pin")
                |> json_response_and_validate_schema(400)
+    end
+
+    test "on pin removes deletion job, on unpin reschedule deletion" do
+      %{conn: conn} = oauth_access(["write:accounts", "write:statuses"])
+      expires_in = 2 * 60 * 60
+
+      expires_at = DateTime.add(DateTime.utc_now(), expires_in)
+
+      assert %{"id" => id} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("api/v1/statuses", %{
+                 "status" => "oolong",
+                 "expires_in" => expires_in
+               })
+               |> json_response_and_validate_schema(200)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: id},
+        scheduled_at: expires_at
+      )
+
+      assert %{"id" => ^id, "pinned" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses/#{id}/pin")
+               |> json_response_and_validate_schema(200)
+
+      refute_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: id},
+        scheduled_at: expires_at
+      )
+
+      assert %{"id" => ^id, "pinned" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses/#{id}/unpin")
+               |> json_response_and_validate_schema(200)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: id},
+        scheduled_at: expires_at
+      )
     end
   end
 
@@ -1414,6 +1509,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       [%{"id" => id}] = response
       assert id == other_user.id
     end
+
+    test "returns empty array when :show_reactions is disabled", %{conn: conn, activity: activity} do
+      clear_config([:instance, :show_reactions], false)
+
+      other_user = insert(:user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+        |> json_response_and_validate_schema(:ok)
+
+      assert Enum.empty?(response)
+    end
   end
 
   describe "GET /api/v1/statuses/:id/reblogged_by" do
@@ -1561,7 +1670,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     # Using the header for pagination works correctly
     [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
-    [_, max_id] = Regex.run(~r/max_id=(.*)>;/, next)
+    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
 
     assert max_id == third_favorite.id
 
@@ -1613,18 +1722,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   test "expires_at is nil for another user" do
     %{conn: conn, user: user} = oauth_access(["read:statuses"])
+    expires_at = DateTime.add(DateTime.utc_now(), 1_000_000)
     {:ok, activity} = CommonAPI.post(user, %{status: "foobar", expires_in: 1_000_000})
 
-    expires_at =
-      activity.id
-      |> ActivityExpiration.get_by_activity_id()
-      |> Map.get(:scheduled_at)
-      |> NaiveDateTime.to_iso8601()
-
-    assert %{"pleroma" => %{"expires_at" => ^expires_at}} =
+    assert %{"pleroma" => %{"expires_at" => a_expires_at}} =
              conn
              |> get("/api/v1/statuses/#{activity.id}")
              |> json_response_and_validate_schema(:ok)
+
+    {:ok, a_expires_at, 0} = DateTime.from_iso8601(a_expires_at)
+    assert DateTime.diff(expires_at, a_expires_at) == 0
 
     %{conn: conn} = oauth_access(["read:statuses"])
 

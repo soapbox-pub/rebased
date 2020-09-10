@@ -10,8 +10,8 @@ defmodule Pleroma.Repo.Migrations.AddFtsIndexToObjectsTwo do
 
     execute("CREATE FUNCTION objects_fts_update() RETURNS trigger AS $$
     begin
-      new.fts_content := to_tsvector('english', new.data->>'content');
-      return new;
+    new.fts_content := to_tsvector('english', new.data->>'content');
+    return new;
     end
     $$ LANGUAGE plpgsql")
     execute("create index if not exists objects_fts on objects using RUM (fts_content rum_tsvector_addon_ops, inserted_at) with (attach = 'inserted_at', to = 'fts_content');")

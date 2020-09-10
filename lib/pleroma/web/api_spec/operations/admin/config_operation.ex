@@ -26,6 +26,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
           %Schema{type: :boolean, default: false},
           "Get only saved in database settings"
         )
+        | admin_api_params()
       ],
       security: [%{"oAuth" => ["read"]}],
       responses: %{
@@ -41,6 +42,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
       summary: "Update config settings",
       operationId: "AdminAPI.ConfigController.update",
       security: [%{"oAuth" => ["write"]}],
+      parameters: admin_api_params(),
       requestBody:
         request_body("Parameters", %Schema{
           type: :object,
@@ -73,6 +75,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
       summary: "Get JSON with config descriptions.",
       operationId: "AdminAPI.ConfigController.descriptions",
       security: [%{"oAuth" => ["read"]}],
+      parameters: admin_api_params(),
       responses: %{
         200 =>
           Operation.response("Config Descriptions", "application/json", %Schema{

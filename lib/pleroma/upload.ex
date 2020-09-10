@@ -56,6 +56,15 @@ defmodule Pleroma.Upload do
         }
   defstruct [:id, :name, :tempfile, :content_type, :path]
 
+  defp get_description(opts, upload) do
+    case {opts[:description], Pleroma.Config.get([Pleroma.Upload, :default_description])} do
+      {description, _} when is_binary(description) -> description
+      {_, :filename} -> upload.name
+      {_, str} when is_binary(str) -> str
+      _ -> ""
+    end
+  end
+
   @spec store(source, options :: [option()]) :: {:ok, Map.t()} | {:error, any()}
   @doc "Store a file. If using a `Plug.Upload{}` as the source, be sure to use `Majic.Plug` to ensure its content_type and filename is correct."
   def store(upload, opts \\ []) do
@@ -64,6 +73,10 @@ defmodule Pleroma.Upload do
     with {:ok, upload} <- prepare_upload(upload, opts),
          upload = %__MODULE__{upload | path: upload.path || "#{upload.id}/#{upload.name}"},
          {:ok, upload} <- Pleroma.Upload.Filter.filter(opts.filters, upload),
+         description = get_description(opts, upload),
+         {_, true} <-
+           {:description_limit,
+            String.length(description) <= Pleroma.Config.get([:instance, :description_limit])},
          {:ok, url_spec} <- Pleroma.Uploaders.Uploader.put_file(opts.uploader, upload) do
       {:ok,
        %{
@@ -76,9 +89,12 @@ defmodule Pleroma.Upload do
              "href" => url_from_spec(upload, opts.base_url, url_spec)
            }
          ],
-         "name" => Map.get(opts, :description) || upload.name
+         "name" => description
        }}
     else
+      {:description_limit, _} ->
+        {:error, :description_too_long}
+
       {:error, error} ->
         Logger.error(
           "#{__MODULE__} store (using #{inspect(opts.uploader)}) failed: #{inspect(error)}"

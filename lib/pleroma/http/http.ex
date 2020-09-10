@@ -7,7 +7,7 @@ defmodule Pleroma.HTTP do
     Wrapper for `Tesla.request/2`.
   """
 
-  alias Pleroma.HTTP.Connection
+  alias Pleroma.HTTP.AdapterHelper
   alias Pleroma.HTTP.Request
   alias Pleroma.HTTP.RequestBuilder, as: Builder
   alias Tesla.Client
@@ -16,6 +16,7 @@ defmodule Pleroma.HTTP do
   require Logger
 
   @type t :: __MODULE__
+  @type method() :: :get | :post | :put | :delete | :head
 
   @doc """
   Performs GET request.
@@ -27,6 +28,9 @@ defmodule Pleroma.HTTP do
   def get(url, headers \\ [], options \\ [])
   def get(nil, _, _), do: nil
   def get(url, headers, options), do: request(:get, url, "", headers, options)
+
+  @spec head(Request.url(), Request.headers(), keyword()) :: {:ok, Env.t()} | {:error, any()}
+  def head(url, headers \\ [], options \\ []), do: request(:head, url, "", headers, options)
 
   @doc """
   Performs POST request.
@@ -42,7 +46,7 @@ defmodule Pleroma.HTTP do
   Builds and performs http request.
 
   # Arguments:
-  `method` - :get, :post, :put, :delete
+  `method` - :get, :post, :put, :delete, :head
   `url` - full url
   `body` - request body
   `headers` - a keyworld list of headers, e.g. `[{"content-type", "text/plain"}]`
@@ -52,52 +56,26 @@ defmodule Pleroma.HTTP do
   `{:ok, %Tesla.Env{}}` or `{:error, error}`
 
   """
-  @spec request(atom(), Request.url(), String.t(), Request.headers(), keyword()) ::
+  @spec request(method(), Request.url(), String.t(), Request.headers(), keyword()) ::
           {:ok, Env.t()} | {:error, any()}
   def request(method, url, body, headers, options) when is_binary(url) do
     uri = URI.parse(url)
-    adapter_opts = Connection.options(uri, options[:adapter] || [])
+    adapter_opts = AdapterHelper.options(uri, options || [])
+
     options = put_in(options[:adapter], adapter_opts)
     params = options[:params] || []
     request = build_request(method, headers, options, url, body, params)
 
     adapter = Application.get_env(:tesla, :adapter)
-    client = Tesla.client([Tesla.Middleware.FollowRedirects], adapter)
 
-    pid = Process.whereis(adapter_opts[:pool])
+    client = Tesla.client(adapter_middlewares(adapter), adapter)
 
-    pool_alive? =
-      if adapter == Tesla.Adapter.Gun && pid do
-        Process.alive?(pid)
-      else
-        false
-      end
-
-    request_opts =
+    maybe_limit(
+      fn ->
+        request(client, request)
+      end,
+      adapter,
       adapter_opts
-      |> Enum.into(%{})
-      |> Map.put(:env, Pleroma.Config.get([:env]))
-      |> Map.put(:pool_alive?, pool_alive?)
-
-    response = request(client, request, request_opts)
-
-    Connection.after_request(adapter_opts)
-
-    response
-  end
-
-  @spec request(Client.t(), keyword(), map()) :: {:ok, Env.t()} | {:error, any()}
-  def request(%Client{} = client, request, %{env: :test}), do: request(client, request)
-
-  def request(%Client{} = client, request, %{body_as: :chunks}), do: request(client, request)
-
-  def request(%Client{} = client, request, %{pool_alive?: false}), do: request(client, request)
-
-  def request(%Client{} = client, request, %{pool: pool, timeout: timeout}) do
-    :poolboy.transaction(
-      pool,
-      &Pleroma.Pool.Request.execute(&1, client, request, timeout),
-      timeout
     )
   end
 
@@ -114,4 +92,19 @@ defmodule Pleroma.HTTP do
     |> Builder.add_param(:query, :query, params)
     |> Builder.convert_to_keyword()
   end
+
+  @prefix Pleroma.Gun.ConnectionPool
+  defp maybe_limit(fun, Tesla.Adapter.Gun, opts) do
+    ConcurrentLimiter.limit(:"#{@prefix}.#{opts[:pool] || :default}", fun)
+  end
+
+  defp maybe_limit(fun, _, _) do
+    fun.()
+  end
+
+  defp adapter_middlewares(Tesla.Adapter.Gun) do
+    [Tesla.Middleware.FollowRedirects, Pleroma.Tesla.Middleware.ConnectionPool]
+  end
+
+  defp adapter_middlewares(_), do: []
 end

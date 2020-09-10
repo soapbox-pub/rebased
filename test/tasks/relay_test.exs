@@ -10,6 +10,8 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
   alias Pleroma.Web.ActivityPub.Utils
   use Pleroma.DataCase
 
+  import Pleroma.Factory
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
@@ -40,13 +42,18 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert activity.data["object"] == target_user.ap_id
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
-      assert_receive {:mix_shell, :info, ["mastodon.example.org (no Accept received)"]}
+
+      assert_receive {:mix_shell, :info,
+                      [
+                        "http://mastodon.example.org/users/admin - no Accept received (relay didn't follow back)"
+                      ]}
     end
   end
 
   describe "running unfollow" do
     test "relay is unfollowed" do
-      target_instance = "http://mastodon.example.org/users/admin"
+      user = insert(:user)
+      target_instance = user.ap_id
 
       Mix.Tasks.Pleroma.Relay.run(["follow", target_instance])
 
@@ -71,7 +78,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
 
       assert undo_activity.data["type"] == "Undo"
       assert undo_activity.data["actor"] == local_user.ap_id
-      assert undo_activity.data["object"] == cancelled_activity.data
+      assert undo_activity.data["object"]["id"] == cancelled_activity.data["id"]
       refute "#{target_instance}/followers" in User.following(local_user)
     end
   end
@@ -92,8 +99,8 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
 
-      assert_receive {:mix_shell, :info, ["mstdn.io"]}
-      assert_receive {:mix_shell, :info, ["mastodon.example.org"]}
+      assert_receive {:mix_shell, :info, ["https://mstdn.io/users/mayuutann"]}
+      assert_receive {:mix_shell, :info, ["http://mastodon.example.org/users/admin"]}
     end
   end
 end

@@ -41,7 +41,8 @@ defmodule Pleroma.CaptchaTest do
                answer_data: answer,
                token: ^token,
                url: ^url,
-               type: :kocaptcha
+               type: :kocaptcha,
+               seconds_valid: 300
              } = new
 
       assert Kocaptcha.validate(token, "7oEy8c", answer) == :ok
@@ -56,7 +57,8 @@ defmodule Pleroma.CaptchaTest do
                answer_data: answer,
                token: token,
                type: :native,
-               url: "data:image/png;base64," <> _
+               url: "data:image/png;base64," <> _,
+               seconds_valid: 300
              } = new
 
       assert is_binary(answer)

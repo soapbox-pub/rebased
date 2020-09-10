@@ -62,6 +62,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         }
       },
       content: %Schema{type: :string, format: :html, description: "HTML-encoded status content"},
+      text: %Schema{
+        type: :string,
+        description: "Original unformatted content in plain text",
+        nullable: true
+      },
       created_at: %Schema{
         type: :string,
         format: "date-time",
@@ -184,6 +189,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           thread_muted: %Schema{
             type: :boolean,
             description: "`true` if the thread the post belongs to is muted"
+          },
+          parent_visible: %Schema{
+            type: :boolean,
+            description: "`true` if the parent post is visible to the user"
           }
         }
       },

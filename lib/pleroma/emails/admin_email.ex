@@ -8,9 +8,10 @@ defmodule Pleroma.Emails.AdminEmail do
   import Swoosh.Email
 
   alias Pleroma.Config
+  alias Pleroma.HTML
   alias Pleroma.Web.Router.Helpers
 
-  defp instance_config, do: Pleroma.Config.get(:instance)
+  defp instance_config, do: Config.get(:instance)
   defp instance_name, do: instance_config()[:name]
 
   defp instance_notify_email do
@@ -72,12 +73,28 @@ defmodule Pleroma.Emails.AdminEmail do
     <p>Reported Account: <a href="#{user_url(account)}">#{account.nickname}</a></p>
     #{comment_html}
     #{statuses_html}
+    <p>
+    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
     """
 
     new()
     |> to({to.name, to.email})
     |> from({instance_name(), instance_notify_email()})
     |> subject("#{instance_name()} Report")
+    |> html_body(html_body)
+  end
+
+  def new_unapproved_registration(to, account) do
+    html_body = """
+    <p>New account for review: <a href="#{user_url(account)}">@#{account.nickname}</a></p>
+    <blockquote>#{HTML.strip_tags(account.registration_reason)}</blockquote>
+    <a href="#{Pleroma.Web.base_url()}/pleroma/admin">Visit AdminFE</a>
+    """
+
+    new()
+    |> to({to.name, to.email})
+    |> from({instance_name(), instance_notify_email()})
+    |> subject("New account up for review on #{instance_name()} (@#{account.nickname})")
     |> html_body(html_body)
   end
 end

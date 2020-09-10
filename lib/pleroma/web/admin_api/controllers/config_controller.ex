@@ -9,8 +9,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   alias Pleroma.ConfigDB
   alias Pleroma.Plugs.OAuthScopesPlug
 
-  @descriptions Pleroma.Docs.JSON.compile()
-
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :update)
 
@@ -25,7 +23,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ConfigOperation
 
   def descriptions(conn, _params) do
-    descriptions = Enum.filter(@descriptions, &whitelisted_config?/1)
+    descriptions = Enum.filter(Pleroma.Docs.JSON.compiled_descriptions(), &whitelisted_config?/1)
 
     json(conn, descriptions)
   end
@@ -33,7 +31,11 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   def show(conn, %{only_db: true}) do
     with :ok <- configurable_from_database() do
       configs = Pleroma.Repo.all(ConfigDB)
-      render(conn, "index.json", %{configs: configs})
+
+      render(conn, "index.json", %{
+        configs: configs,
+        need_reboot: Restarter.Pleroma.need_reboot?()
+      })
     end
   end
 
@@ -61,17 +63,20 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
                 value
               end
 
-            %{
-              group: ConfigDB.convert(group),
-              key: ConfigDB.convert(key),
-              value: ConfigDB.convert(merged_value)
+            %ConfigDB{
+              group: group,
+              key: key,
+              value: merged_value
             }
             |> Pleroma.Maps.put_if_present(:db, db)
           end)
         end)
         |> List.flatten()
 
-      json(conn, %{configs: merged, need_reboot: Restarter.Pleroma.need_reboot?()})
+      render(conn, "index.json", %{
+        configs: merged,
+        need_reboot: Restarter.Pleroma.need_reboot?()
+      })
     end
   end
 
@@ -91,24 +96,17 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
 
       {deleted, updated} =
         results
-        |> Enum.map(fn {:ok, config} ->
-          Map.put(config, :db, ConfigDB.get_db_keys(config))
+        |> Enum.map(fn {:ok, %{key: key, value: value} = config} ->
+          Map.put(config, :db, ConfigDB.get_db_keys(value, key))
         end)
-        |> Enum.split_with(fn config ->
-          Ecto.get_meta(config, :state) == :deleted
-        end)
+        |> Enum.split_with(&(Ecto.get_meta(&1, :state) == :deleted))
 
       Config.TransferTask.load_and_update_env(deleted, false)
 
       if not Restarter.Pleroma.need_reboot?() do
         changed_reboot_settings? =
           (updated ++ deleted)
-          |> Enum.any?(fn config ->
-            group = ConfigDB.from_string(config.group)
-            key = ConfigDB.from_string(config.key)
-            value = ConfigDB.from_binary(config.value)
-            Config.TransferTask.pleroma_need_restart?(group, key, value)
-          end)
+          |> Enum.any?(&Config.TransferTask.pleroma_need_restart?(&1.group, &1.key, &1.value))
 
         if changed_reboot_settings?, do: Restarter.Pleroma.need_reboot()
       end

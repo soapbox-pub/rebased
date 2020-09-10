@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       operationId: "StatusController.delete",
       parameters: [id_param()],
       responses: %{
-        200 => empty_object_response(),
+        200 => status_response(),
         403 => Operation.response("Forbidden", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }

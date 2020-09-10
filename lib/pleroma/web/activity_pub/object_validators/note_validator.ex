@@ -5,44 +5,46 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
   use Ecto.Schema
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
 
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
-    field(:bto, {:array, :string}, default: [])
-    field(:bcc, {:array, :string}, default: [])
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     # TODO: Write type
     field(:tag, {:array, :map}, default: [])
     field(:type, :string)
-    field(:content, :string)
-    field(:context, :string)
-    field(:actor, Types.ObjectID)
-    field(:attributedTo, Types.ObjectID)
+
+    field(:name, :string)
     field(:summary, :string)
-    field(:published, Types.DateTime)
-    # TODO: Write type
-    field(:emoji, :map, default: %{})
+    field(:content, :string)
+
+    field(:context, :string)
+    # short identifier for PleromaFE to group statuses by context
+    field(:context_id, :integer)
+
+    field(:actor, ObjectValidators.ObjectID)
+    field(:attributedTo, ObjectValidators.ObjectID)
+    field(:published, ObjectValidators.DateTime)
+    field(:emoji, ObjectValidators.Emoji, default: %{})
     field(:sensitive, :boolean, default: false)
     # TODO: Write type
     field(:attachment, {:array, :map}, default: [])
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
-    field(:inRepyTo, :string)
-    field(:uri, Types.Uri)
+    field(:inReplyTo, ObjectValidators.ObjectID)
+    field(:url, ObjectValidators.Uri)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
-
-    # see if needed
-    field(:conversation, :string)
-    field(:context_id, :string)
   end
 
   def cast_and_validate(data) do
@@ -51,7 +53,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     |> validate_data()
   end
 
+  defp fix(data) do
+    data
+    |> Transmogrifier.fix_emoji()
+  end
+
   def cast_data(data) do
+    data = fix(data)
+
     %__MODULE__{}
     |> cast(data, __schema__(:fields))
   end

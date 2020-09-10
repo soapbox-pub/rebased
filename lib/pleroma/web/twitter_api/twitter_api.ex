@@ -19,6 +19,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       |> Map.put(:nickname, params[:username])
       |> Map.put(:name, Map.get(params, :fullname, params[:username]))
       |> Map.put(:password_confirmation, params[:password])
+      |> Map.put(:registration_reason, params[:reason])
 
     if Pleroma.Config.get([:instance, :registrations_open]) do
       create_user(params, opts)
@@ -44,6 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     case User.register(changeset) do
       {:ok, user} ->
+        maybe_notify_admins(user)
         {:ok, user}
 
       {:error, changeset} ->
@@ -56,9 +58,21 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  defp maybe_notify_admins(%User{} = account) do
+    if Pleroma.Config.get([:instance, :account_approval_required]) do
+      User.all_superusers()
+      |> Enum.filter(fn user -> not is_nil(user.email) end)
+      |> Enum.each(fn superuser ->
+        superuser
+        |> Pleroma.Emails.AdminEmail.new_unapproved_registration(account)
+        |> Pleroma.Emails.Mailer.deliver_async()
+      end)
+    end
+  end
+
   def password_reset(nickname_or_email) do
     with true <- is_binary(nickname_or_email),
-         %User{local: true, email: email} = user when is_binary(email) <-
+         %User{local: true, email: email, deactivated: false} = user when is_binary(email) <-
            User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user
@@ -67,17 +81,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       {:ok, :enqueued}
     else
-      false ->
-        {:error, "bad user identifier"}
-
-      %User{local: true, email: nil} ->
+      _ ->
         {:ok, :noop}
-
-      %User{local: false} ->
-        {:error, "remote user"}
-
-      nil ->
-        {:error, "unknown user"}
     end
   end
 

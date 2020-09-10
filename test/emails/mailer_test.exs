@@ -14,11 +14,12 @@ defmodule Pleroma.Emails.MailerTest do
     subject: "Pleroma test email",
     to: [{"Test User", "user1@example.com"}]
   }
-  setup do: clear_config([Pleroma.Emails.Mailer, :enabled])
+  setup do: clear_config([Pleroma.Emails.Mailer, :enabled], true)
 
   test "not send email when mailer is disabled" do
-    Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+    clear_config([Pleroma.Emails.Mailer, :enabled], false)
     Mailer.deliver(@email)
+    :timer.sleep(100)
 
     refute_email_sent(
       from: {"Pleroma", "noreply@example.com"},
@@ -30,6 +31,7 @@ defmodule Pleroma.Emails.MailerTest do
 
   test "send email" do
     Mailer.deliver(@email)
+    :timer.sleep(100)
 
     assert_email_sent(
       from: {"Pleroma", "noreply@example.com"},
@@ -41,6 +43,7 @@ defmodule Pleroma.Emails.MailerTest do
 
   test "perform" do
     Mailer.perform(:deliver_async, @email, [])
+    :timer.sleep(100)
 
     assert_email_sent(
       from: {"Pleroma", "noreply@example.com"},

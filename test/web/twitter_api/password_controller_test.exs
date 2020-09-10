@@ -37,7 +37,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
     test "it returns HTTP 200", %{conn: conn} do
       user = insert(:user)
       {:ok, token} = PasswordResetToken.create_token(user)
-      {:ok, _access_token} = Token.create_token(insert(:oauth_app), user, %{})
+      {:ok, _access_token} = Token.create(insert(:oauth_app), user, %{})
 
       params = %{
         "password" => "test",
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
       user = insert(:user, password_reset_pending: true)
 
       {:ok, token} = PasswordResetToken.create_token(user)
-      {:ok, _access_token} = Token.create_token(insert(:oauth_app), user, %{})
+      {:ok, _access_token} = Token.create(insert(:oauth_app), user, %{})
 
       params = %{
         "password" => "test",

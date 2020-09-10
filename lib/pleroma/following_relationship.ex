@@ -95,7 +95,11 @@ defmodule Pleroma.FollowingRelationship do
     |> where([r], r.state == ^:follow_accept)
   end
 
-  def followers_ap_ids(%User{} = user, from_ap_ids \\ nil) do
+  def followers_ap_ids(user, from_ap_ids \\ nil)
+
+  def followers_ap_ids(_, []), do: []
+
+  def followers_ap_ids(%User{} = user, from_ap_ids) do
     query =
       user
       |> followers_query()
@@ -124,6 +128,7 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], f in assoc(r, :follower))
     |> where([r], r.state == ^:follow_pending)
     |> where([r], r.following_id == ^id)
+    |> where([r, f], f.deactivated != true)
     |> select([r, f], f)
     |> Repo.all()
   end
@@ -258,5 +263,13 @@ defmodule Pleroma.FollowingRelationship do
         []
       end
     end)
+  end
+
+  @spec following_ap_ids(User.t()) :: [String.t()]
+  def following_ap_ids(%User{} = user) do
+    user
+    |> following_query()
+    |> select([r, u], u.ap_id)
+    |> Repo.all()
   end
 end

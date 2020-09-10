@@ -17,12 +17,21 @@ defmodule Pleroma.UserSearchTest do
   describe "User.search" do
     setup do: clear_config([:instance, :limit_to_local_content])
 
-    test "excluded invisible users from results" do
+    test "excludes invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})
 
       [found_user] = User.search("john")
       assert found_user.id == user.id
+    end
+
+    test "excludes service actors from results" do
+      insert(:user, actor_type: "Application", nickname: "user1")
+      service = insert(:user, actor_type: "Service", nickname: "user2")
+      person = insert(:user, actor_type: "Person", nickname: "user3")
+
+      assert [found_user1, found_user2] = User.search("user")
+      assert [found_user1.id, found_user2.id] -- [service.id, person.id] == []
     end
 
     test "accepts limit parameter" do
@@ -37,28 +46,47 @@ defmodule Pleroma.UserSearchTest do
       assert length(User.search("john", limit: 3, offset: 3)) == 2
     end
 
-    test "finds a user by full or partial nickname" do
+    defp clear_virtual_fields(user) do
+      Map.merge(user, %{search_rank: nil, search_type: nil})
+    end
+
+    test "finds a user by full nickname or its leading fragment" do
       user = insert(:user, %{nickname: "john"})
 
       Enum.each(["john", "jo", "j"], fn query ->
         assert user ==
                  User.search(query)
                  |> List.first()
-                 |> Map.put(:search_rank, nil)
-                 |> Map.put(:search_type, nil)
+                 |> clear_virtual_fields()
       end)
     end
 
-    test "finds a user by full or partial name" do
+    test "finds a user by full name or leading fragment(s) of its words" do
       user = insert(:user, %{name: "John Doe"})
 
       Enum.each(["John Doe", "JOHN", "doe", "j d", "j", "d"], fn query ->
         assert user ==
                  User.search(query)
                  |> List.first()
-                 |> Map.put(:search_rank, nil)
-                 |> Map.put(:search_type, nil)
+                 |> clear_virtual_fields()
       end)
+    end
+
+    test "matches by leading fragment of user domain" do
+      user = insert(:user, %{nickname: "arandom@dude.com"})
+      insert(:user, %{nickname: "iamthedude"})
+
+      assert [user.id] == User.search("dud") |> Enum.map(& &1.id)
+    end
+
+    test "ranks full nickname match higher than full name match" do
+      nicknamed_user = insert(:user, %{nickname: "hj@shigusegubu.club"})
+      named_user = insert(:user, %{nickname: "xyz@sample.com", name: "HJ"})
+
+      results = User.search("hj")
+
+      assert [nicknamed_user.id, named_user.id] == Enum.map(results, & &1.id)
+      assert Enum.at(results, 0).search_rank > Enum.at(results, 1).search_rank
     end
 
     test "finds users, considering density of matched tokens" do
@@ -81,22 +109,22 @@ defmodule Pleroma.UserSearchTest do
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
     end
 
-    test "finds followers of user by partial name" do
-      u1 = insert(:user)
-      u2 = insert(:user, %{name: "Jimi"})
-      follower_jimi = insert(:user, %{name: "Jimi Hendrix"})
-      follower_lizz = insert(:user, %{name: "Lizz Wright"})
-      friend = insert(:user, %{name: "Jimi"})
+    test "finds followings of user by partial name" do
+      lizz = insert(:user, %{name: "Lizz"})
+      jimi = insert(:user, %{name: "Jimi"})
+      following_lizz = insert(:user, %{name: "Jimi Hendrix"})
+      following_jimi = insert(:user, %{name: "Lizz Wright"})
+      follower_lizz = insert(:user, %{name: "Jimi"})
 
-      {:ok, follower_jimi} = User.follow(follower_jimi, u1)
-      {:ok, _follower_lizz} = User.follow(follower_lizz, u2)
-      {:ok, u1} = User.follow(u1, friend)
+      {:ok, lizz} = User.follow(lizz, following_lizz)
+      {:ok, _jimi} = User.follow(jimi, following_jimi)
+      {:ok, _follower_lizz} = User.follow(follower_lizz, lizz)
 
-      assert Enum.map(User.search("jimi", following: true, for_user: u1), & &1.id) == [
-               follower_jimi.id
+      assert Enum.map(User.search("jimi", following: true, for_user: lizz), & &1.id) == [
+               following_lizz.id
              ]
 
-      assert User.search("lizz", following: true, for_user: u1) == []
+      assert User.search("lizz", following: true, for_user: lizz) == []
     end
 
     test "find local and remote users for authenticated users" do

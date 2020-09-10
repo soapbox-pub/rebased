@@ -19,6 +19,7 @@ Configuration options:
     - `local`: only local users
     - `external`: only external users
     - `active`: only active users
+    - `need_approval`: only unapproved users
     - `deactivated`: only deactivated users
     - `is_admin`: users with admin role
     - `is_moderator`: users with moderator role
@@ -46,7 +47,10 @@ Configuration options:
       "local": bool,
       "tags": array,
       "avatar": string,
-      "display_name": string
+      "display_name": string,
+      "confirmation_pending": bool,
+      "approval_pending": bool,
+      "registration_reason": string,
     },
     ...
   ]
@@ -242,6 +246,24 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `PATCH /api/pleroma/admin/users/approve`
+
+### Approve user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
 ## `GET /api/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user
@@ -291,31 +313,53 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses
 
+## `GET /api/pleroma/admin/relay`
+
+### List Relays
+
+Params: none
+Response:
+
+* On success: JSON array of relays
+
+```json
+[
+  {"actor": "https://example.com/relay", "followed_back": true},
+  {"actor": "https://example2.com/relay", "followed_back": false}
+]
+```
+
 ## `POST /api/pleroma/admin/relay`
 
 ### Follow a Relay
 
-- Params:
-  - `relay_url`
-- Response:
-  - On success: URL of the followed relay
+Params:
+
+* `relay_url`
+
+Response:
+
+* On success: relay json object
+
+```json
+{"actor": "https://example.com/relay", "followed_back": true}
+```
 
 ## `DELETE /api/pleroma/admin/relay`
 
 ### Unfollow a Relay
 
-- Params:
-  - `relay_url`
-- Response:
-  - On success: URL of the unfollowed relay
+Params:
 
-## `GET /api/pleroma/admin/relay`
+* `relay_url`
 
-### List Relays
+Response:
 
-- Params: none
-- Response:
-  - On success: JSON array of relays
+* On success: URL of the unfollowed relay
+
+```json
+{"https://example.com/relay"}
+```
 
 ## `POST /api/pleroma/admin/users/invite_token`
 
@@ -488,34 +532,38 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Change the user's email, password, display and settings-related fields
 
-- Params:
-  - `email`
-  - `password`
-  - `name`
-  - `bio`
-  - `avatar`
-  - `locked`
-  - `no_rich_text`
-  - `default_scope`
-  - `banner`
-  - `hide_follows`
-  - `hide_followers`
-  - `hide_followers_count`
-  - `hide_follows_count`
-  - `hide_favorites`
-  - `allow_following_move`
-  - `background`
-  - `show_role`
-  - `skip_thread_containment`
-  - `fields`
-  - `discoverable`
-  - `actor_type`
+* Params:
+  * `email`
+  * `password`
+  * `name`
+  * `bio`
+  * `avatar`
+  * `locked`
+  * `no_rich_text`
+  * `default_scope`
+  * `banner`
+  * `hide_follows`
+  * `hide_followers`
+  * `hide_followers_count`
+  * `hide_follows_count`
+  * `hide_favorites`
+  * `allow_following_move`
+  * `background`
+  * `show_role`
+  * `skip_thread_containment`
+  * `fields`
+  * `discoverable`
+  * `actor_type`
 
-- Response:
+* Responses:
+
+Status: 200
 
 ```json
 {"status": "success"}
 ```
+
+Status: 400
 
 ```json
 {"errors":
@@ -525,8 +573,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
  }
 ```
 
+Status: 404
+
 ```json
-{"error": "Unable to update user."}
+{"error": "Not found"}
 ```
 
 ## `GET /api/pleroma/admin/reports`
@@ -1112,6 +1162,10 @@ Loads json generated from `config/descriptions.exs`.
 
 ### Stats
 
+- Query Params:
+  - *optional* `instance`: **string** instance hostname (without protocol) to get stats for
+- Example: `https://mypleroma.org/api/pleroma/admin/stats?instance=lain.com`
+
 - Response:
 
 ```json
@@ -1225,3 +1279,58 @@ Loads json generated from `config/descriptions.exs`.
   - On success: `204`, empty response
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
+
+## `GET /api/pleroma/admin/media_proxy_caches`
+
+### Get a list of all banned MediaProxy URLs in Cachex
+
+- Authentication: required
+- Params:
+- *optional* `page`: **integer** page number
+- *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+- *optional* `query`: **string** search term
+
+- Response:
+
+``` json
+{
+  "page_size": integer,
+  "count": integer,
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```
+
+## `POST /api/pleroma/admin/media_proxy_caches/delete`
+
+### Remove a banned MediaProxy URL from Cachex
+
+- Authentication: required
+- Params:
+  - `urls` (array)
+
+- Response:
+
+``` json
+{ }
+
+```
+
+## `POST /api/pleroma/admin/media_proxy_caches/purge`
+
+### Purge a MediaProxy URL
+
+- Authentication: required
+- Params:
+  - `urls` (array)
+  - `ban` (boolean)
+
+- Response:
+
+``` json
+{ }
+
+```

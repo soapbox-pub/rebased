@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -16,8 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   import Pleroma.Factory
 
   describe "account fetching" do
-    setup do: clear_config([:instance, :limit_to_local_content])
-
     test "works by id" do
       %User{id: user_id} = insert(:user)
 
@@ -42,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "works by nickname for remote users" do
-      Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
@@ -53,7 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "respects limit_to_local_content == :all for remote user nicknames" do
-      Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
@@ -63,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "respects limit_to_local_content == :unauthenticated for remote user nicknames" do
-      Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      clear_config([:instance, :limit_to_local_content], :unauthenticated)
 
       user = insert(:user, nickname: "user@example.com", local: false)
       reading_user = insert(:user)
@@ -127,6 +124,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> get("/api/v1/accounts/internal.fetch")
                |> json_response_and_validate_schema(404)
     end
+
+    test "returns 404 for deactivated user", %{conn: conn} do
+      user = insert(:user, deactivated: true)
+
+      assert %{"error" => "Can't find user"} =
+               conn
+               |> get("/api/v1/accounts/#{user.id}")
+               |> json_response_and_validate_schema(:not_found)
+    end
   end
 
   defp local_and_remote_users do
@@ -143,15 +149,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
-      assert %{"error" => "Can't find user"} ==
+      assert %{"error" => "This API requires an authenticated user"} ==
                conn
                |> get("/api/v1/accounts/#{local.id}")
-               |> json_response_and_validate_schema(:not_found)
+               |> json_response_and_validate_schema(:unauthorized)
 
-      assert %{"error" => "Can't find user"} ==
+      assert %{"error" => "This API requires an authenticated user"} ==
                conn
                |> get("/api/v1/accounts/#{remote.id}")
-               |> json_response_and_validate_schema(:not_found)
+               |> json_response_and_validate_schema(:unauthorized)
     end
 
     test "if user is authenticated", %{local: local, remote: remote} do
@@ -173,8 +179,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}")
 
-      assert json_response_and_validate_schema(res_conn, :not_found) == %{
-               "error" => "Can't find user"
+      assert json_response_and_validate_schema(res_conn, :unauthorized) == %{
+               "error" => "This API requires an authenticated user"
              }
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
@@ -203,8 +209,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
 
-      assert json_response_and_validate_schema(res_conn, :not_found) == %{
-               "error" => "Can't find user"
+      assert json_response_and_validate_schema(res_conn, :unauthorized) == %{
+               "error" => "This API requires an authenticated user"
              }
     end
 
@@ -247,6 +253,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert [%{"id" => id}] = resp
       assert id == announce.id
+    end
+
+    test "deactivated user", %{conn: conn} do
+      user = insert(:user, deactivated: true)
+
+      assert %{"error" => "Can't find user"} ==
+               conn
+               |> get("/api/v1/accounts/#{user.id}/statuses")
+               |> json_response_and_validate_schema(:not_found)
+    end
+
+    test "returns 404 when user is invisible", %{conn: conn} do
+      user = insert(:user, %{invisible: true})
+
+      assert %{"error" => "Can't find user"} =
+               conn
+               |> get("/api/v1/accounts/#{user.id}")
+               |> json_response_and_validate_schema(404)
     end
 
     test "respects blocks", %{user: user_one, conn: conn} do
@@ -350,9 +374,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response_and_validate_schema(conn, 200) == []
     end
 
-    test "gets an users media", %{conn: conn} do
+    test "gets an users media, excludes reblogs", %{conn: conn} do
       note = insert(:note_activity)
       user = User.get_cached_by_ap_id(note.data["actor"])
+      other_user = insert(:user)
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -363,6 +388,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: user.ap_id)
 
       {:ok, %{id: image_post_id}} = CommonAPI.post(user, %{status: "cofe", media_ids: [media_id]})
+
+      {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: other_user.ap_id)
+
+      {:ok, %{id: other_image_post_id}} =
+        CommonAPI.post(other_user, %{status: "cofe2", media_ids: [media_id]})
+
+      {:ok, _announce} = CommonAPI.repeat(other_image_post_id, user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?only_media=true")
 
@@ -422,15 +454,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
-      assert %{"error" => "Can't find user"} ==
+      assert %{"error" => "This API requires an authenticated user"} ==
                conn
                |> get("/api/v1/accounts/#{local.id}/statuses")
-               |> json_response_and_validate_schema(:not_found)
+               |> json_response_and_validate_schema(:unauthorized)
 
-      assert %{"error" => "Can't find user"} ==
+      assert %{"error" => "This API requires an authenticated user"} ==
                conn
                |> get("/api/v1/accounts/#{remote.id}/statuses")
-               |> json_response_and_validate_schema(:not_found)
+               |> json_response_and_validate_schema(:unauthorized)
     end
 
     test "if user is authenticated", %{local: local, remote: remote} do
@@ -451,10 +483,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
-      assert %{"error" => "Can't find user"} ==
+      assert %{"error" => "This API requires an authenticated user"} ==
                conn
                |> get("/api/v1/accounts/#{local.id}/statuses")
-               |> json_response_and_validate_schema(:not_found)
+               |> json_response_and_validate_schema(:unauthorized)
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
       assert length(json_response_and_validate_schema(res_conn, 200)) == 1
@@ -481,10 +513,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
       assert length(json_response_and_validate_schema(res_conn, 200)) == 1
 
-      assert %{"error" => "Can't find user"} ==
+      assert %{"error" => "This API requires an authenticated user"} ==
                conn
                |> get("/api/v1/accounts/#{remote.id}/statuses")
-               |> json_response_and_validate_schema(:not_found)
+               |> json_response_and_validate_schema(:unauthorized)
     end
 
     test "if user is authenticated", %{local: local, remote: remote} do
@@ -546,6 +578,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^follower2_id}, %{"id" => ^follower1_id}] =
                conn
                |> get("/api/v1/accounts/#{user.id}/followers?max_id=#{follower3_id}")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^follower2_id}, %{"id" => ^follower1_id}] =
+               conn
+               |> get(
+                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{
+                   follower3_id
+                 }"
+               )
                |> json_response_and_validate_schema(200)
 
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/followers?limit=1&max_id=#{follower3_id}")
@@ -620,6 +661,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert id1 == following1.id
 
       res_conn =
+        get(
+          conn,
+          "/api/v1/accounts/#{user.id}/following?id=#{user.id}&limit=20&max_id=#{following3.id}"
+        )
+
+      assert [%{"id" => id2}, %{"id" => id1}] = json_response_and_validate_schema(res_conn, 200)
+      assert id2 == following2.id
+      assert id1 == following1.id
+
+      res_conn =
         get(conn, "/api/v1/accounts/#{user.id}/following?limit=1&max_id=#{following3.id}")
 
       assert [%{"id" => id2}] = json_response_and_validate_schema(res_conn, 200)
@@ -673,7 +724,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       followed = insert(:user)
       other_user = insert(:user)
 
-      ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow?reblogs=false")
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: false})
 
       assert %{"showing_reblogs" => false} = json_response_and_validate_schema(ret_conn, 200)
 
@@ -687,10 +741,40 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"showing_reblogs" => true} =
                conn
-               |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=true")
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: true})
                |> json_response_and_validate_schema(200)
 
       assert [%{"id" => ^reblog_id}] =
+               conn
+               |> get("/api/v1/timelines/home")
+               |> json_response(200)
+    end
+
+    test "following with reblogs" do
+      %{conn: conn} = oauth_access(["follow", "read:statuses"])
+      followed = insert(:user)
+      other_user = insert(:user)
+
+      ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow")
+
+      assert %{"showing_reblogs" => true} = json_response_and_validate_schema(ret_conn, 200)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
+      {:ok, %{id: reblog_id}} = CommonAPI.repeat(activity.id, followed)
+
+      assert [%{"id" => ^reblog_id}] =
+               conn
+               |> get("/api/v1/timelines/home")
+               |> json_response(200)
+
+      assert %{"showing_reblogs" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: false})
+               |> json_response_and_validate_schema(200)
+
+      assert [] ==
                conn
                |> get("/api/v1/timelines/home")
                |> json_response(200)
@@ -745,7 +829,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"id" => _id, "muting" => true, "muting_notifications" => true} =
                conn
-               |> put_req_header("content-type", "application/json")
                |> post("/api/v1/accounts/#{other_user.id}/mute")
                |> json_response_and_validate_schema(200)
 
@@ -817,9 +900,93 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       [valid_params: valid_params]
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
+    test "registers and logs in without :account_activation_required / :account_approval_required",
+         %{conn: conn} do
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([:instance, :account_approval_required], false)
 
-    test "Account registration via Application", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/apps", %{
+          client_name: "client_name",
+          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+          scopes: "read, write, follow"
+        })
+
+      assert %{
+               "client_id" => client_id,
+               "client_secret" => client_secret,
+               "id" => _,
+               "name" => "client_name",
+               "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+               "vapid_key" => _,
+               "website" => nil
+             } = json_response_and_validate_schema(conn, 200)
+
+      conn =
+        post(conn, "/oauth/token", %{
+          grant_type: "client_credentials",
+          client_id: client_id,
+          client_secret: client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      assert refresh
+      assert scope == "read write follow"
+
+      clear_config([User, :email_blacklist], ["example.org"])
+
+      params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        bio: "Test Bio",
+        agreement: true
+      }
+
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", params)
+
+      assert %{"error" => "{\"email\":[\"Invalid email\"]}"} =
+               json_response_and_validate_schema(conn, 400)
+
+      Pleroma.Config.put([User, :email_blacklist], [])
+
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", params)
+
+      %{
+        "access_token" => token,
+        "created_at" => _created_at,
+        "scope" => ^scope,
+        "token_type" => "Bearer"
+      } = json_response_and_validate_schema(conn, 200)
+
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      user = Repo.preload(token_from_db, :user).user
+
+      assert user
+      refute user.confirmation_pending
+      refute user.approval_pending
+    end
+
+    test "registers but does not log in with :account_activation_required", %{conn: conn} do
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_approval_required], false)
+
       conn =
         conn
         |> put_req_header("content-type", "application/json")
@@ -867,19 +1034,76 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
           agreement: true
         })
 
-      %{
-        "access_token" => token,
-        "created_at" => _created_at,
-        "scope" => _scope,
-        "token_type" => "Bearer"
-      } = json_response_and_validate_schema(conn, 200)
+      response = json_response_and_validate_schema(conn, 200)
+      assert %{"identifier" => "missing_confirmed_email"} = response
+      refute response["access_token"]
+      refute response["token_type"]
 
+      user = Repo.get_by(User, email: "lain@example.org")
+      assert user.confirmation_pending
+    end
+
+    test "registers but does not log in with :account_approval_required", %{conn: conn} do
+      clear_config([:instance, :account_approval_required], true)
+      clear_config([:instance, :account_activation_required], false)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/apps", %{
+          client_name: "client_name",
+          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+          scopes: "read, write, follow"
+        })
+
+      assert %{
+               "client_id" => client_id,
+               "client_secret" => client_secret,
+               "id" => _,
+               "name" => "client_name",
+               "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+               "vapid_key" => _,
+               "website" => nil
+             } = json_response_and_validate_schema(conn, 200)
+
+      conn =
+        post(conn, "/oauth/token", %{
+          grant_type: "client_credentials",
+          client_id: client_id,
+          client_secret: client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
       token_from_db = Repo.get_by(Token, token: token)
       assert token_from_db
-      token_from_db = Repo.preload(token_from_db, :user)
-      assert token_from_db.user
+      assert refresh
+      assert scope == "read write follow"
 
-      assert token_from_db.user.confirmation_pending
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", %{
+          username: "lain",
+          email: "lain@example.org",
+          password: "PlzDontHackLain",
+          bio: "Test Bio",
+          agreement: true,
+          reason: "I'm a cool dude, bro"
+        })
+
+      response = json_response_and_validate_schema(conn, 200)
+      assert %{"identifier" => "awaiting_approval"} = response
+      refute response["access_token"]
+      refute response["token_type"]
+
+      user = Repo.get_by(User, email: "lain@example.org")
+
+      assert user.approval_pending
+      assert user.registration_reason == "I'm a cool dude, bro"
     end
 
     test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
@@ -933,11 +1157,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       end)
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
-
     test "returns bad_request if missing email params when :account_activation_required is enabled",
          %{conn: conn, valid_params: valid_params} do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_activation_required], true)
 
       app_token = insert(:oauth_token, user: nil)
 
@@ -1032,7 +1254,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{
                "access_token" => access_token,
                "created_at" => _,
-               "scope" => ["read", "write", "follow", "push"],
+               "scope" => "read write follow push",
                "token_type" => "Bearer"
              } = response
 
@@ -1102,8 +1324,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         assert token_from_db
         token_from_db = Repo.preload(token_from_db, :user)
         assert token_from_db.user
-
-        assert token_from_db.user.confirmation_pending
       end
 
       conn =
@@ -1150,7 +1370,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{
                "access_token" => access_token,
                "created_at" => _,
-               "scope" => ["read"],
+               "scope" => "read",
                "token_type" => "Bearer"
              } =
                conn

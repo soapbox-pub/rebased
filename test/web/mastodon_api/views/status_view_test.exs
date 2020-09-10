@@ -56,6 +56,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
            ]
   end
 
+  test "works correctly with badly formatted emojis" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{status: "yo"})
+
+    activity
+    |> Object.normalize(false)
+    |> Object.update_data(%{"reactions" => %{"☕" => [user.ap_id], "x" => 1}})
+
+    activity = Activity.get_by_id(activity.id)
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: true}
+           ]
+  end
+
   test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
@@ -177,12 +194,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       id: to_string(note.id),
       uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
-      account: AccountView.render("show.json", %{user: user}),
+      account: AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,
       reblog: nil,
       content: HTML.filter_tags(object_data["content"]),
+      text: nil,
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -226,7 +244,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
-        emoji_reactions: []
+        emoji_reactions: [],
+        parent_visible: false
       }
     }
 
@@ -498,6 +517,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     represented = StatusView.render("show.json", %{for: user, activity: activity})
 
     assert represented[:id] == to_string(activity.id)
+
+    assert represented[:url] ==
+             "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
+
+    assert represented[:content] ==
+             "<p><a href=\"https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39\">Mobilizon Launching Party</a></p><p>Mobilizon is now federated! 🎉</p><p></p><p>You can view this event from other instances if they are subscribed to mobilizon.org, and soon directly from Mastodon and Pleroma. It is possible that you may see some comments from other instances, including Mastodon ones, just below.</p><p></p><p>With a Mobilizon account on an instance, you may <strong>participate</strong> at events from other instances and <strong>add comments</strong> on events.</p><p></p><p>Of course, it&#39;s still <u>a work in progress</u>: if reports made from an instance on events and comments can be federated, you can&#39;t block people right now, and moderators actions are rather limited, but this <strong>will definitely get fixed over time</strong> until first stable version next year.</p><p></p><p>Anyway, if you want to come up with some feedback, head over to our forum or - if you feel you have technical skills and are familiar with it - on our Gitlab repository.</p><p></p><p>Also, to people that want to set Mobilizon themselves even though we really don&#39;t advise to do that for now, we have a little documentation but it&#39;s quite the early days and you&#39;ll probably need some help. No worries, you can chat with us on our Forum or though our Matrix channel.</p><p></p><p>Check our website for more informations and follow us on Twitter or Mastodon.</p>"
   end
 
   describe "build_tags/1" do
@@ -619,5 +644,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
+  end
+
+  test "has a field for parent visibility" do
+    user = insert(:user)
+    poster = insert(:user)
+
+    {:ok, invisible} = CommonAPI.post(poster, %{status: "hey", visibility: "private"})
+
+    {:ok, visible} =
+      CommonAPI.post(poster, %{status: "hey", visibility: "private", in_reply_to_id: invisible.id})
+
+    status = StatusView.render("show.json", activity: visible, for: user)
+    refute status.pleroma.parent_visible
+
+    status = StatusView.render("show.json", activity: visible, for: poster)
+    assert status.pleroma.parent_visible
   end
 end

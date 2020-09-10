@@ -21,7 +21,7 @@ defmodule Pleroma.Web.RichMedia.TTL.AwsSignedUrlTest do
     expire_time =
       Timex.parse!(timestamp, "{ISO:Basic:Z}") |> Timex.to_unix() |> Kernel.+(valid_till)
 
-    assert expire_time == Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl.ttl(metadata, url)
+    assert {:ok, expire_time} == Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl.ttl(metadata, url)
   end
 
   test "s3 signed url is parsed and correct ttl is set for rich media" do
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.RichMedia.TTL.AwsSignedUrlTest do
 
     Cachex.put(:rich_media_cache, url, metadata)
 
-    Pleroma.Web.RichMedia.Parser.set_ttl_based_on_image({:ok, metadata}, url)
+    Pleroma.Web.RichMedia.Parser.set_ttl_based_on_image(metadata, url)
 
     {:ok, cache_ttl} = Cachex.ttl(:rich_media_cache, url)
 

@@ -47,6 +47,10 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   @spec visible_for_user?(Activity.t(), User.t() | nil) :: boolean()
   def visible_for_user?(%{actor: ap_id}, %User{ap_id: ap_id}), do: true
 
+  def visible_for_user?(nil, _), do: false
+
+  def visible_for_user?(%{data: %{"listMessage" => _}}, nil), do: false
+
   def visible_for_user?(%{data: %{"listMessage" => list_ap_id}} = activity, %User{} = user) do
     user.ap_id in activity.data["to"] ||
       list_ap_id
@@ -54,15 +58,10 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       |> Pleroma.List.member?(user)
   end
 
-  def visible_for_user?(%{data: %{"listMessage" => _}}, nil), do: false
-
   def visible_for_user?(%{local: local} = activity, nil) do
-    cfg_key =
-      if local,
-        do: :local,
-        else: :remote
+    cfg_key = if local, do: :local, else: :remote
 
-    if Pleroma.Config.get([:restrict_unauthenticated, :activities, cfg_key]),
+    if Pleroma.Config.restrict_unauthenticated_access?(:activities, cfg_key),
       do: false,
       else: is_public?(activity)
   end

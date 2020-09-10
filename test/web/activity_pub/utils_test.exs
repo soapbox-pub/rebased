@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
@@ -24,16 +23,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       followed = User.get_cached_by_ap_id(activity.data["object"])
 
       assert activity == Utils.fetch_latest_follow(follower, followed)
-    end
-  end
-
-  describe "fetch the latest Block" do
-    test "fetches the latest Block activity" do
-      blocker = insert(:user)
-      blocked = insert(:user)
-      {:ok, activity} = ActivityPub.block(blocker, blocked)
-
-      assert activity == Utils.fetch_latest_block(blocker, blocked)
     end
   end
 
@@ -207,8 +196,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user, locked: true)
       follower = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
 
       data =
         follow_activity_two.data
@@ -231,8 +220,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user, locked: true)
       follower = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
 
       data =
         follow_activity_two.data
@@ -344,9 +333,9 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user1 = insert(:user)
       user2 = insert(:user)
 
-      assert {:ok, %Activity{} = _} = ActivityPub.block(user1, user2)
-      assert {:ok, %Activity{} = _} = ActivityPub.block(user1, user2)
-      assert {:ok, %Activity{} = activity} = ActivityPub.block(user1, user2)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
+      assert {:ok, %Activity{} = activity} = CommonAPI.block(user1, user2)
 
       assert Utils.fetch_latest_block(user1, user2) == activity
     end
@@ -493,7 +482,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         "id" => activity_ap_id,
         "content" => content,
         "published" => activity.object.data["published"],
-        "actor" => AccountView.render("show.json", %{user: target_account})
+        "actor" =>
+          AccountView.render("show.json", %{user: target_account, skip_visibility_check: true})
       }
 
       assert %{

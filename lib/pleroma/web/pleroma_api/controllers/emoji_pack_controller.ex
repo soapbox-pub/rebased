@@ -21,8 +21,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
          ]
   )
 
-  @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
-  plug(:skip_plug, @skip_plugs when action in [:archive, :show, :list])
+  @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
+  plug(:skip_plug, @skip_plugs when action in [:index, :show, :archive])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
@@ -37,14 +37,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     end
   end
 
-  def index(conn, _params) do
+  def index(conn, params) do
     emoji_path =
       [:instance, :static_dir]
       |> Pleroma.Config.get!()
       |> Path.join("emoji")
 
-    with {:ok, packs} <- Pack.list_local() do
-      json(conn, packs)
+    with {:ok, packs, count} <- Pack.list_local(page: params.page, page_size: params.page_size) do
+      json(conn, %{packs: packs, count: count})
     else
       {:error, :create_dir, e} ->
         conn
@@ -60,10 +60,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     end
   end
 
-  def show(conn, %{name: name}) do
+  def show(conn, %{name: name, page: page, page_size: page_size}) do
     name = String.trim(name)
 
-    with {:ok, pack} <- Pack.show(name) do
+    with {:ok, pack} <- Pack.show(name: name, page: page, page_size: page_size) do
       json(conn, pack)
     else
       {:error, :not_found} ->

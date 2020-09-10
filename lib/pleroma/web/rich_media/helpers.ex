@@ -9,12 +9,18 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
+  @options [
+    pool: :media,
+    max_body: 2_000_000,
+    recv_timeout: 2_000
+  ]
+
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Application.get_env(:auto_linker, :opts)[:validate_tld]
+    validate_tld = Config.get([Pleroma.Formatter, :validate_tld])
 
     page_url
-    |> AutoLinker.Parser.url?(scheme: true, validate_tld: validate_tld)
+    |> Linkify.Parser.url?(validate_tld: validate_tld)
     |> parse_uri(page_url)
   end
 
@@ -49,14 +55,23 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     |> hd
   end
 
-  def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
+  def fetch_data_for_object(object) do
     with true <- Config.get([:rich_media, :enabled]),
-         %Object{} = object <- Object.normalize(activity),
          false <- object.data["sensitive"] || false,
-         {:ok, page_url} <- HTML.extract_first_external_url(object, object.data["content"]),
+         {:ok, page_url} <-
+           HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
+    else
+      _ -> %{}
+    end
+  end
+
+  def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
+    with true <- Config.get([:rich_media, :enabled]),
+         %Object{} = object <- Object.normalize(activity) do
+      fetch_data_for_object(object)
     else
       _ -> %{}
     end
@@ -67,5 +82,11 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def perform(:fetch, %Activity{} = activity) do
     fetch_data_for_activity(activity)
     :ok
+  end
+
+  def rich_media_get(url) do
+    headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
+
+    Pleroma.HTTP.get(url, headers, @options)
   end
 end

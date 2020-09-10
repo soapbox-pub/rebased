@@ -160,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         |> Poison.decode!()
         |> Map.put("object", user.ap_id)
 
-      with_mock Pleroma.User, [:passthrough], follow: fn _, _ -> {:error, :testing} end do
+      with_mock Pleroma.User, [:passthrough], follow: fn _, _, _ -> {:error, :testing} end do
         {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
 
         %Activity{} = activity = Activity.get_by_ap_id(id)
@@ -184,6 +184,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       assert data["type"] == "Follow"
       assert data["id"] == "https://hubzilla.example.org/channel/kaniini#follows/2"
       assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
+    test "it works for incoming follows to locked account" do
+      pending_follower = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      user = insert(:user, locked: true)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Follow"
+      assert data["object"] == user.ap_id
+      assert data["state"] == "pending"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+
+      assert [^pending_follower] = User.get_follow_requests(user)
     end
   end
 end

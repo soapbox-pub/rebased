@@ -33,12 +33,6 @@ defmodule Pleroma.Web.OAuth.Token.Query do
     from(q in query, where: q.id == ^id)
   end
 
-  @spec get_expired_tokens(query, DateTime.t() | nil) :: query
-  def get_expired_tokens(query \\ Token, date \\ nil) do
-    expired_date = date || Timex.now()
-    from(q in query, where: fragment("?", q.valid_until) < ^expired_date)
-  end
-
   @spec get_by_user(query, String.t()) :: query
   def get_by_user(query \\ Token, user_id) do
     from(q in query, where: q.user_id == ^user_id)

@@ -19,8 +19,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.CommonAPI
 
-  import Pleroma.Factory
+  import ExUnit.CaptureLog
   import Mock
+  import Pleroma.Factory
 
   describe "handle_after_transaction" do
     test "it streams out notifications and streams" do
@@ -61,6 +62,72 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
         assert called(Pleroma.Web.Push.send(notification))
       end
+    end
+  end
+
+  describe "blocking users" do
+    setup do
+      user = insert(:user)
+      blocked = insert(:user)
+      User.follow(blocked, user)
+      User.follow(user, blocked)
+
+      {:ok, block_data, []} = Builder.block(user, blocked)
+      {:ok, block, _meta} = ActivityPub.persist(block_data, local: true)
+
+      %{user: user, blocked: blocked, block: block}
+    end
+
+    test "it unfollows and blocks", %{user: user, blocked: blocked, block: block} do
+      assert User.following?(user, blocked)
+      assert User.following?(blocked, user)
+
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute User.following?(user, blocked)
+      refute User.following?(blocked, user)
+      assert User.blocks?(user, blocked)
+    end
+
+    test "it blocks but does not unfollow if the relevant setting is set", %{
+      user: user,
+      blocked: blocked,
+      block: block
+    } do
+      clear_config([:activitypub, :unfollow_blocked], false)
+      assert User.following?(user, blocked)
+      assert User.following?(blocked, user)
+
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute User.following?(user, blocked)
+      assert User.following?(blocked, user)
+      assert User.blocks?(user, blocked)
+    end
+  end
+
+  describe "update users" do
+    setup do
+      user = insert(:user)
+      {:ok, update_data, []} = Builder.update(user, %{"id" => user.ap_id, "name" => "new name!"})
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      %{user: user, update_data: update_data, update: update}
+    end
+
+    test "it updates the user", %{user: user, update: update} do
+      {:ok, _, _} = SideEffects.handle(update)
+      user = User.get_by_id(user.id)
+      assert user.name == "new name!"
+    end
+
+    test "it uses a given changeset to update", %{user: user, update: update} do
+      changeset = Ecto.Changeset.change(user, %{default_scope: "direct"})
+
+      assert user.default_scope == "public"
+      {:ok, _, _} = SideEffects.handle(update, user_update_changeset: changeset)
+      user = User.get_by_id(user.id)
+      assert user.default_scope == "direct"
     end
   end
 
@@ -155,6 +222,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       assert User.get_cached_by_ap_id(user.ap_id).deactivated
     end
+
+    test "it logs issues with objects deletion", %{
+      delete: delete,
+      object: object
+    } do
+      {:ok, object} =
+        object
+        |> Object.change(%{data: Map.delete(object.data, "actor")})
+        |> Repo.update()
+
+      Object.invalid_object_cache(object)
+
+      assert capture_log(fn ->
+               {:error, :no_object_actor} = SideEffects.handle(delete)
+             end) =~ "object doesn't have an actor"
+    end
   end
 
   describe "EmojiReact objects" do
@@ -217,8 +300,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, like} = CommonAPI.favorite(user, post.id)
       {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
       {:ok, announce} = CommonAPI.repeat(post.id, user)
-      {:ok, block} = ActivityPub.block(user, poster)
-      User.block(user, poster)
+      {:ok, block} = CommonAPI.block(user, poster)
 
       {:ok, undo_data, _meta} = Builder.undo(user, like)
       {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
@@ -247,8 +329,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       }
     end
 
-    test "deletes the original block", %{block_undo: block_undo, block: block} do
-      {:ok, _block_undo, _} = SideEffects.handle(block_undo)
+    test "deletes the original block", %{
+      block_undo: block_undo,
+      block: block
+    } do
+      {:ok, _block_undo, _meta} = SideEffects.handle(block_undo)
+
       refute Activity.get_by_id(block.id)
     end
 
@@ -524,10 +610,29 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
 
     test "it streams out the announce", %{announce: announce} do
-      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough], stream_out: fn _ -> nil end do
+      with_mocks([
+        {
+          Pleroma.Web.Streamer,
+          [],
+          [
+            stream: fn _, _ -> nil end
+          ]
+        },
+        {
+          Pleroma.Web.Push,
+          [],
+          [
+            send: fn _ -> nil end
+          ]
+        }
+      ]) do
         {:ok, announce, _} = SideEffects.handle(announce)
 
-        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(announce))
+        assert called(
+                 Pleroma.Web.Streamer.stream(["user", "list", "public", "public:local"], announce)
+               )
+
+        assert called(Pleroma.Web.Push.send(:_))
       end
     end
   end

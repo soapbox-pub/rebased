@@ -172,6 +172,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         with_direct_conversation_id: true
       )
     else
+      {:error, {:reject, message}} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: message})
+
       {:error, message} ->
         conn
         |> put_status(:unprocessable_entity)
@@ -200,11 +205,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "DELETE /api/v1/statuses/:id"
   def delete(%{assigns: %{user: user}} = conn, %{id: id}) do
-    with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
-      json(conn, %{})
+    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
+      try_render(conn, "show.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true,
+        with_source: true
+      )
     else
-      {:error, :not_found} = e -> e
-      _e -> render_error(conn, :forbidden, "Can't delete this post")
+      _e -> {:error, :not_found}
     end
   end
 
@@ -304,7 +314,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "GET /api/v1/statuses/:id/favourited_by"
   def favourited_by(%{assigns: %{user: user}} = conn, %{id: id}) do
-    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+    with true <- Pleroma.Config.get([:instance, :show_reactions]),
+         %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
       users =

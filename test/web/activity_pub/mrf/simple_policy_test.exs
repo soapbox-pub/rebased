@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
   import Pleroma.Factory
   alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF.SimplePolicy
+  alias Pleroma.Web.CommonAPI
 
   setup do:
           clear_config(:mrf_simple,
@@ -15,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
             federated_timeline_removal: [],
             report_removal: [],
             reject: [],
+            followers_only: [],
             accept: [],
             avatar_removal: [],
             banner_removal: [],
@@ -124,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       report_message = build_report_message()
       local_message = build_local_message()
 
-      assert SimplePolicy.filter(report_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(report_message)
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
 
@@ -133,7 +135,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       report_message = build_report_message()
       local_message = build_local_message()
 
-      assert SimplePolicy.filter(report_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(report_message)
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
   end
@@ -241,7 +243,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       remote_message = build_remote_message()
 
-      assert SimplePolicy.filter(remote_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_message)
     end
 
     test "activity matches with wildcard domain" do
@@ -249,7 +251,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       remote_message = build_remote_message()
 
-      assert SimplePolicy.filter(remote_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_message)
     end
 
     test "actor has a matching host" do
@@ -257,7 +259,65 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       remote_user = build_remote_user()
 
-      assert SimplePolicy.filter(remote_user) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_user)
+    end
+  end
+
+  describe "when :followers_only" do
+    test "is empty" do
+      Config.put([:mrf_simple, :followers_only], [])
+      {_, ftl_message} = build_ftl_actor_and_message()
+      local_message = build_local_message()
+
+      assert SimplePolicy.filter(ftl_message) == {:ok, ftl_message}
+      assert SimplePolicy.filter(local_message) == {:ok, local_message}
+    end
+
+    test "has a matching host" do
+      actor = insert(:user)
+      following_user = insert(:user)
+      non_following_user = insert(:user)
+
+      {:ok, _, _, _} = CommonAPI.follow(following_user, actor)
+
+      activity = %{
+        "actor" => actor.ap_id,
+        "to" => [
+          "https://www.w3.org/ns/activitystreams#Public",
+          following_user.ap_id,
+          non_following_user.ap_id
+        ],
+        "cc" => [actor.follower_address, "http://foo.bar/qux"]
+      }
+
+      dm_activity = %{
+        "actor" => actor.ap_id,
+        "to" => [
+          following_user.ap_id,
+          non_following_user.ap_id
+        ],
+        "cc" => []
+      }
+
+      actor_domain =
+        activity
+        |> Map.fetch!("actor")
+        |> URI.parse()
+        |> Map.fetch!(:host)
+
+      Config.put([:mrf_simple, :followers_only], [actor_domain])
+
+      assert {:ok, new_activity} = SimplePolicy.filter(activity)
+      assert actor.follower_address in new_activity["cc"]
+      assert following_user.ap_id in new_activity["to"]
+      refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["to"]
+      refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["cc"]
+      refute non_following_user.ap_id in new_activity["to"]
+      refute non_following_user.ap_id in new_activity["cc"]
+
+      assert {:ok, new_dm_activity} = SimplePolicy.filter(dm_activity)
+      assert new_dm_activity["to"] == [following_user.ap_id]
+      assert new_dm_activity["cc"] == []
     end
   end
 
@@ -279,7 +339,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_message = build_remote_message()
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
-      assert SimplePolicy.filter(remote_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_message)
     end
 
     test "activity has a matching host" do
@@ -429,7 +489,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     test "it rejects the deletion" do
       deletion_message = build_remote_deletion_message()
 
-      assert SimplePolicy.filter(deletion_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(deletion_message)
     end
   end
 
@@ -439,7 +499,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     test "it rejects the deletion" do
       deletion_message = build_remote_deletion_message()
 
-      assert SimplePolicy.filter(deletion_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(deletion_message)
     end
   end
 

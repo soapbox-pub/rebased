@@ -1,45 +1,61 @@
 # Static Directory
 
-Static frontend files are shipped in `priv/static/` and tracked by version control in this repository. If you want to overwrite or update these without the possibility of merge conflicts, you can write your custom versions to `instance/static/`.
+Static frontend files are shipped with pleroma. If you want to overwrite or update these without problems during upgrades, you can write your custom versions to the static directory.
 
-```
-config :pleroma, :instance,
-  static_dir: "instance/static/",
-```
+You can find the location of the static directory in the [configuration](../cheatsheet/#instance).
 
-For example, edit `instance/static/instance/panel.html` .
+=== "OTP"
+
+    ```elixir
+    config :pleroma, :instance,
+      static_dir: "/var/lib/pleroma/static/"
+    ```
+
+=== "From Source"
+
+    ```elixir
+    config :pleroma, :instance,
+    static_dir: "instance/static/"
+    ```
 
 Alternatively, you can overwrite this value in your configuration to use a different static instance directory.
 
-This document is written assuming `instance/static/`.
+This document is written using `$static_dir` as the value of the `config :pleroma, :instance, static_dir` setting.
 
-Or, if you want to manage your custom file in git repository, basically remove the `instance/` entry from `.gitignore`.
+If you use a From Source installation and want to manage your custom files in the git repository, you can remove the `instance/` entry from `.gitignore`.
 
 ## robots.txt
 
-By default, the `robots.txt` that ships in `priv/static/` is permissive. It allows well-behaved search engines to index all of your instance's URIs.
+There's a mix tasks to [generate a new robot.txt](../../administration/CLI_tasks/robots_txt/).
 
-If you want to generate a restrictive `robots.txt`, you can run the following mix task. The generated `robots.txt` will be written in your instance static directory.
+For more complex things, you can write your own robots.txt to `$static_dir/robots.txt`.
+
+E.g. if you want to block all crawlers except for [fediverse.network](https://fediverse.network/about) you can use
 
 ```
-mix pleroma.robots_txt disallow_all
+User-Agent: *
+Disallow: /
+
+User-Agent: crawler-us-il-1.fediverse.network
+Allow: /
+
+User-Agent: makhnovtchina.random.sh
+Allow: /
 ```
 
 ## Thumbnail
 
-Put on `instance/static/instance/thumbnail.jpeg` with your selfie or other neat picture. It will appear in [Pleroma Instances](http://distsn.org/pleroma-instances.html).
+Add `$static_dir/instance/thumbnail.jpeg` with your selfie or other neat picture. It will be available on `http://your-domain.tld/instance/thumbnail.jpeg` and can be used by external applications.
 
 ## Instance-specific panel
 
-![instance-specific panel demo](/uploads/296b19ec806b130e0b49b16bfe29ce8a/image.png)
-
-Create and Edit your file on `instance/static/instance/panel.html`.
+Create and Edit your file at `$static_dir/instance/panel.html`.
 
 ## Background
 
-You can change the background of your Pleroma instance by uploading it to `instance/static/`, and then changing `background` in `config/prod.secret.exs` accordingly.
+You can change the background of your Pleroma instance by uploading it to `$static_dir/`, and then changing `background` in [your configuration](../cheatsheet/#frontend_configurations) accordingly.
 
-If you put `instance/static/images/background.jpg`
+E.g. if you put `$static_dir/images/background.jpg`
 
 ```
 config :pleroma, :frontend_configurations,
@@ -50,12 +66,14 @@ config :pleroma, :frontend_configurations,
 
 ## Logo
 
-![logo modification demo](/uploads/c70b14de60fa74245e7f0dcfa695ebff/image.png)
+!!! important
+    Note the extra `static` folder for the default logo.png location
 
-If you want to give a brand to your instance, You can change the logo of your instance by uploading it to `instance/static/`.
+If you want to give a brand to your instance, You can change the logo of your instance by uploading it to the static directory `$static_dir/static/logo.png`.
 
-Alternatively, you can specify the path with config.
-If you put `instance/static/static/mylogo-file.png`
+Alternatively, you can specify the path to your logo in [your configuration](../cheatsheet/#frontend_configurations).
+
+E.g. if you put `$static_dir/static/mylogo-file.png`
 
 ```
 config :pleroma, :frontend_configurations,
@@ -66,4 +84,7 @@ config :pleroma, :frontend_configurations,
 
 ## Terms of Service
 
-Terms of Service will be shown to all users on the registration page. It's the best place where to write down the rules for your instance. You can modify the rules by changing `instance/static/static/terms-of-service.html`.
+!!! important
+    Note the extra `static` folder for the terms-of-service.html
+
+Terms of Service will be shown to all users on the registration page. It's the best place where to write down the rules for your instance. You can modify the rules by adding and changing `$static_dir/static/terms-of-service.html`.

@@ -37,7 +37,15 @@ defmodule Pleroma.Web.Feed.UserController do
     end
   end
 
-  def feed(conn, %{"nickname" => nickname} = params) do
+  def feed(conn, params) do
+    unless Pleroma.Config.restrict_unauthenticated_access?(:profiles, :local) do
+      render_feed(conn, params)
+    else
+      errors(conn, {:error, :not_found})
+    end
+  end
+
+  def render_feed(conn, %{"nickname" => nickname} = params) do
     format = get_format(conn)
 
     format =
@@ -47,7 +55,7 @@ defmodule Pleroma.Web.Feed.UserController do
         "atom"
       end
 
-    with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
+    with {_, %User{local: true} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
       activities =
         %{
           type: ["Create"],
@@ -71,6 +79,7 @@ defmodule Pleroma.Web.Feed.UserController do
     render_error(conn, :not_found, "Not found")
   end
 
+  def errors(conn, {:fetch_user, %User{local: false}}), do: errors(conn, {:error, :not_found})
   def errors(conn, {:fetch_user, nil}), do: errors(conn, {:error, :not_found})
 
   def errors(conn, _) do

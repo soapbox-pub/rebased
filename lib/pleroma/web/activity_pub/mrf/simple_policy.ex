@@ -3,33 +3,36 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
-  alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.MRF
   @moduledoc "Filter activities depending on their origin instance"
   @behaviour Pleroma.Web.ActivityPub.MRF
+
+  alias Pleroma.Config
+  alias Pleroma.FollowingRelationship
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.MRF
 
   require Pleroma.Constants
 
   defp check_accept(%{host: actor_host} = _actor_info, object) do
     accepts =
-      Pleroma.Config.get([:mrf_simple, :accept])
+      Config.get([:mrf_simple, :accept])
       |> MRF.subdomains_regex()
 
     cond do
       accepts == [] -> {:ok, object}
-      actor_host == Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
+      actor_host == Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
       MRF.subdomain_match?(accepts, actor_host) -> {:ok, object}
-      true -> {:reject, nil}
+      true -> {:reject, "[SimplePolicy] host not in accept list"}
     end
   end
 
   defp check_reject(%{host: actor_host} = _actor_info, object) do
     rejects =
-      Pleroma.Config.get([:mrf_simple, :reject])
+      Config.get([:mrf_simple, :reject])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(rejects, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in reject list"}
     else
       {:ok, object}
     end
@@ -41,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
        )
        when length(child_attachment) > 0 do
     media_removal =
-      Pleroma.Config.get([:mrf_simple, :media_removal])
+      Config.get([:mrf_simple, :media_removal])
       |> MRF.subdomains_regex()
 
     object =
@@ -65,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          } = object
        ) do
     media_nsfw =
-      Pleroma.Config.get([:mrf_simple, :media_nsfw])
+      Config.get([:mrf_simple, :media_nsfw])
       |> MRF.subdomains_regex()
 
     object =
@@ -85,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_ftl_removal(%{host: actor_host} = _actor_info, object) do
     timeline_removal =
-      Pleroma.Config.get([:mrf_simple, :federated_timeline_removal])
+      Config.get([:mrf_simple, :federated_timeline_removal])
       |> MRF.subdomains_regex()
 
     object =
@@ -106,13 +109,42 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     {:ok, object}
   end
 
+  defp intersection(list1, list2) do
+    list1 -- list1 -- list2
+  end
+
+  defp check_followers_only(%{host: actor_host} = _actor_info, object) do
+    followers_only =
+      Config.get([:mrf_simple, :followers_only])
+      |> MRF.subdomains_regex()
+
+    object =
+      with true <- MRF.subdomain_match?(followers_only, actor_host),
+           user <- User.get_cached_by_ap_id(object["actor"]) do
+        # Don't use Map.get/3 intentionally, these must not be nil
+        fixed_to = object["to"] || []
+        fixed_cc = object["cc"] || []
+
+        to = FollowingRelationship.followers_ap_ids(user, fixed_to)
+        cc = FollowingRelationship.followers_ap_ids(user, fixed_cc)
+
+        object
+        |> Map.put("to", intersection([user.follower_address | to], fixed_to))
+        |> Map.put("cc", intersection([user.follower_address | cc], fixed_cc))
+      else
+        _ -> object
+      end
+
+    {:ok, object}
+  end
+
   defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
     report_removal =
-      Pleroma.Config.get([:mrf_simple, :report_removal])
+      Config.get([:mrf_simple, :report_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(report_removal, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in report_removal list"}
     else
       {:ok, object}
     end
@@ -122,7 +154,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_avatar_removal(%{host: actor_host} = _actor_info, %{"icon" => _icon} = object) do
     avatar_removal =
-      Pleroma.Config.get([:mrf_simple, :avatar_removal])
+      Config.get([:mrf_simple, :avatar_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(avatar_removal, actor_host) do
@@ -136,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_banner_removal(%{host: actor_host} = _actor_info, %{"image" => _image} = object) do
     banner_removal =
-      Pleroma.Config.get([:mrf_simple, :banner_removal])
+      Config.get([:mrf_simple, :banner_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(banner_removal, actor_host) do
@@ -153,11 +185,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     %{host: actor_host} = URI.parse(actor)
 
     reject_deletes =
-      Pleroma.Config.get([:mrf_simple, :reject_deletes])
+      Config.get([:mrf_simple, :reject_deletes])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(reject_deletes, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in reject_deletes list"}
     else
       {:ok, object}
     end
@@ -172,10 +204,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_media_removal(actor_info, object),
          {:ok, object} <- check_media_nsfw(actor_info, object),
          {:ok, object} <- check_ftl_removal(actor_info, object),
+         {:ok, object} <- check_followers_only(actor_info, object),
          {:ok, object} <- check_report_removal(actor_info, object) do
       {:ok, object}
     else
-      _e -> {:reject, nil}
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -189,7 +224,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else
-      _e -> {:reject, nil}
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -197,10 +234,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   @impl true
   def describe do
-    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+    exclusions = Config.get([:mrf, :transparency_exclusions])
 
     mrf_simple =
-      Pleroma.Config.get(:mrf_simple)
+      Config.get(:mrf_simple)
       |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn v -> v in exclusions end)} end)
       |> Enum.into(%{})
 

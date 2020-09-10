@@ -29,6 +29,10 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     }
   end
 
+  def admin_api_params do
+    [Operation.parameter(:admin_token, :query, :string, "Allows authorization via admin token.")]
+  end
+
   def pagination_params do
     [
       Operation.parameter(:max_id, :query, :string, "Return items older than this ID"),
@@ -38,6 +42,12 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
         :query,
         :string,
         "Return the newest items newer than this ID"
+      ),
+      Operation.parameter(
+        :offset,
+        :query,
+        %Schema{type: :integer, default: 0},
+        "Return items past this number of items"
       ),
       Operation.parameter(
         :limit,

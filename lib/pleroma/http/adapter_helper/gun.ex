@@ -5,73 +5,78 @@
 defmodule Pleroma.HTTP.AdapterHelper.Gun do
   @behaviour Pleroma.HTTP.AdapterHelper
 
+  alias Pleroma.Config
   alias Pleroma.HTTP.AdapterHelper
-  alias Pleroma.Pool.Connections
 
   require Logger
 
   @defaults [
-    connect_timeout: 5_000,
-    domain_lookup_timeout: 5_000,
-    tls_handshake_timeout: 5_000,
     retry: 1,
-    retry_timeout: 1000,
-    await_up_timeout: 5_000
+    retry_timeout: 1_000
   ]
+
+  @type pool() :: :federation | :upload | :media | :default
 
   @spec options(keyword(), URI.t()) :: keyword()
   def options(incoming_opts \\ [], %URI{} = uri) do
     proxy =
-      Pleroma.Config.get([:http, :proxy_url])
+      [:http, :proxy_url]
+      |> Config.get()
       |> AdapterHelper.format_proxy()
 
-    config_opts = Pleroma.Config.get([:http, :adapter], [])
+    config_opts = Config.get([:http, :adapter], [])
 
     @defaults
     |> Keyword.merge(config_opts)
     |> add_scheme_opts(uri)
     |> AdapterHelper.maybe_add_proxy(proxy)
-    |> maybe_get_conn(uri, incoming_opts)
-  end
-
-  @spec after_request(keyword()) :: :ok
-  def after_request(opts) do
-    if opts[:conn] && opts[:body_as] != :chunks do
-      Connections.checkout(opts[:conn], self(), :gun_connections)
-    end
-
-    :ok
+    |> Keyword.merge(incoming_opts)
+    |> put_timeout()
   end
 
   defp add_scheme_opts(opts, %{scheme: "http"}), do: opts
 
   defp add_scheme_opts(opts, %{scheme: "https"}) do
-    opts
-    |> Keyword.put(:certificates_verification, true)
-    |> Keyword.put(:tls_opts, log_level: :warning)
+    Keyword.put(opts, :certificates_verification, true)
   end
 
-  defp maybe_get_conn(adapter_opts, uri, incoming_opts) do
-    {receive_conn?, opts} =
-      adapter_opts
-      |> Keyword.merge(incoming_opts)
-      |> Keyword.pop(:receive_conn, true)
-
-    if Connections.alive?(:gun_connections) and receive_conn? do
-      checkin_conn(uri, opts)
-    else
-      opts
-    end
+  defp put_timeout(opts) do
+    {recv_timeout, opts} = Keyword.pop(opts, :recv_timeout, pool_timeout(opts[:pool]))
+    # this is the timeout to receive a message from Gun
+    # `:timeout` key is used in Tesla
+    Keyword.put(opts, :timeout, recv_timeout)
   end
 
-  defp checkin_conn(uri, opts) do
-    case Connections.checkin(uri, :gun_connections) do
-      nil ->
-        Task.start(Pleroma.Gun.Conn, :open, [uri, :gun_connections, opts])
-        opts
+  @spec pool_timeout(pool()) :: non_neg_integer()
+  def pool_timeout(pool) do
+    default = Config.get([:pools, :default, :recv_timeout], 5_000)
 
-      conn when is_pid(conn) ->
-        Keyword.merge(opts, conn: conn, close_conn: false)
-    end
+    Config.get([:pools, pool, :recv_timeout], default)
+  end
+
+  @prefix Pleroma.Gun.ConnectionPool
+  def limiter_setup do
+    wait = Config.get([:connections_pool, :connection_acquisition_wait])
+    retries = Config.get([:connections_pool, :connection_acquisition_retries])
+
+    :pools
+    |> Config.get([])
+    |> Enum.each(fn {name, opts} ->
+      max_running = Keyword.get(opts, :size, 50)
+      max_waiting = Keyword.get(opts, :max_waiting, 10)
+
+      result =
+        ConcurrentLimiter.new(:"#{@prefix}.#{name}", max_running, max_waiting,
+          wait: wait,
+          max_retries: retries
+        )
+
+      case result do
+        :ok -> :ok
+        {:error, :existing} -> :ok
+      end
+    end)
+
+    :ok
   end
 end

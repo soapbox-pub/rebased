@@ -14,11 +14,12 @@ The following packages need to be installed:
   * git
   * postgresql-server
   * postgresql-contrib
+  * cmake
 
 To install them, run the following command (with doas or as root):
 
 ```
-pkg_add elixir gmake ImageMagick git postgresql-server postgresql-contrib
+pkg_add elixir gmake ImageMagick git postgresql-server postgresql-contrib cmake
 ```
 
 Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide) and packages/ports are available for nginx (www/nginx) and apache (www/apache-httpd). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.
@@ -242,3 +243,11 @@ If your instance is up and running, you can create your first user with administ
 ```
 LC_ALL=en_US.UTF-8 MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress> --admin
 ```
+
+#### Further reading
+
+{! backend/installation/further_reading.include !}
+
+## Questions
+
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.

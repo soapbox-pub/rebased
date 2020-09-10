@@ -50,7 +50,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Authentication: not required
 * Params: none
 * Response: Provider specific JSON, the only guaranteed parameter is `type`
-* Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint"}`
+* Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint", "seconds_valid": 300}`
 
 ## `/api/pleroma/delete_account`
 ### Delete an account
@@ -287,11 +287,8 @@ See [Admin-API](admin_api.md)
 * Method `PUT`
 * Authentication: required
 * Params:
-    * `followers`: BOOLEAN field, receives notifications from followers
-    * `follows`: BOOLEAN field, receives notifications from people the user follows
-    * `remote`: BOOLEAN field, receives notifications from people on remote instances
-    * `local`: BOOLEAN field, receives notifications from people on the local instance
-    * `privacy_option`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
+    * `block_from_strangers`: BOOLEAN field, blocks notifications from accounts you do not follow
+    * `hide_notification_contents`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
 
 ## `/api/pleroma/healthcheck`
@@ -450,18 +447,44 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
 ## `GET /api/pleroma/emoji/packs`
+
 ### Lists local custom emoji packs
+
 * Method `GET`
 * Authentication: not required
-* Params: None
-* Response: JSON, "ok" and 200 status and the JSON hashmap of pack name to pack contents
+* Params:
+  * `page`: page number for packs (default 1)
+  * `page_size`: page size for packs (default 50)
+* Response: `packs` key with JSON hashmap of pack name to pack contents and `count` key for count of packs.
+
+```json
+{
+  "packs": {
+    "pack_name": {...}, // pack contents
+    ...
+  },
+  "count": 0 // packs count
+}
+```
 
 ## `GET /api/pleroma/emoji/packs/:name`
+
 ### Get pack.json for the pack
+
 * Method `GET`
 * Authentication: not required
-* Params: None
-* Response: JSON, pack json with `files` and `pack` keys with 200 status or 404 if the pack does not exist
+* Params:
+  * `page`: page number for files (default 1)
+  * `page_size`: page size for files (default 30)
+* Response: JSON, pack json with `files`, `files_count` and `pack` keys with 200 status or 404 if the pack does not exist.
+
+```json
+{
+  "files": {...},
+  "files_count": 0, // emoji count in pack
+  "pack": {...}
+}
+```
 
 ## `GET /api/pleroma/emoji/packs/:name/archive`
 ### Requests a local pack archive from the instance
