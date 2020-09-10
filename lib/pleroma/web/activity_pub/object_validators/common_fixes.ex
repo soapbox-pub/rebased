@@ -26,14 +26,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
     |> Transmogrifier.fix_implicit_addressing(follower_collection)
   end
 
-  def fix_activity_defaults(data, meta) do
+  defp fix_activity_recipients(activity, field, object) do
+    {:ok, data} = ObjectValidators.Recipients.cast(activity[field] || object[field])
+
+    Map.put(activity, field, data)
+  end
+
+  def fix_activity_defaults(activity, meta) do
     object = meta[:object_data] || %{}
 
-    data
-    |> Map.put_new("to", object["to"] || [])
-    |> Map.put_new("cc", object["cc"] || [])
-    |> Map.put_new("bto", object["bto"] || [])
-    |> Map.put_new("bcc", object["bcc"] || [])
+    activity
+    |> fix_activity_recipients("to", object)
+    |> fix_activity_recipients("cc", object)
+    |> fix_activity_recipients("bto", object)
+    |> fix_activity_recipients("bcc", object)
   end
 
   def fix_actor(data) do

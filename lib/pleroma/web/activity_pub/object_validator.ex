@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = create_activity,
         meta
       )
-      when objtype in ~w[Question Answer Audio Video Event Article] do
+      when objtype in ~w[Question Answer Audio Video Event Article Note] do
     with {:ok, object_data} <- cast_and_apply(object),
          meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
          {:ok, create_activity} <-
@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def validate(%{"type" => type} = object, meta)
-      when type in ~w[Event Question Audio Video Article] do
+      when type in ~w[Event Question Audio Video Article Note] do
     validator =
       case type do
         "Event" -> EventValidator
@@ -122,6 +122,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         "Audio" -> AudioVideoValidator
         "Video" -> AudioVideoValidator
         "Article" -> ArticleNoteValidator
+        "Note" -> ArticleNoteValidator
       end
 
     with {:ok, object} <-
@@ -183,7 +184,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     EventValidator.cast_and_apply(object)
   end
 
-  def cast_and_apply(%{"type" => "Article"} = object) do
+  def cast_and_apply(%{"type" => type} = object) when type in ~w[Article Note] do
     ArticleNoteValidator.cast_and_apply(object)
   end
 

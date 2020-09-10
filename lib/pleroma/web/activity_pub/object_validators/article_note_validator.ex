@@ -50,6 +50,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator do
 
     field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
     field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
+
+    field(:replies, {:array, ObjectValidators.ObjectID}, default: [])
   end
 
   def cast_and_apply(data) do
@@ -65,24 +67,39 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator do
   end
 
   def cast_data(data) do
-    data = fix(data)
-
     %__MODULE__{}
     |> changeset(data)
   end
 
-  defp fix_url(%{"url" => url} = data) when is_map(url) do
-    Map.put(data, "url", url["href"])
-  end
-
+  defp fix_url(%{"url" => url} = data) when is_bitstring(url), do: data
+  defp fix_url(%{"url" => url} = data) when is_map(url), do: Map.put(data, "url", url["href"])
   defp fix_url(data), do: data
+
+  defp fix_tag(%{"tag" => tag} = data) when is_list(tag), do: data
+  defp fix_tag(%{"tag" => tag} = data) when is_map(tag), do: Map.put(data, "tag", [tag])
+  defp fix_tag(data), do: Map.drop(data, ["tag"])
+
+  defp fix_replies(%{"replies" => %{"first" => %{"items" => replies}}} = data)
+       when is_list(replies),
+       do: Map.put(data, "replies", replies)
+
+  defp fix_replies(%{"replies" => %{"items" => replies}} = data) when is_list(replies),
+    do: Map.put(data, "replies", replies)
+
+  defp fix_replies(%{"replies" => replies} = data) when is_bitstring(replies),
+    do: Map.drop(data, ["replies"])
+
+  defp fix_replies(data), do: data
 
   defp fix(data) do
     data
     |> CommonFixes.fix_actor()
     |> CommonFixes.fix_object_defaults()
     |> fix_url()
+    |> fix_tag()
+    |> fix_replies()
     |> Transmogrifier.fix_emoji()
+    |> Transmogrifier.fix_content_map()
   end
 
   def changeset(struct, data) do

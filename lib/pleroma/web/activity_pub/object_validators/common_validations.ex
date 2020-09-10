@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       fields
       |> Enum.map(fn field -> get_field(cng, field) end)
       |> Enum.any?(fn
+        nil -> false
         [] -> false
         _ -> true
       end)

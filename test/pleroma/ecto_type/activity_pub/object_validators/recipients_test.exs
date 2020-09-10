@@ -6,10 +6,10 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.RecipientsTest do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators.Recipients
   use Pleroma.DataCase, async: true
 
-  test "it asserts that all elements of the list are object ids" do
+  test "it only keeps elements that are valid object ids" do
     list = ["https://lain.com/users/lain", "invalid"]
 
-    assert {:error, "invalid"} == Recipients.cast(list)
+    assert {:ok, ["https://lain.com/users/lain"]} == Recipients.cast(list)
   end
 
   test "it works with a list" do

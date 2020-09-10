@@ -404,10 +404,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
+        %{"type" => "Create", "object" => %{"type" => "Page"} = object} = data,
         options
-      )
-      when objtype in ~w{Note Page} do
+      ) do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
@@ -499,14 +498,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(
         %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
-        _options
+        options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article} do
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note} do
     data = Map.put(data, "object", strip_internal_fields(data["object"]))
+    options = Keyword.put(options, :local, false)
 
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          nil <- Activity.get_create_by_object_ap_id(obj_id),
-         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, options) do
       {:ok, activity}
     else
       %Activity{} = activity -> {:ok, activity}

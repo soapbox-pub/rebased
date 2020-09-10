@@ -14,7 +14,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
   import Mock
   import Pleroma.Factory
-  import ExUnit.CaptureLog
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -147,9 +146,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
         data
         |> Map.put("object", object)
 
-      assert capture_log(fn ->
-               {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
-             end) =~ "[warn] Couldn't fetch \"https://404.site/whatever\", error: nil"
+      assert {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
     end
 
     test "it does not work for deactivated users" do
@@ -221,8 +218,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"], fetch: false)
 
-      assert Enum.at(Object.tags(object), 2) == "moo"
-      assert Object.hashtags(object) == ["moo"]
+      assert match?(
+               %{
+                 "href" => "http://localtesting.pleroma.lol/users/lain",
+                 "name" => "@lain@localtesting.pleroma.lol",
+                 "type" => "Mention"
+               },
+               Enum.at(object.data["tag"], 0)
+             )
+
+      assert match?(
+               %{
+                 "href" => "http://mastodon.example.org/tags/moo",
+                 "name" => "#moo",
+                 "type" => "Hashtag"
+               },
+               Enum.at(object.data["tag"], 1)
+             )
+
+      assert "moo" == Enum.at(object.data["tag"], 2)
     end
 
     test "it works for incoming notices with contentMap" do
@@ -276,13 +290,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Jason.decode!()
         |> Map.put("actor", user.ap_id)
-        |> Map.put("to", nil)
         |> Map.put("cc", nil)
 
       object =
         data["object"]
         |> Map.put("attributedTo", user.ap_id)
-        |> Map.put("to", nil)
         |> Map.put("cc", nil)
         |> Map.put("id", user.ap_id <> "/activities/12345678")
 
@@ -290,8 +302,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
-      assert !is_nil(data["to"])
-      assert !is_nil(data["cc"])
+      refute is_nil(data["cc"])
     end
 
     test "it strips internal likes" do
@@ -330,70 +341,46 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "it correctly processes messages with non-array to field" do
-      user = insert(:user)
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("to", "https://www.w3.org/ns/activitystreams#Public")
+        |> put_in(["object", "to"], "https://www.w3.org/ns/activitystreams#Public")
 
-      message = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "to" => "https://www.w3.org/ns/activitystreams#Public",
-        "type" => "Create",
-        "object" => %{
-          "content" => "blah blah blah",
-          "type" => "Note",
-          "attributedTo" => user.ap_id,
-          "inReplyTo" => nil
-        },
-        "actor" => user.ap_id
-      }
+      assert {:ok, activity} = Transmogrifier.handle_incoming(data)
 
-      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+      assert [
+               "http://mastodon.example.org/users/admin/followers",
+               "http://localtesting.pleroma.lol/users/lain"
+             ] == activity.data["cc"]
 
       assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
     end
 
     test "it correctly processes messages with non-array cc field" do
-      user = insert(:user)
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("cc", "http://mastodon.example.org/users/admin/followers")
+        |> put_in(["object", "cc"], "http://mastodon.example.org/users/admin/followers")
 
-      message = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "to" => user.follower_address,
-        "cc" => "https://www.w3.org/ns/activitystreams#Public",
-        "type" => "Create",
-        "object" => %{
-          "content" => "blah blah blah",
-          "type" => "Note",
-          "attributedTo" => user.ap_id,
-          "inReplyTo" => nil
-        },
-        "actor" => user.ap_id
-      }
+      assert {:ok, activity} = Transmogrifier.handle_incoming(data)
 
-      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
-
-      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["cc"]
-      assert [user.follower_address] == activity.data["to"]
+      assert ["http://mastodon.example.org/users/admin/followers"] == activity.data["cc"]
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
     end
 
     test "it correctly processes messages with weirdness in address fields" do
-      user = insert(:user)
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("cc", ["http://mastodon.example.org/users/admin/followers", ["¿"]])
+        |> put_in(["object", "cc"], ["http://mastodon.example.org/users/admin/followers", ["¿"]])
 
-      message = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "to" => [nil, user.follower_address],
-        "cc" => ["https://www.w3.org/ns/activitystreams#Public", ["¿"]],
-        "type" => "Create",
-        "object" => %{
-          "content" => "…",
-          "type" => "Note",
-          "attributedTo" => user.ap_id,
-          "inReplyTo" => nil
-        },
-        "actor" => user.ap_id
-      }
+      assert {:ok, activity} = Transmogrifier.handle_incoming(data)
 
-      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
-
-      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["cc"]
-      assert [user.follower_address] == activity.data["to"]
+      assert ["http://mastodon.example.org/users/admin/followers"] == activity.data["cc"]
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
     end
   end
 
@@ -419,7 +406,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     } do
       clear_config([:instance, :federation_incoming_replies_max_depth], 10)
 
-      {:ok, _activity} = Transmogrifier.handle_incoming(data)
+      {:ok, activity} = Transmogrifier.handle_incoming(data)
+
+      object = Object.normalize(activity.data["object"])
+
+      assert object.data["replies"] == items
 
       for id <- items do
         job_args = %{"op" => "fetch_remote", "id" => id, "depth" => 1}
@@ -442,45 +433,41 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     setup do
-      user = insert(:user)
+      replies = %{
+        "type" => "Collection",
+        "items" => [
+          Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          Pleroma.Web.ActivityPub.Utils.generate_object_id()
+        ]
+      }
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "post1"})
+      activity =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Kernel.put_in(["object", "replies"], replies)
 
-      {:ok, reply1} =
-        CommonAPI.post(user, %{status: "reply1", in_reply_to_status_id: activity.id})
-
-      {:ok, reply2} =
-        CommonAPI.post(user, %{status: "reply2", in_reply_to_status_id: activity.id})
-
-      replies_uris = Enum.map([reply1, reply2], fn a -> a.object.data["id"] end)
-
-      {:ok, federation_output} = Transmogrifier.prepare_outgoing(activity.data)
-
-      Repo.delete(activity.object)
-      Repo.delete(activity)
-
-      %{federation_output: federation_output, replies_uris: replies_uris}
+      %{activity: activity}
     end
 
     test "schedules background fetching of `replies` items if max thread depth limit allows", %{
-      federation_output: federation_output,
-      replies_uris: replies_uris
+      activity: activity
     } do
       clear_config([:instance, :federation_incoming_replies_max_depth], 1)
 
-      {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
+      assert {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(activity)
+      object = Object.normalize(data["object"])
 
-      for id <- replies_uris do
+      for id <- object.data["replies"] do
         job_args = %{"op" => "fetch_remote", "id" => id, "depth" => 1}
         assert_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker, args: job_args)
       end
     end
 
     test "does NOT schedule background fetching of `replies` beyond max thread depth limit allows",
-         %{federation_output: federation_output} do
+         %{activity: activity} do
       clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
-      {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
+      {:ok, _activity} = Transmogrifier.handle_incoming(activity)
 
       assert all_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker) == []
     end
@@ -498,6 +485,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
         "object" => %{
           "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "cc" => [],
+          "id" => Utils.generate_object_id(),
           "type" => "Note",
           "content" => "Hi",
           "inReplyTo" => nil,
@@ -522,6 +510,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
         "object" => %{
           "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "cc" => [],
+          "id" => Utils.generate_object_id(),
           "type" => "Note",
           "content" => "Hi",
           "inReplyTo" => nil,
