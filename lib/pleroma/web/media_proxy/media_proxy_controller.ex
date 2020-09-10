@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   alias Pleroma.Helpers.MediaHelper
   alias Pleroma.ReverseProxy
   alias Pleroma.Web.MediaProxy
+  alias Plug.Conn
 
   def remote(conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.enabled?()},
@@ -18,29 +19,29 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
       ReverseProxy.call(conn, url, media_proxy_opts())
     else
       {:enabled, false} ->
-        send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
+        send_resp(conn, 404, Conn.Status.reason_phrase(404))
 
       {:in_banned_urls, true} ->
-        send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
+        send_resp(conn, 404, Conn.Status.reason_phrase(404))
 
       {:error, :invalid_signature} ->
-        send_resp(conn, 403, Plug.Conn.Status.reason_phrase(403))
+        send_resp(conn, 403, Conn.Status.reason_phrase(403))
 
       {:wrong_filename, filename} ->
         redirect(conn, external: MediaProxy.build_url(sig64, url64, filename))
     end
   end
 
-  def preview(conn, %{"sig" => sig64, "url" => url64}) do
+  def preview(%Conn{} = conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.preview_enabled?()},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64) do
       handle_preview(conn, url)
     else
       {:enabled, false} ->
-        send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
+        send_resp(conn, 404, Conn.Status.reason_phrase(404))
 
       {:error, :invalid_signature} ->
-        send_resp(conn, 403, Plug.Conn.Status.reason_phrase(403))
+        send_resp(conn, 403, Conn.Status.reason_phrase(403))
 
       {:wrong_filename, filename} ->
         redirect(conn, external: MediaProxy.build_preview_url(sig64, url64, filename))
@@ -94,10 +95,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
   end
 
-  defp handle_png_preview(%{params: params} = conn, media_proxy_url) do
+  defp handle_png_preview(conn, media_proxy_url) do
     quality = Config.get!([:media_preview_proxy, :image_quality])
 
-    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
+    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(),
          {:ok, thumbnail_binary} <-
            MediaHelper.image_resize(
              media_proxy_url,
@@ -117,10 +118,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  defp handle_jpeg_preview(%{params: params} = conn, media_proxy_url) do
+  defp handle_jpeg_preview(conn, media_proxy_url) do
     quality = Config.get!([:media_preview_proxy, :image_quality])
 
-    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
+    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(),
          {:ok, thumbnail_binary} <-
            MediaHelper.image_resize(
              media_proxy_url,
@@ -157,22 +158,11 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     |> put_resp_header("cache-control", ReverseProxy.default_cache_control_header())
   end
 
-  defp thumbnail_max_dimensions(params) do
+  defp thumbnail_max_dimensions() do
     config = Config.get([:media_preview_proxy], [])
 
-    thumbnail_max_width =
-      if w = params["thumbnail_max_width"] do
-        String.to_integer(w)
-      else
-        Keyword.fetch!(config, :thumbnail_max_width)
-      end
-
-    thumbnail_max_height =
-      if h = params["thumbnail_max_height"] do
-        String.to_integer(h)
-      else
-        Keyword.fetch!(config, :thumbnail_max_height)
-      end
+    thumbnail_max_width = Keyword.fetch!(config, :thumbnail_max_width)
+    thumbnail_max_height = Keyword.fetch!(config, :thumbnail_max_height)
 
     {thumbnail_max_width, thumbnail_max_height}
   end
