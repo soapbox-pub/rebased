@@ -158,7 +158,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     |> put_resp_header("cache-control", ReverseProxy.default_cache_control_header())
   end
 
-  defp thumbnail_max_dimensions() do
+  defp thumbnail_max_dimensions do
     config = Config.get([:media_preview_proxy], [])
 
     thumbnail_max_width = Keyword.fetch!(config, :thumbnail_max_width)
