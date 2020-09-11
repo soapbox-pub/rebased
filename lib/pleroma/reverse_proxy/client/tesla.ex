@@ -28,7 +28,7 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
              url,
              body,
              headers,
-             Keyword.put(opts, :adapter, opts)
+             opts
            ) do
       if is_map(response.body) and method != :head do
         {:ok, response.status, response.headers, response.body}

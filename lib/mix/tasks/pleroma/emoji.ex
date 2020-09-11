@@ -183,7 +183,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     IO.puts("Downloading the pack and generating SHA256")
 
-    binary_archive = Tesla.get!(client(), src).body
+    {:ok, %{body: binary_archive}} = Pleroma.HTTP.get(src)
     archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
     IO.puts("SHA256 is #{archive_sha}")
@@ -252,7 +252,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   defp fetch("http" <> _ = from) do
-    with {:ok, %{body: body}} <- Tesla.get(client(), from) do
+    with {:ok, %{body: body}} <- Pleroma.HTTP.get(from) do
       {:ok, body}
     end
   end
@@ -269,14 +269,6 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         m: :manifest
       ]
     )
-  end
-
-  defp client do
-    middleware = [
-      {Tesla.Middleware.FollowRedirects, [max_redirects: 3]}
-    ]
-
-    Tesla.client(middleware)
   end
 
   defp default_manifest, do: Pleroma.Config.get!([:emoji, :default_manifest])

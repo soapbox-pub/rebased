@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   require Pleroma.Constants
 
   alias Pleroma.Activity
-  alias Pleroma.ActivityExpiration
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -245,8 +244,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     expires_at =
       with true <- client_posted_this_activity,
-           %ActivityExpiration{scheduled_at: scheduled_at} <-
-             ActivityExpiration.get_by_activity_id(activity.id) do
+           %Oban.Job{scheduled_at: scheduled_at} <-
+             Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id) do
         scheduled_at
       else
         _ -> nil

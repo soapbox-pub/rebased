@@ -16,7 +16,7 @@ defmodule Pleroma.Plugs.OAuthPlugTest do
 
   setup %{conn: conn} do
     user = insert(:user)
-    {:ok, %{token: token}} = Pleroma.Web.OAuth.Token.create_token(insert(:oauth_app), user)
+    {:ok, %{token: token}} = Pleroma.Web.OAuth.Token.create(insert(:oauth_app), user)
     %{user: user, token: token, conn: conn}
   end
 

@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Constants
   alias Pleroma.Conversation
@@ -102,7 +101,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              local: local,
              recipients: recipients,
              actor: object["actor"]
-           }) do
+           }),
+         # TODO: add tests for expired activities, when Note type will be supported in new pipeline
+         {:ok, _} <- maybe_create_activity_expiration(activity) do
       {:ok, activity, meta}
     end
   end
@@ -111,23 +112,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
-         true <- bypass_actor_check || check_actor_is_active(map["actor"]),
-         {_, true} <- {:remote_limit_error, check_remote_limit(map)},
+         {_, true} <- {:actor_check, bypass_actor_check || check_actor_is_active(map["actor"])},
+         {_, true} <- {:remote_limit_pass, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
          {:containment, :ok} <- {:containment, Containment.contain_child(map)},
-         {:ok, map, object} <- insert_full_object(map) do
-      {:ok, activity} =
-        %Activity{
-          data: map,
-          local: local,
-          actor: map["actor"],
-          recipients: recipients
-        }
-        |> Repo.insert()
-        |> maybe_create_activity_expiration()
-
+         {:ok, map, object} <- insert_full_object(map),
+         {:ok, activity} <- insert_activity_with_expiration(map, local, recipients) do
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
 
@@ -137,6 +129,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       %Activity{} = activity ->
         {:ok, activity}
+
+      {:actor_check, _} ->
+        {:error, false}
+
+      {:containment, _} = error ->
+        error
+
+      {:error, _} = error ->
+        error
 
       {:fake, true, map, recipients} ->
         activity = %Activity{
@@ -150,8 +151,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
         {:ok, activity}
 
-      error ->
-        {:error, error}
+      {:remote_limit_pass, _} ->
+        {:error, :remote_limit}
+
+      {:reject, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp insert_activity_with_expiration(data, local, recipients) do
+    struct = %Activity{
+      data: data,
+      local: local,
+      actor: data["actor"],
+      recipients: recipients
+    }
+
+    with {:ok, activity} <- Repo.insert(struct) do
+      maybe_create_activity_expiration(activity)
     end
   end
 
@@ -164,13 +181,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     stream_out_participations(participations)
   end
 
-  defp maybe_create_activity_expiration({:ok, %{data: %{"expires_at" => expires_at}} = activity}) do
-    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
+  defp maybe_create_activity_expiration(
+         %{data: %{"expires_at" => %DateTime{} = expires_at}} = activity
+       ) do
+    with {:ok, _job} <-
+           Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+             activity_id: activity.id,
+             expires_at: expires_at
+           }) do
       {:ok, activity}
     end
   end
 
-  defp maybe_create_activity_expiration(result), do: result
+  defp maybe_create_activity_expiration(activity), do: {:ok, activity}
 
   defp create_or_bump_conversation(activity, actor) do
     with {:ok, conversation} <- Conversation.create_or_bump_for(activity),
