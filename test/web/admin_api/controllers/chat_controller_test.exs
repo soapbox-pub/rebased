@@ -149,7 +149,11 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       %{conn: conn, chat: chat, cm_ref: cm_ref}
     end
 
-    test "DELETE /api/pleroma/admin/chats/:id/messages/:message_id", %{conn: conn, chat: chat, cm_ref: cm_ref} do
+    test "DELETE /api/pleroma/admin/chats/:id/messages/:message_id", %{
+      conn: conn,
+      chat: chat,
+      cm_ref: cm_ref
+    } do
       conn
       |> put_req_header("content-type", "application/json")
       |> delete("/api/pleroma/admin/chats/#{chat.id}/messages/#{cm_ref.id}")
@@ -184,7 +188,11 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       %{conn: build_conn(), chat: chat, cm_ref: cm_ref}
     end
 
-    test "DELETE /api/pleroma/admin/chats/:id/messages/:message_id", %{conn: conn, chat: chat, cm_ref: cm_ref} do
+    test "DELETE /api/pleroma/admin/chats/:id/messages/:message_id", %{
+      conn: conn,
+      chat: chat,
+      cm_ref: cm_ref
+    } do
       conn
       |> put_req_header("content-type", "application/json")
       |> delete("/api/pleroma/admin/chats/#{chat.id}/messages/#{cm_ref.id}")
@@ -205,5 +213,4 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       |> json_response(403)
     end
   end
-
 end
