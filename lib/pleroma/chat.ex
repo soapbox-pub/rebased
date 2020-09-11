@@ -76,9 +76,7 @@ defmodule Pleroma.Chat do
   def for_user_query(user_id) do
     from(c in Chat,
       where: c.user_id == ^user_id,
-      order_by: [desc: c.updated_at],
-      inner_join: u in User,
-      on: u.ap_id == c.recipient
+      order_by: [desc: c.updated_at]
     )
   end
 end

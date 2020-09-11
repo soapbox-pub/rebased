@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
@@ -381,9 +380,9 @@ defmodule Pleroma.Web.CommonAPI do
   def check_expiry_date({:ok, nil} = res), do: res
 
   def check_expiry_date({:ok, in_seconds}) do
-    expiry = NaiveDateTime.utc_now() |> NaiveDateTime.add(in_seconds)
+    expiry = DateTime.add(DateTime.utc_now(), in_seconds)
 
-    if ActivityExpiration.expires_late_enough?(expiry) do
+    if Pleroma.Workers.PurgeExpiredActivity.expires_late_enough?(expiry) do
       {:ok, expiry}
     else
       {:error, "Expiry date is too soon"}
@@ -452,7 +451,8 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def add_mute(user, activity) do
-    with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]) do
+    with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),
+         _ <- Pleroma.Notification.mark_context_as_read(user, activity.data["context"]) do
       {:ok, activity}
     else
       {:error, _} -> {:error, dgettext("errors", "conversation is already muted")}

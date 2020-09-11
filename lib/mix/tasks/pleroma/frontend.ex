@@ -69,7 +69,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
     fe_label = "#{frontend} (#{ref})"
 
-    tmp_dir = Path.join(dest, "tmp")
+    tmp_dir = Path.join([instance_static_dir, "frontends", "tmp"])
 
     with {_, :ok} <-
            {:download_or_unzip, download_or_unzip(frontend_info, tmp_dir, options[:file])},
@@ -124,9 +124,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
     url = String.replace(frontend_info["build_url"], "${ref}", frontend_info["ref"])
 
     with {:ok, %{status: 200, body: zip_body}} <-
-           Pleroma.HTTP.get(url, [],
-             adapter: [pool: :media, timeout: 120_000, recv_timeout: 120_000]
-           ) do
+           Pleroma.HTTP.get(url, [], pool: :media, recv_timeout: 120_000) do
       unzip(zip_body, dest)
     else
       e -> {:error, e}
@@ -135,6 +133,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
   defp install_frontend(frontend_info, source, dest) do
     from = frontend_info["build_dir"] || "dist"
+    File.rm_rf!(dest)
     File.mkdir_p!(dest)
     File.cp_r!(Path.join([source, from]), dest)
     :ok

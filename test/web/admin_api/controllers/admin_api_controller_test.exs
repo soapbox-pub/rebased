@@ -203,7 +203,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         assert user.note_count == 0
         assert user.follower_count == 0
         assert user.following_count == 0
-        assert user.bio == nil
+        assert user.bio == ""
         assert user.name == nil
 
         assert called(Pleroma.Web.Federator.publish(:_))

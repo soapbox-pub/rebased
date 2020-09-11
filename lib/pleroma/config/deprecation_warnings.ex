@@ -8,7 +8,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
   require Logger
   alias Pleroma.Config
 
-  @type config_namespace() :: [atom()]
+  @type config_namespace() :: atom() | [atom()]
   @type config_map() :: {config_namespace(), config_namespace(), String.t()}
 
   @mrf_config_map [
@@ -56,6 +56,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
     check_old_mrf_config()
     check_media_proxy_whitelist_config()
     check_welcome_message_config()
+    check_gun_pool_options()
+    check_activity_expiration_config()
   end
 
   def check_welcome_message_config do
@@ -114,5 +116,63 @@ defmodule Pleroma.Config.DeprecationWarnings do
       Your config is using old format (only domain) for MediaProxy whitelist option. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
       """)
     end
+  end
+
+  def check_gun_pool_options do
+    pool_config = Config.get(:connections_pool)
+
+    if timeout = pool_config[:await_up_timeout] do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using old setting name `await_up_timeout` instead of `connect_timeout`. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+      """)
+
+      Config.put(:connections_pool, Keyword.put_new(pool_config, :connect_timeout, timeout))
+    end
+
+    pools_configs = Config.get(:pools)
+
+    warning_preface = """
+    !!!DEPRECATION WARNING!!!
+    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+    """
+
+    updated_config =
+      Enum.reduce(pools_configs, [], fn {pool_name, config}, acc ->
+        if timeout = config[:timeout] do
+          Keyword.put(acc, pool_name, Keyword.put_new(config, :recv_timeout, timeout))
+        else
+          acc
+        end
+      end)
+
+    if updated_config != [] do
+      pool_warnings =
+        updated_config
+        |> Keyword.keys()
+        |> Enum.map(fn pool_name ->
+          "\n* `:timeout` options in #{pool_name} pool is now `:recv_timeout`"
+        end)
+
+      Logger.warn(Enum.join([warning_preface | pool_warnings]))
+
+      Config.put(:pools, updated_config)
+    end
+  end
+
+  @spec check_activity_expiration_config() :: :ok | nil
+  def check_activity_expiration_config do
+    warning_preface = """
+    !!!DEPRECATION WARNING!!!
+      Your config is using old namespace for activity expiration configuration. Setting should work for now, but you are advised to change to new namespace to prevent possible issues later:
+    """
+
+    move_namespace_and_warn(
+      [
+        {Pleroma.ActivityExpiration, Pleroma.Workers.PurgeExpiredActivity,
+         "\n* `config :pleroma, Pleroma.ActivityExpiration` is now `config :pleroma, Pleroma.Workers.PurgeExpiredActivity`"}
+      ],
+      warning_preface
+    )
   end
 end

@@ -83,7 +83,7 @@ defmodule Pleroma.User do
   ]
 
   schema "users" do
-    field(:bio, :string)
+    field(:bio, :string, default: "")
     field(:raw_bio, :string)
     field(:email, :string)
     field(:name, :string)
@@ -1587,7 +1587,7 @@ defmodule Pleroma.User do
     # "Right to be forgotten"
     # https://gdpr.eu/right-to-be-forgotten/
     change(user, %{
-      bio: nil,
+      bio: "",
       raw_bio: nil,
       email: nil,
       name: nil,
@@ -2315,6 +2315,11 @@ defmodule Pleroma.User do
       max_pinned_statuses = Config.get([:instance, :max_pinned_statuses], 0)
       params = %{pinned_activities: user.pinned_activities ++ [id]}
 
+      # if pinned activity was scheduled for deletion, we remove job
+      if expiration = Pleroma.Workers.PurgeExpiredActivity.get_expiration(id) do
+        Oban.cancel_job(expiration.id)
+      end
+
       user
       |> cast(params, [:pinned_activities])
       |> validate_length(:pinned_activities,
@@ -2327,8 +2332,18 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def remove_pinnned_activity(user, %Pleroma.Activity{id: id}) do
+  def remove_pinnned_activity(user, %Pleroma.Activity{id: id, data: data}) do
     params = %{pinned_activities: List.delete(user.pinned_activities, id)}
+
+    # if pinned activity was scheduled for deletion, we reschedule it for deletion
+    if data["expires_at"] do
+      {:ok, expires_at, _} = DateTime.from_iso8601(data["expires_at"])
+
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+        activity_id: id,
+        expires_at: expires_at
+      })
+    end
 
     user
     |> cast(params, [:pinned_activities])

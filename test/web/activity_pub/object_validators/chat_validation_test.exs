@@ -69,6 +69,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 
       assert Map.put(valid_chat_message, "attachment", nil) == object
+      assert match?(%{"firefox" => _}, object["emoji"])
     end
 
     test "validates for a basic object with an attachment", %{

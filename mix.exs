@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.1.1"),
+      version: version("2.1.50"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -134,7 +134,9 @@ defmodule Pleroma.Mixfile do
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
       {:tesla,
-       github: "teamon/tesla", ref: "af3707078b10793f6a534938e56b963aff82fe3c", override: true},
+       git: "https://github.com/teamon/tesla/",
+       ref: "9f7261ca49f9f901ceb73b60219ad6f8a9f6aa30",
+       override: true},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun,
@@ -178,7 +180,7 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:concurrent_limiter,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter.git",
-       ref: "55e92f84b4ed531bd487952a71040a9c69dc2807"},
+       ref: "d81be41024569330f296fc472e24198d7499ba78"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},

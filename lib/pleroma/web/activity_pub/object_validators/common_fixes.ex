@@ -11,8 +11,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
       Utils.create_context(data["context"] || data["conversation"])
 
     data
-    |> Map.put_new("context", context)
-    |> Map.put_new("context_id", context_id)
+    |> Map.put("context", context)
+    |> Map.put("context_id", context_id)
   end
 
   def fix_attribution(data) do

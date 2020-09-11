@@ -530,6 +530,7 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
+    token_expiration: 5,
     federator_incoming: 50,
     federator_outgoing: 50,
     web_push: 50,
@@ -543,9 +544,6 @@ config :pleroma, Oban,
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
-    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-    {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
-    {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
@@ -656,7 +654,7 @@ config :pleroma, :rate_limit,
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
 
-config :pleroma, Pleroma.ActivityExpiration, enabled: true
+config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
 
@@ -670,7 +668,7 @@ config :pleroma, :static_fe, enabled: false
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
 #
-# config :pleroma, :frontends, 
+# config :pleroma, :frontends,
 # primary: %{"name" => "pleroma-fe", "ref" => "develop"},
 # admin: %{"name" => "admin-fe", "ref" => "stable"},
 # available: %{...}
@@ -734,28 +732,28 @@ config :pleroma, :connections_pool,
   max_connections: 250,
   max_idle_time: 30_000,
   retry: 0,
-  await_up_timeout: 5_000
+  connect_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
     max_waiting: 10,
-    timeout: 10_000
+    recv_timeout: 10_000
   ],
   media: [
     size: 50,
     max_waiting: 10,
-    timeout: 10_000
+    recv_timeout: 10_000
   ],
   upload: [
     size: 25,
     max_waiting: 5,
-    timeout: 15_000
+    recv_timeout: 15_000
   ],
   default: [
     size: 10,
     max_waiting: 2,
-    timeout: 5_000
+    recv_timeout: 5_000
   ]
 
 config :pleroma, :hackney_pools,
