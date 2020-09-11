@@ -1395,7 +1395,7 @@ Loads json generated from `config/descriptions.exs`.
 
 ### List the messages in a chat
 
-- Params: None
+- Params: `max_id`, `min_id`
 
 - Response:
 

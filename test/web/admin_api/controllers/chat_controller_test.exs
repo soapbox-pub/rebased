@@ -15,7 +15,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
 
-  setup do
+  defp admin_setup do
     admin = insert(:user, is_admin: true)
     token = insert(:oauth_admin_token, user: admin)
 
@@ -28,6 +28,8 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "DELETE /api/pleroma/admin/chats/:id/messages/:message_id" do
+    setup do: admin_setup()
+
     test "it deletes a message from the chat", %{conn: conn, admin: admin} do
       user = insert(:user)
       recipient = insert(:user)
@@ -59,6 +61,8 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "GET /api/pleroma/admin/chats/:id/messages" do
+    setup do: admin_setup()
+
     test "it paginates", %{conn: conn} do
       user = insert(:user)
       recipient = insert(:user)
@@ -111,6 +115,8 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "GET /api/pleroma/admin/chats/:id" do
+    setup do: admin_setup()
+
     test "it returns a chat", %{conn: conn} do
       user = insert(:user)
       other_user = insert(:user)
@@ -128,4 +134,76 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       refute result["account"]
     end
   end
+
+  describe "unauthorized chat moderation" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, message} = CommonAPI.post_chat_message(user, recipient, "Yo")
+      object = Object.normalize(message, false)
+      chat = Chat.get(user.id, recipient.ap_id)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
+
+      %{conn: conn} = oauth_access(["read:chats", "write:chats"])
+      %{conn: conn, chat: chat, cm_ref: cm_ref}
+    end
+
+    test "DELETE /api/pleroma/admin/chats/:id/messages/:message_id", %{conn: conn, chat: chat, cm_ref: cm_ref} do
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> delete("/api/pleroma/admin/chats/#{chat.id}/messages/#{cm_ref.id}")
+      |> json_response(403)
+
+      assert MessageReference.get_by_id(cm_ref.id) == cm_ref
+    end
+
+    test "GET /api/pleroma/admin/chats/:id/messages", %{conn: conn, chat: chat} do
+      conn
+      |> get("/api/pleroma/admin/chats/#{chat.id}/messages")
+      |> json_response(403)
+    end
+
+    test "GET /api/pleroma/admin/chats/:id", %{conn: conn, chat: chat} do
+      conn
+      |> get("/api/pleroma/admin/chats/#{chat.id}")
+      |> json_response(403)
+    end
+  end
+
+  describe "unauthenticated chat moderation" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, message} = CommonAPI.post_chat_message(user, recipient, "Yo")
+      object = Object.normalize(message, false)
+      chat = Chat.get(user.id, recipient.ap_id)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
+
+      %{conn: build_conn(), chat: chat, cm_ref: cm_ref}
+    end
+
+    test "DELETE /api/pleroma/admin/chats/:id/messages/:message_id", %{conn: conn, chat: chat, cm_ref: cm_ref} do
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> delete("/api/pleroma/admin/chats/#{chat.id}/messages/#{cm_ref.id}")
+      |> json_response(403)
+
+      assert MessageReference.get_by_id(cm_ref.id) == cm_ref
+    end
+
+    test "GET /api/pleroma/admin/chats/:id/messages", %{conn: conn, chat: chat} do
+      conn
+      |> get("/api/pleroma/admin/chats/#{chat.id}/messages")
+      |> json_response(403)
+    end
+
+    test "GET /api/pleroma/admin/chats/:id", %{conn: conn, chat: chat} do
+      conn
+      |> get("/api/pleroma/admin/chats/#{chat.id}")
+      |> json_response(403)
+    end
+  end
+
 end

@@ -1528,6 +1528,35 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthorized" do
+    setup do
+      user = insert(:user)
+      insert(:chat, user: user)
+      %{conn: conn} = oauth_access(["read:chats"])
+      %{conn: conn, user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthenticated" do
+    setup do
+      user = insert(:user)
+      insert(:chat, user: user)
+      %{conn: build_conn(), user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
+    end
+  end
+
   describe "GET /api/pleroma/admin/moderation_log" do
     setup do
       moderator = insert(:user, is_moderator: true)
