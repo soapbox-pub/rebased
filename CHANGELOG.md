@@ -27,6 +27,12 @@ switched to a new configuration mechanism, however it was not officially removed
 - Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance
 - Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user
 
+## Unreleased-patch
+
+### Security
+
+- Fix most MRF rules either crashing or not being applied to objects passed into the Common Pipeline (ChatMessage, Question, Answer, Audio, Event)
+
 ## [2.1.1] - 2020-09-08
 
 ### Security

@@ -126,6 +126,23 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert result["attachment"]
     end
+
+    test "gets MRF reason when rejected", %{conn: conn, user: user} do
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "GNO/Linux"})
+        |> json_response_and_validate_schema(200)
+
+      assert result == %{}
+    end
   end
 
   describe "DELETE /api/v1/pleroma/chats/:id/messages/:message_id" do
