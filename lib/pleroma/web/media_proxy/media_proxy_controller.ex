@@ -11,6 +11,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
 
+  @min_content_length_for_preview 100 * 1024
+
   def remote(conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.enabled?()},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
@@ -54,8 +56,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
            Pleroma.HTTP.request("head", media_proxy_url, [], [], pool: :media) do
       content_type = Tesla.get_header(head_response, "content-type")
-      handle_preview(content_type, conn, media_proxy_url)
+      content_length = Tesla.get_header(head_response, "content-length")
+      content_length = content_length && String.to_integer(content_length)
+
+      handle_preview(content_type, content_length, conn, media_proxy_url)
     else
+      # If HEAD failed, redirecting to media proxy URI doesn't make much sense; returning an error
       {_, %{status: status}} ->
         send_resp(conn, :failed_dependency, "Can't fetch HTTP headers (HTTP #{status}).")
 
@@ -69,29 +75,36 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   defp handle_preview(
          "image/" <> _ = _content_type,
+         _content_length,
          %{params: %{"output_format" => "jpeg"}} = conn,
          media_proxy_url
        ) do
     handle_jpeg_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview("image/gif" = _content_type, conn, media_proxy_url) do
+  defp handle_preview("image/gif" = _content_type, _content_length, conn, media_proxy_url) do
     redirect(conn, external: media_proxy_url)
   end
 
-  defp handle_preview("image/png" <> _ = _content_type, conn, media_proxy_url) do
+  defp handle_preview("image/" <> _ = _content_type, content_length, conn, media_proxy_url)
+       when is_integer(content_length) and content_length > 0 and
+              content_length < @min_content_length_for_preview do
+    redirect(conn, external: media_proxy_url)
+  end
+
+  defp handle_preview("image/png" <> _ = _content_type, _content_length, conn, media_proxy_url) do
     handle_png_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview("image/" <> _ = _content_type, conn, media_proxy_url) do
+  defp handle_preview("image/" <> _ = _content_type, _content_length, conn, media_proxy_url) do
     handle_jpeg_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview("video/" <> _ = _content_type, conn, media_proxy_url) do
+  defp handle_preview("video/" <> _ = _content_type, _content_length, conn, media_proxy_url) do
     handle_video_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview(_unsupported_content_type, conn, media_proxy_url) do
+  defp handle_preview(_unsupported_content_type, _content_length, conn, media_proxy_url) do
     fallback_on_preview_error(conn, media_proxy_url)
   end
 
