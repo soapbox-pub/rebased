@@ -91,8 +91,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     handle_video_preview(conn, media_proxy_url)
   end
 
-  defp handle_preview(content_type, conn, _media_proxy_url) do
-    send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
+  defp handle_preview(_unsupported_content_type, conn, media_proxy_url) do
+    fallback_on_preview_error(conn, media_proxy_url)
   end
 
   defp handle_png_preview(conn, media_proxy_url) do
@@ -114,7 +114,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
-        send_resp(conn, :failed_dependency, "Can't handle preview.")
+        fallback_on_preview_error(conn, media_proxy_url)
     end
   end
 
@@ -132,7 +132,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
-        send_resp(conn, :failed_dependency, "Can't handle preview.")
+        fallback_on_preview_error(conn, media_proxy_url)
     end
   end
 
@@ -144,8 +144,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
-        send_resp(conn, :failed_dependency, "Can't handle preview.")
+        fallback_on_preview_error(conn, media_proxy_url)
     end
+  end
+
+  defp fallback_on_preview_error(conn, media_proxy_url) do
+    redirect(conn, external: media_proxy_url)
   end
 
   defp put_preview_response_headers(
