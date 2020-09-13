@@ -84,7 +84,7 @@ defmodule Pleroma.Emoji.Pack do
     end)
   end
 
-  @spec add_file(String.t(), String.t(), Path.t(), Plug.Upload.t()) ::
+  @spec add_file(t(), String.t(), Path.t(), Plug.Upload.t()) ::
           {:ok, t()}
           | {:error, File.posix() | atom()}
   def add_file(%Pack{} = pack, _, _, %Plug.Upload{content_type: "application/zip"} = file) do
