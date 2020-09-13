@@ -1125,31 +1125,31 @@ defmodule Pleroma.User do
     User.Query.build(%{followers: user, deactivated: false})
   end
 
-  def get_followers_query(user, page) do
+  def get_followers_query(%User{} = user, page) do
     user
     |> get_followers_query(nil)
     |> User.Query.paginate(page, 20)
   end
 
   @spec get_followers_query(User.t()) :: Ecto.Query.t()
-  def get_followers_query(user), do: get_followers_query(user, nil)
+  def get_followers_query(%User{} = user), do: get_followers_query(user, nil)
 
   @spec get_followers(User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
-  def get_followers(user, page \\ nil) do
+  def get_followers(%User{} = user, page \\ nil) do
     user
     |> get_followers_query(page)
     |> Repo.all()
   end
 
   @spec get_external_followers(User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
-  def get_external_followers(user, page \\ nil) do
+  def get_external_followers(%User{} = user, page \\ nil) do
     user
     |> get_followers_query(page)
     |> User.Query.build(%{external: true})
     |> Repo.all()
   end
 
-  def get_followers_ids(user, page \\ nil) do
+  def get_followers_ids(%User{} = user, page \\ nil) do
     user
     |> get_followers_query(page)
     |> select([u], u.id)
@@ -1161,29 +1161,29 @@ defmodule Pleroma.User do
     User.Query.build(%{friends: user, deactivated: false})
   end
 
-  def get_friends_query(user, page) do
+  def get_friends_query(%User{} = user, page) do
     user
     |> get_friends_query(nil)
     |> User.Query.paginate(page, 20)
   end
 
   @spec get_friends_query(User.t()) :: Ecto.Query.t()
-  def get_friends_query(user), do: get_friends_query(user, nil)
+  def get_friends_query(%User{} = user), do: get_friends_query(user, nil)
 
-  def get_friends(user, page \\ nil) do
+  def get_friends(%User{} = user, page \\ nil) do
     user
     |> get_friends_query(page)
     |> Repo.all()
   end
 
-  def get_friends_ap_ids(user) do
+  def get_friends_ap_ids(%User{} = user) do
     user
     |> get_friends_query(nil)
     |> select([u], u.ap_id)
     |> Repo.all()
   end
 
-  def get_friends_ids(user, page \\ nil) do
+  def get_friends_ids(%User{} = user, page \\ nil) do
     user
     |> get_friends_query(page)
     |> select([u], u.id)
@@ -2335,6 +2335,11 @@ defmodule Pleroma.User do
       max_pinned_statuses = Config.get([:instance, :max_pinned_statuses], 0)
       params = %{pinned_activities: user.pinned_activities ++ [id]}
 
+      # if pinned activity was scheduled for deletion, we remove job
+      if expiration = Pleroma.Workers.PurgeExpiredActivity.get_expiration(id) do
+        Oban.cancel_job(expiration.id)
+      end
+
       user
       |> cast(params, [:pinned_activities])
       |> validate_length(:pinned_activities,
@@ -2347,8 +2352,18 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def remove_pinnned_activity(user, %Pleroma.Activity{id: id}) do
+  def remove_pinnned_activity(user, %Pleroma.Activity{id: id, data: data}) do
     params = %{pinned_activities: List.delete(user.pinned_activities, id)}
+
+    # if pinned activity was scheduled for deletion, we reschedule it for deletion
+    if data["expires_at"] do
+      {:ok, expires_at, _} = DateTime.from_iso8601(data["expires_at"])
+
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+        activity_id: id,
+        expires_at: expires_at
+      })
+    end
 
     user
     |> cast(params, [:pinned_activities])

@@ -50,7 +50,7 @@ defmodule Pleroma.Web.OAuth.Token do
          true <- auth.app_id == app.id do
       user = if auth.user_id, do: User.get_cached_by_id(auth.user_id), else: %User{}
 
-      create_token(
+      create(
         app,
         user,
         %{scopes: auth.scopes}
@@ -83,8 +83,22 @@ defmodule Pleroma.Web.OAuth.Token do
     |> validate_required([:valid_until])
   end
 
-  @spec create_token(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Changeset.t()}
-  def create_token(%App{} = app, %User{} = user, attrs \\ %{}) do
+  @spec create(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Changeset.t()}
+  def create(%App{} = app, %User{} = user, attrs \\ %{}) do
+    with {:ok, token} <- do_create(app, user, attrs) do
+      if Pleroma.Config.get([:oauth2, :clean_expired_tokens]) do
+        Pleroma.Workers.PurgeExpiredToken.enqueue(%{
+          token_id: token.id,
+          valid_until: DateTime.from_naive!(token.valid_until, "Etc/UTC"),
+          mod: __MODULE__
+        })
+      end
+
+      {:ok, token}
+    end
+  end
+
+  defp do_create(app, user, attrs) do
     %__MODULE__{user_id: user.id, app_id: app.id}
     |> cast(%{scopes: attrs[:scopes] || app.scopes}, [:scopes])
     |> validate_required([:scopes, :app_id])
@@ -102,11 +116,6 @@ defmodule Pleroma.Web.OAuth.Token do
   def delete_user_token(%User{id: user_id}, token_id) do
     Query.get_by_user(user_id)
     |> Query.get_by_id(token_id)
-    |> Repo.delete_all()
-  end
-
-  def delete_expired_tokens do
-    Query.get_expired_tokens()
     |> Repo.delete_all()
   end
 

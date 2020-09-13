@@ -379,8 +379,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     filters
     |> String.split(",")
     |> Enum.filter(&Enum.member?(@filters, &1))
-    |> Enum.map(&String.to_atom/1)
-    |> Map.new(&{&1, true})
+    |> Map.new(&{String.to_existing_atom(&1), true})
   end
 
   def right_add_multiple(%{assigns: %{user: admin}} = conn, %{

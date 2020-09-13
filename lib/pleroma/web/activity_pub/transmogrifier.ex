@@ -168,7 +168,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to} = object, options)
       when not is_nil(in_reply_to) do
     in_reply_to_id = prepare_in_reply_to(in_reply_to)
-    object = Map.put(object, "inReplyToAtomUri", in_reply_to_id)
     depth = (options[:depth] || 0) + 1
 
     if Federator.allowed_thread_distance?(depth) do
@@ -176,9 +175,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            %Activity{} <- Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
         object
         |> Map.put("inReplyTo", replied_object.data["id"])
-        |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
-        |> Map.drop(["conversation"])
+        |> Map.drop(["conversation", "inReplyToAtomUri"])
       else
         e ->
           Logger.warn("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")

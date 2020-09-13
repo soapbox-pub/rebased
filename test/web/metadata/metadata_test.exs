@@ -22,4 +22,13 @@ defmodule Pleroma.Web.MetadataTest do
                "<meta content=\"noindex, noarchive\" name=\"robots\">"
     end
   end
+
+  describe "no metadata for private instances" do
+    test "for local user" do
+      clear_config([:instance, :public], false)
+      user = insert(:user, bio: "This is my secret fedi account bio")
+
+      assert "" = Pleroma.Web.Metadata.build_tags(%{user: user})
+    end
+  end
 end
