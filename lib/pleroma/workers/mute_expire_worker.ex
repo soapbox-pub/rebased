@@ -5,8 +5,6 @@
 defmodule Pleroma.Workers.MuteExpireWorker do
   use Pleroma.Workers.WorkerHelper, queue: "mute_expire"
 
-  require Logger
-
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "unmute_user", "muter_id" => muter_id, "mutee_id" => mutee_id}}) do
     muter = Pleroma.User.get_by_id(muter_id)
