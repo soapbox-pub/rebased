@@ -1262,4 +1262,21 @@ defmodule HttpRequestMock do
        inspect(headers)
      }"}
   end
+
+  # Most of the rich media mocks are missing HEAD requests, so we just return 404.
+  @rich_media_mocks [
+    "https://example.com/ogp",
+    "https://example.com/ogp-missing-data",
+    "https://example.com/twitter-card"
+  ]
+  def head(url, _query, _body, _headers) when url in @rich_media_mocks do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def head(url, query, body, headers) do
+    {:error,
+     "Mock response not implemented for HEAD #{inspect(url)}, #{query}, #{inspect(body)}, #{
+       inspect(headers)
+     }"}
+  end
 end
