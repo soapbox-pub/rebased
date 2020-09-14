@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MetadataTest do
       clear_config([:instance, :public], false)
       user = insert(:user, bio: "This is my secret fedi account bio")
 
-      assert "<meta content=\"noindex, noarchive\" name=\"robots\">" ==
+      assert ~s(<meta content="noindex, noarchive" name="robots">) ==
                Pleroma.Web.Metadata.build_tags(%{user: user})
     end
   end
