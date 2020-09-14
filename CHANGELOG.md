@@ -9,15 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
+- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 
 ### Removed
 
 - **Breaking:** `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab` (moved to a simpler implementation).
 - **Breaking:** `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` (moved to scheduled jobs).
 - **Breaking:** `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab` (moved to scheduled jobs).
-
-### Changed
-- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 
 ## [2.1.1] - 2020-09-08
 
