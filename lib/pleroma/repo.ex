@@ -49,7 +49,7 @@ defmodule Pleroma.Repo do
     end
   end
 
-  def chunk_stream(query, chunk_size) do
+  def chunk_stream(query, chunk_size, returns_as \\ :one) do
     # We don't actually need start and end funcitons of resource streaming,
     # but it seems to be the only way to not fetch records one-by-one and
     # have individual records be the elements of the stream, instead of
@@ -69,7 +69,12 @@ defmodule Pleroma.Repo do
 
             records ->
               last_id = List.last(records).id
-              {records, last_id}
+
+              if returns_as == :one do
+                {records, last_id}
+              else
+                {[records], last_id}
+              end
           end
       end,
       fn _ -> :ok end
