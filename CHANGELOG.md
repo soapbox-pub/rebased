@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` (moved to scheduled jobs).
 - **Breaking:** `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab` (moved to scheduled jobs).
 
+### Fixed
+
+- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance
+
 ## [2.1.1] - 2020-09-08
 
 ### Security
