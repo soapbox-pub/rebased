@@ -167,7 +167,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   end
 
   test "does a HEAD request to check if the body is too large" do
-    assert {:error, body_too_large} = Parser.parse("http://example.com/huge-page")
+    assert {:error, :body_too_large} = Parser.parse("http://example.com/huge-page")
   end
 
   test "does a HEAD request to check if the body is html" do
