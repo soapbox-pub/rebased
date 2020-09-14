@@ -100,7 +100,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages")
         |> json_response_and_validate_schema(400)
 
-      assert result
+      assert %{"error" => "no_content"} == result
     end
 
     test "it works with an attachment", %{conn: conn, user: user} do
@@ -139,9 +139,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         conn
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "GNO/Linux"})
-        |> json_response_and_validate_schema(200)
+        |> json_response_and_validate_schema(422)
 
-      assert result == %{}
+      assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} == result
     end
   end
 

@@ -48,6 +48,9 @@ defmodule Pleroma.Web.CommonAPI do
               local: true
             )} do
       {:ok, activity}
+    else
+      {:common_pipeline, {:reject, _} = e} -> e
+      e -> e
     end
   end
 
