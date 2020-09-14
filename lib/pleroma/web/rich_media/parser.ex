@@ -34,7 +34,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
         {:error, :body_too_large} = e ->
           e
 
-        {:error, {:content_type, _}} ->
+        {:error, {:content_type, _}} = e ->
           e
 
         # The TTL is not set for the errors above, since they are unlikely to change
