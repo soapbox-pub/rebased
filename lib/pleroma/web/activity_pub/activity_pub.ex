@@ -744,7 +744,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_replies(query, %{
-         reply_filtering_user: user,
+         reply_filtering_user: %User{} = user,
          reply_visibility: "self"
        }) do
     from(
@@ -760,7 +760,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_replies(query, %{
-         reply_filtering_user: user,
+         reply_filtering_user: %User{} = user,
          reply_visibility: "following"
        }) do
     from(
