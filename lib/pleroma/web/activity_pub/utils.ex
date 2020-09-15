@@ -97,7 +97,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     if need_splice? do
       cc_list = extract_list(params["cc"])
-      Map.put(params, "cc", [ap_id | cc_list])
+
+      params
+      |> Map.put("cc", [ap_id | cc_list])
+      |> Kernel.put_in(["object", "cc"], [ap_id | cc_list])
     else
       params
     end

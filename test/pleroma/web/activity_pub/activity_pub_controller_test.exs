@@ -649,7 +649,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it inserts an incoming activity into the database", %{conn: conn, data: data} do
       user = insert(:user)
-      data = Map.put(data, "bcc", [user.ap_id])
+
+      data =
+        data
+        |> Map.put("bcc", [user.ap_id])
+        |> Kernel.put_in(["object", "bcc"], [user.ap_id])
 
       conn =
         conn
@@ -666,8 +670,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       data =
-        Map.put(data, "to", user.ap_id)
-        |> Map.delete("cc")
+        data
+        |> Map.put("to", user.ap_id)
+        |> Map.put("cc", [])
+        |> Kernel.put_in(["object", "to"], user.ap_id)
+        |> Kernel.put_in(["object", "cc"], [])
 
       conn =
         conn
@@ -684,8 +691,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       data =
-        Map.put(data, "cc", user.ap_id)
-        |> Map.delete("to")
+        data
+        |> Map.put("to", [])
+        |> Map.put("cc", user.ap_id)
+        |> Kernel.put_in(["object", "to"], [])
+        |> Kernel.put_in(["object", "cc"], user.ap_id)
 
       conn =
         conn
@@ -703,9 +713,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       data =
-        Map.put(data, "bcc", user.ap_id)
-        |> Map.delete("to")
-        |> Map.delete("cc")
+        data
+        |> Map.put("to", [])
+        |> Map.put("cc", [])
+        |> Map.put("bcc", user.ap_id)
+        |> Kernel.put_in(["object", "to"], [])
+        |> Kernel.put_in(["object", "cc"], [])
+        |> Kernel.put_in(["object", "bcc"], user.ap_id)
 
       conn =
         conn
