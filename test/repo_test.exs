@@ -37,7 +37,9 @@ defmodule Pleroma.RepoTest do
 
     test "get one-to-many assoc from repo" do
       user = insert(:user)
-      notification = refresh_record(insert(:notification, user: user))
+
+      notification =
+        refresh_record(insert(:notification, user: user, activity: insert(:note_activity)))
 
       assert Repo.get_assoc(user, :notifications) == {:ok, [notification]}
     end
