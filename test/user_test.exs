@@ -440,6 +440,45 @@ defmodule Pleroma.UserTest do
       assert activity.actor == welcome_user.ap_id
     end
 
+    setup do:
+            clear_config(:mrf_simple,
+              media_removal: [],
+              media_nsfw: [],
+              federated_timeline_removal: [],
+              report_removal: [],
+              reject: [],
+              followers_only: [],
+              accept: [],
+              avatar_removal: [],
+              banner_removal: [],
+              reject_deletes: []
+            )
+
+    setup do:
+            clear_config(:mrf,
+              policies: [
+                Pleroma.Web.ActivityPub.MRF.SimplePolicy
+              ]
+            )
+
+    test "it sends a welcome chat message when Simple policy applied to local instance" do
+      Pleroma.Config.put([:mrf_simple, :media_nsfw], ["localhost"])
+
+      welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :chat_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :chat_message, :message], "Hello, this is a chat message")
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+
+      activity = Repo.one(Pleroma.Activity)
+      assert registered_user.ap_id in activity.recipients
+      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert activity.actor == welcome_user.ap_id
+    end
+
     test "it sends a welcome email message if it is set" do
       welcome_user = insert(:user)
       Pleroma.Config.put([:welcome, :email, :enabled], true)

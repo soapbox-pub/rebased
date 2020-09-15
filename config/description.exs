@@ -765,12 +765,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :managed_config,
-        type: :boolean,
-        description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
-      },
-      %{
         key: :static_dir,
         type: :string,
         description: "Instance static directory",
