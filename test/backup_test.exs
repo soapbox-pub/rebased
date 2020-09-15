@@ -18,6 +18,18 @@ defmodule Pleroma.BackupTest do
   setup do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Pleroma.Backup, :limit_days])
+    clear_config([Pleroma.Emails.Mailer, :enabled])
+  end
+
+  test "it requries enabled email" do
+    Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+    user = insert(:user)
+    assert {:error, "Backups require enabled email"} == Backup.create(user)
+  end
+
+  test "it requries user's email" do
+    user = insert(:user, %{email: nil})
+    assert {:error, "Email is required"} == Backup.create(user)
   end
 
   test "it creates a backup record and an Oban job" do
@@ -91,7 +103,7 @@ defmodule Pleroma.BackupTest do
     Bookmark.create(user.id, status3.id)
 
     assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
-    assert {:ok, path} = Backup.zip(backup)
+    assert {:ok, path} = Backup.export(backup)
     assert {:ok, zipfile} = :zip.zip_open(String.to_charlist(path), [:memory])
     assert {:ok, {'actor.json', json}} = :zip.zip_get('actor.json', zipfile)
 
@@ -193,7 +205,7 @@ defmodule Pleroma.BackupTest do
       Bookmark.create(user.id, status3.id)
 
       assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
-      assert {:ok, path} = Backup.zip(backup)
+      assert {:ok, path} = Backup.export(backup)
 
       [path: path, backup: backup]
     end

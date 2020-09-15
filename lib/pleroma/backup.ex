@@ -31,7 +31,9 @@ defmodule Pleroma.Backup do
   end
 
   def create(user) do
-    with :ok <- validate_limit(user),
+    with :ok <- validate_email_enabled(),
+         :ok <- validate_user_email(user),
+         :ok <- validate_limit(user),
          {:ok, backup} <- user |> new() |> Repo.insert() do
       BackupWorker.process(backup)
     end
@@ -74,6 +76,17 @@ defmodule Pleroma.Backup do
     end
   end
 
+  defp validate_email_enabled do
+    if Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
+      :ok
+    else
+      {:error, "Backups require enabled email"}
+    end
+  end
+
+  defp validate_user_email(%User{email: nil}), do: {:error, "Email is required"}
+  defp validate_user_email(%User{email: email}) when is_binary(email), do: :ok
+
   def get_last(user_id) do
     __MODULE__
     |> where(user_id: ^user_id)
@@ -100,7 +113,7 @@ defmodule Pleroma.Backup do
   def get(id), do: Repo.get(__MODULE__, id)
 
   def process(%__MODULE__{} = backup) do
-    with {:ok, zip_file} <- zip(backup),
+    with {:ok, zip_file} <- export(backup),
          {:ok, %{size: size}} <- File.stat(zip_file),
          {:ok, _upload} <- upload(backup, zip_file) do
       backup
@@ -110,7 +123,7 @@ defmodule Pleroma.Backup do
   end
 
   @files ['actor.json', 'outbox.json', 'likes.json', 'bookmarks.json']
-  def zip(%__MODULE__{} = backup) do
+  def export(%__MODULE__{} = backup) do
     backup = Repo.preload(backup, :user)
     name = String.trim_trailing(backup.file_name, ".zip")
     dir = Path.join(System.tmp_dir!(), name)

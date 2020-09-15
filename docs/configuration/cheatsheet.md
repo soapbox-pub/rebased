@@ -1085,6 +1085,9 @@ Control favicons for instances.
 
 ## Account Backup
 
+!!! note
+    Requires enabled email
+
 * `:purge_after_days` an integer, remove backup achives after N days.
 * `:limit_days` an integer, limit user to export not more often than once per N days.
 
