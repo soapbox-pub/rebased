@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -124,12 +125,14 @@ defmodule Pleroma.Object.Fetcher do
   defp prepare_activity_params(data) do
     %{
       "type" => "Create",
-      "to" => data["to"] || [],
-      "cc" => data["cc"] || [],
       # Should we seriously keep this attributedTo thing?
       "actor" => data["actor"] || data["attributedTo"],
       "object" => data
     }
+    |> Maps.put_if_present("to", data["to"])
+    |> Maps.put_if_present("cc", data["cc"])
+    |> Maps.put_if_present("bto", data["bto"])
+    |> Maps.put_if_present("bcc", data["bcc"])
   end
 
   def fetch_object_from_id!(id, options \\ []) do

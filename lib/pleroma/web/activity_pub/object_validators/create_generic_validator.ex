@@ -63,11 +63,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     %User{follower_address: follower_collection} = User.get_cached_by_ap_id(data["actor"])
 
     data
-    |> CommonFixes.cast_recipients("to", object["to"])
-    |> CommonFixes.cast_recipients("cc", object["cc"])
-    |> CommonFixes.cast_recipients("bto", object["bto"])
-    |> CommonFixes.cast_recipients("bcc", object["bcc"])
-    |> Transmogrifier.fix_explicit_addressing(follower_collection)
+    |> CommonFixes.cast_and_filter_recipients("to", follower_collection, object["to"])
+    |> CommonFixes.cast_and_filter_recipients("cc", follower_collection, object["cc"])
+    |> CommonFixes.cast_and_filter_recipients("bto", follower_collection, object["bto"])
+    |> CommonFixes.cast_and_filter_recipients("bcc", follower_collection, object["bcc"])
     |> Transmogrifier.fix_implicit_addressing(follower_collection)
   end
 
