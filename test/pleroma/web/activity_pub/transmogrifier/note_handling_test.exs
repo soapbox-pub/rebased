@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Mock
@@ -40,36 +41,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       assert "test" in Object.tags(object)
       assert Object.hashtags(object) == ["test"]
-    end
-
-    test "it cleans up incoming notices which are not really DMs" do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      to = [user.ap_id, other_user.ap_id]
-
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Jason.decode!()
-        |> Map.put("to", to)
-        |> Map.put("cc", [])
-
-      object =
-        data["object"]
-        |> Map.put("to", to)
-        |> Map.put("cc", [])
-
-      data = Map.put(data, "object", object)
-
-      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
-
-      assert data["to"] == []
-      assert data["cc"] == to
-
-      object_data = Object.normalize(activity, fetch: false).data
-
-      assert object_data["to"] == []
-      assert object_data["cc"] == to
     end
 
     test "it ignores an incoming notice if we already have it" do
@@ -321,9 +292,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       object = Map.put(data["object"], "likes", likes)
       data = Map.put(data, "object", object)
 
-      {:ok, %Activity{object: object}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(data)
 
-      refute Map.has_key?(object.data, "likes")
+      object = Object.normalize(activity)
+
+      assert object.data["likes"] == []
     end
 
     test "it strips internal reactions" do
@@ -435,10 +408,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     setup do
       replies = %{
         "type" => "Collection",
-        "items" => [
-          Pleroma.Web.ActivityPub.Utils.generate_object_id(),
-          Pleroma.Web.ActivityPub.Utils.generate_object_id()
-        ]
+        "items" => [Utils.generate_object_id(), Utils.generate_object_id()]
       }
 
       activity =
