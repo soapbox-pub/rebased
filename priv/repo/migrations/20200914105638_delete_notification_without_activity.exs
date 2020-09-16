@@ -11,7 +11,7 @@ defmodule Pleroma.Repo.Migrations.DeleteNotificationWithoutActivity do
       select: %{id: type(q.id, :integer)},
       where: is_nil(c.id)
     )
-    |> Repo.chunk_stream(1_000, :bacthes)
+    |> Repo.chunk_stream(1_000, :batches)
     |> Stream.each(fn records ->
       notification_ids = Enum.map(records, fn %{id: id} -> id end)
 
