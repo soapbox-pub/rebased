@@ -154,8 +154,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:remote_limit_pass, _} ->
         {:error, :remote_limit}
 
-      {:reject, reason} ->
-        {:error, reason}
+      {:reject, _} = e ->
+        {:error, e}
     end
   end
 
