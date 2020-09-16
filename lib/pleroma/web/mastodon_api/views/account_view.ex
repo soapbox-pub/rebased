@@ -182,9 +182,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     display_name = user.name || user.nickname
 
     avatar = User.avatar_url(user) |> MediaProxy.url()
-    avatar_static = User.avatar_url(user) |> MediaProxy.preview_url(output_format: "jpeg")
+    avatar_static = User.avatar_url(user) |> MediaProxy.preview_url(static: true)
     header = User.banner_url(user) |> MediaProxy.url()
-    header_static = User.banner_url(user) |> MediaProxy.preview_url(output_format: "jpeg")
+    header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
 
     following_count =
       if !user.hide_follows_count or !user.hide_follows or opts[:for] == user do

@@ -157,7 +157,7 @@ defmodule Pleroma.Web.MediaProxy do
   def build_preview_url(sig_base64, url_base64, filename \\ nil, preview_params \\ []) do
     uri = proxy_url("proxy/preview", sig_base64, url_base64, filename)
 
-    UriHelper.append_uri_params(uri, preview_params)
+    UriHelper.modify_uri_params(uri, preview_params)
   end
 
   def verify_request_path_and_url(

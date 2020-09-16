@@ -9,8 +9,6 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   alias Pleroma.HTTP
 
-  @tmp_base "/tmp/pleroma-media_preview-pipe"
-
   def image_resize(url, options) do
     with executable when is_binary(executable) <- System.find_executable("convert"),
          {:ok, args} <- prepare_image_resize_args(options),
@@ -103,7 +101,7 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   defp mkfifo do
-    path = "#{@tmp_base}#{to_charlist(:erlang.phash2(self()))}"
+    path = Path.join(System.tmp_dir!(), "pleroma-media-preview-pipe-#{Ecto.UUID.generate()}")
 
     case System.cmd("mkfifo", [path]) do
       {_, 0} ->
