@@ -275,9 +275,9 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
-  def account_status(%User{approval_pending: true}), do: :approval_pending
+  def account_status(%User{local: true, approval_pending: true}), do: :approval_pending
 
-  def account_status(%User{confirmation_pending: true}) do
+  def account_status(%User{local: true, confirmation_pending: true}) do
     if Config.get([:instance, :account_activation_required]) do
       :confirmation_pending
     else
