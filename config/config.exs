@@ -820,7 +820,8 @@ config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthent
 
 config :pleroma, Pleroma.Backup,
   purge_after_days: 30,
-  limit_days: 7
+  limit_days: 7,
+  dir: nil
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -126,7 +126,7 @@ defmodule Pleroma.Backup do
   def export(%__MODULE__{} = backup) do
     backup = Repo.preload(backup, :user)
     name = String.trim_trailing(backup.file_name, ".zip")
-    dir = Path.join(System.tmp_dir!(), name)
+    dir = dir(name)
 
     with :ok <- File.mkdir(dir),
          :ok <- actor(dir, backup.user),
@@ -137,6 +137,11 @@ defmodule Pleroma.Backup do
          {:ok, _} <- File.rm_rf(dir) do
       {:ok, :binary.list_to_bin(zip_path)}
     end
+  end
+
+  def dir(name) do
+    dir = Pleroma.Config.get([__MODULE__, :dir]) || System.tmp_dir!()
+    Path.join(dir, name)
   end
 
   def upload(%__MODULE__{} = backup, zip_path) do
