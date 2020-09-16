@@ -10,7 +10,6 @@ defmodule Pleroma.Object.FetcherTest do
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
 
-  import ExUnit.CaptureLog
   import Mock
   import Tesla.Mock
 
