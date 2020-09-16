@@ -49,6 +49,20 @@ defmodule Pleroma.Repo do
     end
   end
 
+  @doc """
+  Returns a lazy enumerable that emits all entries from the data store matching the given query.
+
+  `returns_as` use to group records. use the `batches` option to fetch records in bulk.
+
+  ## Examples
+
+  # fetch records one-by-one
+  iex> Pleroma.Repo.chunk_stream(Pleroma.Activity.Queries.by_actor(ap_id), 500)
+
+  # fetch records in bulk
+  iex> Pleroma.Repo.chunk_stream(Pleroma.Activity.Queries.by_actor(ap_id), 500, :batches)
+  """
+  @spec chunk_stream(Ecto.Query.t(), integer(), atom()) :: Enumerable.t()
   def chunk_stream(query, chunk_size, returns_as \\ :one) do
     # We don't actually need start and end funcitons of resource streaming,
     # but it seems to be the only way to not fetch records one-by-one and
