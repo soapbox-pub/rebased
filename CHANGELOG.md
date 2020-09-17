@@ -20,18 +20,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed `:managed_config` option. In practice, it was accidentally removed with 2.0.0 release when frontends were
 switched to a new configuration mechanism, however it was not officially removed until now.
 
-## unreleased-patch - ???
-
-### Fixed
-
-- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance
-- Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user
-
-## Unreleased-patch
+## [2.1.2] - 2020-09-17
 
 ### Security
 
-- Fix most MRF rules either crashing or not being applied to objects passed into the Common Pipeline (ChatMessage, Question, Answer, Audio, Event)
+- Fix most MRF rules either crashing or not being applied to objects passed into the Common Pipeline (ChatMessage, Question, Answer, Audio, Event).
+
+### Fixed
+
+- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance.
+- Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user.
+- Mastodon Streaming API: Handler crashes on authentication failures, resulting in error logs.
+- Mastodon Streaming API: Error logs on client pings.
+- Rich media: Log spam on failures. Now the error is only logged once per attempt.
+
+### Changed
+
+- Rich Media: A HEAD request is now done to the url, to ensure it has the appropriate content type and size before proceeding with a GET.
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## [2.1.1] - 2020-09-08
 
