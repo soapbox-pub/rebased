@@ -182,6 +182,10 @@ defmodule Pleroma.Web.Router do
 
     get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
 
+    get("/instance_document/:name", InstanceDocumentController, :show)
+    patch("/instance_document/:name", InstanceDocumentController, :update)
+    delete("/instance_document/:name", InstanceDocumentController, :delete)
+
     patch("/users/confirm_email", AdminAPIController, :confirm_email)
     patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
 

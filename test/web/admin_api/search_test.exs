@@ -177,5 +177,14 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert total == 3
       assert count == 1
     end
+
+    test "it returns non-discoverable users" do
+      insert(:user)
+      insert(:user, discoverable: false)
+
+      {:ok, _results, total} = Search.user()
+
+      assert total == 2
+    end
   end
 end
