@@ -213,6 +213,17 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert message == :content_too_long
     end
+
+    test "it reject messages via MRF" do
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      author = insert(:user)
+      recipient = insert(:user)
+
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
+               CommonAPI.post_chat_message(author, recipient, "GNO/Linux")
+    end
   end
 
   describe "unblocking" do

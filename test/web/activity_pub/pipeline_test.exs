@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.MRF,
           [],
-          [filter: fn o -> {:ok, o} end]
+          [pipeline_filter: fn o, m -> {:ok, o, m} end]
         },
         {
           Pleroma.Web.ActivityPub.ActivityPub,
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
                  Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
 
         assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.filter(activity))
+        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
         refute called(Pleroma.Web.Federator.publish(activity))
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.MRF,
           [],
-          [filter: fn o -> {:ok, o} end]
+          [pipeline_filter: fn o, m -> {:ok, o, m} end]
         },
         {
           Pleroma.Web.ActivityPub.ActivityPub,
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
                  Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
 
         assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.filter(activity))
+        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
         assert_called(Pleroma.Web.Federator.publish(activity))
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.MRF,
           [],
-          [filter: fn o -> {:ok, o} end]
+          [pipeline_filter: fn o, m -> {:ok, o, m} end]
         },
         {
           Pleroma.Web.ActivityPub.ActivityPub,
@@ -131,7 +131,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
                  Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
 
         assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.filter(activity))
+        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
       end
@@ -148,7 +148,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.MRF,
           [],
-          [filter: fn o -> {:ok, o} end]
+          [pipeline_filter: fn o, m -> {:ok, o, m} end]
         },
         {
           Pleroma.Web.ActivityPub.ActivityPub,
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
                  Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
 
         assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.filter(activity))
+        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
         assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
       end

@@ -37,12 +37,12 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     else
       {:error, :bad_topic} ->
         Logger.debug("#{__MODULE__} bad topic #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(404, req)
+        req = :cowboy_req.reply(404, req)
         {:ok, req, state}
 
       {:error, :unauthorized} ->
         Logger.debug("#{__MODULE__} authentication error: #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(401, req)
+        req = :cowboy_req.reply(401, req)
         {:ok, req, state}
     end
   end
@@ -64,7 +64,9 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     {:ok, %{state | timer: timer()}}
   end
 
-  # We never receive messages.
+  # We only receive pings for now
+  def websocket_handle(:ping, state), do: {:ok, state}
+
   def websocket_handle(frame, state) do
     Logger.error("#{__MODULE__} received frame: #{inspect(frame)}")
     {:ok, state}
@@ -97,6 +99,10 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   def websocket_info(:tick, state) do
     {:reply, :ping, %{state | timer: nil, count: 0}, :hibernate}
   end
+
+  # State can be `[]` only in case we terminate before switching to websocket,
+  # we already log errors for these cases in `init/1`, so just do nothing here
+  def terminate(_reason, _req, []), do: :ok
 
   def terminate(reason, _req, state) do
     Logger.debug(

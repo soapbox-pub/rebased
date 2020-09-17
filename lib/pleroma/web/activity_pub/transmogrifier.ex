@@ -311,7 +311,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_emoji(%{"tag" => tags} = object) when is_list(tags) do
     emoji =
       tags
-      |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
+      |> Enum.filter(fn data -> is_map(data) and data["type"] == "Emoji" and data["icon"] end)
       |> Enum.reduce(%{}, fn data, mapping ->
         name = String.trim(data["name"], ":")
 
