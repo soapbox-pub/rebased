@@ -1193,4 +1193,24 @@ defmodule Pleroma.Web.CommonAPITest do
       assert Visibility.get_visibility(activity) == "private"
     end
   end
+
+  describe "get_user/1" do
+    test "gets user by ap_id" do
+      user = insert(:user)
+      assert CommonAPI.get_user(user.ap_id) == user
+    end
+
+    test "gets user by guessed nickname" do
+      user = insert(:user, ap_id: "", nickname: "mario@mushroom.kingdom")
+      assert CommonAPI.get_user("https://mushroom.kingdom/users/mario") == user
+    end
+
+    test "fallback" do
+      assert %User{
+               name: "",
+               ap_id: "",
+               nickname: "erroruser@example.com"
+             } = CommonAPI.get_user("")
+    end
+  end
 end

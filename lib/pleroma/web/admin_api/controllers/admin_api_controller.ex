@@ -23,8 +23,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
-  require Logger
-
   @users_page_size 50
 
   plug(
@@ -66,6 +64,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
     when action in [:list_user_statuses, :list_instance_statuses]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:chats"], admin: true}
+    when action in [:list_user_chats]
   )
 
   plug(
@@ -251,6 +255,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       conn
       |> put_view(AdminAPI.StatusView)
       |> render("index.json", %{activities: activities, as: :activity})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def list_user_chats(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = _params) do
+    with %User{id: user_id} <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
+      chats =
+        Pleroma.Chat.for_user_query(user_id)
+        |> Pleroma.Repo.all()
+
+      conn
+      |> put_view(AdminAPI.ChatView)
+      |> render("index.json", chats: chats)
     else
       _ -> {:error, :not_found}
     end
