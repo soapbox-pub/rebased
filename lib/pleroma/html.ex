@@ -100,21 +100,27 @@ defmodule Pleroma.HTML do
     end)
   end
 
-  def extract_first_external_url(_, nil), do: {:error, "No content"}
+  def extract_first_external_url_from_object(%{data: %{"content" => content}} = object)
+      when is_binary(content) do
+    unless object.data["fake"] do
+      key = "URL|#{object.id}"
 
-  def extract_first_external_url(object, content) do
-    key = "URL|#{object.id}"
+      Cachex.fetch!(:scrubber_cache, key, fn _key ->
+        {:commit, {:ok, extract_first_external_url(content)}}
+      end)
+    else
+      {:ok, extract_first_external_url(content)}
+    end
+  end
 
-    Cachex.fetch!(:scrubber_cache, key, fn _key ->
-      result =
-        content
-        |> Floki.parse_fragment!()
-        |> Floki.find("a:not(.mention,.hashtag,.attachment,[rel~=\"tag\"])")
-        |> Enum.take(1)
-        |> Floki.attribute("href")
-        |> Enum.at(0)
+  def extract_first_external_url_from_object(_), do: {:error, :no_content}
 
-      {:commit, {:ok, result}}
-    end)
+  def extract_first_external_url(content) do
+    content
+    |> Floki.parse_fragment!()
+    |> Floki.find("a:not(.mention,.hashtag,.attachment,[rel~=\"tag\"])")
+    |> Enum.take(1)
+    |> Floki.attribute("href")
+    |> Enum.at(0)
   end
 end

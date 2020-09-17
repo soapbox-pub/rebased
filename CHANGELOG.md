@@ -3,16 +3,53 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Changed
+
+- Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
+- Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
+- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+
+### Removed
+
+- **Breaking:** `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab` (moved to a simpler implementation).
+- **Breaking:** `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- **Breaking:** `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- Removed `:managed_config` option. In practice, it was accidentally removed with 2.0.0 release when frontends were
+switched to a new configuration mechanism, however it was not officially removed until now.
+
 ## unreleased-patch - ???
 
+### Fixed
+
+- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance
+- Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user
+
+## [2.1.1] - 2020-09-08
+
+### Security
+- Fix possible DoS in Mastodon API user search due to an error in match clauses, leading to an infinite recursion and subsequent OOM with certain inputs.
+- Fix metadata leak for accounts and statuses on private instances.
+- Fix possible DoS in Admin API search using an atom leak vulnerability. Authentication with admin rights was required to exploit.
+
+### Changed
+
+- **Breaking:** The metadata providers RelMe and Feed are no longer configurable. RelMe should always be activated and Feed only provides a <link> header tag for the actual RSS/Atom feed when the instance is public.
+- Improved error message when cmake is not available at build stage.
+
 ### Added
-- Rich media failure tracking (along with `:failure_backoff` option)
+- Rich media failure tracking (along with `:failure_backoff` option).
 
 ### Fixed
+- Default HTTP adapter not respecting pool setting, leading to possible OOM.
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
 - Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
 - Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
   Reduced to just rich media timeout.
-- Password resets no longer processed for deactivated accounts
+- Mastodon API: Cards being wrong for preview statuses due to cache key collision.
+- Password resets no longer processed for deactivated accounts.
+- Favicon scraper raising exceptions on URLs longer than 255 characters.
 
 ## [2.1.0] - 2020-08-28
 

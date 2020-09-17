@@ -18,7 +18,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
-* `discription_limit`: The character limit for image descriptions.
+* `description_limit`: The character limit for image descriptions.
 * `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
@@ -40,7 +40,6 @@ To add configuration to your config file, you can copy it from the base config. 
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
 * `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
-* `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -115,6 +114,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
     * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.ActivityExpiration` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -352,8 +352,6 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `providers`: a list of metadata providers to enable. Providers available:
     * `Pleroma.Web.Metadata.Providers.OpenGraph`
     * `Pleroma.Web.Metadata.Providers.TwitterCard`
-    * `Pleroma.Web.Metadata.Providers.RelMe` - add links from user bio with rel=me into the `<header>` as `<link rel=me>`.
-    * `Pleroma.Web.Metadata.Providers.Feed` - add a link to a user's Atom feed into the `<header>` as `<link rel=alternate>`.
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews.
 
 ### :rich_media (consumer)
@@ -498,7 +496,7 @@ Settings for HTTP connection pool.
 * `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
 * `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
 * `:max_connections` - Maximum number of connections in the pool.
-* `:await_up_timeout` - Timeout to connect to the host.
+* `:connect_timeout` - Timeout to connect to the host.
 * `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
 
 ### :pools
@@ -517,7 +515,7 @@ There are four pools used:
 For each pool, the options are:
 
 * `:size` - limit to how much requests can be concurrently executed.
-* `:timeout` - timeout while `gun` will wait for response
+* `:recv_timeout` - timeout while `gun` will wait for response
 * `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
 
 ## Captcha
@@ -692,9 +690,8 @@ Pleroma has the following queues:
 
 Pleroma has these periodic job workers:
 
-`Pleroma.Workers.Cron.ClearOauthTokenWorker` - a job worker to cleanup expired oauth tokens.
-
-Example:
+* `Pleroma.Workers.Cron.DigestEmailsWorker` - digest emails for users with new mentions and follows
+* `Pleroma.Workers.Cron.NewUsersDigestWorker` - digest emails for admins with new registrations
 
 ```elixir
 config :pleroma, Oban,
@@ -706,7 +703,8 @@ config :pleroma, Oban,
     federator_outgoing: 50
   ],
   crontab: [
-    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker}
+    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
 ```
 
@@ -973,7 +971,7 @@ Configure OAuth 2 provider capabilities:
 
 * `token_expires_in` - The lifetime in seconds of the access token.
 * `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`. Interval settings sets in configuration periodic jobs [`Oban.Cron`](#obancron)
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 
 ## Link parsing
 
@@ -1092,3 +1090,10 @@ config :pleroma, :frontends,
 ```
 
 This would serve the frontend from the the folder at `$instance_static/frontends/pleroma/stable`. You have to copy the frontend into this folder yourself. You can choose the name and ref any way you like, but they will be used by mix tasks to automate installation in the future, the name referring to the project and the ref referring to a commit.
+
+## Ephemeral activities (Pleroma.Workers.PurgeExpiredActivity)
+
+Settings to enable and configure expiration for ephemeral activities
+
+* `:enabled` - enables ephemeral activities creation
+* `:min_lifetime` - minimum lifetime for ephemeral activities (in seconds). Default: 10 minutes.

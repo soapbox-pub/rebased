@@ -18,11 +18,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
                "object" => %{"type" => "Note"}
              })
 
-    assert Timex.diff(expires_at, NaiveDateTime.utc_now(), :days) == 364
+    assert Timex.diff(expires_at, DateTime.utc_now(), :days) == 364
   end
 
   test "keeps existing `expires_at` if it less than the config setting" do
-    expires_at = NaiveDateTime.utc_now() |> Timex.shift(days: 1)
+    expires_at = DateTime.utc_now() |> Timex.shift(days: 1)
 
     assert {:ok, %{"type" => "Create", "expires_at" => ^expires_at}} =
              ActivityExpirationPolicy.filter(%{
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
   end
 
   test "overwrites existing `expires_at` if it greater than the config setting" do
-    too_distant_future = NaiveDateTime.utc_now() |> Timex.shift(years: 2)
+    too_distant_future = DateTime.utc_now() |> Timex.shift(years: 2)
 
     assert {:ok, %{"type" => "Create", "expires_at" => expires_at}} =
              ActivityExpirationPolicy.filter(%{
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
                "object" => %{"type" => "Note"}
              })
 
-    assert Timex.diff(expires_at, NaiveDateTime.utc_now(), :days) == 364
+    assert Timex.diff(expires_at, DateTime.utc_now(), :days) == 364
   end
 
   test "ignores remote activities" do

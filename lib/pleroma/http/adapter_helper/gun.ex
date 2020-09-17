@@ -11,12 +11,8 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
   require Logger
 
   @defaults [
-    connect_timeout: 5_000,
-    domain_lookup_timeout: 5_000,
-    tls_handshake_timeout: 5_000,
     retry: 1,
-    retry_timeout: 1000,
-    await_up_timeout: 5_000
+    retry_timeout: 1_000
   ]
 
   @type pool() :: :federation | :upload | :media | :default
@@ -45,15 +41,17 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
   end
 
   defp put_timeout(opts) do
+    {recv_timeout, opts} = Keyword.pop(opts, :recv_timeout, pool_timeout(opts[:pool]))
     # this is the timeout to receive a message from Gun
-    Keyword.put_new(opts, :timeout, pool_timeout(opts[:pool]))
+    # `:timeout` key is used in Tesla
+    Keyword.put(opts, :timeout, recv_timeout)
   end
 
   @spec pool_timeout(pool()) :: non_neg_integer()
   def pool_timeout(pool) do
-    default = Config.get([:pools, :default, :timeout], 5_000)
+    default = Config.get([:pools, :default, :recv_timeout], 5_000)
 
-    Config.get([:pools, pool, :timeout], default)
+    Config.get([:pools, pool, :recv_timeout], default)
   end
 
   @prefix Pleroma.Gun.ConnectionPool

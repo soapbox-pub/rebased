@@ -21,8 +21,13 @@ defmodule Pleroma.Web.RichMedia.Parser do
            {:ok, _} <- set_ttl_based_on_image(data, url) do
         {:ok, data}
       else
+        {:error, {:invalid_metadata, data}} = e ->
+          Logger.debug(fn -> "Incomplete or invalid metadata for #{url}: #{inspect(data)}" end)
+          e
+
         error ->
-          Logger.error(fn -> "Rich media error: #{inspect(error)}" end)
+          Logger.error(fn -> "Rich media error for #{url}: #{inspect(error)}" end)
+          error
       end
     end
 
@@ -31,6 +36,14 @@ defmodule Pleroma.Web.RichMedia.Parser do
         {:ok, _data} = res ->
           res
 
+        {:error, :body_too_large} = e ->
+          e
+
+        {:error, {:content_type, _}} = e ->
+          e
+
+        # The TTL is not set for the errors above, since they are unlikely to change
+        # with time
         {:error, _} = e ->
           ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
           Cachex.expire(:rich_media_cache, url, ttl)
@@ -90,7 +103,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end)
   end
 
-  defp parse_url(url) do
+  def parse_url(url) do
     with {:ok, %Tesla.Env{body: html}} <- Pleroma.Web.RichMedia.Helpers.rich_media_get(url),
          {:ok, html} <- Floki.parse_document(html) do
       html
@@ -116,7 +129,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp check_parsed_data(data) do
-    {:error, "Found metadata was invalid or incomplete: #{inspect(data)}"}
+    {:error, {:invalid_metadata, data}}
   end
 
   defp clean_parsed_data(data) do

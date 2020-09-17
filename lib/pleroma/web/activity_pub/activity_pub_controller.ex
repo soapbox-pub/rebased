@@ -399,21 +399,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   defp handle_user_activity(
          %User{} = user,
-         %{"type" => "Create", "object" => %{"type" => "Note"}} = params
+         %{"type" => "Create", "object" => %{"type" => "Note"} = object} = params
        ) do
-    object =
-      params["object"]
-      |> Map.merge(Map.take(params, ["to", "cc"]))
-      |> Map.put("attributedTo", user.ap_id())
-      |> Transmogrifier.fix_object()
+    content = if is_binary(object["content"]), do: object["content"], else: ""
+    name = if is_binary(object["name"]), do: object["name"], else: ""
+    summary = if is_binary(object["summary"]), do: object["summary"], else: ""
+    length = String.length(content <> name <> summary)
 
-    ActivityPub.create(%{
-      to: params["to"],
-      actor: user,
-      context: object["context"],
-      object: object,
-      additional: Map.take(params, ["cc"])
-    })
+    if length > Pleroma.Config.get([:instance, :limit]) do
+      {:error, dgettext("errors", "Note is over the character limit")}
+    else
+      object =
+        object
+        |> Map.merge(Map.take(params, ["to", "cc"]))
+        |> Map.put("attributedTo", user.ap_id())
+        |> Transmogrifier.fix_object()
+
+      ActivityPub.create(%{
+        to: params["to"],
+        actor: user,
+        context: object["context"],
+        object: object,
+        additional: Map.take(params, ["cc"])
+      })
+    end
   end
 
   defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do

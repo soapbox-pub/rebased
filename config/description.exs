@@ -765,12 +765,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :managed_config,
-        type: :boolean,
-        description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
-      },
-      %{
         key: :static_dir,
         type: :string,
         description: "Instance static directory",
@@ -2290,9 +2284,6 @@ config :pleroma, :config_description, [
         type: {:list, :tuple},
         description: "Settings for cron background jobs",
         suggestions: [
-          {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-          {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
-          {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
           {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
           {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
         ]
@@ -2475,14 +2466,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.ActivityExpiration,
+    key: Pleroma.Workers.PurgeExpiredActivity,
     type: :group,
-    description: "Expired activity settings",
+    description: "Expired activities settings",
     children: [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether expired activities will be sent to the job queue to be deleted"
+        description: "Enables expired activities addition & deletion"
+      },
+      %{
+        key: :min_lifetime,
+        type: :integer,
+        description: "Minimum lifetime for ephemeral activity (in seconds)",
+        suggestions: [600]
       }
     ]
   },
@@ -3378,7 +3375,7 @@ config :pleroma, :config_description, [
         suggestions: [250]
       },
       %{
-        key: :await_up_timeout,
+        key: :connect_timeout,
         type: :integer,
         description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
         suggestions: [5000]
@@ -3416,6 +3413,12 @@ config :pleroma, :config_description, [
               description:
                 "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
               suggestions: [10]
+            },
+            %{
+              key: :recv_timeout,
+              type: :integer,
+              description: "Timeout for the pool while gun will wait for response",
+              suggestions: [10_000]
             }
           ]
         }
