@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MetadataTest do
     end
 
     test "for local user" do
-      user = insert(:user)
+      user = insert(:user, discoverable: false)
 
       assert Pleroma.Web.Metadata.build_tags(%{user: user}) =~
                "<meta content=\"noindex, noarchive\" name=\"robots\">"
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.MetadataTest do
 
     test "search exclusion metadata is included" do
       clear_config([:instance, :public], false)
-      user = insert(:user, bio: "This is my secret fedi account bio")
+      user = insert(:user, bio: "This is my secret fedi account bio", discoverable: false)
 
       assert ~s(<meta content="noindex, noarchive" name="robots">) ==
                Pleroma.Web.Metadata.build_tags(%{user: user})
