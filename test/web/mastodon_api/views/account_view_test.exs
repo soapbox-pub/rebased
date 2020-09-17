@@ -449,7 +449,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     test "shows unread_count only to the account owner" do
       user = insert(:user)
-      insert_list(7, :notification, user: user)
+      insert_list(7, :notification, user: user, activity: insert(:note_activity))
       other_user = insert(:user)
 
       user = User.get_cached_by_ap_id(user.ap_id)

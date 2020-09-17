@@ -146,11 +146,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     blocked_ap_ids = User.blocked_users_ap_ids(user)
 
     chats =
-      from(c in Chat,
-        where: c.user_id == ^user_id,
-        where: c.recipient not in ^blocked_ap_ids,
-        order_by: [desc: c.updated_at]
-      )
+      Chat.for_user_query(user_id)
+      |> where([c], c.recipient not in ^blocked_ap_ids)
       |> Repo.all()
 
     conn
