@@ -98,8 +98,8 @@ defmodule Pleroma.Object.Fetcher do
       {:containment, _} ->
         {:error, "Object containment failed."}
 
-      {:transmogrifier, {:error, {:reject, nil}}} ->
-        {:reject, nil}
+      {:transmogrifier, {:error, {:reject, e}}} ->
+        {:reject, e}
 
       {:transmogrifier, _} = e ->
         {:error, e}
