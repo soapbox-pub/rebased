@@ -65,20 +65,14 @@ defmodule Pleroma.User.Import do
   def blocks_import(%User{} = blocker, [_ | _] = identifiers) do
     BackgroundWorker.enqueue(
       "blocks_import",
-      %{
-        "blocker_id" => blocker.id,
-        "blocked_identifiers" => identifiers
-      }
+      %{"user_id" => blocker.id, "identifiers" => identifiers}
     )
   end
 
   def follow_import(%User{} = follower, [_ | _] = identifiers) do
     BackgroundWorker.enqueue(
       "follow_import",
-      %{
-        "follower_id" => follower.id,
-        "followed_identifiers" => identifiers
-      }
+      %{"user_id" => follower.id, "identifiers" => identifiers}
     )
   end
 
