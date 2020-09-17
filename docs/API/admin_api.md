@@ -1455,3 +1455,45 @@ Loads json generated from `config/descriptions.exs`.
   "unread": false
 }
 ```
+
+## `GET /api/pleroma/admin/instance_document/:document_name`
+
+### Get an instance document
+
+- Authentication: required
+
+- Response:
+
+Returns the content of the document
+
+```html
+<h1>Instance panel</h1>
+```
+
+## `PATCH /api/pleroma/admin/instance_document/:document_name`
+- Params:
+  - `file` (the file to be uploaded, using multipart form data.)
+
+### Update an instance document
+
+- Authentication: required
+
+- Response:
+
+``` json
+{
+  "url": "https://example.com/instance/panel.html"
+}
+```
+
+## `DELETE /api/pleroma/admin/instance_document/:document_name`
+
+### Delete an instance document
+
+- Response:
+
+``` json
+{
+  "url": "https://example.com/instance/panel.html"
+}
+```
