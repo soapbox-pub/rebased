@@ -33,10 +33,8 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentControllerTest do
     test "return the instance document url", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/instance_document/instance-panel")
 
-      assert %{"url" => url} = json_response_and_validate_schema(conn, 200)
-      index = get(build_conn(), url)
-      response = html_response(index, 200)
-      assert String.contains?(response, @default_instance_panel)
+      assert content = html_response(conn, 200)
+      assert String.contains?(content, @default_instance_panel)
     end
 
     test "it returns 403 if requested by a non-admin" do
@@ -91,9 +89,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentControllerTest do
         conn
         |> get("/api/pleroma/admin/instance_document/instance-panel")
 
-      assert %{"url" => url} = json_response_and_validate_schema(conn_resp, 200)
-      index = get(build_conn(), url)
-      assert html_response(index, 200) == "Custom instance panel"
+      assert html_response(conn_resp, 200) == "Custom instance panel"
 
       conn
       |> delete("/api/pleroma/admin/instance_document/instance-panel")
@@ -103,10 +99,8 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentControllerTest do
         conn
         |> get("/api/pleroma/admin/instance_document/instance-panel")
 
-      assert %{"url" => url} = json_response_and_validate_schema(conn_resp, 200)
-      index = get(build_conn(), url)
-      response = html_response(index, 200)
-      assert String.contains?(response, @default_instance_panel)
+      assert content = html_response(conn_resp, 200)
+      assert String.contains?(content, @default_instance_panel)
     end
   end
 end

@@ -14,7 +14,7 @@ defmodule Pleroma.Web.InstanceDocument do
   @spec get(String.t()) :: {:ok, String.t()} | {:error, atom()}
   def get(document_name) do
     case Map.fetch(@instance_documents, document_name) do
-      {:ok, path} -> {:ok, Path.join(Endpoint.url(), path)}
+      {:ok, path} -> {:ok, path}
       _ -> {:error, :not_found}
     end
   end

@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.InstanceStatic
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.InstanceDocument
 
@@ -18,8 +19,11 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
   plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action in [:update, :delete])
 
   def show(conn, %{name: document_name}) do
-    with {:ok, url} <- InstanceDocument.get(document_name) do
-      json(conn, %{"url" => url})
+    with {:ok, url} <- InstanceDocument.get(document_name),
+         {:ok, content} <- File.read(InstanceStatic.file_path(url)) do
+      conn
+      |> put_resp_content_type("text/html")
+      |> send_resp(200, content)
     end
   end
 

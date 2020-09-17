@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation do
         | Helpers.admin_api_params()
       ],
       responses: %{
-        200 => Operation.response("InstanceDocument", "application/json", instance_document()),
+        200 => document_content(),
         400 => Operation.response("Bad Request", "application/json", ApiError),
         403 => Operation.response("Forbidden", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -104,5 +104,12 @@ defmodule Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation do
         "url" => "https://example.com/static/terms-of-service.html"
       }
     }
+  end
+
+  defp document_content do
+    Operation.response("InstanceDocumentContent", "text/html", %Schema{
+      type: :string,
+      example: "<h1>Instance panel</h1>"
+    })
   end
 end

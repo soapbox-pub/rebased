@@ -1458,23 +1458,23 @@ Loads json generated from `config/descriptions.exs`.
 
 ## `GET /api/pleroma/admin/instance_document/:document_name`
 
-### Gets an instance document
+### Get an instance document
 
 - Authentication: required
 
 - Response:
 
-``` json
-{
-  "url": "https://example.com/instance/panel.html"
-}
+Returns the content of the document
+
+```html
+<h1>Instance panel</h1>
 ```
 
 ## `PATCH /api/pleroma/admin/instance_document/:document_name`
 - Params:
   - `file` (the file to be uploaded, using multipart form data.)
 
-### Updates an instance document
+### Update an instance document
 
 - Authentication: required
 
