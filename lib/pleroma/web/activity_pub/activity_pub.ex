@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  @object_types ~w[ChatMessage Question Answer Audio Event]
+  @object_types ~w[ChatMessage Question Answer Audio Video Event Article]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
@@ -154,8 +154,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:remote_limit_pass, _} ->
         {:error, :remote_limit}
 
-      {:reject, reason} ->
-        {:error, reason}
+      {:reject, _} = e ->
+        {:error, e}
     end
   end
 
@@ -767,7 +767,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_replies(query, %{
-         reply_filtering_user: user,
+         reply_filtering_user: %User{} = user,
          reply_visibility: "self"
        }) do
     from(
@@ -783,7 +783,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_replies(query, %{
-         reply_filtering_user: user,
+         reply_filtering_user: %User{} = user,
          reply_visibility: "following"
        }) do
     from(
