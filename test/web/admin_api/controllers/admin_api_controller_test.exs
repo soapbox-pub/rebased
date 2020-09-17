@@ -1513,10 +1513,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/users/:nickname/chats" do
     setup do
       user = insert(:user)
+      recipients = insert_list(3, :user)
 
-      insert(:chat, user: user)
-      insert(:chat, user: user)
-      insert(:chat, user: user)
+      Enum.each(recipients, fn recipient ->
+        CommonAPI.post_chat_message(user, recipient, "yo")
+      end)
 
       %{user: user}
     end
@@ -1531,7 +1532,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/users/:nickname/chats unauthorized" do
     setup do
       user = insert(:user)
-      insert(:chat, user: user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
       %{conn: conn} = oauth_access(["read:chats"])
       %{conn: conn, user: user}
     end
@@ -1546,7 +1548,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/users/:nickname/chats unauthenticated" do
     setup do
       user = insert(:user)
-      insert(:chat, user: user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
       %{conn: build_conn(), user: user}
     end
 
