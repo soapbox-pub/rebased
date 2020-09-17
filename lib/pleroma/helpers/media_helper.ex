@@ -58,6 +58,7 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   defp prepare_image_resize_args(_), do: {:error, :missing_options}
 
+  # Note: video thumbnail is intentionally not resized (always has original dimensions)
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
          {:ok, env} <- HTTP.get(url, [], pool: :media),

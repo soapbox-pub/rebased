@@ -1961,17 +1961,25 @@ config :pleroma, :config_description, [
       %{
         key: :thumbnail_max_width,
         type: :integer,
-        description: "Max width of preview thumbnail."
+        description:
+          "Max width of preview thumbnail for images (video preview always has original dimensions)."
       },
       %{
         key: :thumbnail_max_height,
         type: :integer,
-        description: "Max height of preview thumbnail."
+        description:
+          "Max height of preview thumbnail for images (video preview always has original dimensions)."
       },
       %{
         key: :image_quality,
         type: :integer,
         description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
+      },
+      %{
+        key: :min_content_length,
+        type: :integer,
+        description:
+          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
       }
     ]
   },

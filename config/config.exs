@@ -444,7 +444,8 @@ config :pleroma, :media_preview_proxy,
   enabled: false,
   thumbnail_max_width: 600,
   thumbnail_max_height: 600,
-  image_quality: 85
+  image_quality: 85,
+  min_content_length: 100 * 1024
 
 config :pleroma, :chat, enabled: true
 
