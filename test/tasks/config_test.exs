@@ -40,6 +40,19 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       on_exit(fn -> Application.put_env(:quack, :level, initial) end)
     end
 
+    @tag capture_log: true
+    test "config migration refused when deprecated settings are found" do
+      clear_config([:media_proxy, :whitelist], ["domain_without_scheme.com"])
+      assert Repo.all(ConfigDB) == []
+
+      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
+
+      assert_received {:mix_shell, :error, [message]}
+
+      assert message =~
+               "Migration is not allowed until all deprecation warnings have been resolved."
+    end
+
     test "filtered settings are migrated to db" do
       assert Repo.all(ConfigDB) == []
 
