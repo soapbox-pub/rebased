@@ -1521,7 +1521,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       %{user: user}
     end
 
-    test "renders user's statuses", %{conn: conn, user: user} do
+    test "renders user's chats", %{conn: conn, user: user} do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
 
       assert json_response(conn, 200) |> length() == 3

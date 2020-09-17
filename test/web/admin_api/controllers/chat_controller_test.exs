@@ -40,8 +40,10 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       object = Object.normalize(message, false)
 
       chat = Chat.get(user.id, recipient.ap_id)
+      recipient_chat = Chat.get(recipient.id, user.ap_id)
 
       cm_ref = MessageReference.for_chat_and_object(chat, object)
+      recipient_cm_ref = MessageReference.for_chat_and_object(recipient_chat, object)
 
       result =
         conn
@@ -56,6 +58,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
       assert result["id"] == cm_ref.id
       refute MessageReference.get_by_id(cm_ref.id)
+      refute MessageReference.get_by_id(recipient_cm_ref.id)
       assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
     end
   end
