@@ -34,7 +34,11 @@ defmodule Pleroma.Workers.BackupWorker do
     with {:ok, %Backup{} = backup} <-
            backup_id |> Backup.get() |> Backup.process(),
          {:ok, _job} <- schedule_deletion(backup),
-         :ok <- Backup.remove_outdated(backup) do
+         :ok <- Backup.remove_outdated(backup),
+         {:ok, _} <-
+           backup
+           |> Pleroma.Emails.UserEmail.backup_is_ready_email()
+           |> Pleroma.Emails.Mailer.deliver() do
       {:ok, backup}
     end
   end

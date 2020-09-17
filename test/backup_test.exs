@@ -6,8 +6,9 @@ defmodule Pleroma.BackupTest do
   use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase
 
-  import Pleroma.Factory
   import Mock
+  import Pleroma.Factory
+  import Swoosh.TestAssertions
 
   alias Pleroma.Backup
   alias Pleroma.Bookmark
@@ -65,6 +66,8 @@ defmodule Pleroma.BackupTest do
     assert_enqueued(worker: BackupWorker, args: delete_job_args)
     assert {:ok, backup} = perform_job(BackupWorker, delete_job_args)
     refute Backup.get(backup_id)
+
+    assert_email_sent(Pleroma.Emails.UserEmail.backup_is_ready_email(backup))
   end
 
   test "it removes outdated backups after creating a fresh one" do
