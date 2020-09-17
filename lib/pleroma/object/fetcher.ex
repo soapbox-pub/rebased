@@ -102,6 +102,9 @@ defmodule Pleroma.Object.Fetcher do
       {:transmogrifier, {:error, {:reject, e}}} ->
         {:reject, e}
 
+      {:transmogrifier, {:reject, e}} ->
+        {:reject, e}
+
       {:transmogrifier, _} = e ->
         {:error, e}
 
