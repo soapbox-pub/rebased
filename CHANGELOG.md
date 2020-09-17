@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## unreleased-patch - ???
+
+### Security
+
+- Fix most MRF rules either crashing or not being applied to objects passed into the Common Pipeline (ChatMessage, Question, Answer, Audio, Event)
+
+### Fixed
+
+- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance
+- Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user
+
 ## [2.1.1] - 2020-09-08
 
 ### Security

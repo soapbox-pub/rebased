@@ -90,6 +90,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       conn
       |> put_view(MessageReferenceView)
       |> render("show.json", chat_message_reference: cm_ref)
+    else
+      {:reject, message} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: message})
+
+      {:error, message} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: message})
     end
   end
 
