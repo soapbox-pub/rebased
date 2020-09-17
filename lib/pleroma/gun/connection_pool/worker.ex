@@ -93,25 +93,18 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       end)
 
     {ref, state} = pop_in(state.client_monitors[client_pid])
-    # DOWN message can receive right after `remove_client` call and cause worker to terminate
-    state =
-      if is_nil(ref) do
-        state
+
+    Process.demonitor(ref, [:flush])
+
+    timer =
+      if used_by == [] do
+        max_idle = Pleroma.Config.get([:connections_pool, :max_idle_time], 30_000)
+        Process.send_after(self(), :idle_close, max_idle)
       else
-        Process.demonitor(ref)
-
-        timer =
-          if used_by == [] do
-            max_idle = Pleroma.Config.get([:connections_pool, :max_idle_time], 30_000)
-            Process.send_after(self(), :idle_close, max_idle)
-          else
-            nil
-          end
-
-        %{state | timer: timer}
+        nil
       end
 
-    {:reply, :ok, state, :hibernate}
+    {:reply, :ok, %{state | timer: timer}, :hibernate}
   end
 
   @impl true

@@ -36,6 +36,14 @@ defmodule Pleroma.Web.RichMedia.Parser do
         {:ok, _data} = res ->
           res
 
+        {:error, :body_too_large} = e ->
+          e
+
+        {:error, {:content_type, _}} = e ->
+          e
+
+        # The TTL is not set for the errors above, since they are unlikely to change
+        # with time
         {:error, _} = e ->
           ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
           Cachex.expire(:rich_media_cache, url, ttl)

@@ -99,7 +99,7 @@ defmodule Mix.Tasks.Pleroma.Database do
       where: fragment("(?)->>'likes' is not null", object.data),
       select: %{id: object.id, likes: fragment("(?)->>'likes'", object.data)}
     )
-    |> Pleroma.RepoStreamer.chunk_stream(100)
+    |> Pleroma.Repo.chunk_stream(100, :batches)
     |> Stream.each(fn objects ->
       ids =
         objects
@@ -145,7 +145,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> where(local: true)
     |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
     |> where([_a, o], fragment("?->>'type' = 'Note'", o.data))
-    |> Pleroma.RepoStreamer.chunk_stream(100)
+    |> Pleroma.Repo.chunk_stream(100, :batches)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity ->
         expires_at =

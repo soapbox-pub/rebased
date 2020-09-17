@@ -1810,6 +1810,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Enum.map(& &1.id)
 
       assert activities_ids == []
+
+      activities_ids =
+        %{}
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, nil)
+        |> ActivityPub.fetch_public_activities()
+
+      assert activities_ids == []
     end
 
     test "home timeline", %{users: %{u1: user}} do
