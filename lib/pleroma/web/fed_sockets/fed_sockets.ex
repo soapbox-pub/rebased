@@ -104,6 +104,9 @@ defmodule Pleroma.Web.FedSockets do
         Logger.debug("fedsocket found in cache - #{inspect(address)}")
         {:ok, socket}
 
+      {:cache, {:error, :rejected} = e} ->
+        e
+
       {:connect, {:error, _host}} ->
         Logger.debug("set host rejected for - #{inspect(address)}")
         FedRegistry.set_host_rejected(address)
