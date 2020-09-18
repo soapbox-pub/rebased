@@ -33,6 +33,8 @@ defmodule Pleroma.Web.MediaProxy.Invalidation do
   def prepare_urls(urls) do
     urls
     |> List.wrap()
-    |> Enum.map(&MediaProxy.url/1)
+    |> Enum.map(fn url -> [MediaProxy.url(url), MediaProxy.preview_url(url)] end)
+    |> List.flatten()
+    |> Enum.uniq()
   end
 end
