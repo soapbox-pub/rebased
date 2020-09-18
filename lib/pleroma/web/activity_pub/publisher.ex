@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.FedSockets
 
   require Pleroma.Constants
 
@@ -50,15 +51,35 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   def publish_one(%{inbox: inbox, json: json, actor: %User{} = actor, id: id} = params) do
     Logger.debug("Federating #{id} to #{inbox}")
 
-    uri = URI.parse(inbox)
+    case FedSockets.get_or_create_fed_socket(inbox) do
+      {:ok, fedsocket} ->
+        Logger.debug("publishing via fedsockets - #{inspect(inbox)}")
+        FedSockets.publish(fedsocket, json)
 
+      _ ->
+        Logger.debug("publishing via http - #{inspect(inbox)}")
+        http_publish(inbox, actor, json, params)
+    end
+  end
+
+  def publish_one(%{actor_id: actor_id} = params) do
+    actor = User.get_cached_by_id(actor_id)
+
+    params
+    |> Map.delete(:actor_id)
+    |> Map.put(:actor, actor)
+    |> publish_one()
+  end
+
+  defp http_publish(inbox, actor, json, params) do
+    uri = %{path: path} = URI.parse(inbox)
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
 
     date = Pleroma.Signature.signed_date()
 
     signature =
       Pleroma.Signature.sign(actor, %{
-        "(request-target)": "post #{uri.path}",
+        "(request-target)": "post #{path}",
         host: signature_host(uri),
         "content-length": byte_size(json),
         digest: digest,
@@ -87,15 +108,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
         {:error, response}
     end
-  end
-
-  def publish_one(%{actor_id: actor_id} = params) do
-    actor = User.get_cached_by_id(actor_id)
-
-    params
-    |> Map.delete(:actor_id)
-    |> Map.put(:actor, actor)
-    |> publish_one()
   end
 
   defp signature_host(%URI{port: port, scheme: scheme, host: host}) do

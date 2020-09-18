@@ -272,6 +272,19 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :fed_sockets,
+    type: :group,
+    description: "Websocket based federation",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enable FedSockets"
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: Pleroma.Emails.Mailer,
     type: :group,
     description: "Mailer-related settings",
