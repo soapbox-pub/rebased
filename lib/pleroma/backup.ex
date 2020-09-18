@@ -191,16 +191,13 @@ defmodule Pleroma.Backup do
       counter = :counters.new(1, [])
 
       query
-      |> Pleroma.RepoStreamer.chunk_stream(100)
-      |> Stream.each(fn items ->
-        Enum.each(items, fn i ->
-          with {:ok, str} <- fun.(i),
-               :ok <- IO.write(file, str <> ",\n") do
-            :counters.add(counter, 1, 1)
-          end
-        end)
+      |> Pleroma.Repo.chunk_stream(100)
+      |> Enum.each(fn i ->
+        with {:ok, str} <- fun.(i),
+             :ok <- IO.write(file, str <> ",\n") do
+          :counters.add(counter, 1, 1)
+        end
       end)
-      |> Stream.run()
 
       total = :counters.get(counter, 1)
 
