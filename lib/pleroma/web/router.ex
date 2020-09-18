@@ -178,8 +178,13 @@ defmodule Pleroma.Web.Router do
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
+    get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
     get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+
+    get("/instance_document/:name", InstanceDocumentController, :show)
+    patch("/instance_document/:name", InstanceDocumentController, :update)
+    delete("/instance_document/:name", InstanceDocumentController, :delete)
 
     patch("/users/confirm_email", AdminAPIController, :confirm_email)
     patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
@@ -214,6 +219,10 @@ defmodule Pleroma.Web.Router do
     get("/media_proxy_caches", MediaProxyCacheController, :index)
     post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
     post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
+
+    get("/chats/:id", ChatController, :show)
+    get("/chats/:id/messages", ChatController, :messages)
+    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do

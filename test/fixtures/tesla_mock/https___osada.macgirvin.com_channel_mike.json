@@ -8,6 +8,7 @@
     "preferredUsername": "mike",
     "name": "Mike Macgirvin (Osada)",
     "updated": "2018-08-29T03:09:11Z",
+    "discoverable": "true",
     "icon": {
         "type": "Image",
         "mediaType": "image/jpeg",
