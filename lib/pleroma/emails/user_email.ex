@@ -190,14 +190,24 @@ defmodule Pleroma.Emails.UserEmail do
     Router.Helpers.subscription_url(Endpoint, :unsubscribe, token)
   end
 
-  def backup_is_ready_email(backup) do
+  def backup_is_ready_email(backup, admin_user_id \\ nil) do
     %{user: user} = Pleroma.Repo.preload(backup, :user)
     download_url = Pleroma.Web.PleromaAPI.BackupView.download_url(backup)
 
-    html_body = """
-    <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
-    <p><a href="#{download_url}"></a></p>
-    """
+    html_body =
+      if is_nil(admin_user_id) do
+        """
+        <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
+        <p><a href="#{download_url}"></a></p>
+        """
+      else
+        admin = Pleroma.Repo.get(User, admin_user_id)
+
+        """
+        <p>Admin @#{admin.nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
+        <p><a href="#{download_url}"></a></p>
+        """
+      end
 
     new()
     |> to(recipient(user))

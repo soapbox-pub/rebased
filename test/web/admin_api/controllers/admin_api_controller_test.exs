@@ -2024,6 +2024,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                response["status_visibility"]
     end
   end
+
+  describe "/api/pleroma/backups" do
+    test "it creates a backup", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      token = insert(:oauth_admin_token, user: admin)
+      user = insert(:user)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert [backup] = Repo.all(Pleroma.Backup)
+
+      ObanHelpers.perform_all()
+
+      assert_email_sent(Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id))
+    end
+  end
 end
 
 # Needed for testing

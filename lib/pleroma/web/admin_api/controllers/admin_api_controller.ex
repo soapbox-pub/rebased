@@ -23,12 +23,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
+  require Logger
+
   @users_page_size 50
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"], admin: true}
-    when action in [:list_users, :user_show, :right_get, :show_user_credentials]
+    when action in [:list_users, :user_show, :right_get, :show_user_credentials, :create_backup]
   )
 
   plug(
@@ -679,6 +681,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     counters = Stats.get_status_visibility_count(params["instance"])
 
     json(conn, %{"status_visibility" => counters})
+  end
+
+  def create_backup(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_by_nickname(nickname),
+         {:ok, _} <- Pleroma.Backup.create(user, admin.id) do
+      Logger.info("Admin @#{admin.nickname} requested account backup for @{nickname}")
+      json(conn, "")
+    end
   end
 
   defp page_params(params) do

@@ -30,12 +30,12 @@ defmodule Pleroma.Backup do
     timestamps()
   end
 
-  def create(user) do
+  def create(user, admin_user_id \\ nil) do
     with :ok <- validate_email_enabled(),
          :ok <- validate_user_email(user),
          :ok <- validate_limit(user),
          {:ok, backup} <- user |> new() |> Repo.insert() do
-      BackupWorker.process(backup)
+      BackupWorker.process(backup, admin_user_id)
     end
   end
 

@@ -8,8 +8,8 @@ defmodule Pleroma.Workers.BackupWorker do
   alias Oban.Job
   alias Pleroma.Backup
 
-  def process(backup) do
-    %{"op" => "process", "backup_id" => backup.id}
+  def process(backup, admin_user_id \\ nil) do
+    %{"op" => "process", "backup_id" => backup.id, "admin_user_id" => admin_user_id}
     |> new()
     |> Oban.insert()
   end
@@ -30,14 +30,16 @@ defmodule Pleroma.Workers.BackupWorker do
     |> Oban.insert()
   end
 
-  def perform(%Job{args: %{"op" => "process", "backup_id" => backup_id}}) do
+  def perform(%Job{
+        args: %{"op" => "process", "backup_id" => backup_id, "admin_user_id" => admin_user_id}
+      }) do
     with {:ok, %Backup{} = backup} <-
            backup_id |> Backup.get() |> Backup.process(),
          {:ok, _job} <- schedule_deletion(backup),
          :ok <- Backup.remove_outdated(backup),
          {:ok, _} <-
            backup
-           |> Pleroma.Emails.UserEmail.backup_is_ready_email()
+           |> Pleroma.Emails.UserEmail.backup_is_ready_email(admin_user_id)
            |> Pleroma.Emails.Mailer.deliver() do
       {:ok, backup}
     end
