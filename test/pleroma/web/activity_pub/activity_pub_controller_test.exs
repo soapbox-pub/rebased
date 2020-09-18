@@ -1334,9 +1334,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         activity: %{
           "@context" => "https://www.w3.org/ns/activitystreams",
           "type" => "Create",
-          "object" => %{"type" => "Note", "content" => "AP C2S test"},
-          "to" => "https://www.w3.org/ns/activitystreams#Public",
-          "cc" => []
+          "object" => %{
+            "type" => "Note",
+            "content" => "AP C2S test",
+            "to" => "https://www.w3.org/ns/activitystreams#Public",
+            "cc" => []
+          }
         }
       ]
     end
@@ -1442,19 +1445,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
       data = %{
-        type: "Delete",
-        object: %{
-          id: note_object.data["id"]
+        "type" => "Delete",
+        "object" => %{
+          "id" => note_object.data["id"]
         }
       }
 
-      conn =
+      result =
         conn
         |> assign(:user, user)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/users/#{user.nickname}/outbox", data)
+        |> json_response(201)
 
-      result = json_response(conn, 201)
       assert Activity.get_by_ap_id(result["id"])
 
       assert object = Object.get_by_ap_id(note_object.data["id"])
@@ -1479,7 +1482,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> put_req_header("content-type", "application/activity+json")
         |> post("/users/#{user.nickname}/outbox", data)
 
-      assert json_response(conn, 400)
+      assert json_response(conn, 403)
     end
 
     test "it increases like count when receiving a like action", %{conn: conn} do
@@ -1557,7 +1560,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/outbox", activity)
         |> json_response(400)
 
-      assert result == "Note is over the character limit"
+      assert result == "Character limit (5 characters) exceeded, contains 11 characters"
     end
   end
 
@@ -1934,10 +1937,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         "object" => %{
           "type" => "Note",
           "content" => "AP C2S test, attachment",
-          "attachment" => [object]
-        },
-        "to" => "https://www.w3.org/ns/activitystreams#Public",
-        "cc" => []
+          "attachment" => [object],
+          "to" => "https://www.w3.org/ns/activitystreams#Public",
+          "cc" => []
+        }
       }
 
       activity_response =

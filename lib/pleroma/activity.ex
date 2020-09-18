@@ -292,7 +292,8 @@ defmodule Pleroma.Activity do
     get_in_reply_to_activity_from_object(Object.normalize(activity, fetch: false))
   end
 
-  def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])
+  def normalize(%Activity{data: %{"id" => ap_id}}), do: get_by_ap_id_with_object(ap_id)
+  def normalize(%{"id" => ap_id}), do: get_by_ap_id_with_object(ap_id)
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
 
