@@ -324,6 +324,14 @@ This section describe PWA manifest instance-specific values. Currently this opti
   * `enabled`: Enables purge cache
   * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
 
+## :media_preview_proxy
+
+* `enabled`: Enables proxying of remote media preview to the instance’s proxy. Requires enabled media proxy (`media_proxy/enabled`).
+* `thumbnail_max_width`: Max width of preview thumbnail for images (video preview always has original dimensions).
+* `thumbnail_max_height`: Max height of preview thumbnail for images (video preview always has original dimensions).
+* `image_quality`: Quality of the output. Ranges from 0 (min quality) to 100 (max quality).
+* `min_content_length`: Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing.
+
 ### Purge cache strategy
 
 #### Pleroma.Web.MediaProxy.Invalidation.Script
