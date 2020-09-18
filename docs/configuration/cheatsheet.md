@@ -225,6 +225,16 @@ Enables the worker which processes posts scheduled for deletion. Pinned posts ar
 
 * `enabled`: whether expired activities will be sent to the job queue to be deleted
 
+## FedSockets
+FedSockets is an experimental feature allowing for Pleroma backends to federate using a persistant websocket connection as opposed to making each federation a seperate http connection. This feature is currently off by default. It is configurable throught he following options.
+
+### :fedsockets
+* `enabled`: Enables FedSockets for this instance. `false` by default.
+* `connection_duration`: Time an idle websocket is kept open.
+* `rejection_duration`: Failures to connect via FedSockets will not be retried for this period of time.
+* `fed_socket_fetches` and `fed_socket_rejections`: Settings passed to `cachex` for the fetch registry, and rejection stacks. See `Pleroma.Web.FedSockets` for more details.
+
+
 ## Frontends
 
 ### :frontend_configurations

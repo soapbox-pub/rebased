@@ -99,7 +99,7 @@ defmodule Pleroma.Application do
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
-        streamer_child(@env) ++
+        dont_run_in_test(@env) ++
         chat_child(@env, chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
@@ -188,16 +188,17 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Config.get([:chat, :enabled])
 
-  defp streamer_child(env) when env in [:test, :benchmark], do: []
+  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
-  defp streamer_child(_) do
+  defp dont_run_in_test(_) do
     [
       {Registry,
        [
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]}
+       ]},
+      Pleroma.Web.FedSockets.Supervisor
     ]
   end
 

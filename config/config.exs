@@ -130,6 +130,7 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
+         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -146,6 +147,16 @@ config :pleroma, Pleroma.Web.Endpoint,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
+  ]
+
+config :pleroma, :fed_sockets,
+  enabled: false,
+  connection_duration: :timer.hours(8),
+  rejection_duration: :timer.minutes(15),
+  fed_socket_fetches: [
+    default: 12_000,
+    interval: 3_000,
+    lazy: false
   ]
 
 # Configures Elixir's Logger
@@ -532,6 +543,7 @@ config :pleroma, Oban,
     token_expiration: 5,
     federator_incoming: 50,
     federator_outgoing: 50,
+    ingestion_queue: 50,
     web_push: 50,
     mailer: 10,
     transmogrifier: 20,
