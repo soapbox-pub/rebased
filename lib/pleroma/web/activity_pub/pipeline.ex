@@ -26,13 +26,17 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
 
       {:error, e} ->
         {:error, e}
+
+      {:reject, e} ->
+        {:reject, e}
     end
   end
 
   def do_common_pipeline(object, meta) do
     with {_, {:ok, validated_object, meta}} <-
            {:validate_object, ObjectValidator.validate(object, meta)},
-         {_, {:ok, mrfd_object}} <- {:mrf_object, MRF.filter(validated_object)},
+         {_, {:ok, mrfd_object, meta}} <-
+           {:mrf_object, MRF.pipeline_filter(validated_object, meta)},
          {_, {:ok, activity, meta}} <-
            {:persist_object, ActivityPub.persist(mrfd_object, meta)},
          {_, {:ok, activity, meta}} <-
@@ -40,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
          {_, {:ok, _}} <- {:federation, maybe_federate(activity, meta)} do
       {:ok, activity, meta}
     else
-      {:mrf_object, {:reject, _}} -> {:ok, nil, meta}
+      {:mrf_object, {:reject, message, _}} -> {:reject, message}
       e -> {:error, e}
     end
   end

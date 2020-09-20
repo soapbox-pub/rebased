@@ -48,6 +48,9 @@ defmodule Pleroma.Web.CommonAPI do
               local: true
             )} do
       {:ok, activity}
+    else
+      {:common_pipeline, {:reject, _} = e} -> e
+      e -> e
     end
   end
 
@@ -559,5 +562,22 @@ defmodule Pleroma.Web.CommonAPI do
 
   def show_reblogs(%User{} = user, %User{} = target) do
     UserRelationship.delete_reblog_mute(user, target)
+  end
+
+  def get_user(ap_id, fake_record_fallback \\ true) do
+    cond do
+      user = User.get_cached_by_ap_id(ap_id) ->
+        user
+
+      user = User.get_by_guessed_nickname(ap_id) ->
+        user
+
+      fake_record_fallback ->
+        # TODO: refactor (fake records is never a good idea)
+        User.error_user(ap_id)
+
+      true ->
+        nil
+    end
   end
 end

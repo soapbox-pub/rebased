@@ -20,35 +20,60 @@ defmodule Pleroma.Web.RichMedia.Parser do
       with {:ok, data} <- get_cached_or_parse(url),
            {:ok, _} <- set_ttl_based_on_image(data, url) do
         {:ok, data}
-      else
-        {:error, {:invalid_metadata, data}} = e ->
-          Logger.debug(fn -> "Incomplete or invalid metadata for #{url}: #{inspect(data)}" end)
-          e
-
-        error ->
-          Logger.error(fn -> "Rich media error for #{url}: #{inspect(error)}" end)
-          error
       end
     end
 
     defp get_cached_or_parse(url) do
-      case Cachex.fetch!(:rich_media_cache, url, fn _ -> {:commit, parse_url(url)} end) do
-        {:ok, _data} = res ->
-          res
+      case Cachex.fetch(:rich_media_cache, url, fn ->
+             case parse_url(url) do
+               {:ok, _} = res ->
+                 {:commit, res}
 
-        {:error, :body_too_large} = e ->
-          e
+               {:error, reason} = e ->
+                 # Unfortunately we have to log errors here, instead of doing that
+                 # along with ttl setting at the bottom. Otherwise we can get log spam
+                 # if more than one process was waiting for the rich media card
+                 # while it was generated. Ideally we would set ttl here as well,
+                 # so we don't override it number_of_waiters_on_generation
+                 # times, but one, obviously, can't set ttl for not-yet-created entry
+                 # and Cachex doesn't support returning ttl from the fetch callback.
+                 log_error(url, reason)
+                 {:commit, e}
+             end
+           end) do
+        {action, res} when action in [:commit, :ok] ->
+          case res do
+            {:ok, _data} = res ->
+              res
 
-        {:error, {:content_type, _}} = e ->
-          e
+            {:error, reason} = e ->
+              if action == :commit, do: set_error_ttl(url, reason)
+              e
+          end
 
-        # The TTL is not set for the errors above, since they are unlikely to change
-        # with time
-        {:error, _} = e ->
-          ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
-          Cachex.expire(:rich_media_cache, url, ttl)
-          e
+        {:error, e} ->
+          {:error, {:cachex_error, e}}
       end
+    end
+
+    defp set_error_ttl(_url, :body_too_large), do: :ok
+    defp set_error_ttl(_url, {:content_type, _}), do: :ok
+
+    # The TTL is not set for the errors above, since they are unlikely to change
+    # with time
+
+    defp set_error_ttl(url, _reason) do
+      ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
+      Cachex.expire(:rich_media_cache, url, ttl)
+      :ok
+    end
+
+    defp log_error(url, {:invalid_metadata, data}) do
+      Logger.debug(fn -> "Incomplete or invalid metadata for #{url}: #{inspect(data)}" end)
+    end
+
+    defp log_error(url, reason) do
+      Logger.warn(fn -> "Rich media error for #{url}: #{inspect(reason)}" end)
     end
   end
 
