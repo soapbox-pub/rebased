@@ -188,18 +188,17 @@ defmodule Pleroma.Backup do
 
     with {:ok, file} <- File.open(path, [:write, :utf8]),
          :ok <- write_header(file, name) do
-      counter = :counters.new(1, [])
-
-      query
-      |> Pleroma.Repo.chunk_stream(100)
-      |> Enum.each(fn i ->
-        with {:ok, str} <- fun.(i),
-             :ok <- IO.write(file, str <> ",\n") do
-          :counters.add(counter, 1, 1)
-        end
-      end)
-
-      total = :counters.get(counter, 1)
+      total =
+        query
+        |> Pleroma.Repo.chunk_stream(100)
+        |> Enum.reduce(0, fn i, acc ->
+          with {:ok, str} <- fun.(i),
+               :ok <- IO.write(file, str <> ",\n") do
+            acc + 1
+          else
+            _ -> acc
+          end
+        end)
 
       with :ok <- :file.pwrite(file, {:eof, -2}, "\n],\n  \"totalItems\": #{total}}") do
         File.close(file)
