@@ -30,12 +30,12 @@ defmodule Pleroma.Backup do
     timestamps()
   end
 
-  def create(user, admin_user_id \\ nil) do
+  def create(user, admin_id \\ nil) do
     with :ok <- validate_email_enabled(),
          :ok <- validate_user_email(user),
-         :ok <- validate_limit(user),
+         :ok <- validate_limit(user, admin_id),
          {:ok, backup} <- user |> new() |> Repo.insert() do
-      BackupWorker.process(backup, admin_user_id)
+      BackupWorker.process(backup, admin_id)
     end
   end
 
@@ -59,7 +59,9 @@ defmodule Pleroma.Backup do
     end
   end
 
-  defp validate_limit(user) do
+  defp validate_limit(_user, admin_id) when is_binary(admin_id), do: :ok
+
+  defp validate_limit(user, nil) do
     case get_last(user.id) do
       %__MODULE__{inserted_at: inserted_at} ->
         days = Pleroma.Config.get([Pleroma.Backup, :limit_days])
