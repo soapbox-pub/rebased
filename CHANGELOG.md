@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Experimental websocket-based federation between Pleroma instances.
+- User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 
 ### Changed
 
