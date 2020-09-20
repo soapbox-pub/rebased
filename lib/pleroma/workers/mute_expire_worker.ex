@@ -7,18 +7,14 @@ defmodule Pleroma.Workers.MuteExpireWorker do
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "unmute_user", "muter_id" => muter_id, "mutee_id" => mutee_id}}) do
-    muter = Pleroma.User.get_by_id(muter_id)
-    mutee = Pleroma.User.get_by_id(mutee_id)
-    Pleroma.User.unmute(muter, mutee)
+    Pleroma.User.unmute(muter_id, mutee_id)
     :ok
   end
 
   def perform(%Job{
         args: %{"op" => "unmute_conversation", "user_id" => user_id, "activity_id" => activity_id}
       }) do
-    user = Pleroma.User.get_by_id(user_id)
-    activity = Pleroma.Activity.get_by_id(activity_id)
-    Pleroma.Web.CommonAPI.remove_mute(user, activity)
+    Pleroma.Web.CommonAPI.remove_mute(user_id, activity_id)
     :ok
   end
 end

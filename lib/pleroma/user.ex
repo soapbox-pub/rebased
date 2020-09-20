@@ -1385,6 +1385,20 @@ defmodule Pleroma.User do
     end
   end
 
+  def unmute(muter_id, mutee_id) do
+    with {:muter, %User{} = muter} <- {:muter, User.get_by_id(muter_id)},
+         {:mutee, %User{} = mutee} <- {:mutee, User.get_by_id(mutee_id)} do
+      unmute(muter, mutee)
+    else
+      {who, result} = error ->
+        Logger.warn(
+          "User.unmute/2 failed. #{who}: #{result}, muter_id: #{muter_id}, mutee_id: #{mutee_id}"
+        )
+
+        {:error, error}
+    end
+  end
+
   def subscribe(%User{} = subscriber, %User{} = target) do
     deny_follow_blocked = Config.get([:user, :deny_follow_blocked])
 

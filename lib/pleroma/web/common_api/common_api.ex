@@ -472,9 +472,25 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def remove_mute(user, activity) do
+  def remove_mute(%User{} = user, %Activity{} = activity) do
     ThreadMute.remove_mute(user.id, activity.data["context"])
     {:ok, activity}
+  end
+
+  def remove_mute(user_id, activity_id) do
+    with {:user, %User{} = user} <- {:user, User.get_by_id(user_id)},
+         {:activity, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)} do
+      remove_mute(user, activity)
+    else
+      {what, result} = error ->
+        Logger.warn(
+          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{
+            activity_id
+          }"
+        )
+
+        {:error, error}
+    end
   end
 
   def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})

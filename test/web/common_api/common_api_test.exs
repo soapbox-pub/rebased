@@ -913,6 +913,12 @@ defmodule Pleroma.Web.CommonAPITest do
       refute CommonAPI.thread_muted?(user, activity)
     end
 
+    test "remove mute by ids", %{user: user, activity: activity} do
+      CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.remove_mute(user.id, activity.id)
+      refute CommonAPI.thread_muted?(user, activity)
+    end
+
     test "check that mutes can't be duplicate", %{user: user, activity: activity} do
       CommonAPI.add_mute(user, activity)
       {:error, _} = CommonAPI.add_mute(user, activity)

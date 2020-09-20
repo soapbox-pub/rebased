@@ -1034,6 +1034,17 @@ defmodule Pleroma.UserTest do
       refute User.muted_notifications?(user, muted_user)
     end
 
+    test "it unmutes users by id" do
+      user = insert(:user)
+      muted_user = insert(:user)
+
+      {:ok, _user_relationships} = User.mute(user, muted_user)
+      {:ok, _user_mute} = User.unmute(user.id, muted_user.id)
+
+      refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
+    end
+
     test "it mutes user without notifications" do
       user = insert(:user)
       muted_user = insert(:user)
