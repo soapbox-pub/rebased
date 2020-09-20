@@ -616,7 +616,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 ]
 ```
 
-## `POST /api/pleroma/backups`
+## `POST /api/v1/pleroma/backups`
 ### Create a user backup archive
 
 * Method: `POST`
@@ -635,7 +635,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 }]
 ```
 
-## `GET /api/pleroma/backups`
+## `GET /api/v1/pleroma/backups`
 ### Lists user backups
 
 * Method: `GET`

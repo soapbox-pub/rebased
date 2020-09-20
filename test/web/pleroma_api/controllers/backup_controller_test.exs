@@ -14,14 +14,14 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
     oauth_access(["read:accounts"])
   end
 
-  test "GET /api/pleroma/backups", %{user: user, conn: conn} do
+  test "GET /api/v1/pleroma/backups", %{user: user, conn: conn} do
     assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id}}} = Backup.create(user)
 
     backup = Backup.get(backup_id)
 
     response =
       conn
-      |> get("/api/pleroma/backups")
+      |> get("/api/v1/pleroma/backups")
       |> json_response_and_validate_schema(:ok)
 
     assert [
@@ -45,11 +45,11 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
              }
            ] =
              conn
-             |> get("/api/pleroma/backups")
+             |> get("/api/v1/pleroma/backups")
              |> json_response_and_validate_schema(:ok)
   end
 
-  test "POST /api/pleroma/backups", %{user: _user, conn: conn} do
+  test "POST /api/v1/pleroma/backups", %{user: _user, conn: conn} do
     assert [
              %{
                "content_type" => "application/zip",
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
              }
            ] =
              conn
-             |> post("/api/pleroma/backups")
+             |> post("/api/v1/pleroma/backups")
              |> json_response_and_validate_schema(:ok)
 
     Pleroma.Tests.ObanHelpers.perform_all()
@@ -72,14 +72,14 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
              }
            ] =
              conn
-             |> get("/api/pleroma/backups")
+             |> get("/api/v1/pleroma/backups")
              |> json_response_and_validate_schema(:ok)
 
     days = Pleroma.Config.get([Backup, :limit_days])
 
     assert %{"error" => "Last export was less than #{days} days ago"} ==
              conn
-             |> post("/api/pleroma/backups")
+             |> post("/api/v1/pleroma/backups")
              |> json_response_and_validate_schema(400)
   end
 end

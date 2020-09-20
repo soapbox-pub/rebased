@@ -295,9 +295,6 @@ defmodule Pleroma.Web.Router do
     get("/accounts/mfa/setup/:method", TwoFactorAuthenticationController, :setup)
     post("/accounts/mfa/confirm/:method", TwoFactorAuthenticationController, :confirm)
     delete("/accounts/mfa/:method", TwoFactorAuthenticationController, :disable)
-
-    get("/backups", BackupController, :index)
-    post("/backups", BackupController, :create)
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
@@ -358,6 +355,9 @@ defmodule Pleroma.Web.Router do
       put("/mascot", MascotController, :update)
 
       post("/scrobble", ScrobbleController, :create)
+
+      get("/backups", BackupController, :index)
+      post("/backups", BackupController, :create)
     end
 
     scope [] do
