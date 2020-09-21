@@ -198,14 +198,14 @@ defmodule Pleroma.Emails.UserEmail do
       if is_nil(admin_user_id) do
         """
         <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
-        <p><a href="#{download_url}"></a></p>
+        <p><a href="#{download_url}">#{download_url}</a></p>
         """
       else
         admin = Pleroma.Repo.get(User, admin_user_id)
 
         """
         <p>Admin @#{admin.nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
-        <p><a href="#{download_url}"></a></p>
+        <p><a href="#{download_url}">#{download_url}</a></p>
         """
       end
 
