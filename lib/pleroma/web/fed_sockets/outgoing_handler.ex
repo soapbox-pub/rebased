@@ -86,7 +86,7 @@ defmodule Pleroma.Web.FedSockets.OutgoingHandler do
 
     %{host: host, port: port, path: path} = URI.parse(ws_uri)
 
-    with {:ok, conn_pid} <- :gun.open(to_charlist(host), port),
+    with {:ok, conn_pid} <- :gun.open(to_charlist(host), port, %{protocols: [:http]}),
          {:ok, _} <- :gun.await_up(conn_pid),
          reference <-
            :gun.get(conn_pid, to_charlist(path), [
