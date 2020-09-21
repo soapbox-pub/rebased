@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+  import Pleroma.Web.ControllerHelper,
+    only: [json_response: 3, fetch_integer_param: 3]
 
   alias Pleroma.Config
   alias Pleroma.MFA
@@ -100,12 +101,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def user_delete(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
-    users =
-      nicknames
-      |> Enum.map(&User.get_cached_by_nickname/1)
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
-    users
-    |> Enum.each(fn user ->
+    Enum.each(users, fn user ->
       {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
       Pipeline.common_pipeline(delete_data, local: true)
     end)
@@ -367,16 +365,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     {page, page_size} = page_params(params)
     filters = maybe_parse_filters(params["filters"])
 
-    search_params = %{
-      query: params["query"],
-      page: page,
-      page_size: page_size,
-      tags: params["tags"],
-      name: params["name"],
-      email: params["email"]
-    }
+    search_params =
+      %{
+        query: params["query"],
+        page: page,
+        page_size: page_size,
+        tags: params["tags"],
+        name: params["name"],
+        email: params["email"]
+      }
+      |> Map.merge(filters)
 
-    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)) do
+    with {:ok, users, count} <- Search.user(search_params) do
       json(
         conn,
         AccountView.render("index.json",
@@ -388,7 +388,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @filters ~w(local external active deactivated need_approval is_admin is_moderator)
+  @filters ~w(local external active deactivated need_approval need_confirmed is_admin is_moderator)
 
   @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
   defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
@@ -682,24 +682,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   defp page_params(params) do
-    {get_page(params["page"]), get_page_size(params["page_size"])}
-  end
-
-  defp get_page(page_string) when is_nil(page_string), do: 1
-
-  defp get_page(page_string) do
-    case Integer.parse(page_string) do
-      {page, _} -> page
-      :error -> 1
-    end
-  end
-
-  defp get_page_size(page_size_string) when is_nil(page_size_string), do: @users_page_size
-
-  defp get_page_size(page_size_string) do
-    case Integer.parse(page_size_string) do
-      {page_size, _} -> page_size
-      :error -> @users_page_size
-    end
+    {
+      fetch_integer_param(params, "page", 1),
+      fetch_integer_param(params, "page_size", @users_page_size)
+    }
   end
 end

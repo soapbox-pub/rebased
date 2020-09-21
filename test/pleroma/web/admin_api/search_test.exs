@@ -178,6 +178,17 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert count == 1
     end
 
+    test "it returns unconfirmed user" do
+      unconfirmed = insert(:user, confirmation_pending: true)
+      insert(:user)
+      insert(:user)
+
+      {:ok, _results, total} = Search.user()
+      {:ok, [^unconfirmed], count} = Search.user(%{need_confirmed: true})
+      assert total == 3
+      assert count == 1
+    end
+
     test "it returns non-discoverable users" do
       insert(:user)
       insert(:user, is_discoverable: false)
