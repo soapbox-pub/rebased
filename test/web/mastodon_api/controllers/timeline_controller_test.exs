@@ -114,8 +114,16 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       {:ok, _reply_from_friend} =
         CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
 
-      res_conn = get(conn, "/api/v1/timelines/public")
-      [%{"id" => ^activity_id}] = json_response_and_validate_schema(res_conn, 200)
+      # Still shows replies from yourself
+      {:ok, %{id: reply_from_me}} =
+        CommonAPI.post(blocker, %{status: "status", in_reply_to_status_id: reply_from_blockee})
+
+      response =
+        get(conn, "/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert length(response) == 2
+      [%{"id" => ^reply_from_me}, %{"id" => ^activity_id}] = response
     end
 
     test "doesn't return replies if follow is posting with users from blocked domain" do

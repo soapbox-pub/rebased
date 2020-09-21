@@ -841,7 +841,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     from(
       [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
-      where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
+      where:
+        fragment(
+          "((not (? && ?)) or ? = ?)",
+          activity.recipients,
+          ^blocked_ap_ids,
+          activity.actor,
+          ^user.ap_id
+        ),
       where:
         fragment(
           "recipients_contain_blocked_domains(?, ?) = false",
