@@ -2445,7 +2445,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: Pleroma.Formatter,
-    label: "Auto Linker",
+    label: "Linkify",
     type: :group,
     description:
       "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
