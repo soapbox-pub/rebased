@@ -1685,42 +1685,6 @@ defmodule Pleroma.User do
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
 
-  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
-  def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
-      when is_list(blocked_identifiers) do
-    Enum.map(
-      blocked_identifiers,
-      fn blocked_identifier ->
-        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, _block} <- CommonAPI.block(blocker, blocked) do
-          blocked
-        else
-          err ->
-            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
-  def perform(:follow_import, %User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    Enum.map(
-      followed_identifiers,
-      fn followed_identifier ->
-        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
-             {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
-          followed
-        else
-          err ->
-            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do
     User.Query.build(%{
@@ -1747,21 +1711,6 @@ defmodule Pleroma.User do
         else: query
 
     Repo.all(query)
-  end
-
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    BackgroundWorker.enqueue("blocks_import", %{
-      "blocker_id" => blocker.id,
-      "blocked_identifiers" => blocked_identifiers
-    })
-  end
-
-  def follow_import(%User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    BackgroundWorker.enqueue("follow_import", %{
-      "follower_id" => follower.id,
-      "followed_identifiers" => followed_identifiers
-    })
   end
 
   def delete_notifications_from_user_activities(%User{ap_id: ap_id}) do
