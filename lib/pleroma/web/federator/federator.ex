@@ -66,14 +66,17 @@ defmodule Pleroma.Web.Federator do
   def perform(:incoming_ap_doc, params) do
     Logger.debug("Handling incoming AP activity")
 
-    params = Utils.normalize_params(params)
+    actor =
+      params
+      |> Map.get("actor")
+      |> Utils.get_ap_id()
 
     # NOTE: we use the actor ID to do the containment, this is fine because an
     # actor shouldn't be acting on objects outside their own AP server.
-    with {:ok, _user} <- ap_enabled_actor(params["actor"]),
+    with {_, {:ok, _user}} <- {:actor, ap_enabled_actor(actor)},
          nil <- Activity.normalize(params["id"]),
          {_, :ok} <-
-           {:correct_origin?, Containment.contain_origin_from_id(params["actor"], params)},
+           {:correct_origin?, Containment.contain_origin_from_id(actor, params)},
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       {:ok, activity}
     else
@@ -85,10 +88,13 @@ defmodule Pleroma.Web.Federator do
         Logger.debug("Already had #{params["id"]}")
         {:error, :already_present}
 
+      {:actor, e} ->
+        Logger.debug("Unhandled actor #{actor}, #{inspect(e)}")
+        {:error, e}
+
       e ->
         # Just drop those for now
-        Logger.debug("Unhandled activity")
-        Logger.debug(Jason.encode!(params, pretty: true))
+        Logger.debug(fn -> "Unhandled activity\n" <> Jason.encode!(params, pretty: true) end)
         {:error, e}
     end
   end
