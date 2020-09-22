@@ -66,6 +66,14 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
            end) =~ "Your config is using old format (only domain) for MediaProxy whitelist option"
   end
 
+  test "check_welcome_message_config/0" do
+    clear_config([:instance, :welcome_user_nickname], "LainChan")
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_welcome_message_config()
+           end) =~ "Your config is using the old namespace for Welcome messages configuration."
+  end
+
   describe "check_gun_pool_options/0" do
     test "await_up_timeout" do
       config = Config.get(:connections_pool)
