@@ -33,34 +33,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
-  def mrf_user_allowlist do
-    config = Config.get(:mrf_user_allowlist)
-
-    if config && Enum.any?(config, fn {k, _} -> is_atom(k) end) do
-      rewritten =
-        Enum.reduce(Config.get(:mrf_user_allowlist), Map.new(), fn {k, v}, acc ->
-          Map.put(acc, to_string(k), v)
-        end)
-
-      Config.put(:mrf_user_allowlist, rewritten)
-
-      Logger.error("""
-      !!!DEPRECATION WARNING!!!
-      As of Pleroma 2.0.7, the `mrf_user_allowlist` setting changed of format.
-      Pleroma 2.1 will remove support for the old format. Please change your configuration to match this:
-
-      config :pleroma, :mrf_user_allowlist, #{inspect(rewritten, pretty: true)}
-      """)
-
-      :error
-    else
-      :ok
-    end
-  end
-
   def warn do
     with :ok <- check_hellthread_threshold(),
-         :ok <- mrf_user_allowlist(),
          :ok <- check_old_mrf_config(),
          :ok <- check_media_proxy_whitelist_config(),
          :ok <- check_welcome_message_config(),
