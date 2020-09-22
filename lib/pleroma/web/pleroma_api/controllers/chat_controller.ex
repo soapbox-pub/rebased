@@ -87,6 +87,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       conn
       |> put_view(MessageReferenceView)
       |> render("show.json", chat_message_reference: cm_ref)
+    else
+      {:reject, message} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: message})
+
+      {:error, message} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: message})
     end
   end
 
@@ -134,11 +144,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     blocked_ap_ids = User.blocked_users_ap_ids(user)
 
     chats =
-      from(c in Chat,
-        where: c.user_id == ^user_id,
-        where: c.recipient not in ^blocked_ap_ids,
-        order_by: [desc: c.updated_at]
-      )
+      Chat.for_user_query(user_id)
+      |> where([c], c.recipient not in ^blocked_ap_ids)
       |> Repo.all()
 
     conn

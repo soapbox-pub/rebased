@@ -46,7 +46,7 @@ defmodule Pleroma.Web.OAuth.Token.Strategy.RefreshToken do
   defp create_access_token({:error, error}, _), do: {:error, error}
 
   defp create_access_token({:ok, token}, %{app: app, user: user} = token_params) do
-    Token.create_token(app, user, add_refresh_token(token_params, token.refresh_token))
+    Token.create(app, user, add_refresh_token(token_params, token.refresh_token))
   end
 
   defp add_refresh_token(params, token) do

@@ -25,6 +25,14 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
+    test "excludes users when discoverable is false" do
+      insert(:user, %{nickname: "john 3000", discoverable: false})
+      insert(:user, %{nickname: "john 3001"})
+
+      users = User.search("john")
+      assert Enum.count(users) == 1
+    end
+
     test "excludes service actors from results" do
       insert(:user, actor_type: "Application", nickname: "user1")
       service = insert(:user, actor_type: "Service", nickname: "user2")

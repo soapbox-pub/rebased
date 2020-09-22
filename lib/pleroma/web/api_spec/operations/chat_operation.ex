@@ -185,7 +185,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
             "application/json",
             ChatMessage
           ),
-        400 => Operation.response("Bad Request", "application/json", ApiError)
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        422 => Operation.response("MRF Rejection", "application/json", ApiError)
       },
       security: [
         %{

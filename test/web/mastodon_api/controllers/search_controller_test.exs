@@ -282,18 +282,18 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       capture_log(fn ->
         {:ok, %{id: activity_id}} =
           CommonAPI.post(insert(:user), %{
-            status: "check out https://shitposter.club/notice/2827873"
+            status: "check out http://mastodon.example.org/@admin/99541947525187367"
           })
 
         results =
           conn
-          |> get("/api/v1/search?q=https://shitposter.club/notice/2827873")
+          |> get("/api/v1/search?q=http://mastodon.example.org/@admin/99541947525187367")
           |> json_response_and_validate_schema(200)
 
-        [status, %{"id" => ^activity_id}] = results["statuses"]
-
-        assert status["uri"] ==
-                 "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+        assert [
+                 %{"url" => "http://mastodon.example.org/@admin/99541947525187367"},
+                 %{"id" => ^activity_id}
+               ] = results["statuses"]
       end)
     end
 

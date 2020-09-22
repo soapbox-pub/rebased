@@ -239,7 +239,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         }
       }
 
-      assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
+      assert {:error, :remote_limit} = ActivityPub.insert(data)
     end
 
     test "doesn't drop activities with content being null" do
@@ -386,9 +386,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "create activities" do
-    test "it reverts create" do
-      user = insert(:user)
+    setup do
+      [user: insert(:user)]
+    end
 
+    test "it reverts create", %{user: user} do
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} =
                  ActivityPub.create(%{
@@ -407,9 +409,47 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.aggregate(Object, :count, :id) == 0
     end
 
-    test "removes doubled 'to' recipients" do
-      user = insert(:user)
+    test "creates activity if expiration is not configured and expires_at is not passed", %{
+      user: user
+    } do
+      clear_config([Pleroma.Workers.PurgeExpiredActivity, :enabled], false)
 
+      assert {:ok, _} =
+               ActivityPub.create(%{
+                 to: ["user1", "user2"],
+                 actor: user,
+                 context: "",
+                 object: %{
+                   "to" => ["user1", "user2"],
+                   "type" => "Note",
+                   "content" => "testing"
+                 }
+               })
+    end
+
+    test "rejects activity if expires_at present but expiration is not configured", %{user: user} do
+      clear_config([Pleroma.Workers.PurgeExpiredActivity, :enabled], false)
+
+      assert {:error, :expired_activities_disabled} =
+               ActivityPub.create(%{
+                 to: ["user1", "user2"],
+                 actor: user,
+                 context: "",
+                 object: %{
+                   "to" => ["user1", "user2"],
+                   "type" => "Note",
+                   "content" => "testing"
+                 },
+                 additional: %{
+                   "expires_at" => DateTime.utc_now()
+                 }
+               })
+
+      assert Repo.aggregate(Activity, :count, :id) == 0
+      assert Repo.aggregate(Object, :count, :id) == 0
+    end
+
+    test "removes doubled 'to' recipients", %{user: user} do
       {:ok, activity} =
         ActivityPub.create(%{
           to: ["user1", "user1", "user2"],
@@ -427,9 +467,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.recipients == ["user1", "user2", user.ap_id]
     end
 
-    test "increases user note count only for public activities" do
-      user = insert(:user)
-
+    test "increases user note count only for public activities", %{user: user} do
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
           status: "1",
@@ -458,8 +496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert user.note_count == 2
     end
 
-    test "increases replies count" do
-      user = insert(:user)
+    test "increases replies count", %{user: user} do
       user2 = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})
@@ -1773,6 +1810,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Enum.map(& &1.id)
 
       assert activities_ids == []
+
+      activities_ids =
+        %{}
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, nil)
+        |> ActivityPub.fetch_public_activities()
+
+      assert activities_ids == []
     end
 
     test "home timeline", %{users: %{u1: user}} do
@@ -2069,18 +2114,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "global activity expiration" do
-    setup do: clear_config([:mrf, :policies])
-
     test "creates an activity expiration for local Create activities" do
-      Pleroma.Config.put(
-        [:mrf, :policies],
-        Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
+      clear_config([:mrf, :policies], Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy)
+
+      {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity.id},
+        scheduled_at:
+          activity.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
       )
 
-      {:ok, %{id: id_create}} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
-      {:ok, _follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
-
-      assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
+      refute_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: follow.id}
+      )
     end
   end
 

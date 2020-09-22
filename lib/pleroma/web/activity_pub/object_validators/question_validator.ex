@@ -47,8 +47,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
-    field(:likes, {:array, :string}, default: [])
-    field(:announcements, {:array, :string}, default: [])
+    field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
 
     field(:closed, ObjectValidators.DateTime)
     field(:voters, {:array, ObjectValidators.ObjectID}, default: [])

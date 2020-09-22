@@ -56,6 +56,27 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
       %{method: :get, url: "http://example.com/error"} ->
         {:error, :overload}
+
+      %{
+        method: :head,
+        url: "http://example.com/huge-page"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          headers: [{"content-length", "2000001"}, {"content-type", "text/html"}]
+        }
+
+      %{
+        method: :head,
+        url: "http://example.com/pdf-file"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          headers: [{"content-length", "1000000"}, {"content-type", "application/pdf"}]
+        }
+
+      %{method: :head} ->
+        %Tesla.Env{status: 404, body: "", headers: []}
     end)
 
     :ok
@@ -143,5 +164,13 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
   test "returns error if getting page was not successful" do
     assert {:error, :overload} = Parser.parse("http://example.com/error")
+  end
+
+  test "does a HEAD request to check if the body is too large" do
+    assert {:error, :body_too_large} = Parser.parse("http://example.com/huge-page")
+  end
+
+  test "does a HEAD request to check if the body is html" do
+    assert {:error, {:content_type, _}} = Parser.parse("http://example.com/pdf-file")
   end
 end
