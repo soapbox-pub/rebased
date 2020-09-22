@@ -82,6 +82,14 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
            end) =~ "You are using the old configuration mechanism for the hellthread filter."
   end
 
+  test "check_activity_expiration_config/0" do
+    clear_config([Pleroma.ActivityExpiration, :enabled], true)
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_activity_expiration_config()
+           end) =~ "Your config is using old namespace for activity expiration configuration."
+  end
+
   describe "check_gun_pool_options/0" do
     test "await_up_timeout" do
       config = Config.get(:connections_pool)
