@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
+  alias Pleroma.Object.Containment
   alias Pleroma.Web.ActivityPub.Utils
 
   # based on Pleroma.Web.ActivityPub.Utils.lazy_put_objects_defaults
@@ -11,12 +12,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
       Utils.create_context(data["context"] || data["conversation"])
 
     data
-    |> Map.put_new("context", context)
-    |> Map.put_new("context_id", context_id)
+    |> Map.put("context", context)
+    |> Map.put("context_id", context_id)
   end
 
   def fix_attribution(data) do
     data
     |> Map.put_new("actor", data["attributedTo"])
+  end
+
+  def fix_actor(data) do
+    actor = Containment.get_actor(data)
+
+    data
+    |> Map.put("actor", actor)
+    |> Map.put("attributedTo", actor)
   end
 end

@@ -25,7 +25,6 @@ defmodule Pleroma.User do
   alias Pleroma.Object
   alias Pleroma.Registration
   alias Pleroma.Repo
-  alias Pleroma.RepoStreamer
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web
@@ -83,7 +82,7 @@ defmodule Pleroma.User do
   ]
 
   schema "users" do
-    field(:bio, :string)
+    field(:bio, :string, default: "")
     field(:raw_bio, :string)
     field(:email, :string)
     field(:name, :string)
@@ -276,9 +275,9 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
-  def account_status(%User{approval_pending: true}), do: :approval_pending
+  def account_status(%User{local: true, approval_pending: true}), do: :approval_pending
 
-  def account_status(%User{confirmation_pending: true}) do
+  def account_status(%User{local: true, confirmation_pending: true}) do
     if Config.get([:instance, :account_activation_required]) do
       :confirmation_pending
     else
@@ -1587,7 +1586,7 @@ defmodule Pleroma.User do
     # "Right to be forgotten"
     # https://gdpr.eu/right-to-be-forgotten/
     change(user, %{
-      bio: nil,
+      bio: "",
       raw_bio: nil,
       email: nil,
       name: nil,
@@ -1686,42 +1685,6 @@ defmodule Pleroma.User do
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
 
-  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
-  def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
-      when is_list(blocked_identifiers) do
-    Enum.map(
-      blocked_identifiers,
-      fn blocked_identifier ->
-        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, _block} <- CommonAPI.block(blocker, blocked) do
-          blocked
-        else
-          err ->
-            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
-  def perform(:follow_import, %User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    Enum.map(
-      followed_identifiers,
-      fn followed_identifier ->
-        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
-             {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
-          followed
-        else
-          err ->
-            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do
     User.Query.build(%{
@@ -1750,21 +1713,6 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    BackgroundWorker.enqueue("blocks_import", %{
-      "blocker_id" => blocker.id,
-      "blocked_identifiers" => blocked_identifiers
-    })
-  end
-
-  def follow_import(%User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    BackgroundWorker.enqueue("follow_import", %{
-      "follower_id" => follower.id,
-      "followed_identifiers" => followed_identifiers
-    })
-  end
-
   def delete_notifications_from_user_activities(%User{ap_id: ap_id}) do
     Notification
     |> join(:inner, [n], activity in assoc(n, :activity))
@@ -1775,7 +1723,7 @@ defmodule Pleroma.User do
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id
     |> Activity.Queries.by_actor()
-    |> RepoStreamer.chunk_stream(50)
+    |> Repo.chunk_stream(50, :batches)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity -> delete_activity(activity, user) end)
     end)
@@ -1821,12 +1769,12 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: Config.get([:markup, :scrub_policy])
 
-  def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
+  def fetch_by_ap_id(ap_id, opts \\ []), do: ActivityPub.make_user_from_ap_id(ap_id, opts)
 
-  def get_or_fetch_by_ap_id(ap_id) do
+  def get_or_fetch_by_ap_id(ap_id, opts \\ []) do
     cached_user = get_cached_by_ap_id(ap_id)
 
-    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id, opts)
 
     case {cached_user, maybe_fetched_user} do
       {_, {:ok, %User{} = user}} ->
@@ -1899,8 +1847,8 @@ defmodule Pleroma.User do
 
   def public_key(_), do: {:error, "key not found"}
 
-  def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
+  def get_public_key_for_ap_id(ap_id, opts \\ []) do
+    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id, opts),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
@@ -2315,6 +2263,11 @@ defmodule Pleroma.User do
       max_pinned_statuses = Config.get([:instance, :max_pinned_statuses], 0)
       params = %{pinned_activities: user.pinned_activities ++ [id]}
 
+      # if pinned activity was scheduled for deletion, we remove job
+      if expiration = Pleroma.Workers.PurgeExpiredActivity.get_expiration(id) do
+        Oban.cancel_job(expiration.id)
+      end
+
       user
       |> cast(params, [:pinned_activities])
       |> validate_length(:pinned_activities,
@@ -2327,8 +2280,18 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def remove_pinnned_activity(user, %Pleroma.Activity{id: id}) do
+  def remove_pinnned_activity(user, %Pleroma.Activity{id: id, data: data}) do
     params = %{pinned_activities: List.delete(user.pinned_activities, id)}
+
+    # if pinned activity was scheduled for deletion, we reschedule it for deletion
+    if data["expires_at"] do
+      {:ok, expires_at, _} = DateTime.from_iso8601(data["expires_at"])
+
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+        activity_id: id,
+        expires_at: expires_at
+      })
+    end
 
     user
     |> cast(params, [:pinned_activities])

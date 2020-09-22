@@ -6,8 +6,15 @@ defmodule Pleroma.Web.MediaProxyTest do
   use ExUnit.Case
   use Pleroma.Tests.Helpers
 
+  alias Pleroma.Config
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
+
+  defp decode_result(encoded) do
+    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
+    {:ok, decoded} = MediaProxy.decode_url(sig, base64)
+    decoded
+  end
 
   describe "when enabled" do
     setup do: clear_config([:media_proxy, :enabled], true)
@@ -35,7 +42,7 @@ defmodule Pleroma.Web.MediaProxyTest do
 
       assert String.starts_with?(
                encoded,
-               Pleroma.Config.get([:media_proxy, :base_url], Pleroma.Web.base_url())
+               Config.get([:media_proxy, :base_url], Pleroma.Web.base_url())
              )
 
       assert String.ends_with?(encoded, "/logo.png")
@@ -73,6 +80,64 @@ defmodule Pleroma.Web.MediaProxyTest do
 
       [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
       assert MediaProxy.decode_url(sig, base64) == {:error, :invalid_signature}
+    end
+
+    def test_verify_request_path_and_url(request_path, url, expected_result) do
+      assert MediaProxy.verify_request_path_and_url(request_path, url) == expected_result
+
+      assert MediaProxy.verify_request_path_and_url(
+               %Plug.Conn{
+                 params: %{"filename" => Path.basename(request_path)},
+                 request_path: request_path
+               },
+               url
+             ) == expected_result
+    end
+
+    test "if first arg of `verify_request_path_and_url/2` is a Plug.Conn without \"filename\" " <>
+           "parameter, `verify_request_path_and_url/2` returns :ok " do
+      assert MediaProxy.verify_request_path_and_url(
+               %Plug.Conn{params: %{}, request_path: "/some/path"},
+               "https://instance.com/file.jpg"
+             ) == :ok
+
+      assert MediaProxy.verify_request_path_and_url(
+               %Plug.Conn{params: %{}, request_path: "/path/to/file.jpg"},
+               "https://instance.com/file.jpg"
+             ) == :ok
+    end
+
+    test "`verify_request_path_and_url/2` preserves the encoded or decoded path" do
+      test_verify_request_path_and_url(
+        "/Hello world.jpg",
+        "http://pleroma.social/Hello world.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
+        "/Hello%20world.jpg",
+        "http://pleroma.social/Hello%20world.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
+        "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+        "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
+        # Note: `conn.request_path` returns encoded url
+        "/ANALYSE-DAI-_-LE-STABLECOIN-100-D%C3%89CENTRALIS%C3%89-BQ.jpg",
+        "https://mydomain.com/uploads/2019/07/ANALYSE-DAI-_-LE-STABLECOIN-100-DÉCENTRALISÉ-BQ.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
+        "/my%2Flong%2Furl%2F2019%2F07%2FS",
+        "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+        {:wrong_filename, "my%2Flong%2Furl%2F2019%2F07%2FS.jpg"}
+      )
     end
 
     test "uses the configured base_url" do
@@ -122,12 +187,6 @@ defmodule Pleroma.Web.MediaProxyTest do
     test "does not encode remote urls" do
       assert MediaProxy.url("https://google.fr") == "https://google.fr"
     end
-  end
-
-  defp decode_result(encoded) do
-    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
-    {:ok, decoded} = MediaProxy.decode_url(sig, base64)
-    decoded
   end
 
   describe "whitelist" do

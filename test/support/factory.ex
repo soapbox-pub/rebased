@@ -31,6 +31,7 @@ defmodule Pleroma.Factory do
       nickname: sequence(:nickname, &"nick#{&1}"),
       password_hash: Pbkdf2.hash_pwd_salt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
+      discoverable: true,
       last_digest_emailed_at: NaiveDateTime.utc_now(),
       last_refreshed_at: NaiveDateTime.utc_now(),
       notification_settings: %Pleroma.User.NotificationSetting{},
@@ -198,25 +199,6 @@ defmodule Pleroma.Factory do
       recipients: data["to"]
     }
     |> Map.merge(attrs)
-  end
-
-  defp expiration_offset_by_minutes(attrs, minutes) do
-    scheduled_at =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.add(:timer.minutes(minutes), :millisecond)
-      |> NaiveDateTime.truncate(:second)
-
-    %Pleroma.ActivityExpiration{}
-    |> Map.merge(attrs)
-    |> Map.put(:scheduled_at, scheduled_at)
-  end
-
-  def expiration_in_the_past_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, -60)
-  end
-
-  def expiration_in_the_future_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, 61)
   end
 
   def article_activity_factory do

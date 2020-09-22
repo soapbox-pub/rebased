@@ -22,6 +22,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
     }
   }
 
+  setup do: clear_config([:media_proxy, :enabled], true)
+
   test "it prefetches media proxy URIs" do
     with_mock HTTP, get: fn _, _, _ -> {:ok, []} end do
       MediaProxyWarmingPolicy.filter(@message)

@@ -11,10 +11,12 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.StreamerView
 
   @mix_env Mix.env()
@@ -26,53 +28,87 @@ defmodule Pleroma.Web.Streamer do
   @user_streams ["user", "user:notification", "direct", "user:pleroma_chat"]
 
   @doc "Expands and authorizes a stream, and registers the process for streaming."
-  @spec get_topic_and_add_socket(stream :: String.t(), User.t() | nil, Map.t() | nil) ::
+  @spec get_topic_and_add_socket(
+          stream :: String.t(),
+          User.t() | nil,
+          Token.t() | nil,
+          Map.t() | nil
+        ) ::
           {:ok, topic :: String.t()} | {:error, :bad_topic} | {:error, :unauthorized}
-  def get_topic_and_add_socket(stream, user, params \\ %{}) do
-    case get_topic(stream, user, params) do
+  def get_topic_and_add_socket(stream, user, oauth_token, params \\ %{}) do
+    case get_topic(stream, user, oauth_token, params) do
       {:ok, topic} -> add_socket(topic, user)
       error -> error
     end
   end
 
   @doc "Expand and authorizes a stream"
-  @spec get_topic(stream :: String.t(), User.t() | nil, Map.t()) ::
+  @spec get_topic(stream :: String.t(), User.t() | nil, Token.t() | nil, Map.t()) ::
           {:ok, topic :: String.t()} | {:error, :bad_topic}
-  def get_topic(stream, user, params \\ %{})
+  def get_topic(stream, user, oauth_token, params \\ %{})
 
   # Allow all public steams.
-  def get_topic(stream, _, _) when stream in @public_streams do
+  def get_topic(stream, _user, _oauth_token, _params) when stream in @public_streams do
     {:ok, stream}
   end
 
   # Allow all hashtags streams.
-  def get_topic("hashtag", _, %{"tag" => tag}) do
+  def get_topic("hashtag", _user, _oauth_token, %{"tag" => tag} = _params) do
     {:ok, "hashtag:" <> tag}
   end
 
   # Expand user streams.
-  def get_topic(stream, %User{} = user, _) when stream in @user_streams do
-    {:ok, stream <> ":" <> to_string(user.id)}
+  def get_topic(
+        stream,
+        %User{id: user_id} = user,
+        %Token{user_id: token_user_id} = oauth_token,
+        _params
+      )
+      when stream in @user_streams and user_id == token_user_id do
+    # Note: "read" works for all user streams (not mentioning it since it's an ancestor scope)
+    required_scopes =
+      if stream == "user:notification" do
+        ["read:notifications"]
+      else
+        ["read:statuses"]
+      end
+
+    if OAuthScopesPlug.filter_descendants(required_scopes, oauth_token.scopes) == [] do
+      {:error, :unauthorized}
+    else
+      {:ok, stream <> ":" <> to_string(user.id)}
+    end
   end
 
-  def get_topic(stream, _, _) when stream in @user_streams do
+  def get_topic(stream, _user, _oauth_token, _params) when stream in @user_streams do
     {:error, :unauthorized}
   end
 
   # List streams.
-  def get_topic("list", %User{} = user, %{"list" => id}) do
-    if Pleroma.List.get(id, user) do
-      {:ok, "list:" <> to_string(id)}
-    else
-      {:error, :bad_topic}
+  def get_topic(
+        "list",
+        %User{id: user_id} = user,
+        %Token{user_id: token_user_id} = oauth_token,
+        %{"list" => id}
+      )
+      when user_id == token_user_id do
+    cond do
+      OAuthScopesPlug.filter_descendants(["read", "read:lists"], oauth_token.scopes) == [] ->
+        {:error, :unauthorized}
+
+      Pleroma.List.get(id, user) ->
+        {:ok, "list:" <> to_string(id)}
+
+      true ->
+        {:error, :bad_topic}
     end
   end
 
-  def get_topic("list", _, _) do
+  def get_topic("list", _user, _oauth_token, _params) do
     {:error, :unauthorized}
   end
 
-  def get_topic(_, _, _) do
+  def get_topic(_stream, _user, _oauth_token, _params) do
     {:error, :bad_topic}
   end
 

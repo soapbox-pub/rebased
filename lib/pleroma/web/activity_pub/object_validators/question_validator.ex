@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
 
@@ -35,8 +36,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:attributedTo, ObjectValidators.ObjectID)
     field(:summary, :string)
     field(:published, ObjectValidators.DateTime)
-    # TODO: Write type
-    field(:emoji, :map, default: %{})
+    field(:emoji, ObjectValidators.Emoji, default: %{})
     field(:sensitive, :boolean, default: false)
     embeds_many(:attachment, AttachmentValidator)
     field(:replies_count, :integer, default: 0)
@@ -47,8 +47,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
-    field(:likes, {:array, :string}, default: [])
-    field(:announcements, {:array, :string}, default: [])
+    field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
 
     field(:closed, ObjectValidators.DateTime)
     field(:voters, {:array, ObjectValidators.ObjectID}, default: [])
@@ -85,6 +85,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     data
     |> CommonFixes.fix_defaults()
     |> CommonFixes.fix_attribution()
+    |> Transmogrifier.fix_emoji()
     |> fix_closed()
   end
 

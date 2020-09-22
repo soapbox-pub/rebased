@@ -67,7 +67,7 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
     assert following == [other_user.follower_address]
   end
 
-  test "removing users from a list" do
+  test "removing users from a list, body params" do
     %{user: user, conn: conn} = oauth_access(["write:lists"])
     other_user = insert(:user)
     third_user = insert(:user)
@@ -79,6 +79,24 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
              conn
              |> put_req_header("content-type", "application/json")
              |> delete("/api/v1/lists/#{list.id}/accounts", %{"account_ids" => [other_user.id]})
+             |> json_response_and_validate_schema(:ok)
+
+    %Pleroma.List{following: following} = Pleroma.List.get(list.id, user)
+    assert following == [third_user.follower_address]
+  end
+
+  test "removing users from a list, query params" do
+    %{user: user, conn: conn} = oauth_access(["write:lists"])
+    other_user = insert(:user)
+    third_user = insert(:user)
+    {:ok, list} = Pleroma.List.create("name", user)
+    {:ok, list} = Pleroma.List.follow(list, other_user)
+    {:ok, list} = Pleroma.List.follow(list, third_user)
+
+    assert %{} ==
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> delete("/api/v1/lists/#{list.id}/accounts?account_ids[]=#{other_user.id}")
              |> json_response_and_validate_schema(:ok)
 
     %Pleroma.List{following: following} = Pleroma.List.get(list.id, user)

@@ -203,7 +203,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         assert user.note_count == 0
         assert user.follower_count == 0
         assert user.following_count == 0
-        assert user.bio == nil
+        assert user.bio == ""
         assert user.name == nil
 
         assert called(Pleroma.Web.Federator.publish(:_))
@@ -1507,6 +1507,56 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
 
       assert json_response(conn_res, 200) |> length() == 1
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats" do
+    setup do
+      user = insert(:user)
+      recipients = insert_list(3, :user)
+
+      Enum.each(recipients, fn recipient ->
+        CommonAPI.post_chat_message(user, recipient, "yo")
+      end)
+
+      %{user: user}
+    end
+
+    test "renders user's chats", %{conn: conn, user: user} do
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
+
+      assert json_response(conn, 200) |> length() == 3
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthorized" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
+      %{conn: conn} = oauth_access(["read:chats"])
+      %{conn: conn, user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthenticated" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
+      %{conn: build_conn(), user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
     end
   end
 
