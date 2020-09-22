@@ -74,6 +74,14 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
            end) =~ "Your config is using the old namespace for Welcome messages configuration."
   end
 
+  test "check_hellthread_threshold/0" do
+    clear_config([:mrf_hellthread, :threshold], 16)
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_hellthread_threshold()
+           end) =~ "You are using the old configuration mechanism for the hellthread filter."
+  end
+
   describe "check_gun_pool_options/0" do
     test "await_up_timeout" do
       config = Config.get(:connections_pool)
