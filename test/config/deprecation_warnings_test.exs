@@ -74,7 +74,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
       assert capture_log(fn ->
                DeprecationWarnings.check_gun_pool_options()
              end) =~
-               "Your config is using old setting name `await_up_timeout` instead of `connect_timeout`"
+               "Your config is using old setting `config :pleroma, :connections_pool, await_up_timeout`."
     end
 
     test "pool timeout" do

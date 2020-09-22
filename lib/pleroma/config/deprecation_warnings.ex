@@ -122,7 +122,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     if timeout = pool_config[:await_up_timeout] do
       Logger.warn("""
       !!!DEPRECATION WARNING!!!
-      Your config is using old setting name `await_up_timeout` instead of `connect_timeout`. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+      Your config is using old setting `config :pleroma, :connections_pool, await_up_timeout`. Please change to `config :pleroma, :connections_pool, connect_timeout` to ensure compatibility with future releases.
       """)
 
       Config.put(:connections_pool, Keyword.put_new(pool_config, :connect_timeout, timeout))
