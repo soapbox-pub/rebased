@@ -27,8 +27,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
             properties: %{
               relays: %Schema{
                 type: :array,
-                items: %Schema{type: :string},
-                example: ["lain.com", "mstdn.io"]
+                items: relay()
               }
             }
           })
@@ -43,19 +42,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       operationId: "AdminAPI.RelayController.follow",
       security: [%{"oAuth" => ["write:follows"]}],
       parameters: admin_api_params(),
-      requestBody:
-        request_body("Parameters", %Schema{
-          type: :object,
-          properties: %{
-            relay_url: %Schema{type: :string, format: :uri}
-          }
-        }),
+      requestBody: request_body("Parameters", relay_url()),
       responses: %{
-        200 =>
-          Operation.response("Status", "application/json", %Schema{
-            type: :string,
-            example: "http://mastodon.example.org/users/admin"
-          })
+        200 => Operation.response("Status", "application/json", relay())
       }
     }
   end
@@ -67,19 +56,38 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       operationId: "AdminAPI.RelayController.unfollow",
       security: [%{"oAuth" => ["write:follows"]}],
       parameters: admin_api_params(),
-      requestBody:
-        request_body("Parameters", %Schema{
-          type: :object,
-          properties: %{
-            relay_url: %Schema{type: :string, format: :uri}
-          }
-        }),
+      requestBody: request_body("Parameters", relay_url()),
       responses: %{
         200 =>
           Operation.response("Status", "application/json", %Schema{
             type: :string,
             example: "http://mastodon.example.org/users/admin"
           })
+      }
+    }
+  end
+
+  defp relay do
+    %Schema{
+      type: :object,
+      properties: %{
+        actor: %Schema{
+          type: :string,
+          example: "https://example.com/relay"
+        },
+        followed_back: %Schema{
+          type: :boolean,
+          description: "Is relay followed back by this actor?"
+        }
+      }
+    }
+  end
+
+  defp relay_url do
+    %Schema{
+      type: :object,
+      properties: %{
+        relay_url: %Schema{type: :string, format: :uri}
       }
     }
   end

@@ -52,6 +52,7 @@ defmodule Pleroma.User.Search do
     |> base_query(following)
     |> filter_blocked_user(for_user)
     |> filter_invisible_users()
+    |> filter_discoverable_users()
     |> filter_internal_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
@@ -115,11 +116,15 @@ defmodule Pleroma.User.Search do
     )
   end
 
-  defp base_query(_user, false), do: User
-  defp base_query(user, true), do: User.get_followers_query(user)
+  defp base_query(%User{} = user, true), do: User.get_friends_query(user)
+  defp base_query(_user, _following), do: User
 
   defp filter_invisible_users(query) do
     from(q in query, where: q.invisible == false)
+  end
+
+  defp filter_discoverable_users(query) do
+    from(q in query, where: q.discoverable == true)
   end
 
   defp filter_internal_users(query) do

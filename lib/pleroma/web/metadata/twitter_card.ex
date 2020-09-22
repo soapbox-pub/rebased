@@ -40,7 +40,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
 
   @impl Provider
   def build_tags(%{user: user}) do
-    with truncated_bio = Utils.scrub_html_and_truncate(user.bio || "") do
+    with truncated_bio = Utils.scrub_html_and_truncate(user.bio) do
       [
         title_tag(user),
         {:meta, [property: "twitter:description", content: truncated_bio], []},

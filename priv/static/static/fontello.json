@@ -405,6 +405,12 @@
       "css": "block",
       "code": 59434,
       "src": "fontawesome"
+    },
+    {
+      "uid": "3e674995cacc2b09692c096ea7eb6165",
+      "css": "megaphone",
+      "code": 59435,
+      "src": "fontawesome"
     }
   ]
 }

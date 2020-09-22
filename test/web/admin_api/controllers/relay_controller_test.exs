@@ -39,8 +39,10 @@ defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
           relay_url: "http://mastodon.example.org/users/admin"
         })
 
-      assert json_response_and_validate_schema(conn, 200) ==
-               "http://mastodon.example.org/users/admin"
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "actor" => "http://mastodon.example.org/users/admin",
+               "followed_back" => false
+             }
 
       log_entry = Repo.one(ModerationLog)
 
@@ -59,8 +61,13 @@ defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/relay")
 
-      assert json_response_and_validate_schema(conn, 200)["relays"] --
-               ["mastodon.example.org", "mstdn.io"] == []
+      assert json_response_and_validate_schema(conn, 200)["relays"] == [
+               %{
+                 "actor" => "http://mastodon.example.org/users/admin",
+                 "followed_back" => true
+               },
+               %{"actor" => "https://mstdn.io/users/mayuutann", "followed_back" => true}
+             ]
     end
 
     test "DELETE /relay", %{conn: conn, admin: admin} do

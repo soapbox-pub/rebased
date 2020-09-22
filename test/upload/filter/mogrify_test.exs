@@ -33,7 +33,7 @@ defmodule Pleroma.Upload.Filter.MogrifyTest do
       custom: fn _m, _a -> :ok end,
       custom: fn m, a, o -> send(task.pid, {:apply_filter, {m, a, o}}) end,
       save: fn _f, _o -> :ok end do
-      assert Filter.Mogrify.filter(upload) == :ok
+      assert Filter.Mogrify.filter(upload) == {:ok, :filtered}
     end
 
     Task.await(task)

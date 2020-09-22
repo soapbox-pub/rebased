@@ -114,8 +114,16 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       {:ok, _reply_from_friend} =
         CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
 
-      res_conn = get(conn, "/api/v1/timelines/public")
-      [%{"id" => ^activity_id}] = json_response_and_validate_schema(res_conn, 200)
+      # Still shows replies from yourself
+      {:ok, %{id: reply_from_me}} =
+        CommonAPI.post(blocker, %{status: "status", in_reply_to_status_id: reply_from_blockee})
+
+      response =
+        get(conn, "/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert length(response) == 2
+      [%{"id" => ^reply_from_me}, %{"id" => ^activity_id}] = response
     end
 
     test "doesn't return replies if follow is posting with users from blocked domain" do
@@ -332,6 +340,46 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
   describe "list" do
     setup do: oauth_access(["read:lists"])
+
+    test "does not contain retoots", %{user: user, conn: conn} do
+      other_user = insert(:user)
+      {:ok, activity_one} = CommonAPI.post(user, %{status: "Marisa is cute."})
+      {:ok, activity_two} = CommonAPI.post(other_user, %{status: "Marisa is stupid."})
+      {:ok, _} = CommonAPI.repeat(activity_one.id, other_user)
+
+      {:ok, list} = Pleroma.List.create("name", user)
+      {:ok, list} = Pleroma.List.follow(list, other_user)
+
+      conn = get(conn, "/api/v1/timelines/list/#{list.id}")
+
+      assert [%{"id" => id}] = json_response_and_validate_schema(conn, :ok)
+
+      assert id == to_string(activity_two.id)
+    end
+
+    test "works with pagination", %{user: user, conn: conn} do
+      other_user = insert(:user)
+      {:ok, list} = Pleroma.List.create("name", user)
+      {:ok, list} = Pleroma.List.follow(list, other_user)
+
+      Enum.each(1..30, fn i ->
+        CommonAPI.post(other_user, %{status: "post number #{i}"})
+      end)
+
+      res =
+        get(conn, "/api/v1/timelines/list/#{list.id}?limit=1")
+        |> json_response_and_validate_schema(:ok)
+
+      assert length(res) == 1
+
+      [first] = res
+
+      res =
+        get(conn, "/api/v1/timelines/list/#{list.id}?max_id=#{first["id"]}&limit=30")
+        |> json_response_and_validate_schema(:ok)
+
+      assert length(res) == 29
+    end
 
     test "list timeline", %{user: user, conn: conn} do
       other_user = insert(:user)

@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Object.Fetcher
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -43,15 +42,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       object = Object.normalize(data["object"])
 
       assert "test" in object.data["tag"]
-    end
-
-    test "it works for incoming notices with url not being a string (prismo)" do
-      data = File.read!("test/fixtures/prismo-url-map.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
-
-      assert object.data["url"] == "https://prismo.news/posts/83"
     end
 
     test "it cleans up incoming notices which are not really DMs" do
@@ -105,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       object =
         data["object"]
-        |> Map.put("inReplyTo", "https://shitposter.club/notice/2827873")
+        |> Map.put("inReplyTo", "https://mstdn.io/users/mayuutann/statuses/99568293732299394")
 
       data = Map.put(data, "object", object)
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
@@ -113,10 +103,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity =
                Activity.get_create_by_object_ap_id(
-                 "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+                 "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
                )
 
-      assert returned_object.data["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+      assert returned_object.data["inReplyTo"] ==
+               "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
     end
 
     test "it does not fetch reply-to activities beyond max replies depth limit" do
@@ -140,8 +131,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
                )
 
-        assert returned_object.data["inReplyToAtomUri"] ==
-                 "https://shitposter.club/notice/2827873"
+        assert returned_object.data["inReplyTo"] == "https://shitposter.club/notice/2827873"
       end
     end
 
@@ -353,83 +343,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
       refute User.following?(User.get_cached_by_ap_id(data["actor"]), user)
-    end
-
-    test "skip converting the content when it is nil" do
-      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
-
-      {:ok, object} = Fetcher.fetch_and_contain_remote_object_from_id(object_id)
-
-      result =
-        Pleroma.Web.ActivityPub.Transmogrifier.fix_object(Map.merge(object, %{"content" => nil}))
-
-      assert result["content"] == nil
-    end
-
-    test "it converts content of object to html" do
-      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
-
-      {:ok, %{"content" => content_markdown}} =
-        Fetcher.fetch_and_contain_remote_object_from_id(object_id)
-
-      {:ok, %Pleroma.Object{data: %{"content" => content}} = object} =
-        Fetcher.fetch_object_from_id(object_id)
-
-      assert content_markdown ==
-               "Support this and our other Michigan!/usr/group videos and meetings. Learn more at http://mug.org/membership\n\nTwenty Years in Jail: FreeBSD's Jails, Then and Now\n\nJails started as a limited virtualization system, but over the last two years they've..."
-
-      assert content ==
-               "<p>Support this and our other Michigan!/usr/group videos and meetings. Learn more at <a href=\"http://mug.org/membership\">http://mug.org/membership</a></p><p>Twenty Years in Jail: FreeBSD’s Jails, Then and Now</p><p>Jails started as a limited virtualization system, but over the last two years they’ve…</p>"
-
-      assert object.data["mediaType"] == "text/html"
-    end
-
-    test "it remaps video URLs as attachments if necessary" do
-      {:ok, object} =
-        Fetcher.fetch_object_from_id(
-          "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
-        )
-
-      assert object.data["url"] ==
-               "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
-
-      assert object.data["attachment"] == [
-               %{
-                 "type" => "Link",
-                 "mediaType" => "video/mp4",
-                 "url" => [
-                   %{
-                     "href" =>
-                       "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-                     "mediaType" => "video/mp4",
-                     "type" => "Link"
-                   }
-                 ]
-               }
-             ]
-
-      {:ok, object} =
-        Fetcher.fetch_object_from_id(
-          "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
-        )
-
-      assert object.data["attachment"] == [
-               %{
-                 "type" => "Link",
-                 "mediaType" => "video/mp4",
-                 "url" => [
-                   %{
-                     "href" =>
-                       "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
-                     "mediaType" => "video/mp4",
-                     "type" => "Link"
-                   }
-                 ]
-               }
-             ]
-
-      assert object.data["url"] ==
-               "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
     end
 
     test "it accepts Flag activities" do
@@ -1072,7 +985,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Transmogrifier.fix_in_reply_to(data) == data
     end
 
-    test "returns object with inReplyToAtomUri when denied incoming reply", %{data: data} do
+    test "returns object with inReplyTo when denied incoming reply", %{data: data} do
       Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
 
       object_with_reply =
@@ -1080,26 +993,22 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == "https://shitposter.club/notice/2827873"
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       object_with_reply =
         Map.put(data["object"], "inReplyTo", %{"id" => "https://shitposter.club/notice/2827873"})
 
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == %{"id" => "https://shitposter.club/notice/2827873"}
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       object_with_reply =
         Map.put(data["object"], "inReplyTo", ["https://shitposter.club/notice/2827873"])
 
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == ["https://shitposter.club/notice/2827873"]
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
       object_with_reply = Map.put(data["object"], "inReplyTo", [])
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
       assert modified_object["inReplyTo"] == []
-      assert modified_object["inReplyToAtomUri"] == ""
     end
 
     @tag capture_log: true
@@ -1108,19 +1017,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         Map.put(
           data["object"],
           "inReplyTo",
-          "https://shitposter.club/notice/2827873"
+          "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
         )
 
       Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 5)
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
 
       assert modified_object["inReplyTo"] ==
-               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-
-      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+               "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
 
       assert modified_object["context"] ==
-               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
+               "tag:shitposter.club,2018-02-22:objectType=thread:nonce=e5a7c72d60a9c0e4"
     end
   end
 
@@ -1139,75 +1046,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              }
     end
 
-    test "fixes data for video object" do
-      object = %{
-        "type" => "Video",
-        "url" => [
-          %{
-            "type" => "Link",
-            "mimeType" => "video/mp4",
-            "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
-          },
-          %{
-            "type" => "Link",
-            "mimeType" => "video/mp4",
-            "href" => "https://peertube46fb-ad81-2d4c2d1630e3-240.mp4"
-          },
-          %{
-            "type" => "Link",
-            "mimeType" => "text/html",
-            "href" => "https://peertube.-2d4c2d1630e3"
-          },
-          %{
-            "type" => "Link",
-            "mimeType" => "text/html",
-            "href" => "https://peertube.-2d4c2d16377-42"
-          }
-        ]
-      }
-
-      assert Transmogrifier.fix_url(object) == %{
-               "attachment" => [
-                 %{
-                   "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-                   "mimeType" => "video/mp4",
-                   "type" => "Link"
-                 }
-               ],
-               "type" => "Video",
-               "url" => "https://peertube.-2d4c2d1630e3"
-             }
-    end
-
-    test "fixes url for not Video object" do
-      object = %{
-        "type" => "Text",
-        "url" => [
-          %{
-            "type" => "Link",
-            "mimeType" => "text/html",
-            "href" => "https://peertube.-2d4c2d1630e3"
-          },
-          %{
-            "type" => "Link",
-            "mimeType" => "text/html",
-            "href" => "https://peertube.-2d4c2d16377-42"
-          }
-        ]
-      }
-
-      assert Transmogrifier.fix_url(object) == %{
-               "type" => "Text",
-               "url" => "https://peertube.-2d4c2d1630e3"
-             }
-
-      assert Transmogrifier.fix_url(%{"type" => "Text", "url" => []}) == %{
-               "type" => "Text",
-               "url" => ""
-             }
-    end
-
-    test "retunrs not modified object" do
+    test "returns non-modified object" do
       assert Transmogrifier.fix_url(%{"type" => "Text"}) == %{"type" => "Text"}
     end
   end
@@ -1222,7 +1061,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     @tag capture_log: true
     test "returns {:ok, %Object{}} for success case" do
       assert {:ok, %Object{}} =
-               Transmogrifier.get_obj_helper("https://shitposter.club/notice/2827873")
+               Transmogrifier.get_obj_helper(
+                 "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
+               )
     end
   end
 

@@ -3,13 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.DatabaseTest do
+  use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-
-  use Pleroma.DataCase
 
   import Pleroma.Factory
 
@@ -130,40 +131,45 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
 
   describe "ensure_expiration" do
     test "it adds to expiration old statuses" do
-      %{id: activity_id1} = insert(:note_activity)
+      activity1 = insert(:note_activity)
 
-      %{id: activity_id2} =
-        insert(:note_activity, %{inserted_at: NaiveDateTime.from_iso8601!("2015-01-23 23:50:07")})
+      {:ok, inserted_at, 0} = DateTime.from_iso8601("2015-01-23T23:50:07Z")
+      activity2 = insert(:note_activity, %{inserted_at: inserted_at})
 
-      %{id: activity_id3} = activity3 = insert(:note_activity)
+      %{id: activity_id3} = insert(:note_activity)
 
-      expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(60 * 61, :second)
-        |> NaiveDateTime.truncate(:second)
+      expires_at = DateTime.add(DateTime.utc_now(), 60 * 61)
 
-      Pleroma.ActivityExpiration.create(activity3, expires_at)
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+        activity_id: activity_id3,
+        expires_at: expires_at
+      })
 
       Mix.Tasks.Pleroma.Database.run(["ensure_expiration"])
 
-      expirations =
-        Pleroma.ActivityExpiration
-        |> order_by(:activity_id)
-        |> Repo.all()
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity1.id},
+        scheduled_at:
+          activity1.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
+      )
 
-      assert [
-               %Pleroma.ActivityExpiration{
-                 activity_id: ^activity_id1
-               },
-               %Pleroma.ActivityExpiration{
-                 activity_id: ^activity_id2,
-                 scheduled_at: ~N[2016-01-23 23:50:07]
-               },
-               %Pleroma.ActivityExpiration{
-                 activity_id: ^activity_id3,
-                 scheduled_at: ^expires_at
-               }
-             ] = expirations
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity2.id},
+        scheduled_at:
+          activity2.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
+      )
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity_id3},
+        scheduled_at: expires_at
+      )
     end
   end
 end

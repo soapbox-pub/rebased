@@ -136,18 +136,30 @@ defmodule Pleroma.Web.WebFinger do
 
   def find_lrdd_template(domain) do
     with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           HTTP.get("http://#{domain}/.well-known/host-meta", []) do
+           HTTP.get("http://#{domain}/.well-known/host-meta") do
       get_template_from_xml(body)
     else
       _ ->
         with {:ok, %{body: body, status: status}} when status in 200..299 <-
-               HTTP.get("https://#{domain}/.well-known/host-meta", []) do
+               HTTP.get("https://#{domain}/.well-known/host-meta") do
           get_template_from_xml(body)
         else
           e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
         end
     end
   end
+
+  defp get_address_from_domain(domain, encoded_account) when is_binary(domain) do
+    case find_lrdd_template(domain) do
+      {:ok, template} ->
+        String.replace(template, "{uri}", encoded_account)
+
+      _ ->
+        "https://#{domain}/.well-known/webfinger?resource=#{encoded_account}"
+    end
+  end
+
+  defp get_address_from_domain(_, _), do: nil
 
   @spec finger(String.t()) :: {:ok, map()} | {:error, any()}
   def finger(account) do
@@ -163,16 +175,8 @@ defmodule Pleroma.Web.WebFinger do
 
     encoded_account = URI.encode("acct:#{account}")
 
-    address =
-      case find_lrdd_template(domain) do
-        {:ok, template} ->
-          String.replace(template, "{uri}", encoded_account)
-
-        _ ->
-          "https://#{domain}/.well-known/webfinger?resource=#{encoded_account}"
-      end
-
-    with response <-
+    with address when is_binary(address) <- get_address_from_domain(domain, encoded_account),
+         response <-
            HTTP.get(
              address,
              [{"accept", "application/xrd+xml,application/jrd+json"}]

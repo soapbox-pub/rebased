@@ -19,13 +19,13 @@ defmodule Pleroma.MigrationHelper.NotificationBackfill do
     query
     |> Repo.chunk_stream(100)
     |> Enum.each(fn notification ->
-      type =
-        notification.activity
-        |> type_from_activity()
+      if notification.activity do
+        type = type_from_activity(notification.activity)
 
-      notification
-      |> Ecto.Changeset.change(%{type: type})
-      |> Repo.update()
+        notification
+        |> Ecto.Changeset.change(%{type: type})
+        |> Repo.update()
+      end
     end)
   end
 
@@ -72,8 +72,7 @@ defmodule Pleroma.MigrationHelper.NotificationBackfill do
         "pleroma:emoji_reaction"
 
       "Create" ->
-        activity
-        |> type_from_activity_object()
+        type_from_activity_object(activity)
 
       t ->
         raise "No notification type for activity type #{t}"

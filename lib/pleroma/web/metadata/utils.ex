@@ -38,7 +38,7 @@ defmodule Pleroma.Web.Metadata.Utils do
   def scrub_html(content), do: content
 
   def attachment_url(url) do
-    MediaProxy.url(url)
+    MediaProxy.preview_url(url)
   end
 
   def user_name_string(user) do

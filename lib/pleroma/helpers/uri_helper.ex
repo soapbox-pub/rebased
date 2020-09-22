@@ -3,18 +3,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Helpers.UriHelper do
-  def append_uri_params(uri, appended_params) do
+  def modify_uri_params(uri, overridden_params, deleted_params \\ []) do
     uri = URI.parse(uri)
-    appended_params = for {k, v} <- appended_params, into: %{}, do: {to_string(k), v}
-    existing_params = URI.query_decoder(uri.query || "") |> Enum.into(%{})
-    updated_params_keys = Enum.uniq(Map.keys(existing_params) ++ Map.keys(appended_params))
+
+    existing_params = URI.query_decoder(uri.query || "") |> Map.new()
+    overridden_params = Map.new(overridden_params, fn {k, v} -> {to_string(k), v} end)
+    deleted_params = Enum.map(deleted_params, &to_string/1)
 
     updated_params =
-      for k <- updated_params_keys, do: {k, appended_params[k] || existing_params[k]}
+      existing_params
+      |> Map.merge(overridden_params)
+      |> Map.drop(deleted_params)
 
     uri
     |> Map.put(:query, URI.encode_query(updated_params))
     |> URI.to_string()
+    |> String.replace_suffix("?", "")
   end
 
   def maybe_add_base("/" <> uri, base), do: Path.join([base, uri])

@@ -7,7 +7,7 @@ This document was written for FreeBSD 12.1, but should be work on future release
 This assumes the target system has `pkg(8)`.
 
 ```
-# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh
+# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake
 ```
 
 Copy the rc.d scripts to the right directory:

@@ -1442,7 +1442,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "verify_credentials" do
     test "verify_credentials" do
       %{user: user, conn: conn} = oauth_access(["read:accounts"])
-      [notification | _] = insert_list(7, :notification, user: user)
+
+      [notification | _] =
+        insert_list(7, :notification, user: user, activity: insert(:note_activity))
+
       Pleroma.Notification.set_read_up_to(user, notification.id)
       conn = get(conn, "/api/v1/accounts/verify_credentials")
 

@@ -19,8 +19,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     :ok
   end
 
-  setup do: clear_config([:instances_favicons, :enabled])
-
   test "Represent a user account" do
     background_image = %{
       "url" => [%{"href" => "https://example.com/images/asuka_hospital.png"}]
@@ -71,15 +69,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         sensitive: false,
         pleroma: %{
           actor_type: "Person",
-          discoverable: false
+          discoverable: true
         },
         fields: []
       },
       pleroma: %{
         ap_id: user.ap_id,
         background_image: "https://example.com/images/asuka_hospital.png",
-        favicon:
-          "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
+        favicon: nil,
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -98,22 +95,26 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("show.json", %{user: user, skip_visibility_check: true})
   end
 
-  test "Favicon is nil when :instances_favicons is disabled" do
-    user = insert(:user)
+  describe "favicon" do
+    setup do
+      [user: insert(:user)]
+    end
 
-    Config.put([:instances_favicons, :enabled], true)
+    test "is parsed when :instance_favicons is enabled", %{user: user} do
+      clear_config([:instances_favicons, :enabled], true)
 
-    assert %{
-             pleroma: %{
-               favicon:
-                 "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png"
-             }
-           } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+      assert %{
+               pleroma: %{
+                 favicon:
+                   "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png"
+               }
+             } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+    end
 
-    Config.put([:instances_favicons, :enabled], false)
-
-    assert %{pleroma: %{favicon: nil}} =
-             AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+    test "is nil when :instances_favicons is disabled", %{user: user} do
+      assert %{pleroma: %{favicon: nil}} =
+               AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+    end
   end
 
   test "Represent the user account for the account owner" do
@@ -166,15 +167,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         sensitive: false,
         pleroma: %{
           actor_type: "Service",
-          discoverable: false
+          discoverable: true
         },
         fields: []
       },
       pleroma: %{
         ap_id: user.ap_id,
         background_image: nil,
-        favicon:
-          "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
+        favicon: nil,
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -449,7 +449,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     test "shows unread_count only to the account owner" do
       user = insert(:user)
-      insert_list(7, :notification, user: user)
+      insert_list(7, :notification, user: user, activity: insert(:note_activity))
       other_user = insert(:user)
 
       user = User.get_cached_by_ap_id(user.ap_id)
@@ -541,8 +541,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
   end
 
-  test "uses mediaproxy urls when it's enabled" do
+  test "uses mediaproxy urls when it's enabled (regardless of media preview proxy state)" do
     clear_config([:media_proxy, :enabled], true)
+    clear_config([:media_preview_proxy, :enabled])
 
     user =
       insert(:user,
@@ -551,20 +552,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         emoji: %{"joker_smile" => "https://evil.website/society.png"}
       )
 
-    AccountView.render("show.json", %{user: user, skip_visibility_check: true})
-    |> Enum.all?(fn
-      {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
-        String.starts_with?(url, Pleroma.Web.base_url())
+    with media_preview_enabled <- [false, true] do
+      Config.put([:media_preview_proxy, :enabled], media_preview_enabled)
 
-      {:emojis, emojis} ->
-        Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
-          String.starts_with?(url, Pleroma.Web.base_url()) &&
-            String.starts_with?(static_url, Pleroma.Web.base_url())
-        end)
+      AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+      |> Enum.all?(fn
+        {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
+          String.starts_with?(url, Pleroma.Web.base_url())
 
-      _ ->
-        true
-    end)
-    |> assert()
+        {:emojis, emojis} ->
+          Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
+            String.starts_with?(url, Pleroma.Web.base_url()) &&
+              String.starts_with?(static_url, Pleroma.Web.base_url())
+          end)
+
+        _ ->
+          true
+      end)
+      |> assert()
+    end
   end
 end

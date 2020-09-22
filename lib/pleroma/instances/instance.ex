@@ -14,6 +14,8 @@ defmodule Pleroma.Instances.Instance do
   import Ecto.Query
   import Ecto.Changeset
 
+  require Logger
+
   schema "instances" do
     field(:host, :string)
     field(:unreachable_since, :naive_datetime_usec)
@@ -145,25 +147,32 @@ defmodule Pleroma.Instances.Instance do
 
       favicon
     end
+  rescue
+    e ->
+      Logger.warn("Instance.get_or_update_favicon(\"#{host}\") error: #{inspect(e)}")
+      nil
   end
 
   defp scrape_favicon(%URI{} = instance_uri) do
     try do
       with {:ok, %Tesla.Env{body: html}} <-
-             Pleroma.HTTP.get(to_string(instance_uri), [{:Accept, "text/html"}]),
-           favicon_rel <-
-             html
-             |> Floki.parse_document!()
-             |> Floki.attribute("link[rel=icon]", "href")
-             |> List.first(),
-           favicon <- URI.merge(instance_uri, favicon_rel) |> to_string(),
-           true <- is_binary(favicon) do
+             Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}], pool: :media),
+           {_, [favicon_rel | _]} when is_binary(favicon_rel) <-
+             {:parse,
+              html |> Floki.parse_document!() |> Floki.attribute("link[rel=icon]", "href")},
+           {_, favicon} when is_binary(favicon) <-
+             {:merge, URI.merge(instance_uri, favicon_rel) |> to_string()} do
         favicon
       else
         _ -> nil
       end
     rescue
-      _ -> nil
+      e ->
+        Logger.warn(
+          "Instance.scrape_favicon(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
+        )
+
+        nil
     end
   end
 end

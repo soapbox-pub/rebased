@@ -36,7 +36,7 @@ defmodule Pleroma.Upload.Filter.MogrifunTest do
          save: fn _f, _o -> :ok end
        ]}
     ]) do
-      assert Filter.Mogrifun.filter(upload) == :ok
+      assert Filter.Mogrifun.filter(upload) == {:ok, :filtered}
     end
 
     Task.await(task)

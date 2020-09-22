@@ -130,6 +130,7 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
+         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -146,6 +147,16 @@ config :pleroma, Pleroma.Web.Endpoint,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
+  ]
+
+config :pleroma, :fed_sockets,
+  enabled: false,
+  connection_duration: :timer.hours(8),
+  rejection_duration: :timer.minutes(15),
+  fed_socket_fetches: [
+    default: 12_000,
+    interval: 3_000,
+    lazy: false
   ]
 
 # Configures Elixir's Logger
@@ -216,7 +227,6 @@ config :pleroma, :instance,
   allow_relay: true,
   public: true,
   quarantined_instances: [],
-  managed_config: true,
   static_dir: "instance/static/",
   allowed_post_formats: [
     "text/plain",
@@ -412,6 +422,7 @@ config :pleroma, :rich_media,
     Pleroma.Web.RichMedia.Parsers.TwitterCard,
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ],
+  failure_backoff: 60_000,
   ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
 
 config :pleroma, :media_proxy,
@@ -423,6 +434,8 @@ config :pleroma, :media_proxy,
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
+    # Note: max_read_duration defaults to Pleroma.ReverseProxy.max_read_duration_default/1
+    max_read_duration: 30_000,
     http: [
       follow_redirect: true,
       pool: :media
@@ -436,6 +449,14 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
   options: []
 
 config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
+
+# Note: media preview proxy depends on media proxy to be enabled
+config :pleroma, :media_preview_proxy,
+  enabled: false,
+  thumbnail_max_width: 600,
+  thumbnail_max_height: 600,
+  image_quality: 85,
+  min_content_length: 100 * 1024
 
 config :pleroma, :chat, enabled: true
 
@@ -453,9 +474,7 @@ config :pleroma, :gopher,
 config :pleroma, Pleroma.Web.Metadata,
   providers: [
     Pleroma.Web.Metadata.Providers.OpenGraph,
-    Pleroma.Web.Metadata.Providers.TwitterCard,
-    Pleroma.Web.Metadata.Providers.RelMe,
-    Pleroma.Web.Metadata.Providers.Feed
+    Pleroma.Web.Metadata.Providers.TwitterCard
   ],
   unfurl_nsfw: false
 
@@ -531,8 +550,10 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
+    token_expiration: 5,
     federator_incoming: 50,
     federator_outgoing: 50,
+    ingestion_queue: 50,
     web_push: 50,
     mailer: 10,
     transmogrifier: 20,
@@ -544,9 +565,6 @@ config :pleroma, Oban,
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
-    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-    {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
-    {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
@@ -657,7 +675,7 @@ config :pleroma, :rate_limit,
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
 
-config :pleroma, Pleroma.ActivityExpiration, enabled: true
+config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
 
@@ -671,7 +689,50 @@ config :pleroma, :static_fe, enabled: false
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
 #
-# config :pleroma, :frontends, primary: %{"name" => "pleroma", "ref" => "develop"}
+# config :pleroma, :frontends,
+# primary: %{"name" => "pleroma-fe", "ref" => "develop"},
+# admin: %{"name" => "admin-fe", "ref" => "stable"},
+# available: %{...}
+
+config :pleroma, :frontends,
+  available: %{
+    "kenoma" => %{
+      "name" => "kenoma",
+      "git" => "https://git.pleroma.social/lambadalambda/kenoma",
+      "build_url" =>
+        "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "master"
+    },
+    "pleroma-fe" => %{
+      "name" => "pleroma-fe",
+      "git" => "https://git.pleroma.social/pleroma/pleroma-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/pleroma-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "develop"
+    },
+    "fedi-fe" => %{
+      "name" => "fedi-fe",
+      "git" => "https://git.pleroma.social/pleroma/fedi-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "master"
+    },
+    "admin-fe" => %{
+      "name" => "admin-fe",
+      "git" => "https://git.pleroma.social/pleroma/admin-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "develop"
+    },
+    "soapbox-fe" => %{
+      "name" => "soapbox-fe",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+      "build_url" =>
+        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+      "ref" => "v1.0.0",
+      "build_dir" => "static"
+    }
+  }
 
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
@@ -692,24 +753,28 @@ config :pleroma, :connections_pool,
   max_connections: 250,
   max_idle_time: 30_000,
   retry: 0,
-  await_up_timeout: 5_000
+  connect_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_waiting: 10
+    max_waiting: 10,
+    recv_timeout: 10_000
   ],
   media: [
     size: 50,
-    max_waiting: 10
+    max_waiting: 20,
+    recv_timeout: 15_000
   ],
   upload: [
     size: 25,
-    max_waiting: 5
+    max_waiting: 5,
+    recv_timeout: 15_000
   ],
   default: [
     size: 10,
-    max_waiting: 2
+    max_waiting: 2,
+    recv_timeout: 5_000
   ]
 
 config :pleroma, :hackney_pools,
@@ -743,6 +808,8 @@ config :pleroma, :mrf,
 config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
+config :web_push_encryption, http_client: Pleroma.HTTP
 
 config :pleroma, :instances_favicons, enabled: false
 

@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   require Pleroma.Constants
 
   alias Pleroma.Activity
-  alias Pleroma.ActivityExpiration
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -22,6 +21,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MediaProxy
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
+
+  # This is a naive way to do this, just spawning a process per activity
+  # to fetch the preview. However it should be fine considering
+  # pagination is restricted to 40 activities at a time
+  defp fetch_rich_media_for_activities(activities) do
+    Enum.each(activities, fn activity ->
+      spawn(fn ->
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      end)
+    end)
+  end
 
   # TODO: Add cached version.
   defp get_replied_to_activities([]), do: %{}
@@ -45,23 +55,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  def get_user(ap_id, fake_record_fallback \\ true) do
-    cond do
-      user = User.get_cached_by_ap_id(ap_id) ->
-        user
-
-      user = User.get_by_guessed_nickname(ap_id) ->
-        user
-
-      fake_record_fallback ->
-        # TODO: refactor (fake records is never a good idea)
-        User.error_user(ap_id)
-
-      true ->
-        nil
-    end
-  end
-
   defp get_context_id(%{data: %{"context_id" => context_id}}) when not is_nil(context_id),
     do: context_id
 
@@ -80,6 +73,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
     activities = Enum.filter(opts.activities, & &1)
+
+    # Start fetching rich media before doing anything else, so that later calls to get the cards
+    # only block for timeout in the worst case, as opposed to
+    # length(activities_with_links) * timeout
+    fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
 
     parent_activities =
@@ -104,7 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           # Note: unresolved users are filtered out
           actors =
             (activities ++ parent_activities)
-            |> Enum.map(&get_user(&1.data["actor"], false))
+            |> Enum.map(&CommonAPI.get_user(&1.data["actor"], false))
             |> Enum.filter(& &1)
 
           UserRelationship.view_relationships_option(reading_user, actors, subset: :source_mutes)
@@ -123,7 +121,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         "show.json",
         %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
       ) do
-    user = get_user(activity.data["actor"])
+    user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
     activity_object = Object.normalize(activity)
 
@@ -196,7 +194,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
     object = Object.normalize(activity)
 
-    user = get_user(activity.data["actor"])
+    user = CommonAPI.get_user(activity.data["actor"])
     user_follower_address = user.follower_address
 
     like_count = object.data["like_count"] || 0
@@ -229,8 +227,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     expires_at =
       with true <- client_posted_this_activity,
-           %ActivityExpiration{scheduled_at: scheduled_at} <-
-             ActivityExpiration.get_by_activity_id(activity.id) do
+           %Oban.Job{scheduled_at: scheduled_at} <-
+             Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id) do
         scheduled_at
       else
         _ -> nil
@@ -250,7 +248,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     reply_to = get_reply_to(activity, opts)
 
-    reply_to_user = reply_to && get_user(reply_to.data["actor"])
+    reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
 
     content =
       object
@@ -417,6 +415,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     [attachment_url | _] = attachment["url"]
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
     href = attachment_url["href"] |> MediaProxy.url()
+    href_preview = attachment_url["href"] |> MediaProxy.preview_url()
 
     type =
       cond do
@@ -432,7 +431,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: to_string(attachment["id"] || hash_id),
       url: href,
       remote_url: href,
-      preview_url: href,
+      preview_url: href_preview,
       text_url: href,
       type: type,
       description: attachment["name"],
@@ -473,23 +472,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Video", "Event", "Audio"] do
-    with name when not is_nil(name) and name != "" <- object.data["name"] do
-      "<p><a href=\"#{object.data["id"]}\">#{name}</a></p>#{object.data["content"]}"
-    else
-      _ -> object.data["content"] || ""
-    end
-  end
+  def render_content(%{data: %{"name" => name}} = object) when not is_nil(name) and name != "" do
+    url = object.data["url"] || object.data["id"]
 
-  def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Article", "Page"] do
-    with summary when not is_nil(summary) and summary != "" <- object.data["name"],
-         url when is_bitstring(url) <- object.data["url"] do
-      "<p><a href=\"#{url}\">#{summary}</a></p>#{object.data["content"]}"
-    else
-      _ -> object.data["content"] || ""
-    end
+    "<p><a href=\"#{url}\">#{name}</a></p>#{object.data["content"]}"
   end
 
   def render_content(object), do: object.data["content"] || ""

@@ -6,12 +6,11 @@ defmodule Pleroma.HTTP.AdapterHelper do
   @moduledoc """
   Configure Tesla.Client with default and customized adapter options.
   """
-  @defaults [pool: :federation]
+  @defaults [pool: :federation, connect_timeout: 5_000, recv_timeout: 5_000]
 
   @type proxy_type() :: :socks4 | :socks5
   @type host() :: charlist() | :inet.ip_address()
 
-  alias Pleroma.Config
   alias Pleroma.HTTP.AdapterHelper
   require Logger
 
@@ -20,7 +19,6 @@ defmodule Pleroma.HTTP.AdapterHelper do
           | {Connection.proxy_type(), Connection.host(), pos_integer()}
 
   @callback options(keyword(), URI.t()) :: keyword()
-  @callback get_conn(URI.t(), keyword()) :: {:ok, term()} | {:error, term()}
 
   @spec format_proxy(String.t() | tuple() | nil) :: proxy() | nil
   def format_proxy(nil), do: nil
@@ -44,27 +42,10 @@ defmodule Pleroma.HTTP.AdapterHelper do
   @spec options(URI.t(), keyword()) :: keyword()
   def options(%URI{} = uri, opts \\ []) do
     @defaults
-    |> put_timeout()
     |> Keyword.merge(opts)
     |> adapter_helper().options(uri)
   end
 
-  # For Hackney, this is the time a connection can stay idle in the pool.
-  # For Gun, this is the timeout to receive a message from Gun.
-  defp put_timeout(opts) do
-    {config_key, default} =
-      if adapter() == Tesla.Adapter.Gun do
-        {:pools, Config.get([:pools, :default, :timeout], 5_000)}
-      else
-        {:hackney_pools, 10_000}
-      end
-
-    timeout = Config.get([config_key, opts[:pool], :timeout], default)
-
-    Keyword.merge(opts, timeout: timeout)
-  end
-
-  def get_conn(uri, opts), do: adapter_helper().get_conn(uri, opts)
   defp adapter, do: Application.get_env(:tesla, :adapter)
 
   defp adapter_helper do

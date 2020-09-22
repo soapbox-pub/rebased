@@ -40,6 +40,11 @@ defmodule Pleroma.Web.WebFingerTest do
   end
 
   describe "fingering" do
+    test "returns error for nonsensical input" do
+      assert {:error, _} = WebFinger.finger("bliblablu")
+      assert {:error, _} = WebFinger.finger("pleroma.social")
+    end
+
     test "returns error when fails parse xml or json" do
       user = "invalid_content@social.heldscal.la"
       assert {:error, %Jason.DecodeError{}} = WebFinger.finger(user)
