@@ -59,8 +59,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
         |> post("/api/pleroma/emoji/packs/test_pack/files", %{
           file: %Plug.Upload{
             content_type: "application/zip",
-            filename: "finland-emojis.zip",
-            path: Path.absname("test/fixtures/finland-emojis.zip")
+            filename: "emojis.zip",
+            path: Path.absname("test/fixtures/emojis.zip")
           }
         })
         |> json_response_and_validate_schema(200)

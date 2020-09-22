@@ -37,8 +37,8 @@ defmodule Pleroma.Emoji.PackTest do
     test "add emojies from zip file", %{pack: pack} do
       file = %Plug.Upload{
         content_type: "application/zip",
-        filename: "finland-emojis.zip",
-        path: Path.absname("test/fixtures/finland-emojis.zip")
+        filename: "emojis.zip",
+        path: Path.absname("test/fixtures/emojis.zip")
       }
 
       {:ok, updated_pack} = Pack.add_file(pack, nil, nil, file)
@@ -58,7 +58,7 @@ defmodule Pleroma.Emoji.PackTest do
   test "returns error when zip file is bad", %{pack: pack} do
     file = %Plug.Upload{
       content_type: "application/zip",
-      filename: "finland-emojis.zip",
+      filename: "emojis.zip",
       path: Path.absname("test/instance_static/emoji/test_pack/blank.png")
     }
 
@@ -68,7 +68,7 @@ defmodule Pleroma.Emoji.PackTest do
   test "returns pack when zip file is empty", %{pack: pack} do
     file = %Plug.Upload{
       content_type: "application/zip",
-      filename: "finland-emojis.zip",
+      filename: "emojis.zip",
       path: Path.absname("test/fixtures/empty.zip")
     }
 
