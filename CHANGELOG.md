@@ -5,9 +5,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
-### Added
-- Experimental websocket-based federation between Pleroma instances.
-
 ### Changed
 
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
@@ -19,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Media preview proxy (requires media proxy be enabled; see `:media_preview_proxy` config for more details).
 - Pleroma API: Importing the mutes users from CSV files.
+- Experimental websocket-based federation between Pleroma instances.
+- Admin API: Importing emoji from a zip file
 
 ### Removed
 
@@ -29,7 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 switched to a new configuration mechanism, however it was not officially removed until now.
 
 ### Fixed
+
 - Add documented-but-missing chat pagination.
+- Allow sending out emails again.
 
 ## [2.1.2] - 2020-09-17
 
