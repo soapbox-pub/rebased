@@ -509,7 +509,12 @@ defmodule Pleroma.UserTest do
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
-      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(registered_user))
+
+      Pleroma.Emails.UserEmail.account_confirmation_email(registered_user)
+      # temporary hackney fix until hackney max_connections bug is fixed
+      # https://git.pleroma.social/pleroma/pleroma/-/issues/2101
+      |> Swoosh.Email.put_private(:hackney_options, ssl_options: [versions: [:"tlsv1.2"]])
+      |> assert_email_sent()
     end
 
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
