@@ -53,7 +53,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
     |> assign(:token, nil)
   end
 
-  @doc "Filters descendants of supported scopes"
+  @doc "Keeps those of `scopes` which are descendants of `supported_scopes`"
   def filter_descendants(scopes, supported_scopes) do
     Enum.filter(
       scopes,

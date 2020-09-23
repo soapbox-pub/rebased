@@ -238,9 +238,9 @@ defmodule Pleroma.Web.Router do
       patch("/:name", EmojiPackController, :update)
       delete("/:name", EmojiPackController, :delete)
 
-      post("/:name/files", EmojiPackController, :add_file)
-      patch("/:name/files", EmojiPackController, :update_file)
-      delete("/:name/files", EmojiPackController, :delete_file)
+      post("/:name/files", EmojiFileController, :create)
+      patch("/:name/files", EmojiFileController, :update)
+      delete("/:name/files", EmojiFileController, :delete)
     end
 
     # Pack info / downloading
@@ -269,13 +269,14 @@ defmodule Pleroma.Web.Router do
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
-
-    post("/blocks_import", UtilController, :blocks_import)
-    post("/follow_import", UtilController, :follow_import)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:authenticated_api)
+
+    post("/mutes_import", UserImportController, :mutes)
+    post("/blocks_import", UserImportController, :blocks)
+    post("/follow_import", UserImportController, :follow)
 
     get("/accounts/mfa", TwoFactorAuthenticationController, :settings)
     get("/accounts/mfa/backup_codes", TwoFactorAuthenticationController, :backup_codes)

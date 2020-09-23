@@ -509,7 +509,12 @@ defmodule Pleroma.UserTest do
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
-      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(registered_user))
+
+      Pleroma.Emails.UserEmail.account_confirmation_email(registered_user)
+      # temporary hackney fix until hackney max_connections bug is fixed
+      # https://git.pleroma.social/pleroma/pleroma/-/issues/2101
+      |> Swoosh.Email.put_private(:hackney_options, ssl_options: [versions: [:"tlsv1.2"]])
+      |> assert_email_sent()
     end
 
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
@@ -971,23 +976,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "follow_import" do
-    test "it imports user followings from list" do
-      [user1, user2, user3] = insert_list(3, :user)
-
-      identifiers = [
-        user2.ap_id,
-        user3.nickname
-      ]
-
-      {:ok, job} = User.follow_import(user1, identifiers)
-
-      assert {:ok, result} = ObanHelpers.perform(job)
-      assert is_list(result)
-      assert result == [user2, user3]
-    end
-  end
-
   describe "mutes" do
     test "it mutes people" do
       user = insert(:user)
@@ -1223,23 +1211,6 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.follow(user, good_eggo)
 
       refute User.blocks?(user, good_eggo)
-    end
-  end
-
-  describe "blocks_import" do
-    test "it imports user blocks from list" do
-      [user1, user2, user3] = insert_list(3, :user)
-
-      identifiers = [
-        user2.ap_id,
-        user3.nickname
-      ]
-
-      {:ok, job} = User.blocks_import(user1, identifiers)
-
-      assert {:ok, result} = ObanHelpers.perform(job)
-      assert is_list(result)
-      assert result == [user2, user3]
     end
   end
 

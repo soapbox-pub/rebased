@@ -27,6 +27,21 @@ defmodule Pleroma.DataCase do
       import Ecto.Query
       import Pleroma.DataCase
       use Pleroma.Tests.Helpers
+
+      # Sets up OAuth access with specified scopes
+      defp oauth_access(scopes, opts \\ []) do
+        user =
+          Keyword.get_lazy(opts, :user, fn ->
+            Pleroma.Factory.insert(:user)
+          end)
+
+        token =
+          Keyword.get_lazy(opts, :oauth_token, fn ->
+            Pleroma.Factory.insert(:oauth_token, user: user, scopes: scopes)
+          end)
+
+        %{user: user, token: token}
+      end
     end
   end
 

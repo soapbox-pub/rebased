@@ -7,6 +7,7 @@ defmodule Pleroma.Web.FedSockets.OutgoingHandler do
 
   require Logger
 
+  alias Pleroma.Application
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.FedSockets
   alias Pleroma.Web.FedSockets.FedRegistry
@@ -85,9 +86,12 @@ defmodule Pleroma.Web.FedSockets.OutgoingHandler do
 
     %{host: host, port: port, path: path} = URI.parse(ws_uri)
 
-    with {:ok, conn_pid} <- :gun.open(to_charlist(host), port),
+    with {:ok, conn_pid} <- :gun.open(to_charlist(host), port, %{protocols: [:http]}),
          {:ok, _} <- :gun.await_up(conn_pid),
-         reference <- :gun.get(conn_pid, to_charlist(path)),
+         reference <-
+           :gun.get(conn_pid, to_charlist(path), [
+             {'user-agent', to_charlist(Application.user_agent())}
+           ]),
          {:response, :fin, 204, _} <- :gun.await(conn_pid, reference),
          headers <- build_headers(uri),
          ref <- :gun.ws_upgrade(conn_pid, to_charlist(path), headers, %{silence_pings: false}) do
@@ -132,7 +136,8 @@ defmodule Pleroma.Web.FedSockets.OutgoingHandler do
       {'date', date},
       {'digest', to_charlist(digest)},
       {'content-length', to_charlist("#{shake_size}")},
-      {to_charlist("(request-target)"), to_charlist(shake)}
+      {to_charlist("(request-target)"), to_charlist(shake)},
+      {'user-agent', to_charlist(Application.user_agent())}
     ]
   end
 

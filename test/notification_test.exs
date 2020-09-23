@@ -179,17 +179,19 @@ defmodule Pleroma.NotificationTest do
   describe "create_notification" do
     @tag needs_streamer: true
     test "it creates a notification for user and send to the 'user' and the 'user:notification' stream" do
-      user = insert(:user)
+      %{user: user, token: oauth_token} = oauth_access(["read"])
 
       task =
         Task.async(fn ->
-          Streamer.get_topic_and_add_socket("user", user)
+          {:ok, _topic} = Streamer.get_topic_and_add_socket("user", user, oauth_token)
           assert_receive {:render_with_user, _, _, _}, 4_000
         end)
 
       task_user_notification =
         Task.async(fn ->
-          Streamer.get_topic_and_add_socket("user:notification", user)
+          {:ok, _topic} =
+            Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
+
           assert_receive {:render_with_user, _, _, _}, 4_000
         end)
 
