@@ -515,15 +515,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => objtype}} = data,
+        %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
         _options
       )
       when objtype in ~w{Question Answer ChatMessage Audio Video Event Article} do
     data = Map.put(data, "object", strip_internal_fields(data["object"]))
 
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         nil <- Activity.get_create_by_object_ap_id(obj_id),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
+    else
+      %Activity{} = activity -> {:ok, activity}
+      e -> e
     end
   end
 
