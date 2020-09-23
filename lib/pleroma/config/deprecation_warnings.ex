@@ -20,6 +20,66 @@ defmodule Pleroma.Config.DeprecationWarnings do
      "\n* `config :pleroma, :instance, mrf_transparency_exclusions` is now `config :pleroma, :mrf, transparency_exclusions`"}
   ]
 
+  def check_simple_policy_tuples do
+    has_strings =
+      Config.get([:mrf_simple])
+      |> Enum.any?(fn {_, v} -> Enum.any?(v, fn e -> is_binary(e) end) end)
+
+    if has_strings do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using strings in the SimplePolicy configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, :mrf_simple,
+        media_removal: ["instance.tld"],
+        media_nsfw: ["instance.tld"],
+        federated_timeline_removal: ["instance.tld"],
+        report_removal: ["instance.tld"],
+        reject: ["instance.tld"],
+        followers_only: ["instance.tld"],
+        accept: ["instance.tld"],
+        avatar_removal: ["instance.tld"],
+        banner_removal: ["instance.tld"],
+        reject_deletes: ["instance.tld"]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, :mrf_simple,
+        media_removal: [{"instance.tld", "Reason for media removal"}],
+        media_nsfw: [{"instance.tld", "Reason for media nsfw"}],
+        federated_timeline_removal: [{"instance.tld", "Reason for federated timeline removal"}],
+        report_removal: [{"instance.tld", "Reason for report removal"}],
+        reject: [{"instance.tld", "Reason for reject"}],
+        followers_only: [{"instance.tld", "Reason for followers only"}],
+        accept: [{"instance.tld", "Reason for accept"}],
+        avatar_removal: [{"instance.tld", "Reason for avatar removal"}],
+        banner_removal: [{"instance.tld", "Reason for banner removal"}],
+        reject_deletes: [{"instance.tld", "Reason for reject deletes"}]
+      ```
+      """)
+
+      new_config =
+        Config.get([:mrf_simple])
+        |> Enum.map(fn {k, v} ->
+          {k,
+           Enum.map(v, fn
+             {instance, reason} -> {instance, reason}
+             instance -> {instance, ""}
+           end)}
+        end)
+
+      Config.put([:mrf_simple], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
   def check_hellthread_threshold do
     if Config.get([:mrf_hellthread, :threshold]) do
       Logger.warn("""
@@ -42,7 +102,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
          :ok <- check_activity_expiration_config(),
          :ok <- check_remote_ip_plug_name(),
          :ok <- check_uploders_s3_public_endpoint(),
-         :ok <- check_old_chat_shoutbox() do
+         :ok <- check_old_chat_shoutbox(),
+         :ok <- check_simple_policy_tuples() do
       :ok
     else
       _ ->
