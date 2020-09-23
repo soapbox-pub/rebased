@@ -67,7 +67,12 @@ defmodule Pleroma.BackupTest do
     assert {:ok, backup} = perform_job(BackupWorker, delete_job_args)
     refute Backup.get(backup_id)
 
-    assert_email_sent(Pleroma.Emails.UserEmail.backup_is_ready_email(backup))
+    email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup)
+
+    assert_email_sent(
+      to: {user.name, user.email},
+      html_body: email.html_body
+    )
   end
 
   test "it removes outdated backups after creating a fresh one" do

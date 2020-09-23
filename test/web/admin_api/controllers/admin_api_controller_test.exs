@@ -2042,7 +2042,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       ObanHelpers.perform_all()
 
-      assert_email_sent(Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id))
+      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id)
+
+      assert String.contains?(email.html_body, "Admin @#{admin.nickname} requested a full backup")
+      assert_email_sent(to: {user.name, user.email}, html_body: email.html_body)
     end
 
     test "it doesn't limit admins", %{conn: conn} do
