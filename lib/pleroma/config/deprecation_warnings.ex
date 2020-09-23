@@ -8,7 +8,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
   require Logger
   alias Pleroma.Config
 
-  @type config_namespace() :: [atom()]
+  @type config_namespace() :: atom() | [atom()]
   @type config_map() :: {config_namespace(), config_namespace(), String.t()}
 
   @mrf_config_map [
@@ -26,6 +26,10 @@ defmodule Pleroma.Config.DeprecationWarnings do
       !!!DEPRECATION WARNING!!!
       You are using the old configuration mechanism for the hellthread filter. Please check config.md.
       """)
+
+      :error
+    else
+      :ok
     end
   end
 
@@ -47,16 +51,26 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
       config :pleroma, :mrf_user_allowlist, #{inspect(rewritten, pretty: true)}
       """)
+
+      :error
+    else
+      :ok
     end
   end
 
   def warn do
-    check_hellthread_threshold()
-    mrf_user_allowlist()
-    check_old_mrf_config()
-    check_media_proxy_whitelist_config()
-    check_welcome_message_config()
-    check_gun_pool_options()
+    with :ok <- check_hellthread_threshold(),
+         :ok <- mrf_user_allowlist(),
+         :ok <- check_old_mrf_config(),
+         :ok <- check_media_proxy_whitelist_config(),
+         :ok <- check_welcome_message_config(),
+         :ok <- check_gun_pool_options(),
+         :ok <- check_activity_expiration_config() do
+      :ok
+    else
+      _ ->
+        :error
+    end
   end
 
   def check_welcome_message_config do
@@ -73,6 +87,10 @@ defmodule Pleroma.Config.DeprecationWarnings do
       \n* `config :pleroma, :instance, welcome_user_nickname` is now `config :pleroma, :welcome, :direct_message, :sender_nickname`
       \n* `config :pleroma, :instance, welcome_message` is now `config :pleroma, :welcome, :direct_message, :message`
       """)
+
+      :error
+    else
+      :ok
     end
   end
 
@@ -100,8 +118,11 @@ defmodule Pleroma.Config.DeprecationWarnings do
           end
       end)
 
-    if warning != "" do
+    if warning == "" do
+      :ok
+    else
       Logger.warn(warning_preface <> warning)
+      :error
     end
   end
 
@@ -114,6 +135,10 @@ defmodule Pleroma.Config.DeprecationWarnings do
       !!!DEPRECATION WARNING!!!
       Your config is using old format (only domain) for MediaProxy whitelist option. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
       """)
+
+      :error
+    else
+      :ok
     end
   end
 
@@ -156,6 +181,25 @@ defmodule Pleroma.Config.DeprecationWarnings do
       Logger.warn(Enum.join([warning_preface | pool_warnings]))
 
       Config.put(:pools, updated_config)
+      :error
+    else
+      :ok
     end
+  end
+
+  @spec check_activity_expiration_config() :: :ok | nil
+  def check_activity_expiration_config do
+    warning_preface = """
+    !!!DEPRECATION WARNING!!!
+      Your config is using old namespace for activity expiration configuration. Setting should work for now, but you are advised to change to new namespace to prevent possible issues later:
+    """
+
+    move_namespace_and_warn(
+      [
+        {Pleroma.ActivityExpiration, Pleroma.Workers.PurgeExpiredActivity,
+         "\n* `config :pleroma, Pleroma.ActivityExpiration` is now `config :pleroma, Pleroma.Workers.PurgeExpiredActivity`"}
+      ],
+      warning_preface
+    )
   end
 end

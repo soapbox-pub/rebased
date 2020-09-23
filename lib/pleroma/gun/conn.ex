@@ -50,10 +50,10 @@ defmodule Pleroma.Gun.Conn do
 
     with open_opts <- Map.delete(opts, :tls_opts),
          {:ok, conn} <- Gun.open(proxy_host, proxy_port, open_opts),
-         {:ok, _} <- Gun.await_up(conn, opts[:connect_timeout]),
+         {:ok, protocol} <- Gun.await_up(conn, opts[:connect_timeout]),
          stream <- Gun.connect(conn, connect_opts),
          {:response, :fin, 200, _} <- Gun.await(conn, stream) do
-      {:ok, conn}
+      {:ok, conn, protocol}
     else
       error ->
         Logger.warn(
@@ -88,8 +88,8 @@ defmodule Pleroma.Gun.Conn do
       |> Map.put(:socks_opts, socks_opts)
 
     with {:ok, conn} <- Gun.open(proxy_host, proxy_port, opts),
-         {:ok, _} <- Gun.await_up(conn, opts[:connect_timeout]) do
-      {:ok, conn}
+         {:ok, protocol} <- Gun.await_up(conn, opts[:connect_timeout]) do
+      {:ok, conn, protocol}
     else
       error ->
         Logger.warn(
@@ -106,8 +106,8 @@ defmodule Pleroma.Gun.Conn do
     host = Pleroma.HTTP.AdapterHelper.parse_host(host)
 
     with {:ok, conn} <- Gun.open(host, port, opts),
-         {:ok, _} <- Gun.await_up(conn, opts[:connect_timeout]) do
-      {:ok, conn}
+         {:ok, protocol} <- Gun.await_up(conn, opts[:connect_timeout]) do
+      {:ok, conn, protocol}
     else
       error ->
         Logger.warn(

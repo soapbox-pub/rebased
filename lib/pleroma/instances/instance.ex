@@ -156,16 +156,12 @@ defmodule Pleroma.Instances.Instance do
   defp scrape_favicon(%URI{} = instance_uri) do
     try do
       with {:ok, %Tesla.Env{body: html}} <-
-             Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}],
-               adapter: [pool: :media]
-             ),
-           favicon_rel <-
-             html
-             |> Floki.parse_document!()
-             |> Floki.attribute("link[rel=icon]", "href")
-             |> List.first(),
-           favicon <- URI.merge(instance_uri, favicon_rel) |> to_string(),
-           true <- is_binary(favicon) do
+             Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}], pool: :media),
+           {_, [favicon_rel | _]} when is_binary(favicon_rel) <-
+             {:parse,
+              html |> Floki.parse_document!() |> Floki.attribute("link[rel=icon]", "href")},
+           {_, favicon} when is_binary(favicon) <-
+             {:merge, URI.merge(instance_uri, favicon_rel) |> to_string()} do
         favicon
       else
         _ -> nil

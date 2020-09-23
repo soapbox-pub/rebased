@@ -272,6 +272,19 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :fed_sockets,
+    type: :group,
+    description: "Websocket based federation",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enable FedSockets"
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: Pleroma.Emails.Mailer,
     type: :group,
     description: "Mailer-related settings",
@@ -763,12 +776,6 @@ config :pleroma, :config_description, [
           "quarantined.com",
           "*.quarantined.com"
         ]
-      },
-      %{
-        key: :managed_config,
-        type: :boolean,
-        description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
       },
       %{
         key: :static_dir,
@@ -1880,6 +1887,7 @@ config :pleroma, :config_description, [
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
+          max_read_duration: 30_000,
           http: [
             follow_redirect: true,
             pool: :media
@@ -1899,6 +1907,11 @@ config :pleroma, :config_description, [
             description:
               "Limits the content length to be approximately the " <>
                 "specified length. It is validated with the `content-length` header and also verified when proxying."
+          },
+          %{
+            key: :max_read_duration,
+            type: :integer,
+            description: "Timeout (in milliseconds) of GET request to remote URI."
           },
           %{
             key: :http,
@@ -1943,6 +1956,43 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of hosts with scheme to bypass the mediaproxy",
         suggestions: ["http://example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :media_preview_proxy,
+    type: :group,
+    description: "Media preview proxy",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description:
+          "Enables proxying of remote media preview to the instance's proxy. Requires enabled media proxy."
+      },
+      %{
+        key: :thumbnail_max_width,
+        type: :integer,
+        description:
+          "Max width of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :thumbnail_max_height,
+        type: :integer,
+        description:
+          "Max height of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :image_quality,
+        type: :integer,
+        description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
+      },
+      %{
+        key: :min_content_length,
+        type: :integer,
+        description:
+          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
       }
     ]
   },
@@ -2290,8 +2340,6 @@ config :pleroma, :config_description, [
         type: {:list, :tuple},
         description: "Settings for cron background jobs",
         suggestions: [
-          {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-          {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
           {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
           {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
         ]
@@ -2397,7 +2445,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: Pleroma.Formatter,
-    label: "Auto Linker",
+    label: "Linkify",
     type: :group,
     description:
       "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
@@ -2474,14 +2522,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.ActivityExpiration,
+    key: Pleroma.Workers.PurgeExpiredActivity,
     type: :group,
-    description: "Expired activity settings",
+    description: "Expired activities settings",
     children: [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether expired activities will be sent to the job queue to be deleted"
+        description: "Enables expired activities addition & deletion"
+      },
+      %{
+        key: :min_lifetime,
+        type: :integer,
+        description: "Minimum lifetime for ephemeral activity (in seconds)",
+        suggestions: [600]
       }
     ]
   },

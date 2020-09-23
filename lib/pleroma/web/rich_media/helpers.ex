@@ -87,6 +87,50 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def rich_media_get(url) do
     headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
-    Pleroma.HTTP.get(url, headers, @options)
+    head_check =
+      case Pleroma.HTTP.head(url, headers, @options) do
+        # If the HEAD request didn't reach the server for whatever reason,
+        # we assume the GET that comes right after won't either
+        {:error, _} = e ->
+          e
+
+        {:ok, %Tesla.Env{status: 200, headers: headers}} ->
+          with :ok <- check_content_type(headers),
+               :ok <- check_content_length(headers),
+               do: :ok
+
+        _ ->
+          :ok
+      end
+
+    with :ok <- head_check, do: Pleroma.HTTP.get(url, headers, @options)
+  end
+
+  defp check_content_type(headers) do
+    case List.keyfind(headers, "content-type", 0) do
+      {_, content_type} ->
+        case Plug.Conn.Utils.media_type(content_type) do
+          {:ok, "text", "html", _} -> :ok
+          _ -> {:error, {:content_type, content_type}}
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  @max_body @options[:max_body]
+  defp check_content_length(headers) do
+    case List.keyfind(headers, "content-length", 0) do
+      {_, maybe_content_length} ->
+        case Integer.parse(maybe_content_length) do
+          {content_length, ""} when content_length <= @max_body -> :ok
+          {_, ""} -> {:error, :body_too_large}
+          _ -> :ok
+        end
+
+      _ ->
+        :ok
+    end
   end
 end

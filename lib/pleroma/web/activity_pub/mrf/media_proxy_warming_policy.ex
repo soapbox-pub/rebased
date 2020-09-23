@@ -12,17 +12,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
   require Logger
 
-  @options [
+  @adapter_options [
     pool: :media,
     recv_timeout: 10_000
   ]
 
   def perform(:prefetch, url) do
-    Logger.debug("Prefetching #{inspect(url)}")
+    # Fetching only proxiable resources
+    if MediaProxy.enabled?() and MediaProxy.url_proxiable?(url) do
+      # If preview proxy is enabled, it'll also hit media proxy (so we're caching both requests)
+      prefetch_url = MediaProxy.preview_url(url)
 
-    url
-    |> MediaProxy.url()
-    |> HTTP.get([], @options)
+      Logger.debug("Prefetching #{inspect(url)} as #{inspect(prefetch_url)}")
+
+      HTTP.get(prefetch_url, [], @adapter_options)
+    end
   end
 
   def perform(:preload, %{"object" => %{"attachment" => attachments}} = _message) do

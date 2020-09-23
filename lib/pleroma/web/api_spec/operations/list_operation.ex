@@ -187,8 +187,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
         type: :object,
         properties: %{
           account_ids: %Schema{type: :array, description: "Array of account IDs", items: FlakeID}
-        },
-        required: required && [:account_ids]
+        }
       },
       required: required
     )

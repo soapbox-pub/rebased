@@ -23,8 +23,8 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     with params <- Enum.into(:cow_qs.parse_qs(qs), %{}),
          sec_websocket <- :cowboy_req.header("sec-websocket-protocol", req, nil),
          access_token <- Map.get(params, "access_token"),
-         {:ok, user} <- authenticate_request(access_token, sec_websocket),
-         {:ok, topic} <- Streamer.get_topic(Map.get(params, "stream"), user, params) do
+         {:ok, user, oauth_token} <- authenticate_request(access_token, sec_websocket),
+         {:ok, topic} <- Streamer.get_topic(params["stream"], user, oauth_token, params) do
       req =
         if sec_websocket do
           :cowboy_req.set_resp_header("sec-websocket-protocol", sec_websocket, req)
@@ -37,12 +37,12 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     else
       {:error, :bad_topic} ->
         Logger.debug("#{__MODULE__} bad topic #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(404, req)
+        req = :cowboy_req.reply(404, req)
         {:ok, req, state}
 
       {:error, :unauthorized} ->
         Logger.debug("#{__MODULE__} authentication error: #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(401, req)
+        req = :cowboy_req.reply(401, req)
         {:ok, req, state}
     end
   end
@@ -64,7 +64,9 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     {:ok, %{state | timer: timer()}}
   end
 
-  # We never receive messages.
+  # We only receive pings for now
+  def websocket_handle(:ping, state), do: {:ok, state}
+
   def websocket_handle(frame, state) do
     Logger.error("#{__MODULE__} received frame: #{inspect(frame)}")
     {:ok, state}
@@ -98,6 +100,10 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     {:reply, :ping, %{state | timer: nil, count: 0}, :hibernate}
   end
 
+  # State can be `[]` only in case we terminate before switching to websocket,
+  # we already log errors for these cases in `init/1`, so just do nothing here
+  def terminate(_reason, _req, []), do: :ok
+
   def terminate(reason, _req, state) do
     Logger.debug(
       "#{__MODULE__} terminating websocket connection for user #{
@@ -111,7 +117,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   # Public streams without authentication.
   defp authenticate_request(nil, nil) do
-    {:ok, nil}
+    {:ok, nil, nil}
   end
 
   # Authenticated streams.
@@ -119,9 +125,9 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     token = access_token || sec_websocket
 
     with true <- is_bitstring(token),
-         %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
+         oauth_token = %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          user = %User{} <- User.get_cached_by_id(user_id) do
-      {:ok, user}
+      {:ok, user, oauth_token}
     else
       _ -> {:error, :unauthorized}
     end

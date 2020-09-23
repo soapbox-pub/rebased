@@ -178,8 +178,13 @@ defmodule Pleroma.Web.Router do
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
+    get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
     get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+
+    get("/instance_document/:name", InstanceDocumentController, :show)
+    patch("/instance_document/:name", InstanceDocumentController, :update)
+    delete("/instance_document/:name", InstanceDocumentController, :delete)
 
     patch("/users/confirm_email", AdminAPIController, :confirm_email)
     patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
@@ -214,6 +219,10 @@ defmodule Pleroma.Web.Router do
     get("/media_proxy_caches", MediaProxyCacheController, :index)
     post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
     post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
+
+    get("/chats/:id", ChatController, :show)
+    get("/chats/:id/messages", ChatController, :messages)
+    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -229,9 +238,9 @@ defmodule Pleroma.Web.Router do
       patch("/:name", EmojiPackController, :update)
       delete("/:name", EmojiPackController, :delete)
 
-      post("/:name/files", EmojiPackController, :add_file)
-      patch("/:name/files", EmojiPackController, :update_file)
-      delete("/:name/files", EmojiPackController, :delete_file)
+      post("/:name/files", EmojiFileController, :create)
+      patch("/:name/files", EmojiFileController, :update)
+      delete("/:name/files", EmojiFileController, :delete)
     end
 
     # Pack info / downloading
@@ -260,13 +269,14 @@ defmodule Pleroma.Web.Router do
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
-
-    post("/blocks_import", UtilController, :blocks_import)
-    post("/follow_import", UtilController, :follow_import)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:authenticated_api)
+
+    post("/mutes_import", UserImportController, :mutes)
+    post("/blocks_import", UserImportController, :blocks)
+    post("/follow_import", UserImportController, :follow)
 
     get("/accounts/mfa", TwoFactorAuthenticationController, :settings)
     get("/accounts/mfa/backup_codes", TwoFactorAuthenticationController, :backup_codes)
@@ -670,6 +680,8 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/proxy/", Pleroma.Web.MediaProxy do
+    get("/preview/:sig/:url", MediaProxyController, :preview)
+    get("/preview/:sig/:url/:filename", MediaProxyController, :preview)
     get("/:sig/:url", MediaProxyController, :remote)
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
