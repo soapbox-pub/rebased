@@ -370,7 +370,7 @@ defmodule Mix.Tasks.Pleroma.User do
       is_admin: false,
       invisible: false
     })
-    |> Pleroma.RepoStreamer.chunk_stream(500)
+    |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
       |> Enum.each(fn user -> User.need_confirmation(user, false) end)
@@ -388,7 +388,7 @@ defmodule Mix.Tasks.Pleroma.User do
       is_admin: false,
       invisible: false
     })
-    |> Pleroma.RepoStreamer.chunk_stream(500)
+    |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
       |> Enum.each(fn user -> User.need_confirmation(user, true) end)
