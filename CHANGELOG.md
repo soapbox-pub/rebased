@@ -28,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 switched to a new configuration mechanism, however it was not officially removed until now.
 
 ### Fixed
+
+- Add documented-but-missing chat pagination.
 - Allow sending out emails again.
 
 ## [2.1.2] - 2020-09-17
