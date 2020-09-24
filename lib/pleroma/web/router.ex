@@ -248,13 +248,9 @@ defmodule Pleroma.Web.Router do
       get("/remote", EmojiPackController, :remote)
       post("/download", EmojiPackController, :download)
 
-      post("/create", EmojiPackController, :create)
-      patch("/update", EmojiPackController, :update)
-      delete("/delete", EmojiPackController, :delete)
-
-      post("/files", EmojiFileController, :add_file)
-      patch("/files", EmojiFileController, :update_file)
-      delete("/files", EmojiFileController, :delete_file)
+      post("/files", EmojiFileController, :create)
+      patch("/files", EmojiFileController, :update)
+      delete("/files", EmojiFileController, :delete)
     end
 
     # Pack info / downloading

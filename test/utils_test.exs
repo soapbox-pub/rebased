@@ -8,7 +8,7 @@ defmodule Pleroma.UtilsTest do
   describe "tmp_dir/1" do
     test "returns unique temporary directory" do
       {:ok, path} = Pleroma.Utils.tmp_dir("emoji")
-      assert path =~ ~r/\/tmp\/emoji-(.*)-#{:os.getpid()}-(.*)/
+      assert path =~ ~r/\/emoji-(.*)-#{:os.getpid()}-(.*)/
       File.rm_rf(path)
     end
   end
