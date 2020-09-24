@@ -30,7 +30,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
            :create,
            :mark_as_read,
            :mark_message_as_read,
-           :delete_message
+           :delete_message,
+           :delete
          ]
   )
 
@@ -42,6 +43,18 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
+
+  def delete(%{assigns: %{user: user}} = conn, %{id: chat_id}) do
+    with {:ok, chat} <- Chat.get_by_user_and_id(user, chat_id),
+         {:ok, chat} <- Pleroma.Repo.delete(chat) do
+      conn
+      |> put_view(ChatView)
+      |> render("show.json", chat: chat)
+    else
+      _e ->
+        {:error, :could_not_delete}
+    end
+  end
 
   def delete_message(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
         message_id: message_id,

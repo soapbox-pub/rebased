@@ -301,6 +301,24 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
     end
   end
 
+  describe "DELETE /api/v1/pleroma/chats/:id" do
+    setup do: oauth_access(["write:chats"])
+
+    test "it deletes a chat", %{conn: conn, user: user} do
+      other_user = insert(:user)
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> delete("/api/v1/pleroma/chats/#{chat.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert result["id"] == to_string(chat.id)
+
+      refute Chat.get_by_id(chat.id)
+    end
+  end
+
   describe "GET /api/v1/pleroma/chats" do
     setup do: oauth_access(["read:chats"])
 
