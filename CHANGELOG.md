@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Breaking:** Pleroma API: packs and files routes changed.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 - The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
@@ -14,10 +15,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 
 ### Added
+
 - Media preview proxy (requires media proxy be enabled; see `:media_preview_proxy` config for more details).
-- Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
+
+<details>
+  <summary>API Changes</summary>
+
+- Pleroma API: Importing the mutes users from CSV files.
 - Admin API: Importing emoji from a zip file
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
 
 ### Removed
 
@@ -120,7 +129,6 @@ switched to a new configuration mechanism, however it was not officially removed
 - Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
 - Mastodon API: Make notifications about statuses from muted users and threads read automatically
 - Pleroma API: `/api/pleroma/captcha` responses now include `seconds_valid` with an integer value.
-- Pleroma API: Pagination for remote/local packs and emoji.
 
 </details>
 
