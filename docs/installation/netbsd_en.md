@@ -10,7 +10,7 @@ Pleroma uses.
 
 The `mksh` shell is needed to run the Elixir `mix` script.
 
-`# pkgin install acmesh elixir git-base git-docs mksh nginx postgresql11-server postgresql11-client postgresql11-contrib sudo`
+`# pkgin install acmesh elixir git-base git-docs mksh nginx postgresql11-server postgresql11-client postgresql11-contrib sudo ffmpeg4 ImageMagick`
 
 You can also build these packages using pkgsrc:
 ```

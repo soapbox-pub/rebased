@@ -13,6 +13,8 @@ It assumes that you have administrative rights, either as root or a user with [s
 * `erlang-parsetools`
 * `erlang-xmerl`
 * `git`
+* `ffmpeg`
+* `ImageMagick`
 * Development Tools
 * `cmake`
 
@@ -56,6 +58,13 @@ sudo apk add erlang erlang-runtime-tools erlang-xmerl elixir
 ```shell
 sudo apk add erlang-eldap
 ```
+
+### Install ffmpeg and ImageMagick
+
+```shell
+sudo apk add ffmpeg imagemagick
+```
+
 ### Install PostgreSQL
 
 * Install Postgresql server:

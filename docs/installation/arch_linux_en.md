@@ -10,6 +10,8 @@ This guide will assume that you have administrative rights, either as root or a 
 * `git`
 * `base-devel`
 * `cmake`
+* `ffmpeg`
+* `ImageMagick`
 
 #### Optional packages used in this guide
 
@@ -27,7 +29,7 @@ sudo pacman -Syu
 * Install some of the above mentioned programs:
 
 ```shell
-sudo pacman -S git base-devel elixir cmake
+sudo pacman -S git base-devel elixir cmake ffmpeg imagemagick
 ```
 
 ### Install PostgreSQL

@@ -13,6 +13,8 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 * `git`
 * `build-essential`
 * `cmake`
+* `ffmpeg`
+* `ImageMagick`
 
 #### Optional packages used in this guide
 
@@ -31,7 +33,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib cmake
+sudo apt install git build-essential postgresql postgresql-contrib cmake ffmpeg imagemagick
 ```
 
 ### Install Elixir and Erlang
