@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Pleroma.Email do
   @moduledoc File.read!("docs/administration/CLI_tasks/email.md")
 
   def run(["test" | args]) do
-    Mix.Pleroma.start_pleroma()
+    start_pleroma()
 
     {options, [], []} =
       OptionParser.parse(
