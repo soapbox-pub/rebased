@@ -480,7 +480,7 @@ defmodule Pleroma.UserTest do
             )
 
     test "it sends a welcome chat message when Simple policy applied to local instance" do
-      clear_config([:mrf_simple, :media_nsfw], ["localhost"])
+      clear_config([:mrf_simple, :media_nsfw], [{"localhost", ""}])
 
       welcome_user = insert(:user)
       clear_config([:welcome, :chat_message, :enabled], true)

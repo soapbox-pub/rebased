@@ -154,15 +154,17 @@ defmodule Pleroma.Web.NodeInfoTest do
     clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
     clear_config([:mrf, :transparency], true)
 
-    simple_config = %{"reject" => ["example.com"]}
+    simple_config = %{"reject" => [{"example.com", ""}]}
     clear_config(:mrf_simple, simple_config)
+
+    expected_config = %{"reject" => [["example.com", ""]]}
 
     response =
       conn
       |> get("/nodeinfo/2.1.json")
       |> json_response(:ok)
 
-    assert response["metadata"]["federation"]["mrf_simple"] == simple_config
+    assert response["metadata"]["federation"]["mrf_simple"] == expected_config
   end
 
   test "it performs exclusions from MRF transparency data if configured", %{conn: conn} do
@@ -170,10 +172,10 @@ defmodule Pleroma.Web.NodeInfoTest do
     clear_config([:mrf, :transparency], true)
     clear_config([:mrf, :transparency_exclusions], ["other.site"])
 
-    simple_config = %{"reject" => ["example.com", "other.site"]}
+    simple_config = %{"reject" => [{"example.com", ""}, {"other.site", ""}]}
     clear_config(:mrf_simple, simple_config)
 
-    expected_config = %{"reject" => ["example.com"]}
+    expected_config = %{"reject" => [["example.com", ""]]}
 
     response =
       conn
