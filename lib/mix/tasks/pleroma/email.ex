@@ -25,6 +25,8 @@ defmodule Mix.Tasks.Pleroma.Email do
   def run(["resend_confirmation_emails"]) do
     start_pleroma()
 
+    shell_info("Sending emails to all unconfirmed users")
+
     Pleroma.User.Query.build(%{
       local: true,
       deactivated: false,
