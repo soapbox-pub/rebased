@@ -452,6 +452,8 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Authentication: required (admin)
 * Params:
   * `url`: url of the instance to get packs from
+  * `page`: page number for packs (default 1)
+  * `page_size`: page size for packs (default 50)
 * Response: JSON with the pack list, hashmap with pack name and pack contents
 
 ## `POST /api/pleroma/emoji/packs/download`
