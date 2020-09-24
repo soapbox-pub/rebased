@@ -19,11 +19,21 @@ defmodule Pleroma.User.Search do
 
     query_string = format_query(query_string)
 
-    maybe_resolve(resolve, for_user, query_string)
+    # If this returns anything, it should bounce to the top
+    maybe_resolved = maybe_resolve(resolve, for_user, query_string)
+    maybe_ap_id_match = User.get_cached_by_ap_id(query_string)
+
+    top_user_ids =
+      case {maybe_resolved, maybe_ap_id_match} do
+        {{:ok, %User{} = user}, %User{} = other_user} -> [user.id, other_user.id]
+        {{:ok, %User{} = user}, _} -> [user.id]
+        {_, %User{} = user} -> [user.id]
+        _ -> []
+      end
 
     results =
       query_string
-      |> search_query(for_user, following)
+      |> search_query(for_user, following, top_user_ids)
       |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => result_limit}, :offset)
 
     results
@@ -47,7 +57,7 @@ defmodule Pleroma.User.Search do
     end
   end
 
-  defp search_query(query_string, for_user, following) do
+  defp search_query(query_string, for_user, following, top_user_ids) do
     for_user
     |> base_query(following)
     |> filter_blocked_user(for_user)
@@ -56,11 +66,18 @@ defmodule Pleroma.User.Search do
     |> filter_internal_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
+    |> select_top_users(top_user_ids)
     |> trigram_rank(query_string)
-    |> boost_search_rank(for_user)
+    |> boost_search_rank(for_user, top_user_ids)
     |> subquery()
     |> order_by(desc: :search_rank)
     |> maybe_restrict_local(for_user)
+  end
+
+  defp select_top_users(query, top_user_ids) do
+    from(u in query,
+      or_where: u.id in ^top_user_ids
+    )
   end
 
   defp fts_search(query, query_string) do
@@ -180,7 +197,7 @@ defmodule Pleroma.User.Search do
 
   defp local_domain, do: Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
 
-  defp boost_search_rank(query, %User{} = for_user) do
+  defp boost_search_rank(query, %User{} = for_user, top_user_ids) do
     friends_ids = User.get_friends_ids(for_user)
     followers_ids = User.get_followers_ids(for_user)
 
@@ -192,6 +209,7 @@ defmodule Pleroma.User.Search do
              CASE WHEN (?) THEN (?) * 1.5
              WHEN (?) THEN (?) * 1.3
              WHEN (?) THEN (?) * 1.1
+             WHEN (?) THEN 9001
              ELSE (?) END
             """,
             u.id in ^friends_ids and u.id in ^followers_ids,
@@ -200,11 +218,26 @@ defmodule Pleroma.User.Search do
             u.search_rank,
             u.id in ^followers_ids,
             u.search_rank,
+            u.id in ^top_user_ids,
             u.search_rank
           )
       }
     )
   end
 
-  defp boost_search_rank(query, _for_user), do: query
+  defp boost_search_rank(query, _for_user, top_user_ids) do
+    from(u in subquery(query),
+      select_merge: %{
+        search_rank:
+          fragment(
+            """
+             CASE WHEN (?) THEN 9001
+             ELSE (?) END
+            """,
+            u.id in ^top_user_ids,
+            u.search_rank
+          )
+      }
+    )
+  end
 end
