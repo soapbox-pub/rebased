@@ -211,6 +211,14 @@ Returned data:
 }
 ```
 
+### Deleting a chat
+
+Deleting a chat works like this:
+
+`DELETE /api/v1/pleroma/chats/:chat_id`
+
+Returned data is the deleted chat.
+
 ### Deleting a chat message
 
 Deleting a chat message for given Chat id works like this:
