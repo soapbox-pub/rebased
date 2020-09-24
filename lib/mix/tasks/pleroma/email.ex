@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Pleroma.Email do
       confirmation_pending: true,
       invisible: false
     })
-    |> Pleroma.Repo.chunk_stream(500, :batches)
+    |> Pleroma.Repo.chunk_stream(500)
     |> Stream.each(&Pleroma.User.try_send_confirmation_email(&1))
     |> Stream.run()
   end
