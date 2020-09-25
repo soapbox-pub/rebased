@@ -29,6 +29,23 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
 
+  describe "posting polls" do
+    test "it posts a poll" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "who is the best",
+          poll: %{expires_in: 600, options: ["reimu", "marisa"]}
+        })
+
+      object = Object.normalize(activity)
+
+      assert object.data["type"] == "Question"
+      assert object.data["oneOf"] |> length() == 2
+    end
+  end
+
   describe "blocking" do
     setup do
       blocker = insert(:user)

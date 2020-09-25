@@ -48,13 +48,13 @@ defmodule Pleroma.Web.ControllerHelper do
 
   defp param_to_integer(_, default), do: default
 
-  def add_link_headers(conn, activities, extra_params \\ %{})
+  def add_link_headers(conn, entries, extra_params \\ %{})
 
-  def add_link_headers(%{assigns: %{skip_link_headers: true}} = conn, _activities, _extra_params),
+  def add_link_headers(%{assigns: %{skip_link_headers: true}} = conn, _entries, _extra_params),
     do: conn
 
-  def add_link_headers(conn, activities, extra_params) do
-    case get_pagination_fields(conn, activities, extra_params) do
+  def add_link_headers(conn, entries, extra_params) do
+    case get_pagination_fields(conn, entries, extra_params) do
       %{"next" => next_url, "prev" => prev_url} ->
         put_resp_header(conn, "link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
 
@@ -78,19 +78,15 @@ defmodule Pleroma.Web.ControllerHelper do
     }
   end
 
-  def get_pagination_fields(conn, activities, extra_params \\ %{}) do
-    case List.last(activities) do
+  def get_pagination_fields(conn, entries, extra_params \\ %{}) do
+    case List.last(entries) do
       %{pagination_id: max_id} when not is_nil(max_id) ->
-        %{pagination_id: min_id} =
-          activities
-          |> List.first()
+        %{pagination_id: min_id} = List.first(entries)
 
         build_pagination_fields(conn, min_id, max_id, extra_params)
 
       %{id: max_id} ->
-        %{id: min_id} =
-          activities
-          |> List.first()
+        %{id: min_id} = List.first(entries)
 
         build_pagination_fields(conn, min_id, max_id, extra_params)
 

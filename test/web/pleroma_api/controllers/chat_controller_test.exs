@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
@@ -201,17 +201,39 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       chat = Chat.get(user.id, recipient.ap_id)
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
-        |> json_response_and_validate_schema(200)
+      response = get(conn, "/api/v1/pleroma/chats/#{chat.id}/messages")
+      result = json_response_and_validate_schema(response, 200)
+
+      [next, prev] = get_resp_header(response, "link") |> hd() |> String.split(", ")
+      api_endpoint = "/api/v1/pleroma/chats/"
+
+      assert String.match?(
+               next,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*; rel=\"next\"$)
+             )
+
+      assert String.match?(
+               prev,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&min_id=.*; rel=\"prev\"$)
+             )
 
       assert length(result) == 20
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
-        |> json_response_and_validate_schema(200)
+      response =
+        get(conn, "/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
+
+      result = json_response_and_validate_schema(response, 200)
+      [next, prev] = get_resp_header(response, "link") |> hd() |> String.split(", ")
+
+      assert String.match?(
+               next,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*; rel=\"next\"$)
+             )
+
+      assert String.match?(
+               prev,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*&min_id=.*; rel=\"prev\"$)
+             )
 
       assert length(result) == 10
     end
@@ -240,12 +262,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       assert length(result) == 3
 
       # Trying to get the chat of a different user
-      result =
-        conn
-        |> assign(:user, other_user)
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
-
-      assert result |> json_response(404)
+      conn
+      |> assign(:user, other_user)
+      |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
+      |> json_response_and_validate_schema(404)
     end
   end
 
