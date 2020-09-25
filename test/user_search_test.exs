@@ -36,6 +36,21 @@ defmodule Pleroma.UserSearchTest do
       assert first_user.id == user.id
     end
 
+    test "returns a user with matching uri as the first result" do
+      user =
+        insert(:user, %{
+          nickname: "no_relation",
+          ap_id: "https://lain.com/users/lain",
+          uri: "https://lain.com/@lain"
+        })
+
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/@lain")
+
+      assert first_user.id == user.id
+    end
+
     test "excludes invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})
