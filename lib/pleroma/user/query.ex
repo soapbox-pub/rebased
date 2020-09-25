@@ -43,7 +43,7 @@ defmodule Pleroma.User.Query do
             active: boolean(),
             deactivated: boolean(),
             need_approval: boolean(),
-            need_confirmed: boolean(),
+            unconfirmed: boolean(),
             is_admin: boolean(),
             is_moderator: boolean(),
             super_users: boolean(),
@@ -157,7 +157,7 @@ defmodule Pleroma.User.Query do
     where(query, [u], u.approval_pending)
   end
 
-  defp compose_query({:need_confirmed, _}, query) do
+  defp compose_query({:unconfirmed, _}, query) do
     where(query, [u], u.confirmation_pending)
   end
 

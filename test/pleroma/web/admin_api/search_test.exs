@@ -184,7 +184,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       insert(:user)
 
       {:ok, _results, total} = Search.user()
-      {:ok, [^unconfirmed], count} = Search.user(%{need_confirmed: true})
+      {:ok, [^unconfirmed], count} = Search.user(%{unconfirmed: true})
       assert total == 3
       assert count == 1
     end

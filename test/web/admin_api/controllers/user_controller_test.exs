@@ -644,7 +644,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       result =
         conn
-        |> get("/api/pleroma/admin/users?filters=need_confirmed")
+        |> get("/api/pleroma/admin/users?filters=unconfirmed")
         |> json_response(200)
 
       users =
