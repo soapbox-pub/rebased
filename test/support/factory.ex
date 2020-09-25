@@ -142,6 +142,11 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def followers_only_note_factory(attrs \\ %{}) do
+    %Pleroma.Object{data: data} = note_factory(attrs)
+    %Pleroma.Object{data: Map.merge(data, %{"to" => [data["actor"] <> "/followers"]})}
+  end
+
   def audio_factory(attrs \\ %{}) do
     text = sequence(:text, &"lain radio episode #{&1}")
 
@@ -256,6 +261,33 @@ defmodule Pleroma.Factory do
         "type" => "Add",
         "to" => [Pleroma.Constants.as_public()],
         "cc" => [user.follower_address]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
+  end
+
+  def followers_only_note_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    note = insert(:followers_only_note, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :note, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => note.data["actor"],
+        "to" => note.data["to"],
+        "object" => note.data,
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => note.data["context"]
       }
       |> Map.merge(data_attrs)
 
