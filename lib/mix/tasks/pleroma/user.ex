@@ -455,11 +455,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_confirmed(user, value) do
-    {:ok, user} =
-      case value do
-        true -> User.need_confirmation(user, false)
-        false -> User.need_confirmation(user, true)
-      end
+    {:ok, user} = User.need_confirmation(user, !value)
 
     shell_info("Confirmation pending status of #{user.nickname}: #{user.confirmation_pending}")
     user
