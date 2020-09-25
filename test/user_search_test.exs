@@ -41,7 +41,7 @@ defmodule Pleroma.UserSearchTest do
         insert(:user, %{
           nickname: "no_relation",
           ap_id: "https://lain.com/users/lain",
-          uri: "https://lain.com/@lain"
+          uri: "https://lain.com/@Lain"
         })
 
       _user = insert(:user, %{nickname: "com_user"})
