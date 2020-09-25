@@ -1,5 +1,5 @@
 defmodule Pleroma.Config.DeprecationWarningsTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   use Pleroma.Tests.Helpers
 
   import ExUnit.CaptureLog
