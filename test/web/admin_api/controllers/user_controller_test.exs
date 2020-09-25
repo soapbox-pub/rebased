@@ -671,12 +671,12 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=need_approval")
 
-      users =
-        [
-          user_response(user,
-            %{"approval_pending" => true, "registration_reason" => "Plz let me in!"}
-          )
-        ]
+      users = [
+        user_response(
+          user,
+          %{"approval_pending" => true, "registration_reason" => "Plz let me in!"}
+        )
+      ]
 
       assert json_response(conn, 200) == %{
                "count" => 1,
@@ -724,9 +724,9 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "page_size" => 50,
                "users" => [
                  user_response(moderator, %{
-                       "deactivated" => false,
-                       "roles" => %{"admin" => false, "moderator" => true}
-                               })
+                   "deactivated" => false,
+                   "roles" => %{"admin" => false, "moderator" => true}
+                 })
                ]
              }
     end
@@ -738,9 +738,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       user1 = insert(:user)
       user2 = insert(:user)
 
-      response = conn
-      |> get(user_path(conn, :list), %{actor_types: ["Person"]})
-      |> json_response(200)
+      response =
+        conn
+        |> get(user_path(conn, :list), %{actor_types: ["Person"]})
+        |> json_response(200)
 
       users =
         [
@@ -760,9 +761,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       user1 = insert(:user)
       user2 = insert(:user)
 
-      response  = conn
-      |> get(user_path(conn, :list), %{actor_types: ["Person", "Service"]})
-      |> json_response(200)
+      response =
+        conn
+        |> get(user_path(conn, :list), %{actor_types: ["Person", "Service"]})
+        |> json_response(200)
 
       users =
         [
@@ -782,12 +784,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       insert(:user)
       insert(:user)
 
-      response = conn
-      |> get(user_path(conn, :list), %{actor_types: ["Service"]})
-      |> json_response(200)
+      response =
+        conn
+        |> get(user_path(conn, :list), %{actor_types: ["Service"]})
+        |> json_response(200)
+
       users = [user_response(user_service, %{"actor_type" => "Service"})]
 
-      assert response == %{"count" => 1, "page_size" => 50, "users" => users }
+      assert response == %{"count" => 1, "page_size" => 50, "users" => users}
     end
 
     test "load users with tags list", %{conn: conn} do
