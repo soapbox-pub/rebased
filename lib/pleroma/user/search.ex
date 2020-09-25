@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.Uri, as: UriType
   alias Pleroma.Pagination
   alias Pleroma.User
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators.Uri, as: UriType
+
   import Ecto.Query
 
   @limit 20
