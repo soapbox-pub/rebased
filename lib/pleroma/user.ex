@@ -813,7 +813,8 @@ defmodule Pleroma.User do
   def send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{confirmation_pending: true} = user) do
+  def try_send_confirmation_email(%User{confirmation_pending: true, email: email} = user)
+      when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
       {:ok, :enqueued}
@@ -2069,6 +2070,13 @@ defmodule Pleroma.User do
   @spec toggle_confirmation([User.t()]) :: [{:ok, User.t()} | {:error, Changeset.t()}]
   def toggle_confirmation(users) do
     Enum.map(users, &toggle_confirmation/1)
+  end
+
+  @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def need_confirmation(%User{} = user, bool) do
+    user
+    |> confirmation_changeset(need_confirmation: bool)
+    |> update_and_set_cache()
   end
 
   def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do
