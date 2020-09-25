@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.Uri, as: UriType
   alias Pleroma.Pagination
   alias Pleroma.User
+
   import Ecto.Query
 
   @limit 20
@@ -21,15 +23,12 @@ defmodule Pleroma.User.Search do
 
     # If this returns anything, it should bounce to the top
     maybe_resolved = maybe_resolve(resolve, for_user, query_string)
-    maybe_ap_id_match = User.get_cached_by_ap_id(query_string)
 
     top_user_ids =
-      case {maybe_resolved, maybe_ap_id_match} do
-        {{:ok, %User{} = user}, %User{} = other_user} -> [user.id, other_user.id]
-        {{:ok, %User{} = user}, _} -> [user.id]
-        {_, %User{} = user} -> [user.id]
-        _ -> []
-      end
+      []
+      |> maybe_add_resolved(maybe_resolved)
+      |> maybe_add_ap_id_match(query_string)
+      |> maybe_add_uri_match(query_string)
 
     results =
       query_string
@@ -37,6 +36,29 @@ defmodule Pleroma.User.Search do
       |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => result_limit}, :offset)
 
     results
+  end
+
+  defp maybe_add_resolved(list, {:ok, %User{} = user}) do
+    [user.id | list]
+  end
+
+  defp maybe_add_resolved(list, _), do: list
+
+  defp maybe_add_ap_id_match(list, query) do
+    if user = User.get_cached_by_ap_id(query) do
+      [user.id | list]
+    else
+      list
+    end
+  end
+
+  defp maybe_add_uri_match(list, query) do
+    with {:ok, query} <- UriType.cast(query),
+         %User{} = user <- Pleroma.Repo.get_by(User, uri: query) do
+      [user.id | list]
+    else
+      _ -> list
+    end
   end
 
   defp format_query(query_string) do
