@@ -56,7 +56,8 @@ defmodule Pleroma.User.Query do
             ap_id: [String.t()],
             order_by: term(),
             select: term(),
-            limit: pos_integer()
+            limit: pos_integer(),
+            actor_types: [String.t()]
           }
           | map()
 
@@ -113,6 +114,10 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:is_admin, bool}, query) do
     where(query, [u], u.is_admin == ^bool)
+  end
+
+  defp compose_query({:actor_types, actor_types}, query) when is_list(actor_types) do
+    where(query, [u], u.actor_type in ^actor_types)
   end
 
   defp compose_query({:is_moderator, bool}, query) do
