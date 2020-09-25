@@ -243,7 +243,8 @@ defmodule Pleroma.Web.AdminAPI.UserController do
         page_size: page_size,
         tags: params["tags"],
         name: params["name"],
-        email: params["email"]
+        email: params["email"],
+        actor_types: params["actor_types"]
       }
       |> Map.merge(filters)
 

@@ -673,23 +673,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       users =
         [
-          %{
-            "deactivated" => user.deactivated,
-            "id" => user.id,
-            "nickname" => user.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => true,
-            "tags" => [],
-            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user.name || user.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => true,
-            "url" => user.ap_id,
-            "registration_reason" => "Plz let me in!",
-            "actor_type" => "Person"
-          }
+          user_response(user,
+            %{"approval_pending" => true, "registration_reason" => "Plz let me in!"}
+          )
         ]
-        |> Enum.sort_by(& &1["nickname"])
 
       assert json_response(conn, 200) == %{
                "count" => 1,
@@ -707,36 +694,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       users =
         [
-          %{
+          user_response(admin, %{
             "deactivated" => false,
-            "id" => admin.id,
-            "nickname" => admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "local" => admin.local,
-            "tags" => [],
-            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(admin.name || admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
+            "roles" => %{"admin" => true, "moderator" => false}
+          }),
+          user_response(second_admin, %{
             "deactivated" => false,
-            "id" => second_admin.id,
-            "nickname" => second_admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "local" => second_admin.local,
-            "tags" => [],
-            "avatar" => User.avatar_url(second_admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(second_admin.name || second_admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => second_admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          }
+            "roles" => %{"admin" => true, "moderator" => false}
+          })
         ]
         |> Enum.sort_by(& &1["nickname"])
 
@@ -758,23 +723,71 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "count" => 1,
                "page_size" => 50,
                "users" => [
-                 %{
-                   "deactivated" => false,
-                   "id" => moderator.id,
-                   "nickname" => moderator.nickname,
-                   "roles" => %{"admin" => false, "moderator" => true},
-                   "local" => moderator.local,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(moderator) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(moderator.name || moderator.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => moderator.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
+                 user_response(moderator, %{
+                       "deactivated" => false,
+                       "roles" => %{"admin" => false, "moderator" => true}
+                               })
                ]
              }
+    end
+
+    test "load users with actor_type is Person", %{admin: admin, conn: conn} do
+      insert(:user, actor_type: "Service")
+      insert(:user, actor_type: "Application")
+
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      response = conn
+      |> get(user_path(conn, :list), %{actor_types: ["Person"]})
+      |> json_response(200)
+
+      users =
+        [
+          user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}}),
+          user_response(user1),
+          user_response(user2)
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
+      assert response == %{"count" => 3, "page_size" => 50, "users" => users}
+    end
+
+    test "load users with actor_type is Person and Service", %{admin: admin, conn: conn} do
+      user_service = insert(:user, actor_type: "Service")
+      insert(:user, actor_type: "Application")
+
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      response  = conn
+      |> get(user_path(conn, :list), %{actor_types: ["Person", "Service"]})
+      |> json_response(200)
+
+      users =
+        [
+          user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}}),
+          user_response(user1),
+          user_response(user2),
+          user_response(user_service, %{"actor_type" => "Service"})
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
+      assert response == %{"count" => 4, "page_size" => 50, "users" => users}
+    end
+
+    test "load users with actor_type is Service", %{conn: conn} do
+      user_service = insert(:user, actor_type: "Service")
+      insert(:user, actor_type: "Application")
+      insert(:user)
+      insert(:user)
+
+      response = conn
+      |> get(user_path(conn, :list), %{actor_types: ["Service"]})
+      |> json_response(200)
+      users = [user_response(user_service, %{"actor_type" => "Service"})]
+
+      assert response == %{"count" => 1, "page_size" => 50, "users" => users }
     end
 
     test "load users with tags list", %{conn: conn} do
@@ -787,37 +800,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       users =
         [
-          user_response(
-            user1,
-            %{
-              "deactivated" => false,
-              "roles" => %{"admin" => false, "moderator" => false},
-              "local" => user1.local,
-              "tags" => ["first"],
-              "avatar" => User.avatar_url(user1) |> MediaProxy.url(),
-              "display_name" => HTML.strip_tags(user1.name || user1.nickname),
-              "confirmation_pending" => false,
-              "approval_pending" => false,
-              "url" => user1.ap_id,
-              "registration_reason" => nil,
-              "actor_type" => "Person"
-            }
-          ),
-          %{
-            "deactivated" => false,
-            "id" => user2.id,
-            "nickname" => user2.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => user2.local,
-            "tags" => ["second"],
-            "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user2.name || user2.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => user2.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          }
+          user_response(user1, %{"tags" => ["first"]}),
+          user_response(user2, %{"tags" => ["second"]})
         ]
         |> Enum.sort_by(& &1["nickname"])
 
