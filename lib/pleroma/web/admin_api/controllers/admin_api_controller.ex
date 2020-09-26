@@ -686,7 +686,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def create_backup(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_by_nickname(nickname),
          {:ok, _} <- Pleroma.Backup.create(user, admin.id) do
-      Logger.info("Admin @#{admin.nickname} requested account backup for @{nickname}")
+      ModerationLog.insert_log(%{actor: admin, subject: user, action: "create_backup"})
+
       json(conn, "")
     end
   end

@@ -2027,9 +2027,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/backups" do
     test "it creates a backup", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
+      admin = %{id: admin_id, nickname: admin_nickname} = insert(:user, is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
-      user = insert(:user)
+      user = %{id: user_id, nickname: user_nickname} = insert(:user)
 
       assert "" ==
                conn
@@ -2046,6 +2046,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert String.contains?(email.html_body, "Admin @#{admin.nickname} requested a full backup")
       assert_email_sent(to: {user.name, user.email}, html_body: email.html_body)
+
+      log_message = "@#{admin_nickname} requested account backup for @#{user_nickname}"
+
+      assert [
+               %{
+                 data: %{
+                   "action" => "create_backup",
+                   "actor" => %{
+                     "id" => ^admin_id,
+                     "nickname" => ^admin_nickname
+                   },
+                   "message" => ^log_message,
+                   "subject" => %{
+                     "id" => ^user_id,
+                     "nickname" => ^user_nickname
+                   }
+                 }
+               }
+             ] = Pleroma.ModerationLog |> Repo.all()
     end
 
     test "it doesn't limit admins", %{conn: conn} do
