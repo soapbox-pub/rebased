@@ -7,6 +7,7 @@ defmodule Pleroma.Backup do
 
   import Ecto.Changeset
   import Ecto.Query
+  import Pleroma.Web.Gettext
 
   require Pleroma.Constants
 
@@ -70,7 +71,14 @@ defmodule Pleroma.Backup do
         if diff > days do
           :ok
         else
-          {:error, "Last export was less than #{days} days ago"}
+          {:error,
+           dngettext(
+             "errors",
+             "Last export was less than a day ago",
+             "Last export was less than %{days} days ago",
+             days,
+             days: days
+           )}
         end
 
       nil ->
@@ -82,11 +90,14 @@ defmodule Pleroma.Backup do
     if Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
       :ok
     else
-      {:error, "Backups require enabled email"}
+      {:error, dgettext("errors", "Backups require enabled email")}
     end
   end
 
-  defp validate_user_email(%User{email: nil}), do: {:error, "Email is required"}
+  defp validate_user_email(%User{email: nil}) do
+    {:error, dgettext("errors", "Email is required")}
+  end
+
   defp validate_user_email(%User{email: email}) when is_binary(email), do: :ok
 
   def get_last(user_id) do
