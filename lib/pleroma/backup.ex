@@ -194,7 +194,8 @@ defmodule Pleroma.Backup do
         query
         |> Pleroma.Repo.chunk_stream(100)
         |> Enum.reduce(0, fn i, acc ->
-          with {:ok, str} <- fun.(i),
+          with {:ok, data} <- fun.(i),
+               {:ok, str} <- Jason.encode(data),
                :ok <- IO.write(file, str <> ",\n") do
             acc + 1
           else
@@ -213,7 +214,7 @@ defmodule Pleroma.Backup do
     |> where(user_id: ^user_id)
     |> join(:inner, [b], activity in assoc(b, :activity))
     |> select([b, a], %{id: b.id, object: fragment("(?)->>'object'", a.data)})
-    |> write(dir, "bookmarks", fn a -> {:ok, "\"#{a.object}\""} end)
+    |> write(dir, "bookmarks", fn a -> {:ok, a.object} end)
   end
 
   defp likes(dir, user) do
@@ -221,7 +222,7 @@ defmodule Pleroma.Backup do
     |> Activity.Queries.by_actor()
     |> Activity.Queries.by_type("Like")
     |> select([like], %{id: like.id, object: fragment("(?)->>'object'", like.data)})
-    |> write(dir, "likes", fn a -> {:ok, "\"#{a.object}\""} end)
+    |> write(dir, "likes", fn a -> {:ok, a.object} end)
   end
 
   defp statuses(dir, user) do
@@ -239,7 +240,7 @@ defmodule Pleroma.Backup do
     |> ActivityPub.fetch_activities_query(opts)
     |> write(dir, "outbox", fn a ->
       with {:ok, activity} <- Transmogrifier.prepare_outgoing(a.data) do
-        activity |> Map.delete("@context") |> Jason.encode()
+        {:ok, Map.delete(activity, "@context")}
       end
     end)
   end
