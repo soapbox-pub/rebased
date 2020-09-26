@@ -10,13 +10,14 @@ This guide will assume that you have administrative rights, either as root or a 
 * `git`
 * `base-devel`
 * `cmake`
-* `ffmpeg`
-* `ImageMagick`
 
 #### Optional packages used in this guide
 
 * `nginx` (preferred, example configs for other reverse proxies can be found in the repo)
 * `certbot` (or any other ACME client for Let’s Encrypt certificates)
+* `ImageMagick`
+* `ffmpeg`
+* `exiftool`
 
 ### Prepare the system
 
@@ -29,7 +30,7 @@ sudo pacman -Syu
 * Install some of the above mentioned programs:
 
 ```shell
-sudo pacman -S git base-devel elixir cmake ffmpeg imagemagick
+sudo pacman -S git base-devel elixir cmake
 ```
 
 ### Install PostgreSQL
@@ -52,6 +53,12 @@ sudo -iu postgres initdb -D /var/lib/postgres/data
 
 ```shell
 sudo systemctl enable --now postgresql.service
+```
+
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+
+```shell
+sudo pacman -S ffmpeg imagemagick perl-image-exiftool
 ```
 
 ### Install PleromaBE

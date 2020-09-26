@@ -7,7 +7,7 @@ This document was written for FreeBSD 12.1, but should be work on future release
 This assumes the target system has `pkg(8)`.
 
 ```
-# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake ffmpeg imagemagick
+# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake
 ```
 
 Copy the rc.d scripts to the right directory:
@@ -24,6 +24,12 @@ Setup the required services to automatically start at boot, using `sysrc(8)`.
 ```
 # service postgresql initdb
 # service postgresql start
+```
+
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+
+```shell
+# pkg install imagemagick ffmpeg p5-Image-ExifTool
 ```
 
 ## Configuring Pleroma

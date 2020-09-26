@@ -27,19 +27,36 @@ Other than things bundled in the OTP release Pleroma depends on:
 * PostgreSQL (also utilizes extensions in postgresql-contrib)
 * nginx (could be swapped with another reverse proxy but this guide covers only it)
 * certbot (for Let's Encrypt certificates, could be swapped with another ACME client, but this guide covers only it)
-* ffmpeg (needed for media preview proxy)
-* ImageMagick (needed for media preview proxy)
 
 === "Alpine"
     ```
     echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
     apk update
-    apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot ffmpeg imagemagick
+    apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot
     ```
 
 === "Debian/Ubuntu"
     ```
-    apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot ffmpeg imagemagick
+    apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot
+    ```
+
+### Installing optional packages
+
+Per [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+  * ImageMagick
+  * ffmpeg
+  * exiftool
+
+=== "Alpine"
+    ```
+    echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
+    apk update
+    apk add imagemagick ffmpeg exiftool
+    ```
+
+=== "Debian/Ubuntu"
+    ```
+    apt install imagemagick ffmpeg libimage-exiftool-perl
     ```
 
 ## Setup

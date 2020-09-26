@@ -18,6 +18,17 @@ Asenna tarvittava ohjelmisto:
 
 `# pkg_add git elixir gmake postgresql-server-10.3 postgresql-contrib-10.3 cmake ffmpeg ImageMagick`
 
+#### Optional software
+
+[`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+  * ImageMagick
+  * ffmpeg
+  * exiftool
+
+Asenna tarvittava ohjelmisto:
+
+`# pkg_add ImageMagick ffmpeg p5-Image-ExifTool`
+
 Luo postgresql-tietokanta:
 
 `# su - _postgresql`

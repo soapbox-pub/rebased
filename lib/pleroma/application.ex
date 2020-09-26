@@ -268,7 +268,8 @@ defmodule Pleroma.Application do
       with true <- filter in filters,
            false <- Pleroma.Utils.command_available?(command_required) do
         Logger.error(
-          "#{filter} is specified in list of Pleroma.Upload filters, but the #{command_required} command is not found"
+          "#{filter} is specified in list of Pleroma.Upload filters, but the " <>
+            "#{command_required} command is not found"
         )
       end
     end
@@ -276,5 +277,20 @@ defmodule Pleroma.Application do
     check_filter.(Pleroma.Upload.Filters.Exiftool, "exiftool")
     check_filter.(Pleroma.Upload.Filters.Mogrify, "mogrify")
     check_filter.(Pleroma.Upload.Filters.Mogrifun, "mogrify")
+
+    with true <- Config.get([:media_preview_proxy, :enabled]),
+         missing_graphics_tools = Pleroma.Helpers.MediaHelper.missing_dependencies(),
+         [] <- missing_graphics_tools do
+      :noop
+    else
+      false ->
+        :noop
+
+      missing_graphics_tools ->
+        Logger.error(
+          "The following dependencies required by Media preview proxy " <>
+            "(which is currently enabled) are not installed: #{inspect(missing_graphics_tools)}"
+        )
+    end
   end
 end
