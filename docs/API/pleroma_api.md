@@ -620,7 +620,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 ### Create a user backup archive
 
 * Method: `POST`
-* Authentication: not required
+* Authentication: required
 * Params: none
 * Response: JSON
 * Example response:
