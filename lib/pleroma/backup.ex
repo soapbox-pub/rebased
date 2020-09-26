@@ -55,7 +55,7 @@ defmodule Pleroma.Backup do
   def delete(backup) do
     uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
 
-    with :ok <- uploader.delete_file("backups/" <> backup.file_name) do
+    with :ok <- uploader.delete_file(Path.join("backups", backup.file_name)) do
       Repo.delete(backup)
     end
   end
@@ -164,7 +164,7 @@ defmodule Pleroma.Backup do
       name: backup.file_name,
       tempfile: zip_path,
       content_type: backup.content_type,
-      path: "backups/" <> backup.file_name
+      path: Path.join("backups", backup.file_name)
     }
 
     with {:ok, _} <- Pleroma.Uploaders.Uploader.put_file(uploader, upload),
@@ -178,7 +178,7 @@ defmodule Pleroma.Backup do
            UserView.render("user.json", %{user: user})
            |> Map.merge(%{"likes" => "likes.json", "bookmarks" => "bookmarks.json"})
            |> Jason.encode() do
-      File.write(dir <> "/actor.json", json)
+      File.write(Path.join(dir, "actor.json"), json)
     end
   end
 
@@ -197,7 +197,7 @@ defmodule Pleroma.Backup do
   end
 
   defp write(query, dir, name, fun) do
-    path = dir <> "/#{name}.json"
+    path = Path.join(dir, "#{name}.json")
 
     with {:ok, file} <- File.open(path, [:write, :utf8]),
          :ok <- write_header(file, name) do
