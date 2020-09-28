@@ -1,19 +1,9 @@
 defmodule Pleroma.Repo.Migrations.MakeUserIdsCI do
   use Ecto.Migration
 
-  def up do
-    alter table(:users) do
-      modify(:uri, :citext)
-    end
-
-    create(unique_index(:users, :uri))
-  end
-
-  def don do
-    drop(unique_index(:users, :uri))
-
-    alter table(:users) do
-      modify(:uri, :text)
-    end
+  def change do
+    # Migration retired, see
+    # https://git.pleroma.social/pleroma/pleroma/-/issues/2188
+    :noop
   end
 end
