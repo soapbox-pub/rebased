@@ -43,7 +43,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_content_map()
     |> fix_addressing()
     |> fix_summary()
-    |> fix_type(options)
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -321,19 +320,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
-  def fix_type(object, options \\ [])
+  defp fix_type(%{"type" => "Note", "inReplyTo" => reply_id, "name" => _} = object, options)
+       when is_binary(reply_id) do
+    options = Keyword.put(options, :fetch, true)
 
-  def fix_type(%{"inReplyTo" => reply_id, "name" => _} = object, options)
-      when is_binary(reply_id) do
-    with true <- Federator.allowed_thread_distance?(options[:depth]),
-         {:ok, %{data: %{"type" => "Question"} = _} = _} <- get_obj_helper(reply_id, options) do
+    with %Object{data: %{"type" => "Question"}} <- Object.normalize(reply_id, options) do
       Map.put(object, "type", "Answer")
     else
       _ -> object
     end
   end
 
-  def fix_type(object, _), do: object
+  defp fix_type(object, _options), do: object
 
   # Reduce the object list to find the reported user.
   defp get_reported(objects) do
@@ -501,7 +499,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         options
       )
       when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note} do
-    data = Map.put(data, "object", strip_internal_fields(data["object"]))
+    fetch_options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
+
+    object =
+      data["object"]
+      |> strip_internal_fields()
+      |> fix_type(fetch_options)
+      |> fix_in_reply_to(fetch_options)
+
+    data = Map.put(data, "object", object)
     options = Keyword.put(options, :local, false)
 
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
