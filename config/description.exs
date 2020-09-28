@@ -44,11 +44,13 @@ frontend_options = [
   },
   %{
     key: "git",
+    label: "Git",
     type: :string,
     description: "URL of the git repository of the frontend"
   },
   %{
     key: "build_url",
+    label: "Build URL",
     type: :string,
     description:
       "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
@@ -56,6 +58,7 @@ frontend_options = [
   },
   %{
     key: "build_dir",
+    label: "Build Dir",
     type: :string,
     description: "The directory inside the zip file "
   }
@@ -3681,9 +3684,7 @@ config :pleroma, :config_description, [
         type: :map,
         description:
           "A map containing available frontends and parameters for their installation.",
-        children: [
-          frontend_options
-        ]
+        children: frontend_options
       }
     ]
   },
