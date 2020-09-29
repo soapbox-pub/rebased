@@ -915,9 +915,7 @@ defmodule Pleroma.User do
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
-        {:ok, follower} =
-          follower
-          |> update_following_count()
+        {:ok, follower} = update_following_count(follower)
 
         {:ok, follower, followed}
 

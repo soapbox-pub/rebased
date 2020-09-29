@@ -63,6 +63,46 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["to"] == [user.ap_id]
       refute "#{user.ap_id}/followers" in User.following(service_actor)
     end
+
+    test "force unfollow when target service is dead" do
+      user = insert(:user)
+      user_ap_id = user.ap_id
+      user_id = user.id
+
+      Tesla.Mock.mock(fn %{method: :get, url: ^user_ap_id} ->
+        %Tesla.Env{status: 404}
+      end)
+
+      service_actor = Relay.get_actor()
+      CommonAPI.follow(service_actor, user)
+      assert "#{user.ap_id}/followers" in User.following(service_actor)
+
+      assert Pleroma.Repo.get_by(
+               Pleroma.FollowingRelationship,
+               follower_id: service_actor.id,
+               following_id: user_id
+             )
+
+      Pleroma.Repo.delete(user)
+      Cachex.clear(:user_cache)
+
+      assert {:ok, %Activity{} = activity} = Relay.unfollow(user_ap_id, %{force: true})
+
+      assert refresh_record(service_actor).following_count == 0
+
+      refute Pleroma.Repo.get_by(
+               Pleroma.FollowingRelationship,
+               follower_id: service_actor.id,
+               following_id: user_id
+             )
+
+      assert activity.actor == "#{Pleroma.Web.Endpoint.url()}/relay"
+      assert user.ap_id in activity.recipients
+      assert activity.data["type"] == "Undo"
+      assert activity.data["actor"] == service_actor.ap_id
+      assert activity.data["to"] == [user_ap_id]
+      refute "#{user.ap_id}/followers" in User.following(service_actor)
+    end
   end
 
   describe "publish/1" do

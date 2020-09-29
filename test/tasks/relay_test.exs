@@ -81,6 +81,80 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert undo_activity.data["object"]["id"] == cancelled_activity.data["id"]
       refute "#{target_instance}/followers" in User.following(local_user)
     end
+
+    test "unfollow when relay is dead" do
+      user = insert(:user)
+      target_instance = user.ap_id
+
+      Mix.Tasks.Pleroma.Relay.run(["follow", target_instance])
+
+      %User{ap_id: follower_id} = local_user = Relay.get_actor()
+      target_user = User.get_cached_by_ap_id(target_instance)
+      follow_activity = Utils.fetch_latest_follow(local_user, target_user)
+      User.follow(local_user, target_user)
+
+      assert "#{target_instance}/followers" in User.following(local_user)
+
+      Tesla.Mock.mock(fn %{method: :get, url: ^target_instance} ->
+        %Tesla.Env{status: 404}
+      end)
+
+      Pleroma.Repo.delete(user)
+      Cachex.clear(:user_cache)
+
+      Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance])
+
+      cancelled_activity = Activity.get_by_ap_id(follow_activity.data["id"])
+      assert cancelled_activity.data["state"] == "accept"
+
+      assert [] ==
+               ActivityPub.fetch_activities(
+                 [],
+                 %{
+                   type: "Undo",
+                   actor_id: follower_id,
+                   skip_preload: true,
+                   invisible_actors: true
+                 }
+               )
+    end
+
+    test "force unfollow when relay is dead" do
+      user = insert(:user)
+      target_instance = user.ap_id
+
+      Mix.Tasks.Pleroma.Relay.run(["follow", target_instance])
+
+      %User{ap_id: follower_id} = local_user = Relay.get_actor()
+      target_user = User.get_cached_by_ap_id(target_instance)
+      follow_activity = Utils.fetch_latest_follow(local_user, target_user)
+      User.follow(local_user, target_user)
+
+      assert "#{target_instance}/followers" in User.following(local_user)
+
+      Tesla.Mock.mock(fn %{method: :get, url: ^target_instance} ->
+        %Tesla.Env{status: 404}
+      end)
+
+      Pleroma.Repo.delete(user)
+      Cachex.clear(:user_cache)
+
+      Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance, "--force"])
+
+      cancelled_activity = Activity.get_by_ap_id(follow_activity.data["id"])
+      assert cancelled_activity.data["state"] == "cancelled"
+
+      [undo_activity] =
+        ActivityPub.fetch_activities(
+          [],
+          %{type: "Undo", actor_id: follower_id, skip_preload: true, invisible_actors: true}
+        )
+
+      assert undo_activity.data["type"] == "Undo"
+      assert undo_activity.data["actor"] == local_user.ap_id
+      assert undo_activity.data["object"]["id"] == cancelled_activity.data["id"]
+      refute "#{target_instance}/followers" in User.following(local_user)
+    end
   end
 
   describe "mix pleroma.relay list" do
