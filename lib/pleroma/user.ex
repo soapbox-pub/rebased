@@ -2291,7 +2291,9 @@ defmodule Pleroma.User do
 
     # if pinned activity was scheduled for deletion, we reschedule it for deletion
     if data["expires_at"] do
-      {:ok, expires_at, _} = DateTime.from_iso8601(data["expires_at"])
+      # MRF.ActivityExpirationPolicy used UTC timestamps for expires_at in original implementation
+      {:ok, expires_at} =
+        data["expires_at"] |> Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime.cast()
 
       Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
         activity_id: id,
