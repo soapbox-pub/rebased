@@ -81,6 +81,15 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   end
 
   describe "Media Preview Proxy" do
+    def assert_dependencies_installed do
+      missing_dependencies = Pleroma.Helpers.MediaHelper.missing_dependencies()
+
+      assert missing_dependencies == [],
+             "Error: missing dependencies (please refer to `docs/installation`): #{
+               inspect(missing_dependencies)
+             }"
+    end
+
     setup do
       clear_config([:media_proxy, :enabled], true)
       clear_config([:media_preview_proxy, :enabled], true)
@@ -184,6 +193,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       url: url,
       media_proxy_url: media_proxy_url
     } do
+      assert_dependencies_installed()
+
       # Setting a high :min_content_length to ensure this scenario is not affected by its logic
       clear_config([:media_preview_proxy, :min_content_length], 1_000_000_000)
 
@@ -270,6 +281,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       url: url,
       media_proxy_url: media_proxy_url
     } do
+      assert_dependencies_installed()
+
       Tesla.Mock.mock(fn
         %{method: "head", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/png"}]}
@@ -290,6 +303,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       url: url,
       media_proxy_url: media_proxy_url
     } do
+      assert_dependencies_installed()
+
       Tesla.Mock.mock(fn
         %{method: "head", url: ^media_proxy_url} ->
           %Tesla.Env{status: 200, body: "", headers: [{"content-type", "image/jpeg"}]}

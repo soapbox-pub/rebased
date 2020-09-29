@@ -10,7 +10,7 @@ Pleroma uses.
 
 The `mksh` shell is needed to run the Elixir `mix` script.
 
-`# pkgin install acmesh elixir git-base git-docs mksh nginx postgresql11-server postgresql11-client postgresql11-contrib sudo`
+`# pkgin install acmesh elixir git-base git-docs mksh nginx postgresql11-server postgresql11-client postgresql11-contrib sudo ffmpeg4 ImageMagick`
 
 You can also build these packages using pkgsrc:
 ```
@@ -43,6 +43,10 @@ pgsql=YES
 ## Configuring postgres
 
 First, run `# /etc/rc.d/pgsql start`. Then, `$ sudo -Hu pgsql -g pgsql createdb`.
+
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+
+`# pkgin install ImageMagick ffmpeg4 p5-Image-ExifTool`
 
 ## Configuring Pleroma
 
