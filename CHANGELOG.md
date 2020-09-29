@@ -37,6 +37,11 @@ switched to a new configuration mechanism, however it was not officially removed
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
 
+## Unreleased (Patch)
+
+### Changed
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
+
 ## [2.1.2] - 2020-09-17
 
 ### Security
