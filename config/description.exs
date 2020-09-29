@@ -44,7 +44,7 @@ frontend_options = [
   },
   %{
     key: "git",
-    label: "Git",
+    label: "Git Repository URL"
     type: :string,
     description: "URL of the git repository of the frontend"
   },
