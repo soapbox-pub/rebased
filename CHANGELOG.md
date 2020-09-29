@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
 - Users with the `discoverable` field set to false will not show up in searches.
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
-- **Breaking:** Introduced dependencies on `ffmpeg` and `ImageMagick` software packages. Please refer to documentation in `docs/installation`.
+- Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
 
 ### Added
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
