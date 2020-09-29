@@ -58,7 +58,7 @@ frontend_options = [
   },
   %{
     key: "build_dir",
-    label: "Build directory"
+    label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
   }
