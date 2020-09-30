@@ -54,8 +54,9 @@ defmodule Pleroma.User.Search do
 
   defp maybe_add_uri_match(list, query) do
     with {:ok, query} <- UriType.cast(query),
-         %User{} = user <- Pleroma.Repo.get_by(User, uri: query) do
-      [user.id | list]
+         q = from(u in User, where: u.uri == ^query, select: u.id),
+         users = Pleroma.Repo.all(q) do
+      users ++ list
     else
       _ -> list
     end
