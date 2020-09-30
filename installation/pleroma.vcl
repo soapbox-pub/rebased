@@ -109,7 +109,7 @@ sub vcl_hash {
 
 sub vcl_backend_fetch {
     # Be more lenient for slow servers on the fediverse
-    if bereq.url ~ "^/proxy/" {
+    if (bereq.url ~ "^/proxy/") {
       set bereq.first_byte_timeout = 300s;
     }
 
