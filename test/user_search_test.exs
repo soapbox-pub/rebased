@@ -36,6 +36,12 @@ defmodule Pleroma.UserSearchTest do
       assert first_user.id == user.id
     end
 
+    test "doesn't die if two users have the same uri" do
+      insert(:user, %{uri: "https://gensokyo.2hu/@raymoo"})
+      insert(:user, %{uri: "https://gensokyo.2hu/@raymoo"})
+      assert [_first_user, _second_user] = User.search("https://gensokyo.2hu/@raymoo")
+    end
+
     test "returns a user with matching uri as the first result" do
       user =
         insert(:user, %{
