@@ -809,7 +809,7 @@ config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
 
-config :web_push_encryption, http_client: Pleroma.HTTP
+config :web_push_encryption, http_client: Pleroma.HTTP.WebPush
 
 config :pleroma, :instances_favicons, enabled: false
 

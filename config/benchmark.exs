@@ -59,8 +59,6 @@ config :web_push_encryption, :vapid_details,
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
 
-config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
-
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
   total_user_limit: 3,
