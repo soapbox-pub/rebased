@@ -258,7 +258,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   @impl true
   def describe do
-    exclusions = Config.get([:mrf, :transparency_exclusions])
+    exclusions = Config.get([:mrf, :transparency_exclusions]) |> MRF.instance_list_from_tuples()
 
     mrf_simple =
       Config.get(:mrf_simple)

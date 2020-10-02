@@ -170,7 +170,7 @@ defmodule Pleroma.Web.NodeInfoTest do
   test "it performs exclusions from MRF transparency data if configured", %{conn: conn} do
     clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
     clear_config([:mrf, :transparency], true)
-    clear_config([:mrf, :transparency_exclusions], ["other.site"])
+    clear_config([:mrf, :transparency_exclusions], [{"other.site", "We don't want them to know"}])
 
     simple_config = %{"reject" => [{"example.com", ""}, {"other.site", ""}]}
     clear_config(:mrf_simple, simple_config)
