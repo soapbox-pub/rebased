@@ -118,6 +118,44 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
+  def check_transparency_exclusions_tuples do
+    has_strings =
+      Config.get([:mrf, :transparency_exclusions]) |> Enum.any?(fn e -> is_binary(e) end)
+
+    if has_strings do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using strings in the transparency_exclusions configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, :mrf,
+        transparency_exclusions: ["instance.tld"]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, :mrf,
+        transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+      ```
+      """)
+
+      new_config =
+        Config.get([:mrf, :transparency_exclusions])
+        |> Enum.map(fn
+          {instance, reason} -> {instance, reason}
+          instance -> {instance, ""}
+        end)
+
+      Config.put([:mrf, :transparency_exclusions], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
   def check_hellthread_threshold do
     if Config.get([:mrf_hellthread, :threshold]) do
       Logger.warn("""
@@ -142,6 +180,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
          :ok <- check_uploders_s3_public_endpoint(),
          :ok <- check_old_chat_shoutbox(),
          :ok <- check_quarantined_instances_tuples(),
+         :ok <- check_transparency_exclusions_tuples(),
          :ok <- check_simple_policy_tuples() do
       :ok
     else

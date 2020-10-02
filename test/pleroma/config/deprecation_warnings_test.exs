@@ -137,6 +137,56 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
     end
   end
 
+  describe "transparency_exclusions tuples" do
+    test "gives warning when there are still strings" do
+      clear_config([:mrf, :transparency_exclusions], [
+        {"domain.com", "some reason"},
+        "somedomain.tld"
+      ])
+
+      assert capture_log(fn -> DeprecationWarnings.check_transparency_exclusions_tuples() end) =~
+               """
+               !!!DEPRECATION WARNING!!!
+               Your config is using strings in the transparency_exclusions configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+               ```
+               config :pleroma, :mrf,
+                 transparency_exclusions: ["instance.tld"]
+               ```
+
+               Is now
+
+
+               ```
+               config :pleroma, :mrf,
+                 transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+               ```
+               """
+    end
+
+    test "transforms config to tuples" do
+      clear_config([:mrf, :transparency_exclusions], [
+        {"domain.com", "some reason"},
+        "some.tld"
+      ])
+
+      expected_config = [{"domain.com", "some reason"}, {"some.tld", ""}]
+
+      capture_log(fn -> DeprecationWarnings.check_transparency_exclusions_tuples() end)
+
+      assert Config.get([:mrf, :transparency_exclusions]) == expected_config
+    end
+
+    test "doesn't give a warning with correct config" do
+      clear_config([:mrf, :transparency_exclusions], [
+        {"domain.com", "some reason"},
+        {"some.tld", ""}
+      ])
+
+      assert capture_log(fn -> DeprecationWarnings.check_transparency_exclusions_tuples() end) == ""
+    end
+  end
+
   test "check_old_mrf_config/0" do
     clear_config([:instance, :rewrite_policy], [])
     clear_config([:instance, :mrf_transparency], true)
