@@ -1,4 +1,26 @@
-# ChatMessages
+# AP Extensions
+## Actor endpoints
+
+The following endpoints are additionally present into our actors.
+
+- `oauthRegistrationEndpoint`
+- `uploadMedia`
+
+### uploadMedia
+
+Inspired by <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
+
+Content-Type: multipart/form-data
+
+Parameters:
+- (required) `file`: The file being uploaded
+- (optionnal) `description`: A plain-text description of the media, for accessibility purposes.
+
+Response: HTTP 201 Created with the object into the body, no `Location` header provided as it doesn't have an `id`
+
+The object given in the reponse should then be inserted into an Object's `attachment` field.
+
+## ChatMessages
 
 ChatMessages are the messages sent in 1-on-1 chats. They are similar to
 `Note`s, but the addresing is done by having a single AP actor in the `to`
