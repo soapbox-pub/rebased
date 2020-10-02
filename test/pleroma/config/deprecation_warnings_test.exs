@@ -87,6 +87,56 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
     end
   end
 
+  describe "quarantined_instances tuples" do
+    test "gives warning when there are still strings" do
+      clear_config([:instance, :quarantined_instances], [
+        {"domain.com", "some reason"},
+        "somedomain.tld"
+      ])
+
+      assert capture_log(fn -> DeprecationWarnings.check_quarantined_instances_tuples() end) =~
+               """
+               !!!DEPRECATION WARNING!!!
+               Your config is using strings in the quarantined_instances configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+               ```
+               config :pleroma, :instance,
+                 quarantined_instances: ["instance.tld"]
+               ```
+
+               Is now
+
+
+               ```
+               config :pleroma, :instance,
+                 quarantined_instances: [{"instance.tld", "Reason for quarantine"}]
+               ```
+               """
+    end
+
+    test "transforms config to tuples" do
+      clear_config([:instance, :quarantined_instances], [
+        {"domain.com", "some reason"},
+        "some.tld"
+      ])
+
+      expected_config = [{"domain.com", "some reason"}, {"some.tld", ""}]
+
+      capture_log(fn -> DeprecationWarnings.check_quarantined_instances_tuples() end)
+
+      assert Config.get([:instance, :quarantined_instances]) == expected_config
+    end
+
+    test "doesn't give a warning with correct config" do
+      clear_config([:instance, :quarantined_instances], [
+        {"domain.com", "some reason"},
+        {"some.tld", ""}
+      ])
+
+      assert capture_log(fn -> DeprecationWarnings.check_quarantined_instances_tuples() end) == ""
+    end
+  end
+
   test "check_old_mrf_config/0" do
     clear_config([:instance, :rewrite_policy], [])
     clear_config([:instance, :mrf_transparency], true)
