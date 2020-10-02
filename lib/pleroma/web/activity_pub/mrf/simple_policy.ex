@@ -187,9 +187,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp instance_list(config_key) do
     Config.get([:mrf_simple, config_key])
-    |> Enum.map(fn
-      {instance, _} -> instance
-    end)
+    |> MRF.instance_list_from_tuples()
   end
 
   @impl true

@@ -271,7 +271,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Pleroma.Web.Federator.Publisher,
                    [:passthrough],
                    [] do
-      Config.put([:instance, :quarantined_instances], ["domain.com"])
+      Config.put([:instance, :quarantined_instances], [{"domain.com", "some reason"}])
 
       follower =
         insert(:user, %{
@@ -308,7 +308,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
                    Pleroma.Web.Federator.Publisher,
                    [:passthrough],
                    [] do
-      Config.put([:instance, :quarantined_instances], ["somedomain.com"])
+      Config.put([:instance, :quarantined_instances], [{"somedomain.com", "some reason"}])
 
       follower =
         insert(:user, %{

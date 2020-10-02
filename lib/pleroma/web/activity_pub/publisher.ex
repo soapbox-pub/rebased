@@ -112,6 +112,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
       quarantined_instances =
         Config.get([:instance, :quarantined_instances], [])
+        |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
         |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
 
       !Pleroma.Web.ActivityPub.MRF.subdomain_match?(quarantined_instances, host)
