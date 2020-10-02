@@ -561,12 +561,17 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.StaticFEPlug)
   end
 
+  pipeline :ostatus_no_html do
+    plug(:accepts, ["xml", "rss", "atom", "activity+json", "json"])
+  end
+
   pipeline :oembed do
     plug(:accepts, ["json", "xml"])
   end
 
   scope "/", Pleroma.Web do
-    pipe_through([:ostatus, :http_signature])
+    # Note: no authentication plugs, all endpoints below should only yield public objects
+    pipe_through(:ostatus)
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
@@ -579,6 +584,10 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:ostatus_no_html)
 
     get("/tags/:tag", Feed.TagController, :feed, as: :tag_feed)
   end

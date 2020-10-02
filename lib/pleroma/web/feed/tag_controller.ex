@@ -10,14 +10,14 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.Feed.FeedView
 
   def feed(conn, params) do
-    unless Pleroma.Config.restrict_unauthenticated_access?(:activities, :local) do
+    unless Config.restrict_unauthenticated_access?(:activities, :local) do
       render_feed(conn, params)
     else
       render_error(conn, :not_found, "Not found")
     end
   end
 
-  def render_feed(conn, %{"tag" => raw_tag} = params) do
+  defp render_feed(conn, %{"tag" => raw_tag} = params) do
     {format, tag} = parse_tag(raw_tag)
 
     activities =

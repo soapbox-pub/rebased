@@ -40,11 +40,11 @@ defmodule Pleroma.Web.Feed.UserController do
     end
   end
 
-  def render_feed(conn, %{"nickname" => nickname} = params) do
+  defp render_feed(conn, %{"nickname" => nickname} = params) do
     format = get_format(conn)
 
     format =
-      if format in ["rss", "atom"] do
+      if format in ["atom", "rss"] do
         format
       else
         "atom"

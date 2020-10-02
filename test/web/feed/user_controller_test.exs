@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  setup do: clear_config([:instance, :federating], true)
+  setup do: clear_config([:static_fe, :enabled], false)
 
   describe "feed" do
     setup do: clear_config([:feed])
@@ -191,6 +191,16 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
              |> put_req_header("accept", "application/atom+xml")
              |> get(user_feed_path(conn, :feed, user.nickname))
              |> response(404)
+    end
+
+    test "does not require authentication on non-federating instances", %{conn: conn} do
+      clear_config([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> put_req_header("accept", "application/rss+xml")
+      |> get("/users/#{user.nickname}/feed.rss")
+      |> response(200)
     end
   end
 

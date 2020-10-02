@@ -33,6 +33,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   setup do: clear_config([:instance, :federating], true)
 
+  defp ensure_federating_or_authenticated(conn, url, user) do
+    Config.put([:instance, :federating], false)
+
+    conn
+    |> get(url)
+    |> response(403)
+
+    conn
+    |> assign(:user, user)
+    |> get(url)
+    |> response(200)
+
+    Config.put([:instance, :federating], true)
+
+    conn
+    |> get(url)
+    |> response(200)
+  end
+
   describe "/relay" do
     setup do: clear_config([:instance, :allow_relay])
 
