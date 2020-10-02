@@ -17,7 +17,11 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_public?(%Activity{data: %{"type" => "Move"}}), do: true
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
-  def is_public?(data), do: Utils.label_in_message?(Pleroma.Constants.as_public(), data)
+
+  def is_public?(data) do
+    Utils.label_in_message?(Pleroma.Constants.as_public(), data) or
+      Utils.label_in_message?(Pleroma.Web.base_url() <> "/#Public", data)
+  end
 
   def is_private?(activity) do
     with false <- is_public?(activity),

@@ -175,7 +175,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
 
     with true <- Config.get!([:instance, :federating]),
-         true <- type != "Block" || outgoing_blocks do
+         true <- type != "Block" || outgoing_blocks,
+         false <- Activity.local_only?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 

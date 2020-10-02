@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
       do_not_federate = meta[:do_not_federate] || !Config.get([:instance, :federating])
 
-      if !do_not_federate && local do
+      if !do_not_federate and local and not Activity.local_only?(activity) do
         activity =
           if object = Keyword.get(meta, :object_data) do
             %{activity | data: Map.put(activity.data, "object", object)}

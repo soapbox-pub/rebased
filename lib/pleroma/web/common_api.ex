@@ -15,6 +15,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
@@ -398,31 +399,13 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def listen(user, data) do
-    visibility = Map.get(data, :visibility, "public")
-
-    with {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
-         listen_data <-
-           data
-           |> Map.take([:album, :artist, :title, :length])
-           |> Map.new(fn {key, value} -> {to_string(key), value} end)
-           |> Map.put("type", "Audio")
-           |> Map.put("to", to)
-           |> Map.put("cc", cc)
-           |> Map.put("actor", user.ap_id),
-         {:ok, activity} <-
-           ActivityPub.listen(%{
-             actor: user,
-             to: to,
-             object: listen_data,
-             context: Utils.generate_context_id(),
-             additional: %{"cc" => cc}
-           }) do
-      {:ok, activity}
+    with {:ok, draft} <- ActivityDraft.listen(user, data) do
+      ActivityPub.listen(draft.changes)
     end
   end
 
   def post(user, %{status: _} = data) do
-    with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
+    with {:ok, draft} <- ActivityDraft.create(user, data) do
       ActivityPub.create(draft.changes, draft.preview?)
     end
   end
