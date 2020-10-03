@@ -183,7 +183,8 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
         {"some.tld", ""}
       ])
 
-      assert capture_log(fn -> DeprecationWarnings.check_transparency_exclusions_tuples() end) == ""
+      assert capture_log(fn -> DeprecationWarnings.check_transparency_exclusions_tuples() end) ==
+               ""
     end
   end
 
