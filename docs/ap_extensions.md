@@ -6,6 +6,12 @@ The following endpoints are additionally present into our actors.
 - `oauthRegistrationEndpoint`
 - `uploadMedia`
 
+### oauthRegistrationEndpoint
+
+Points to MastodonAPI `/api/v1/apps` for now.
+
+See <https://docs.joinmastodon.org/methods/apps/>
+
 ### uploadMedia
 
 Inspired by <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
