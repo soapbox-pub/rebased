@@ -47,8 +47,19 @@ defmodule Pleroma.Plugs.RemoteIp do
       config
       |> Keyword.get(:proxies, [])
       |> Enum.concat(reserved)
-      |> Enum.map(&InetCidr.parse/1)
+      |> Enum.map(&maybe_add_cidr/1)
 
     {headers, proxies}
+  end
+
+  defp maybe_add_cidr(proxy) when is_binary(proxy) do
+    proxy =
+      cond do
+        "/" in String.codepoints(proxy) -> proxy
+        InetCidr.v4?(InetCidr.parse_address!(proxy)) -> proxy <> "/32"
+        InetCidr.v6?(InetCidr.parse_address!(proxy)) -> proxy <> "/128"
+      end
+
+    InetCidr.parse(proxy)
   end
 end
