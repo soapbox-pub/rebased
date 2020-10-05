@@ -73,7 +73,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
         {:media_removal, [{"some.removal", ""}, {"some.other.instance", "Some reason"}]}
       ]
 
-      capture_log(fn -> DeprecationWarnings.check_simple_policy_tuples() end)
+      capture_log(fn -> DeprecationWarnings.warn() end)
 
       assert Config.get([:mrf_simple]) == expected_config
     end
@@ -122,7 +122,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
 
       expected_config = [{"domain.com", "some reason"}, {"some.tld", ""}]
 
-      capture_log(fn -> DeprecationWarnings.check_quarantined_instances_tuples() end)
+      capture_log(fn -> DeprecationWarnings.warn() end)
 
       assert Config.get([:instance, :quarantined_instances]) == expected_config
     end
@@ -172,7 +172,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
 
       expected_config = [{"domain.com", "some reason"}, {"some.tld", ""}]
 
-      capture_log(fn -> DeprecationWarnings.check_transparency_exclusions_tuples() end)
+      capture_log(fn -> DeprecationWarnings.warn() end)
 
       assert Config.get([:mrf, :transparency_exclusions]) == expected_config
     end
