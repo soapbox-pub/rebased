@@ -24,6 +24,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     with %Activity{local: true} = activity <-
            Activity.get_by_id_with_object(notice_id),
          true <- Visibility.is_public?(activity.object),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, _reading_user = nil)},
          %User{} = user <- User.get_by_ap_id(activity.object.data["actor"]) do
       meta = Metadata.build_tags(%{activity_id: notice_id, object: activity.object, user: user})
 
@@ -47,34 +48,35 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   @doc "Renders public activities of requested user"
   def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
-    case User.get_cached_by_nickname_or_id(username_or_id) do
-      %User{} = user ->
-        meta = Metadata.build_tags(%{user: user})
+    with {_, %User{local: true} = user} <-
+           {:fetch_user, User.get_cached_by_nickname_or_id(username_or_id)},
+         {_, :visible} <- {:visibility, User.visible_for(user, _reading_user = nil)} do
+      meta = Metadata.build_tags(%{user: user})
 
-        params =
-          params
-          |> Map.take(@page_keys)
-          |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
+      params =
+        params
+        |> Map.take(@page_keys)
+        |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
 
-        timeline =
-          user
-          |> ActivityPub.fetch_user_activities(_reading_user = nil, params)
-          |> Enum.map(&represent/1)
+      timeline =
+        user
+        |> ActivityPub.fetch_user_activities(_reading_user = nil, params)
+        |> Enum.map(&represent/1)
 
-        prev_page_id =
-          (params["min_id"] || params["max_id"]) &&
-            List.first(timeline) && List.first(timeline).id
+      prev_page_id =
+        (params["min_id"] || params["max_id"]) &&
+          List.first(timeline) && List.first(timeline).id
 
-        next_page_id = List.last(timeline) && List.last(timeline).id
+      next_page_id = List.last(timeline) && List.last(timeline).id
 
-        render(conn, "profile.html", %{
-          user: User.sanitize_html(user),
-          timeline: timeline,
-          prev_page_id: prev_page_id,
-          next_page_id: next_page_id,
-          meta: meta
-        })
-
+      render(conn, "profile.html", %{
+        user: User.sanitize_html(user),
+        timeline: timeline,
+        prev_page_id: prev_page_id,
+        next_page_id: next_page_id,
+        meta: meta
+      })
+    else
       _ ->
         not_found(conn, "User not found.")
     end

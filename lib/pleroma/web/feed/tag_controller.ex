@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.Feed.FeedView
 
   def feed(conn, params) do
-    unless Config.restrict_unauthenticated_access?(:activities, :local) do
+    if Config.get!([:instance, :public]) do
       render_feed(conn, params)
     else
       render_error(conn, :not_found, "Not found")
@@ -36,12 +36,13 @@ defmodule Pleroma.Web.Feed.TagController do
   end
 
   @spec parse_tag(binary() | any()) :: {format :: String.t(), tag :: String.t()}
-  defp parse_tag(raw_tag) when is_binary(raw_tag) do
-    case Enum.reverse(String.split(raw_tag, ".")) do
-      [format | tag] when format in ["atom", "rss"] -> {format, Enum.join(tag, ".")}
-      _ -> {"rss", raw_tag}
+  defp parse_tag(raw_tag) do
+    case is_binary(raw_tag) && Enum.reverse(String.split(raw_tag, ".")) do
+      [format | tag] when format in ["rss", "atom"] ->
+        {format, Enum.join(tag, ".")}
+
+      _ ->
+        {"atom", raw_tag}
     end
   end
-
-  defp parse_tag(raw_tag), do: {"rss", raw_tag}
 end

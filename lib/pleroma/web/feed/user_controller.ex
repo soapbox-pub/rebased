@@ -6,6 +6,8 @@ defmodule Pleroma.Web.Feed.UserController do
   use Pleroma.Web, :controller
 
   alias Fallback.RedirectController
+
+  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ActivityPubController
@@ -32,15 +34,7 @@ defmodule Pleroma.Web.Feed.UserController do
     end
   end
 
-  def feed(conn, params) do
-    unless Pleroma.Config.restrict_unauthenticated_access?(:profiles, :local) do
-      render_feed(conn, params)
-    else
-      errors(conn, {:error, :not_found})
-    end
-  end
-
-  defp render_feed(conn, %{"nickname" => nickname} = params) do
+  def feed(conn, %{"nickname" => nickname} = params) do
     format = get_format(conn)
 
     format =
@@ -50,7 +44,8 @@ defmodule Pleroma.Web.Feed.UserController do
         "atom"
       end
 
-    with {_, %User{local: true} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
+    with {_, %User{local: true} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)},
+         {_, :visible} <- {:visibility, User.visible_for(user, _reading_user = nil)} do
       activities =
         %{
           type: ["Create"],
@@ -65,7 +60,7 @@ defmodule Pleroma.Web.Feed.UserController do
       |> render("user.#{format}",
         user: user,
         activities: activities,
-        feed_config: Pleroma.Config.get([:feed])
+        feed_config: Config.get([:feed])
       )
     end
   end
@@ -76,6 +71,8 @@ defmodule Pleroma.Web.Feed.UserController do
 
   def errors(conn, {:fetch_user, %User{local: false}}), do: errors(conn, {:error, :not_found})
   def errors(conn, {:fetch_user, nil}), do: errors(conn, {:error, :not_found})
+
+  def errors(conn, {:visibility, _}), do: errors(conn, {:error, :not_found})
 
   def errors(conn, _) do
     render_error(conn, :internal_server_error, "Something went wrong")

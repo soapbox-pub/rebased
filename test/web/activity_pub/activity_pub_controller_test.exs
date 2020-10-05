@@ -33,25 +33,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   setup do: clear_config([:instance, :federating], true)
 
-  defp ensure_federating_or_authenticated(conn, url, user) do
-    Config.put([:instance, :federating], false)
-
-    conn
-    |> get(url)
-    |> response(403)
-
-    conn
-    |> assign(:user, user)
-    |> get(url)
-    |> response(200)
-
-    Config.put([:instance, :federating], true)
-
-    conn
-    |> get(url)
-    |> response(200)
-  end
-
   describe "/relay" do
     setup do: clear_config([:instance, :allow_relay])
 
@@ -174,21 +155,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(404)
 
       assert response == "Not found"
-    end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-
-      conn =
-        put_req_header(
-          conn,
-          "accept",
-          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
-        )
-
-      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}.json", user)
     end
   end
 
@@ -357,18 +323,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert "Not found" == json_response(conn2, :not_found)
     end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      note = insert(:note)
-      uuid = String.split(note.data["id"], "/") |> List.last()
-
-      conn = put_req_header(conn, "accept", "application/activity+json")
-
-      ensure_federating_or_authenticated(conn, "/objects/#{uuid}", user)
-    end
   end
 
   describe "/activities/:uuid" do
@@ -439,18 +393,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/activities/#{uuid}")
 
       assert "Not found" == json_response(conn2, :not_found)
-    end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      activity = insert(:note_activity)
-      uuid = String.split(activity.data["id"], "/") |> List.last()
-
-      conn = put_req_header(conn, "accept", "application/activity+json")
-
-      ensure_federating_or_authenticated(conn, "/activities/#{uuid}", user)
     end
   end
 
@@ -911,15 +853,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
-    end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      conn = put_req_header(conn, "accept", "application/activity+json")
-
-      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}/outbox", user)
     end
   end
 

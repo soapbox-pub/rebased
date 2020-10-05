@@ -5,6 +5,14 @@
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
 
+  pipeline :accepts_html do
+    plug(:accepts, ["html"])
+  end
+
+  pipeline :accepts_xml_rss_atom do
+    plug(:accepts, ["xml", "rss", "atom"])
+  end
+
   pipeline :browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
@@ -556,39 +564,55 @@ defmodule Pleroma.Web.Router do
     )
   end
 
-  pipeline :ostatus do
+  pipeline :ostatus_html_json do
+    plug(:accepts, ["html", "activity+json", "json"])
+    plug(Pleroma.Plugs.StaticFEPlug)
+  end
+
+  pipeline :ostatus_html_xml do
+    plug(:accepts, ["html", "xml", "rss", "atom"])
+    plug(Pleroma.Plugs.StaticFEPlug)
+  end
+
+  pipeline :ostatus_html_xml_json do
     plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
     plug(Pleroma.Plugs.StaticFEPlug)
   end
 
-  pipeline :ostatus_no_html do
-    plug(:accepts, ["xml", "rss", "atom", "activity+json", "json"])
-  end
-
-  pipeline :oembed do
-    plug(:accepts, ["json", "xml"])
-  end
-
   scope "/", Pleroma.Web do
-    # Note: no authentication plugs, all endpoints below should only yield public objects
-    pipe_through(:ostatus)
+    # Note: html format is supported only if static FE is enabled
+    pipe_through(:ostatus_html_json)
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
     get("/notice/:id", OStatus.OStatusController, :notice)
-    get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
 
     # Mastodon compatibility routes
     get("/users/:nickname/statuses/:id", OStatus.OStatusController, :object)
     get("/users/:nickname/statuses/:id/activity", OStatus.OStatusController, :activity)
+  end
 
-    get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
+  scope "/", Pleroma.Web do
+    # Note: html format is supported only if static FE is enabled
+    pipe_through(:ostatus_html_xml_json)
+
+    # Note: for json format responds with user profile (not user feed)
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
   end
 
   scope "/", Pleroma.Web do
-    pipe_through(:ostatus_no_html)
+    # Note: html format is supported only if static FE is enabled
+    pipe_through(:ostatus_html_xml)
+    get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
+  end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:accepts_html)
+    get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:accepts_xml_rss_atom)
     get("/tags/:tag", Feed.TagController, :feed, as: :tag_feed)
   end
 
