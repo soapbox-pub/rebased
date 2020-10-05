@@ -17,6 +17,46 @@ defmodule Pleroma.UserSearchTest do
   describe "User.search" do
     setup do: clear_config([:instance, :limit_to_local_content])
 
+    test "returns a resolved user as the first result" do
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      user = insert(:user, %{nickname: "no_relation", ap_id: "https://lain.com/users/lain"})
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/users/lain", resolve: true)
+
+      assert first_user.id == user.id
+    end
+
+    test "returns a user with matching ap_id as the first result" do
+      user = insert(:user, %{nickname: "no_relation", ap_id: "https://lain.com/users/lain"})
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/users/lain")
+
+      assert first_user.id == user.id
+    end
+
+    test "doesn't die if two users have the same uri" do
+      insert(:user, %{uri: "https://gensokyo.2hu/@raymoo"})
+      insert(:user, %{uri: "https://gensokyo.2hu/@raymoo"})
+      assert [_first_user, _second_user] = User.search("https://gensokyo.2hu/@raymoo")
+    end
+
+    test "returns a user with matching uri as the first result" do
+      user =
+        insert(:user, %{
+          nickname: "no_relation",
+          ap_id: "https://lain.com/users/lain",
+          uri: "https://lain.com/@lain"
+        })
+
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/@lain")
+
+      assert first_user.id == user.id
+    end
+
     test "excludes invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})

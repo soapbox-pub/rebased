@@ -21,10 +21,19 @@ defmodule Mix.Tasks.Pleroma.Relay do
     end
   end
 
-  def run(["unfollow", target]) do
+  def run(["unfollow", target | rest]) do
     start_pleroma()
 
-    with {:ok, _activity} <- Relay.unfollow(target) do
+    {options, [], []} =
+      OptionParser.parse(
+        rest,
+        strict: [force: :boolean],
+        aliases: [f: :force]
+      )
+
+    force = Keyword.get(options, :force, false)
+
+    with {:ok, _activity} <- Relay.unfollow(target, %{force: force}) do
       # put this task to sleep to allow the genserver to push out the messages
       :timer.sleep(500)
     else

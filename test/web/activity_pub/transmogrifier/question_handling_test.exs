@@ -157,12 +157,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
            }
   end
 
-  test "returns an error if received a second time" do
+  test "returns same activity if received a second time" do
     data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
 
     assert {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    assert {:error, {:validate_object, {:error, _}}} = Transmogrifier.handle_incoming(data)
+    assert {:ok, ^activity} = Transmogrifier.handle_incoming(data)
   end
 
   test "accepts a Question with no content" do

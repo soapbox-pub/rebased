@@ -9,6 +9,18 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   alias Pleroma.HTTP
 
+  require Logger
+
+  def missing_dependencies do
+    Enum.reduce([imagemagick: "convert", ffmpeg: "ffmpeg"], [], fn {sym, executable}, acc ->
+      if Pleroma.Utils.command_available?(executable) do
+        acc
+      else
+        [sym | acc]
+      end
+    end)
+  end
+
   def image_resize(url, options) do
     with executable when is_binary(executable) <- System.find_executable("convert"),
          {:ok, args} <- prepare_image_resize_args(options),

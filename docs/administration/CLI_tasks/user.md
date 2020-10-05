@@ -224,9 +224,10 @@
     ```
 
 ### Options
+- `--admin`/`--no-admin` - whether the user should be an admin
+- `--confirmed`/`--no-confirmed` - whether the user account is confirmed
 - `--locked`/`--no-locked` - whether the user should be locked
 - `--moderator`/`--no-moderator` - whether the user should be a moderator
-- `--admin`/`--no-admin` - whether the user should be an admin
 
 ## Add tags to a user
 
@@ -270,4 +271,34 @@
 
     ```sh
     mix pleroma.user toggle_confirmed <nickname>
+    ```
+
+## Set confirmation status for all regular active users
+*Admins and moderators are excluded*
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user confirm_all
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user confirm_all
+    ```
+
+## Revoke confirmation status for all regular active users
+*Admins and moderators are excluded*
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user unconfirm_all
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user unconfirm_all
     ```
