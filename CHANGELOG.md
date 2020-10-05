@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
 - Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
@@ -24,7 +25,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
 - Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
+
+<details>
+  <summary>API Changes</summary>
+
+- Pleroma API: Importing the mutes users from CSV files.
 - Admin API: Importing emoji from a zip file
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
 
 ### Removed
 
@@ -38,6 +47,11 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
+
+## Unreleased (Patch)
+
+### Changed
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
 
 ## [2.1.2] - 2020-09-17
 

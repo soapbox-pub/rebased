@@ -19,7 +19,21 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       tags: ["Emoji Packs"],
       summary: "Make request to another instance for emoji packs list",
       security: [%{"oAuth" => ["write"]}],
-      parameters: [url_param()],
+      parameters: [
+        url_param(),
+        Operation.parameter(
+          :page,
+          :query,
+          %Schema{type: :integer, default: 1},
+          "Page"
+        ),
+        Operation.parameter(
+          :page_size,
+          :query,
+          %Schema{type: :integer, default: 30},
+          "Number of emoji to return"
+        )
+      ],
       operationId: "PleromaAPI.EmojiPackController.remote",
       responses: %{
         200 => emoji_packs_response(),
@@ -192,7 +206,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
   end
 
   defp name_param do
-    Operation.parameter(:name, :path, :string, "Pack Name", example: "cofe", required: true)
+    Operation.parameter(:name, :query, :string, "Pack Name", example: "cofe", required: true)
   end
 
   defp url_param do

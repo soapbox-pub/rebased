@@ -101,6 +101,8 @@ It is encouraged to check [Optimizing your PostgreSQL performance](../configurat
 If you are using PostgreSQL 12 or higher, add this to your Ecto database configuration
 
 ```elixir
+#
+config :pleroma, Pleroma.Repo,
 prepare: :named,
 parameters: [
   plan_cache_mode: "force_custom_plan"
