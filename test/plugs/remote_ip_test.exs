@@ -82,4 +82,15 @@ defmodule Pleroma.Plugs.RemoteIpTest do
 
     assert conn.remote_ip == {1, 1, 1, 1}
   end
+
+  test "proxies set without CIDR format" do
+    Pleroma.Config.put([RemoteIp, :proxies], ["173.245.48.1"])
+
+    conn =
+      conn(:get, "/")
+      |> put_req_header("x-forwarded-for", "173.245.48.1, 1.1.1.1")
+      |> RemoteIp.call(nil)
+
+    assert conn.remote_ip == {1, 1, 1, 1}
+  end
 end
