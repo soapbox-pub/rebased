@@ -427,7 +427,7 @@ Available options:
 
 * `enabled` - Enable/disable the plug. Defaults to `false`.
 * `headers` - A list of strings naming the HTTP headers to use when deriving the true client IP address. Defaults to `["x-forwarded-for"]`.
-* `proxies` - A list of upstream proxy IP subnets in CIDR notation. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128.
+* `proxies` - A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128.
 * `reserved` - A list of reserved IP subnets in CIDR notation which should be ignored if found in `headers`. Defaults to `["127.0.0.0/8", "::1/128", "fc00::/7", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]`.
 
 

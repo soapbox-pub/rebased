@@ -3270,7 +3270,7 @@ config :pleroma, :config_description, [
         key: :proxies,
         type: {:list, :string},
         description:
-          "A list of upstream proxy IP subnets in CIDR notation. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128."
+          "A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128."
       },
       %{
         key: :reserved,
