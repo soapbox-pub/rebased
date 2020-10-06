@@ -3263,7 +3263,7 @@ config :pleroma, :config_description, [
         key: :headers,
         type: {:list, :string},
         description: """
-          A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Default: `["x-forwarded-for"]`.
+          A list of strings naming the HTTP headers to use when deriving the true client IP. Default: `["x-forwarded-for"]`.
         """
       },
       %{
