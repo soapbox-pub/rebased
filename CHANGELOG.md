@@ -8,21 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
 - Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task option for force-unfollowing relays
 
 ### Changed
 
+- **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
 - Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 - The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
 - Users with the `discoverable` field set to false will not show up in searches.
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+- Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
 
 ### Added
-- Media preview proxy (requires media proxy be enabled; see `:media_preview_proxy` config for more details).
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
 - Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
+
+<details>
+  <summary>API Changes</summary>
+
+- Pleroma API: Importing the mutes users from CSV files.
 - Admin API: Importing emoji from a zip file
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
 
 ### Removed
 
@@ -36,6 +47,11 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
+
+## Unreleased (Patch)
+
+### Changed
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
 
 ## [2.1.2] - 2020-09-17
 

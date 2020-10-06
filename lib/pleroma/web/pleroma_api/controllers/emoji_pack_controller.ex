@@ -23,8 +23,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
-  def remote(conn, %{url: url}) do
-    with {:ok, packs} <- Pack.list_remote(url) do
+  def remote(conn, params) do
+    with {:ok, packs} <-
+           Pack.list_remote(url: params.url, page_size: params.page_size, page: params.page) do
       json(conn, packs)
     else
       {:error, :not_shareable} ->

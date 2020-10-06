@@ -226,6 +226,20 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
+    scope "/pack" do
+      pipe_through(:admin_api)
+
+      post("/", EmojiPackController, :create)
+      patch("/", EmojiPackController, :update)
+      delete("/", EmojiPackController, :delete)
+    end
+
+    scope "/pack" do
+      pipe_through(:api)
+
+      get("/", EmojiPackController, :show)
+    end
+
     # Modifying packs
     scope "/packs" do
       pipe_through(:admin_api)
@@ -234,21 +248,17 @@ defmodule Pleroma.Web.Router do
       get("/remote", EmojiPackController, :remote)
       post("/download", EmojiPackController, :download)
 
-      post("/:name", EmojiPackController, :create)
-      patch("/:name", EmojiPackController, :update)
-      delete("/:name", EmojiPackController, :delete)
-
-      post("/:name/files", EmojiFileController, :create)
-      patch("/:name/files", EmojiFileController, :update)
-      delete("/:name/files", EmojiFileController, :delete)
+      post("/files", EmojiFileController, :create)
+      patch("/files", EmojiFileController, :update)
+      delete("/files", EmojiFileController, :delete)
     end
 
     # Pack info / downloading
     scope "/packs" do
       pipe_through(:api)
+
       get("/", EmojiPackController, :index)
-      get("/:name", EmojiPackController, :show)
-      get("/:name/archive", EmojiPackController, :archive)
+      get("/archive", EmojiPackController, :archive)
     end
   end
 

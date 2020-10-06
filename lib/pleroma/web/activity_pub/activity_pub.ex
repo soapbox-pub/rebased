@@ -790,7 +790,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       [activity, object] in query,
       where:
         fragment(
-          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          """
+          ?->>'type' != 'Create'     -- This isn't a Create      
+          OR ?->>'inReplyTo' is null -- this isn't a reply
+          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends, 
+                                     -- unless they are the author (because authors 
+                                     -- are also part of the recipients). This leads
+                                     -- to a bug that self-replies by friends won't
+                                     -- show up.
+          OR ? = ?                   -- The actor is us
+          """,
+          activity.data,
           object.data,
           ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
           activity.recipients,

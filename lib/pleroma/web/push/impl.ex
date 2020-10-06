@@ -19,7 +19,7 @@ defmodule Pleroma.Web.Push.Impl do
   @types ["Create", "Follow", "Announce", "Like", "Move"]
 
   @doc "Performs sending notifications for user subscriptions"
-  @spec perform(Notification.t()) :: list(any) | :error
+  @spec perform(Notification.t()) :: list(any) | :error | {:error, :unknown_type}
   def perform(
         %{
           activity: %{data: %{"type" => activity_type}} = activity,
@@ -64,20 +64,20 @@ defmodule Pleroma.Web.Push.Impl do
   @doc "Push message to web"
   def push_message(body, sub, api_key, subscription) do
     case WebPushEncryption.send_web_push(body, sub, api_key) do
-      {:ok, %{status_code: code}} when 400 <= code and code < 500 ->
+      {:ok, %{status: code}} when code in 400..499 ->
         Logger.debug("Removing subscription record")
         Repo.delete!(subscription)
         :ok
 
-      {:ok, %{status_code: code}} when 200 <= code and code < 300 ->
+      {:ok, %{status: code}} when code in 200..299 ->
         :ok
 
-      {:ok, %{status_code: code}} ->
+      {:ok, %{status: code}} ->
         Logger.error("Web Push Notification failed with code: #{code}")
         :error
 
-      _ ->
-        Logger.error("Web Push Notification failed with unknown error")
+      error ->
+        Logger.error("Web Push Notification failed with #{inspect(error)}")
         :error
     end
   end
