@@ -426,7 +426,7 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 Available options:
 
 * `enabled` - Enable/disable the plug. Defaults to `false`.
-* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `["x-forwarded-for"]`.
+* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Defaults to `["x-forwarded-for"]`.
 * `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
 * `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).
 

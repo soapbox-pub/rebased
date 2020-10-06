@@ -3262,8 +3262,9 @@ config :pleroma, :config_description, [
       %{
         key: :headers,
         type: {:list, :string},
-        description:
-          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Default: `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+        description: """
+          A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Default: `["x-forwarded-for"]`.
+        """
       },
       %{
         key: :proxies,
