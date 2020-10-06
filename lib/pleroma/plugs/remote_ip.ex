@@ -23,7 +23,7 @@ defmodule Pleroma.Plugs.RemoteIp do
     end
   end
 
-  defp remote_ip_opts() do
+  defp remote_ip_opts do
     headers = Config.get([__MODULE__, :headers], []) |> MapSet.new()
     reserved = Config.get([__MODULE__, :reserved], [])
 
