@@ -104,6 +104,5 @@ defmodule Pleroma.Plugs.RemoteIpTest do
       |> RemoteIp.call(nil)
 
     assert conn.remote_ip == {1, 1, 1, 1}
-
   end
 end
