@@ -155,7 +155,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
-
   # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
     params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
