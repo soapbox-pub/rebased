@@ -43,6 +43,6 @@ defmodule Pleroma.Plugs.RemoteIp do
         InetCidr.v6?(InetCidr.parse_address!(proxy)) -> proxy <> "/128"
       end
 
-    InetCidr.parse(proxy)
+    InetCidr.parse(proxy, true)
   end
 end
