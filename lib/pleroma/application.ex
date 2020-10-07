@@ -202,7 +202,10 @@ defmodule Pleroma.Application do
   end
 
   defp chat_child(true) do
-    [Pleroma.Web.ChatChannel.ChatChannelState]
+    [
+      Pleroma.Web.ChatChannel.ChatChannelState,
+      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
+    ]
   end
 
   defp chat_child(_), do: []
