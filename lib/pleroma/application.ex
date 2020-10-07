@@ -99,7 +99,7 @@ defmodule Pleroma.Application do
         ] ++
         task_children(@env) ++
         dont_run_in_test(@env) ++
-        chat_child(@env, chat_enabled?()) ++
+        chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
           Pleroma.Gopher.Server
@@ -201,11 +201,11 @@ defmodule Pleroma.Application do
     ]
   end
 
-  defp chat_child(_env, true) do
+  defp chat_child(true) do
     [Pleroma.Web.ChatChannel.ChatChannelState]
   end
 
-  defp chat_child(_, _), do: []
+  defp chat_child(_), do: []
 
   defp task_children(:test) do
     [
