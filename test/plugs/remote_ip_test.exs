@@ -92,6 +92,7 @@ defmodule Pleroma.Plugs.RemoteIpTest do
       |> RemoteIp.call(nil)
 
     assert conn.remote_ip == {1, 1, 1, 1}
+  end
 
   test "proxies set `nonsensical` CIDR" do
     Pleroma.Config.put([RemoteIp, :reserved], ["127.0.0.0/8"])
