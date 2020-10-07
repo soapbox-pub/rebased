@@ -143,7 +143,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
+  pubsub_server: Pleroma.PubSub,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
