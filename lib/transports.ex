@@ -31,7 +31,7 @@ defmodule Phoenix.Transports.WebSocket.Raw do
 
     case conn do
       %{halted: false} = conn ->
-        case Transport.connect(%{
+        case handler.connect(%{
                endpoint: endpoint,
                transport: transport,
                options: [serializer: nil],
