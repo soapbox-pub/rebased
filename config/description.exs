@@ -3265,20 +3265,22 @@ config :pleroma, :config_description, [
       %{
         key: :headers,
         type: {:list, :string},
-        description:
-          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Default: `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+        description: """
+          A list of strings naming the HTTP headers to use when deriving the true client IP. Default: `["x-forwarded-for"]`.
+        """
       },
       %{
         key: :proxies,
         type: {:list, :string},
         description:
-          "A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Default: `[]`."
+          "A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128."
       },
       %{
         key: :reserved,
         type: {:list, :string},
-        description:
-          "Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network)."
+        description: """
+          A list of reserved IP subnets in CIDR notation which should be ignored if found in `headers`. Defaults to `["127.0.0.0/8", "::1/128", "fc00::/7", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]`
+        """
       }
     ]
   },
