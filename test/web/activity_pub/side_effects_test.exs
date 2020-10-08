@@ -19,8 +19,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.CommonAPI
 
-  import Pleroma.Factory
+  import ExUnit.CaptureLog
   import Mock
+  import Pleroma.Factory
 
   describe "handle_after_transaction" do
     test "it streams out notifications and streams" do
@@ -220,6 +221,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       ObanHelpers.perform_all()
 
       assert User.get_cached_by_ap_id(user.ap_id).deactivated
+    end
+
+    test "it logs issues with objects deletion", %{
+      delete: delete,
+      object: object
+    } do
+      {:ok, object} =
+        object
+        |> Object.change(%{data: Map.delete(object.data, "actor")})
+        |> Repo.update()
+
+      Object.invalid_object_cache(object)
+
+      assert capture_log(fn ->
+               {:error, :no_object_actor} = SideEffects.handle(delete)
+             end) =~ "object doesn't have an actor"
     end
   end
 

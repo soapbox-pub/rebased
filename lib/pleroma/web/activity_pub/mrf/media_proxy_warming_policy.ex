@@ -12,23 +12,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
   require Logger
 
-  @options [
-    pool: :media
+  @adapter_options [
+    pool: :media,
+    recv_timeout: 10_000
   ]
 
   def perform(:prefetch, url) do
-    Logger.debug("Prefetching #{inspect(url)}")
+    # Fetching only proxiable resources
+    if MediaProxy.enabled?() and MediaProxy.url_proxiable?(url) do
+      # If preview proxy is enabled, it'll also hit media proxy (so we're caching both requests)
+      prefetch_url = MediaProxy.preview_url(url)
 
-    opts =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
-        Keyword.put(@options, :recv_timeout, 10_000)
-      else
-        @options
-      end
+      Logger.debug("Prefetching #{inspect(url)} as #{inspect(prefetch_url)}")
 
-    url
-    |> MediaProxy.url()
-    |> HTTP.get([], adapter: opts)
+      HTTP.get(prefetch_url, [], @adapter_options)
+    end
   end
 
   def perform(:preload, %{"object" => %{"attachment" => attachments}} = _message) do

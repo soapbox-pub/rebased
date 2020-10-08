@@ -28,12 +28,16 @@ Gentoo quite pointedly does not come with a cron daemon installed, and as such i
 * `dev-db/postgresql`
 * `dev-lang/elixir`
 * `dev-vcs/git`
+* `dev-util/cmake`
 
 #### Optional ebuilds used in this guide
 
 * `www-servers/nginx` (preferred, example configs for other reverse proxies can be found in the repo)
 * `app-crypt/certbot` (or any other ACME client for Let’s Encrypt certificates)
 * `app-crypt/certbot-nginx` (nginx certbot plugin that allows use of the all-powerful `--nginx` flag on certbot)
+* `media-gfx/imagemagick`
+* `media-video/ffmpeg`
+* `media-libs/exiftool`
 
 ### Prepare the system
 
@@ -46,7 +50,7 @@ Gentoo quite pointedly does not come with a cron daemon installed, and as such i
 * Emerge all required the required and suggested software in one go:
 
 ```shell
- # emerge --ask dev-db/postgresql dev-lang/elixir dev-vcs/git www-servers/nginx app-crypt/certbot app-crypt/certbot-nginx
+ # emerge --ask dev-db/postgresql dev-lang/elixir dev-vcs/git www-servers/nginx app-crypt/certbot app-crypt/certbot-nginx dev-util/cmake
 ```
 
 If you would not like to install the optional packages, remove them from this line. 
@@ -85,6 +89,12 @@ The output from emerging postgresql should give you a command for initializing t
 If you do not plan to make any modifications to your Pleroma instance, cloning directly from the main repo will get you what you need. However, if you plan on doing any contributions to upstream development, making changes or modifications to your instance, making custom themes, or want to play around--and let's be honest here, if you're using Gentoo that is most likely you--you will save yourself a lot of headache later if you take the time right now to fork the Pleroma repo and use that in the following section.
 
 Not only does this make it much easier to deploy changes you make, as you can commit and pull from upstream and all that good stuff from the comfort of your local machine then simply `git pull` on your instance server when you're ready to deploy, it also ensures you are compliant with the Affero General Public Licence that Pleroma is licenced under, which stipulates that all network services provided with modified AGPL code must publish their changes on a publicly available internet service and for free. It also makes it much easier to ask for help from and provide help to your fellow Pleroma admins if your public repo always reflects what you are running because it is part of your deployment procedure.
+
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+
+```shell
+# emerge --ask media-video/ffmpeg media-gfx/imagemagick media-libs/exiftool
+```
 
 ### Install PleromaBE
 

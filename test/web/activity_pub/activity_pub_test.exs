@@ -239,7 +239,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         }
       }
 
-      assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
+      assert {:error, :remote_limit} = ActivityPub.insert(data)
     end
 
     test "doesn't drop activities with content being null" do
@@ -386,9 +386,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "create activities" do
-    test "it reverts create" do
-      user = insert(:user)
+    setup do
+      [user: insert(:user)]
+    end
 
+    test "it reverts create", %{user: user} do
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} =
                  ActivityPub.create(%{
@@ -407,9 +409,47 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.aggregate(Object, :count, :id) == 0
     end
 
-    test "removes doubled 'to' recipients" do
-      user = insert(:user)
+    test "creates activity if expiration is not configured and expires_at is not passed", %{
+      user: user
+    } do
+      clear_config([Pleroma.Workers.PurgeExpiredActivity, :enabled], false)
 
+      assert {:ok, _} =
+               ActivityPub.create(%{
+                 to: ["user1", "user2"],
+                 actor: user,
+                 context: "",
+                 object: %{
+                   "to" => ["user1", "user2"],
+                   "type" => "Note",
+                   "content" => "testing"
+                 }
+               })
+    end
+
+    test "rejects activity if expires_at present but expiration is not configured", %{user: user} do
+      clear_config([Pleroma.Workers.PurgeExpiredActivity, :enabled], false)
+
+      assert {:error, :expired_activities_disabled} =
+               ActivityPub.create(%{
+                 to: ["user1", "user2"],
+                 actor: user,
+                 context: "",
+                 object: %{
+                   "to" => ["user1", "user2"],
+                   "type" => "Note",
+                   "content" => "testing"
+                 },
+                 additional: %{
+                   "expires_at" => DateTime.utc_now()
+                 }
+               })
+
+      assert Repo.aggregate(Activity, :count, :id) == 0
+      assert Repo.aggregate(Object, :count, :id) == 0
+    end
+
+    test "removes doubled 'to' recipients", %{user: user} do
       {:ok, activity} =
         ActivityPub.create(%{
           to: ["user1", "user1", "user2"],
@@ -427,9 +467,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.recipients == ["user1", "user2", user.ap_id]
     end
 
-    test "increases user note count only for public activities" do
-      user = insert(:user)
-
+    test "increases user note count only for public activities", %{user: user} do
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
           status: "1",
@@ -458,8 +496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert user.note_count == 2
     end
 
-    test "increases replies count" do
-      user = insert(:user)
+    test "increases replies count", %{user: user} do
       user2 = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})
@@ -990,13 +1027,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "uploading files" do
-    test "copies the file to the configured folder" do
-      file = %Plug.Upload{
+    setup do
+      test_file = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
 
+      %{test_file: test_file}
+    end
+
+    test "sets a description if given", %{test_file: file} do
+      {:ok, %Object{} = object} = ActivityPub.upload(file, description: "a cool file")
+      assert object.data["name"] == "a cool file"
+    end
+
+    test "it sets the default description depending on the configuration", %{test_file: file} do
+      clear_config([Pleroma.Upload, :default_description])
+
+      Pleroma.Config.put([Pleroma.Upload, :default_description], nil)
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == ""
+
+      Pleroma.Config.put([Pleroma.Upload, :default_description], :filename)
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == "an_image.jpg"
+
+      Pleroma.Config.put([Pleroma.Upload, :default_description], "unnamed attachment")
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == "unnamed attachment"
+    end
+
+    test "copies the file to the configured folder", %{test_file: file} do
+      clear_config([Pleroma.Upload, :default_description], :filename)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "an_image.jpg"
     end
@@ -1747,6 +1810,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Enum.map(& &1.id)
 
       assert activities_ids == []
+
+      activities_ids =
+        %{}
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, nil)
+        |> ActivityPub.fetch_public_activities()
+
+      assert activities_ids == []
     end
 
     test "home timeline", %{users: %{u1: user}} do
@@ -2043,18 +2114,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "global activity expiration" do
-    setup do: clear_config([:mrf, :policies])
-
     test "creates an activity expiration for local Create activities" do
-      Pleroma.Config.put(
-        [:mrf, :policies],
-        Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
+      clear_config([:mrf, :policies], Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy)
+
+      {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity.id},
+        scheduled_at:
+          activity.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
       )
 
-      {:ok, %{id: id_create}} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
-      {:ok, _follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
-
-      assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
+      refute_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: follow.id}
+      )
     end
   end
 
@@ -2097,6 +2175,86 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = User.get_by_id(orig_user.id)
 
       assert user.nickname == orig_user.nickname
+    end
+  end
+
+  describe "reply filtering" do
+    test "`following` still contains announcements by friends" do
+      user = insert(:user)
+      followed = insert(:user)
+      not_followed = insert(:user)
+
+      User.follow(user, followed)
+
+      {:ok, followed_post} = CommonAPI.post(followed, %{status: "Hello"})
+
+      {:ok, not_followed_to_followed} =
+        CommonAPI.post(not_followed, %{
+          status: "Also hello",
+          in_reply_to_status_id: followed_post.id
+        })
+
+      {:ok, retoot} = CommonAPI.repeat(not_followed_to_followed.id, followed)
+
+      params =
+        %{}
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:announce_filtering_user, user)
+        |> Map.put(:user, user)
+
+      activities =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      followed_post_id = followed_post.id
+      retoot_id = retoot.id
+
+      assert [%{id: ^followed_post_id}, %{id: ^retoot_id}] = activities
+
+      assert length(activities) == 2
+    end
+
+    # This test is skipped because, while this is the desired behavior,
+    # there seems to be no good way to achieve it with the method that
+    # we currently use for detecting to who a reply is directed.
+    # This is a TODO and should be fixed by a later rewrite of the code
+    # in question.
+    @tag skip: true
+    test "`following` still contains self-replies by friends" do
+      user = insert(:user)
+      followed = insert(:user)
+      not_followed = insert(:user)
+
+      User.follow(user, followed)
+
+      {:ok, followed_post} = CommonAPI.post(followed, %{status: "Hello"})
+      {:ok, not_followed_post} = CommonAPI.post(not_followed, %{status: "Also hello"})
+
+      {:ok, _followed_to_not_followed} =
+        CommonAPI.post(followed, %{status: "sup", in_reply_to_status_id: not_followed_post.id})
+
+      {:ok, _followed_self_reply} =
+        CommonAPI.post(followed, %{status: "Also cofe", in_reply_to_status_id: followed_post.id})
+
+      params =
+        %{}
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:announce_filtering_user, user)
+        |> Map.put(:user, user)
+
+      activities =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      assert length(activities) == 2
     end
   end
 end

@@ -1342,6 +1342,75 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                args: ["auto-orient", "strip", {"implode", "1"}, {"resize", "3840x1080>"}]
              ]
     end
+
+    test "enables the welcome messages", %{conn: conn} do
+      clear_config([:welcome])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => ":welcome",
+        "value" => [
+          %{
+            "tuple" => [
+              ":direct_message",
+              [
+                %{"tuple" => [":enabled", true]},
+                %{"tuple" => [":message", "Welcome to Pleroma!"]},
+                %{"tuple" => [":sender_nickname", "pleroma"]}
+              ]
+            ]
+          },
+          %{
+            "tuple" => [
+              ":chat_message",
+              [
+                %{"tuple" => [":enabled", true]},
+                %{"tuple" => [":message", "Welcome to Pleroma!"]},
+                %{"tuple" => [":sender_nickname", "pleroma"]}
+              ]
+            ]
+          },
+          %{
+            "tuple" => [
+              ":email",
+              [
+                %{"tuple" => [":enabled", true]},
+                %{"tuple" => [":sender", %{"tuple" => ["pleroma@dev.dev", "Pleroma"]}]},
+                %{"tuple" => [":subject", "Welcome to <%= instance_name %>!"]},
+                %{"tuple" => [":html", "Welcome to <%= instance_name %>!"]},
+                %{"tuple" => [":text", "Welcome to <%= instance_name %>!"]}
+              ]
+            ]
+          }
+        ]
+      }
+
+      refute Pleroma.User.WelcomeEmail.enabled?()
+      refute Pleroma.User.WelcomeMessage.enabled?()
+      refute Pleroma.User.WelcomeChatMessage.enabled?()
+
+      res =
+        assert conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+               |> json_response_and_validate_schema(200)
+
+      assert Pleroma.User.WelcomeEmail.enabled?()
+      assert Pleroma.User.WelcomeMessage.enabled?()
+      assert Pleroma.User.WelcomeChatMessage.enabled?()
+
+      assert res == %{
+               "configs" => [
+                 %{
+                   "db" => [":direct_message", ":chat_message", ":email"],
+                   "group" => ":pleroma",
+                   "key" => ":welcome",
+                   "value" => params["value"]
+                 }
+               ],
+               "need_reboot" => false
+             }
+    end
   end
 
   describe "GET /api/pleroma/admin/config/descriptions" do

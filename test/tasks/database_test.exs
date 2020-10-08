@@ -3,13 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.DatabaseTest do
+  use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-
-  use Pleroma.DataCase
 
   import Pleroma.Factory
 
@@ -125,6 +126,50 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
 
       assert length(Object.get_by_id(object.id).data["likes"]) == 1
       assert Enum.empty?(Object.get_by_id(object2.id).data["likes"])
+    end
+  end
+
+  describe "ensure_expiration" do
+    test "it adds to expiration old statuses" do
+      activity1 = insert(:note_activity)
+
+      {:ok, inserted_at, 0} = DateTime.from_iso8601("2015-01-23T23:50:07Z")
+      activity2 = insert(:note_activity, %{inserted_at: inserted_at})
+
+      %{id: activity_id3} = insert(:note_activity)
+
+      expires_at = DateTime.add(DateTime.utc_now(), 60 * 61)
+
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+        activity_id: activity_id3,
+        expires_at: expires_at
+      })
+
+      Mix.Tasks.Pleroma.Database.run(["ensure_expiration"])
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity1.id},
+        scheduled_at:
+          activity1.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
+      )
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity2.id},
+        scheduled_at:
+          activity2.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
+      )
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity_id3},
+        scheduled_at: expires_at
+      )
     end
   end
 end

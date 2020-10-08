@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.AuthController do
   use Pleroma.Web, :controller
 
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
@@ -59,17 +61,9 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   def password_reset(conn, params) do
     nickname_or_email = params["email"] || params["nickname"]
 
-    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
-      conn
-      |> put_status(:no_content)
-      |> json("")
-    else
-      {:error, "unknown user"} ->
-        send_resp(conn, :not_found, "")
+    TwitterAPI.password_reset(nickname_or_email)
 
-      {:error, _} ->
-        send_resp(conn, :bad_request, "")
-    end
+    json_response(conn, :no_content, "")
   end
 
   defp local_mastodon_root_path(conn) do

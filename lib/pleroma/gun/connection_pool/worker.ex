@@ -15,7 +15,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   @impl true
   def handle_continue({:connect, [key, uri, opts, client_pid]}, _) do
-    with {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
+    with {:ok, conn_pid, protocol} <- Gun.Conn.open(uri, opts),
          Process.link(conn_pid) do
       time = :erlang.monotonic_time(:millisecond)
 
@@ -27,8 +27,12 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       send(client_pid, {:conn_pid, conn_pid})
 
       {:noreply,
-       %{key: key, timer: nil, client_monitors: %{client_pid => Process.monitor(client_pid)}},
-       :hibernate}
+       %{
+         key: key,
+         timer: nil,
+         client_monitors: %{client_pid => Process.monitor(client_pid)},
+         protocol: protocol
+       }, :hibernate}
     else
       err ->
         {:stop, {:shutdown, err}, nil}
@@ -53,13 +57,19 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   end
 
   @impl true
-  def handle_call(:add_client, {client_pid, _}, %{key: key} = state) do
+  def handle_call(:add_client, {client_pid, _}, %{key: key, protocol: protocol} = state) do
     time = :erlang.monotonic_time(:millisecond)
 
-    {{conn_pid, _, _, _}, _} =
+    {{conn_pid, used_by, _, _}, _} =
       Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
         {conn_pid, [client_pid | used_by], crf(time - last_reference, crf), time}
       end)
+
+    :telemetry.execute(
+      [:pleroma, :connection_pool, :client, :add],
+      %{client_pid: client_pid, clients: used_by},
+      %{key: state.key, protocol: protocol}
+    )
 
     state =
       if state.timer != nil do
@@ -83,7 +93,8 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       end)
 
     {ref, state} = pop_in(state.client_monitors[client_pid])
-    Process.demonitor(ref)
+
+    Process.demonitor(ref, [:flush])
 
     timer =
       if used_by == [] do
@@ -103,22 +114,27 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
     {:stop, :normal, state}
   end
 
+  @impl true
+  def handle_info({:gun_up, _pid, _protocol}, state) do
+    {:noreply, state, :hibernate}
+  end
+
   # Gracefully shutdown if the connection got closed without any streams left
   @impl true
   def handle_info({:gun_down, _pid, _protocol, _reason, []}, state) do
     {:stop, :normal, state}
   end
 
-  # Otherwise, shutdown with an error
+  # Otherwise, wait for retry
   @impl true
-  def handle_info({:gun_down, _pid, _protocol, _reason, _killed_streams} = down_message, state) do
-    {:stop, {:error, down_message}, state}
+  def handle_info({:gun_down, _pid, _protocol, _reason, _killed_streams}, state) do
+    {:noreply, state, :hibernate}
   end
 
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
     :telemetry.execute(
-      [:pleroma, :connection_pool, :client_death],
+      [:pleroma, :connection_pool, :client, :dead],
       %{client_pid: pid, reason: reason},
       %{key: state.key}
     )

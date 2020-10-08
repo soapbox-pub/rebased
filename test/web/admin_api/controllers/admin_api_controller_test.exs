@@ -155,11 +155,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "DELETE /api/pleroma/admin/users" do
     test "single user", %{admin: admin, conn: conn} do
-      user = insert(:user)
       clear_config([:instance, :federating], true)
 
+      user =
+        insert(:user,
+          avatar: %{"url" => [%{"href" => "https://someurl"}]},
+          banner: %{"url" => [%{"href" => "https://somebanner"}]},
+          bio: "Hello world!",
+          name: "A guy"
+        )
+
+      # Create some activities to check they got deleted later
+      follower = insert(:user)
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+      {:ok, _, _, _} = CommonAPI.follow(user, follower)
+      {:ok, _, _, _} = CommonAPI.follow(follower, user)
+      user = Repo.get(User, user.id)
+      assert user.note_count == 1
+      assert user.follower_count == 1
+      assert user.following_count == 1
+      refute user.deactivated
+
       with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end do
+        publish: fn _ -> nil end,
+        perform: fn _, _ -> nil end do
         conn =
           conn
           |> put_req_header("accept", "application/json")
@@ -175,6 +194,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  "@#{admin.nickname} deleted users: @#{user.nickname}"
 
         assert json_response(conn, 200) == [user.nickname]
+
+        user = Repo.get(User, user.id)
+        assert user.deactivated
+
+        assert user.avatar == %{}
+        assert user.banner == %{}
+        assert user.note_count == 0
+        assert user.follower_count == 0
+        assert user.following_count == 0
+        assert user.bio == ""
+        assert user.name == nil
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end
@@ -351,7 +381,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "confirmation_pending" => false,
         "approval_pending" => false,
         "url" => user.ap_id,
-        "registration_reason" => nil
+        "registration_reason" => nil,
+        "actor_type" => "Person"
       }
 
       assert expected == json_response(conn, 200)
@@ -439,7 +470,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user1: user1,
       user2: user2
     } do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user1.id).tags == ["x", "foo", "bar"]
       assert User.get_cached_by_id(user2.id).tags == ["y", "foo", "bar"]
 
@@ -457,7 +488,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
@@ -485,7 +516,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user1: user1,
       user2: user2
     } do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user1.id).tags == []
       assert User.get_cached_by_id(user2.id).tags == ["y"]
 
@@ -503,7 +534,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
@@ -633,7 +664,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => user.deactivated,
@@ -647,7 +679,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => user2.deactivated,
@@ -661,7 +694,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => true,
             "url" => user2.ap_id,
-            "registration_reason" => "I'm a chill dude"
+            "registration_reason" => "I'm a chill dude",
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -736,7 +770,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -764,7 +799,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -792,7 +828,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -820,7 +857,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -848,7 +886,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -876,7 +915,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -899,7 +939,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user2.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -934,7 +975,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -962,7 +1004,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => admin.deactivated,
@@ -976,7 +1019,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => false,
@@ -990,7 +1034,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => old_admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1028,7 +1073,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => true,
             "url" => user.ap_id,
-            "registration_reason" => "Plz let me in!"
+            "registration_reason" => "Plz let me in!",
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1061,7 +1107,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => false,
@@ -1075,7 +1122,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => second_admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1110,7 +1158,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => moderator.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -1138,7 +1187,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user1.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => false,
@@ -1152,7 +1202,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user2.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1162,6 +1213,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "page_size" => 50,
                "users" => users
              }
+    end
+
+    test "`active` filters out users pending approval", %{token: token} do
+      insert(:user, approval_pending: true)
+      %{id: user_id} = insert(:user, approval_pending: false)
+      %{id: admin_id} = token.user
+
+      conn =
+        build_conn()
+        |> assign(:user, token.user)
+        |> assign(:token, token)
+        |> get("/api/pleroma/admin/users?filters=active")
+
+      assert %{
+               "count" => 2,
+               "page_size" => 50,
+               "users" => [
+                 %{"id" => ^admin_id},
+                 %{"id" => ^user_id}
+               ]
+             } = json_response(conn, 200)
     end
 
     test "it works with multiple filters" do
@@ -1194,7 +1266,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -1221,7 +1294,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => admin.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -1306,7 +1380,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "confirmation_pending" => false,
                "approval_pending" => false,
                "url" => user.ap_id,
-               "registration_reason" => nil
+               "registration_reason" => nil,
+               "actor_type" => "Person"
              }
 
     log_entry = Repo.one(ModerationLog)
@@ -1432,6 +1507,56 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
 
       assert json_response(conn_res, 200) |> length() == 1
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats" do
+    setup do
+      user = insert(:user)
+      recipients = insert_list(3, :user)
+
+      Enum.each(recipients, fn recipient ->
+        CommonAPI.post_chat_message(user, recipient, "yo")
+      end)
+
+      %{user: user}
+    end
+
+    test "renders user's chats", %{conn: conn, user: user} do
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
+
+      assert json_response(conn, 200) |> length() == 3
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthorized" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
+      %{conn: conn} = oauth_access(["read:chats"])
+      %{conn: conn, user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthenticated" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
+      %{conn: build_conn(), user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
     end
   end
 
@@ -1756,7 +1881,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         patch(conn, "/api/pleroma/admin/users/force_password_reset", %{nicknames: [user.nickname]})
 
-      assert json_response(conn, 204) == ""
+      assert empty_json_response(conn) == ""
 
       ObanHelpers.perform_all()
 
@@ -1852,7 +1977,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                }"
 
       ObanHelpers.perform_all()
-      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(first_user))
+
+      Pleroma.Emails.UserEmail.account_confirmation_email(first_user)
+      # temporary hackney fix until hackney max_connections bug is fixed
+      # https://git.pleroma.social/pleroma/pleroma/-/issues/2101
+      |> Swoosh.Email.put_private(:hackney_options, ssl_options: [versions: [:"tlsv1.2"]])
+      |> assert_email_sent()
     end
   end
 

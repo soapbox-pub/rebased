@@ -87,7 +87,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidationTest do
 
       {:error, cng} = ObjectValidator.validate(invalid_other_actor, [])
 
-      assert {:actor, {"is not allowed to delete object", []}} in cng.errors
+      assert {:actor, {"is not allowed to modify object", []}} in cng.errors
     end
 
     test "it's valid if the actor of the object is a local superuser",

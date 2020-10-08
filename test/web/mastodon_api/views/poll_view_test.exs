@@ -135,4 +135,33 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
     assert result[:expires_at] == nil
     assert result[:expired] == false
   end
+
+  test "doesn't strips HTML tags" do
+    user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "What's with the smug face?",
+        poll: %{
+          options: [
+            "<input type=\"date\">",
+            "<input type=\"date\" >",
+            "<input type=\"date\"/>",
+            "<input type=\"date\"></input>"
+          ],
+          expires_in: 20
+        }
+      })
+
+    object = Object.normalize(activity)
+
+    assert %{
+             options: [
+               %{title: "<input type=\"date\">", votes_count: 0},
+               %{title: "<input type=\"date\" >", votes_count: 0},
+               %{title: "<input type=\"date\"/>", votes_count: 0},
+               %{title: "<input type=\"date\"></input>", votes_count: 0}
+             ]
+           } = PollView.render("show.json", %{object: object})
+  end
 end

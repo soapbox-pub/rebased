@@ -26,29 +26,40 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
   defdelegate open_api_operation(action), to: Spec.MediaProxyCacheOperation
 
   def index(%{assigns: %{user: _}} = conn, params) do
-    cursor =
-      :banned_urls_cache
-      |> :ets.table([{:traverse, {:select, Cachex.Query.create(true, :key)}}])
-      |> :qlc.cursor()
+    entries = fetch_entries(params)
+    urls = paginate_entries(entries, params.page, params.page_size)
 
-    urls =
-      case params.page do
-        1 ->
-          :qlc.next_answers(cursor, params.page_size)
+    render(conn, "index.json",
+      urls: urls,
+      page_size: params.page_size,
+      count: length(entries)
+    )
+  end
 
-        _ ->
-          :qlc.next_answers(cursor, (params.page - 1) * params.page_size)
-          :qlc.next_answers(cursor, params.page_size)
-      end
+  defp fetch_entries(params) do
+    MediaProxy.cache_table()
+    |> Cachex.stream!(Cachex.Query.create(true, :key))
+    |> filter_entries(params[:query])
+  end
 
-    :qlc.delete_cursor(cursor)
+  defp filter_entries(stream, query) when is_binary(query) do
+    regex = ~r/#{query}/i
 
-    render(conn, "index.json", urls: urls)
+    stream
+    |> Enum.filter(fn url -> String.match?(url, regex) end)
+    |> Enum.to_list()
+  end
+
+  defp filter_entries(stream, _), do: Enum.to_list(stream)
+
+  defp paginate_entries(entries, page, page_size) do
+    offset = page_size * (page - 1)
+    Enum.slice(entries, offset, page_size)
   end
 
   def delete(%{assigns: %{user: _}, body_params: %{urls: urls}} = conn, _) do
     MediaProxy.remove_from_banned_urls(urls)
-    render(conn, "index.json", urls: urls)
+    json(conn, %{})
   end
 
   def purge(%{assigns: %{user: _}, body_params: %{urls: urls, ban: ban}} = conn, _) do
@@ -58,6 +69,6 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
       MediaProxy.put_in_banned_urls(urls)
     end
 
-    render(conn, "index.json", urls: urls)
+    json(conn, %{})
   end
 end

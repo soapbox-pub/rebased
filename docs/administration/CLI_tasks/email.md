@@ -1,24 +1,46 @@
-# Managing emails
+# EMail administration tasks
 
 {! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
 ## Send test email (instance email by default)
 
-```sh tab="OTP"
- ./bin/pleroma_ctl email test [--to <destination email address>]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.email test [--to <destination email address>]
-```
+    ```sh
+     ./bin/pleroma_ctl email test [--to <destination email address>]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.email test [--to <destination email address>]
+    ```
 
 
 Example: 
 
-```sh tab="OTP"
-./bin/pleroma_ctl email test --to root@example.org
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.email test --to root@example.org
-```
+    ```sh
+    ./bin/pleroma_ctl email test --to root@example.org
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.email test --to root@example.org
+    ```
+
+## Send confirmation emails to all unconfirmed user accounts
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl email send_confirmation_mails
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.email send_confirmation_mails
+    ```

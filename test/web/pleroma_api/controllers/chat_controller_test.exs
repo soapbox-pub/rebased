@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages")
         |> json_response_and_validate_schema(400)
 
-      assert result
+      assert %{"error" => "no_content"} == result
     end
 
     test "it works with an attachment", %{conn: conn, user: user} do
@@ -125,6 +125,23 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert result["attachment"]
+    end
+
+    test "gets MRF reason when rejected", %{conn: conn, user: user} do
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "GNO/Linux"})
+        |> json_response_and_validate_schema(422)
+
+      assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} == result
     end
   end
 
@@ -184,17 +201,39 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       chat = Chat.get(user.id, recipient.ap_id)
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
-        |> json_response_and_validate_schema(200)
+      response = get(conn, "/api/v1/pleroma/chats/#{chat.id}/messages")
+      result = json_response_and_validate_schema(response, 200)
+
+      [next, prev] = get_resp_header(response, "link") |> hd() |> String.split(", ")
+      api_endpoint = "/api/v1/pleroma/chats/"
+
+      assert String.match?(
+               next,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*; rel=\"next\"$)
+             )
+
+      assert String.match?(
+               prev,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&min_id=.*; rel=\"prev\"$)
+             )
 
       assert length(result) == 20
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
-        |> json_response_and_validate_schema(200)
+      response =
+        get(conn, "/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
+
+      result = json_response_and_validate_schema(response, 200)
+      [next, prev] = get_resp_header(response, "link") |> hd() |> String.split(", ")
+
+      assert String.match?(
+               next,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*; rel=\"next\"$)
+             )
+
+      assert String.match?(
+               prev,
+               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*&min_id=.*; rel=\"prev\"$)
+             )
 
       assert length(result) == 10
     end
@@ -223,12 +262,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       assert length(result) == 3
 
       # Trying to get the chat of a different user
-      result =
-        conn
-        |> assign(:user, other_user)
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
-
-      assert result |> json_response(404)
+      conn
+      |> assign(:user, other_user)
+      |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
+      |> json_response_and_validate_schema(404)
     end
   end
 
@@ -266,6 +303,21 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   describe "GET /api/v1/pleroma/chats" do
     setup do: oauth_access(["read:chats"])
+
+    test "it does not return chats with deleted users", %{conn: conn, user: user} do
+      recipient = insert(:user)
+      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+
+      Pleroma.Repo.delete(recipient)
+      User.invalidate_cache(recipient)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 0
+    end
 
     test "it does not return chats with users you blocked", %{conn: conn, user: user} do
       recipient = insert(:user)

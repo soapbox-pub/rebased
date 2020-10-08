@@ -56,6 +56,15 @@ defmodule Pleroma.Upload do
         }
   defstruct [:id, :name, :tempfile, :content_type, :path]
 
+  defp get_description(opts, upload) do
+    case {opts[:description], Pleroma.Config.get([Pleroma.Upload, :default_description])} do
+      {description, _} when is_binary(description) -> description
+      {_, :filename} -> upload.name
+      {_, str} when is_binary(str) -> str
+      _ -> ""
+    end
+  end
+
   @spec store(source, options :: [option()]) :: {:ok, Map.t()} | {:error, any()}
   def store(upload, opts \\ []) do
     opts = get_opts(opts)
@@ -63,7 +72,7 @@ defmodule Pleroma.Upload do
     with {:ok, upload} <- prepare_upload(upload, opts),
          upload = %__MODULE__{upload | path: upload.path || "#{upload.id}/#{upload.name}"},
          {:ok, upload} <- Pleroma.Upload.Filter.filter(opts.filters, upload),
-         description = Map.get(opts, :description) || upload.name,
+         description = get_description(opts, upload),
          {_, true} <-
            {:description_limit,
             String.length(description) <= Pleroma.Config.get([:instance, :description_limit])},

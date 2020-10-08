@@ -1,0 +1,11 @@
+{
+    "files": {
+        "blank": "blank.png"
+    },
+    "pack": {
+        "description": "Test description",
+        "homepage": "https://pleroma.social",
+        "license": "Test license",
+        "share-files": true
+    }
+}

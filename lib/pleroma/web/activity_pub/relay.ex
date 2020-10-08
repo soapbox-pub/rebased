@@ -10,19 +10,13 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   alias Pleroma.Web.CommonAPI
   require Logger
 
-  @relay_nickname "relay"
+  @nickname "relay"
 
-  def get_actor do
-    actor =
-      relay_ap_id()
-      |> User.get_or_create_service_actor_by_ap_id(@relay_nickname)
+  @spec ap_id() :: String.t()
+  def ap_id, do: "#{Pleroma.Web.Endpoint.url()}/#{@nickname}"
 
-    actor
-  end
-
-  def relay_ap_id do
-    "#{Pleroma.Web.Endpoint.url()}/relay"
-  end
+  @spec get_actor() :: User.t() | nil
+  def get_actor, do: User.get_or_create_service_actor_by_ap_id(ap_id(), @nickname)
 
   @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
   def follow(target_instance) do
@@ -36,16 +30,28 @@ defmodule Pleroma.Web.ActivityPub.Relay do
     end
   end
 
-  @spec unfollow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
-  def unfollow(target_instance) do
+  @spec unfollow(String.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def unfollow(target_instance, opts \\ %{}) do
     with %User{} = local_user <- get_actor(),
-         {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_instance),
+         {:ok, target_user} <- fetch_target_user(target_instance, opts),
          {:ok, activity} <- ActivityPub.unfollow(local_user, target_user) do
-      User.unfollow(local_user, target_user)
+      case target_user.id do
+        nil -> User.update_following_count(local_user)
+        _ -> User.unfollow(local_user, target_user)
+      end
+
       Logger.info("relay: unfollowed instance: #{target_instance}: id=#{activity.data["id"]}")
       {:ok, activity}
     else
       error -> format_error(error)
+    end
+  end
+
+  defp fetch_target_user(ap_id, opts) do
+    case {opts[:force], User.get_or_fetch_by_ap_id(ap_id)} do
+      {_, {:ok, %User{} = user}} -> {:ok, user}
+      {true, _} -> {:ok, %User{ap_id: ap_id}}
+      {_, error} -> error
     end
   end
 
@@ -61,32 +67,36 @@ defmodule Pleroma.Web.ActivityPub.Relay do
 
   def publish(_), do: {:error, "Not implemented"}
 
-  @spec list(boolean()) :: {:ok, [String.t()]} | {:error, any()}
-  def list(with_not_accepted \\ false) do
+  @spec list() :: {:ok, [%{actor: String.t(), followed_back: boolean()}]} | {:error, any()}
+  def list do
     with %User{} = user <- get_actor() do
       accepted =
         user
-        |> User.following()
-        |> Enum.map(fn entry -> URI.parse(entry).host end)
+        |> following()
+        |> Enum.map(fn actor -> %{actor: actor, followed_back: true} end)
+
+      without_accept =
+        user
+        |> Pleroma.Activity.following_requests_for_actor()
+        |> Enum.map(fn activity -> %{actor: activity.data["object"], followed_back: false} end)
         |> Enum.uniq()
 
-      list =
-        if with_not_accepted do
-          without_accept =
-            user
-            |> Pleroma.Activity.following_requests_for_actor()
-            |> Enum.map(fn a -> URI.parse(a.data["object"]).host <> " (no Accept received)" end)
-            |> Enum.uniq()
-
-          accepted ++ without_accept
-        else
-          accepted
-        end
-
-      {:ok, list}
+      {:ok, accepted ++ without_accept}
     else
       error -> format_error(error)
     end
+  end
+
+  @spec following() :: [String.t()]
+  def following do
+    get_actor()
+    |> following()
+  end
+
+  defp following(user) do
+    user
+    |> User.following_ap_ids()
+    |> Enum.uniq()
   end
 
   defp format_error({:error, error}), do: format_error(error)

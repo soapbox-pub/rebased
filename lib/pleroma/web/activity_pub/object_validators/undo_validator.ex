@@ -18,8 +18,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
     field(:type, :string)
     field(:object, ObjectValidators.ObjectID)
     field(:actor, ObjectValidators.ObjectID)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
   end
 
   def cast_and_validate(data) do

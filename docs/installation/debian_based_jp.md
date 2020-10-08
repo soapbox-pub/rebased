@@ -16,11 +16,15 @@
 - `erlang-nox`
 - `git`
 - `build-essential`
+- `cmake`
 
 #### このガイドで利用している追加パッケージ
 
 - `nginx` (おすすめです。他のリバースプロキシを使う場合は、参考となる設定をこのリポジトリから探してください)
 - `certbot` (または何らかのLet's Encrypt向けACMEクライアント)
+- `ImageMagick`
+- `ffmpeg`
+- `exiftool`
 
 ### システムを準備する
 
@@ -32,9 +36,8 @@ sudo apt full-upgrade
 
 * 上記に挙げたパッケージをインストールしておきます。
 ```
-sudo apt install git build-essential postgresql postgresql-contrib
+sudo apt install git build-essential postgresql postgresql-contrib cmake ffmpeg imagemagick
 ```
-
 
 ### ElixirとErlangをインストールします
 
@@ -48,6 +51,12 @@ sudo dpkg -i /tmp/erlang-solutions_2.0_all.deb
 ```
 sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
+```
+
+### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md)
+
+```shell
+sudo apt install imagemagick ffmpeg libimage-exiftool-perl
 ```
 
 ### Pleroma BE (バックエンド) をインストールします

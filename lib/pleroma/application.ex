@@ -22,13 +22,18 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    case Config.get([:http, :user_agent], :default) do
-      :default ->
-        info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
-        named_version() <> "; " <> info
+    if Process.whereis(Pleroma.Web.Endpoint) do
+      case Config.get([:http, :user_agent], :default) do
+        :default ->
+          info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
+          named_version() <> "; " <> info
 
-      custom ->
-        custom
+        custom ->
+          custom
+      end
+    else
+      # fallback, if endpoint is not started yet
+      "Pleroma Data Loader"
     end
   end
 
@@ -39,9 +44,13 @@ defmodule Pleroma.Application do
     # every time the application is restarted, so we disable module
     # conflicts at runtime
     Code.compiler_options(ignore_module_conflict: true)
+    # Disable warnings_as_errors at runtime, it breaks Phoenix live reload
+    # due to protocol consolidation warnings
+    Code.compiler_options(warnings_as_errors: false)
     Pleroma.Telemetry.Logger.attach()
     Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
+    Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
@@ -89,7 +98,7 @@ defmodule Pleroma.Application do
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
-        streamer_child(@env) ++
+        dont_run_in_test(@env) ++
         chat_child(@env, chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
@@ -178,16 +187,17 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Config.get([:chat, :enabled])
 
-  defp streamer_child(env) when env in [:test, :benchmark], do: []
+  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
-  defp streamer_child(_) do
+  defp dont_run_in_test(_) do
     [
       {Registry,
        [
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]}
+       ]},
+      Pleroma.Web.FedSockets.Supervisor
     ]
   end
 

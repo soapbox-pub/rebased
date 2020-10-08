@@ -5,15 +5,33 @@
 defmodule Pleroma.Web.ActivityPub.MRF do
   @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
 
-  def filter(policies, %{} = object) do
+  def filter(policies, %{} = message) do
     policies
-    |> Enum.reduce({:ok, object}, fn
-      policy, {:ok, object} -> policy.filter(object)
+    |> Enum.reduce({:ok, message}, fn
+      policy, {:ok, message} -> policy.filter(message)
       _, error -> error
     end)
   end
 
   def filter(%{} = object), do: get_policies() |> filter(object)
+
+  def pipeline_filter(%{} = message, meta) do
+    object = meta[:object_data]
+    ap_id = message["object"]
+
+    if object && ap_id do
+      with {:ok, message} <- filter(Map.put(message, "object", object)) do
+        meta = Keyword.put(meta, :object_data, message["object"])
+        {:ok, Map.put(message, "object", ap_id), meta}
+      else
+        {err, message} -> {err, message, meta}
+      end
+    else
+      {err, message} = filter(message)
+
+      {err, message, meta}
+    end
+  end
 
   def get_policies do
     Pleroma.Config.get([:mrf, :policies], []) |> get_policies()

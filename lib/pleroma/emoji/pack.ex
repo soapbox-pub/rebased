@@ -17,6 +17,7 @@ defmodule Pleroma.Emoji.Pack do
         }
 
   alias Pleroma.Emoji
+  alias Pleroma.Emoji.Pack
 
   @spec create(String.t()) :: {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
   def create(name) do
@@ -64,24 +65,93 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec add_file(String.t(), String.t(), Path.t(), Plug.Upload.t() | String.t()) ::
-          {:ok, t()} | {:error, File.posix() | atom()}
-  def add_file(name, shortcode, filename, file) do
-    with :ok <- validate_not_empty([name, shortcode, filename]),
+  @spec unpack_zip_emojies(list(tuple())) :: list(map())
+  defp unpack_zip_emojies(zip_files) do
+    Enum.reduce(zip_files, [], fn
+      {_, path, s, _, _, _}, acc when elem(s, 2) == :regular ->
+        with(
+          filename <- Path.basename(path),
+          shortcode <- Path.basename(filename, Path.extname(filename)),
+          false <- Emoji.exist?(shortcode)
+        ) do
+          [%{path: path, filename: path, shortcode: shortcode} | acc]
+        else
+          _ -> acc
+        end
+
+      _, acc ->
+        acc
+    end)
+  end
+
+  @spec add_file(t(), String.t(), Path.t(), Plug.Upload.t()) ::
+          {:ok, t()}
+          | {:error, File.posix() | atom()}
+  def add_file(%Pack{} = pack, _, _, %Plug.Upload{content_type: "application/zip"} = file) do
+    with {:ok, zip_files} <- :zip.table(to_charlist(file.path)),
+         [_ | _] = emojies <- unpack_zip_emojies(zip_files),
+         {:ok, tmp_dir} <- Pleroma.Utils.tmp_dir("emoji") do
+      try do
+        {:ok, _emoji_files} =
+          :zip.unzip(
+            to_charlist(file.path),
+            [{:file_list, Enum.map(emojies, & &1[:path])}, {:cwd, tmp_dir}]
+          )
+
+        {_, updated_pack} =
+          Enum.map_reduce(emojies, pack, fn item, emoji_pack ->
+            emoji_file = %Plug.Upload{
+              filename: item[:filename],
+              path: Path.join(tmp_dir, item[:path])
+            }
+
+            {:ok, updated_pack} =
+              do_add_file(
+                emoji_pack,
+                item[:shortcode],
+                to_string(item[:filename]),
+                emoji_file
+              )
+
+            {item, updated_pack}
+          end)
+
+        Emoji.reload()
+
+        {:ok, updated_pack}
+      after
+        File.rm_rf(tmp_dir)
+      end
+    else
+      {:error, _} = error ->
+        error
+
+      _ ->
+        {:ok, pack}
+    end
+  end
+
+  def add_file(%Pack{} = pack, shortcode, filename, %Plug.Upload{} = file) do
+    with :ok <- validate_not_empty([shortcode, filename]),
          :ok <- validate_emoji_not_exists(shortcode),
-         {:ok, pack} <- load_pack(name),
-         :ok <- save_file(file, pack, filename),
-         {:ok, updated_pack} <- pack |> put_emoji(shortcode, filename) |> save_pack() do
+         {:ok, updated_pack} <- do_add_file(pack, shortcode, filename, file) do
       Emoji.reload()
       {:ok, updated_pack}
     end
   end
 
-  @spec delete_file(String.t(), String.t()) ::
+  defp do_add_file(pack, shortcode, filename, file) do
+    with :ok <- save_file(file, pack, filename) do
+      pack
+      |> put_emoji(shortcode, filename)
+      |> save_pack()
+    end
+  end
+
+  @spec delete_file(t(), String.t()) ::
           {:ok, t()} | {:error, File.posix() | atom()}
-  def delete_file(name, shortcode) do
-    with :ok <- validate_not_empty([name, shortcode]),
-         {:ok, pack} <- load_pack(name),
+  def delete_file(%Pack{} = pack, shortcode) do
+    with :ok <- validate_not_empty([shortcode]),
          :ok <- remove_file(pack, shortcode),
          {:ok, updated_pack} <- pack |> delete_emoji(shortcode) |> save_pack() do
       Emoji.reload()
@@ -89,11 +159,10 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec update_file(String.t(), String.t(), String.t(), String.t(), boolean()) ::
+  @spec update_file(t(), String.t(), String.t(), String.t(), boolean()) ::
           {:ok, t()} | {:error, File.posix() | atom()}
-  def update_file(name, shortcode, new_shortcode, new_filename, force) do
-    with :ok <- validate_not_empty([name, shortcode, new_shortcode, new_filename]),
-         {:ok, pack} <- load_pack(name),
+  def update_file(%Pack{} = pack, shortcode, new_shortcode, new_filename, force) do
+    with :ok <- validate_not_empty([shortcode, new_shortcode, new_filename]),
          {:ok, filename} <- get_filename(pack, shortcode),
          :ok <- validate_emoji_not_exists(new_shortcode, force),
          :ok <- rename_file(pack, filename, new_filename),
@@ -129,13 +198,13 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_remote(String.t()) :: {:ok, map()} | {:error, atom()}
-  def list_remote(url) do
-    uri = url |> String.trim() |> URI.parse()
+  @spec list_remote(keyword()) :: {:ok, map()} | {:error, atom()}
+  def list_remote(opts) do
+    uri = opts[:url] |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri) do
       uri
-      |> URI.merge("/api/pleroma/emoji/packs")
+      |> URI.merge("/api/pleroma/emoji/packs?page=#{opts[:page]}&page_size=#{opts[:page_size]}")
       |> http_get()
     end
   end
@@ -175,7 +244,8 @@ defmodule Pleroma.Emoji.Pack do
     uri = url |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri),
-         {:ok, remote_pack} <- uri |> URI.merge("/api/pleroma/emoji/packs/#{name}") |> http_get(),
+         {:ok, remote_pack} <-
+           uri |> URI.merge("/api/pleroma/emoji/pack?name=#{name}") |> http_get(),
          {:ok, %{sha: sha, url: url} = pack_info} <- fetch_pack_info(remote_pack, uri, name),
          {:ok, archive} <- download_archive(url, sha),
          pack <- copy_as(remote_pack, as || name),
@@ -243,9 +313,10 @@ defmodule Pleroma.Emoji.Pack do
   defp validate_emoji_not_exists(_shortcode, true), do: :ok
 
   defp validate_emoji_not_exists(shortcode, _) do
-    case Emoji.get(shortcode) do
-      nil -> :ok
-      _ -> {:error, :already_exists}
+    if Emoji.exist?(shortcode) do
+      {:error, :already_exists}
+    else
+      :ok
     end
   end
 
@@ -386,25 +457,18 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  defp save_file(file, pack, filename) do
+  defp save_file(%Plug.Upload{path: upload_path}, pack, filename) do
     file_path = Path.join(pack.path, filename)
     create_subdirs(file_path)
 
-    case file do
-      %Plug.Upload{path: upload_path} ->
-        # Copy the uploaded file from the temporary directory
-        with {:ok, _} <- File.copy(upload_path, file_path), do: :ok
-
-      url when is_binary(url) ->
-        # Download and write the file
-        file_contents = Tesla.get!(url).body
-        File.write(file_path, file_contents)
+    with {:ok, _} <- File.copy(upload_path, file_path) do
+      :ok
     end
   end
 
   defp put_emoji(pack, shortcode, filename) do
     files = Map.put(pack.files, shortcode, filename)
-    %{pack | files: files}
+    %{pack | files: files, files_count: length(Map.keys(files))}
   end
 
   defp delete_emoji(pack, shortcode) do
@@ -460,7 +524,7 @@ defmodule Pleroma.Emoji.Pack do
   defp http_get(%URI{} = url), do: url |> to_string() |> http_get()
 
   defp http_get(url) do
-    with {:ok, %{body: body}} <- url |> Pleroma.HTTP.get() do
+    with {:ok, %{body: body}} <- Pleroma.HTTP.get(url, [], pool: :default) do
       Jason.decode(body)
     end
   end
@@ -509,7 +573,7 @@ defmodule Pleroma.Emoji.Pack do
         {:ok,
          %{
            sha: sha,
-           url: URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/archive") |> to_string()
+           url: URI.merge(uri, "/api/pleroma/emoji/packs/archive?name=#{name}") |> to_string()
          }}
 
       %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->

@@ -9,14 +9,15 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
-  @rich_media_options [
+  @options [
     pool: :media,
-    max_body: 2_000_000
+    max_body: 2_000_000,
+    recv_timeout: 2_000
   ]
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Pleroma.Config.get([Pleroma.Formatter, :validate_tld])
+    validate_tld = Config.get([Pleroma.Formatter, :validate_tld])
 
     page_url
     |> Linkify.Parser.url?(validate_tld: validate_tld)
@@ -56,9 +57,8 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   def fetch_data_for_object(object) do
     with true <- Config.get([:rich_media, :enabled]),
-         false <- object.data["sensitive"] || false,
          {:ok, page_url} <-
-           HTML.extract_first_external_url(object, object.data["content"]),
+           HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
@@ -86,16 +86,50 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def rich_media_get(url) do
     headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
-    options =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
-        Keyword.merge(@rich_media_options,
-          recv_timeout: 2_000,
-          with_body: true
-        )
-      else
-        @rich_media_options
+    head_check =
+      case Pleroma.HTTP.head(url, headers, @options) do
+        # If the HEAD request didn't reach the server for whatever reason,
+        # we assume the GET that comes right after won't either
+        {:error, _} = e ->
+          e
+
+        {:ok, %Tesla.Env{status: 200, headers: headers}} ->
+          with :ok <- check_content_type(headers),
+               :ok <- check_content_length(headers),
+               do: :ok
+
+        _ ->
+          :ok
       end
 
-    Pleroma.HTTP.get(url, headers, options)
+    with :ok <- head_check, do: Pleroma.HTTP.get(url, headers, @options)
+  end
+
+  defp check_content_type(headers) do
+    case List.keyfind(headers, "content-type", 0) do
+      {_, content_type} ->
+        case Plug.Conn.Utils.media_type(content_type) do
+          {:ok, "text", "html", _} -> :ok
+          _ -> {:error, {:content_type, content_type}}
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  @max_body @options[:max_body]
+  defp check_content_length(headers) do
+    case List.keyfind(headers, "content-length", 0) do
+      {_, maybe_content_length} ->
+        case Integer.parse(maybe_content_length) do
+          {content_length, ""} when content_length <= @max_body -> :ok
+          {_, ""} -> {:error, :body_too_large}
+          _ -> :ok
+        end
+
+      _ ->
+        :ok
+    end
   end
 end

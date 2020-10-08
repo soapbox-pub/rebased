@@ -20,9 +20,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     String.match?(string, pattern)
   end
 
-  defp check_reject(%{"object" => %{"content" => content, "summary" => summary}} = message) do
+  defp object_payload(%{} = object) do
+    [object["content"], object["summary"], object["name"]]
+    |> Enum.filter(& &1)
+    |> Enum.join("\n")
+  end
+
+  defp check_reject(%{"object" => %{} = object} = message) do
+    payload = object_payload(object)
+
     if Enum.any?(Pleroma.Config.get([:mrf_keyword, :reject]), fn pattern ->
-         string_matches?(content, pattern) or string_matches?(summary, pattern)
+         string_matches?(payload, pattern)
        end) do
       {:reject, "[KeywordPolicy] Matches with rejected keyword"}
     else
@@ -30,12 +38,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  defp check_ftl_removal(
-         %{"to" => to, "object" => %{"content" => content, "summary" => summary}} = message
-       ) do
+  defp check_ftl_removal(%{"to" => to, "object" => %{} = object} = message) do
+    payload = object_payload(object)
+
     if Pleroma.Constants.as_public() in to and
          Enum.any?(Pleroma.Config.get([:mrf_keyword, :federated_timeline_removal]), fn pattern ->
-           string_matches?(content, pattern) or string_matches?(summary, pattern)
+           string_matches?(payload, pattern)
          end) do
       to = List.delete(to, Pleroma.Constants.as_public())
       cc = [Pleroma.Constants.as_public() | message["cc"] || []]
@@ -51,35 +59,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  defp check_replace(%{"object" => %{"content" => content, "summary" => summary}} = message) do
-    content =
-      if is_binary(content) do
-        content
-      else
-        ""
-      end
+  defp check_replace(%{"object" => %{} = object} = message) do
+    object =
+      ["content", "name", "summary"]
+      |> Enum.filter(fn field -> Map.has_key?(object, field) && object[field] end)
+      |> Enum.reduce(object, fn field, object ->
+        data =
+          Enum.reduce(
+            Pleroma.Config.get([:mrf_keyword, :replace]),
+            object[field],
+            fn {pat, repl}, acc -> String.replace(acc, pat, repl) end
+          )
 
-    summary =
-      if is_binary(summary) do
-        summary
-      else
-        ""
-      end
+        Map.put(object, field, data)
+      end)
 
-    {content, summary} =
-      Enum.reduce(
-        Pleroma.Config.get([:mrf_keyword, :replace]),
-        {content, summary},
-        fn {pattern, replacement}, {content_acc, summary_acc} ->
-          {String.replace(content_acc, pattern, replacement),
-           String.replace(summary_acc, pattern, replacement)}
-        end
-      )
+    message = Map.put(message, "object", object)
 
-    {:ok,
-     message
-     |> put_in(["object", "content"], content)
-     |> put_in(["object", "summary"], summary)}
+    {:ok, message}
   end
 
   @impl true

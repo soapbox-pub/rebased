@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
     end
 
     test "it returns 204", %{conn: conn} do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
     end
 
     test "it creates a PasswordResetToken record for user", %{user: user} do
@@ -91,7 +91,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
 
       assert conn
              |> post("/auth/password?nickname=#{user.nickname}")
-             |> json_response(:no_content)
+             |> empty_json_response()
 
       ObanHelpers.perform_all()
       token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
@@ -112,7 +112,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
 
       assert conn
              |> post("/auth/password?nickname=#{user.nickname}")
-             |> json_response(:no_content)
+             |> empty_json_response()
     end
   end
 
@@ -122,17 +122,24 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
       {:ok, user: user}
     end
 
-    test "it returns 404 when user is not found", %{conn: conn, user: user} do
+    test "it returns 204 when user is not found", %{conn: conn, user: user} do
       conn = post(conn, "/auth/password?email=nonexisting_#{user.email}")
-      assert conn.status == 404
-      assert conn.resp_body == ""
+
+      assert empty_json_response(conn)
     end
 
-    test "it returns 400 when user is not local", %{conn: conn, user: user} do
+    test "it returns 204 when user is not local", %{conn: conn, user: user} do
       {:ok, user} = Repo.update(Ecto.Changeset.change(user, local: false))
       conn = post(conn, "/auth/password?email=#{user.email}")
-      assert conn.status == 400
-      assert conn.resp_body == ""
+
+      assert empty_json_response(conn)
+    end
+
+    test "it returns 204 when user is deactivated", %{conn: conn, user: user} do
+      {:ok, user} = Repo.update(Ecto.Changeset.change(user, deactivated: true, local: true))
+      conn = post(conn, "/auth/password?email=#{user.email}")
+
+      assert empty_json_response(conn)
     end
   end
 

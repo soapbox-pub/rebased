@@ -1,3 +1,4 @@
+# Recommended varnishncsa logging format: '%h %l %u %t "%m %{X-Forwarded-Proto}i://%{Host}i%U%q %H" %s %b "%{Referer}i" "%{User-agent}i"'
 vcl 4.1;
 import std;
 
@@ -14,8 +15,11 @@ acl purge {
 sub vcl_recv {
     # Redirect HTTP to HTTPS
     if (std.port(server.ip) != 443) {
+      set req.http.X-Forwarded-Proto = "http";
       set req.http.x-redir = "https://" + req.http.host + req.url;
       return (synth(750, ""));
+    } else {
+      set req.http.X-Forwarded-Proto = "https";
     }
 
     # CHUNKED SUPPORT
@@ -105,7 +109,7 @@ sub vcl_hash {
 
 sub vcl_backend_fetch {
     # Be more lenient for slow servers on the fediverse
-    if bereq.url ~ "^/proxy/" {
+    if (bereq.url ~ "^/proxy/") {
       set bereq.first_byte_timeout = 300s;
     }
 

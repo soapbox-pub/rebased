@@ -26,26 +26,10 @@ defmodule Pleroma.Workers.BackgroundWorker do
     User.perform(:force_password_reset, user)
   end
 
-  def perform(%Job{
-        args: %{
-          "op" => "blocks_import",
-          "blocker_id" => blocker_id,
-          "blocked_identifiers" => blocked_identifiers
-        }
-      }) do
-    blocker = User.get_cached_by_id(blocker_id)
-    {:ok, User.perform(:blocks_import, blocker, blocked_identifiers)}
-  end
-
-  def perform(%Job{
-        args: %{
-          "op" => "follow_import",
-          "follower_id" => follower_id,
-          "followed_identifiers" => followed_identifiers
-        }
-      }) do
-    follower = User.get_cached_by_id(follower_id)
-    {:ok, User.perform(:follow_import, follower, followed_identifiers)}
+  def perform(%Job{args: %{"op" => op, "user_id" => user_id, "identifiers" => identifiers}})
+      when op in ["blocks_import", "follow_import", "mutes_import"] do
+    user = User.get_cached_by_id(user_id)
+    {:ok, User.Import.perform(String.to_atom(op), user, identifiers)}
   end
 
   def perform(%Job{args: %{"op" => "media_proxy_preload", "message" => message}}) do

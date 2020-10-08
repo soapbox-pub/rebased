@@ -8,6 +8,7 @@ defmodule Pleroma.Web.AdminAPI.StatusView do
   require Pleroma.Constants
 
   alias Pleroma.Web.AdminAPI
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI
 
   defdelegate merge_account_views(user), to: AdminAPI.AccountView
@@ -17,7 +18,7 @@ defmodule Pleroma.Web.AdminAPI.StatusView do
   end
 
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
-    user = MastodonAPI.StatusView.get_user(activity.data["actor"])
+    user = CommonAPI.get_user(activity.data["actor"])
 
     MastodonAPI.StatusView.render("show.json", opts)
     |> Map.merge(%{account: merge_account_views(user)})

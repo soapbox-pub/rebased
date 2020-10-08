@@ -12,20 +12,49 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
+  alias Pleroma.Object.Containment
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.EventValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
+
+  def validate(%{"type" => type} = object, meta)
+      when type in ~w[Accept Reject] do
+    with {:ok, object} <-
+           object
+           |> AcceptRejectValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "Event"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> EventValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
 
   def validate(%{"type" => "Follow"} = object, meta) do
     with {:ok, object} <-
@@ -112,17 +141,60 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(%{"type" => "Question"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> QuestionValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => type} = object, meta) when type in ~w[Audio Video] do
+    with {:ok, object} <-
+           object
+           |> AudioVideoValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "Article"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> ArticleNoteValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "Answer"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> AnswerValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
   def validate(%{"type" => "EmojiReact"} = object, meta) do
     with {:ok, object} <-
            object
            |> EmojiReactValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object |> Map.from_struct())
+      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
 
-  def validate(%{"type" => "Create", "object" => object} = create_activity, meta) do
+  def validate(
+        %{"type" => "Create", "object" => %{"type" => "ChatMessage"} = object} = create_activity,
+        meta
+      ) do
     with {:ok, object_data} <- cast_and_apply(object),
          meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
          {:ok, create_activity} <-
@@ -134,12 +206,28 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(
+        %{"type" => "Create", "object" => %{"type" => objtype} = object} = create_activity,
+        meta
+      )
+      when objtype in ~w[Question Answer Audio Video Event Article] do
+    with {:ok, object_data} <- cast_and_apply(object),
+         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+         {:ok, create_activity} <-
+           create_activity
+           |> CreateGenericValidator.cast_and_validate(meta)
+           |> Ecto.Changeset.apply_action(:insert) do
+      create_activity = stringify_keys(create_activity)
+      {:ok, create_activity, meta}
+    end
+  end
+
   def validate(%{"type" => "Announce"} = object, meta) do
     with {:ok, object} <-
            object
            |> AnnounceValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object |> Map.from_struct())
+      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
@@ -148,8 +236,29 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     ChatMessageValidator.cast_and_apply(object)
   end
 
+  def cast_and_apply(%{"type" => "Question"} = object) do
+    QuestionValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(%{"type" => "Answer"} = object) do
+    AnswerValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(%{"type" => type} = object) when type in ~w[Audio Video] do
+    AudioVideoValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(%{"type" => "Event"} = object) do
+    EventValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(%{"type" => "Article"} = object) do
+    ArticleNoteValidator.cast_and_apply(object)
+  end
+
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
+  # is_struct/1 isn't present in Elixir 1.8.x
   def stringify_keys(%{__struct__: _} = object) do
     object
     |> Map.from_struct()
@@ -169,7 +278,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   def stringify_keys(object), do: object
 
   def fetch_actor(object) do
-    with {:ok, actor} <- ObjectValidators.ObjectID.cast(object["actor"]) do
+    with actor <- Containment.get_actor(object),
+         {:ok, actor} <- ObjectValidators.ObjectID.cast(actor) do
       User.get_or_fetch_by_ap_id(actor)
     end
   end

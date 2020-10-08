@@ -21,170 +21,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   setup do: clear_config([:instance])
   setup do: clear_config([:frontend_configurations, :pleroma_fe])
 
-  describe "POST /api/pleroma/follow_import" do
-    setup do: oauth_access(["follow"])
-
-    test "it returns HTTP 200", %{conn: conn} do
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> post("/api/pleroma/follow_import", %{"list" => "#{user2.ap_id}"})
-        |> json_response(:ok)
-
-      assert response == "job started"
-    end
-
-    test "it imports follow lists from file", %{user: user1, conn: conn} do
-      user2 = insert(:user)
-
-      with_mocks([
-        {File, [],
-         read!: fn "follow_list.txt" ->
-           "Account address,Show boosts\n#{user2.ap_id},true"
-         end}
-      ]) do
-        response =
-          conn
-          |> post("/api/pleroma/follow_import", %{"list" => %Plug.Upload{path: "follow_list.txt"}})
-          |> json_response(:ok)
-
-        assert response == "job started"
-
-        assert ObanHelpers.member?(
-                 %{
-                   "op" => "follow_import",
-                   "follower_id" => user1.id,
-                   "followed_identifiers" => [user2.ap_id]
-                 },
-                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
-               )
-      end
-    end
-
-    test "it imports new-style mastodon follow lists", %{conn: conn} do
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> post("/api/pleroma/follow_import", %{
-          "list" => "Account address,Show boosts\n#{user2.ap_id},true"
-        })
-        |> json_response(:ok)
-
-      assert response == "job started"
-    end
-
-    test "requires 'follow' or 'write:follows' permissions" do
-      token1 = insert(:oauth_token, scopes: ["read", "write"])
-      token2 = insert(:oauth_token, scopes: ["follow"])
-      token3 = insert(:oauth_token, scopes: ["something"])
-      another_user = insert(:user)
-
-      for token <- [token1, token2, token3] do
-        conn =
-          build_conn()
-          |> put_req_header("authorization", "Bearer #{token.token}")
-          |> post("/api/pleroma/follow_import", %{"list" => "#{another_user.ap_id}"})
-
-        if token == token3 do
-          assert %{"error" => "Insufficient permissions: follow | write:follows."} ==
-                   json_response(conn, 403)
-        else
-          assert json_response(conn, 200)
-        end
-      end
-    end
-
-    test "it imports follows with different nickname variations", %{conn: conn} do
-      [user2, user3, user4, user5, user6] = insert_list(5, :user)
-
-      identifiers =
-        [
-          user2.ap_id,
-          user3.nickname,
-          "  ",
-          "@" <> user4.nickname,
-          user5.nickname <> "@localhost",
-          "@" <> user6.nickname <> "@localhost"
-        ]
-        |> Enum.join("\n")
-
-      response =
-        conn
-        |> post("/api/pleroma/follow_import", %{"list" => identifiers})
-        |> json_response(:ok)
-
-      assert response == "job started"
-      assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == [user2, user3, user4, user5, user6]
-    end
-  end
-
-  describe "POST /api/pleroma/blocks_import" do
-    # Note: "follow" or "write:blocks" permission is required
-    setup do: oauth_access(["write:blocks"])
-
-    test "it returns HTTP 200", %{conn: conn} do
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> post("/api/pleroma/blocks_import", %{"list" => "#{user2.ap_id}"})
-        |> json_response(:ok)
-
-      assert response == "job started"
-    end
-
-    test "it imports blocks users from file", %{user: user1, conn: conn} do
-      user2 = insert(:user)
-      user3 = insert(:user)
-
-      with_mocks([
-        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end}
-      ]) do
-        response =
-          conn
-          |> post("/api/pleroma/blocks_import", %{"list" => %Plug.Upload{path: "blocks_list.txt"}})
-          |> json_response(:ok)
-
-        assert response == "job started"
-
-        assert ObanHelpers.member?(
-                 %{
-                   "op" => "blocks_import",
-                   "blocker_id" => user1.id,
-                   "blocked_identifiers" => [user2.ap_id, user3.ap_id]
-                 },
-                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
-               )
-      end
-    end
-
-    test "it imports blocks with different nickname variations", %{conn: conn} do
-      [user2, user3, user4, user5, user6] = insert_list(5, :user)
-
-      identifiers =
-        [
-          user2.ap_id,
-          user3.nickname,
-          "@" <> user4.nickname,
-          user5.nickname <> "@localhost",
-          "@" <> user6.nickname <> "@localhost"
-        ]
-        |> Enum.join(" ")
-
-      response =
-        conn
-        |> post("/api/pleroma/blocks_import", %{"list" => identifiers})
-        |> json_response(:ok)
-
-      assert response == "job started"
-      assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == [user2, user3, user4, user5, user6]
-    end
-  end
-
   describe "PUT /api/pleroma/notification_settings" do
     setup do: oauth_access(["write:accounts"])
 
@@ -586,10 +422,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       end
     end
 
-    test "with proper permissions and valid password", %{conn: conn} do
+    test "with proper permissions and valid password", %{conn: conn, user: user} do
       conn = post(conn, "/api/pleroma/delete_account", %{"password" => "test"})
-
+      ObanHelpers.perform_all()
       assert json_response(conn, 200) == %{"status" => "success"}
+
+      user = User.get_by_id(user.id)
+      assert user.deactivated == true
+      assert user.name == nil
+      assert user.bio == ""
+      assert user.password_hash == nil
     end
   end
 end

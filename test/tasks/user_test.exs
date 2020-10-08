@@ -225,47 +225,64 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     test "All statuses set" do
       user = insert(:user)
 
-      Mix.Tasks.Pleroma.User.run(["set", user.nickname, "--moderator", "--admin", "--locked"])
+      Mix.Tasks.Pleroma.User.run([
+        "set",
+        user.nickname,
+        "--admin",
+        "--confirmed",
+        "--locked",
+        "--moderator"
+      ])
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Moderator status .* true/
+      assert message =~ ~r/Admin status .* true/
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ ~r/Confirmation pending .* false/
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ ~r/Locked status .* true/
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Admin status .* true/
+      assert message =~ ~r/Moderator status .* true/
 
       user = User.get_cached_by_nickname(user.nickname)
       assert user.is_moderator
       assert user.locked
       assert user.is_admin
+      refute user.confirmation_pending
     end
 
     test "All statuses unset" do
-      user = insert(:user, locked: true, is_moderator: true, is_admin: true)
+      user =
+        insert(:user, locked: true, is_moderator: true, is_admin: true, confirmation_pending: true)
 
       Mix.Tasks.Pleroma.User.run([
         "set",
         user.nickname,
-        "--no-moderator",
         "--no-admin",
-        "--no-locked"
+        "--no-confirmed",
+        "--no-locked",
+        "--no-moderator"
       ])
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Moderator status .* false/
+      assert message =~ ~r/Admin status .* false/
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ ~r/Confirmation pending .* true/
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ ~r/Locked status .* false/
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r/Admin status .* false/
+      assert message =~ ~r/Moderator status .* false/
 
       user = User.get_cached_by_nickname(user.nickname)
       refute user.is_moderator
       refute user.locked
       refute user.is_admin
+      assert user.confirmation_pending
     end
 
     test "no user to set status" do
@@ -552,6 +569,46 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "Could not change user tags"
+    end
+  end
+
+  describe "bulk confirm and unconfirm" do
+    test "confirm all" do
+      user1 = insert(:user, confirmation_pending: true)
+      user2 = insert(:user, confirmation_pending: true)
+
+      assert user1.confirmation_pending
+      assert user2.confirmation_pending
+
+      Mix.Tasks.Pleroma.User.run(["confirm_all"])
+
+      user1 = User.get_cached_by_nickname(user1.nickname)
+      user2 = User.get_cached_by_nickname(user2.nickname)
+
+      refute user1.confirmation_pending
+      refute user2.confirmation_pending
+    end
+
+    test "unconfirm all" do
+      user1 = insert(:user, confirmation_pending: false)
+      user2 = insert(:user, confirmation_pending: false)
+      admin = insert(:user, is_admin: true, confirmation_pending: false)
+      mod = insert(:user, is_moderator: true, confirmation_pending: false)
+
+      refute user1.confirmation_pending
+      refute user2.confirmation_pending
+
+      Mix.Tasks.Pleroma.User.run(["unconfirm_all"])
+
+      user1 = User.get_cached_by_nickname(user1.nickname)
+      user2 = User.get_cached_by_nickname(user2.nickname)
+      admin = User.get_cached_by_nickname(admin.nickname)
+      mod = User.get_cached_by_nickname(mod.nickname)
+
+      assert user1.confirmation_pending
+      assert user2.confirmation_pending
+      refute admin.confirmation_pending
+      refute mod.confirmation_pending
     end
   end
 end

@@ -313,14 +313,37 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses
 
+## `GET /api/pleroma/admin/relay`
+
+### List Relays
+
+Params: none
+Response:
+
+* On success: JSON array of relays
+
+```json
+[
+  {"actor": "https://example.com/relay", "followed_back": true},
+  {"actor": "https://example2.com/relay", "followed_back": false}
+]
+```
+
 ## `POST /api/pleroma/admin/relay`
 
 ### Follow a Relay
 
-- Params:
-  - `relay_url`
-- Response:
-  - On success: URL of the followed relay
+Params:
+
+* `relay_url`
+
+Response:
+
+* On success: relay json object
+
+```json
+{"actor": "https://example.com/relay", "followed_back": true}
+```
 
 ## `DELETE /api/pleroma/admin/relay`
 
@@ -328,16 +351,15 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 - Params:
   - `relay_url`
-- Response:
-  - On success: URL of the unfollowed relay
+  - *optional* `force`: forcefully unfollow a relay even when the relay is not available. (default is `false`)
 
-## `GET /api/pleroma/admin/relay`
+Response:
 
-### List Relays
+* On success: URL of the unfollowed relay
 
-- Params: none
-- Response:
-  - On success: JSON array of relays
+```json
+{"https://example.com/relay"}
+```
 
 ## `POST /api/pleroma/admin/users/invite_token`
 
@@ -1266,11 +1288,14 @@ Loads json generated from `config/descriptions.exs`.
 - Params:
 - *optional* `page`: **integer** page number
 - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+- *optional* `query`: **string** search term
 
 - Response:
 
 ``` json
 {
+  "page_size": integer,
+  "count": integer,
   "urls": [
     "http://example.com/media/a688346.jpg",
     "http://example.com/media/fb1f4d.jpg"
@@ -1290,12 +1315,7 @@ Loads json generated from `config/descriptions.exs`.
 - Response:
 
 ``` json
-{
-  "urls": [
-    "http://example.com/media/a688346.jpg",
-    "http://example.com/media/fb1f4d.jpg"
-  ]
-}
+{ }
 
 ```
 
@@ -1311,11 +1331,169 @@ Loads json generated from `config/descriptions.exs`.
 - Response:
 
 ``` json
-{
-  "urls": [
-    "http://example.com/media/a688346.jpg",
-    "http://example.com/media/fb1f4d.jpg"
-  ]
-}
+{ }
 
+```
+
+## GET /api/pleroma/admin/users/:nickname/chats
+
+### List a user's chats
+
+- Params: None
+
+- Response:
+
+```json
+[
+   {
+      "sender": {
+        "id": "someflakeid",
+        "username": "somenick",
+        ...
+      },
+      "receiver": {
+        "id": "someflakeid",
+        "username": "somenick",
+        ...
+      },
+      "id" : "1",
+      "unread" : 2,
+      "last_message" : {...}, // The last message in that chat
+      "updated_at": "2020-04-21T15:11:46.000Z"
+   }
+]
+```
+
+## GET /api/pleroma/admin/chats/:chat_id
+
+### View a single chat
+
+- Params: None
+
+- Response:
+
+```json
+{
+  "sender": {
+    "id": "someflakeid",
+    "username": "somenick",
+    ...
+  },
+  "receiver": {
+    "id": "someflakeid",
+    "username": "somenick",
+    ...
+  },
+  "id" : "1",
+  "unread" : 2,
+  "last_message" : {...}, // The last message in that chat
+  "updated_at": "2020-04-21T15:11:46.000Z"
+}
+```
+
+## GET /api/pleroma/admin/chats/:chat_id/messages
+
+### List the messages in a chat
+
+- Params: `max_id`, `min_id`
+
+- Response:
+
+```json
+[
+  {
+    "account_id": "someflakeid",
+    "chat_id": "1",
+    "content": "Check this out :firefox:",
+    "created_at": "2020-04-21T15:11:46.000Z",
+    "emojis": [
+      {
+        "shortcode": "firefox",
+        "static_url": "https://dontbulling.me/emoji/Firefox.gif",
+        "url": "https://dontbulling.me/emoji/Firefox.gif",
+        "visible_in_picker": false
+      }
+    ],
+    "id": "13",
+    "unread": true
+  },
+  {
+    "account_id": "someflakeid",
+    "chat_id": "1",
+    "content": "Whats' up?",
+    "created_at": "2020-04-21T15:06:45.000Z",
+    "emojis": [],
+    "id": "12",
+    "unread": false
+  }
+]
+```
+
+## DELETE /api/pleroma/admin/chats/:chat_id/messages/:message_id
+
+### Delete a single message
+
+- Params: None
+
+- Response:
+
+```json
+{
+  "account_id": "someflakeid",
+  "chat_id": "1",
+  "content": "Check this out :firefox:",
+  "created_at": "2020-04-21T15:11:46.000Z",
+  "emojis": [
+    {
+      "shortcode": "firefox",
+      "static_url": "https://dontbulling.me/emoji/Firefox.gif",
+      "url": "https://dontbulling.me/emoji/Firefox.gif",
+      "visible_in_picker": false
+    }
+  ],
+  "id": "13",
+  "unread": false
+}
+```
+
+## `GET /api/pleroma/admin/instance_document/:document_name`
+
+### Get an instance document
+
+- Authentication: required
+
+- Response:
+
+Returns the content of the document
+
+```html
+<h1>Instance panel</h1>
+```
+
+## `PATCH /api/pleroma/admin/instance_document/:document_name`
+- Params:
+  - `file` (the file to be uploaded, using multipart form data.)
+
+### Update an instance document
+
+- Authentication: required
+
+- Response:
+
+``` json
+{
+  "url": "https://example.com/instance/panel.html"
+}
+```
+
+## `DELETE /api/pleroma/admin/instance_document/:document_name`
+
+### Delete an instance document
+
+- Response:
+
+``` json
+{
+  "url": "https://example.com/instance/panel.html"
+}
 ```

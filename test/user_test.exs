@@ -440,6 +440,45 @@ defmodule Pleroma.UserTest do
       assert activity.actor == welcome_user.ap_id
     end
 
+    setup do:
+            clear_config(:mrf_simple,
+              media_removal: [],
+              media_nsfw: [],
+              federated_timeline_removal: [],
+              report_removal: [],
+              reject: [],
+              followers_only: [],
+              accept: [],
+              avatar_removal: [],
+              banner_removal: [],
+              reject_deletes: []
+            )
+
+    setup do:
+            clear_config(:mrf,
+              policies: [
+                Pleroma.Web.ActivityPub.MRF.SimplePolicy
+              ]
+            )
+
+    test "it sends a welcome chat message when Simple policy applied to local instance" do
+      Pleroma.Config.put([:mrf_simple, :media_nsfw], ["localhost"])
+
+      welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :chat_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :chat_message, :message], "Hello, this is a chat message")
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+
+      activity = Repo.one(Pleroma.Activity)
+      assert registered_user.ap_id in activity.recipients
+      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert activity.actor == welcome_user.ap_id
+    end
+
     test "it sends a welcome email message if it is set" do
       welcome_user = insert(:user)
       Pleroma.Config.put([:welcome, :email, :enabled], true)
@@ -470,7 +509,12 @@ defmodule Pleroma.UserTest do
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
-      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(registered_user))
+
+      Pleroma.Emails.UserEmail.account_confirmation_email(registered_user)
+      # temporary hackney fix until hackney max_connections bug is fixed
+      # https://git.pleroma.social/pleroma/pleroma/-/issues/2101
+      |> Swoosh.Email.put_private(:hackney_options, ssl_options: [versions: [:"tlsv1.2"]])
+      |> assert_email_sent()
     end
 
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
@@ -932,23 +976,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "follow_import" do
-    test "it imports user followings from list" do
-      [user1, user2, user3] = insert_list(3, :user)
-
-      identifiers = [
-        user2.ap_id,
-        user3.nickname
-      ]
-
-      {:ok, job} = User.follow_import(user1, identifiers)
-
-      assert {:ok, result} = ObanHelpers.perform(job)
-      assert is_list(result)
-      assert result == [user2, user3]
-    end
-  end
-
   describe "mutes" do
     test "it mutes people" do
       user = insert(:user)
@@ -1152,23 +1179,6 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.follow(user, good_eggo)
 
       refute User.blocks?(user, good_eggo)
-    end
-  end
-
-  describe "blocks_import" do
-    test "it imports user blocks from list" do
-      [user1, user2, user3] = insert_list(3, :user)
-
-      identifiers = [
-        user2.ap_id,
-        user3.nickname
-      ]
-
-      {:ok, job} = User.blocks_import(user1, identifiers)
-
-      assert {:ok, result} = ObanHelpers.perform(job)
-      assert is_list(result)
-      assert result == [user2, user3]
     end
   end
 
@@ -1417,13 +1427,91 @@ defmodule Pleroma.UserTest do
 
   test "delete/1 when approval is pending deletes the user" do
     user = insert(:user, approval_pending: true)
-    {:ok, user: user}
 
     {:ok, job} = User.delete(user)
     {:ok, _} = ObanHelpers.perform(job)
 
     refute User.get_cached_by_id(user.id)
     refute User.get_by_id(user.id)
+  end
+
+  test "delete/1 purges a user when they wouldn't be fully deleted" do
+    user =
+      insert(:user, %{
+        bio: "eyy lmao",
+        name: "qqqqqqq",
+        password_hash: "pdfk2$1b3n159001",
+        keys: "RSA begin buplic key",
+        public_key: "--PRIVATE KEYE--",
+        avatar: %{"a" => "b"},
+        tags: ["qqqqq"],
+        banner: %{"a" => "b"},
+        background: %{"a" => "b"},
+        note_count: 9,
+        follower_count: 9,
+        following_count: 9001,
+        locked: true,
+        confirmation_pending: true,
+        password_reset_pending: true,
+        approval_pending: true,
+        registration_reason: "ahhhhh",
+        confirmation_token: "qqqq",
+        domain_blocks: ["lain.com"],
+        deactivated: true,
+        ap_enabled: true,
+        is_moderator: true,
+        is_admin: true,
+        mastofe_settings: %{"a" => "b"},
+        mascot: %{"a" => "b"},
+        emoji: %{"a" => "b"},
+        pleroma_settings_store: %{"q" => "x"},
+        fields: [%{"gg" => "qq"}],
+        raw_fields: [%{"gg" => "qq"}],
+        discoverable: true,
+        also_known_as: ["https://lol.olo/users/loll"]
+      })
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+    user = User.get_by_id(user.id)
+
+    assert %User{
+             bio: "",
+             raw_bio: nil,
+             email: nil,
+             name: nil,
+             password_hash: nil,
+             keys: nil,
+             public_key: nil,
+             avatar: %{},
+             tags: [],
+             last_refreshed_at: nil,
+             last_digest_emailed_at: nil,
+             banner: %{},
+             background: %{},
+             note_count: 0,
+             follower_count: 0,
+             following_count: 0,
+             locked: false,
+             confirmation_pending: false,
+             password_reset_pending: false,
+             approval_pending: false,
+             registration_reason: nil,
+             confirmation_token: nil,
+             domain_blocks: [],
+             deactivated: true,
+             ap_enabled: false,
+             is_moderator: false,
+             is_admin: false,
+             mastofe_settings: nil,
+             mascot: nil,
+             emoji: %{},
+             pleroma_settings_store: %{},
+             fields: [],
+             raw_fields: [],
+             discoverable: false,
+             also_known_as: []
+           } = user
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
@@ -1559,7 +1647,7 @@ defmodule Pleroma.UserTest do
       assert User.visible_for(user, user) == :visible
     end
 
-    test "returns false when the account is unauthenticated and auth is required" do
+    test "returns false when the account is unconfirmed and confirmation is required" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
       user = insert(:user, local: true, confirmation_pending: true)
@@ -1568,14 +1656,23 @@ defmodule Pleroma.UserTest do
       refute User.visible_for(user, other_user) == :visible
     end
 
-    test "returns true when the account is unauthenticated and auth is not required" do
+    test "returns true when the account is unconfirmed and confirmation is required but the account is remote" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      user = insert(:user, local: false, confirmation_pending: true)
+      other_user = insert(:user, local: true)
+
+      assert User.visible_for(user, other_user) == :visible
+    end
+
+    test "returns true when the account is unconfirmed and confirmation is not required" do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
       assert User.visible_for(user, other_user) == :visible
     end
 
-    test "returns true when the account is unauthenticated and being viewed by a privileged account (auth required)" do
+    test "returns true when the account is unconfirmed and being viewed by a privileged account (confirmation required)" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
       user = insert(:user, local: true, confirmation_pending: true)

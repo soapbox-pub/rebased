@@ -5,7 +5,11 @@
 defmodule Pleroma.Web.AdminAPI.MediaProxyCacheView do
   use Pleroma.Web, :view
 
-  def render("index.json", %{urls: urls}) do
-    %{urls: urls}
+  def render("index.json", %{urls: urls, page_size: page_size, count: count}) do
+    %{
+      urls: urls,
+      count: count,
+      page_size: page_size
+    }
   end
 end
