@@ -12,16 +12,8 @@ defmodule Pleroma.Web.Preload.Providers.TimelineTest do
   @public_url "/api/v1/timelines/public"
 
   describe "unauthenticated timeliness when restricted" do
-    setup do
-      svd_config = Pleroma.Config.get([:restrict_unauthenticated, :timelines])
-      Pleroma.Config.put([:restrict_unauthenticated, :timelines], %{local: true, federated: true})
-
-      on_exit(fn ->
-        Pleroma.Config.put([:restrict_unauthenticated, :timelines], svd_config)
-      end)
-
-      :ok
-    end
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :local], true)
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :federated], true)
 
     test "return nothing" do
       tl_data = Timelines.generate_terms(%{})
@@ -31,20 +23,10 @@ defmodule Pleroma.Web.Preload.Providers.TimelineTest do
   end
 
   describe "unauthenticated timeliness when unrestricted" do
-    setup do
-      svd_config = Pleroma.Config.get([:restrict_unauthenticated, :timelines])
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :local], false)
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :federated], false)
 
-      Pleroma.Config.put([:restrict_unauthenticated, :timelines], %{
-        local: false,
-        federated: false
-      })
-
-      on_exit(fn ->
-        Pleroma.Config.put([:restrict_unauthenticated, :timelines], svd_config)
-      end)
-
-      {:ok, user: insert(:user)}
-    end
+    setup do: {:ok, user: insert(:user)}
 
     test "returns the timeline when not restricted" do
       assert Timelines.generate_terms(%{})

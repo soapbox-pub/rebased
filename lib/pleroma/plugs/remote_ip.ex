@@ -7,45 +7,42 @@ defmodule Pleroma.Plugs.RemoteIp do
   This is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
   """
 
+  alias Pleroma.Config
+  import Plug.Conn
+
   @behaviour Plug
-
-  @headers ~w[
-    x-forwarded-for
-  ]
-
-  # https://en.wikipedia.org/wiki/Localhost
-  # https://en.wikipedia.org/wiki/Private_network
-  @reserved ~w[
-    127.0.0.0/8
-    ::1/128
-    fc00::/7
-    10.0.0.0/8
-    172.16.0.0/12
-    192.168.0.0/16
-  ]
 
   def init(_), do: nil
 
-  def call(conn, _) do
-    config = Pleroma.Config.get(__MODULE__, [])
-
-    if Keyword.get(config, :enabled, false) do
-      RemoteIp.call(conn, remote_ip_opts(config))
+  def call(%{remote_ip: original_remote_ip} = conn, _) do
+    if Config.get([__MODULE__, :enabled]) do
+      %{remote_ip: new_remote_ip} = conn = RemoteIp.call(conn, remote_ip_opts())
+      assign(conn, :remote_ip_found, original_remote_ip != new_remote_ip)
     else
       conn
     end
   end
 
-  defp remote_ip_opts(config) do
-    headers = config |> Keyword.get(:headers, @headers) |> MapSet.new()
-    reserved = Keyword.get(config, :reserved, @reserved)
+  defp remote_ip_opts do
+    headers = Config.get([__MODULE__, :headers], []) |> MapSet.new()
+    reserved = Config.get([__MODULE__, :reserved], [])
 
     proxies =
-      config
-      |> Keyword.get(:proxies, [])
+      Config.get([__MODULE__, :proxies], [])
       |> Enum.concat(reserved)
-      |> Enum.map(&InetCidr.parse/1)
+      |> Enum.map(&maybe_add_cidr/1)
 
     {headers, proxies}
+  end
+
+  defp maybe_add_cidr(proxy) when is_binary(proxy) do
+    proxy =
+      cond do
+        "/" in String.codepoints(proxy) -> proxy
+        InetCidr.v4?(InetCidr.parse_address!(proxy)) -> proxy <> "/32"
+        InetCidr.v6?(InetCidr.parse_address!(proxy)) -> proxy <> "/128"
+      end
+
+    InetCidr.parse(proxy, true)
   end
 end

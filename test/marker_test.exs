@@ -33,8 +33,8 @@ defmodule Pleroma.MarkerTest do
     test "returns user markers" do
       user = insert(:user)
       marker = insert(:marker, user: user)
-      insert(:notification, user: user)
-      insert(:notification, user: user)
+      insert(:notification, user: user, activity: insert(:note_activity))
+      insert(:notification, user: user, activity: insert(:note_activity))
       insert(:marker, timeline: "home", user: user)
 
       assert Marker.get_markers(

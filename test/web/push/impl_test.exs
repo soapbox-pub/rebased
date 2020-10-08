@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase
 
+  import Pleroma.Factory
+
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -12,8 +14,6 @@ defmodule Pleroma.Web.Push.ImplTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Push.Impl
   alias Pleroma.Web.Push.Subscription
-
-  import Pleroma.Factory
 
   setup do
     Tesla.Mock.mock(fn

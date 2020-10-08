@@ -24,6 +24,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     object = Object.normalize(activity, false)
 
+    assert object.data["url"] == "https://mastodon.sdf.org/@rinpatch/102070944809637304"
+
     assert object.data["closed"] == "2019-05-11T09:03:36Z"
 
     assert object.data["context"] == activity.data["context"]
@@ -104,12 +106,63 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
     assert Enum.sort(object.data["oneOf"]) == Enum.sort(options)
   end
 
-  test "returns an error if received a second time" do
+  test "Mastodon Question activity with custom emojis" do
+    options = [
+      %{
+        "type" => "Note",
+        "name" => ":blobcat:",
+        "replies" => %{"totalItems" => 0, "type" => "Collection"}
+      },
+      %{
+        "type" => "Note",
+        "name" => ":blobfox:",
+        "replies" => %{"totalItems" => 0, "type" => "Collection"}
+      }
+    ]
+
+    tag = [
+      %{
+        "icon" => %{
+          "type" => "Image",
+          "url" => "https://blob.cat/emoji/custom/blobcats/blobcat.png"
+        },
+        "id" => "https://blob.cat/emoji/custom/blobcats/blobcat.png",
+        "name" => ":blobcat:",
+        "type" => "Emoji",
+        "updated" => "1970-01-01T00:00:00Z"
+      },
+      %{
+        "icon" => %{"type" => "Image", "url" => "https://blob.cat/emoji/blobfox/blobfox.png"},
+        "id" => "https://blob.cat/emoji/blobfox/blobfox.png",
+        "name" => ":blobfox:",
+        "type" => "Emoji",
+        "updated" => "1970-01-01T00:00:00Z"
+      }
+    ]
+
+    data =
+      File.read!("test/fixtures/mastodon-question-activity.json")
+      |> Poison.decode!()
+      |> Kernel.put_in(["object", "oneOf"], options)
+      |> Kernel.put_in(["object", "tag"], tag)
+
+    {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+    object = Object.normalize(activity, false)
+
+    assert object.data["oneOf"] == options
+
+    assert object.data["emoji"] == %{
+             "blobcat" => "https://blob.cat/emoji/custom/blobcats/blobcat.png",
+             "blobfox" => "https://blob.cat/emoji/blobfox/blobfox.png"
+           }
+  end
+
+  test "returns same activity if received a second time" do
     data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
 
     assert {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    assert {:error, {:validate_object, {:error, _}}} = Transmogrifier.handle_incoming(data)
+    assert {:ok, ^activity} = Transmogrifier.handle_incoming(data)
   end
 
   test "accepts a Question with no content" do

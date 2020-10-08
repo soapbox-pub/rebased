@@ -9,13 +9,18 @@
 
 Replaces embedded objects with references to them in the `objects` table. Only needs to be ran once if the instance was created before Pleroma 1.0.5. The reason why this is not a migration is because it could significantly increase the database size after being ran, however after this `VACUUM FULL` will be able to reclaim about 20% (really depends on what is in the database, your mileage may vary) of the db size before the migration.
 
-```sh tab="OTP"
-./bin/pleroma_ctl database remove_embedded_objects [option ...]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database remove_embedded_objects [option ...]
-```
+    ```sh
+    ./bin/pleroma_ctl database remove_embedded_objects [option ...]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database remove_embedded_objects [option ...]
+    ```
+
 
 ### Options
 - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
@@ -27,13 +32,17 @@ This will prune remote posts older than 90 days (configurable with [`config :ple
 !!! danger
     The disk space will only be reclaimed after `VACUUM FULL`. You may run out of disk space during the execution of the task or vacuuming if you don't have about 1/3rds of the database size free.
 
-```sh tab="OTP"
-./bin/pleroma_ctl database prune_objects [option ...]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database prune_objects [option ...]
-```
+    ```sh
+    ./bin/pleroma_ctl database prune_objects [option ...]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database prune_objects [option ...]
+    ```
 
 ### Options
 - `--vacuum` - run `VACUUM FULL` after the objects are pruned
@@ -42,33 +51,45 @@ mix pleroma.database prune_objects [option ...]
 
 Can be safely re-run
 
-```sh tab="OTP"
-./bin/pleroma_ctl database bump_all_conversations
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database bump_all_conversations
-```
+    ```sh
+    ./bin/pleroma_ctl database bump_all_conversations
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database bump_all_conversations
+    ```
 
 ## Remove duplicated items from following and update followers count for all users
 
-```sh tab="OTP"
-./bin/pleroma_ctl database update_users_following_followers_counts
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database update_users_following_followers_counts
-```
+    ```sh
+    ./bin/pleroma_ctl database update_users_following_followers_counts
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database update_users_following_followers_counts
+    ```
 
 ## Fix the pre-existing "likes" collections for all objects
 
-```sh tab="OTP"
-./bin/pleroma_ctl database fix_likes_collections
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database fix_likes_collections
-```
+    ```sh
+    ./bin/pleroma_ctl database fix_likes_collections
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database fix_likes_collections
+    ```
 
 ## Vacuum the database
 
@@ -76,13 +97,17 @@ mix pleroma.database fix_likes_collections
 
 Running an `analyze` vacuum job can improve performance by updating statistics used by the query planner. **It is safe to cancel this.**
 
-```sh tab="OTP"
-./bin/pleroma_ctl database vacuum analyze
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database vacuum analyze
-```
+    ```sh
+    ./bin/pleroma_ctl database vacuum analyze
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database vacuum analyze
+    ```
 
 ### Full
 
@@ -91,10 +116,28 @@ and more compact files with an optimized layout. This process will take a long t
 it builds the files side-by-side the existing database files. It can make your database faster and use less disk space,
 but should only be run if necessary. **It is safe to cancel this.**
 
-```sh tab="OTP"
-./bin/pleroma_ctl database vacuum full
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.database vacuum full
-```
+    ```sh
+    ./bin/pleroma_ctl database vacuum full
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database vacuum full
+    ```
+
+## Add expiration to all local statuses
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl database ensure_expiration
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database ensure_expiration
+    ```

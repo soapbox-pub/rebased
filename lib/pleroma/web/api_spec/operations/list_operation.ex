@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
       description: "Add accounts to the given list.",
       operationId: "ListController.add_to_list",
       parameters: [id_param()],
-      requestBody: add_remove_accounts_request(),
+      requestBody: add_remove_accounts_request(true),
       security: [%{"oAuth" => ["write:lists"]}],
       responses: %{
         200 => Operation.response("Empty object", "application/json", %Schema{type: :object})
@@ -127,8 +127,16 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
       tags: ["Lists"],
       summary: "Remove accounts from list",
       operationId: "ListController.remove_from_list",
-      parameters: [id_param()],
-      requestBody: add_remove_accounts_request(),
+      parameters: [
+        id_param(),
+        Operation.parameter(
+          :account_ids,
+          :query,
+          %Schema{type: :array, items: %Schema{type: :string}},
+          "Array of account IDs"
+        )
+      ],
+      requestBody: add_remove_accounts_request(false),
       security: [%{"oAuth" => ["write:lists"]}],
       responses: %{
         200 => Operation.response("Empty object", "application/json", %Schema{type: :object})
@@ -171,7 +179,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
     )
   end
 
-  defp add_remove_accounts_request do
+  defp add_remove_accounts_request(required) when is_boolean(required) do
     request_body(
       "Parameters",
       %Schema{
@@ -179,10 +187,9 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
         type: :object,
         properties: %{
           account_ids: %Schema{type: :array, description: "Array of account IDs", items: FlakeID}
-        },
-        required: [:account_ids]
+        }
       },
-      required: true
+      required: required
     )
   end
 end

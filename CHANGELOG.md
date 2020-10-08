@@ -3,20 +3,127 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [unreleased]
+## Unreleased
+
+### Added
+- Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
+- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task option for force-unfollowing relays
 
 ### Changed
+
+- **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
+- **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- Search: Users are now findable by their urls.
+- Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
+- Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
+- The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
+- Users with the `discoverable` field set to false will not show up in searches.
+- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+- Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
+
+### Added
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Pleroma API: Importing the mutes users from CSV files.
+- Experimental websocket-based federation between Pleroma instances.
+
+<details>
+  <summary>API Changes</summary>
+
+- Pleroma API: Importing the mutes users from CSV files.
+- Admin API: Importing emoji from a zip file
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
+
+### Removed
+
+- **Breaking:** `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab` (moved to a simpler implementation).
+- **Breaking:** `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- **Breaking:** `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- Removed `:managed_config` option. In practice, it was accidentally removed with 2.0.0 release when frontends were
+switched to a new configuration mechanism, however it was not officially removed until now.
+
+### Fixed
+
+- Add documented-but-missing chat pagination.
+- Allow sending out emails again.
+
+## Unreleased (Patch)
+
+### Changed
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
+
+## [2.1.2] - 2020-09-17
+
+### Security
+
+- Fix most MRF rules either crashing or not being applied to objects passed into the Common Pipeline (ChatMessage, Question, Answer, Audio, Event).
+
+### Fixed
+
+- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance.
+- Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user.
+- Mastodon Streaming API: Handler crashes on authentication failures, resulting in error logs.
+- Mastodon Streaming API: Error logs on client pings.
+- Rich media: Log spam on failures. Now the error is only logged once per attempt.
+
+### Changed
+
+- Rich Media: A HEAD request is now done to the url, to ensure it has the appropriate content type and size before proceeding with a GET.
+
+### Upgrade notes
+
+1. Restart Pleroma
+
+## [2.1.1] - 2020-09-08
+
+### Security
+- Fix possible DoS in Mastodon API user search due to an error in match clauses, leading to an infinite recursion and subsequent OOM with certain inputs.
+- Fix metadata leak for accounts and statuses on private instances.
+- Fix possible DoS in Admin API search using an atom leak vulnerability. Authentication with admin rights was required to exploit.
+
+### Changed
+
+- **Breaking:** The metadata providers RelMe and Feed are no longer configurable. RelMe should always be activated and Feed only provides a <link> header tag for the actual RSS/Atom feed when the instance is public.
+- Improved error message when cmake is not available at build stage.
+
+### Added
+- Rich media failure tracking (along with `:failure_backoff` option).
+
+<details>
+  <summary>Admin API Changes</summary>
+
+- Add `PATCH /api/pleroma/admin/instance_document/:document_name` to modify the Terms of Service and Instance Panel HTML pages via Admin API
+</details>
+
+### Fixed
+- Default HTTP adapter not respecting pool setting, leading to possible OOM.
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled by skipping them
+- Mastodon API: Search parameter `following` now correctly returns the followings rather than the followers
+- Mastodon API: Timelines hanging for (`number of posts with links * rich media timeout`) in the worst case.
+  Reduced to just rich media timeout.
+- Mastodon API: Cards being wrong for preview statuses due to cache key collision.
+- Password resets no longer processed for deactivated accounts.
+- Favicon scraper raising exceptions on URLs longer than 255 characters.
+
+## [2.1.0] - 2020-08-28
+
+### Changed
+
+- **Breaking:** The default descriptions on uploads are now empty. The old behavior (filename as default) can be configured, see the cheat sheet.
 - **Breaking:** Added the ObjectAgePolicy to the default set of MRFs. This will delist and strip the follower collection of any message received that is older than 7 days. This will stop users from seeing very old messages in the timelines. The messages can still be viewed on the user's page and in conversations. They also still trigger notifications.
 - **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
 - **Breaking:** Configuration: `:auto_linker, :opts` moved to `:pleroma, Pleroma.Formatter`. Old config namespace is deprecated.
+- **Breaking:** Configuration: `:instance, welcome_user_nickname` moved to `:welcome, :direct_message, :sender_nickname`, `:instance, :welcome_message` moved to `:welcome, :direct_message, :message`. Old config namespace is deprecated.
+- **Breaking:** LDAP: Fallback to local database authentication has been removed for security reasons and lack of a mechanism to ensure the passwords are synchronized when LDAP passwords are updated.
+- **Breaking** Changed defaults for `:restrict_unauthenticated` so that when `:instance, :public` is set to `false` then all `:restrict_unauthenticated` items be effectively set to `true`. If you'd like to allow unauthenticated access to specific API endpoints on a private instance, please explicitly set `:restrict_unauthenticated` to non-default value in `config/prod.secret.exs`.
 - In Conversations, return only direct messages as `last_status`
 - Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
 - Configuration: `:instance, rewrite_policy` moved to `:mrf, policies`, `:instance, :mrf_transparency` moved to `:mrf, :transparency`, `:instance, :mrf_transparency_exclusions` moved to `:mrf, :transparency_exclusions`. Old config namespace is deprecated.
 - Configuration: `:media_proxy, whitelist` format changed to host with scheme (e.g. `http://example.com` instead of `example.com`). Domain format is deprecated.
-- **Breaking:** Configuration: `:instance, welcome_user_nickname` moved to `:welcome, :direct_message, :sender_nickname`, `:instance, :welcome_message` moved to `:welcome, :direct_message, :message`. Old config namespace is deprecated.
-- **Breaking:** LDAP: Fallback to local database authentication has been removed for security reasons and lack of a mechanism to ensure the passwords are synchronized when LDAP passwords are updated.
 
 <details>
   <summary>API Changes</summary>
@@ -24,33 +131,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Pleroma API: The routes to update avatar, banner and background have been removed.
 - **Breaking:** Image description length is limited now.
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- **Breaking:** Notification Settings API for suppressing notifications has been simplified down to `block_from_strangers`.
+- **Breaking:** Notification Settings API option for hiding push notification contents has been renamed to `hide_notification_contents`.
 - MastodonAPI: Allow removal of avatar, banner and background.
 - Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
 - Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
 - Mastodon API: On deletion, returns the original post text.
 - Mastodon API: Add `pleroma.unread_count` to the Marker entity.
-- **Breaking:** Notification Settings API for suppressing notifications
-  has been simplified down to `block_from_strangers`.
-- **Breaking:** Notification Settings API option for hiding push notification
-  contents has been renamed to `hide_notification_contents`
 - Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
 - Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
+- Mastodon API: Make notifications about statuses from muted users and threads read automatically
 - Pleroma API: `/api/pleroma/captcha` responses now include `seconds_valid` with an integer value.
+
 </details>
 
 <details>
   <summary>Admin API Changes</summary>
 
+- **Breaking** Changed relay `/api/pleroma/admin/relay` endpoints response format.
 - Status visibility stats: now can return stats per instance.
-
 - Mix task to refresh counter cache (`mix pleroma.refresh_counter_cache`)
+
 </details>
 
 ### Removed
+
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
 
+- Frontends: Add mix task to install frontends.
+- Frontends: Add configurable frontends for primary and admin fe.
 - Configuration: Added a blacklist for email servers.
 - Chats: Added `accepts_chat_messages` field to user, exposed in APIs and federation.
 - Chats: Added support for federated chats. For details, see the docs.
@@ -93,6 +204,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 </details>
 
 ### Fixed
+- Fix list pagination and other list issues.
 - Support pagination in conversations API
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
@@ -106,12 +218,81 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
 - Emoji Packs could not be listed when instance was set to `public: false`
 - Fix whole_word always returning false on filter get requests
+- Migrations not working on OTP releases if the database was connected over ssl
+- Fix relay following
 
-## [Unreleased (patch)]
+## [2.0.7] - 2020-06-13
+
+### Security
+- Fix potential DoSes exploiting atom leaks in rich media parser and the `UserAllowListPolicy` MRF policy
 
 ### Fixed
+- CSP: not allowing images/media from every host when mediaproxy is disabled
+- CSP: not adding mediaproxy base url to image/media hosts
+- StaticFE missing the CSS file
+
+### Upgrade notes
+
+1. Restart Pleroma
+
+## [2.0.6] - 2020-06-09
+
+### Security
+- CSP: harden `image-src` and `media-src` when MediaProxy is used
+
+### Fixed
+- AP C2S: Fix pagination in inbox/outbox
+- Various compilation errors on OTP 23
+- Mastodon API streaming: Repeats from muted threads not being filtered
+
+### Changed
+- Various database performance improvements
+
+### Upgrade notes
+1. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+2. Restart Pleroma
+
+## [2.0.5] - 2020-05-13
+
+### Security
+- Fix possible private status leaks in Mastodon Streaming API
+
+### Fixed
+- Crashes when trying to block a user if block federation is disabled
+- Not being able to start the instance without `erlang-eldap` installed
+- Users with bios over the limit getting rejected
+- Follower counters not being updated on incoming follow accepts
+
+### Upgrade notes
+
+1. Restart Pleroma
+
+## [2.0.4] - 2020-05-10
+
+### Security
+- AP C2S: Fix a potential DoS by creating nonsensical objects that break timelines
+
+### Fixed
+- Peertube user lookups not working
+- `InsertSkeletonsForDeletedUsers` migration failing on some instances
 - Healthcheck reporting the number of memory currently used, rather than allocated in total
-- `InsertSkeletonsForDeletedUsers` failing on some instances
+- LDAP not being usable in OTP releases
+- Default apache configuration having tls chain issues
+
+### Upgrade notes
+
+#### Apache only
+
+1. Remove the following line from your config:
+```
+    SSLCertificateFile      /etc/letsencrypt/live/${servername}/cert.pem
+```
+
+#### Everyone
+
+1. Restart Pleroma
 
 ## [2.0.3] - 2020-05-02
 
@@ -135,7 +316,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Follow request notifications
 <details>
   <summary>API Changes</summary>
-
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
 </details>
 
@@ -170,6 +350,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Static-FE: Fix remote posts not being sanitized
 
 ### Fixed
+=======
+- Rate limiter crashes when there is no explicitly specified ip in the config
 - 500 errors when no `Accept` header is present if Static-FE is enabled
 - Instance panel not being updated immediately due to wrong `Cache-Control` headers
 - Statuses posted with BBCode/Markdown having unncessary newlines in Pleroma-FE

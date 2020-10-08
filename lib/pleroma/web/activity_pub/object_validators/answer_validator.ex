@@ -15,16 +15,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
 
   embedded_schema do
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
-
-    # is this actually needed?
-    field(:bto, {:array, :string}, default: [])
-    field(:bcc, {:array, :string}, default: [])
-
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     field(:type, :string)
     field(:name, :string)
-    field(:inReplyTo, :string)
+    field(:inReplyTo, ObjectValidators.ObjectID)
     field(:attributedTo, ObjectValidators.ObjectID)
 
     # TODO: Remove actor on objects

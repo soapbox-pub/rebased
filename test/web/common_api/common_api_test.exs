@@ -4,11 +4,14 @@
 
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -18,12 +21,30 @@ defmodule Pleroma.Web.CommonAPITest do
 
   import Pleroma.Factory
   import Mock
+  import Ecto.Query, only: [from: 2]
 
   require Pleroma.Constants
 
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
+
+  describe "posting polls" do
+    test "it posts a poll" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "who is the best",
+          poll: %{expires_in: 600, options: ["reimu", "marisa"]}
+        })
+
+      object = Object.normalize(activity)
+
+      assert object.data["type"] == "Question"
+      assert object.data["oneOf"] |> length() == 2
+    end
+  end
 
   describe "blocking" do
     setup do
@@ -212,6 +233,17 @@ defmodule Pleroma.Web.CommonAPITest do
         )
 
       assert message == :content_too_long
+    end
+
+    test "it reject messages via MRF" do
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      author = insert(:user)
+      recipient = insert(:user)
+
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
+               CommonAPI.post_chat_message(author, recipient, "GNO/Linux")
     end
   end
 
@@ -596,15 +628,15 @@ defmodule Pleroma.Web.CommonAPITest do
     test "it can handle activities that expire" do
       user = insert(:user)
 
-      expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.truncate(:second)
-        |> NaiveDateTime.add(1_000_000, :second)
+      expires_at = DateTime.add(DateTime.utc_now(), 1_000_000)
 
       assert {:ok, activity} = CommonAPI.post(user, %{status: "chai", expires_in: 1_000_000})
 
-      assert expiration = Pleroma.ActivityExpiration.get_by_activity_id(activity.id)
-      assert expiration.scheduled_at == expires_at
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity.id},
+        scheduled_at: expires_at
+      )
     end
   end
 
@@ -806,6 +838,69 @@ defmodule Pleroma.Web.CommonAPITest do
       activity = insert(:note_activity)
 
       [user: user, activity: activity]
+    end
+
+    test "marks notifications as read after mute" do
+      author = insert(:user)
+      activity = insert(:note_activity, user: author)
+
+      friend1 = insert(:user)
+      friend2 = insert(:user)
+
+      {:ok, reply_activity} =
+        CommonAPI.post(
+          friend2,
+          %{
+            status: "@#{author.nickname} @#{friend1.nickname} test reply",
+            in_reply_to_status_id: activity.id
+          }
+        )
+
+      {:ok, favorite_activity} = CommonAPI.favorite(friend2, activity.id)
+      {:ok, repeat_activity} = CommonAPI.repeat(activity.id, friend1)
+
+      assert Repo.aggregate(
+               from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
+               :count
+             ) == 1
+
+      unread_notifications =
+        Repo.all(from(n in Notification, where: n.seen == false, where: n.user_id == ^author.id))
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "favourite" && n.activity_id == favorite_activity.id
+             end)
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "reblog" && n.activity_id == repeat_activity.id
+             end)
+
+      assert Enum.any?(unread_notifications, fn n ->
+               n.type == "mention" && n.activity_id == reply_activity.id
+             end)
+
+      {:ok, _} = CommonAPI.add_mute(author, activity)
+      assert CommonAPI.thread_muted?(author, activity)
+
+      assert Repo.aggregate(
+               from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
+               :count
+             ) == 1
+
+      read_notifications =
+        Repo.all(from(n in Notification, where: n.seen == true, where: n.user_id == ^author.id))
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "favourite" && n.activity_id == favorite_activity.id
+             end)
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "reblog" && n.activity_id == repeat_activity.id
+             end)
+
+      assert Enum.any?(read_notifications, fn n ->
+               n.type == "mention" && n.activity_id == reply_activity.id
+             end)
     end
 
     test "add mute", %{user: user, activity: activity} do
@@ -1124,6 +1219,26 @@ defmodule Pleroma.Web.CommonAPITest do
       assert object.data["title"] == "lain radio episode 1"
 
       assert Visibility.get_visibility(activity) == "private"
+    end
+  end
+
+  describe "get_user/1" do
+    test "gets user by ap_id" do
+      user = insert(:user)
+      assert CommonAPI.get_user(user.ap_id) == user
+    end
+
+    test "gets user by guessed nickname" do
+      user = insert(:user, ap_id: "", nickname: "mario@mushroom.kingdom")
+      assert CommonAPI.get_user("https://mushroom.kingdom/users/mario") == user
+    end
+
+    test "fallback" do
+      assert %User{
+               name: "",
+               ap_id: "",
+               nickname: "erroruser@example.com"
+             } = CommonAPI.get_user("")
     end
   end
 end

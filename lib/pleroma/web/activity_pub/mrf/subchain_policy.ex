@@ -28,8 +28,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
         }"
       )
 
-      subchain
-      |> MRF.filter(message)
+      MRF.filter(subchain, message)
     else
       _e -> {:ok, message}
     end

@@ -10,9 +10,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   import Ecto.Changeset
-  import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   @primary_key false
 
@@ -61,17 +62,29 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     end
   end
 
+  defp fix_addressing(data, meta) do
+    if object = meta[:object_data] do
+      data
+      |> Map.put_new("to", object["to"] || [])
+      |> Map.put_new("cc", object["cc"] || [])
+    else
+      data
+    end
+  end
+
   defp fix(data, meta) do
     data
     |> fix_context(meta)
+    |> fix_addressing(meta)
+    |> CommonFixes.fix_actor()
   end
 
   def validate_data(cng, meta \\ []) do
     cng
     |> validate_required([:actor, :type, :object])
     |> validate_inclusion(:type, ["Create"])
-    |> validate_actor_presence()
-    |> validate_any_presence([:to, :cc])
+    |> CommonValidations.validate_actor_presence()
+    |> CommonValidations.validate_any_presence([:to, :cc])
     |> validate_actors_match(meta)
     |> validate_context_match(meta)
     |> validate_object_nonexistence()

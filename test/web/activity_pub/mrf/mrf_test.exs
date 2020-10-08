@@ -61,6 +61,8 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
 
   describe "describe/0" do
     test "it works as expected with noop policy" do
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.NoOpPolicy])
+
       expected = %{
         mrf_policies: ["NoOpPolicy"],
         exclusions: false

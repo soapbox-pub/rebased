@@ -66,7 +66,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
            "type" => "Create",
            "object" => child_object
          } = object
-       ) do
+       )
+       when is_map(child_object) do
     media_nsfw =
       Config.get([:mrf_simple, :media_nsfw])
       |> MRF.subdomains_regex()

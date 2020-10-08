@@ -12,6 +12,58 @@ websocket_config = [
   compress: false
 ]
 
+installed_frontend_options = [
+  %{
+    key: "name",
+    label: "Name",
+    type: :string,
+    description:
+      "Name of the installed frontend. Valid config must include both `Name` and `Reference` values."
+  },
+  %{
+    key: "ref",
+    label: "Reference",
+    type: :string,
+    description:
+      "Reference of the installed frontend to be used. Valid config must include both `Name` and `Reference` values."
+  }
+]
+
+frontend_options = [
+  %{
+    key: "name",
+    label: "Name",
+    type: :string,
+    description: "Name of the frontend."
+  },
+  %{
+    key: "ref",
+    label: "Reference",
+    type: :string,
+    description: "Reference of the frontend to be used."
+  },
+  %{
+    key: "git",
+    label: "Git Repository URL",
+    type: :string,
+    description: "URL of the git repository of the frontend"
+  },
+  %{
+    key: "build_url",
+    label: "Build URL",
+    type: :string,
+    description:
+      "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
+    example: "https://some.url/builds/${ref}.zip"
+  },
+  %{
+    key: "build_dir",
+    label: "Build directory",
+    type: :string,
+    description: "The directory inside the zip file "
+  }
+]
+
 config :pleroma, :config_description, [
   %{
     group: :pleroma,
@@ -194,7 +246,7 @@ config :pleroma, :config_description, [
         type: [:string, {:list, :string}, {:list, :tuple}],
         description:
           "List of actions for the mogrify command. It's possible to add self-written settings as string. " <>
-            "For example `[\"auto-orient\", \"strip\", {\"resize\", \"3840x1080>\"}]` string will be parsed into list of the settings.",
+            "For example `auto-orient, strip, {\"resize\", \"3840x1080>\"}` value will be parsed into valid list of the settings.",
         suggestions: [
           "strip",
           "auto-orient",
@@ -218,6 +270,19 @@ config :pleroma, :config_description, [
         suggestions: [
           "custom-file-name.{extension}"
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :fed_sockets,
+    type: :group,
+    description: "Websocket based federation",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enable FedSockets"
       }
     ]
   },
@@ -716,12 +781,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :managed_config,
-        type: :boolean,
-        description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
-      },
-      %{
         key: :static_dir,
         type: :string,
         description: "Instance static directory",
@@ -951,7 +1010,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :instance_thumbnail,
-        type: :string,
+        type: {:string, :image},
         description:
           "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
@@ -964,25 +1023,25 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :welcome,
+    group: :pleroma,
+    key: :welcome,
     type: :group,
     description: "Welcome messages settings",
     children: [
       %{
-        group: :direct_message,
-        type: :group,
+        key: :direct_message,
+        type: :keyword,
         descpiption: "Direct message settings",
         children: [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables sends direct message for new user after registration"
+            description: "Enables sending a direct message to newly registered users"
           },
           %{
             key: :message,
             type: :string,
-            description:
-              "A message that will be sent to a newly registered users as a direct message",
+            description: "A message that will be sent to newly registered users",
             suggestions: [
               "Hi, @username! Welcome on board!"
             ]
@@ -990,7 +1049,7 @@ config :pleroma, :config_description, [
           %{
             key: :sender_nickname,
             type: :string,
-            description: "The nickname of the local user that sends the welcome message",
+            description: "The nickname of the local user that sends a welcome message",
             suggestions: [
               "lain"
             ]
@@ -998,20 +1057,20 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        group: :chat_message,
-        type: :group,
+        key: :chat_message,
+        type: :keyword,
         descpiption: "Chat message settings",
         children: [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables sends chat message for new user after registration"
+            description: "Enables sending a chat message to newly registered users"
           },
           %{
             key: :message,
             type: :string,
             description:
-              "A message that will be sent to a newly registered users as a chat message",
+              "A message that will be sent to newly registered users as a chat message",
             suggestions: [
               "Hello, welcome on board!"
             ]
@@ -1019,7 +1078,7 @@ config :pleroma, :config_description, [
           %{
             key: :sender_nickname,
             type: :string,
-            description: "The nickname of the local user that sends the welcome message",
+            description: "The nickname of the local user that sends a welcome chat message",
             suggestions: [
               "lain"
             ]
@@ -1027,20 +1086,20 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        group: :email,
-        type: :group,
+        key: :email,
+        type: :keyword,
         descpiption: "Email message settings",
         children: [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables sends direct message for new user after registration"
+            description: "Enables sending an email to newly registered users"
           },
           %{
             key: :sender,
             type: [:string, :tuple],
             description:
-              "The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.",
+              "Email address and/or nickname that will be used to send the welcome email.",
             suggestions: [
               {"Pleroma App", "welcome@pleroma.app"}
             ]
@@ -1049,21 +1108,21 @@ config :pleroma, :config_description, [
             key: :subject,
             type: :string,
             description:
-              "The subject of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+              "Subject of the welcome email. EEX template with user and instance_name variables can be used.",
             suggestions: ["Welcome to <%= instance_name%>"]
           },
           %{
             key: :html,
             type: :string,
             description:
-              "The html content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+              "HTML content of the welcome email. EEX template with user and instance_name variables can be used.",
             suggestions: ["<h1>Hello <%= user.name%>. Welcome to <%= instance_name%></h1>"]
           },
           %{
             key: :text,
             type: :string,
             description:
-              "The text content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+              "Text content of the welcome email. EEX template with user and instance_name variables can be used.",
             suggestions: ["Hello <%= user.name%>. \n Welcome to <%= instance_name%>\n"]
           }
         ]
@@ -1236,7 +1295,7 @@ config :pleroma, :config_description, [
           },
           %{
             key: :background,
-            type: :string,
+            type: {:string, :image},
             description:
               "URL of the background, unless viewing a user profile with a background that is set",
             suggestions: ["/images/city.jpg"]
@@ -1293,7 +1352,7 @@ config :pleroma, :config_description, [
           },
           %{
             key: :logo,
-            type: :string,
+            type: {:string, :image},
             description: "URL of the logo, defaults to Pleroma's logo",
             suggestions: ["/static/logo.png"]
           },
@@ -1325,7 +1384,7 @@ config :pleroma, :config_description, [
           %{
             key: :nsfwCensorImage,
             label: "NSFW Censor Image",
-            type: :string,
+            type: {:string, :image},
             description:
               "URL of the image to use for hiding NSFW media attachments in the timeline",
             suggestions: ["/static/img/nsfw.74818f9.png"]
@@ -1451,7 +1510,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :default_user_avatar,
-        type: :string,
+        type: {:string, :image},
         description: "URL of the default user avatar",
         suggestions: ["/images/avi.png"]
       }
@@ -1810,12 +1869,12 @@ config :pleroma, :config_description, [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables invalidate media cache"
+            description: "Enables media cache object invalidation."
           },
           %{
             key: :provider,
             type: :module,
-            description: "Module which will be used to cache purge.",
+            description: "Module which will be used to purge objects from the cache.",
             suggestions: [
               Pleroma.Web.MediaProxy.Invalidation.Script,
               Pleroma.Web.MediaProxy.Invalidation.Http
@@ -1831,6 +1890,7 @@ config :pleroma, :config_description, [
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
+          max_read_duration: 30_000,
           http: [
             follow_redirect: true,
             pool: :media
@@ -1850,6 +1910,11 @@ config :pleroma, :config_description, [
             description:
               "Limits the content length to be approximately the " <>
                 "specified length. It is validated with the `content-length` header and also verified when proxying."
+          },
+          %{
+            key: :max_read_duration,
+            type: :integer,
+            description: "Timeout (in milliseconds) of GET request to remote URI."
           },
           %{
             key: :http,
@@ -1894,6 +1959,43 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of hosts with scheme to bypass the mediaproxy",
         suggestions: ["http://example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :media_preview_proxy,
+    type: :group,
+    description: "Media preview proxy",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description:
+          "Enables proxying of remote media preview to the instance's proxy. Requires enabled media proxy."
+      },
+      %{
+        key: :thumbnail_max_width,
+        type: :integer,
+        description:
+          "Max width of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :thumbnail_max_height,
+        type: :integer,
+        description:
+          "Max height of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :image_quality,
+        type: :integer,
+        description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
+      },
+      %{
+        key: :min_content_length,
+        type: :integer,
+        description:
+          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
       }
     ]
   },
@@ -2241,9 +2343,6 @@ config :pleroma, :config_description, [
         type: {:list, :tuple},
         description: "Settings for cron background jobs",
         suggestions: [
-          {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-          {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
-          {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
           {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
           {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
         ]
@@ -2336,13 +2435,20 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
         ]
+      },
+      %{
+        key: :failure_backoff,
+        type: :integer,
+        description:
+          "Amount of milliseconds after request failure, during which the request will not be retried.",
+        suggestions: [60_000]
       }
     ]
   },
   %{
     group: :pleroma,
     key: Pleroma.Formatter,
-    label: "Auto Linker",
+    label: "Linkify",
     type: :group,
     description:
       "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
@@ -2419,14 +2525,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.ActivityExpiration,
+    key: Pleroma.Workers.PurgeExpiredActivity,
     type: :group,
-    description: "Expired activity settings",
+    description: "Expired activities settings",
     children: [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether expired activities will be sent to the job queue to be deleted"
+        description: "Enables expired activities addition & deletion"
+      },
+      %{
+        key: :min_lifetime,
+        type: :integer,
+        description: "Minimum lifetime for ephemeral activity (in seconds)",
+        suggestions: [600]
       }
     ]
   },
@@ -2642,7 +2754,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :logo,
-        type: :string,
+        type: {:string, :image},
         description: "A path to a custom logo. Set it to `nil` to use the default Pleroma logo.",
         suggestions: ["some/path/logo.png"]
       },
@@ -3153,20 +3265,22 @@ config :pleroma, :config_description, [
       %{
         key: :headers,
         type: {:list, :string},
-        description:
-          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Default: `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+        description: """
+          A list of strings naming the HTTP headers to use when deriving the true client IP. Default: `["x-forwarded-for"]`.
+        """
       },
       %{
         key: :proxies,
         type: {:list, :string},
         description:
-          "A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Default: `[]`."
+          "A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128."
       },
       %{
         key: :reserved,
         type: {:list, :string},
-        description:
-          "Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network)."
+        description: """
+          A list of reserved IP subnets in CIDR notation which should be ignored if found in `headers`. Defaults to `["127.0.0.0/8", "::1/128", "fc00::/7", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]`
+        """
       }
     ]
   },
@@ -3299,13 +3413,13 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :connections_pool,
     type: :group,
-    description: "Advanced settings for `gun` connections pool",
+    description: "Advanced settings for `Gun` connections pool",
     children: [
       %{
         key: :connection_acquisition_wait,
         type: :integer,
         description:
-          "Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries. Default: 250ms.",
+          "Timeout to acquire a connection from pool. The total max time is this value multiplied by the number of retries. Default: 250ms.",
         suggestions: [250]
       },
       %{
@@ -3322,7 +3436,7 @@ config :pleroma, :config_description, [
         suggestions: [250]
       },
       %{
-        key: :await_up_timeout,
+        key: :connect_timeout,
         type: :integer,
         description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
         suggestions: [5000]
@@ -3340,7 +3454,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :pools,
     type: :group,
-    description: "Advanced settings for `gun` workers pools",
+    description: "Advanced settings for `Gun` workers pools",
     children:
       Enum.map([:federation, :media, :upload, :default], fn pool_name ->
         %{
@@ -3360,6 +3474,12 @@ config :pleroma, :config_description, [
               description:
                 "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
               suggestions: [10]
+            },
+            %{
+              key: :recv_timeout,
+              type: :integer,
+              description: "Timeout for the pool while gun will wait for response",
+              suggestions: [10_000]
             }
           ]
         }
@@ -3369,7 +3489,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :hackney_pools,
     type: :group,
-    description: "Advanced settings for `hackney` connections pools",
+    description: "Advanced settings for `Hackney` connections pools",
     children: [
       %{
         key: :federation,
@@ -3433,6 +3553,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :restrict_unauthenticated,
+    label: "Restrict Unauthenticated",
     type: :group,
     description:
       "Disallow viewing timelines, user profiles and statuses for unauthenticated users.",
@@ -3552,17 +3673,38 @@ config :pleroma, :config_description, [
         key: :primary,
         type: :map,
         description: "Primary frontend, the one that is served for all pages by default",
-        children: [
-          %{
-            key: "name",
-            type: :string,
-            description: "Name of the installed primary frontend"
-          },
-          %{
-            key: "ref",
-            type: :string,
-            description: "reference of the installed primary frontend to be used"
-          }
+        children: installed_frontend_options
+      },
+      %{
+        key: :admin,
+        type: :map,
+        description: "Admin frontend",
+        children: installed_frontend_options
+      },
+      %{
+        key: :available,
+        type: :map,
+        description:
+          "A map containing available frontends and parameters for their installation.",
+        children: frontend_options
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.Preload,
+    type: :group,
+    description: "Preload-related settings",
+    children: [
+      %{
+        key: :providers,
+        type: {:list, :module},
+        description: "List of preload providers to enable",
+        suggestions: [
+          Pleroma.Web.Preload.Providers.Instance,
+          Pleroma.Web.Preload.Providers.User,
+          Pleroma.Web.Preload.Providers.Timelines,
+          Pleroma.Web.Preload.Providers.StatusNet
         ]
       }
     ]

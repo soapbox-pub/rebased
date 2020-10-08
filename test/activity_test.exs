@@ -185,15 +185,6 @@ defmodule Pleroma.ActivityTest do
     end
   end
 
-  test "add an activity with an expiration" do
-    activity = insert(:note_activity)
-    insert(:expiration_in_the_future, %{activity_id: activity.id})
-
-    Pleroma.ActivityExpiration
-    |> where([a], a.activity_id == ^activity.id)
-    |> Repo.one!()
-  end
-
   test "all_by_ids_with_object/1" do
     %{id: id1} = insert(:note_activity)
     %{id: id2} = insert(:note_activity)

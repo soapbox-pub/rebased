@@ -107,25 +107,34 @@ defmodule Pleroma.Emails.UserEmail do
       |> Enum.filter(&(&1.activity.data["type"] == "Create"))
       |> Enum.map(fn notification ->
         object = Pleroma.Object.normalize(notification.activity)
-        object = update_in(object.data["content"], &format_links/1)
 
-        %{
-          data: notification,
-          object: object,
-          from: User.get_by_ap_id(notification.activity.actor)
-        }
+        if not is_nil(object) do
+          object = update_in(object.data["content"], &format_links/1)
+
+          %{
+            data: notification,
+            object: object,
+            from: User.get_by_ap_id(notification.activity.actor)
+          }
+        end
       end)
+      |> Enum.filter(& &1)
 
     followers =
       notifications
       |> Enum.filter(&(&1.activity.data["type"] == "Follow"))
       |> Enum.map(fn notification ->
-        %{
-          data: notification,
-          object: Pleroma.Object.normalize(notification.activity),
-          from: User.get_by_ap_id(notification.activity.actor)
-        }
+        from = User.get_by_ap_id(notification.activity.actor)
+
+        if not is_nil(from) do
+          %{
+            data: notification,
+            object: Pleroma.Object.normalize(notification.activity),
+            from: User.get_by_ap_id(notification.activity.actor)
+          }
+        end
       end)
+      |> Enum.filter(& &1)
 
     unless Enum.empty?(mentions) do
       styling = Config.get([__MODULE__, :styling])

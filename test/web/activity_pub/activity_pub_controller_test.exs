@@ -533,7 +533,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       end)
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
-      assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
+      assert_receive {:mix_shell, :info, ["https://relay.mastodon.host/actor"]}
     end
 
     @tag capture_log: true
@@ -905,6 +905,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "POST /users/:nickname/outbox (C2S)" do
+    setup do: clear_config([:instance, :limit])
+
     setup do
       [
         activity: %{
@@ -1120,6 +1122,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert cirno_object = Object.normalize(cirno_outbox["object"])
       assert cirno_object.data["actor"] == cirno.ap_id
       assert cirno_object.data["attributedTo"] == cirno.ap_id
+    end
+
+    test "Character limitation", %{conn: conn, activity: activity} do
+      Pleroma.Config.put([:instance, :limit], 5)
+      user = insert(:user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", activity)
+        |> json_response(400)
+
+      assert result == "Note is over the character limit"
     end
   end
 

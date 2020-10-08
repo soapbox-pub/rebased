@@ -18,7 +18,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
-* `discription_limit`: The character limit for image descriptions.
+* `description_limit`: The character limit for image descriptions.
 * `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
@@ -38,9 +38,8 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
-* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. See also: `restrict_unauthenticated`.
-* `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
-* `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
+* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
+* `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -87,7 +86,7 @@ To add configuration to your config file, you can copy it from the base config. 
       direct_message: [
         enabled: true,
         sender_nickname: "lain",
-        message: "Hi, @username! Welcome on board!"
+        message: "Hi! Welcome on board!"
         ],
       email: [
         enabled: true,
@@ -114,6 +113,8 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.ActivityExpiration` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -220,7 +221,19 @@ config :pleroma, :mrf_user_allowlist, %{
 
 ## Pleroma.ActivityExpiration
 
+Enables the worker which processes posts scheduled for deletion. Pinned posts are exempt from expiration.
+
 * `enabled`: whether expired activities will be sent to the job queue to be deleted
+
+## FedSockets
+FedSockets is an experimental feature allowing for Pleroma backends to federate using a persistant websocket connection as opposed to making each federation a seperate http connection. This feature is currently off by default. It is configurable throught he following options.
+
+### :fedsockets
+* `enabled`: Enables FedSockets for this instance. `false` by default.
+* `connection_duration`: Time an idle websocket is kept open.
+* `rejection_duration`: Failures to connect via FedSockets will not be retried for this period of time.
+* `fed_socket_fetches` and `fed_socket_rejections`: Settings passed to `cachex` for the fetch registry, and rejection stacks. See `Pleroma.Web.FedSockets` for more details.
+
 
 ## Frontends
 
@@ -311,6 +324,14 @@ This section describe PWA manifest instance-specific values. Currently this opti
   * `enabled`: Enables purge cache
   * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
 
+## :media_preview_proxy
+
+* `enabled`: Enables proxying of remote media preview to the instance’s proxy. Requires enabled media proxy (`media_proxy/enabled`).
+* `thumbnail_max_width`: Max width of preview thumbnail for images (video preview always has original dimensions).
+* `thumbnail_max_height`: Max height of preview thumbnail for images (video preview always has original dimensions).
+* `image_quality`: Quality of the output. Ranges from 0 (min quality) to 100 (max quality).
+* `min_content_length`: Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing.
+
 ### Purge cache strategy
 
 #### Pleroma.Web.MediaProxy.Invalidation.Script
@@ -349,8 +370,6 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `providers`: a list of metadata providers to enable. Providers available:
     * `Pleroma.Web.Metadata.Providers.OpenGraph`
     * `Pleroma.Web.Metadata.Providers.TwitterCard`
-    * `Pleroma.Web.Metadata.Providers.RelMe` - add links from user bio with rel=me into the `<header>` as `<link rel=me>`.
-    * `Pleroma.Web.Metadata.Providers.Feed` - add a link to a user's Atom feed into the `<header>` as `<link rel=alternate>`.
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews.
 
 ### :rich_media (consumer)
@@ -358,6 +377,7 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"].
 * `parsers`: list of Rich Media parsers.
+* `failure_backoff`: Amount of milliseconds after request failure, during which the request will not be retried.
 
 ## HTTP server
 
@@ -406,9 +426,9 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 Available options:
 
 * `enabled` - Enable/disable the plug. Defaults to `false`.
-* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `["x-forwarded-for"]`.
-* `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
-* `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).
+* `headers` - A list of strings naming the HTTP headers to use when deriving the true client IP address. Defaults to `["x-forwarded-for"]`.
+* `proxies` - A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128.
+* `reserved` - A list of reserved IP subnets in CIDR notation which should be ignored if found in `headers`. Defaults to `["127.0.0.0/8", "::1/128", "fc00::/7", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]`.
 
 
 ### :rate_limit
@@ -494,7 +514,7 @@ Settings for HTTP connection pool.
 * `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
 * `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
 * `:max_connections` - Maximum number of connections in the pool.
-* `:await_up_timeout` - Timeout to connect to the host.
+* `:connect_timeout` - Timeout to connect to the host.
 * `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
 
 ### :pools
@@ -513,7 +533,7 @@ There are four pools used:
 For each pool, the options are:
 
 * `:size` - limit to how much requests can be concurrently executed.
-* `:timeout` - timeout while `gun` will wait for response
+* `:recv_timeout` - timeout while `gun` will wait for response
 * `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
 
 ## Captcha
@@ -549,6 +569,7 @@ the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). Th
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 * `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
+* `default_description`: Sets which default description an image has if none is set explicitly. Options: nil (default) - Don't set a default, :filename - use the filename of the file, a string (e.g. "attachment") - Use this string
 
 !!! warning
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
@@ -687,9 +708,8 @@ Pleroma has the following queues:
 
 Pleroma has these periodic job workers:
 
-`Pleroma.Workers.Cron.ClearOauthTokenWorker` - a job worker to cleanup expired oauth tokens.
-
-Example:
+* `Pleroma.Workers.Cron.DigestEmailsWorker` - digest emails for users with new mentions and follows
+* `Pleroma.Workers.Cron.NewUsersDigestWorker` - digest emails for admins with new registrations
 
 ```elixir
 config :pleroma, Oban,
@@ -701,7 +721,8 @@ config :pleroma, Oban,
     federator_outgoing: 50
   ],
   crontab: [
-    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker}
+    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
 ```
 
@@ -968,7 +989,7 @@ Configure OAuth 2 provider capabilities:
 
 * `token_expires_in` - The lifetime in seconds of the access token.
 * `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`. Interval settings sets in configuration periodic jobs [`Oban.Cron`](#obancron)
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 
 ## Link parsing
 
@@ -1048,6 +1069,8 @@ Restrict access for unauthenticated users to timelines (public and federated), u
   * `local`
   * `remote`
 
+Note: when `:instance, :public` is set to `false`, all `:restrict_unauthenticated` items be effectively set to `true` by default. If you'd like to allow unauthenticated access to specific API endpoints on a private instance, please explicitly set `:restrict_unauthenticated` to non-default value in `config/prod.secret.exs`.
+
 Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline).
 
 ## Pleroma.Web.ApiSpec.CastAndValidate
@@ -1064,11 +1087,11 @@ Control favicons for instances.
 
 Frontends in Pleroma are swappable - you can specify which one to use here.
 
-For now, you can set a frontend with the key `primary` and the options of `name` and `ref`. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
+You can set a frontends for the key `primary` and `admin` and the options of `name` and `ref`. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
 
-The key `primary` refers to the frontend that will be served by default for general requests. In the future, other frontends like the admin frontend will also be configurable here.
+The key `primary` refers to the frontend that will be served by default for general requests. The key `admin` refers to the frontend that will be served at the `/pleroma/admin` path.
 
-If you don't set anything here, the bundled frontend will be used.
+If you don't set anything here, the bundled frontends will be used.
 
 Example:
 
@@ -1077,7 +1100,18 @@ config :pleroma, :frontends,
   primary: %{
     "name" => "pleroma",
     "ref" => "stable"
+  },
+  admin: %{
+    "name" => "admin",
+    "ref" => "develop"
   }
 ```
 
 This would serve the frontend from the the folder at `$instance_static/frontends/pleroma/stable`. You have to copy the frontend into this folder yourself. You can choose the name and ref any way you like, but they will be used by mix tasks to automate installation in the future, the name referring to the project and the ref referring to a commit.
+
+## Ephemeral activities (Pleroma.Workers.PurgeExpiredActivity)
+
+Settings to enable and configure expiration for ephemeral activities
+
+* `:enabled` - enables ephemeral activities creation
+* `:min_lifetime` - minimum lifetime for ephemeral activities (in seconds). Default: 10 minutes.

@@ -7,8 +7,9 @@ defmodule Pleroma.Web.Metadata do
 
   def build_tags(params) do
     providers = [
+      Pleroma.Web.Metadata.Providers.RelMe,
       Pleroma.Web.Metadata.Providers.RestrictIndexing
-      | Pleroma.Config.get([__MODULE__, :providers], [])
+      | activated_providers()
     ]
 
     Enum.reduce(providers, "", fn parser, acc ->
@@ -41,5 +42,13 @@ defmodule Pleroma.Web.Metadata do
 
   def activity_nsfw?(_) do
     false
+  end
+
+  defp activated_providers do
+    unless Pleroma.Config.restrict_unauthenticated_access?(:activities, :local) do
+      [Pleroma.Web.Metadata.Providers.Feed | Pleroma.Config.get([__MODULE__, :providers], [])]
+    else
+      []
+    end
   end
 end

@@ -103,14 +103,6 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mastodon.social/users/emelie.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/emelie.atom")
-     }}
-  end
-
   def get(
         "https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com",
         _,
@@ -137,14 +129,6 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://pawoo.net/users/pekorino.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/https___pawoo.net_users_pekorino.atom")
-     }}
-  end
-
   def get(
         "https://pawoo.net/.well-known/webfinger?resource=acct:https://pawoo.net/users/pekorino",
         _,
@@ -159,19 +143,6 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://social.stopwatchingus-heidelberg.de/api/statuses/user_timeline/18330.atom",
-        _,
-        _,
-        _
-      ) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/atarifrosch_feed.xml")
-     }}
-  end
-
-  def get(
         "https://social.stopwatchingus-heidelberg.de/.well-known/webfinger?resource=acct:https://social.stopwatchingus-heidelberg.de/user/18330",
         _,
         _,
@@ -181,27 +152,6 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/atarifrosch_webfinger.xml")
-     }}
-  end
-
-  def get("https://mamot.fr/users/Skruyb.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/https___mamot.fr_users_Skruyb.atom")
-     }}
-  end
-
-  def get(
-        "https://mamot.fr/.well-known/webfinger?resource=acct:https://mamot.fr/users/Skruyb",
-        _,
-        _,
-        [{"accept", "application/xrd+xml,application/jrd+json"}]
-      ) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/skruyb@mamot.fr.atom")
      }}
   end
 
@@ -507,19 +457,6 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get(
-        "https://mamot.fr/.well-known/webfinger?resource=https://mamot.fr/users/Skruyb",
-        _,
-        _,
-        _
-      ) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/skruyb@mamot.fr.atom")
-     }}
-  end
-
   def get("http://pawoo.net/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -647,17 +584,6 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://pleroma.soykaf.com/users/lain/feed.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/https___pleroma.soykaf.com_users_lain_feed.atom.xml"
-         )
-     }}
-  end
-
   def get(url, _, _, [{"accept", "application/xrd+xml,application/jrd+json"}])
       when url in [
              "https://pleroma.soykaf.com/.well-known/webfinger?resource=acct:https://pleroma.soykaf.com/users/lain",
@@ -667,17 +593,6 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/https___pleroma.soykaf.com_users_lain.xml")
-     }}
-  end
-
-  def get("https://shitposter.club/api/statuses/user_timeline/1.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/https___shitposter.club_api_statuses_user_timeline_1.atom.xml"
-         )
      }}
   end
 
@@ -694,35 +609,8 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://shitposter.club/notice/2827873", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/https___shitposter.club_notice_2827873.json")
-     }}
-  end
-
-  def get("https://shitposter.club/api/statuses/show/2827873.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/https___shitposter.club_api_statuses_show_2827873.atom.xml"
-         )
-     }}
-  end
-
   def get("https://testing.pleroma.lol/objects/b319022a-4946-44c5-9de9-34801f95507b", _, _, _) do
     {:ok, %Tesla.Env{status: 200}}
-  end
-
-  def get("https://shitposter.club/api/statuses/user_timeline/5381.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/spc_5381.atom")
-     }}
   end
 
   def get(
@@ -746,27 +634,11 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://shitposter.club/api/statuses/show/7369654.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/7369654.atom")
-     }}
-  end
-
   def get("https://shitposter.club/notice/4027863", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/7369654.html")
-     }}
-  end
-
-  def get("https://social.sakamoto.gq/users/eal/feed.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/sakamoto_eal_feed.atom")
      }}
   end
 
@@ -789,15 +661,6 @@ defmodule HttpRequestMock do
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/eal_sakamoto.xml")
      }}
-  end
-
-  def get(
-        "https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056",
-        _,
-        _,
-        [{"accept", "application/atom+xml"}]
-      ) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/sakamoto.atom")}}
   end
 
   def get("http://mastodon.social/.well-known/host-meta", _, _, _) do
@@ -851,28 +714,6 @@ defmodule HttpRequestMock do
         [{"accept", "application/activity+json"}]
       ) do
     {:ok, %Tesla.Env{status: 406, body: ""}}
-  end
-
-  def get("http://gs.example.org/index.php/api/statuses/user_timeline/1.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/http__gs.example.org_index.php_api_statuses_user_timeline_1.atom.xml"
-         )
-     }}
-  end
-
-  def get("https://social.heldscal.la/api/statuses/user_timeline/29191.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/https___social.heldscal.la_api_statuses_user_timeline_29191.atom.xml"
-         )
-     }}
   end
 
   def get("http://squeet.me/.well-known/host-meta", _, _, _) do
@@ -996,17 +837,6 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://social.heldscal.la/api/statuses/user_timeline/23211.atom", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body:
-         File.read!(
-           "test/fixtures/tesla_mock/https___social.heldscal.la_api_statuses_user_timeline_23211.atom.xml"
-         )
-     }}
-  end
-
   def get(
         "https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/23211",
         _,
@@ -1034,10 +864,6 @@ defmodule HttpRequestMock do
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/social.heldscal.la_host_meta")
      }}
-  end
-
-  def get("https://mastodon.social/users/lambadalambda.atom", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/lambadalambda.atom")}}
   end
 
   def get("https://mastodon.social/users/lambadalambda", _, _, _) do
@@ -1350,11 +1176,11 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/relay/relay.json")}}
   end
 
-  def get("http://localhost:4001/", _, "", Accept: "text/html") do
+  def get("http://localhost:4001/", _, "", [{"accept", "text/html"}]) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/7369654.html")}}
   end
 
-  def get("https://osada.macgirvin.com/", _, "", Accept: "text/html") do
+  def get("https://osada.macgirvin.com/", _, "", [{"accept", "text/html"}]) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -1433,6 +1259,23 @@ defmodule HttpRequestMock do
   def post(url, query, body, headers) do
     {:error,
      "Mock response not implemented for POST #{inspect(url)}, #{query}, #{inspect(body)}, #{
+       inspect(headers)
+     }"}
+  end
+
+  # Most of the rich media mocks are missing HEAD requests, so we just return 404.
+  @rich_media_mocks [
+    "https://example.com/ogp",
+    "https://example.com/ogp-missing-data",
+    "https://example.com/twitter-card"
+  ]
+  def head(url, _query, _body, _headers) when url in @rich_media_mocks do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def head(url, query, body, headers) do
+    {:error,
+     "Mock response not implemented for HEAD #{inspect(url)}, #{query}, #{inspect(body)}, #{
        inspect(headers)
      }"}
   end

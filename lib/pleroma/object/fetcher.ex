@@ -12,6 +12,7 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.FedSockets
 
   require Logger
   require Pleroma.Constants
@@ -36,8 +37,7 @@ defmodule Pleroma.Object.Fetcher do
   defp reinject_object(%Object{data: %{"type" => "Question"}} = object, new_data) do
     Logger.debug("Reinjecting object #{new_data["id"]}")
 
-    with new_data <- Transmogrifier.fix_object(new_data),
-         data <- maybe_reinject_internal_fields(object, new_data),
+    with data <- maybe_reinject_internal_fields(object, new_data),
          {:ok, data, _} <- ObjectValidator.validate(data, %{}),
          changeset <- Object.change(object, %{data: data}),
          changeset <- touch_changeset(changeset),
@@ -99,8 +99,8 @@ defmodule Pleroma.Object.Fetcher do
       {:containment, _} ->
         {:error, "Object containment failed."}
 
-      {:transmogrifier, {:error, {:reject, nil}}} ->
-        {:reject, nil}
+      {:transmogrifier, {:error, {:reject, e}}} ->
+        {:reject, e}
 
       {:transmogrifier, _} = e ->
         {:error, e}
@@ -125,8 +125,8 @@ defmodule Pleroma.Object.Fetcher do
   defp prepare_activity_params(data) do
     %{
       "type" => "Create",
-      "to" => data["to"],
-      "cc" => data["cc"],
+      "to" => data["to"] || [],
+      "cc" => data["cc"] || [],
       # Should we seriously keep this attributedTo thing?
       "actor" => data["actor"] || data["attributedTo"],
       "object" => data
@@ -164,12 +164,12 @@ defmodule Pleroma.Object.Fetcher do
         date: date
       })
 
-    [{"signature", signature}]
+    {"signature", signature}
   end
 
   defp sign_fetch(headers, id, date) do
     if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
-      headers ++ make_signature(id, date)
+      [make_signature(id, date) | headers]
     else
       headers
     end
@@ -177,33 +177,26 @@ defmodule Pleroma.Object.Fetcher do
 
   defp maybe_date_fetch(headers, date) do
     if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
-      headers ++ [{"date", date}]
+      [{"date", date} | headers]
     else
       headers
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
+  def fetch_and_contain_remote_object_from_id(prm, opts \\ [])
+
+  def fetch_and_contain_remote_object_from_id(%{"id" => id}, opts),
+    do: fetch_and_contain_remote_object_from_id(id, opts)
+
+  def fetch_and_contain_remote_object_from_id(id, opts) when is_binary(id) do
     Logger.debug("Fetching object #{id} via AP")
 
-    date = Pleroma.Signature.signed_date()
-
-    headers =
-      [{"accept", "application/activity+json"}]
-      |> maybe_date_fetch(date)
-      |> sign_fetch(id, date)
-
-    Logger.debug("Fetch headers: #{inspect(headers)}")
-
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
-         {:ok, %{body: body, status: code}} when code in 200..299 <- HTTP.get(id, headers),
-         {:ok, data} <- Jason.decode(body),
+         {:ok, body} <- get_object(id, opts),
+         {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
       {:ok, data}
     else
-      {:ok, %{status: code}} when code in [404, 410] ->
-        {:error, "Object has been deleted"}
-
       {:scheme, _} ->
         {:error, "Unsupported URI scheme"}
 
@@ -215,8 +208,44 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(%{"id" => id}),
-    do: fetch_and_contain_remote_object_from_id(id)
+  def fetch_and_contain_remote_object_from_id(_id, _opts),
+    do: {:error, "id must be a string"}
 
-  def fetch_and_contain_remote_object_from_id(_id), do: {:error, "id must be a string"}
+  defp get_object(id, opts) do
+    with false <- Keyword.get(opts, :force_http, false),
+         {:ok, fedsocket} <- FedSockets.get_or_create_fed_socket(id) do
+      Logger.debug("fetching via fedsocket - #{inspect(id)}")
+      FedSockets.fetch(fedsocket, id)
+    else
+      _other ->
+        Logger.debug("fetching via http - #{inspect(id)}")
+        get_object_http(id)
+    end
+  end
+
+  defp get_object_http(id) do
+    date = Pleroma.Signature.signed_date()
+
+    headers =
+      [{"accept", "application/activity+json"}]
+      |> maybe_date_fetch(date)
+      |> sign_fetch(id, date)
+
+    case HTTP.get(id, headers) do
+      {:ok, %{body: body, status: code}} when code in 200..299 ->
+        {:ok, body}
+
+      {:ok, %{status: code}} when code in [404, 410] ->
+        {:error, "Object has been deleted"}
+
+      {:error, e} ->
+        {:error, e}
+
+      e ->
+        {:error, e}
+    end
+  end
+
+  defp safe_json_decode(nil), do: {:ok, nil}
+  defp safe_json_decode(json), do: Jason.decode(json)
 end

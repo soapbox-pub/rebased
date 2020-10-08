@@ -4,13 +4,17 @@
 
 ## Create a user
 
-```sh tab="OTP"
-./bin/pleroma_ctl user new <nickname> <email> [option ...]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.user new <nickname> <email> [option ...]
-```
+    ```sh
+    ./bin/pleroma_ctl user new <nickname> <email> [option ...]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user new <nickname> <email> [option ...]
+    ```
 
 
 ### Options
@@ -22,23 +26,33 @@ mix pleroma.user new <nickname> <email> [option ...]
 - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions
 
 ## List local users
-```sh tab="OTP"
- ./bin/pleroma_ctl user list
-```
 
-```sh tab="From Source"
-mix pleroma.user list
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user list
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user list
+    ```
 
 
 ## Generate an invite link
-```sh tab="OTP"
- ./bin/pleroma_ctl user invite [option ...]
-```
 
-```sh tab="From Source"
-mix pleroma.user invite [option ...]
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user invite [option ...]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user invite [option ...]
+    ```
 
 
 ### Options
@@ -46,144 +60,245 @@ mix pleroma.user invite [option ...]
 - `--max-use NUMBER` - maximum numbers of token uses
 
 ## List generated invites
-```sh tab="OTP"
- ./bin/pleroma_ctl user invites
-```
 
-```sh tab="From Source"
-mix pleroma.user invites
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user invites
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user invites
+    ```
 
 
 ## Revoke invite
-```sh tab="OTP"
- ./bin/pleroma_ctl user revoke_invite <token>
-```
 
-```sh tab="From Source"
-mix pleroma.user revoke_invite <token>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user revoke_invite <token>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user revoke_invite <token>
+    ```
 
 
 ## Delete a user
-```sh tab="OTP"
- ./bin/pleroma_ctl user rm <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user rm <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user rm <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user rm <nickname>
+    ```
 
 
 ## Delete user's posts and interactions
-```sh tab="OTP"
- ./bin/pleroma_ctl user delete_activities <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user delete_activities <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user delete_activities <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user delete_activities <nickname>
+    ```
 
 
 ## Sign user out from all applications (delete user's OAuth tokens and authorizations)
-```sh tab="OTP"
- ./bin/pleroma_ctl user sign_out <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user sign_out <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user sign_out <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user sign_out <nickname>
+    ```
 
 
 ## Deactivate or activate a user
-```sh tab="OTP"
- ./bin/pleroma_ctl user toggle_activated <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user toggle_activated <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user toggle_activated <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user toggle_activated <nickname>
+    ```
 
 
 ## Deactivate a user and unsubscribes local users from the user
-```sh tab="OTP"
- ./bin/pleroma_ctl user deactivate NICKNAME
-```
 
-```sh tab="From Source"
-mix pleroma.user deactivate NICKNAME
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user deactivate NICKNAME
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user deactivate NICKNAME
+    ```
 
 
 ## Deactivate all accounts from an instance and unsubscribe local users on it
-```sh tab="OTP"
- ./bin/pleroma_ctl user deactivate_all_from_instance <instance>
-```
 
-```sh tab="From Source"
-mix pleroma.user deactivate_all_from_instance <instance>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user deactivate_all_from_instance <instance>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user deactivate_all_from_instance <instance>
+    ```
 
 
 ## Create a password reset link for user
-```sh tab="OTP"
- ./bin/pleroma_ctl user reset_password <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user reset_password <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user reset_password <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user reset_password <nickname>
+    ```
 
 
 ## Disable Multi Factor Authentication (MFA/2FA) for a user
-```sh tab="OTP"
- ./bin/pleroma_ctl user reset_mfa <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user reset_mfa <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user reset_mfa <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user reset_mfa <nickname>
+    ```
 
 
 ## Set the value of the given user's settings
-```sh tab="OTP"
- ./bin/pleroma_ctl user set <nickname> [option ...]
-```
 
-```sh tab="From Source"
-mix pleroma.user set <nickname> [option ...]
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user set <nickname> [option ...]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user set <nickname> [option ...]
+    ```
 
 ### Options
+- `--admin`/`--no-admin` - whether the user should be an admin
+- `--confirmed`/`--no-confirmed` - whether the user account is confirmed
 - `--locked`/`--no-locked` - whether the user should be locked
 - `--moderator`/`--no-moderator` - whether the user should be a moderator
-- `--admin`/`--no-admin` - whether the user should be an admin
 
 ## Add tags to a user
-```sh tab="OTP"
- ./bin/pleroma_ctl user tag <nickname> <tags>
-```
 
-```sh tab="From Source"
-mix pleroma.user tag <nickname> <tags>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user tag <nickname> <tags>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user tag <nickname> <tags>
+    ```
 
 
 ## Delete tags from a user
-```sh tab="OTP"
- ./bin/pleroma_ctl user untag <nickname> <tags>
-```
 
-```sh tab="From Source"
-mix pleroma.user untag <nickname> <tags>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user untag <nickname> <tags>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user untag <nickname> <tags>
+    ```
 
 
 ## Toggle confirmation status of the user
-```sh tab="OTP"
- ./bin/pleroma_ctl user toggle_confirmed <nickname>
-```
 
-```sh tab="From Source"
-mix pleroma.user toggle_confirmed <nickname>
-```
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user toggle_confirmed <nickname>
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user toggle_confirmed <nickname>
+    ```
+
+## Set confirmation status for all regular active users
+*Admins and moderators are excluded*
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user confirm_all
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user confirm_all
+    ```
+
+## Revoke confirmation status for all regular active users
+*Admins and moderators are excluded*
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl user unconfirm_all
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.user unconfirm_all
+    ```

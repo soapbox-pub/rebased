@@ -11,6 +11,8 @@ defmodule Pleroma.HTTP.ExAws do
 
   @impl true
   def request(method, url, body \\ "", headers \\ [], http_opts \\ []) do
+    http_opts = Keyword.put_new(http_opts, :pool, :upload)
+
     case HTTP.request(method, url, body, headers, http_opts) do
       {:ok, env} ->
         {:ok, %{status_code: env.status, headers: env.headers, body: env.body}}

@@ -19,7 +19,21 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       tags: ["Emoji Packs"],
       summary: "Make request to another instance for emoji packs list",
       security: [%{"oAuth" => ["write"]}],
-      parameters: [url_param()],
+      parameters: [
+        url_param(),
+        Operation.parameter(
+          :page,
+          :query,
+          %Schema{type: :integer, default: 1},
+          "Page"
+        ),
+        Operation.parameter(
+          :page_size,
+          :query,
+          %Schema{type: :integer, default: 30},
+          "Number of emoji to return"
+        )
+      ],
       operationId: "PleromaAPI.EmojiPackController.remote",
       responses: %{
         200 => emoji_packs_response(),
@@ -175,111 +189,6 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
     }
   end
 
-  def add_file_operation do
-    %Operation{
-      tags: ["Emoji Packs"],
-      summary: "Add new file to the pack",
-      operationId: "PleromaAPI.EmojiPackController.add_file",
-      security: [%{"oAuth" => ["write"]}],
-      requestBody: request_body("Parameters", add_file_request(), required: true),
-      parameters: [name_param()],
-      responses: %{
-        200 => Operation.response("Files Object", "application/json", files_object()),
-        400 => Operation.response("Bad Request", "application/json", ApiError),
-        409 => Operation.response("Conflict", "application/json", ApiError)
-      }
-    }
-  end
-
-  defp add_file_request do
-    %Schema{
-      type: :object,
-      required: [:file],
-      properties: %{
-        file: %Schema{
-          description:
-            "File needs to be uploaded with the multipart request or link to remote file",
-          anyOf: [
-            %Schema{type: :string, format: :binary},
-            %Schema{type: :string, format: :uri}
-          ]
-        },
-        shortcode: %Schema{
-          type: :string,
-          description:
-            "Shortcode for new emoji, must be unique for all emoji. If not sended, shortcode will be taken from original filename."
-        },
-        filename: %Schema{
-          type: :string,
-          description:
-            "New emoji file name. If not specified will be taken from original filename."
-        }
-      }
-    }
-  end
-
-  def update_file_operation do
-    %Operation{
-      tags: ["Emoji Packs"],
-      summary: "Add new file to the pack",
-      operationId: "PleromaAPI.EmojiPackController.update_file",
-      security: [%{"oAuth" => ["write"]}],
-      requestBody: request_body("Parameters", update_file_request(), required: true),
-      parameters: [name_param()],
-      responses: %{
-        200 => Operation.response("Files Object", "application/json", files_object()),
-        400 => Operation.response("Bad Request", "application/json", ApiError),
-        409 => Operation.response("Conflict", "application/json", ApiError)
-      }
-    }
-  end
-
-  defp update_file_request do
-    %Schema{
-      type: :object,
-      required: [:shortcode, :new_shortcode, :new_filename],
-      properties: %{
-        shortcode: %Schema{
-          type: :string,
-          description: "Emoji file shortcode"
-        },
-        new_shortcode: %Schema{
-          type: :string,
-          description: "New emoji file shortcode"
-        },
-        new_filename: %Schema{
-          type: :string,
-          description: "New filename for emoji file"
-        },
-        force: %Schema{
-          type: :boolean,
-          description: "With true value to overwrite existing emoji with new shortcode",
-          default: false
-        }
-      }
-    }
-  end
-
-  def delete_file_operation do
-    %Operation{
-      tags: ["Emoji Packs"],
-      summary: "Delete emoji file from pack",
-      operationId: "PleromaAPI.EmojiPackController.delete_file",
-      security: [%{"oAuth" => ["write"]}],
-      parameters: [
-        name_param(),
-        Operation.parameter(:shortcode, :query, :string, "File shortcode",
-          example: "cofe",
-          required: true
-        )
-      ],
-      responses: %{
-        200 => Operation.response("Files Object", "application/json", files_object()),
-        400 => Operation.response("Bad Request", "application/json", ApiError)
-      }
-    }
-  end
-
   def import_from_filesystem_operation do
     %Operation{
       tags: ["Emoji Packs"],
@@ -297,7 +206,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
   end
 
   defp name_param do
-    Operation.parameter(:name, :path, :string, "Pack Name", example: "cofe", required: true)
+    Operation.parameter(:name, :query, :string, "Pack Name", example: "cofe", required: true)
   end
 
   defp url_param do

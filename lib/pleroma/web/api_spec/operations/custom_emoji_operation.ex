@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
           type: :object,
           properties: %{
             category: %Schema{type: :string},
-            tags: %Schema{type: :array}
+            tags: %Schema{type: :array, items: %Schema{type: :string}}
           }
         }
       ],

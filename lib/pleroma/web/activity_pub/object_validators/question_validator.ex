@@ -7,9 +7,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
-  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
 
@@ -19,10 +20,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   # Extends from NoteValidator
   embedded_schema do
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
-    field(:bto, {:array, :string}, default: [])
-    field(:bcc, {:array, :string}, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     # TODO: Write type
     field(:tag, {:array, :map}, default: [])
     field(:type, :string)
@@ -35,20 +36,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:attributedTo, ObjectValidators.ObjectID)
     field(:summary, :string)
     field(:published, ObjectValidators.DateTime)
-    # TODO: Write type
-    field(:emoji, :map, default: %{})
+    field(:emoji, ObjectValidators.Emoji, default: %{})
     field(:sensitive, :boolean, default: false)
     embeds_many(:attachment, AttachmentValidator)
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
-    field(:inReplyTo, :string)
-    field(:uri, ObjectValidators.Uri)
+    field(:inReplyTo, ObjectValidators.ObjectID)
+    field(:url, ObjectValidators.Uri)
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
-    field(:likes, {:array, :string}, default: [])
-    field(:announcements, {:array, :string}, default: [])
+    field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
 
     field(:closed, ObjectValidators.DateTime)
     field(:voters, {:array, ObjectValidators.ObjectID}, default: [])
@@ -81,27 +81,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     end
   end
 
-  # based on Pleroma.Web.ActivityPub.Utils.lazy_put_objects_defaults
-  defp fix_defaults(data) do
-    %{data: %{"id" => context}, id: context_id} =
-      Utils.create_context(data["context"] || data["conversation"])
-
-    data
-    |> Map.put_new_lazy("published", &Utils.make_date/0)
-    |> Map.put_new("context", context)
-    |> Map.put_new("context_id", context_id)
-  end
-
-  defp fix_attribution(data) do
-    data
-    |> Map.put_new("actor", data["attributedTo"])
-  end
-
   defp fix(data) do
     data
-    |> fix_attribution()
+    |> CommonFixes.fix_defaults()
+    |> CommonFixes.fix_attribution()
+    |> Transmogrifier.fix_emoji()
     |> fix_closed()
-    |> fix_defaults()
   end
 
   def changeset(struct, data) do
@@ -117,7 +102,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

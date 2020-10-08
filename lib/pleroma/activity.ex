@@ -7,7 +7,6 @@ defmodule Pleroma.Activity do
 
   alias Pleroma.Activity
   alias Pleroma.Activity.Queries
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Bookmark
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -59,8 +58,6 @@ defmodule Pleroma.Activity do
     # As a convenience, Activity.with_preloaded_object() sets up an inner join and preload for the
     # typical case.
     has_one(:object, Object, on_delete: :nothing, foreign_key: :id)
-
-    has_one(:expiration, ActivityExpiration, on_delete: :delete_all)
 
     timestamps()
   end
@@ -304,14 +301,14 @@ defmodule Pleroma.Activity do
     |> Repo.all()
   end
 
-  def follow_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+  def follow_requests_for_actor(%User{ap_id: ap_id}) do
     ap_id
     |> Queries.by_object_id()
     |> Queries.by_type("Follow")
     |> where([a], fragment("? ->> 'state' = 'pending'", a.data))
   end
 
-  def following_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+  def following_requests_for_actor(%User{ap_id: ap_id}) do
     Queries.by_type("Follow")
     |> where([a], fragment("?->>'state' = 'pending'", a.data))
     |> where([a], a.actor == ^ap_id)
@@ -339,5 +336,11 @@ defmodule Pleroma.Activity do
     else
       _ -> nil
     end
+  end
+
+  @spec pinned_by_actor?(Activity.t()) :: boolean()
+  def pinned_by_actor?(%Activity{} = activity) do
+    actor = user_actor(activity)
+    activity.id in actor.pinned_activities
   end
 end

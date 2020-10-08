@@ -4,60 +4,72 @@
 
 defmodule Pleroma.Web.MediaProxy do
   alias Pleroma.Config
+  alias Pleroma.Helpers.UriHelper
   alias Pleroma.Upload
   alias Pleroma.Web
   alias Pleroma.Web.MediaProxy.Invalidation
 
   @base64_opts [padding: false]
+  @cache_table :banned_urls_cache
+
+  def cache_table, do: @cache_table
 
   @spec in_banned_urls(String.t()) :: boolean()
-  def in_banned_urls(url), do: elem(Cachex.exists?(:banned_urls_cache, url(url)), 1)
+  def in_banned_urls(url), do: elem(Cachex.exists?(@cache_table, url(url)), 1)
 
   def remove_from_banned_urls(urls) when is_list(urls) do
-    Cachex.execute!(:banned_urls_cache, fn cache ->
+    Cachex.execute!(@cache_table, fn cache ->
       Enum.each(Invalidation.prepare_urls(urls), &Cachex.del(cache, &1))
     end)
   end
 
   def remove_from_banned_urls(url) when is_binary(url) do
-    Cachex.del(:banned_urls_cache, url(url))
+    Cachex.del(@cache_table, url(url))
   end
 
   def put_in_banned_urls(urls) when is_list(urls) do
-    Cachex.execute!(:banned_urls_cache, fn cache ->
+    Cachex.execute!(@cache_table, fn cache ->
       Enum.each(Invalidation.prepare_urls(urls), &Cachex.put(cache, &1, true))
     end)
   end
 
   def put_in_banned_urls(url) when is_binary(url) do
-    Cachex.put(:banned_urls_cache, url(url), true)
+    Cachex.put(@cache_table, url(url), true)
   end
 
   def url(url) when is_nil(url) or url == "", do: nil
   def url("/" <> _ = url), do: url
 
   def url(url) do
-    if disabled?() or not url_proxiable?(url) do
-      url
-    else
+    if enabled?() and url_proxiable?(url) do
       encode_url(url)
+    else
+      url
     end
   end
 
   @spec url_proxiable?(String.t()) :: boolean()
   def url_proxiable?(url) do
-    if local?(url) or whitelisted?(url) do
-      false
+    not local?(url) and not whitelisted?(url)
+  end
+
+  def preview_url(url, preview_params \\ []) do
+    if preview_enabled?() do
+      encode_preview_url(url, preview_params)
     else
-      true
+      url(url)
     end
   end
 
-  defp disabled?, do: !Config.get([:media_proxy, :enabled], false)
+  def enabled?, do: Config.get([:media_proxy, :enabled], false)
 
-  defp local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+  # Note: media proxy must be enabled for media preview proxy in order to load all
+  #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
+  def preview_enabled?, do: enabled?() and !!Config.get([:media_preview_proxy, :enabled])
 
-  defp whitelisted?(url) do
+  def local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+
+  def whitelisted?(url) do
     %{host: domain} = URI.parse(url)
 
     mediaproxy_whitelist_domains =
@@ -82,15 +94,27 @@ defmodule Pleroma.Web.MediaProxy do
 
   defp maybe_get_domain_from_url(domain), do: domain
 
-  def encode_url(url) do
+  defp base64_sig64(url) do
     base64 = Base.url_encode64(url, @base64_opts)
 
     sig64 =
       base64
-      |> signed_url
+      |> signed_url()
       |> Base.url_encode64(@base64_opts)
 
+    {base64, sig64}
+  end
+
+  def encode_url(url) do
+    {base64, sig64} = base64_sig64(url)
+
     build_url(sig64, base64, filename(url))
+  end
+
+  def encode_preview_url(url, preview_params \\ []) do
+    {base64, sig64} = base64_sig64(url)
+
+    build_preview_url(sig64, base64, filename(url), preview_params)
   end
 
   def decode_url(sig, url) do
@@ -110,15 +134,53 @@ defmodule Pleroma.Web.MediaProxy do
     if path = URI.parse(url_or_path).path, do: Path.basename(path)
   end
 
-  def build_url(sig_base64, url_base64, filename \\ nil) do
+  def base_url do
+    Config.get([:media_proxy, :base_url], Web.base_url())
+  end
+
+  defp proxy_url(path, sig_base64, url_base64, filename) do
     [
-      Config.get([:media_proxy, :base_url], Web.base_url()),
-      "proxy",
+      base_url(),
+      path,
       sig_base64,
       url_base64,
       filename
     ]
     |> Enum.filter(& &1)
     |> Path.join()
+  end
+
+  def build_url(sig_base64, url_base64, filename \\ nil) do
+    proxy_url("proxy", sig_base64, url_base64, filename)
+  end
+
+  def build_preview_url(sig_base64, url_base64, filename \\ nil, preview_params \\ []) do
+    uri = proxy_url("proxy/preview", sig_base64, url_base64, filename)
+
+    UriHelper.modify_uri_params(uri, preview_params)
+  end
+
+  def verify_request_path_and_url(
+        %Plug.Conn{params: %{"filename" => _}, request_path: request_path},
+        url
+      ) do
+    verify_request_path_and_url(request_path, url)
+  end
+
+  def verify_request_path_and_url(request_path, url) when is_binary(request_path) do
+    filename = filename(url)
+
+    if filename && not basename_matches?(request_path, filename) do
+      {:wrong_filename, filename}
+    else
+      :ok
+    end
+  end
+
+  def verify_request_path_and_url(_, _), do: :ok
+
+  defp basename_matches?(path, filename) do
+    basename = Path.basename(path)
+    basename == filename or URI.decode(basename) == filename or URI.encode(basename) == filename
   end
 end

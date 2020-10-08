@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   """
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.FollowingRelationship
@@ -16,13 +15,69 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.BackgroundWorker
 
+  require Logger
+
   def handle(object, meta \\ [])
+
+  # Task this handles
+  # - Follows
+  # - Sends a notification
+  def handle(
+        %{
+          data: %{
+            "actor" => actor,
+            "type" => "Accept",
+            "object" => follow_activity_id
+          }
+        } = object,
+        meta
+      ) do
+    with %Activity{actor: follower_id} = follow_activity <-
+           Activity.get_by_ap_id(follow_activity_id),
+         %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
+      Notification.update_notification_type(followed, follow_activity)
+      User.update_follower_count(followed)
+      User.update_following_count(follower)
+    end
+
+    {:ok, object, meta}
+  end
+
+  # Task this handles
+  # - Rejects all existing follow activities for this person
+  # - Updates the follow state
+  # - Dismisses notification
+  def handle(
+        %{
+          data: %{
+            "actor" => actor,
+            "type" => "Reject",
+            "object" => follow_activity_id
+          }
+        } = object,
+        meta
+      ) do
+    with %Activity{actor: follower_id} = follow_activity <-
+           Activity.get_by_ap_id(follow_activity_id),
+         %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
+      FollowingRelationship.update(follower, followed, :follow_reject)
+      Notification.dismiss(follow_activity)
+    end
+
+    {:ok, object, meta}
+  end
 
   # Tasks this handle
   # - Follows if possible
@@ -44,33 +99,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          {_, {:ok, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
       if followed.local && !followed.locked do
-        Utils.update_follow_state_for_all(object, "accept")
-        FollowingRelationship.update(follower, followed, :follow_accept)
-        User.update_follower_count(followed)
-        User.update_following_count(follower)
-
-        %{
-          to: [following_user],
-          actor: followed,
-          object: follow_id,
-          local: true
-        }
-        |> ActivityPub.accept()
+        {:ok, accept_data, _} = Builder.accept(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
       end
     else
-      {:following, {:error, _}, follower, followed} ->
-        Utils.update_follow_state_for_all(object, "reject")
-        FollowingRelationship.update(follower, followed, :follow_reject)
-
-        if followed.local do
-          %{
-            to: [follower.ap_id],
-            actor: followed,
-            object: follow_id,
-            local: true
-          }
-          |> ActivityPub.reject()
-        end
+      {:following, {:error, _}, _follower, followed} ->
+        {:ok, reject_data, _} = Builder.reject(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
 
       _ ->
         nil
@@ -152,10 +187,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Object.increase_replies_count(in_reply_to)
       end
 
-      if expires_at = activity.data["expires_at"] do
-        ActivityExpiration.create(activity, expires_at)
-      end
-
       BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       meta =
@@ -217,13 +248,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Stream out the activity
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
-      Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)
+      Object.normalize(deleted_object, false) ||
+        User.get_cached_by_ap_id(deleted_object)
 
     result =
       case deleted_object do
         %Object{} ->
           with {:ok, deleted_object, activity} <- Object.delete(deleted_object),
-               %User{} = user <- User.get_cached_by_ap_id(deleted_object.data["actor"]) do
+               {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
+               %User{} = user <- User.get_cached_by_ap_id(actor) do
             User.remove_pinnned_activity(user, activity)
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
@@ -237,6 +270,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
             :ok
+          else
+            {:actor, _} ->
+              Logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
+              :no_object_actor
           end
 
         %User{} ->
@@ -298,7 +335,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
-  def handle_object_creation(%{"type" => "Question"} = object, meta) do
+  def handle_object_creation(%{"type" => objtype} = object, meta)
+      when objtype in ~w[Audio Video Question Event Article] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end
