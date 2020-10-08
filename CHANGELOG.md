@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
 - Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
 - Mix task option for force-unfollowing relays
+- Ability to set ActivityPub aliases for follower migration.
 
 ### Changed
 
@@ -182,7 +183,6 @@ switched to a new configuration mechanism, however it was not officially removed
 - Support pagination in emoji packs API (for packs and for files in pack)
 - Support for viewing instances favicons next to posts and accounts
 - Added Pleroma.Upload.Filter.Exiftool as an alternate EXIF stripping mechanism targeting GPS/location metadata.
-- Ability to set ActivityPub aliases for follower migration.
 - "By approval" registrations mode.
 - Configuration: Added `:welcome` settings for the welcome message to newly registered users. You can send a welcome message as a direct message, chat or email.
 - Ability to hide favourites and emoji reactions in the API with `[:instance, :show_reactions]` config.
