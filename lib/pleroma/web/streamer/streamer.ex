@@ -57,6 +57,15 @@ defmodule Pleroma.Web.Streamer do
     {:ok, "hashtag:" <> tag}
   end
 
+  # Allow remote instance streams.
+  def get_topic("public:remote", _user, _oauth_token, %{"instance" => instance} = _params) do
+    {:ok, "public:remote:" <> instance}
+  end
+
+  def get_topic("public:remote:media", _user, _oauth_token, %{"instance" => instance} = _params) do
+    {:ok, "public:remote:media:" <> instance}
+  end
+
   # Expand user streams.
   def get_topic(
         stream,

@@ -93,6 +93,13 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
 
       refute Enum.member?(topics, "hashtag:2")
     end
+
+    test "non-local action produces public:remote topic", %{activity: activity} do
+      activity = %{activity | local: false, actor: "https://lain.com/users/lain"}
+      topics = Topics.get_activity_topics(activity)
+
+      assert Enum.member?(topics, "public:remote:lain.com")
+    end
   end
 
   describe "public visibility create events with attachments" do
@@ -123,6 +130,13 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
       topics = Topics.get_activity_topics(activity)
 
       refute Enum.member?(topics, "public:local:media")
+    end
+
+    test "non-local action produces public:remote:media topic", %{activity: activity} do
+      activity = %{activity | local: false, actor: "https://lain.com/users/lain"}
+      topics = Topics.get_activity_topics(activity)
+
+      assert Enum.member?(topics, "public:remote:media:lain.com")
     end
   end
 

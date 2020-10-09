@@ -29,6 +29,14 @@ defmodule Pleroma.Web.StreamerTest do
       assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", nil, nil)
     end
 
+    test "allows instance streams" do
+      assert {:ok, "public:remote:lain.com"} =
+               Streamer.get_topic("public:remote", nil, nil, %{"instance" => "lain.com"})
+
+      assert {:ok, "public:remote:media:lain.com"} =
+               Streamer.get_topic("public:remote:media", nil, nil, %{"instance" => "lain.com"})
+    end
+
     test "allows hashtag streams" do
       assert {:ok, "hashtag:cofe"} = Streamer.get_topic("hashtag", nil, nil, %{"tag" => "cofe"})
     end
