@@ -63,7 +63,7 @@ defmodule Pleroma.Emails.AdminEmailTest do
     assert res.html_body == """
            <p>New account for review: <a href="#{account_url}">@#{account.nickname}</a></p>
            <blockquote>Plz let me in</blockquote>
-           <a href="http://localhost:4001/pleroma/admin">Visit AdminFE</a>
+           <a href="http://localhost:4001/pleroma/admin/#/users/#{account.id}/">Visit AdminFE</a>
            """
   end
 end
