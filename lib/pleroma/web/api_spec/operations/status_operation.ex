@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             "application/json",
             %Schema{oneOf: [Status, ScheduledStatus]}
           ),
-        422 => Operation.response("Bad Request", "application/json", ApiError)
+        422 => Operation.response("Bad Request / MRF Rejection", "application/json", ApiError)
       }
     }
   end

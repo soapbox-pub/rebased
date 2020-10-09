@@ -44,6 +44,22 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: HTTP 200 on success, 500 on error
 * Note: Users that can't be followed are silently skipped.
 
+## `/api/pleroma/blocks_import`
+### Imports your blocks.
+* Method: `POST`
+* Authentication: required
+* Params:
+    * `list`: STRING or FILE containing a whitespace-separated list of accounts to block
+* Response: HTTP 200 on success, 500 on error
+
+## `/api/pleroma/mutes_import`
+### Imports your mutes.
+* Method: `POST`
+* Authentication: required
+* Params:
+    * `list`: STRING or FILE containing a whitespace-separated list of accounts to mute
+* Response: HTTP 200 on success, 500 on error
+
 ## `/api/pleroma/captcha`
 ### Get a new captcha
 * Method: `GET`
@@ -362,44 +378,43 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params: None
 * Response: JSON, returns a list of Mastodon Conversation entities that were marked as read (200 - healthy, 503 unhealthy).
 
-## `GET /api/pleroma/emoji/packs/import`
-### Imports packs from filesystem
+## `GET /api/pleroma/emoji/pack?name=:name`
+
+### Get pack.json for the pack
+
 * Method `GET`
-* Authentication: required
-* Params: None
-* Response: JSON, returns a list of imported packs.
-
-## `GET /api/pleroma/emoji/packs/remote`
-### Make request to another instance for packs list
-* Method `GET`
-* Authentication: required
+* Authentication: not required
 * Params:
-  * `url`: url of the instance to get packs from
-* Response: JSON with the pack list, hashmap with pack name and pack contents
+  * `page`: page number for files (default 1)
+  * `page_size`: page size for files (default 30)
+* Response: JSON, pack json with `files`, `files_count` and `pack` keys with 200 status or 404 if the pack does not exist.
 
-## `POST /api/pleroma/emoji/packs/download`
-### Download pack from another instance
-* Method `POST`
-* Authentication: required
-* Params:
-  * `url`: url of the instance to download from
-  * `name`: pack to download from that instance
-  * `as`: (*optional*) name how to save pack
-* Response: JSON, "ok" with 200 status if the pack was downloaded, or 500 if there were
-  errors downloading the pack
+```json
+{
+  "files": {...},
+  "files_count": 0, // emoji count in pack
+  "pack": {...}
+}
+```
 
-## `POST /api/pleroma/emoji/packs/:name`
+## `POST /api/pleroma/emoji/pack?name=:name`
+
 ### Creates an empty pack
+
 * Method `POST`
-* Authentication: required
-* Params: None
+* Authentication: required (admin)
+* Params:
+  * `name`: pack name
 * Response: JSON, "ok" and 200 status or 409 if the pack with that name already exists
 
-## `PATCH /api/pleroma/emoji/packs/:name`
+## `PATCH /api/pleroma/emoji/pack?name=:name`
+
 ### Updates (replaces) pack metadata
+
 * Method `PATCH`
-* Authentication: required
+* Authentication: required (admin)
 * Params:
+  * `name`: pack name
   * `metadata`: metadata to replace the old one
     * `license`: Pack license
     * `homepage`: Pack home page url
@@ -410,39 +425,85 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, updated "metadata" section of the pack and 200 status or 400 if there was a
   problem with the new metadata (the error is specified in the "error" part of the response JSON)
 
-## `DELETE /api/pleroma/emoji/packs/:name`
+## `DELETE /api/pleroma/emoji/pack?name=:name`
+
 ### Delete a custom emoji pack
+
 * Method `DELETE`
-* Authentication: required
-* Params: None
+* Authentication: required (admin)
+* Params:
+  * `name`: pack name
 * Response: JSON, "ok" and 200 status or 500 if there was an error deleting the pack
 
-## `POST /api/pleroma/emoji/packs/:name/files`
-### Add new file to the pack
-* Method `POST`
-* Authentication: required
+## `GET /api/pleroma/emoji/packs/import`
+
+### Imports packs from filesystem
+
+* Method `GET`
+* Authentication: required (admin)
+* Params: None
+* Response: JSON, returns a list of imported packs.
+
+## `GET /api/pleroma/emoji/packs/remote`
+
+### Make request to another instance for packs list
+
+* Method `GET`
+* Authentication: required (admin)
 * Params:
+  * `url`: url of the instance to get packs from
+  * `page`: page number for packs (default 1)
+  * `page_size`: page size for packs (default 50)
+* Response: JSON with the pack list, hashmap with pack name and pack contents
+
+## `POST /api/pleroma/emoji/packs/download`
+
+### Download pack from another instance
+
+* Method `POST`
+* Authentication: required (admin)
+* Params:
+  * `url`: url of the instance to download from
+  * `name`: pack to download from that instance
+  * `as`: (*optional*) name how to save pack
+* Response: JSON, "ok" with 200 status if the pack was downloaded, or 500 if there were
+  errors downloading the pack
+
+## `POST /api/pleroma/emoji/packs/files?name=:name`
+
+### Add new file to the pack
+
+* Method `POST`
+* Authentication: required (admin)
+* Params:
+  * `name`: pack name
   * `file`: file needs to be uploaded with the multipart request or link to remote file.
   * `shortcode`: (*optional*) shortcode for new emoji, must be unique for all emoji. If not sended, shortcode will be taken from original filename.
   * `filename`: (*optional*) new emoji file name. If not specified will be taken from original filename.
 * Response: JSON, list of files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
-## `PATCH /api/pleroma/emoji/packs/:name/files`
+## `PATCH /api/pleroma/emoji/packs/files?name=:name`
+
 ### Update emoji file from pack
+
 * Method `PATCH`
-* Authentication: required
+* Authentication: required (admin)
 * Params:
+  * `name`: pack name
   * `shortcode`: emoji file shortcode
   * `new_shortcode`: new emoji file shortcode
   * `new_filename`: new filename for emoji file
   * `force`: (*optional*) with true value to overwrite existing emoji with new shortcode
 * Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
-## `DELETE /api/pleroma/emoji/packs/:name/files`
+## `DELETE /api/pleroma/emoji/packs/files?name=:name`
+
 ### Delete emoji file from pack
+
 * Method `DELETE`
-* Authentication: required
+* Authentication: required (admin)
 * Params:
+  * `name`: pack name
   * `shortcode`: emoji file shortcode
 * Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
@@ -467,30 +528,14 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 }
 ```
 
-## `GET /api/pleroma/emoji/packs/:name`
+## `GET /api/pleroma/emoji/packs/archive?name=:name`
 
-### Get pack.json for the pack
+### Requests a local pack archive from the instance
 
 * Method `GET`
 * Authentication: not required
 * Params:
-  * `page`: page number for files (default 1)
-  * `page_size`: page size for files (default 30)
-* Response: JSON, pack json with `files`, `files_count` and `pack` keys with 200 status or 404 if the pack does not exist.
-
-```json
-{
-  "files": {...},
-  "files_count": 0, // emoji count in pack
-  "pack": {...}
-}
-```
-
-## `GET /api/pleroma/emoji/packs/:name/archive`
-### Requests a local pack archive from the instance
-* Method `GET`
-* Authentication: not required
-* Params: None
+  * `name`: pack name
 * Response: the archive of the pack with a 200 status code, 403 if the pack is not set as shared,
   404 if the pack does not exist
 

@@ -130,6 +130,7 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
+         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -146,6 +147,16 @@ config :pleroma, Pleroma.Web.Endpoint,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
+  ]
+
+config :pleroma, :fed_sockets,
+  enabled: false,
+  connection_duration: :timer.hours(8),
+  rejection_duration: :timer.minutes(15),
+  fed_socket_fetches: [
+    default: 12_000,
+    interval: 3_000,
+    lazy: false
   ]
 
 # Configures Elixir's Logger
@@ -216,7 +227,6 @@ config :pleroma, :instance,
   allow_relay: true,
   public: true,
   quarantined_instances: [],
-  managed_config: true,
   static_dir: "instance/static/",
   allowed_post_formats: [
     "text/plain",
@@ -424,6 +434,8 @@ config :pleroma, :media_proxy,
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
+    # Note: max_read_duration defaults to Pleroma.ReverseProxy.max_read_duration_default/1
+    max_read_duration: 30_000,
     http: [
       follow_redirect: true,
       pool: :media
@@ -437,6 +449,14 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
   options: []
 
 config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
+
+# Note: media preview proxy depends on media proxy to be enabled
+config :pleroma, :media_preview_proxy,
+  enabled: false,
+  thumbnail_max_width: 600,
+  thumbnail_max_height: 600,
+  image_quality: 85,
+  min_content_length: 100 * 1024
 
 config :pleroma, :chat, enabled: true
 
@@ -533,6 +553,7 @@ config :pleroma, Oban,
     token_expiration: 5,
     federator_incoming: 50,
     federator_outgoing: 50,
+    ingestion_queue: 50,
     web_push: 50,
     mailer: 10,
     transmogrifier: 20,
@@ -656,7 +677,18 @@ config :pleroma, :rate_limit,
 
 config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
-config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
+config :pleroma, Pleroma.Plugs.RemoteIp,
+  enabled: true,
+  headers: ["x-forwarded-for"],
+  proxies: [],
+  reserved: [
+    "127.0.0.0/8",
+    "::1/128",
+    "fc00::/7",
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+  ]
 
 config :pleroma, :static_fe, enabled: false
 
@@ -742,8 +774,8 @@ config :pleroma, :pools,
   ],
   media: [
     size: 50,
-    max_waiting: 10,
-    recv_timeout: 10_000
+    max_waiting: 20,
+    recv_timeout: 15_000
   ],
   upload: [
     size: 25,
@@ -789,6 +821,8 @@ config :pleroma, :mrf,
 config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
+config :web_push_encryption, http_client: Pleroma.HTTP.WebPush
 
 config :pleroma, :instances_favicons, enabled: false
 

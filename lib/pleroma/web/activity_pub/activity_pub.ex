@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  @object_types ~w[ChatMessage Question Answer Audio Event]
+  @object_types ~w[ChatMessage Question Answer Audio Video Event Article]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
@@ -154,8 +154,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:remote_limit_pass, _} ->
         {:error, :remote_limit}
 
-      {:reject, reason} ->
-        {:error, reason}
+      {:reject, _} = e ->
+        {:error, e}
     end
   end
 
@@ -767,7 +767,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_replies(query, %{
-         reply_filtering_user: user,
+         reply_filtering_user: %User{} = user,
          reply_visibility: "self"
        }) do
     from(
@@ -783,14 +783,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_replies(query, %{
-         reply_filtering_user: user,
+         reply_filtering_user: %User{} = user,
          reply_visibility: "following"
        }) do
     from(
       [activity, object] in query,
       where:
         fragment(
-          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          """
+          ?->>'type' != 'Create'     -- This isn't a Create      
+          OR ?->>'inReplyTo' is null -- this isn't a reply
+          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends, 
+                                     -- unless they are the author (because authors 
+                                     -- are also part of the recipients). This leads
+                                     -- to a bug that self-replies by friends won't
+                                     -- show up.
+          OR ? = ?                   -- The actor is us
+          """,
+          activity.data,
           object.data,
           ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
           activity.recipients,
@@ -841,7 +851,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     from(
       [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
-      where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
+      where:
+        fragment(
+          "((not (? && ?)) or ? = ?)",
+          activity.recipients,
+          ^blocked_ap_ids,
+          activity.actor,
+          ^user.ap_id
+        ),
       where:
         fragment(
           "recipients_contain_blocked_domains(?, ?) = false",
@@ -1270,10 +1287,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
+           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address,
+             force_http: true
+           ),
          {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
+           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address, force_http: true),
          {:ok, hide_followers} <- collection_private(followers_data) do
       {:ok,
        %{
@@ -1347,8 +1366,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id) do
-    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
+  def fetch_and_prepare_user_from_ap_id(ap_id, opts \\ []) do
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id, opts),
          {:ok, data} <- user_data_from_user_object(data) do
       {:ok, maybe_update_follow_information(data)}
     else
@@ -1390,13 +1409,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def make_user_from_ap_id(ap_id) do
+  def make_user_from_ap_id(ap_id, opts \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
 
     if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, opts) do
         if user do
           user
           |> User.remote_user_changeset(data)

@@ -158,7 +158,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
             "The messages in the chat",
             "application/json",
             chat_messages_response()
-          )
+          ),
+        404 => Operation.response("Not Found", "application/json", ApiError)
       },
       security: [
         %{
@@ -184,7 +185,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
             "application/json",
             ChatMessage
           ),
-        400 => Operation.response("Bad Request", "application/json", ApiError)
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        422 => Operation.response("MRF Rejection", "application/json", ApiError)
       },
       security: [
         %{

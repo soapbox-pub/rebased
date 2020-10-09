@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       operationId: "AdminAPI.RelayController.unfollow",
       security: [%{"oAuth" => ["write:follows"]}],
       parameters: admin_api_params(),
-      requestBody: request_body("Parameters", relay_url()),
+      requestBody: request_body("Parameters", relay_unfollow()),
       responses: %{
         200 =>
           Operation.response("Status", "application/json", %Schema{
@@ -88,6 +88,16 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       type: :object,
       properties: %{
         relay_url: %Schema{type: :string, format: :uri}
+      }
+    }
+  end
+
+  defp relay_unfollow do
+    %Schema{
+      type: :object,
+      properties: %{
+        relay_url: %Schema{type: :string, format: :uri},
+        force: %Schema{type: :boolean, default: false}
       }
     }
   end

@@ -41,6 +41,25 @@ Other than things bundled in the OTP release Pleroma depends on:
     apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot libmagic-dev
     ```
 
+### Installing optional packages
+
+Per [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+  * ImageMagick
+  * ffmpeg
+  * exiftool
+
+=== "Alpine"
+    ```
+    echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
+    apk update
+    apk add imagemagick ffmpeg exiftool
+    ```
+
+=== "Debian/Ubuntu"
+    ```
+    apt install imagemagick ffmpeg libimage-exiftool-perl
+    ```
+
 ## Setup
 ### Configuring PostgreSQL
 #### (Optional) Installing RUM indexes
@@ -83,6 +102,8 @@ It is encouraged to check [Optimizing your PostgreSQL performance](../configurat
 If you are using PostgreSQL 12 or higher, add this to your Ecto database configuration
 
 ```elixir
+#
+config :pleroma, Pleroma.Repo,
 prepare: :named,
 parameters: [
   plan_cache_mode: "force_custom_plan"

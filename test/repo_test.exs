@@ -37,7 +37,9 @@ defmodule Pleroma.RepoTest do
 
     test "get one-to-many assoc from repo" do
       user = insert(:user)
-      notification = refresh_record(insert(:notification, user: user))
+
+      notification =
+        refresh_record(insert(:notification, user: user, activity: insert(:note_activity)))
 
       assert Repo.get_assoc(user, :notifications) == {:ok, [notification]}
     end
@@ -45,6 +47,34 @@ defmodule Pleroma.RepoTest do
     test "return error if has not assoc " do
       token = insert(:oauth_token, user: nil)
       assert Repo.get_assoc(token, :user) == {:error, :not_found}
+    end
+  end
+
+  describe "chunk_stream/3" do
+    test "fetch records one-by-one" do
+      users = insert_list(50, :user)
+
+      {fetch_users, 50} =
+        from(t in User)
+        |> Repo.chunk_stream(5)
+        |> Enum.reduce({[], 0}, fn %User{} = user, {acc, count} ->
+          {acc ++ [user], count + 1}
+        end)
+
+      assert users == fetch_users
+    end
+
+    test "fetch records in bulk" do
+      users = insert_list(50, :user)
+
+      {fetch_users, 10} =
+        from(t in User)
+        |> Repo.chunk_stream(5, :batches)
+        |> Enum.reduce({[], 0}, fn users, {acc, count} ->
+          {acc ++ users, count + 1}
+        end)
+
+      assert users == fetch_users
     end
   end
 end

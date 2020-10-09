@@ -26,38 +26,25 @@ defmodule Pleroma.Config.DeprecationWarnings do
       !!!DEPRECATION WARNING!!!
       You are using the old configuration mechanism for the hellthread filter. Please check config.md.
       """)
-    end
-  end
 
-  def mrf_user_allowlist do
-    config = Config.get(:mrf_user_allowlist)
-
-    if config && Enum.any?(config, fn {k, _} -> is_atom(k) end) do
-      rewritten =
-        Enum.reduce(Config.get(:mrf_user_allowlist), Map.new(), fn {k, v}, acc ->
-          Map.put(acc, to_string(k), v)
-        end)
-
-      Config.put(:mrf_user_allowlist, rewritten)
-
-      Logger.error("""
-      !!!DEPRECATION WARNING!!!
-      As of Pleroma 2.0.7, the `mrf_user_allowlist` setting changed of format.
-      Pleroma 2.1 will remove support for the old format. Please change your configuration to match this:
-
-      config :pleroma, :mrf_user_allowlist, #{inspect(rewritten, pretty: true)}
-      """)
+      :error
+    else
+      :ok
     end
   end
 
   def warn do
-    check_hellthread_threshold()
-    mrf_user_allowlist()
-    check_old_mrf_config()
-    check_media_proxy_whitelist_config()
-    check_welcome_message_config()
-    check_gun_pool_options()
-    check_activity_expiration_config()
+    with :ok <- check_hellthread_threshold(),
+         :ok <- check_old_mrf_config(),
+         :ok <- check_media_proxy_whitelist_config(),
+         :ok <- check_welcome_message_config(),
+         :ok <- check_gun_pool_options(),
+         :ok <- check_activity_expiration_config() do
+      :ok
+    else
+      _ ->
+        :error
+    end
   end
 
   def check_welcome_message_config do
@@ -70,10 +57,14 @@ defmodule Pleroma.Config.DeprecationWarnings do
     if use_old_config do
       Logger.error("""
       !!!DEPRECATION WARNING!!!
-      Your config is using the old namespace for Welcome messages configuration. You need to change to the new namespace:
-      \n* `config :pleroma, :instance, welcome_user_nickname` is now `config :pleroma, :welcome, :direct_message, :sender_nickname`
-      \n* `config :pleroma, :instance, welcome_message` is now `config :pleroma, :welcome, :direct_message, :message`
+      Your config is using the old namespace for Welcome messages configuration. You need to convert to the new namespace. e.g.,
+      \n* `config :pleroma, :instance, welcome_user_nickname` and `config :pleroma, :instance, welcome_message` are now equal to:
+      \n* `config :pleroma, :welcome, direct_message: [enabled: true, sender_nickname: "NICKNAME", message: "Your welcome message"]`"
       """)
+
+      :error
+    else
+      :ok
     end
   end
 
@@ -101,8 +92,11 @@ defmodule Pleroma.Config.DeprecationWarnings do
           end
       end)
 
-    if warning != "" do
+    if warning == "" do
+      :ok
+    else
       Logger.warn(warning_preface <> warning)
+      :error
     end
   end
 
@@ -115,6 +109,10 @@ defmodule Pleroma.Config.DeprecationWarnings do
       !!!DEPRECATION WARNING!!!
       Your config is using old format (only domain) for MediaProxy whitelist option. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
       """)
+
+      :error
+    else
+      :ok
     end
   end
 
@@ -124,7 +122,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     if timeout = pool_config[:await_up_timeout] do
       Logger.warn("""
       !!!DEPRECATION WARNING!!!
-      Your config is using old setting name `await_up_timeout` instead of `connect_timeout`. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+      Your config is using old setting `config :pleroma, :connections_pool, await_up_timeout`. Please change to `config :pleroma, :connections_pool, connect_timeout` to ensure compatibility with future releases.
       """)
 
       Config.put(:connections_pool, Keyword.put_new(pool_config, :connect_timeout, timeout))
@@ -157,6 +155,9 @@ defmodule Pleroma.Config.DeprecationWarnings do
       Logger.warn(Enum.join([warning_preface | pool_warnings]))
 
       Config.put(:pools, updated_config)
+      :error
+    else
+      :ok
     end
   end
 

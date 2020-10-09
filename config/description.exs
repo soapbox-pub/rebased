@@ -44,11 +44,13 @@ frontend_options = [
   },
   %{
     key: "git",
+    label: "Git Repository URL",
     type: :string,
     description: "URL of the git repository of the frontend"
   },
   %{
     key: "build_url",
+    label: "Build URL",
     type: :string,
     description:
       "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
@@ -56,6 +58,7 @@ frontend_options = [
   },
   %{
     key: "build_dir",
+    label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
   }
@@ -267,6 +270,19 @@ config :pleroma, :config_description, [
         suggestions: [
           "custom-file-name.{extension}"
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :fed_sockets,
+    type: :group,
+    description: "Websocket based federation",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enable FedSockets"
       }
     ]
   },
@@ -763,12 +779,6 @@ config :pleroma, :config_description, [
           "quarantined.com",
           "*.quarantined.com"
         ]
-      },
-      %{
-        key: :managed_config,
-        type: :boolean,
-        description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
       },
       %{
         key: :static_dir,
@@ -1880,6 +1890,7 @@ config :pleroma, :config_description, [
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
+          max_read_duration: 30_000,
           http: [
             follow_redirect: true,
             pool: :media
@@ -1899,6 +1910,11 @@ config :pleroma, :config_description, [
             description:
               "Limits the content length to be approximately the " <>
                 "specified length. It is validated with the `content-length` header and also verified when proxying."
+          },
+          %{
+            key: :max_read_duration,
+            type: :integer,
+            description: "Timeout (in milliseconds) of GET request to remote URI."
           },
           %{
             key: :http,
@@ -1943,6 +1959,43 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of hosts with scheme to bypass the mediaproxy",
         suggestions: ["http://example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :media_preview_proxy,
+    type: :group,
+    description: "Media preview proxy",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description:
+          "Enables proxying of remote media preview to the instance's proxy. Requires enabled media proxy."
+      },
+      %{
+        key: :thumbnail_max_width,
+        type: :integer,
+        description:
+          "Max width of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :thumbnail_max_height,
+        type: :integer,
+        description:
+          "Max height of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :image_quality,
+        type: :integer,
+        description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
+      },
+      %{
+        key: :min_content_length,
+        type: :integer,
+        description:
+          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
       }
     ]
   },
@@ -2395,7 +2448,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: Pleroma.Formatter,
-    label: "Auto Linker",
+    label: "Linkify",
     type: :group,
     description:
       "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
@@ -3212,20 +3265,22 @@ config :pleroma, :config_description, [
       %{
         key: :headers,
         type: {:list, :string},
-        description:
-          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Default: `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+        description: """
+          A list of strings naming the HTTP headers to use when deriving the true client IP. Default: `["x-forwarded-for"]`.
+        """
       },
       %{
         key: :proxies,
         type: {:list, :string},
         description:
-          "A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Default: `[]`."
+          "A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128."
       },
       %{
         key: :reserved,
         type: {:list, :string},
-        description:
-          "Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network)."
+        description: """
+          A list of reserved IP subnets in CIDR notation which should be ignored if found in `headers`. Defaults to `["127.0.0.0/8", "::1/128", "fc00::/7", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]`
+        """
       }
     ]
   },
@@ -3631,9 +3686,7 @@ config :pleroma, :config_description, [
         type: :map,
         description:
           "A map containing available frontends and parameters for their installation.",
-        children: [
-          frontend_options
-        ]
+        children: frontend_options
       }
     ]
   },

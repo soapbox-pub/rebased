@@ -19,6 +19,11 @@ config :logger, :console,
   level: :warn,
   format: "\n[$level] $message\n"
 
+config :pleroma, :fed_sockets,
+  enabled: false,
+  connection_duration: 5,
+  rejection_duration: 5
+
 config :pleroma, :auth, oauth_consumer_strategies: []
 
 config :pleroma, Pleroma.Upload,
@@ -77,8 +82,6 @@ config :web_push_encryption, :vapid_details,
   public_key:
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
-
-config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
 config :pleroma, Oban,
   queues: false,

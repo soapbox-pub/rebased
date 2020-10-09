@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-09-09 09:49+0000\n"
-"PO-Revision-Date: 2020-09-09 10:52+0000\n"
+"PO-Revision-Date: 2020-09-11 21:26+0000\n"
 "Last-Translator: tarteka <info@tarteka.net>\n"
 "Language-Team: Spanish <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/es/>\n"
@@ -94,52 +94,52 @@ msgid "must be less than %{number}"
 msgstr ""
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "debe ser mayor que %{number}"
 
 msgid "must be less than or equal to %{number}"
-msgstr ""
+msgstr "debe ser menor o igual que %{number}"
 
 msgid "must be greater than or equal to %{number}"
-msgstr ""
+msgstr "deber ser mayor o igual que %{number}"
 
 msgid "must be equal to %{number}"
-msgstr ""
+msgstr "deber ser igual a %{number}"
 
 #: lib/pleroma/web/common_api/common_api.ex:505
 #, elixir-format
 msgid "Account not found"
-msgstr ""
+msgstr "Cuenta no encontrada"
 
 #: lib/pleroma/web/common_api/common_api.ex:339
 #, elixir-format
 msgid "Already voted"
-msgstr ""
+msgstr "Ya has votado"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:359
 #, elixir-format
 msgid "Bad request"
-msgstr ""
+msgstr "Solicitud incorrecta"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:426
 #, elixir-format
 msgid "Can't delete object"
-msgstr ""
+msgstr "No se puede eliminar el objeto"
 
 #: lib/pleroma/web/controller_helper.ex:105
 #: lib/pleroma/web/controller_helper.ex:111
 #, elixir-format
 msgid "Can't display this activity"
-msgstr ""
+msgstr "No se puede mostrar esta actividad"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:285
 #, elixir-format
 msgid "Can't find user"
-msgstr ""
+msgstr "No se puede encontrar al usuario"
 
 #: lib/pleroma/web/pleroma_api/controllers/account_controller.ex:61
 #, elixir-format
 msgid "Can't get favorites"
-msgstr ""
+msgstr "No se puede obtener los favoritos"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:438
 #, elixir-format
@@ -149,7 +149,7 @@ msgstr ""
 #: lib/pleroma/web/common_api/utils.ex:563
 #, elixir-format
 msgid "Cannot post an empty status without attachments"
-msgstr ""
+msgstr "No se puede publicar un estado vacío y sin archivos adjuntos"
 
 #: lib/pleroma/web/common_api/utils.ex:511
 #, elixir-format

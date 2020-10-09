@@ -1510,6 +1510,56 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "GET /api/pleroma/admin/users/:nickname/chats" do
+    setup do
+      user = insert(:user)
+      recipients = insert_list(3, :user)
+
+      Enum.each(recipients, fn recipient ->
+        CommonAPI.post_chat_message(user, recipient, "yo")
+      end)
+
+      %{user: user}
+    end
+
+    test "renders user's chats", %{conn: conn, user: user} do
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
+
+      assert json_response(conn, 200) |> length() == 3
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthorized" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
+      %{conn: conn} = oauth_access(["read:chats"])
+      %{conn: conn, user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
+    end
+  end
+
+  describe "GET /api/pleroma/admin/users/:nickname/chats unauthenticated" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user)
+      CommonAPI.post_chat_message(user, recipient, "yo")
+      %{conn: build_conn(), user: user}
+    end
+
+    test "returns 403", %{conn: conn, user: user} do
+      conn
+      |> get("/api/pleroma/admin/users/#{user.nickname}/chats")
+      |> json_response(403)
+    end
+  end
+
   describe "GET /api/pleroma/admin/moderation_log" do
     setup do
       moderator = insert(:user, is_moderator: true)
@@ -1927,7 +1977,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                }"
 
       ObanHelpers.perform_all()
-      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(first_user))
+
+      Pleroma.Emails.UserEmail.account_confirmation_email(first_user)
+      # temporary hackney fix until hackney max_connections bug is fixed
+      # https://git.pleroma.social/pleroma/pleroma/-/issues/2101
+      |> Swoosh.Email.put_private(:hackney_options, ssl_options: [versions: [:"tlsv1.2"]])
+      |> assert_email_sent()
     end
   end
 

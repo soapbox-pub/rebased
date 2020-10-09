@@ -25,7 +25,6 @@ defmodule Pleroma.User do
   alias Pleroma.Object
   alias Pleroma.Registration
   alias Pleroma.Repo
-  alias Pleroma.RepoStreamer
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web
@@ -276,9 +275,9 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
-  def account_status(%User{approval_pending: true}), do: :approval_pending
+  def account_status(%User{local: true, approval_pending: true}), do: :approval_pending
 
-  def account_status(%User{confirmation_pending: true}) do
+  def account_status(%User{local: true, confirmation_pending: true}) do
     if Config.get([:instance, :account_activation_required]) do
       :confirmation_pending
     else
@@ -814,7 +813,8 @@ defmodule Pleroma.User do
   def send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{confirmation_pending: true} = user) do
+  def try_send_confirmation_email(%User{confirmation_pending: true, email: email} = user)
+      when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
       {:ok, :enqueued}
@@ -915,9 +915,7 @@ defmodule Pleroma.User do
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
-        {:ok, follower} =
-          follower
-          |> update_following_count()
+        {:ok, follower} = update_following_count(follower)
 
         {:ok, follower, followed}
 
@@ -1686,42 +1684,6 @@ defmodule Pleroma.User do
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
 
-  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
-  def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
-      when is_list(blocked_identifiers) do
-    Enum.map(
-      blocked_identifiers,
-      fn blocked_identifier ->
-        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, _block} <- CommonAPI.block(blocker, blocked) do
-          blocked
-        else
-          err ->
-            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
-  def perform(:follow_import, %User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    Enum.map(
-      followed_identifiers,
-      fn followed_identifier ->
-        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
-             {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
-          followed
-        else
-          err ->
-            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do
     User.Query.build(%{
@@ -1750,21 +1712,6 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    BackgroundWorker.enqueue("blocks_import", %{
-      "blocker_id" => blocker.id,
-      "blocked_identifiers" => blocked_identifiers
-    })
-  end
-
-  def follow_import(%User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    BackgroundWorker.enqueue("follow_import", %{
-      "follower_id" => follower.id,
-      "followed_identifiers" => followed_identifiers
-    })
-  end
-
   def delete_notifications_from_user_activities(%User{ap_id: ap_id}) do
     Notification
     |> join(:inner, [n], activity in assoc(n, :activity))
@@ -1775,7 +1722,7 @@ defmodule Pleroma.User do
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id
     |> Activity.Queries.by_actor()
-    |> RepoStreamer.chunk_stream(50)
+    |> Repo.chunk_stream(50, :batches)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity -> delete_activity(activity, user) end)
     end)
@@ -1821,12 +1768,12 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: Config.get([:markup, :scrub_policy])
 
-  def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
+  def fetch_by_ap_id(ap_id, opts \\ []), do: ActivityPub.make_user_from_ap_id(ap_id, opts)
 
-  def get_or_fetch_by_ap_id(ap_id) do
+  def get_or_fetch_by_ap_id(ap_id, opts \\ []) do
     cached_user = get_cached_by_ap_id(ap_id)
 
-    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id, opts)
 
     case {cached_user, maybe_fetched_user} do
       {_, {:ok, %User{} = user}} ->
@@ -1899,8 +1846,8 @@ defmodule Pleroma.User do
 
   def public_key(_), do: {:error, "key not found"}
 
-  def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
+  def get_public_key_for_ap_id(ap_id, opts \\ []) do
+    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id, opts),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
@@ -2123,6 +2070,13 @@ defmodule Pleroma.User do
     Enum.map(users, &toggle_confirmation/1)
   end
 
+  @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def need_confirmation(%User{} = user, bool) do
+    user
+    |> confirmation_changeset(need_confirmation: bool)
+    |> update_and_set_cache()
+  end
+
   def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do
     mascot
   end
@@ -2337,7 +2291,9 @@ defmodule Pleroma.User do
 
     # if pinned activity was scheduled for deletion, we reschedule it for deletion
     if data["expires_at"] do
-      {:ok, expires_at, _} = DateTime.from_iso8601(data["expires_at"])
+      # MRF.ActivityExpirationPolicy used UTC timestamps for expires_at in original implementation
+      {:ok, expires_at} =
+        data["expires_at"] |> Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime.cast()
 
       Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
         activity_id: id,

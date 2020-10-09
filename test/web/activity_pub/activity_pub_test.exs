@@ -1810,6 +1810,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Enum.map(& &1.id)
 
       assert activities_ids == []
+
+      activities_ids =
+        %{}
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, nil)
+        |> ActivityPub.fetch_public_activities()
+
+      assert activities_ids == []
     end
 
     test "home timeline", %{users: %{u1: user}} do
@@ -2167,6 +2175,86 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = User.get_by_id(orig_user.id)
 
       assert user.nickname == orig_user.nickname
+    end
+  end
+
+  describe "reply filtering" do
+    test "`following` still contains announcements by friends" do
+      user = insert(:user)
+      followed = insert(:user)
+      not_followed = insert(:user)
+
+      User.follow(user, followed)
+
+      {:ok, followed_post} = CommonAPI.post(followed, %{status: "Hello"})
+
+      {:ok, not_followed_to_followed} =
+        CommonAPI.post(not_followed, %{
+          status: "Also hello",
+          in_reply_to_status_id: followed_post.id
+        })
+
+      {:ok, retoot} = CommonAPI.repeat(not_followed_to_followed.id, followed)
+
+      params =
+        %{}
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:announce_filtering_user, user)
+        |> Map.put(:user, user)
+
+      activities =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      followed_post_id = followed_post.id
+      retoot_id = retoot.id
+
+      assert [%{id: ^followed_post_id}, %{id: ^retoot_id}] = activities
+
+      assert length(activities) == 2
+    end
+
+    # This test is skipped because, while this is the desired behavior,
+    # there seems to be no good way to achieve it with the method that
+    # we currently use for detecting to who a reply is directed.
+    # This is a TODO and should be fixed by a later rewrite of the code
+    # in question.
+    @tag skip: true
+    test "`following` still contains self-replies by friends" do
+      user = insert(:user)
+      followed = insert(:user)
+      not_followed = insert(:user)
+
+      User.follow(user, followed)
+
+      {:ok, followed_post} = CommonAPI.post(followed, %{status: "Hello"})
+      {:ok, not_followed_post} = CommonAPI.post(not_followed, %{status: "Also hello"})
+
+      {:ok, _followed_to_not_followed} =
+        CommonAPI.post(followed, %{status: "sup", in_reply_to_status_id: not_followed_post.id})
+
+      {:ok, _followed_self_reply} =
+        CommonAPI.post(followed, %{status: "Also cofe", in_reply_to_status_id: followed_post.id})
+
+      params =
+        %{}
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:announce_filtering_user, user)
+        |> Map.put(:user, user)
+
+      activities =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      assert length(activities) == 2
     end
   end
 end

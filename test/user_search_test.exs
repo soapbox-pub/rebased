@@ -17,12 +17,60 @@ defmodule Pleroma.UserSearchTest do
   describe "User.search" do
     setup do: clear_config([:instance, :limit_to_local_content])
 
+    test "returns a resolved user as the first result" do
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      user = insert(:user, %{nickname: "no_relation", ap_id: "https://lain.com/users/lain"})
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/users/lain", resolve: true)
+
+      assert first_user.id == user.id
+    end
+
+    test "returns a user with matching ap_id as the first result" do
+      user = insert(:user, %{nickname: "no_relation", ap_id: "https://lain.com/users/lain"})
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/users/lain")
+
+      assert first_user.id == user.id
+    end
+
+    test "doesn't die if two users have the same uri" do
+      insert(:user, %{uri: "https://gensokyo.2hu/@raymoo"})
+      insert(:user, %{uri: "https://gensokyo.2hu/@raymoo"})
+      assert [_first_user, _second_user] = User.search("https://gensokyo.2hu/@raymoo")
+    end
+
+    test "returns a user with matching uri as the first result" do
+      user =
+        insert(:user, %{
+          nickname: "no_relation",
+          ap_id: "https://lain.com/users/lain",
+          uri: "https://lain.com/@lain"
+        })
+
+      _user = insert(:user, %{nickname: "com_user"})
+
+      [first_user, _second_user] = User.search("https://lain.com/@lain")
+
+      assert first_user.id == user.id
+    end
+
     test "excludes invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})
 
       [found_user] = User.search("john")
       assert found_user.id == user.id
+    end
+
+    test "excludes users when discoverable is false" do
+      insert(:user, %{nickname: "john 3000", discoverable: false})
+      insert(:user, %{nickname: "john 3001"})
+
+      users = User.search("john")
+      assert Enum.count(users) == 1
     end
 
     test "excludes service actors from results" do

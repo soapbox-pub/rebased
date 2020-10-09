@@ -19,6 +19,9 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 
 * `nginx` (preferred, example configs for other reverse proxies can be found in the repo)
 * `certbot` (or any other ACME client for Let’s Encrypt certificates)
+* `ImageMagick`
+* `ffmpeg`
+* `exiftool`
 
 ### Prepare the system
 
@@ -49,6 +52,12 @@ sudo dpkg -i /tmp/erlang-solutions_2.0_all.deb
 ```shell
 sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
+```
+
+### Optional packages: [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md)
+
+```shell
+sudo apt install imagemagick ffmpeg libimage-exiftool-perl
 ```
 
 ### Install PleromaBE

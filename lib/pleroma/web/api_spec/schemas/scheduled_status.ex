@@ -27,9 +27,9 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
           media_ids: %Schema{type: :array, nullable: true, items: %Schema{type: :string}},
           sensitive: %Schema{type: :boolean, nullable: true},
           spoiler_text: %Schema{type: :string, nullable: true},
-          visibility: %Schema{type: VisibilityScope, nullable: true},
+          visibility: %Schema{allOf: [VisibilityScope], nullable: true},
           scheduled_at: %Schema{type: :string, format: :"date-time", nullable: true},
-          poll: %Schema{type: Poll, nullable: true},
+          poll: %Schema{allOf: [Poll], nullable: true},
           in_reply_to_id: %Schema{type: :string, nullable: true}
         }
       }

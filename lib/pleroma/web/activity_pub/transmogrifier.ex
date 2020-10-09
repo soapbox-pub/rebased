@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   A module to handle coding from internal to wire ActivityPub and back.
   """
   alias Pleroma.Activity
-  alias Pleroma.EarmarkRenderer
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Maps
   alias Pleroma.Object
@@ -45,7 +44,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_addressing
     |> fix_summary
     |> fix_type(options)
-    |> fix_content
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -274,24 +272,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "url", url["href"])
   end
 
-  def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
-    attachment =
-      Enum.find(url, fn x ->
-        media_type = x["mediaType"] || x["mimeType"] || ""
-
-        is_map(x) and String.starts_with?(media_type, "video/")
-      end)
-
-    link_element =
-      Enum.find(url, fn x -> is_map(x) and (x["mediaType"] || x["mimeType"]) == "text/html" end)
-
-    object
-    |> Map.put("attachment", [attachment])
-    |> Map.put("url", link_element["href"])
-  end
-
-  def fix_url(%{"type" => object_type, "url" => url} = object)
-      when object_type != "Video" and is_list(url) do
+  def fix_url(%{"url" => url} = object) when is_list(url) do
     first_element = Enum.at(url, 0)
 
     url_string =
@@ -309,7 +290,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_emoji(%{"tag" => tags} = object) when is_list(tags) do
     emoji =
       tags
-      |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
+      |> Enum.filter(fn data -> is_map(data) and data["type"] == "Emoji" and data["icon"] end)
       |> Enum.reduce(%{}, fn data, mapping ->
         name = String.trim(data["name"], ":")
 
@@ -370,18 +351,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_type(object, _), do: object
-
-  defp fix_content(%{"mediaType" => "text/markdown", "content" => content} = object)
-       when is_binary(content) do
-    html_content =
-      content
-      |> Earmark.as_html!(%Earmark.Options{renderer: EarmarkRenderer})
-      |> Pleroma.HTML.filter_tags()
-
-    Map.merge(object, %{"content" => html_content, "mediaType" => "text/html"})
-  end
-
-  defp fix_content(object), do: object
 
   # Reduce the object list to find the reported user.
   defp get_reported(objects) do
@@ -455,7 +424,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ~w{Article Note Video Page} do
+      when objtype in ~w{Note Page} do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
@@ -546,13 +515,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => objtype}} = data,
+        %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
         _options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Event} do
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article} do
+    data = Map.put(data, "object", strip_internal_fields(data["object"]))
+
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         nil <- Activity.get_create_by_object_ap_id(obj_id),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
+    else
+      %Activity{} = activity -> {:ok, activity}
+      e -> e
     end
   end
 
@@ -1029,7 +1004,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def upgrade_user_from_ap_id(ap_id) do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id, force_http: true),
          {:ok, user} <- update_user(user, data) do
       TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}

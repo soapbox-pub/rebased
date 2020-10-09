@@ -56,6 +56,9 @@ defmodule Pleroma.Emoji do
     end
   end
 
+  @spec exist?(String.t()) :: boolean()
+  def exist?(name), do: not is_nil(get(name))
+
   @doc "Returns all the emojos!!"
   @spec get_all() :: list({String.t(), String.t(), String.t()})
   def get_all do

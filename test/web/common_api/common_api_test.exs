@@ -29,6 +29,23 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
 
+  describe "posting polls" do
+    test "it posts a poll" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "who is the best",
+          poll: %{expires_in: 600, options: ["reimu", "marisa"]}
+        })
+
+      object = Object.normalize(activity)
+
+      assert object.data["type"] == "Question"
+      assert object.data["oneOf"] |> length() == 2
+    end
+  end
+
   describe "blocking" do
     setup do
       blocker = insert(:user)
@@ -216,6 +233,17 @@ defmodule Pleroma.Web.CommonAPITest do
         )
 
       assert message == :content_too_long
+    end
+
+    test "it reject messages via MRF" do
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      author = insert(:user)
+      recipient = insert(:user)
+
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
+               CommonAPI.post_chat_message(author, recipient, "GNO/Linux")
     end
   end
 
@@ -1191,6 +1219,26 @@ defmodule Pleroma.Web.CommonAPITest do
       assert object.data["title"] == "lain radio episode 1"
 
       assert Visibility.get_visibility(activity) == "private"
+    end
+  end
+
+  describe "get_user/1" do
+    test "gets user by ap_id" do
+      user = insert(:user)
+      assert CommonAPI.get_user(user.ap_id) == user
+    end
+
+    test "gets user by guessed nickname" do
+      user = insert(:user, ap_id: "", nickname: "mario@mushroom.kingdom")
+      assert CommonAPI.get_user("https://mushroom.kingdom/users/mario") == user
+    end
+
+    test "fallback" do
+      assert %User{
+               name: "",
+               ap_id: "",
+               nickname: "erroruser@example.com"
+             } = CommonAPI.get_user("")
     end
   end
 end

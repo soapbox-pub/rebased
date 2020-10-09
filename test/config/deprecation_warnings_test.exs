@@ -1,5 +1,5 @@
 defmodule Pleroma.Config.DeprecationWarningsTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   use Pleroma.Tests.Helpers
 
   import ExUnit.CaptureLog
@@ -66,6 +66,30 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
            end) =~ "Your config is using old format (only domain) for MediaProxy whitelist option"
   end
 
+  test "check_welcome_message_config/0" do
+    clear_config([:instance, :welcome_user_nickname], "LainChan")
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_welcome_message_config()
+           end) =~ "Your config is using the old namespace for Welcome messages configuration."
+  end
+
+  test "check_hellthread_threshold/0" do
+    clear_config([:mrf_hellthread, :threshold], 16)
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_hellthread_threshold()
+           end) =~ "You are using the old configuration mechanism for the hellthread filter."
+  end
+
+  test "check_activity_expiration_config/0" do
+    clear_config([Pleroma.ActivityExpiration, :enabled], true)
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_activity_expiration_config()
+           end) =~ "Your config is using old namespace for activity expiration configuration."
+  end
+
   describe "check_gun_pool_options/0" do
     test "await_up_timeout" do
       config = Config.get(:connections_pool)
@@ -74,7 +98,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
       assert capture_log(fn ->
                DeprecationWarnings.check_gun_pool_options()
              end) =~
-               "Your config is using old setting name `await_up_timeout` instead of `connect_timeout`"
+               "Your config is using old setting `config :pleroma, :connections_pool, await_up_timeout`."
     end
 
     test "pool timeout" do

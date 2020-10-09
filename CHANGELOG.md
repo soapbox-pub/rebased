@@ -5,20 +5,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+- Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
+- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task option for force-unfollowing relays
+
 ### Changed
 
 - **Breaking** Requires `libmagic` (or `file`) to guess file types.
+- **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
+- **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
+- The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
+- Users with the `discoverable` field set to false will not show up in searches.
+- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+- Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
+
+### Added
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Pleroma API: Importing the mutes users from CSV files.
+- Experimental websocket-based federation between Pleroma instances.
+
+<details>
+  <summary>API Changes</summary>
+
+- Pleroma API: Importing the mutes users from CSV files.
+- Admin API: Importing emoji from a zip file
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
 
 ### Removed
 
 - **Breaking:** `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab` (moved to a simpler implementation).
 - **Breaking:** `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` (moved to scheduled jobs).
 - **Breaking:** `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- Removed `:managed_config` option. In practice, it was accidentally removed with 2.0.0 release when frontends were
+switched to a new configuration mechanism, however it was not officially removed until now.
+
+### Fixed
+
+- Add documented-but-missing chat pagination.
+- Allow sending out emails again.
+
+## Unreleased (Patch)
 
 ### Changed
-- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
+
+## [2.1.2] - 2020-09-17
+
+### Security
+
+- Fix most MRF rules either crashing or not being applied to objects passed into the Common Pipeline (ChatMessage, Question, Answer, Audio, Event).
+
+### Fixed
+
+- Welcome Chat messages preventing user registration with MRF Simple Policy applied to the local instance.
+- Mastodon API: the public timeline returning an error when the `reply_visibility` parameter is set to `self` for an unauthenticated user.
+- Mastodon Streaming API: Handler crashes on authentication failures, resulting in error logs.
+- Mastodon Streaming API: Error logs on client pings.
+- Rich media: Log spam on failures. Now the error is only logged once per attempt.
+
+### Changed
+
+- Rich Media: A HEAD request is now done to the url, to ensure it has the appropriate content type and size before proceeding with a GET.
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## [2.1.1] - 2020-09-08
 
@@ -34,6 +91,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Rich media failure tracking (along with `:failure_backoff` option).
+
+<details>
+  <summary>Admin API Changes</summary>
+
+- Add `PATCH /api/pleroma/admin/instance_document/:document_name` to modify the Terms of Service and Instance Panel HTML pages via Admin API
+</details>
 
 ### Fixed
 - Default HTTP adapter not respecting pool setting, leading to possible OOM.
