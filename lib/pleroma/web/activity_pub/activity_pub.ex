@@ -410,6 +410,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
     |> restrict_blocked(opts)
+    |> restrict_blockers_visibility(opts)
     |> restrict_recipients(recipients, opts[:user])
     |> restrict_filtered(opts)
     |> where(
@@ -906,6 +907,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_blocked(query, _), do: query
 
+  defp restrict_blockers_visibility(query, %{blocking_user: %User{} = user}) do
+    if Config.get([:activitypub, :blockers_visible]) == true do
+      query
+    else
+      blocker_ap_ids = User.incoming_relationships_ungrouped_ap_ids(user, [:block])
+
+      from(
+        activity in query,
+        # The author doesn't block you
+        where: fragment("not (? = ANY(?))", activity.actor, ^blocker_ap_ids),
+
+        # It's not a boost of a user that blocks you
+        where:
+          fragment(
+            "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
+            activity.data,
+            activity.data,
+            ^blocker_ap_ids
+          )
+      )
+    end
+  end
+
+  defp restrict_blockers_visibility(query, _), do: query
+
   defp restrict_unlisted(query, %{restrict_unlisted: true}) do
     from(
       activity in query,
@@ -1106,6 +1132,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_state(opts)
     |> restrict_favorited_by(opts)
     |> restrict_blocked(restrict_blocked_opts)
+    |> restrict_blockers_visibility(opts)
     |> restrict_muted(restrict_muted_opts)
     |> restrict_filtered(opts)
     |> restrict_media(opts)
