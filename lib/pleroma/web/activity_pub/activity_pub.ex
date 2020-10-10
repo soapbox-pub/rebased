@@ -791,10 +791,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where:
         fragment(
           """
-          ?->>'type' != 'Create'     -- This isn't a Create      
+          ?->>'type' != 'Create'     -- This isn't a Create
           OR ?->>'inReplyTo' is null -- this isn't a reply
-          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends, 
-                                     -- unless they are the author (because authors 
+          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends,
+                                     -- unless they are the author (because authors
                                      -- are also part of the recipients). This leads
                                      -- to a bug that self-replies by friends won't
                                      -- show up.
@@ -850,7 +850,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(
       [activity, object: o] in query,
+      # You don't block the author
       where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
+
+      # You don't block any recipients, and didn't author the post
       where:
         fragment(
           "((not (? && ?)) or ? = ?)",
@@ -859,12 +862,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.actor,
           ^user.ap_id
         ),
+
+      # You don't block the domain of any recipients, and didn't author the post
       where:
         fragment(
-          "recipients_contain_blocked_domains(?, ?) = false",
+          "(recipients_contain_blocked_domains(?, ?) = false) or ? = ?",
           activity.recipients,
-          ^domain_blocks
+          ^domain_blocks,
+          activity.actor,
+          ^user.ap_id
         ),
+
+      # It's not a boost of a user you block
       where:
         fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
@@ -872,6 +881,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocked_ap_ids
         ),
+
+      # You don't block the author's domain, and also don't follow the author
       where:
         fragment(
           "(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)",
@@ -880,6 +891,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.actor,
           ^following_ap_ids
         ),
+
+      # Same as above, but checks the Object
       where:
         fragment(
           "(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)",
