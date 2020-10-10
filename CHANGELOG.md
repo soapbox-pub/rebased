@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
 - Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
 - Mix task option for force-unfollowing relays
+- `[:activitypub, :blockers_visible]` config to control visibility of blockers.
 
 ### Changed
 
@@ -48,6 +49,7 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
+- See your own post when addressing a user from a blocked domain.
 
 ## Unreleased (Patch)
 
