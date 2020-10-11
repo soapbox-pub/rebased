@@ -64,41 +64,6 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
   end
 
-  test "refuses to crawl URLs from posts marked sensitive" do
-    user = insert(:user)
-
-    {:ok, activity} =
-      CommonAPI.post(user, %{
-        status: "http://example.com/ogp",
-        sensitive: true
-      })
-
-    %Object{} = object = Object.normalize(activity)
-
-    assert object.data["sensitive"]
-
-    Config.put([:rich_media, :enabled], true)
-
-    assert %{} = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-  end
-
-  test "refuses to crawl URLs from posts tagged NSFW" do
-    user = insert(:user)
-
-    {:ok, activity} =
-      CommonAPI.post(user, %{
-        status: "http://example.com/ogp #nsfw"
-      })
-
-    %Object{} = object = Object.normalize(activity)
-
-    assert object.data["sensitive"]
-
-    Config.put([:rich_media, :enabled], true)
-
-    assert %{} = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-  end
-
   test "refuses to crawl URLs of private network from posts" do
     user = insert(:user)
 

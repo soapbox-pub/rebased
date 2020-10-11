@@ -57,7 +57,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   def fetch_data_for_object(object) do
     with true <- Config.get([:rich_media, :enabled]),
-         false <- object.data["sensitive"] || false,
          {:ok, page_url} <-
            HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
