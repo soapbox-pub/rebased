@@ -773,12 +773,37 @@ defmodule Pleroma.User do
   end
 
   def post_register_action(%User{} = user) do
+    instance_config =
+      Config.get(:instance)
+      |> Enum.into(%{})
+
+    do_post_register_action(user, instance_config)
+  end
+
+  defp do_post_register_action(%User{confirmation_pending: true} = user, %{
+         account_activation_required: true
+       }) do
+    with {:ok, _} <- try_send_confirmation_email(user) do
+      {:ok, user}
+    end
+  end
+
+  defp do_post_register_action(%User{approval_pending: true} = user, %{
+         account_approval_required: true
+       }) do
+    # TODO: Send approval explanation email
+    {:ok, user}
+  end
+
+  defp do_post_register_action(
+         %User{approval_pending: false, confirmation_pending: false} = user,
+         _instance_config
+       ) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, user} <- set_cache(user),
          {:ok, _} <- send_welcome_email(user),
          {:ok, _} <- send_welcome_message(user),
-         {:ok, _} <- send_welcome_chat_message(user),
-         {:ok, _} <- try_send_confirmation_email(user) do
+         {:ok, _} <- send_welcome_chat_message(user) do
       {:ok, user}
     end
   end
@@ -1570,6 +1595,7 @@ defmodule Pleroma.User do
   def approve(%User{} = user) do
     change(user, approval_pending: false)
     |> update_and_set_cache()
+    |> post_register_action()
   end
 
   def update_notification_settings(%User{} = user, settings) do

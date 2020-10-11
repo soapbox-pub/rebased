@@ -34,7 +34,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          {:ok, _} <-
            user
            |> User.confirmation_changeset(need_confirmation: false)
-           |> User.update_and_set_cache() do
+           |> User.update_and_set_cache()
+           |> User.post_register_action() do
       redirect(conn, to: "/")
     end
   end
