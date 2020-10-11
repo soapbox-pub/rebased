@@ -78,6 +78,18 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
 
       assert html_response(conn, 200) =~ user.nickname
     end
+
+    test "returns 404 for local user with `restrict_unauthenticated/profiles/local` setting", %{
+      conn: conn
+    } do
+      clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+      local_user = insert(:user, local: true)
+
+      conn
+      |> get("/users/#{local_user.nickname}")
+      |> html_response(404)
+    end
   end
 
   describe "notice html" do
@@ -199,6 +211,17 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       conn = get(conn, "/notice/#{activity.id}")
 
       assert html_response(conn, 200) =~ "testing a thing!"
+    end
+
+    test "returns 404 for local public activity with `restrict_unauthenticated/activities/local` setting",
+         %{conn: conn, user: user} do
+      clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "testing a thing!"})
+
+      conn
+      |> get("/notice/#{activity.id}")
+      |> html_response(404)
     end
   end
 end

@@ -9,6 +9,18 @@ defmodule Pleroma.Web.Router do
     plug(:accepts, ["html"])
   end
 
+  pipeline :accepts_html_xml do
+    plug(:accepts, ["html", "xml", "rss", "atom"])
+  end
+
+  pipeline :accepts_html_json do
+    plug(:accepts, ["html", "activity+json", "json"])
+  end
+
+  pipeline :accepts_html_xml_json do
+    plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
+  end
+
   pipeline :accepts_xml_rss_atom do
     plug(:accepts, ["xml", "rss", "atom"])
   end
@@ -574,24 +586,10 @@ defmodule Pleroma.Web.Router do
     )
   end
 
-  pipeline :ostatus_html_json do
-    plug(:accepts, ["html", "activity+json", "json"])
-    plug(Pleroma.Plugs.StaticFEPlug)
-  end
-
-  pipeline :ostatus_html_xml do
-    plug(:accepts, ["html", "xml", "rss", "atom"])
-    plug(Pleroma.Plugs.StaticFEPlug)
-  end
-
-  pipeline :ostatus_html_xml_json do
-    plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
-    plug(Pleroma.Plugs.StaticFEPlug)
-  end
-
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
-    pipe_through(:ostatus_html_json)
+    # Note: http signature is only considered for json requests (no auth for non-json requests)
+    pipe_through([:accepts_html_json, :http_signature, Pleroma.Plugs.StaticFEPlug])
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
@@ -604,15 +602,17 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
-    pipe_through(:ostatus_html_xml_json)
+    # Note: http signature is only considered for json requests (no auth for non-json requests)
+    pipe_through([:accepts_html_xml_json, :http_signature, Pleroma.Plugs.StaticFEPlug])
 
-    # Note: for json format responds with user profile (not user feed)
+    # Note: returns user _profile_ for json requests, redirects to user _feed_ for non-json ones
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
   end
 
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
-    pipe_through(:ostatus_html_xml)
+    pipe_through([:accepts_html_xml, Pleroma.Plugs.StaticFEPlug])
+
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
   end
 
