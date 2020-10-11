@@ -32,23 +32,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   @federating_only_actions [:internal_fetch, :relay, :relay_following, :relay_followers]
 
-  # Note: :following and :followers must be served even without authentication (as via :api)
-  @auth_only_actions [:read_inbox, :update_outbox, :whoami, :upload_media]
-
-  # Always accessible actions (must perform entity accessibility checks)
-  @no_auth_no_federation_actions [:user, :activity, :object]
-
-  @authenticated_or_federating_actions @federating_only_actions ++
-                                         @auth_only_actions ++ @no_auth_no_federation_actions
-
   plug(FederatingPlug when action in @federating_only_actions)
-
-  plug(EnsureAuthenticatedPlug when action in @auth_only_actions)
 
   plug(
     EnsureAuthenticatedPlug,
-    [unless_func: &FederatingPlug.federating?/1]
-    when action not in @authenticated_or_federating_actions
+    [unless_func: &FederatingPlug.federating?/1] when action not in @federating_only_actions
+  )
+
+  # Note: :following and :followers must be served even without authentication (as via :api)
+  plug(
+    EnsureAuthenticatedPlug
+    when action in [:read_inbox, :update_outbox, :whoami, :upload_media]
   )
 
   plug(
@@ -72,22 +66,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def user(conn, %{"nickname" => nickname}) do
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
-         {_, :visible} <- {:visibility, User.visible_for(user, _reading_user = nil)},
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
       |> render("user.json", %{user: user})
     else
-      _ -> {:error, :not_found}
+      nil -> {:error, :not_found}
+      %{local: false} -> {:error, :not_found}
     end
   end
 
   def object(conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)},
-         {_, false} <- {:restricted?, Visibility.restrict_unauthenticated_access?(object)} do
+         {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
@@ -95,15 +88,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: object)
     else
-      _ -> {:error, :not_found}
+      {:public?, false} ->
+        {:error, :not_found}
     end
+  end
+
+  def track_object_fetch(conn, nil), do: conn
+
+  def track_object_fetch(conn, object_id) do
+    with %{assigns: %{user: %User{id: user_id}}} <- conn do
+      Delivery.create(object_id, user_id)
+    end
+
+    conn
   end
 
   def activity(conn, _params) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(activity)},
-         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, _reading_user = nil)} do
+         {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
@@ -111,7 +114,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: activity)
     else
-      _ -> {:error, :not_found}
+      {:public?, false} -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
 
@@ -545,15 +549,5 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_status(:created)
       |> json(object.data)
     end
-  end
-
-  def track_object_fetch(conn, nil), do: conn
-
-  def track_object_fetch(conn, object_id) do
-    with %{assigns: %{user: %User{id: user_id}}} <- conn do
-      Delivery.create(object_id, user_id)
-    end
-
-    conn
   end
 end
