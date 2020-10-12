@@ -779,7 +779,11 @@ defmodule Pleroma.User do
   end
 
   def post_register_action(%User{approval_pending: true} = user) do
-    # TODO: Send approval explanation email
+    # Send approval pending email
+    user
+    |> Pleroma.Emails.UserEmail.approval_pending_email()
+    |> Pleroma.Emails.Mailer.deliver_async()
+
     {:ok, user}
   end
 
