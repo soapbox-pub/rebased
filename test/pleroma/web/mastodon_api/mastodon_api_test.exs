@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
   describe "follow/3" do
     test "returns error when followed user is deactivated" do
       follower = insert(:user)
-      user = insert(:user, local: true, deactivated: true)
+      user = insert(:user, local: true, is_active: false)
       assert {:error, _error} = MastodonAPI.follow(follower, user)
     end
 

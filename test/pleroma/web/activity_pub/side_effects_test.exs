@@ -170,7 +170,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, _, _} = SideEffects.handle(delete)
       ObanHelpers.perform_all()
 
-      assert User.get_cached_by_id(user.id).deactivated
+      refute User.get_cached_by_id(user.id).is_active
     end
 
     test "when activation is required", %{delete: delete, user: user} do

@@ -75,7 +75,7 @@ defmodule Pleroma.Stats do
 
     users_query =
       from(u in User,
-        where: u.deactivated != true,
+        where: u.is_active == true,
         where: u.local == true,
         where: not is_nil(u.nickname),
         where: not u.invisible

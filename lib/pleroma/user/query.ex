@@ -151,7 +151,7 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, true}, query) do
-    where(query, [u], u.deactivated == ^true)
+    where(query, [u], u.is_active == false)
   end
 
   defp compose_query({:confirmation_pending, bool}, query) do

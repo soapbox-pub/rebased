@@ -126,7 +126,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "returns 404 for deactivated user", %{conn: conn} do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
 
       assert %{"error" => "Can't find user"} =
                conn
@@ -256,7 +256,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "deactivated user", %{conn: conn} do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
 
       assert %{"error" => "Can't find user"} ==
                conn

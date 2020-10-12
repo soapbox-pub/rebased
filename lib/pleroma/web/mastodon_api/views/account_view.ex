@@ -376,7 +376,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_allow_following_move(data, _, _), do: data
 
   defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
-    Kernel.put_in(data, [:pleroma, :deactivated], user.deactivated)
+    Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active)
   end
 
   defp maybe_put_activation_status(data, _, _), do: data

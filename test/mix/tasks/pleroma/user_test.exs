@@ -102,7 +102,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
         assert_received {:mix_shell, :info, [message]}
         assert message =~ " deleted"
-        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+        assert %{is_active: false} = User.get_by_nickname(user.nickname)
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end
@@ -140,7 +140,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
         assert_received {:mix_shell, :info, [message]}
         assert message =~ " deleted"
-        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+        assert %{is_active: false} = User.get_by_nickname(user.nickname)
 
         assert called(Pleroma.Web.Federator.publish(:_))
         refute Pleroma.Repo.get(Pleroma.Activity, like_activity.id)
@@ -167,11 +167,11 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ " deactivated"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert user.deactivated
+      refute user.is_active
     end
 
     test "user is activated" do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
 
       Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
 
@@ -179,7 +179,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ " activated"
 
       user = User.get_cached_by_nickname(user.nickname)
-      refute user.deactivated
+      assert user.is_active
     end
 
     test "no user to toggle" do
@@ -210,7 +210,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       user = User.get_cached_by_nickname(user.nickname)
       assert Enum.empty?(Enum.filter(User.get_friends(user), & &1.local))
-      assert user.deactivated
+      refute user.is_active
     end
 
     test "no user to deactivate" do

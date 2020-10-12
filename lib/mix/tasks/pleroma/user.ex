@@ -111,10 +111,10 @@ defmodule Mix.Tasks.Pleroma.User do
     start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.deactivate(user, !user.deactivated)
+      {:ok, user} = User.deactivate(user, user.is_active)
 
       shell_info(
-        "Activation status of #{nickname}: #{if(user.deactivated, do: "de", else: "")}activated"
+        "Activation status of #{nickname}: #{unless(user.is_active, do: "de", else: "")}activated"
       )
     else
       _ ->
@@ -365,7 +365,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_moderator: false,
       is_admin: false,
       invisible: false
@@ -383,7 +383,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_moderator: false,
       is_admin: false,
       invisible: false
@@ -420,7 +420,7 @@ defmodule Mix.Tasks.Pleroma.User do
         shell_info(
           "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
             user.is_locked
-          }, deactivated: #{user.deactivated}"
+          }, is_active: #{user.is_active}"
         )
       end)
     end)

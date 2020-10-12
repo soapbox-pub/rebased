@@ -172,9 +172,9 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def toggle_activation(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
 
-    {:ok, updated_user} = User.deactivate(user, !user.deactivated)
+    {:ok, updated_user} = User.deactivate(user, !user.is_active)
 
-    action = if user.deactivated, do: "activate", else: "deactivate"
+    action = if !user.is_active, do: "activate", else: "deactivate"
 
     ModerationLog.insert_log(%{
       actor: admin,

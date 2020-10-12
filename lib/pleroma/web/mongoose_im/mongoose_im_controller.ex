@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   plug(RateLimiter, [name: :authentication, params: ["user"]] when action == :check_password)
 
   def user_exists(conn, %{"user" => username}) do
-    with %User{} <- Repo.get_by(User, nickname: username, local: true, deactivated: false) do
+    with %User{} <- Repo.get_by(User, nickname: username, local: true, is_active: true) do
       conn
       |> json(true)
     else
@@ -26,7 +26,7 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   end
 
   def check_password(conn, %{"user" => username, "pass" => password}) do
-    with %User{password_hash: password_hash, deactivated: false} <-
+    with %User{password_hash: password_hash, is_active: true} <-
            Repo.get_by(User, nickname: username, local: true),
          true <- AuthenticationPlug.checkpw(password, password_hash) do
       conn

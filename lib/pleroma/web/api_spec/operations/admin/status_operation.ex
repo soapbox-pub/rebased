@@ -132,7 +132,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
         avatar: %Schema{type: :string},
         nickname: %Schema{type: :string},
         display_name: %Schema{type: :string},
-        deactivated: %Schema{type: :boolean},
+        is_active: %Schema{type: :boolean},
         local: %Schema{type: :boolean},
         roles: %Schema{
           type: :object,
