@@ -772,33 +772,18 @@ defmodule Pleroma.User do
     end
   end
 
-  def post_register_action(%User{} = user) do
-    instance_config =
-      Config.get(:instance)
-      |> Enum.into(%{})
-
-    do_post_register_action(user, instance_config)
-  end
-
-  defp do_post_register_action(%User{confirmation_pending: true} = user, %{
-         account_activation_required: true
-       }) do
+  def post_register_action(%User{confirmation_pending: true} = user) do
     with {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
 
-  defp do_post_register_action(%User{approval_pending: true} = user, %{
-         account_approval_required: true
-       }) do
+  def post_register_action(%User{approval_pending: true} = user) do
     # TODO: Send approval explanation email
     {:ok, user}
   end
 
-  defp do_post_register_action(
-         %User{approval_pending: false, confirmation_pending: false} = user,
-         _instance_config
-       ) do
+  def post_register_action(%User{approval_pending: false, confirmation_pending: false} = user) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, user} <- set_cache(user),
          {:ok, _} <- send_welcome_email(user),
