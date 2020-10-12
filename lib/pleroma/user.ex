@@ -1598,6 +1598,22 @@ defmodule Pleroma.User do
     end
   end
 
+  def confirm(users) when is_list(users) do
+    Repo.transaction(fn ->
+      Enum.map(users, fn user ->
+        with {:ok, user} <- confirm(user), do: user
+      end)
+    end)
+  end
+
+  def confirm(%User{} = user) do
+    with chg <- confirmation_changeset(user, need_confirmation: false),
+         {:ok, user} <- update_and_set_cache(chg) do
+      post_register_action(user)
+      {:ok, user}
+    end
+  end
+
   def update_notification_settings(%User{} = user, settings) do
     user
     |> cast(%{notification_settings: settings}, [])

@@ -1352,6 +1352,78 @@ defmodule Pleroma.UserTest do
         assert false == user.approval_pending
       end)
     end
+
+    test "it sends welcome email if it is set" do
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([:welcome, :email, :sender], "tester@test.me")
+
+      user = insert(:user, approval_pending: true)
+      welcome_user = insert(:user, email: "tester@test.me")
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      User.approve(user)
+
+      ObanHelpers.perform_all()
+
+      assert_email_sent(
+        from: {instance_name, welcome_user.email},
+        to: {user.name, user.email},
+        html_body: "Welcome to #{instance_name}"
+      )
+    end
+  end
+
+  describe "confirm" do
+    test "confirms a user" do
+      user = insert(:user, confirmation_pending: true)
+      assert true == user.confirmation_pending
+      {:ok, user} = User.confirm(user)
+      assert false == user.confirmation_pending
+    end
+
+    test "confirms a list of users" do
+      unconfirmed_users = [
+        insert(:user, confirmation_pending: true),
+        insert(:user, confirmation_pending: true),
+        insert(:user, confirmation_pending: true)
+      ]
+
+      {:ok, users} = User.confirm(unconfirmed_users)
+
+      assert Enum.count(users) == 3
+
+      Enum.each(users, fn user ->
+        assert false == user.confirmation_pending
+      end)
+    end
+
+    test "sends approval emails when `approval_pending: true`" do
+      admin = insert(:user, is_admin: true)
+      user = insert(:user, confirmation_pending: true, approval_pending: true)
+      User.confirm(user)
+
+      ObanHelpers.perform_all()
+
+      user_email = Pleroma.Emails.UserEmail.approval_pending_email(user)
+      admin_email = Pleroma.Emails.AdminEmail.new_unapproved_registration(admin, user)
+
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      # User approval email
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: user_email.html_body
+      )
+
+      # Admin email
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {admin.name, admin.email},
+        html_body: admin_email.html_body
+      )
+    end
   end
 
   describe "delete" do
