@@ -517,6 +517,22 @@ defmodule Pleroma.UserTest do
       |> assert_email_sent()
     end
 
+    test "sends a pending approval email" do
+      clear_config([:instance, :account_approval_required], true)
+
+      {:ok, user} =
+        User.register_changeset(%User{}, @full_user_data)
+        |> User.register()
+
+      ObanHelpers.perform_all()
+
+      assert_email_sent(
+        from: Pleroma.Config.Helpers.sender(),
+        to: {user.name, user.email},
+        subject: "Your account is awaiting approval"
+      )
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 

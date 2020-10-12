@@ -1582,9 +1582,11 @@ defmodule Pleroma.User do
   end
 
   def approve(%User{} = user) do
-    change(user, approval_pending: false)
-    |> update_and_set_cache()
-    |> post_register_action()
+    with chg <- change(user, approval_pending: false),
+         {:ok, user} <- update_and_set_cache(chg) do
+      post_register_action(user)
+      {:ok, user}
+    end
   end
 
   def update_notification_settings(%User{} = user, settings) do
