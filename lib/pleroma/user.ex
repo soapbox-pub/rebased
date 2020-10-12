@@ -779,21 +779,10 @@ defmodule Pleroma.User do
   end
 
   def post_register_action(%User{approval_pending: true} = user) do
-    # Send approval pending email to user
-    user
-    |> Pleroma.Emails.UserEmail.approval_pending_email()
-    |> Pleroma.Emails.Mailer.deliver_async()
-
-    # Notify admins
-    all_superusers()
-    |> Enum.filter(fn user -> not is_nil(user.email) end)
-    |> Enum.each(fn superuser ->
-      superuser
-      |> Pleroma.Emails.AdminEmail.new_unapproved_registration(user)
-      |> Pleroma.Emails.Mailer.deliver_async()
-    end)
-
-    {:ok, user}
+    with {:ok, _} <- send_user_approval_email(user),
+         {:ok, _} <- send_admin_approval_emails(user) do
+      {:ok, user}
+    end
   end
 
   def post_register_action(%User{approval_pending: false, confirmation_pending: false} = user) do
@@ -804,6 +793,26 @@ defmodule Pleroma.User do
          {:ok, _} <- send_welcome_chat_message(user) do
       {:ok, user}
     end
+  end
+
+  defp send_user_approval_email(user) do
+    user
+    |> Pleroma.Emails.UserEmail.approval_pending_email()
+    |> Pleroma.Emails.Mailer.deliver_async()
+
+    {:ok, :enqueued}
+  end
+
+  defp send_admin_approval_emails(user) do
+    all_superusers()
+    |> Enum.filter(fn user -> not is_nil(user.email) end)
+    |> Enum.each(fn superuser ->
+      superuser
+      |> Pleroma.Emails.AdminEmail.new_unapproved_registration(user)
+      |> Pleroma.Emails.Mailer.deliver_async()
+    end)
+
+    {:ok, :enqueued}
   end
 
   def send_welcome_message(user) do
