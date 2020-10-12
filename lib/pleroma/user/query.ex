@@ -137,7 +137,7 @@ defmodule Pleroma.User.Query do
   defp compose_query({:external, _}, query), do: location_query(query, false)
 
   defp compose_query({:active, _}, query) do
-    User.restrict_deactivated(query)
+    where(query, [u], u.is_active == true)
     |> where([u], u.approval_pending == false)
   end
 
@@ -147,7 +147,7 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, false}, query) do
-    User.restrict_deactivated(query)
+    where(query, [u], u.is_active == true)
   end
 
   defp compose_query({:deactivated, true}, query) do

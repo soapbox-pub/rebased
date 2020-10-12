@@ -217,7 +217,8 @@ defmodule Pleroma.User do
       target_users_query = assoc(user, unquote(outgoing_relation_target))
 
       if restrict_deactivated? do
-        restrict_deactivated(target_users_query)
+        target_users_query
+        |> User.Query.build(%{deactivated: false})
       else
         target_users_query
       end
@@ -385,11 +386,6 @@ defmodule Pleroma.User do
   @spec ap_following(User.t()) :: String.t()
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
-
-  @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
-  def restrict_deactivated(query) do
-    from(u in query, where: u.is_active == ^true)
-  end
 
   defp truncate_fields_param(params) do
     if Map.has_key?(params, :fields) do
