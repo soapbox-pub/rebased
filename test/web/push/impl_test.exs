@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase
 
+  import Pleroma.Factory
+
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -12,10 +14,6 @@ defmodule Pleroma.Web.Push.ImplTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Push.Impl
   alias Pleroma.Web.Push.Subscription
-  alias Pleroma.Web.WebPushHttpClientMock
-
-  import Mock
-  import Pleroma.Factory
 
   setup do
     Tesla.Mock.mock(fn
@@ -78,22 +76,6 @@ defmodule Pleroma.Web.Push.ImplTest do
 
   test "successful message sending" do
     assert Impl.push_message(@message, @sub, @api_key, %Subscription{}) == :ok
-  end
-
-  test_with_mock "uses WebPushHttpClientMock as an HTTP client", WebPushHttpClientMock,
-    post: fn _, _, _ -> {:ok, %{status_code: 200}} end do
-    Impl.push_message(@message, @sub, @api_key, %Subscription{})
-    assert_called(WebPushHttpClientMock.post("https://example.com/example/1234", :_, :_))
-  end
-
-  test_with_mock "uses Pleroma.HTTP as an HTTP client", Pleroma.HTTP,
-    post: fn _, _, _ -> {:ok, %{status_code: 200}} end do
-    client = Application.get_env(:web_push_encryption, :http_client)
-    on_exit(fn -> Application.put_env(:web_push_encryption, :http_client, client) end)
-    Application.put_env(:web_push_encryption, :http_client, Pleroma.HTTP)
-
-    Impl.push_message(@message, @sub, @api_key, %Subscription{})
-    assert_called(Pleroma.HTTP.post("https://example.com/example/1234", :_, :_))
   end
 
   @tag capture_log: true

@@ -198,13 +198,13 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_remote(String.t()) :: {:ok, map()} | {:error, atom()}
-  def list_remote(url) do
-    uri = url |> String.trim() |> URI.parse()
+  @spec list_remote(keyword()) :: {:ok, map()} | {:error, atom()}
+  def list_remote(opts) do
+    uri = opts[:url] |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri) do
       uri
-      |> URI.merge("/api/pleroma/emoji/packs")
+      |> URI.merge("/api/pleroma/emoji/packs?page=#{opts[:page]}&page_size=#{opts[:page_size]}")
       |> http_get()
     end
   end
@@ -244,7 +244,8 @@ defmodule Pleroma.Emoji.Pack do
     uri = url |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri),
-         {:ok, remote_pack} <- uri |> URI.merge("/api/pleroma/emoji/packs/#{name}") |> http_get(),
+         {:ok, remote_pack} <-
+           uri |> URI.merge("/api/pleroma/emoji/pack?name=#{name}") |> http_get(),
          {:ok, %{sha: sha, url: url} = pack_info} <- fetch_pack_info(remote_pack, uri, name),
          {:ok, archive} <- download_archive(url, sha),
          pack <- copy_as(remote_pack, as || name),
@@ -523,7 +524,7 @@ defmodule Pleroma.Emoji.Pack do
   defp http_get(%URI{} = url), do: url |> to_string() |> http_get()
 
   defp http_get(url) do
-    with {:ok, %{body: body}} <- url |> Pleroma.HTTP.get() do
+    with {:ok, %{body: body}} <- Pleroma.HTTP.get(url, [], pool: :default) do
       Jason.decode(body)
     end
   end
@@ -572,7 +573,7 @@ defmodule Pleroma.Emoji.Pack do
         {:ok,
          %{
            sha: sha,
-           url: URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/archive") |> to_string()
+           url: URI.merge(uri, "/api/pleroma/emoji/packs/archive?name=#{name}") |> to_string()
          }}
 
       %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->

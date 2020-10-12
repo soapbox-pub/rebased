@@ -349,9 +349,9 @@ Response:
 
 ### Unfollow a Relay
 
-Params:
-
-* `relay_url`
+- Params:
+  - `relay_url`
+  - *optional* `force`: forcefully unfollow a relay even when the relay is not available. (default is `false`)
 
 Response:
 

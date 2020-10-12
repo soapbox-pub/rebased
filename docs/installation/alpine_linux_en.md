@@ -20,6 +20,9 @@ It assumes that you have administrative rights, either as root or a user with [s
 
 * `nginx` (preferred, example configs for other reverse proxies can be found in the repo)
 * `certbot` (or any other ACME client for Let’s Encrypt certificates)
+* `ImageMagick`
+* `ffmpeg`
+* `exiftool`
 
 ### Prepare the system
 
@@ -28,7 +31,6 @@ It assumes that you have administrative rights, either as root or a user with [s
 ```shell
 awk 'NR==2' /etc/apk/repositories | sed 's/main/community/' | tee -a /etc/apk/repositories
 ```
-
 
 * Then update the system, if not already done:
 
@@ -56,6 +58,7 @@ sudo apk add erlang erlang-runtime-tools erlang-xmerl elixir
 ```shell
 sudo apk add erlang-eldap
 ```
+
 ### Install PostgreSQL
 
 * Install Postgresql server:
@@ -74,6 +77,12 @@ sudo /etc/init.d/postgresql start
 
 ```shell
 sudo rc-update add postgresql
+```
+
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+
+```shell
+sudo apk add ffmpeg imagemagick exiftool
 ```
 
 ### Install PleromaBE
