@@ -7,11 +7,13 @@ defmodule Pleroma.Web.Preload.Providers.Instance do
   alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.Nodeinfo.Nodeinfo
   alias Pleroma.Web.Preload.Providers.Provider
+  alias Pleroma.Web.TwitterAPI.UtilView
 
   @behaviour Provider
   @instance_url "/api/v1/instance"
   @panel_url "/instance/panel.html"
   @nodeinfo_url "/nodeinfo/2.0.json"
+  @fe_config_url "/api/pleroma/frontend_configurations"
 
   @impl Provider
   def generate_terms(_params) do
@@ -19,6 +21,7 @@ defmodule Pleroma.Web.Preload.Providers.Instance do
     |> build_info_tag()
     |> build_panel_tag()
     |> build_nodeinfo_tag()
+    |> build_fe_config_tag()
   end
 
   defp build_info_tag(acc) do
@@ -46,5 +49,11 @@ defmodule Pleroma.Web.Preload.Providers.Instance do
       nodeinfo_data ->
         Map.put(acc, @nodeinfo_url, nodeinfo_data)
     end
+  end
+
+  defp build_fe_config_tag(acc) do
+    fe_data = UtilView.render("frontend_configurations.json", %{})
+
+    Map.put(acc, @fe_config_url, fe_data)
   end
 end
