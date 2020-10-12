@@ -1590,13 +1590,15 @@ defmodule Pleroma.User do
     end)
   end
 
-  def approve(%User{} = user) do
+  def approve(%User{approval_pending: true} = user) do
     with chg <- change(user, approval_pending: false),
          {:ok, user} <- update_and_set_cache(chg) do
       post_register_action(user)
       {:ok, user}
     end
   end
+
+  def approve(%User{} = user), do: {:ok, user}
 
   def confirm(users) when is_list(users) do
     Repo.transaction(fn ->
@@ -1606,13 +1608,15 @@ defmodule Pleroma.User do
     end)
   end
 
-  def confirm(%User{} = user) do
+  def confirm(%User{confirmation_pending: true} = user) do
     with chg <- confirmation_changeset(user, need_confirmation: false),
          {:ok, user} <- update_and_set_cache(chg) do
       post_register_action(user)
       {:ok, user}
     end
   end
+
+  def confirm(%User{} = user), do: {:ok, user}
 
   def update_notification_settings(%User{} = user, settings) do
     user

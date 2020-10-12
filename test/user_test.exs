@@ -1371,6 +1371,17 @@ defmodule Pleroma.UserTest do
         html_body: "Welcome to #{instance_name}"
       )
     end
+
+    test "approving an approved user does not trigger post-register actions" do
+      clear_config([:welcome, :email, :enabled], true)
+
+      user = insert(:user, approval_pending: false)
+      User.approve(user)
+
+      ObanHelpers.perform_all()
+
+      assert_no_email_sent()
+    end
   end
 
   describe "confirm" do
@@ -1423,6 +1434,15 @@ defmodule Pleroma.UserTest do
         to: {admin.name, admin.email},
         html_body: admin_email.html_body
       )
+    end
+
+    test "confirming a confirmed user does not trigger post-register actions" do
+      user = insert(:user, confirmation_pending: false, approval_pending: true)
+      User.confirm(user)
+
+      ObanHelpers.perform_all()
+
+      assert_no_email_sent()
     end
   end
 
