@@ -143,7 +143,10 @@ defmodule Pleroma.Formatter do
   end
 
   def minify(text, "text/html") do
-    String.replace(text, "\n", "")
+    text
+    |> String.replace(">\n", ">")
+    |> String.replace(">  ", ">")
+    |> String.replace("  <", "<")
   end
 
   def truncate(text, max_length \\ 200, omission \\ "...") do
