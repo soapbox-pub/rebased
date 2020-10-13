@@ -255,7 +255,12 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
     test "All statuses unset" do
       user =
-        insert(:user, is_locked: true, is_moderator: true, is_admin: true, confirmation_pending: true)
+        insert(:user,
+          is_locked: true,
+          is_moderator: true,
+          is_admin: true,
+          confirmation_pending: true
+        )
 
       Mix.Tasks.Pleroma.User.run([
         "set",
