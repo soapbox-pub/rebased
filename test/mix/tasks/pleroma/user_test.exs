@@ -436,13 +436,6 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Invite for token #{invite.token} was revoked."
     end
-
-    test "it prints an error message when invite is not exist" do
-      Mix.Tasks.Pleroma.User.run(["revoke_invite", "foo"])
-
-      assert_received {:mix_shell, :error, [message]}
-      assert message =~ "No invite found"
-    end
   end
 
   describe "running delete_activities" do

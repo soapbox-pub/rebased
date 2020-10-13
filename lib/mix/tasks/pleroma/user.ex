@@ -213,7 +213,7 @@ defmodule Mix.Tasks.Pleroma.User do
       user =
         case Keyword.get(options, :confirmed) do
           nil -> user
-          value -> set_confirmed(user, value)
+          value -> set_confirmation(user, value)
         end
 
       user =
@@ -373,7 +373,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> User.need_confirmation(user, false) end)
+      |> Enum.each(fn user -> User.set_confirmation(user, true) end)
     end)
     |> Stream.run()
   end
@@ -391,7 +391,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> User.need_confirmation(user, true) end)
+      |> Enum.each(fn user -> User.set_confirmation(user, false) end)
     end)
     |> Stream.run()
   end
@@ -454,8 +454,8 @@ defmodule Mix.Tasks.Pleroma.User do
     user
   end
 
-  defp set_confirmed(user, value) do
-    {:ok, user} = User.need_confirmation(user, !value)
+  defp set_confirmation(user, value) do
+    {:ok, user} = User.set_confirmation(user, value)
 
     shell_info("Confirmation status of #{user.nickname}: #{user.is_confirmed}")
     user

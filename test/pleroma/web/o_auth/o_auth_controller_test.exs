@@ -928,7 +928,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       {:ok, user} =
         insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password))
-        |> User.confirmation_changeset(need_confirmation: true)
+        |> User.confirmation_changeset(set_confirmation: false)
         |> User.update_and_set_cache()
 
       refute Pleroma.User.account_status(user) == :active

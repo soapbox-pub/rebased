@@ -666,7 +666,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it creates confirmed user if :confirmed option is given" do
-      changeset = User.register_changeset(%User{}, @full_user_data, need_confirmation: false)
+      changeset = User.register_changeset(%User{}, @full_user_data, confirmed: true)
       assert changeset.valid?
 
       {:ok, user} = Repo.insert(changeset)

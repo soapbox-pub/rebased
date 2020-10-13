@@ -906,8 +906,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert ret_conn.status == 200
 
-      assert User.get_by_id(first_user.id).is_confirmed
-      assert User.get_by_id(second_user.id).is_confirmed
+      first_user = User.get_by_id(first_user.id)
+      second_user = User.get_by_id(second_user.id)
+
+      assert first_user.is_confirmed
+      assert second_user.is_confirmed
 
       log_entry = Repo.one(ModerationLog)
 

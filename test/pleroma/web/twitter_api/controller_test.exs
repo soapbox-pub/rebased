@@ -64,7 +64,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     setup do
       {:ok, user} =
         insert(:user)
-        |> User.confirmation_changeset(need_confirmation: true)
+        |> User.confirmation_changeset(set_confirmation: false)
         |> Repo.update()
 
       refute user.is_confirmed
