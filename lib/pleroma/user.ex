@@ -1583,20 +1583,20 @@ defmodule Pleroma.User do
 
   defp maybe_filter_on_ap_id(query, _ap_ids), do: query
 
-  def deactivate_async(user, status \\ true) do
-    BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
+  def set_activation_async(user, status \\ true) do
+    BackgroundWorker.enqueue("user_activation", %{"user_id" => user.id, "status" => status})
   end
 
-  def deactivate(user, status \\ true)
-
-  def deactivate(users, status) when is_list(users) do
+  @spec set_activation([User.t()], boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def set_activation(users, status) when is_list(users) do
     Repo.transaction(fn ->
-      for user <- users, do: deactivate(user, status)
+      for user <- users, do: set_activation(user, status)
     end)
   end
 
-  def deactivate(%User{} = user, status) do
-    with {:ok, user} <- set_activation_status(user, !status) do
+  @spec set_activation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def set_activation(%User{} = user, status) do
+    with {:ok, user} <- set_activation_status(user, status) do
       user
       |> get_followers()
       |> Enum.filter(& &1.local)
@@ -1758,7 +1758,7 @@ defmodule Pleroma.User do
     delete_or_deactivate(user)
   end
 
-  def perform(:deactivate_async, user, status), do: deactivate(user, status)
+  def perform(:set_activation_async, user, status), do: set_activation(user, status)
 
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do

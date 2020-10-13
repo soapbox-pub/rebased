@@ -1313,13 +1313,13 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe ".deactivate" do
+  describe ".set_activation" do
     test "can de-activate then re-activate a user" do
       user = insert(:user)
       assert user.is_active
-      {:ok, user} = User.deactivate(user)
+      {:ok, user} = User.set_activation(user, false)
       refute user.is_active
-      {:ok, user} = User.deactivate(user, false)
+      {:ok, user} = User.set_activation(user, true)
       assert user.is_active
     end
 
@@ -1328,7 +1328,7 @@ defmodule Pleroma.UserTest do
       user2 = insert(:user)
 
       {:ok, user, user2} = User.follow(user, user2)
-      {:ok, _user} = User.deactivate(user)
+      {:ok, _user} = User.set_activation(user, false)
 
       user2 = User.get_cached_by_id(user2.id)
 
@@ -1344,7 +1344,7 @@ defmodule Pleroma.UserTest do
       assert user2.following_count == 1
       assert User.following_count(user2) == 1
 
-      {:ok, _user} = User.deactivate(user)
+      {:ok, _user} = User.set_activation(user, false)
 
       user2 = User.get_cached_by_id(user2.id)
 
@@ -1374,7 +1374,7 @@ defmodule Pleroma.UserTest do
                  user: user2
                })
 
-      {:ok, _user} = User.deactivate(user)
+      {:ok, _user} = User.set_activation(user, false)
 
       assert [] == ActivityPub.fetch_public_activities(%{})
       assert [] == Pleroma.Notification.for_user(user2)

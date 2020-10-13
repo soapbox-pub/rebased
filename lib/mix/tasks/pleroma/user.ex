@@ -146,7 +146,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       shell_info("Deactivating #{user.nickname}")
-      User.deactivate(user)
+      User.set_activation(user, false)
       :timer.sleep(500)
 
       user = User.get_cached_by_id(user.id)

@@ -940,7 +940,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     assert json_response(conn, 200) ==
              user_response(
                user,
-               %{"is_active" => user.is_active}
+               %{"is_active" => !user.is_active}
              )
 
     log_entry = Repo.one(ModerationLog)

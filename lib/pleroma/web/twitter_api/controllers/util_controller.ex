@@ -150,7 +150,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def disable_account(%{assigns: %{user: user}} = conn, params) do
     case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
       {:ok, user} ->
-        User.deactivate_async(user)
+        User.set_activation_async(user, false)
         json(conn, %{status: "success"})
 
       {:error, msg} ->
