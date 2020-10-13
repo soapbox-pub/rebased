@@ -45,4 +45,12 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
     assert metadata.private == false
     assert metadata.suggestions == %{enabled: false}
   end
+
+  test "it renders the frontend configurations", %{
+    "/api/pleroma/frontend_configurations" => fe_configs
+  } do
+    assert %{
+             pleroma_fe: %{background: "/images/city.jpg", logo: "/static/logo.png"}
+           } = fe_configs
+  end
 end

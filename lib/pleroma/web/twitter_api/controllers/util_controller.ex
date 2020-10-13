@@ -74,11 +74,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def frontend_configurations(conn, _params) do
-    config =
-      Config.get(:frontend_configurations, %{})
-      |> Enum.into(%{})
-
-    json(conn, config)
+    render(conn, "frontend_configurations.json")
   end
 
   def emoji(conn, _params) do
