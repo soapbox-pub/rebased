@@ -105,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       conn = patch(conn, "/api/v1/accounts/update_credentials", %{is_locked: "true"})
 
       assert user_data = json_response_and_validate_schema(conn, 200)
-      assert user_data["locked"] == true
+      assert user_data["is_locked"] == true
     end
 
     test "updates the user's chat acceptance status", %{conn: conn} do
