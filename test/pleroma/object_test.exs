@@ -82,7 +82,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], false)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -116,7 +116,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -155,7 +155,7 @@ defmodule Pleroma.ObjectTest do
       File.mkdir_p!(uploads_dir)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -188,7 +188,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -225,7 +225,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
