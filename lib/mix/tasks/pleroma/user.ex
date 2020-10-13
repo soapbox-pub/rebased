@@ -107,21 +107,6 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["toggle_activated", nickname]) do
-    start_pleroma()
-
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.deactivate(user, user.is_active)
-
-      shell_info(
-        "Activation status of #{nickname}: #{unless(user.is_active, do: "de", else: "")}activated"
-      )
-    else
-      _ ->
-        shell_error("No user #{nickname}")
-    end
-  end
-
   def run(["reset_password", nickname]) do
     start_pleroma()
 

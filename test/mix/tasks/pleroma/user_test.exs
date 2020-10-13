@@ -157,39 +157,6 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running toggle_activated" do
-    test "user is deactivated" do
-      user = insert(:user)
-
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " deactivated"
-
-      user = User.get_cached_by_nickname(user.nickname)
-      refute user.is_active
-    end
-
-    test "user is activated" do
-      user = insert(:user, is_active: false)
-
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " activated"
-
-      user = User.get_cached_by_nickname(user.nickname)
-      assert user.is_active
-    end
-
-    test "no user to toggle" do
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", "nonexistent"])
-
-      assert_received {:mix_shell, :error, [message]}
-      assert message =~ "No user"
-    end
-  end
-
   describe "running deactivate" do
     test "user is unsubscribed" do
       followed = insert(:user)
