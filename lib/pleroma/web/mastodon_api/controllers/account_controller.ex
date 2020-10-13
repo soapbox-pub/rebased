@@ -448,9 +448,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/blocks"
-  def blocks(%{assigns: %{user: user}} = conn, _) do
-    users = User.blocked_users(user, _restrict_deactivated = true)
-    render(conn, "index.json", users: users, for: user, as: :user)
+  def blocks(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.blocked_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+
+    conn
+    |> add_link_headers(users)
+    |> render("index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/endorsements"
