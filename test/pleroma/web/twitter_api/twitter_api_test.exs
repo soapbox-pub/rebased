@@ -65,7 +65,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user} = TwitterAPI.register_user(data)
     ObanHelpers.perform_all()
 
-    assert user.confirmation_pending
+    refute user.is_confirmed
 
     email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
 

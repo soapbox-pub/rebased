@@ -67,7 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> User.confirmation_changeset(need_confirmation: true)
         |> Repo.update()
 
-      assert user.confirmation_pending
+      refute user.is_confirmed
 
       [user: user]
     end
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = User.get_cached_by_id(user.id)
 
-      refute user.confirmation_pending
+      assert user.is_confirmed
       refute user.confirmation_token
     end
 

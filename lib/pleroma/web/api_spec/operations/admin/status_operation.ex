@@ -142,7 +142,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
           }
         },
         tags: %Schema{type: :string},
-        confirmation_pending: %Schema{type: :string}
+        is_confirmed: %Schema{type: :string}
       }
     }
   end

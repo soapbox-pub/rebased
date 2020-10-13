@@ -640,7 +640,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = Repo.insert(changeset)
 
-      refute user.confirmation_pending
+      assert user.is_confirmed
     end
   end
 
@@ -661,7 +661,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = Repo.insert(changeset)
 
-      assert user.confirmation_pending
+      refute user.is_confirmed
       assert user.confirmation_token
     end
 
@@ -671,7 +671,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = Repo.insert(changeset)
 
-      refute user.confirmation_pending
+      assert user.is_confirmed
       refute user.confirmation_token
     end
   end
@@ -1443,17 +1443,17 @@ defmodule Pleroma.UserTest do
 
   describe "confirm" do
     test "confirms a user" do
-      user = insert(:user, confirmation_pending: true)
-      assert true == user.confirmation_pending
+      user = insert(:user, is_confirmed: false)
+      refute user.is_confirmed
       {:ok, user} = User.confirm(user)
-      assert false == user.confirmation_pending
+      assert user.is_confirmed
     end
 
     test "confirms a list of users" do
       unconfirmed_users = [
-        insert(:user, confirmation_pending: true),
-        insert(:user, confirmation_pending: true),
-        insert(:user, confirmation_pending: true)
+        insert(:user, is_confirmed: false),
+        insert(:user, is_confirmed: false),
+        insert(:user, is_confirmed: false)
       ]
 
       {:ok, users} = User.confirm(unconfirmed_users)
@@ -1461,13 +1461,13 @@ defmodule Pleroma.UserTest do
       assert Enum.count(users) == 3
 
       Enum.each(users, fn user ->
-        assert false == user.confirmation_pending
+        assert user.is_confirmed
       end)
     end
 
     test "sends approval emails when `approval_pending: true`" do
       admin = insert(:user, is_admin: true)
-      user = insert(:user, confirmation_pending: true, approval_pending: true)
+      user = insert(:user, is_confirmed: false, approval_pending: true)
       User.confirm(user)
 
       ObanHelpers.perform_all()
@@ -1494,7 +1494,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "confirming a confirmed user does not trigger post-register actions" do
-      user = insert(:user, confirmation_pending: false, approval_pending: true)
+      user = insert(:user, is_confirmed: true, approval_pending: true)
       User.confirm(user)
 
       ObanHelpers.perform_all()
@@ -1565,7 +1565,7 @@ defmodule Pleroma.UserTest do
 
   describe "delete/1 when confirmation is pending" do
     setup do
-      user = insert(:user, confirmation_pending: true)
+      user = insert(:user, is_confirmed: false)
       {:ok, user: user}
     end
 
@@ -1616,7 +1616,7 @@ defmodule Pleroma.UserTest do
         follower_count: 9,
         following_count: 9001,
         is_locked: true,
-        confirmation_pending: true,
+        is_confirmed: false,
         password_reset_pending: true,
         approval_pending: true,
         registration_reason: "ahhhhh",
@@ -1658,7 +1658,7 @@ defmodule Pleroma.UserTest do
              follower_count: 0,
              following_count: 0,
              is_locked: false,
-             confirmation_pending: false,
+             is_confirmed: true,
              password_reset_pending: false,
              approval_pending: false,
              registration_reason: nil,
@@ -1729,13 +1729,13 @@ defmodule Pleroma.UserTest do
 
     test "return confirmation_pending for unconfirm user" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
-      user = insert(:user, confirmation_pending: true)
+      user = insert(:user, is_confirmed: false)
       assert User.account_status(user) == :confirmation_pending
     end
 
     test "return active for confirmed user" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
-      user = insert(:user, confirmation_pending: false)
+      user = insert(:user, is_confirmed: true)
       assert User.account_status(user) == :active
     end
 
@@ -1750,7 +1750,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "returns :deactivated for deactivated user" do
-      user = insert(:user, local: true, confirmation_pending: false, deactivated: true)
+      user = insert(:user, local: true, is_confirmed: true, deactivated: true)
       assert User.account_status(user) == :deactivated
     end
 
@@ -1758,7 +1758,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true, approval_pending: true)
       assert User.account_status(user) == :approval_pending
 
-      user = insert(:user, local: true, confirmation_pending: true, approval_pending: true)
+      user = insert(:user, local: true, is_confirmed: false, approval_pending: true)
       assert User.account_status(user) == :approval_pending
     end
   end
@@ -1815,7 +1815,7 @@ defmodule Pleroma.UserTest do
     test "returns false when the account is unconfirmed and confirmation is required" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
-      user = insert(:user, local: true, confirmation_pending: true)
+      user = insert(:user, local: true, is_confirmed: false)
       other_user = insert(:user, local: true)
 
       refute User.visible_for(user, other_user) == :visible
@@ -1824,14 +1824,14 @@ defmodule Pleroma.UserTest do
     test "returns true when the account is unconfirmed and confirmation is required but the account is remote" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
-      user = insert(:user, local: false, confirmation_pending: true)
+      user = insert(:user, local: false, is_confirmed: false)
       other_user = insert(:user, local: true)
 
       assert User.visible_for(user, other_user) == :visible
     end
 
     test "returns true when the account is unconfirmed and confirmation is not required" do
-      user = insert(:user, local: true, confirmation_pending: true)
+      user = insert(:user, local: true, is_confirmed: false)
       other_user = insert(:user, local: true)
 
       assert User.visible_for(user, other_user) == :visible
@@ -1840,7 +1840,7 @@ defmodule Pleroma.UserTest do
     test "returns true when the account is unconfirmed and being viewed by a privileged account (confirmation required)" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
-      user = insert(:user, local: true, confirmation_pending: true)
+      user = insert(:user, local: true, is_confirmed: false)
       other_user = insert(:user, local: true, is_admin: true)
 
       assert User.visible_for(user, other_user) == :visible

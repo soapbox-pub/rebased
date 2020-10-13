@@ -20,7 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> User.confirmation_changeset(need_confirmation: true)
         |> User.update_and_set_cache()
 
-      assert user.confirmation_pending
+      refute user.is_confirmed
 
       [user: user]
     end

@@ -1013,7 +1013,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       user =
         insert(:user,
           password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
-          confirmation_pending: true
+          is_confirmed: false
         )
 
       app = insert(:oauth_app, scopes: ["read", "write"])

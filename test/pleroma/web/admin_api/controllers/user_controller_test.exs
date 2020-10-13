@@ -635,11 +635,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "only unconfirmed users", %{conn: conn} do
-      sad_user = insert(:user, nickname: "sadboy", confirmation_pending: true)
-      old_user = insert(:user, nickname: "oldboy", confirmation_pending: true)
+      sad_user = insert(:user, nickname: "sadboy", is_confirmed: false)
+      old_user = insert(:user, nickname: "oldboy", is_confirmed: false)
 
       insert(:user, nickname: "happyboy", approval_pending: false)
-      insert(:user, confirmation_pending: false)
+      insert(:user, is_confirmed: true)
 
       result =
         conn
@@ -649,7 +649,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       users =
         Enum.map([old_user, sad_user], fn user ->
           user_response(user, %{
-            "confirmation_pending" => true,
+            "is_confirmed" => false,
             "approval_pending" => false
           })
         end)
@@ -960,7 +960,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       "tags" => [],
       "avatar" => User.avatar_url(user) |> MediaProxy.url(),
       "display_name" => HTML.strip_tags(user.name || user.nickname),
-      "confirmation_pending" => false,
+      "is_confirmed" => true,
       "approval_pending" => false,
       "url" => user.ap_id,
       "registration_reason" => nil,

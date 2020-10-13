@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
   describe "delete users with confirmation pending" do
     setup do
-      user = insert(:user, confirmation_pending: true)
+      user = insert(:user, is_confirmed: false)
       {:ok, delete_user_data, _meta} = Builder.delete(user, user.ap_id)
       {:ok, delete_user, _meta} = ActivityPub.persist(delete_user_data, local: true)
       {:ok, delete: delete_user, user: user}
