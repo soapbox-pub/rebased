@@ -9,12 +9,12 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
 
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.ReportNote
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
 

@@ -12,12 +12,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
-  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.Plugs.AuthenticationPlug
 
   require Logger
   require Pleroma.Constants

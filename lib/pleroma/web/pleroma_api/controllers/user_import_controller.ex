@@ -7,9 +7,9 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
 
   require Logger
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ApiSpec
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:follows"]} when action == :follow)
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks)

@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.PleromaAPI.MascotController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:update])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)

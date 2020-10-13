@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.DomainBlockOperation

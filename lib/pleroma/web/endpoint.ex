@@ -9,17 +9,17 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/socket", Pleroma.Web.UserSocket)
 
-  plug(Pleroma.Plugs.SetLocalePlug)
+  plug(Pleroma.Web.Plugs.SetLocalePlug)
   plug(CORSPlug)
-  plug(Pleroma.Plugs.HTTPSecurityPlug)
-  plug(Pleroma.Plugs.UploadedMedia)
+  plug(Pleroma.Web.Plugs.HTTPSecurityPlug)
+  plug(Pleroma.Web.Plugs.UploadedMedia)
 
   @static_cache_control "public, no-cache"
 
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
   # Cache-control headers are duplicated in case we turn off etags in the future
-  plug(Pleroma.Plugs.InstanceStatic,
+  plug(Pleroma.Web.Plugs.InstanceStatic,
     at: "/",
     gzip: true,
     cache_control_for_etags: @static_cache_control,
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.Endpoint do
   )
 
   # Careful! No `only` restriction here, as we don't know what frontends contain.
-  plug(Pleroma.Plugs.FrontendStatic,
+  plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/",
     frontend_type: :primary,
     gzip: true,
@@ -41,7 +41,7 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Plug.Static.IndexHtml, at: "/pleroma/admin/")
 
-  plug(Pleroma.Plugs.FrontendStatic,
+  plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/pleroma/admin",
     frontend_type: :admin,
     gzip: true,
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.Endpoint do
     plug(Phoenix.CodeReloader)
   end
 
-  plug(Pleroma.Plugs.TrailingFormatPlug)
+  plug(Pleroma.Web.Plugs.TrailingFormatPlug)
   plug(Plug.RequestId)
   plug(Plug.Logger, log: :debug)
 
@@ -122,7 +122,7 @@ defmodule Pleroma.Web.Endpoint do
     extra: extra
   )
 
-  plug(Pleroma.Plugs.RemoteIp)
+  plug(Pleroma.Web.Plugs.RemoteIp)
 
   defmodule Instrumenter do
     use Prometheus.PhoenixInstrumenter
