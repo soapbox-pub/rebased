@@ -15,9 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     ]
 
   alias Pleroma.Maps
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
@@ -29,6 +26,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.OAuthView
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)

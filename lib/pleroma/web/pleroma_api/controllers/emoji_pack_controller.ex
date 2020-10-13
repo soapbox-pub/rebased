@@ -10,7 +10,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
-    Pleroma.Plugs.OAuthScopesPlug,
+    Pleroma.Web.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
     when action in [
            :import_from_filesystem,
@@ -22,8 +22,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
          ]
   )
 
-  @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
-  plug(:skip_plug, @skip_plugs when action in [:index, :show, :archive])
+  @skip_plugs [
+    Pleroma.Web.Plugs.OAuthScopesPlug,
+    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
+  ]
+  plug(:skip_plug, @skip_plugs when action in [:index, :archive, :show])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
