@@ -6,9 +6,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Object
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
   plug(Pleroma.Web.ApiSpec.CastAndValidate)

@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
-    Pleroma.Plugs.OAuthScopesPlug,
+    Pleroma.Web.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
     when action in [
            :create,

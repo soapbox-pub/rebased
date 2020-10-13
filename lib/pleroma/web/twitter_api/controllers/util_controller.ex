@@ -11,12 +11,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.Notification
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
-  plug(Pleroma.Web.FederatingPlug when action == :remote_subscribe)
+  plug(Pleroma.Web.Plugs.FederatingPlug when action == :remote_subscribe)
 
   plug(
     OAuthScopesPlug,

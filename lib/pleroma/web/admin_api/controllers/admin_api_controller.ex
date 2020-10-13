@@ -10,7 +10,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Config
   alias Pleroma.MFA
   alias Pleroma.ModerationLog
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -21,6 +20,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.ModerationLogView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Router
 
   @users_page_size 50
