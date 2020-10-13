@@ -6,7 +6,6 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
   use Pleroma.DataCase
 
   alias Pleroma.Config
-  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.RichMedia.Helpers
 

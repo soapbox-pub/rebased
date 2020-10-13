@@ -87,7 +87,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
   end
 
   test "check_activity_expiration_config/0" do
-    clear_config([Pleroma.ActivityExpiration, :enabled], true)
+    clear_config(Pleroma.ActivityExpiration, enabled: true)
 
     assert capture_log(fn ->
              DeprecationWarnings.check_activity_expiration_config()
