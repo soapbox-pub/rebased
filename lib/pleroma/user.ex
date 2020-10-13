@@ -942,7 +942,7 @@ defmodule Pleroma.User do
     deny_follow_blocked = Config.get([:user, :deny_follow_blocked])
 
     cond do
-      followed.is_active == false ->
+      not followed.is_active ->
         {:error, "Could not follow user: #{followed.nickname} is deactivated."}
 
       deny_follow_blocked and blocks?(followed, follower) ->
