@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.MastodonAPI.ListController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   @oauth_read_actions [:index, :show, :list_accounts]
 

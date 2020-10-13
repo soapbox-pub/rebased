@@ -39,7 +39,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
          :ok <- check_media_proxy_whitelist_config(),
          :ok <- check_welcome_message_config(),
          :ok <- check_gun_pool_options(),
-         :ok <- check_activity_expiration_config() do
+         :ok <- check_activity_expiration_config(),
+         :ok <- check_remote_ip_plug_name() do
       :ok
     else
       _ ->
@@ -172,6 +173,22 @@ defmodule Pleroma.Config.DeprecationWarnings do
       [
         {Pleroma.ActivityExpiration, Pleroma.Workers.PurgeExpiredActivity,
          "\n* `config :pleroma, Pleroma.ActivityExpiration` is now `config :pleroma, Pleroma.Workers.PurgeExpiredActivity`"}
+      ],
+      warning_preface
+    )
+  end
+
+  @spec check_remote_ip_plug_name() :: :ok | nil
+  def check_remote_ip_plug_name do
+    warning_preface = """
+    !!!DEPRECATION WARNING!!!
+    Your config is using old namespace for RemoteIp Plug. Setting should work for now, but you are advised to change to new namespace to prevent possible issues later:
+    """
+
+    move_namespace_and_warn(
+      [
+        {Pleroma.Plugs.RemoteIp, Pleroma.Web.Plugs.RemoteIp,
+         "\n* `config :pleroma, Pleroma.Plugs.RemoteIp` is now `config :pleroma, Pleroma.Web.Plugs.RemoteIp`"}
       ],
       warning_preface
     )
