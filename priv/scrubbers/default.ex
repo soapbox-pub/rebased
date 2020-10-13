@@ -39,6 +39,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes(:code, [])
   Meta.allow_tag_with_these_attributes(:del, [])
   Meta.allow_tag_with_these_attributes(:em, [])
+  Meta.allow_tag_with_these_attributes(:hr, [])
   Meta.allow_tag_with_these_attributes(:i, [])
   Meta.allow_tag_with_these_attributes(:li, [])
   Meta.allow_tag_with_these_attributes(:ol, [])
