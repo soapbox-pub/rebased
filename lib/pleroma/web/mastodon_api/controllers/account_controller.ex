@@ -186,7 +186,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
-        :discoverable,
+        :is_discoverable,
         :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->

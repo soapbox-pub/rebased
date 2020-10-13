@@ -253,7 +253,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
               "sensitive" => false,
               "note" => "lain",
               "pleroma" => %{
-                "discoverable" => false,
+                "is_discoverable" => false,
                 "actor_type" => "Person"
               },
               "fields" => []

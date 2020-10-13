@@ -69,7 +69,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         sensitive: false,
         pleroma: %{
           actor_type: "Person",
-          discoverable: true
+          is_discoverable: true
         },
         fields: []
       },
@@ -167,7 +167,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         sensitive: false,
         pleroma: %{
           actor_type: "Service",
-          discoverable: true
+          is_discoverable: true
         },
         fields: []
       },

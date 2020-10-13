@@ -1278,7 +1278,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                  "note" => "",
                  "pleroma" => %{
                    "actor_type" => "Person",
-                   "discoverable" => false,
+                   "is_discoverable" => false,
                    "no_rich_text" => false,
                    "show_role" => true
                  },

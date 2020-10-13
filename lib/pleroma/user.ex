@@ -136,7 +136,7 @@ defmodule Pleroma.User do
     field(:pleroma_settings_store, :map, default: %{})
     field(:fields, {:array, :map}, default: [])
     field(:raw_fields, {:array, :map}, default: [])
-    field(:discoverable, :boolean, default: false)
+    field(:is_discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
@@ -448,7 +448,7 @@ defmodule Pleroma.User do
         :follower_count,
         :fields,
         :following_count,
-        :discoverable,
+        :is_discoverable,
         :invisible,
         :actor_type,
         :also_known_as,
@@ -495,7 +495,7 @@ defmodule Pleroma.User do
         :fields,
         :raw_fields,
         :pleroma_settings_store,
-        :discoverable,
+        :is_discoverable,
         :actor_type,
         :also_known_as,
         :accepts_chat_messages
@@ -1618,7 +1618,7 @@ defmodule Pleroma.User do
       pleroma_settings_store: %{},
       fields: [],
       raw_fields: [],
-      discoverable: false,
+      is_discoverable: false,
       also_known_as: []
     })
   end
