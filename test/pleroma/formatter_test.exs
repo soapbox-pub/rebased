@@ -307,4 +307,11 @@ defmodule Pleroma.FormatterTest do
 
     assert Formatter.html_escape(text, "text/plain") == expected
   end
+
+  test "it minifies html" do
+    text = "<p>\nhello</p>\n<p>\nworld</p>\n"
+    expected = "<p>hello</p><p>world</p>"
+
+    assert Formatter.minify(text, "text/html") == expected
+  end
 end

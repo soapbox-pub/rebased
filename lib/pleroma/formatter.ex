@@ -138,6 +138,14 @@ defmodule Pleroma.Formatter do
     |> Enum.join("")
   end
 
+  def minify({text, mentions, hashtags}, type) do
+    {minify(text, type), mentions, hashtags}
+  end
+
+  def minify(text, "text/html") do
+    String.replace(text, "\n", "")
+  end
+
   def truncate(text, max_length \\ 200, omission \\ "...") do
     # Remove trailing whitespace
     text = Regex.replace(~r/([^ \t\r\n])([ \t]+$)/u, text, "\\g{1}")
