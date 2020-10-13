@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.TwitterAPI.UtilView do
   use Pleroma.Web, :view
   import Phoenix.HTML.Form
+  alias Pleroma.Config
   alias Pleroma.Web
 
   def status_net_config(instance) do
@@ -18,5 +19,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilView do
     </site>
     </config>
     """
+  end
+
+  def render("frontend_configurations.json", _) do
+    Config.get(:frontend_configurations, %{})
+    |> Enum.into(%{})
   end
 end

@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   plug(
     :skip_plug,
-    [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
+    [Pleroma.Web.Plugs.OAuthScopesPlug, Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug]
     when action in [:empty_array, :empty_object]
   )
 

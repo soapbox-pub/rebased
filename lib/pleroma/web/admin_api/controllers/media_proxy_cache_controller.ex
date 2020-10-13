@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ApiSpec.Admin, as: Spec
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 

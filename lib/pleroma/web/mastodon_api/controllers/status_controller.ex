@@ -13,8 +13,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Object
-  alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
@@ -23,9 +21,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:skip_plug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show])
+
+  plug(
+    :skip_plug,
+    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show]
+  )
 
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
 

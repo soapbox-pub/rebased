@@ -11,12 +11,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.Notification
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
-  plug(Pleroma.Web.FederatingPlug when action == :remote_subscribe)
+  plug(Pleroma.Web.Plugs.FederatingPlug when action == :remote_subscribe)
 
   plug(
     OAuthScopesPlug,
@@ -74,11 +74,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def frontend_configurations(conn, _params) do
-    config =
-      Config.get(:frontend_configurations, %{})
-      |> Enum.into(%{})
-
-    json(conn, config)
+    render(conn, "frontend_configurations.json")
   end
 
   def emoji(conn, _params) do

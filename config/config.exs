@@ -676,7 +676,18 @@ config :pleroma, :rate_limit,
 
 config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
-config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
+config :pleroma, Pleroma.Web.Plugs.RemoteIp,
+  enabled: true,
+  headers: ["x-forwarded-for"],
+  proxies: [],
+  reserved: [
+    "127.0.0.0/8",
+    "::1/128",
+    "fc00::/7",
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+  ]
 
 config :pleroma, :static_fe, enabled: false
 
