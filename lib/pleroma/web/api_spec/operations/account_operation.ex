@@ -335,6 +335,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.mutes",
       description: "Accounts the user has muted.",
       security: [%{"oAuth" => ["follow", "read:mutes"]}],
+      parameters: pagination_params(),
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
