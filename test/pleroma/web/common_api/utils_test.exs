@@ -187,12 +187,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert result == "<p>before</p><hr /><p>after</p>"
     end
 
-    test "headings" do
-      code = ~s[# h1\n## h2\n### h3\n]
-      {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == ~s[<h1>h1</h1><h2>h2</h2><h3>h3</h3>]
-    end
-
     test "blockquote" do
       code = ~s[> whoms't are you quoting?]
       {result, [], []} = Utils.format_input(code, "text/markdown")
@@ -224,10 +218,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
 
     test "delegated renderers" do
-      code = ~s[a<br/>b]
-      {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == "<p>#{code}</p>"
-
       code = ~s[*aaaa~*]
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><em>aaaa~</em></p>]
@@ -236,7 +226,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><strong>aaaa~</strong></p>]
 
-      # strikethrought
+      # strikethrough
       code = ~s[<del>aaaa~</del>]
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><del>aaaa~</del></p>]
