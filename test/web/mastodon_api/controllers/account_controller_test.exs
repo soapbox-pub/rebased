@@ -706,7 +706,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "cancelling follow request", %{conn: conn} do
-      %{id: other_user_id} = insert(:user, %{locked: true})
+      %{id: other_user_id} = insert(:user, %{is_locked: true})
 
       assert %{"id" => ^other_user_id, "following" => false, "requested" => true} =
                conn

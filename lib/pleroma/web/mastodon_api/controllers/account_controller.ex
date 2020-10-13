@@ -177,7 +177,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     user_params =
       [
         :no_rich_text,
-        :locked,
+        :is_locked,
         :hide_followers_count,
         :hide_follows_count,
         :hide_followers,

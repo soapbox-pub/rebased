@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       header_static: %Schema{type: :string, format: :uri},
       header: %Schema{type: :string, format: :uri},
       id: FlakeID,
-      locked: %Schema{type: :boolean},
+      is_locked: %Schema{type: :boolean},
       note: %Schema{type: :string, format: :html},
       statuses_count: %Schema{type: :integer},
       url: %Schema{type: :string, format: :uri},
@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       "header" => "https://mypleroma.com/images/banner.png",
       "header_static" => "https://mypleroma.com/images/banner.png",
       "id" => "9tKi3esbG7OQgZ2920",
-      "locked" => false,
+      "is_locked" => false,
       "note" => "cofe",
       "pleroma" => %{
         "allow_following_move" => true,

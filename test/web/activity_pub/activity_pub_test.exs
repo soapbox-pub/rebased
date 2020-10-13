@@ -1120,7 +1120,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "creates an undo activity for a pending follow request" do
       follower = insert(:user)
-      followed = insert(:user, %{locked: true})
+      followed = insert(:user, %{is_locked: true})
 
       {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
