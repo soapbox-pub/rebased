@@ -558,7 +558,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
+      assert object.data["content"] == "<p><b>2hu</b></p>"
       assert object.data["source"] == post
     end
 

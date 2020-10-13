@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
        when is_binary(content) do
     content =
       content
-      |> Earmark.as_html!()
+      |> Pleroma.Formatter.markdown_to_html()
       |> Pleroma.HTML.filter_tags()
 
     Map.put(data, "content", content)

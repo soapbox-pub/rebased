@@ -294,7 +294,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def format_input(text, "text/markdown", options) do
     text
     |> Formatter.mentions_escape(options)
-    |> Earmark.as_html!()
+    |> Formatter.markdown_to_html()
     |> Formatter.linkify(options)
     |> Formatter.minify("text/html")
     |> Formatter.html_escape("text/html")

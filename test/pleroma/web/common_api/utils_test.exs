@@ -178,13 +178,13 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "raw HTML" do
       code = ~s[<a href="http://example.org/">OwO</a><!-- what's this?-->]
       {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == "<p>#{code}</p>"
+      assert result == ~s[<a href="http://example.org/">OwO</a>]
     end
 
     test "rulers" do
       code = ~s[before\n\n-----\n\nafter]
       {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == "<p>before</p><hr /><p>after</p>"
+      assert result == "<p>before</p><hr/><p>after</p>"
     end
 
     test "blockquote" do
@@ -204,7 +204,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       code = ~s[```\nputs "Hello World"\n```]
       {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == ~s[<pre><code class="">puts &quot;Hello World&quot;</code></pre>]
+      assert result == ~s[<pre><code>puts &quot;Hello World&quot;</code></pre>]
     end
 
     test "lists" do
@@ -227,9 +227,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert result == ~s[<p><strong>aaaa~</strong></p>]
 
       # strikethrough
-      code = ~s[<del>aaaa~</del>]
+      code = ~s[~~aaaa~~~]
       {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == ~s[<p><del>aaaa~</del></p>]
+      assert result == ~s[<p><del>aaaa</del>~</p>]
     end
   end
 
