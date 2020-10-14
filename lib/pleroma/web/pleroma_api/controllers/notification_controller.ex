@@ -6,10 +6,14 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Notification
-  alias Pleroma.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :mark_as_read)
+
+  plug(
+    Pleroma.Web.Plugs.OAuthScopesPlug,
+    %{scopes: ["write:notifications"]} when action == :mark_as_read
+  )
+
   plug(:put_view, Pleroma.Web.MastodonAPI.NotificationView)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaNotificationOperation

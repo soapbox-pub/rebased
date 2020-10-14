@@ -12,31 +12,31 @@ defmodule Pleroma.Web.Router do
 
   pipeline :oauth do
     plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.OAuthPlug)
+    plug(Pleroma.Web.Plugs.UserEnabledPlug)
   end
 
   pipeline :expect_authentication do
-    plug(Pleroma.Plugs.ExpectAuthenticatedCheckPlug)
+    plug(Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug)
   end
 
   pipeline :expect_public_instance_or_authentication do
-    plug(Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug)
+    plug(Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug)
   end
 
   pipeline :authenticate do
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Web.Plugs.OAuthPlug)
+    plug(Pleroma.Web.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Web.Plugs.UserFetcherPlug)
+    plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Web.Plugs.LegacyAuthenticationPlug)
+    plug(Pleroma.Web.Plugs.AuthenticationPlug)
   end
 
   pipeline :after_auth do
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.SetUserSessionIdPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
   end
 
   pipeline :base_api do
@@ -50,25 +50,25 @@ defmodule Pleroma.Web.Router do
     plug(:expect_public_instance_or_authentication)
     plug(:base_api)
     plug(:after_auth)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :authenticated_api do
     plug(:expect_authentication)
     plug(:base_api)
     plug(:after_auth)
-    plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
+    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :admin_api do
     plug(:expect_authentication)
     plug(:base_api)
-    plug(Pleroma.Plugs.AdminSecretAuthenticationPlug)
+    plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
-    plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Plugs.UserIsAdminPlug)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
+    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
+    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :mastodon_html do
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.Router do
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
-    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
   end
 
   pipeline :well_known do
@@ -568,7 +568,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :ostatus do
     plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
-    plug(Pleroma.Plugs.StaticFEPlug)
+    plug(Pleroma.Web.Plugs.StaticFEPlug)
   end
 
   pipeline :oembed do
@@ -737,7 +737,7 @@ defmodule Pleroma.Web.Router do
     get("/check_password", MongooseIMController, :check_password)
   end
 
-  scope "/", Fallback do
+  scope "/", Pleroma.Web.Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
     get("/api*path", RedirectController, :api_not_implemented)
