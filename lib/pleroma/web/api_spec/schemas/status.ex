@@ -284,7 +284,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "source" => %{
           "fields" => [],
           "note" => "Tester Number 6",
-          "pleroma" => %{"actor_type" => "Person", "is_discoverable" => false},
+          "pleroma" => %{"actor_type" => "Person", "discoverable" => false},
           "sensitive" => false
         },
         "statuses_count" => 1,

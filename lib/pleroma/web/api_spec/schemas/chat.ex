@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
           "sensitive" => false,
           "note" => "lain",
           "pleroma" => %{
-            "is_discoverable" => false,
+            "discoverable" => false,
             "actor_type" => "Person"
           },
           "fields" => []

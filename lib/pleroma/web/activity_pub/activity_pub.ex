@@ -1232,7 +1232,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     capabilities = data["capabilities"] || %{}
     accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
-    is_discoverable = data["is_discoverable"] || false
+    is_discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
