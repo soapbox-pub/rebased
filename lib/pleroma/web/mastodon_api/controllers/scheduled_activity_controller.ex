@@ -7,9 +7,9 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityController do
 
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.ScheduledActivity
   alias Pleroma.Web.MastodonAPI.MastodonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   @oauth_read_actions [:show, :index]
 
