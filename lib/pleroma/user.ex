@@ -2113,18 +2113,6 @@ defmodule Pleroma.User do
     updated_user
   end
 
-  @spec toggle_confirmation(User.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
-  def toggle_confirmation(%User{} = user) do
-    user
-    |> confirmation_changeset(need_confirmation: !user.confirmation_pending)
-    |> update_and_set_cache()
-  end
-
-  @spec toggle_confirmation([User.t()]) :: [{:ok, User.t()} | {:error, Changeset.t()}]
-  def toggle_confirmation(users) do
-    Enum.map(users, &toggle_confirmation/1)
-  end
-
   @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def need_confirmation(%User{} = user, bool) do
     user

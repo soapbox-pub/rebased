@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Users with the `discoverable` field set to false will not show up in searches.
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 - Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
+- Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
 
 ### Added
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).

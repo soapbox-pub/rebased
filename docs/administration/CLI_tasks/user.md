@@ -264,13 +264,13 @@
 === "OTP"
 
     ```sh
-     ./bin/pleroma_ctl user toggle_confirmed <nickname>
+     ./bin/pleroma_ctl user confirm <nickname>
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.user toggle_confirmed <nickname>
+    mix pleroma.user confirm <nickname>
     ```
 
 ## Set confirmation status for all regular active users

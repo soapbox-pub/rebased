@@ -1940,24 +1940,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "toggle_confirmation/1" do
-    test "if user is confirmed" do
-      user = insert(:user, confirmation_pending: false)
-      {:ok, user} = User.toggle_confirmation(user)
-
-      assert user.confirmation_pending
-      assert user.confirmation_token
-    end
-
-    test "if user is unconfirmed" do
-      user = insert(:user, confirmation_pending: true, confirmation_token: "some token")
-      {:ok, user} = User.toggle_confirmation(user)
-
-      refute user.confirmation_pending
-      refute user.confirmation_token
-    end
-  end
-
   describe "ensure_keys_present" do
     test "it creates keys for a user and stores them in info" do
       user = insert(:user)
