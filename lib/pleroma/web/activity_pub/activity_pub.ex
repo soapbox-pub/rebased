@@ -1228,7 +1228,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {String.trim(name, ":"), url}
       end)
 
-    locked = data["manuallyApprovesFollowers"] || false
+    is_locked = data["manuallyApprovesFollowers"] || false
     capabilities = data["capabilities"] || %{}
     accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
@@ -1257,7 +1257,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       banner: banner,
       fields: fields,
       emoji: emojis,
-      locked: locked,
+      is_locked: is_locked,
       discoverable: discoverable,
       invisible: invisible,
       avatar: avatar,

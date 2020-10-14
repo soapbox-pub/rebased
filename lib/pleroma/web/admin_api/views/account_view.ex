@@ -39,7 +39,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       :fields,
       :name,
       :nickname,
-      :locked,
+      :is_locked,
       :no_rich_text,
       :default_scope,
       :hide_follows,
