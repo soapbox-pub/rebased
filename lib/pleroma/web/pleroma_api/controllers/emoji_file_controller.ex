@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   use Pleroma.Web, :controller
 
@@ -7,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
-    Pleroma.Plugs.OAuthScopesPlug,
+    Pleroma.Web.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
     when action in [
            :create,
