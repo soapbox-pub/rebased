@@ -147,14 +147,14 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
     end
 
     test "updates the user's discoverable status", %{conn: conn} do
-      assert %{"source" => %{"pleroma" => %{"is_discoverable" => true}}} =
+      assert %{"source" => %{"pleroma" => %{"discoverable" => true}}} =
                conn
-               |> patch("/api/v1/accounts/update_credentials", %{is_discoverable: "true"})
+               |> patch("/api/v1/accounts/update_credentials", %{discoverable: "true"})
                |> json_response_and_validate_schema(:ok)
 
-      assert %{"source" => %{"pleroma" => %{"is_discoverable" => false}}} =
+      assert %{"source" => %{"pleroma" => %{"discoverable" => false}}} =
                conn
-               |> patch("/api/v1/accounts/update_credentials", %{is_discoverable: "false"})
+               |> patch("/api/v1/accounts/update_credentials", %{discoverable: "false"})
                |> json_response_and_validate_schema(:ok)
     end
 

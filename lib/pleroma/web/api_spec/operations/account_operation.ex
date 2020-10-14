@@ -606,7 +606,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Sets the background image of the user.",
           format: :binary
         },
-        is_discoverable: %Schema{
+        discoverable: %Schema{
           allOf: [BooleanLike],
           nullable: true,
           description:
@@ -630,7 +630,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         pleroma_settings_store: %{"pleroma-fe" => %{"key" => "val"}},
         skip_thread_containment: false,
         allow_following_move: false,
-        is_discoverable: false,
+        discoverable: false,
         actor_type: "Person"
       }
     }

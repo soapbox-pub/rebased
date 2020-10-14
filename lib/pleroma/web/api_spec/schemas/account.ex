@@ -124,7 +124,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             type: :object,
             properties: %{
               actor_type: ActorType,
-              is_discoverable: %Schema{
+              discoverable: %Schema{
                 type: :boolean,
                 description:
                   "whether the user allows discovery of the account in search results and other services."
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "note" => "foobar",
         "pleroma" => %{
           "actor_type" => "Person",
-          "is_discoverable" => false,
+          "discoverable" => false,
           "no_rich_text" => false,
           "show_role" => true
         },
