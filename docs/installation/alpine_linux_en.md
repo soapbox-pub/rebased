@@ -13,6 +13,7 @@ It assumes that you have administrative rights, either as root or a user with [s
 * `erlang-parsetools`
 * `erlang-xmerl`
 * `git`
+* `file-dev`
 * Development Tools
 * `cmake`
 
@@ -42,7 +43,7 @@ sudo apk upgrade
 * Install some tools, which are needed later:
 
 ```shell
-sudo apk add git build-base cmake
+sudo apk add git build-base cmake file-dev
 ```
 
 ### Install Elixir and Erlang

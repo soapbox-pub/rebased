@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["read"]} when action == :index)
+  plug(Pleroma.Web.Plugs.OAuthScopesPlug, %{scopes: ["read"]} when action == :index)
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")

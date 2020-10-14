@@ -7,10 +7,10 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
 
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
 

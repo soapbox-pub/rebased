@@ -4,8 +4,8 @@
 
 defmodule Pleroma.BBS.Authenticator do
   use Sshd.PasswordAuthenticator
-  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.AuthenticationPlug
 
   def authenticate(username, password) do
     username = to_string(username)

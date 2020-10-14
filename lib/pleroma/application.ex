@@ -52,7 +52,7 @@ defmodule Pleroma.Application do
     Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
-    Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
+    Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
@@ -88,13 +88,14 @@ defmodule Pleroma.Application do
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
-        Pleroma.Plugs.RateLimiter.Supervisor
+        Pleroma.Web.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
         http_children(adapter, @env) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
+          {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
