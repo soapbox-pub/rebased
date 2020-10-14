@@ -96,6 +96,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     content =
       content
       |> Pleroma.Formatter.markdown_to_html()
+      |> Pleroma.Formatter.minify("text/html")
       |> Pleroma.HTML.filter_tags()
 
     Map.put(data, "content", content)
