@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:restrict_push_enabled)
-  plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
+  plug(Pleroma.Web.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.SubscriptionOperation
 

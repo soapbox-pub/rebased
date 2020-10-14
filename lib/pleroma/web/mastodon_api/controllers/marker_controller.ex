@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.MastodonAPI.MarkerController do
   use Pleroma.Web, :controller
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 

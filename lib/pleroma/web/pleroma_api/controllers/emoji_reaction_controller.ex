@@ -7,9 +7,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action in [:create, :delete])
