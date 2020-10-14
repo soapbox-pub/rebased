@@ -10,6 +10,7 @@ This guide will assume that you have administrative rights, either as root or a 
 * `git`
 * `base-devel`
 * `cmake`
+* `file`
 
 #### Optional packages used in this guide
 
@@ -30,7 +31,7 @@ sudo pacman -Syu
 * Install some of the above mentioned programs:
 
 ```shell
-sudo pacman -S git base-devel elixir cmake
+sudo pacman -S git base-devel elixir cmake file
 ```
 
 ### Install PostgreSQL

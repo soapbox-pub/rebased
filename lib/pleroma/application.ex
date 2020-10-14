@@ -95,6 +95,7 @@ defmodule Pleroma.Application do
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
+          {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++

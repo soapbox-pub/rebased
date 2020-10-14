@@ -13,7 +13,7 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilenameTest do
 
     upload_file = %Upload{
       name: "an… image.jpg",
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/image_tmp.jpg")
     }
 

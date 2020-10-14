@@ -102,7 +102,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = followed <- User.get_cached_by_ap_id(followed_user),
          {_, {:ok, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
-      if followed.local && !followed.locked do
+      if followed.local && !followed.is_locked do
         {:ok, accept_data, _} = Builder.accept(followed, object)
         {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
       end

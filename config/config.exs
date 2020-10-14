@@ -802,6 +802,8 @@ config :pleroma, :hackney_pools,
     timeout: 300_000
   ]
 
+config :pleroma, :majic_pool, size: 2
+
 private_instance? = :if_instance_is_private
 
 config :pleroma, :restrict_unauthenticated,

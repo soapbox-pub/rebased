@@ -335,7 +335,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     test "represent a relationship for the user with a pending follow request" do
       user = insert(:user)
-      other_user = insert(:user, locked: true)
+      other_user = insert(:user, is_locked: true)
 
       {:ok, user, other_user, _} = CommonAPI.follow(user, other_user)
       user = User.get_cached_by_id(user.id)
@@ -484,7 +484,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "shows non-zero when follow requests are pending" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
@@ -496,7 +496,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "decreases when accepting a follow request" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
@@ -513,7 +513,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "decreases when rejecting a follow request" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
@@ -530,14 +530,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "shows non-zero when historical unapproved requests are present" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
-      {:ok, user} = User.update_and_set_cache(user, %{locked: false})
+      {:ok, user} = User.update_and_set_cache(user, %{is_locked: false})
 
       assert %{locked: false, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})

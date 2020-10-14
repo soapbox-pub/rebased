@@ -3708,5 +3708,19 @@ config :pleroma, :config_description, [
         ]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: :majic_pool,
+    type: :group,
+    description: "Majic/libmagic configuration",
+    children: [
+      %{
+        key: :size,
+        type: :integer,
+        description: "Number of majic workers to start.",
+        suggestions: [2]
+      }
+    ]
   }
 ]

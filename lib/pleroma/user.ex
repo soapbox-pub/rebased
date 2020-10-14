@@ -108,7 +108,7 @@ defmodule Pleroma.User do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:following_count, :integer, default: 0)
-    field(:locked, :boolean, default: false)
+    field(:is_locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
     field(:approval_pending, :boolean, default: false)
@@ -437,7 +437,7 @@ defmodule Pleroma.User do
         :avatar,
         :ap_enabled,
         :banner,
-        :locked,
+        :is_locked,
         :last_refreshed_at,
         :uri,
         :follower_address,
@@ -480,7 +480,7 @@ defmodule Pleroma.User do
         :public_key,
         :inbox,
         :shared_inbox,
-        :locked,
+        :is_locked,
         :no_rich_text,
         :default_scope,
         :banner,
@@ -849,7 +849,7 @@ defmodule Pleroma.User do
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
 
   # "Locked" (self-locked) users demand explicit authorization of follow requests
-  def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
+  def maybe_direct_follow(%User{} = follower, %User{local: true, is_locked: true} = followed) do
     follow(follower, followed, :follow_pending)
   end
 
@@ -956,7 +956,7 @@ defmodule Pleroma.User do
   end
 
   def locked?(%User{} = user) do
-    user.locked || false
+    user.is_locked || false
   end
 
   def get_by_id(id) do
@@ -1603,7 +1603,7 @@ defmodule Pleroma.User do
       note_count: 0,
       follower_count: 0,
       following_count: 0,
-      locked: false,
+      is_locked: false,
       confirmation_pending: false,
       password_reset_pending: false,
       approval_pending: false,
