@@ -9,6 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
+  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:update])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action != :show)
@@ -22,14 +23,15 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
 
   @doc "PUT /api/v1/pleroma/mascot"
   def update(%{assigns: %{user: user}, body_params: %{file: file}} = conn, _) do
-    with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
-         # Reject if not an image
-         %{type: "image"} = attachment <- render_attachment(object) do
+    with {:content_type, "image" <> _} <- {:content_type, file.content_type},
+         {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)) do
+      attachment = render_attachment(object)
       {:ok, _user} = User.mascot_update(user, attachment)
 
       json(conn, attachment)
     else
-      %{type: _} -> render_error(conn, :unsupported_media_type, "mascots can only be images")
+      {:content_type, _} ->
+        render_error(conn, :unsupported_media_type, "mascots can only be images")
     end
   end
 

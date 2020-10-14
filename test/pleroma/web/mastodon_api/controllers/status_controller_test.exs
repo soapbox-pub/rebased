@@ -167,7 +167,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "posting an undefined status with an attachment", %{user: user, conn: conn} do
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -408,7 +408,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> Kernel.<>("Z")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
