@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       username: "shp",
       acct: user.nickname,
       display_name: user.name,
-      is_locked: false,
+      locked: false,
       created_at: "2017-08-15T15:47:06.000Z",
       followers_count: 3,
       following_count: 0,
@@ -148,7 +148,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       username: "shp",
       acct: user.nickname,
       display_name: user.name,
-      is_locked: false,
+      locked: false,
       created_at: "2017-08-15T15:47:06.000Z",
       followers_count: 3,
       following_count: 0,
@@ -483,60 +483,60 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     test "shows non-zero when follow requests are pending" do
       user = insert(:user, is_locked: true)
 
-      assert %{is_locked: true} = AccountView.render("show.json", %{user: user, for: user})
+      assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
-      assert %{is_locked: true, follow_requests_count: 1} =
+      assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
     end
 
     test "decreases when accepting a follow request" do
       user = insert(:user, is_locked: true)
 
-      assert %{is_locked: true} = AccountView.render("show.json", %{user: user, for: user})
+      assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
       {:ok, other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
-      assert %{is_locked: true, follow_requests_count: 1} =
+      assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
 
       {:ok, _other_user} = CommonAPI.accept_follow_request(other_user, user)
 
-      assert %{is_locked: true, follow_requests_count: 0} =
+      assert %{locked: true, follow_requests_count: 0} =
                AccountView.render("show.json", %{user: user, for: user})
     end
 
     test "decreases when rejecting a follow request" do
       user = insert(:user, is_locked: true)
 
-      assert %{is_locked: true} = AccountView.render("show.json", %{user: user, for: user})
+      assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
       {:ok, other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
-      assert %{is_locked: true, follow_requests_count: 1} =
+      assert %{locked: true, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
 
       {:ok, _other_user} = CommonAPI.reject_follow_request(other_user, user)
 
-      assert %{is_locked: true, follow_requests_count: 0} =
+      assert %{locked: true, follow_requests_count: 0} =
                AccountView.render("show.json", %{user: user, for: user})
     end
 
     test "shows non-zero when historical unapproved requests are present" do
       user = insert(:user, is_locked: true)
 
-      assert %{is_locked: true} = AccountView.render("show.json", %{user: user, for: user})
+      assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
       {:ok, user} = User.update_and_set_cache(user, %{is_locked: false})
 
-      assert %{is_locked: false, follow_requests_count: 1} =
+      assert %{locked: false, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
     end
   end

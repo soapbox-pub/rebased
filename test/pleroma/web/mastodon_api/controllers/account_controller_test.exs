@@ -1271,7 +1271,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                "follow_requests_count" => 0,
                "followers_count" => 0,
                "following_count" => 0,
-               "is_locked" => false,
+               "locked" => false,
                "note" => "",
                "source" => %{
                  "fields" => [],

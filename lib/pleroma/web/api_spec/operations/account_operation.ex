@@ -519,7 +519,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Header image encoded using multipart/form-data",
           format: :binary
         },
-        is_locked: %Schema{
+        locked: %Schema{
           allOf: [BooleanLike],
           nullable: true,
           description: "Whether manual approval of follow requests is required."
