@@ -1487,9 +1487,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       desc = "Description of the image"
 
       image = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "bad/content-type",
         path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an_image.jpg"
+        filename: "an_image.png"
       }
 
       object =
@@ -1504,6 +1504,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert [%{"href" => object_href, "mediaType" => object_mediatype}] = object["url"]
       assert is_binary(object_href)
       assert object_mediatype == "image/jpeg"
+      assert String.ends_with?(object_href, ".jpg")
 
       activity_request = %{
         "@context" => "https://www.w3.org/ns/activitystreams",

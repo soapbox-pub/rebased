@@ -177,7 +177,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     user_params =
       [
         :no_rich_text,
-        :locked,
         :hide_followers_count,
         :hide_follows_count,
         :hide_followers,
@@ -209,6 +208,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
+      |> Maps.put_if_present(:is_locked, params[:locked])
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
 
     # What happens here:

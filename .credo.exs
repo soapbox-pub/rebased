@@ -25,7 +25,7 @@
       #
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
-      requires: ["./lib/credo/check/consistency/file_location.ex"],
+      requires: ["./test/credo/check/consistency/file_location.ex"],
       #
       # Credo automatically checks for updates, like e.g. Hex does.
       # You can disable this behaviour below:
