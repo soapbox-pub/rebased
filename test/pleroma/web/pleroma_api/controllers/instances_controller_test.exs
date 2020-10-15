@@ -31,10 +31,8 @@ defmodule Pleroma.Web.PleromaApi.InstancesControllerTest do
     assert conn
            |> put_req_header("content-type", "application/json")
            |> get("/api/v1/pleroma/federation_status")
-           |> json_response(200) == %{
+           |> json_response_and_validate_schema(200) == %{
              "unreachable" => %{constant_host => to_string(constant_unreachable)}
            }
-
-    # |> json_response_and_validate_schema(200)
   end
 end

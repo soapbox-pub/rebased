@@ -7,7 +7,9 @@ defmodule Pleroma.Web.PleromaAPI.InstancesController do
 
   alias Pleroma.Instances
 
-  # defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaInstancesController
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaInstancesOperation
 
   def show(conn, _params) do
     unreachable =
