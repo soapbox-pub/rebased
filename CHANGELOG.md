@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## [2.2.0] - 2020-10-??
 
 ### Added
 - Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking** Requires `libmagic` (or `file`) to guess file types.
 - **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
 - **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
 - Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
@@ -50,10 +51,14 @@ switched to a new configuration mechanism, however it was not officially removed
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
 
-## Unreleased (Patch)
+### Upgrade notes
 
-### Changed
-- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
+1. Install libmagic and development headers (`libmagic-dev` on Ubuntu/Debian, `file-dev` on Alpine Linux)
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+3. Restart Pleroma
+
 
 ## [2.1.2] - 2020-09-17
 
