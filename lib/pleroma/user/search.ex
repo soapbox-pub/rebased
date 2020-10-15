@@ -164,7 +164,7 @@ defmodule Pleroma.User.Search do
   end
 
   defp filter_discoverable_users(query) do
-    from(q in query, where: q.discoverable == true)
+    from(q in query, where: q.is_discoverable == true)
   end
 
   defp filter_internal_users(query) do
