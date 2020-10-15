@@ -400,7 +400,7 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user, locked: true)
       follower = insert(:user)
       {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, user)
-      assert [notification] = Notification.for_user(user)
+      assert [_notification] = Notification.for_user(user)
       {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
       assert [] = Notification.for_user(user)
     end

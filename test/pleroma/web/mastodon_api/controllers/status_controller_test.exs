@@ -937,7 +937,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> get("/api/v1/statuses/#{reblog_activity1.id}")
 
       assert %{
-               "reblog" => %{"id" => id, "reblogged" => false, "reblogs_count" => 2},
+               "reblog" => %{"id" => _id, "reblogged" => false, "reblogs_count" => 2},
                "reblogged" => false,
                "favourited" => false,
                "bookmarked" => false

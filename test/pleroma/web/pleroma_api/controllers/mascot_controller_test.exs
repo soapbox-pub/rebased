@@ -34,7 +34,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       |> put_req_header("content-type", "multipart/form-data")
       |> put("/api/v1/pleroma/mascot", %{"file" => file})
 
-    assert %{"id" => _, "type" => image} = json_response_and_validate_schema(conn, 200)
+    assert %{"id" => _, "type" => _image} = json_response_and_validate_schema(conn, 200)
   end
 
   test "mascot retrieving" do
