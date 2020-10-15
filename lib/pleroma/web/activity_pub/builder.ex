@@ -223,7 +223,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
           [actor.follower_address]
 
         public? and Pleroma.Activity.local_only?(object) ->
-          [actor.follower_address, object.data["actor"], Pleroma.Web.base_url() <> "/#Public"]
+          [actor.follower_address, object.data["actor"], Pleroma.Constants.as_local_public()]
 
         public? ->
           [actor.follower_address, object.data["actor"], Pleroma.Constants.as_public()]

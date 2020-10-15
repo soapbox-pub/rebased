@@ -1752,7 +1752,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "local_only" => "true"
       })
 
-    local = Pleroma.Web.base_url() <> "/#Public"
+    local = Pleroma.Constants.as_local_public()
 
     assert %{"content" => "cofe", "id" => id, "pleroma" => %{"local_only" => true}} =
              json_response(conn_one, 200)

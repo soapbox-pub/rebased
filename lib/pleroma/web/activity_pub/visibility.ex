@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
 
   def is_public?(data) do
     Utils.label_in_message?(Pleroma.Constants.as_public(), data) or
-      Utils.label_in_message?(Pleroma.Web.base_url() <> "/#Public", data)
+      Utils.label_in_message?(Pleroma.Constants.as_local_public(), data)
   end
 
   def is_private?(activity) do

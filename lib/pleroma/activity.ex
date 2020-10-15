@@ -349,7 +349,7 @@ defmodule Pleroma.Activity do
   def local_only?(activity) do
     recipients = Enum.concat(activity.data["to"], Map.get(activity.data, "cc", []))
     public = Pleroma.Constants.as_public()
-    local = Pleroma.Web.base_url() <> "/#Public"
+    local = Pleroma.Constants.as_local_public()
 
     Enum.member?(recipients, local) and not Enum.member?(recipients, public)
   end

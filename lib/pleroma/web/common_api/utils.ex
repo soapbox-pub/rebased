@@ -103,7 +103,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(%{visibility: {:list, _}, mentions: mentions}), do: {mentions, []}
 
-  defp public_uri(%{params: %{local_only: true}}), do: Pleroma.Web.base_url() <> "/#Public"
+  defp public_uri(%{params: %{local_only: true}}), do: Pleroma.Constants.as_local_public()
   defp public_uri(_), do: Pleroma.Constants.as_public()
 
   def get_addressed_users(_, to) when is_list(to) do
