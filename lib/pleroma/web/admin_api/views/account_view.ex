@@ -52,7 +52,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       :skip_thread_containment,
       :pleroma_settings_store,
       :raw_fields,
-      :is_discoverable,
+      :discoverable,
       :actor_type
     ])
     |> Map.merge(%{
