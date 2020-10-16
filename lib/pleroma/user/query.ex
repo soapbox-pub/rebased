@@ -138,7 +138,7 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:active, _}, query) do
     User.restrict_deactivated(query)
-    |> where([u], u.approval_pending == false)
+    |> where([u], u.is_approved == true)
   end
 
   defp compose_query({:legacy_active, _}, query) do
@@ -159,7 +159,7 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:need_approval, _}, query) do
-    where(query, [u], u.approval_pending)
+    where(query, [u], u.is_approved == false)
   end
 
   defp compose_query({:unconfirmed, _}, query) do

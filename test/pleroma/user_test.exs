@@ -694,7 +694,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = Repo.insert(changeset)
 
-      assert user.approval_pending
+      refute user.is_approved
       assert user.registration_reason == "I'm a cool guy :)"
     end
 
@@ -1388,17 +1388,17 @@ defmodule Pleroma.UserTest do
 
   describe "approve" do
     test "approves a user" do
-      user = insert(:user, approval_pending: true)
-      assert true == user.approval_pending
+      user = insert(:user, is_approved: false)
+      refute user.is_approved
       {:ok, user} = User.approve(user)
-      assert false == user.approval_pending
+      assert user.is_approved
     end
 
     test "approves a list of users" do
       unapproved_users = [
-        insert(:user, approval_pending: true),
-        insert(:user, approval_pending: true),
-        insert(:user, approval_pending: true)
+        insert(:user, is_approved: false),
+        insert(:user, is_approved: false),
+        insert(:user, is_approved: false)
       ]
 
       {:ok, users} = User.approve(unapproved_users)
@@ -1406,7 +1406,7 @@ defmodule Pleroma.UserTest do
       assert Enum.count(users) == 3
 
       Enum.each(users, fn user ->
-        assert false == user.approval_pending
+        assert user.is_approved
       end)
     end
 
@@ -1414,7 +1414,7 @@ defmodule Pleroma.UserTest do
       clear_config([:welcome, :email, :enabled], true)
       clear_config([:welcome, :email, :sender], "tester@test.me")
 
-      user = insert(:user, approval_pending: true)
+      user = insert(:user, is_approved: false)
       welcome_user = insert(:user, email: "tester@test.me")
       instance_name = Pleroma.Config.get([:instance, :name])
 
@@ -1432,7 +1432,7 @@ defmodule Pleroma.UserTest do
     test "approving an approved user does not trigger post-register actions" do
       clear_config([:welcome, :email, :enabled], true)
 
-      user = insert(:user, approval_pending: false)
+      user = insert(:user, is_approved: true)
       User.approve(user)
 
       ObanHelpers.perform_all()
@@ -1465,9 +1465,9 @@ defmodule Pleroma.UserTest do
       end)
     end
 
-    test "sends approval emails when `approval_pending: true`" do
+    test "sends approval emails when `is_approved: false`" do
       admin = insert(:user, is_admin: true)
-      user = insert(:user, confirmation_pending: true, approval_pending: true)
+      user = insert(:user, confirmation_pending: true, is_approved: false)
       User.confirm(user)
 
       ObanHelpers.perform_all()
@@ -1494,7 +1494,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "confirming a confirmed user does not trigger post-register actions" do
-      user = insert(:user, confirmation_pending: false, approval_pending: true)
+      user = insert(:user, confirmation_pending: false, is_approved: false)
       User.confirm(user)
 
       ObanHelpers.perform_all()
@@ -1591,7 +1591,7 @@ defmodule Pleroma.UserTest do
   end
 
   test "delete/1 when approval is pending deletes the user" do
-    user = insert(:user, approval_pending: true)
+    user = insert(:user, is_approved: false)
 
     {:ok, job} = User.delete(user)
     {:ok, _} = ObanHelpers.perform(job)
@@ -1618,7 +1618,7 @@ defmodule Pleroma.UserTest do
         is_locked: true,
         confirmation_pending: true,
         password_reset_pending: true,
-        approval_pending: true,
+        is_approved: false,
         registration_reason: "ahhhhh",
         confirmation_token: "qqqq",
         domain_blocks: ["lain.com"],
@@ -1660,7 +1660,7 @@ defmodule Pleroma.UserTest do
              is_locked: false,
              confirmation_pending: false,
              password_reset_pending: false,
-             approval_pending: false,
+             is_approved: true,
              registration_reason: nil,
              confirmation_token: nil,
              domain_blocks: [],
@@ -1755,10 +1755,10 @@ defmodule Pleroma.UserTest do
     end
 
     test "returns :approval_pending for unapproved user" do
-      user = insert(:user, local: true, approval_pending: true)
+      user = insert(:user, local: true, is_approved: false)
       assert User.account_status(user) == :approval_pending
 
-      user = insert(:user, local: true, confirmation_pending: true, approval_pending: true)
+      user = insert(:user, local: true, confirmation_pending: true, is_approved: false)
       assert User.account_status(user) == :approval_pending
     end
   end

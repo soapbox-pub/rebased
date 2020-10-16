@@ -1041,7 +1041,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       user =
         insert(:user,
           password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
-          approval_pending: true
+          is_approved: false
         )
 
       refute Pleroma.User.account_status(user) == :active

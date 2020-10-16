@@ -182,7 +182,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns unapproved user" do
-      unapproved = insert(:user, approval_pending: true)
+      unapproved = insert(:user, is_approved: false)
       insert(:user)
       insert(:user)
 
