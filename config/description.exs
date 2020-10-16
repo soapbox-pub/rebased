@@ -838,6 +838,17 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :autofollowing_nicknames,
+        type: {:list, :string},
+        description:
+          "Set to nicknames of (local) users that automatically follows every newly registered user",
+        suggestions: [
+          "admin",
+          "info",
+          "moderator",
+        ]
+      },
+      %{
         key: :attachment_links,
         type: :boolean,
         description: "Enable to automatically add attachment link text to statuses"

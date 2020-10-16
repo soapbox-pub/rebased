@@ -765,6 +765,16 @@ defmodule Pleroma.User do
     follow_all(user, autofollowed_users)
   end
 
+  defp autofollowing_users(user) do
+    candidates = Config.get([:instance, :autofollowing_nicknames])
+
+    User.Query.build(%{nickname: candidates, local: true, deactivated: false})
+    |> Repo.all()
+    |> Enum.each(&follow(&1, user, :follow_accept))
+
+    {:ok, :success}
+  end
+
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
@@ -774,6 +784,7 @@ defmodule Pleroma.User do
 
   def post_register_action(%User{} = user) do
     with {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
          {:ok, _} <- send_welcome_email(user),
          {:ok, _} <- send_welcome_message(user),
