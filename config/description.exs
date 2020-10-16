@@ -841,12 +841,7 @@ config :pleroma, :config_description, [
         key: :autofollowing_nicknames,
         type: {:list, :string},
         description:
-          "Set to nicknames of (local) users that automatically follows every newly registered user",
-        suggestions: [
-          "admin",
-          "info",
-          "moderator",
-        ]
+          "Set to nicknames of (local) users that automatically follows every newly registered user"
       },
       %{
         key: :attachment_links,
