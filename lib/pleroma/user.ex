@@ -2328,8 +2328,7 @@ defmodule Pleroma.User do
 
   @spec approval_changeset(User.t(), keyword()) :: Changeset.t()
   def approval_changeset(user, set_approval: approved?) do
-    params = if approved?, do: %{is_approved: true}, else: %{is_approved: false}
-    cast(user, params, [:is_approved])
+    cast(user, %{is_approved: approved?}, [:is_approved])
   end
 
   def add_pinnned_activity(user, %Pleroma.Activity{id: id}) do
