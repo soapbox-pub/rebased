@@ -1228,11 +1228,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {String.trim(name, ":"), url}
       end)
 
-    locked = data["manuallyApprovesFollowers"] || false
+    is_locked = data["manuallyApprovesFollowers"] || false
     capabilities = data["capabilities"] || %{}
     accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
-    discoverable = data["discoverable"] || false
+    is_discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
@@ -1257,8 +1257,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       banner: banner,
       fields: fields,
       emoji: emojis,
-      locked: locked,
-      discoverable: discoverable,
+      is_locked: is_locked,
+      is_discoverable: is_discoverable,
       invisible: invisible,
       avatar: avatar,
       name: data["name"],

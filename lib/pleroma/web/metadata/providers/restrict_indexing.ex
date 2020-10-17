@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Metadata.Providers.RestrictIndexing do
   """
 
   @impl true
-  def build_tags(%{user: %{local: true, discoverable: true}}), do: []
+  def build_tags(%{user: %{local: true, is_discoverable: true}}), do: []
 
   def build_tags(_) do
     [

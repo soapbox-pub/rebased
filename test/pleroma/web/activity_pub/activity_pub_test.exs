@@ -1029,7 +1029,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "uploading files" do
     setup do
       test_file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -1120,7 +1120,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "creates an undo activity for a pending follow request" do
       follower = insert(:user)
-      followed = insert(:user, %{locked: true})
+      followed = insert(:user, %{is_locked: true})
 
       {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)

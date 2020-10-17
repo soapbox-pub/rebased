@@ -16,7 +16,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
 
     upload = %Pleroma.Upload{
       name: "image_with_GPS_data.jpg",
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/DSCN0010.jpg"),
       tempfile: Path.absname("test/fixtures/DSCN0010_tmp.jpg")
     }

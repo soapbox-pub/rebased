@@ -10,6 +10,7 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 * `elixir` (1.8+, Follow the guide to install from the Erlang Solutions repo or use [asdf](https://github.com/asdf-vm/asdf) as the pleroma user)
 * `erlang-dev`
 * `erlang-nox`
+* `libmagic-dev`
 * `git`
 * `build-essential`
 * `cmake`
@@ -34,7 +35,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib cmake
+sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-devel
 ```
 
 ### Install Elixir and Erlang
@@ -99,6 +100,7 @@ sudo -Hu pleroma mix deps.get
 ```shell
 mv config/{generated_config.exs,prod.secret.exs}
 ```
+
 
 * The previous command creates also the file `config/setup_db.psql`, with which you can create the database:
 
@@ -180,6 +182,7 @@ sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.se
 ```
 
 * Edit the service file and make sure that all paths fit your installation
+* Check that `EnvironmentFile` contains the correct path to the env file. Or generate the env file: `sudo -Hu pleroma mix pleroma.release_env gen`
 * Enable and start `pleroma.service`:
 
 ```shell

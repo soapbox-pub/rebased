@@ -11,7 +11,7 @@ defmodule Pleroma.UploadTest do
   alias Pleroma.Uploaders.Uploader
 
   @upload_file %Plug.Upload{
-    content_type: "image/jpg",
+    content_type: "image/jpeg",
     path: Path.absname("test/fixtures/image_tmp.jpg"),
     filename: "image.jpg"
   }
@@ -112,7 +112,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "image.jpg"
       }
@@ -124,7 +124,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "image.jpg"
       }
@@ -140,7 +140,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "an [image.jpg"
       }
@@ -156,7 +156,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "an [image.jpg"
       }
@@ -165,63 +165,31 @@ defmodule Pleroma.UploadTest do
       assert data["name"] == "an [image.jpg"
     end
 
-    test "fixes incorrect content type" do
-      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
-
-      file = %Plug.Upload{
-        content_type: "application/octet-stream",
-        path: Path.absname("test/fixtures/image_tmp.jpg"),
-        filename: "an [image.jpg"
+    test "fixes incorrect content type when base64 is given" do
+      params = %{
+        img: "data:image/png;base64,#{Base.encode64(File.read!("test/fixtures/image.jpg"))}"
       }
 
-      {:ok, data} = Upload.store(file, filters: [Pleroma.Upload.Filter.Dedupe])
+      {:ok, data} = Upload.store(params)
       assert hd(data["url"])["mediaType"] == "image/jpeg"
     end
 
-    test "adds missing extension" do
+    test "adds extension when base64 is given" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
-      file = %Plug.Upload{
-        content_type: "image/jpg",
-        path: Path.absname("test/fixtures/image_tmp.jpg"),
-        filename: "an [image"
+      params = %{
+        img: "data:image/png;base64,#{Base.encode64(File.read!("test/fixtures/image.jpg"))}"
       }
 
-      {:ok, data} = Upload.store(file)
-      assert data["name"] == "an [image.jpg"
-    end
-
-    test "fixes incorrect file extension" do
-      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
-
-      file = %Plug.Upload{
-        content_type: "image/jpg",
-        path: Path.absname("test/fixtures/image_tmp.jpg"),
-        filename: "an [image.blah"
-      }
-
-      {:ok, data} = Upload.store(file)
-      assert data["name"] == "an [image.jpg"
-    end
-
-    test "don't modify filename of an unknown type" do
-      File.cp("test/fixtures/test.txt", "test/fixtures/test_tmp.txt")
-
-      file = %Plug.Upload{
-        content_type: "text/plain",
-        path: Path.absname("test/fixtures/test_tmp.txt"),
-        filename: "test.txt"
-      }
-
-      {:ok, data} = Upload.store(file)
-      assert data["name"] == "test.txt"
+      {:ok, data} = Upload.store(params)
+      assert String.ends_with?(data["name"], ".jpg")
     end
 
     test "copies the file to the configured folder with anonymizing filename" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "an [image.jpg"
       }
@@ -235,7 +203,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "an… image.jpg"
       }
@@ -250,7 +218,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: ":?#[]@!$&\\'()*+,;=.jpg"
       }
@@ -272,7 +240,7 @@ defmodule Pleroma.UploadTest do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "image.jpg"
       }

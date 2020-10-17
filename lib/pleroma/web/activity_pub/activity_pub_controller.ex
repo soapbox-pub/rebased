@@ -45,6 +45,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:read_inbox, :update_outbox, :whoami, :upload_media]
   )
 
+  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:upload_media])
+
   plug(
     Pleroma.Web.Plugs.Cache,
     [query_params: false, tracking_fun: &__MODULE__.track_object_fetch/2]

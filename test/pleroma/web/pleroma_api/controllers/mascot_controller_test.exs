@@ -24,7 +24,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
     assert json_response_and_validate_schema(ret_conn, 415)
 
     file = %Plug.Upload{
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
 
     # When a user sets their mascot, we should get that back
     file = %Plug.Upload{
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }

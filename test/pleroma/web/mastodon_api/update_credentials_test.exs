@@ -222,7 +222,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
     test "updates the user's avatar", %{user: user, conn: conn} do
       new_avatar = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -246,7 +246,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
     test "updates the user's banner", %{user: user, conn: conn} do
       new_header = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -265,7 +265,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
     test "updates the user's background", %{conn: conn, user: user} do
       new_header = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
