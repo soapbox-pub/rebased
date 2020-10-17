@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Feed.UserController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ActivityPubController
