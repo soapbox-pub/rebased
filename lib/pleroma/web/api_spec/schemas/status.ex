@@ -252,7 +252,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "header" => "http://localhost:4001/images/banner.png",
         "header_static" => "http://localhost:4001/images/banner.png",
         "id" => "9toJCsKN7SmSf3aj5c",
-        "locked" => false,
+        "is_locked" => false,
         "note" => "Tester Number 6",
         "pleroma" => %{
           "background_image" => nil,

@@ -8,8 +8,8 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Pleroma.Config
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
 

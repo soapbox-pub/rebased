@@ -10,8 +10,8 @@ defmodule Pleroma.Web.PleromaAPI.TwoFactorAuthenticationController do
 
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(OAuthScopesPlug, %{scopes: ["read:security"]} when action in [:settings])
 

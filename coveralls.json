@@ -1,6 +1,7 @@
 {
   "skip_files": [
     "test/support",
-    "lib/mix/tasks/pleroma/benchmark.ex"
+    "lib/mix/tasks/pleroma/benchmark.ex",
+    "lib/credo/check/consistency/file_location.ex"
   ]
 }

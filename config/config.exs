@@ -677,7 +677,7 @@ config :pleroma, :rate_limit,
 
 config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
-config :pleroma, Pleroma.Plugs.RemoteIp,
+config :pleroma, Pleroma.Web.Plugs.RemoteIp,
   enabled: true,
   headers: ["x-forwarded-for"],
   proxies: [],
@@ -801,6 +801,8 @@ config :pleroma, :hackney_pools,
     max_connections: 25,
     timeout: 300_000
   ]
+
+config :pleroma, :majic_pool, size: 2
 
 private_instance? = :if_instance_is_private
 
