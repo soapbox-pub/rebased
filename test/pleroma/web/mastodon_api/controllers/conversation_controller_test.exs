@@ -54,7 +54,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
              ] = response
 
       account_ids = Enum.map(res_accounts, & &1["id"])
-      assert length(res_accounts) == 2
+      assert length(res_accounts) == 3
+      assert user_one.id in account_ids
       assert user_two.id in account_ids
       assert user_three.id in account_ids
       assert is_binary(res_id)
