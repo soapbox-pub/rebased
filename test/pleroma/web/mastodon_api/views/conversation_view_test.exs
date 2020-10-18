@@ -37,7 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
     assert conversation.id == participation.id |> to_string()
     assert conversation.last_status.id == activity.id
 
-    account_ids = Enum.map(conversation.accounts, & &1["id"])
+    account_ids = Enum.map(conversation.accounts, & &1.id)
     assert length(conversation.accounts) == 2
     assert user.id in account_ids
     assert other_user.id in account_ids
