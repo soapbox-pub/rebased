@@ -19,7 +19,7 @@ defmodule Pleroma.BackupTest do
   setup do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Pleroma.Backup, :limit_days])
-    clear_config([Pleroma.Emails.Mailer, :enabled])
+    clear_config([Pleroma.Emails.Mailer, :enabled], true)
   end
 
   test "it requries enabled email" do

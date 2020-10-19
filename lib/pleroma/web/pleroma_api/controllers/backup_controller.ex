@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.PleromaAPI.BackupController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
   plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action in [:index, :create])
