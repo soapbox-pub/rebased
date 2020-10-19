@@ -1467,7 +1467,7 @@ defmodule Pleroma.UserTest do
         pleroma_settings_store: %{"q" => "x"},
         fields: [%{"gg" => "qq"}],
         raw_fields: [%{"gg" => "qq"}],
-        discoverable: true,
+        is_discoverable: true,
         also_known_as: ["https://lol.olo/users/loll"]
       })
 
@@ -1509,7 +1509,7 @@ defmodule Pleroma.UserTest do
              pleroma_settings_store: %{},
              fields: [],
              raw_fields: [],
-             discoverable: false,
+             is_discoverable: false,
              also_known_as: []
            } = user
   end

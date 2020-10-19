@@ -827,7 +827,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query =
       from([activity] in query,
         where: fragment("not (? = ANY(?))", activity.actor, ^mutes),
-        where: fragment("not (?->'to' \\?| ?)", activity.data, ^mutes)
+        where:
+          fragment(
+            "not (?->'to' \\?| ?) or ? = ?",
+            activity.data,
+            ^mutes,
+            activity.actor,
+            ^user.ap_id
+          )
       )
 
     unless opts[:skip_preload] do
@@ -1232,7 +1239,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     capabilities = data["capabilities"] || %{}
     accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
-    discoverable = data["discoverable"] || false
+    is_discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
@@ -1258,7 +1265,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       fields: fields,
       emoji: emojis,
       is_locked: is_locked,
-      discoverable: discoverable,
+      is_discoverable: is_discoverable,
       invisible: invisible,
       avatar: avatar,
       name: data["name"],

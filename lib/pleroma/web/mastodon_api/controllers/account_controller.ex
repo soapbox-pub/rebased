@@ -185,7 +185,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
-        :discoverable,
         :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->
@@ -210,6 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
       |> Maps.put_if_present(:is_locked, params[:locked])
+      |> Maps.put_if_present(:is_discoverable, params[:discoverable])
 
     # What happens here:
     #
