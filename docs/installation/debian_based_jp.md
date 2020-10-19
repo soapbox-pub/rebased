@@ -17,6 +17,7 @@
 - `git`
 - `build-essential`
 - `cmake`
+- `libmagic-dev`
 
 #### このガイドで利用している追加パッケージ
 
@@ -36,7 +37,7 @@ sudo apt full-upgrade
 
 * 上記に挙げたパッケージをインストールしておきます。
 ```
-sudo apt install git build-essential postgresql postgresql-contrib cmake ffmpeg imagemagick
+sudo apt install git build-essential postgresql postgresql-contrib cmake ffmpeg imagemagick libmagic-dev
 ```
 
 ### ElixirとErlangをインストールします

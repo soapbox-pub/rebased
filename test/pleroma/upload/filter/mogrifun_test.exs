@@ -17,7 +17,7 @@ defmodule Pleroma.Upload.Filter.MogrifunTest do
 
     upload = %Upload{
       name: "an… image.jpg",
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/image_tmp.jpg"),
       tempfile: Path.absname("test/fixtures/image_tmp.jpg")
     }

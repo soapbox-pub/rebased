@@ -19,7 +19,7 @@ defmodule Pleroma.Uploaders.LocalTest do
 
       file = %Pleroma.Upload{
         name: "image.jpg",
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: file_path,
         tempfile: Path.absname("test/fixtures/image_tmp.jpg")
       }
@@ -38,7 +38,7 @@ defmodule Pleroma.Uploaders.LocalTest do
 
       file = %Pleroma.Upload{
         name: "image.jpg",
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: file_path,
         tempfile: Path.absname("test/fixtures/image_tmp.jpg")
       }

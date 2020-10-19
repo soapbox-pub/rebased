@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
   test "it fails for incoming rejects which cannot be correlated" do
     follower = insert(:user)
-    followed = insert(:user, locked: true)
+    followed = insert(:user, is_locked: true)
 
     accept_data =
       File.read!("test/fixtures/mastodon-reject-activity.json")
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
   test "it works for incoming rejects which are referenced by IRI only" do
     follower = insert(:user)
-    followed = insert(:user, locked: true)
+    followed = insert(:user, is_locked: true)
 
     {:ok, follower} = User.follow(follower, followed)
     {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)

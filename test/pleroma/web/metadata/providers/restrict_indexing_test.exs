@@ -14,13 +14,13 @@ defmodule Pleroma.Web.Metadata.Providers.RestrictIndexingTest do
 
     test "for local user" do
       assert Pleroma.Web.Metadata.Providers.RestrictIndexing.build_tags(%{
-               user: %Pleroma.User{local: true, discoverable: true}
+               user: %Pleroma.User{local: true, is_discoverable: true}
              }) == []
     end
 
     test "for local user when discoverable is false" do
       assert Pleroma.Web.Metadata.Providers.RestrictIndexing.build_tags(%{
-               user: %Pleroma.User{local: true, discoverable: false}
+               user: %Pleroma.User{local: true, is_discoverable: false}
              }) == [{:meta, [name: "robots", content: "noindex, noarchive"], []}]
     end
   end

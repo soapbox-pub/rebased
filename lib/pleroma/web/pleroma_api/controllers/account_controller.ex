@@ -18,6 +18,11 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   require Pleroma.Constants
 
   plug(
+    Majic.Plug,
+    [pool: Pleroma.MajicPool] when action in [:update_avatar, :update_background, :update_banner]
+  )
+
+  plug(
     OpenApiSpex.Plug.PutApiSpec,
     [module: Pleroma.Web.ApiSpec] when action == :confirmation_resend
   )

@@ -25,6 +25,8 @@ before_script:
   - apt-get update && apt-get install -y cmake
   - mix local.hex --force
   - mix local.rebar --force
+  - apt-get -qq update
+  - apt-get install -y libmagic-dev
 
 build:
   stage: build
