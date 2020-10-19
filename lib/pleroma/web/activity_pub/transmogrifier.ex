@@ -40,6 +40,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_in_reply_to(options)
     |> fix_emoji
     |> fix_tag
+    |> set_sensitive
     |> fix_content_map
     |> fix_addressing
     |> fix_summary
@@ -313,7 +314,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags =
       tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
-      |> Enum.map(fn data -> String.slice(data["name"], 1..-1) end)
+      |> Enum.map(fn %{"name" => name} ->
+        name
+        |> String.slice(1..-1)
+        |> String.downcase()
+      end)
 
     Map.put(object, "tag", tag ++ tags)
   end
@@ -927,7 +932,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "conversation", object["context"])
   end
 
-  def set_sensitive(%{"sensitive" => true} = object) do
+  def set_sensitive(%{"sensitive" => _} = object) do
     object
   end
 
