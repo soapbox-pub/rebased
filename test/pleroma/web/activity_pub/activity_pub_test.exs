@@ -752,6 +752,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute repeat_activity in activities
   end
 
+  test "returns your own posts regardless of mute" do
+    user = insert(:user)
+    muted = insert(:user)
+
+    {:ok, muted_post} = CommonAPI.post(muted, %{status: "Im stupid"})
+
+    {:ok, reply} =
+      CommonAPI.post(user, %{status: "I'm muting you", in_reply_to_status_id: muted_post.id})
+
+    {:ok, _} = User.mute(user, muted)
+
+    [activity] = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
+
+    assert activity.id == reply.id
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)

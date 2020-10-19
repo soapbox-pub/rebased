@@ -827,7 +827,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query =
       from([activity] in query,
         where: fragment("not (? = ANY(?))", activity.actor, ^mutes),
-        where: fragment("not (?->'to' \\?| ?)", activity.data, ^mutes)
+        where:
+          fragment(
+            "not (?->'to' \\?| ?) or ? = ?",
+            activity.data,
+            ^mutes,
+            activity.actor,
+            ^user.ap_id
+          )
       )
 
     unless opts[:skip_preload] do
