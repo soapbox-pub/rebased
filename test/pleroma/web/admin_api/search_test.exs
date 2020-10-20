@@ -180,7 +180,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
 
     test "it returns non-discoverable users" do
       insert(:user)
-      insert(:user, discoverable: false)
+      insert(:user, is_discoverable: false)
 
       {:ok, _results, total} = Search.user()
 

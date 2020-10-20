@@ -829,13 +829,7 @@ config :pleroma, :config_description, [
         key: :autofollowed_nicknames,
         type: {:list, :string},
         description:
-          "Set to nicknames of (local) users that every new user should automatically follow",
-        suggestions: [
-          "lain",
-          "kaniini",
-          "lanodan",
-          "rinpatch"
-        ]
+          "Set to nicknames of (local) users that every new user should automatically follow"
       },
       %{
         key: :attachment_links,
