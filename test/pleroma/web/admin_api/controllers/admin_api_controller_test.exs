@@ -2038,7 +2038,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
                |> json_response(200)
 
-      assert [backup] = Repo.all(Pleroma.Backup)
+      assert [backup] = Repo.all(Pleroma.User.Backup)
 
       ObanHelpers.perform_all()
 
@@ -2079,7 +2079,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
                |> json_response(200)
 
-      assert [_backup] = Repo.all(Pleroma.Backup)
+      assert [_backup] = Repo.all(Pleroma.User.Backup)
 
       assert "" ==
                conn
@@ -2088,7 +2088,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
                |> json_response(200)
 
-      assert Repo.aggregate(Pleroma.Backup, :count) == 2
+      assert Repo.aggregate(Pleroma.User.Backup, :count) == 2
     end
   end
 end

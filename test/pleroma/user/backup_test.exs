@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.BackupTest do
+defmodule Pleroma.User.BackupTest do
   use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase
 
@@ -10,7 +10,7 @@ defmodule Pleroma.BackupTest do
   import Pleroma.Factory
   import Swoosh.TestAssertions
 
-  alias Pleroma.Backup
+  alias Pleroma.User.Backup
   alias Pleroma.Bookmark
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
@@ -18,7 +18,7 @@ defmodule Pleroma.BackupTest do
 
   setup do
     clear_config([Pleroma.Upload, :uploader])
-    clear_config([Pleroma.Backup, :limit_days])
+    clear_config([Backup, :limit_days])
     clear_config([Pleroma.Emails.Mailer, :enabled], true)
   end
 
@@ -44,7 +44,7 @@ defmodule Pleroma.BackupTest do
 
   test "it return an error if the export limit is over" do
     %{id: user_id} = user = insert(:user)
-    limit_days = Pleroma.Config.get([Pleroma.Backup, :limit_days])
+    limit_days = Pleroma.Config.get([Backup, :limit_days])
     assert {:ok, %Oban.Job{args: args}} = Backup.create(user)
     backup = Backup.get(args["backup_id"])
     assert %Backup{user_id: ^user_id, processed: false, file_size: 0} = backup
@@ -76,7 +76,7 @@ defmodule Pleroma.BackupTest do
   end
 
   test "it removes outdated backups after creating a fresh one" do
-    Pleroma.Config.put([Pleroma.Backup, :limit_days], -1)
+    Pleroma.Config.put([Backup, :limit_days], -1)
     Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
     user = insert(:user)
 

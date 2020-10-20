@@ -6,6 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.User.Backup
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
   plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action in [:index, :create])
@@ -14,13 +15,13 @@ defmodule Pleroma.Web.PleromaAPI.BackupController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaBackupOperation
 
   def index(%{assigns: %{user: user}} = conn, _params) do
-    backups = Pleroma.Backup.list(user)
+    backups = Backup.list(user)
     render(conn, "index.json", backups: backups)
   end
 
   def create(%{assigns: %{user: user}} = conn, _params) do
-    with {:ok, _} <- Pleroma.Backup.create(user) do
-      backups = Pleroma.Backup.list(user)
+    with {:ok, _} <- Backup.create(user) do
+      backups = Backup.list(user)
       render(conn, "index.json", backups: backups)
     end
   end

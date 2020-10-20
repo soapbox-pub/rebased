@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Backup
+  alias Pleroma.User.Backup
   alias Pleroma.Web.PleromaAPI.BackupView
 
   setup do

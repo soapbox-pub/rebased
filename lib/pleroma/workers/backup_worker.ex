@@ -6,7 +6,7 @@ defmodule Pleroma.Workers.BackupWorker do
   use Oban.Worker, queue: :backup, max_attempts: 1
 
   alias Oban.Job
-  alias Pleroma.Backup
+  alias Pleroma.User.Backup
 
   def process(backup, admin_user_id \\ nil) do
     %{"op" => "process", "backup_id" => backup.id, "admin_user_id" => admin_user_id}
@@ -15,7 +15,7 @@ defmodule Pleroma.Workers.BackupWorker do
   end
 
   def schedule_deletion(backup) do
-    days = Pleroma.Config.get([Pleroma.Backup, :purge_after_days])
+    days = Pleroma.Config.get([Backup, :purge_after_days])
     time = 60 * 60 * 24 * days
     scheduled_at = Calendar.NaiveDateTime.add!(backup.inserted_at, time)
 

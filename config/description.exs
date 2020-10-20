@@ -3731,7 +3731,7 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.Backup,
+    key: Pleroma.User.Backup,
     type: :group,
     description: "Account Backup",
     children: [

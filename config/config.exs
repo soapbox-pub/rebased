@@ -831,7 +831,7 @@ config :floki, :html_parser, Floki.HTMLParser.FastHtml
 
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
 
-config :pleroma, Pleroma.Backup,
+config :pleroma, Pleroma.User.Backup,
   purge_after_days: 30,
   limit_days: 7,
   dir: nil

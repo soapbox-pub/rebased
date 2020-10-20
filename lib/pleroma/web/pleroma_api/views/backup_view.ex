@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.PleromaAPI.BackupView do
   use Pleroma.Web, :view
 
-  alias Pleroma.Backup
+  alias Pleroma.User.Backup
   alias Pleroma.Web.CommonAPI.Utils
 
   def render("show.json", %{backup: %Backup{} = backup}) do

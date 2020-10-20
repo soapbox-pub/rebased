@@ -1077,7 +1077,7 @@ Control favicons for instances.
 
 * `enabled`: Allow/disallow displaying and getting instances favicons
 
-## Account Backup
+## Pleroma.User.Backup
 
 !!! note
     Requires enabled email

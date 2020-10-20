@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Backup do
+defmodule Pleroma.User.Backup do
   use Ecto.Schema
 
   import Ecto.Changeset
@@ -65,7 +65,7 @@ defmodule Pleroma.Backup do
   defp validate_limit(user, nil) do
     case get_last(user.id) do
       %__MODULE__{inserted_at: inserted_at} ->
-        days = Pleroma.Config.get([Pleroma.Backup, :limit_days])
+        days = Pleroma.Config.get([__MODULE__, :limit_days])
         diff = Timex.diff(NaiveDateTime.utc_now(), inserted_at, :days)
 
         if diff > days do
