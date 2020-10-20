@@ -3722,5 +3722,41 @@ config :pleroma, :config_description, [
         suggestions: [2]
       }
     ]
+  },
+  %{
+    group: :prometheus,
+    key: Pleroma.Web.Endpoint.MetricsExporter,
+    type: :group,
+    description: "Prometheus app metrics endpoint configuration",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "[Pleroma extension] Enables app metrics endpoint."
+      },
+      %{
+        key: :ip_whitelist,
+        type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
+        description: "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+      },
+      %{
+        key: :auth,
+        type: [:boolean, :tuple],
+        description: "Enables HTTP Basic Auth for app metrics endpoint.",
+        suggestion: [false, {:basic, "myusername", "mypassword"}]
+      },
+      %{
+        key: :path,
+        type: :string,
+        description: "App metrics endpoint URI path.",
+        suggestions: ["/api/pleroma/app_metrics"]
+      },
+      %{
+        key: :format,
+        type: :atom,
+        description: "App metrics endpoint output format.",
+        suggestions: [:text, :protobuf]
+      }
+    ]
   }
 ]
