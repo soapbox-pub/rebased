@@ -66,6 +66,14 @@ defmodule Pleroma.Object.FetcherTest do
           %Tesla.Env{
             status: 500
           }
+
+        %{
+          method: :get,
+          url: "https://stereophonic.space/objects/02997b83-3ea7-4b63-94af-ef3aa2d4ed17"
+        } ->
+          %Tesla.Env{
+            status: 500
+          }
       end)
 
       :ok
