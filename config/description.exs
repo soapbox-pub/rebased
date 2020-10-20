@@ -3737,7 +3737,8 @@ config :pleroma, :config_description, [
       %{
         key: :ip_whitelist,
         type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
-        description: "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+        description:
+          "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
       },
       %{
         key: :auth,
