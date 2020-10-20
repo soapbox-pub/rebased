@@ -10,9 +10,9 @@ defmodule Pleroma.User.BackupTest do
   import Pleroma.Factory
   import Swoosh.TestAssertions
 
-  alias Pleroma.User.Backup
   alias Pleroma.Bookmark
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.User.Backup
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.BackupWorker
 
