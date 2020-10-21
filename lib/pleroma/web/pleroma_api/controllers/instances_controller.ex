@@ -14,7 +14,7 @@ defmodule Pleroma.Web.PleromaAPI.InstancesController do
   def show(conn, _params) do
     unreachable =
       Instances.get_consistently_unreachable()
-      |> Enum.reduce(%{}, fn {host, date}, acc -> Map.put(acc, host, to_string(date)) end)
+      |> Map.new(fn {host, date} -> {host, to_string(date)} end)
 
     json(conn, %{"unreachable" => unreachable})
   end
