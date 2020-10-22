@@ -636,7 +636,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{status: "foobar"})
 
-      assert {:ok, activity} = CommonAPI.post(user, %{status: "12345"})
+      assert {:ok, _activity} = CommonAPI.post(user, %{status: "12345"})
     end
 
     test "it can handle activities that expire" do
