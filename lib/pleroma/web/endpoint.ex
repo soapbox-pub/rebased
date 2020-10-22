@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/socket", Pleroma.Web.UserSocket)
 
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+  plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
   plug(Pleroma.Web.Plugs.SetLocalePlug)
   plug(CORSPlug)
