@@ -9,13 +9,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     only: [fetch_integer_param: 3]
 
   alias Pleroma.ModerationLog
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.Search
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   @users_page_size 50
 
