@@ -172,7 +172,9 @@ defmodule Pleroma.Mixfile do
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
       # Note: once `prometheus_phx` is integrated into `prometheus_phoenix`, remove the former:
-      {:prometheus_phx, github: "theblitzapp/prometheus-phx"},
+      {:prometheus_phx,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus-phx.git",
+       branch: "no-logging"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
       {:quack, "~> 0.1.1"},
