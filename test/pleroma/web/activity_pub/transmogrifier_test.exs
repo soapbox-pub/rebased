@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
       returned_object = Object.normalize(returned_activity, false)
 
-      assert activity =
+      assert %Activity{} =
                Activity.get_create_by_object_ap_id(
                  "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
                )

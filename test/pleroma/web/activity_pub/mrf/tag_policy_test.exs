@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
       actor = insert(:user, tags: ["mrf_tag:disable-remote-subscription"])
       follower = insert(:user, tags: ["mrf_tag:disable-remote-subscription"], local: true)
       message = %{"object" => actor.ap_id, "type" => "Follow", "actor" => follower.ap_id}
-      assert {:ok, message} = TagPolicy.filter(message)
+      assert {:ok, _message} = TagPolicy.filter(message)
     end
   end
 

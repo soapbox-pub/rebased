@@ -414,7 +414,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       object =
         object
         |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", user.ap_id())
+        |> Map.put("attributedTo", user.ap_id)
         |> Transmogrifier.fix_object()
 
       ActivityPub.create(%{
@@ -458,7 +458,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    actor = user.ap_id()
+    actor = user.ap_id
 
     params =
       params
