@@ -151,7 +151,10 @@ defmodule Pleroma.Application do
 
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-    Pleroma.Web.Endpoint.Instrumenter.setup()
+
+    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
+    # Pleroma.Web.Endpoint.Instrumenter.setup()
+    PrometheusPhx.setup()
   end
 
   defp cachex_children do
