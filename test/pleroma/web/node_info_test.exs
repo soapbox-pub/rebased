@@ -150,6 +150,22 @@ defmodule Pleroma.Web.NodeInfoTest do
            )
   end
 
+  test "it shows quarantined instances data if enabled", %{conn: conn} do
+    clear_config([:mrf, :transparency], true)
+
+    quarantined_instances = [{"example.com", ""}]
+    clear_config([:instance, :quarantined_instances], quarantined_instances)
+
+    expected_config = [%{"instance" => "example.com", "reason" => ""}]
+
+    response =
+      conn
+      |> get("/nodeinfo/2.1.json")
+      |> json_response(:ok)
+
+    assert response["metadata"]["federation"]["quarantined_instances"] == expected_config
+  end
+
   test "it shows MRF transparency data if enabled", %{conn: conn} do
     clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
     clear_config([:mrf, :transparency], true)
@@ -157,7 +173,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     simple_config = %{"reject" => [{"example.com", ""}]}
     clear_config(:mrf_simple, simple_config)
 
-    expected_config = %{"reject" => [["example.com", ""]]}
+    expected_config = %{"reject" => [%{"instance" => "example.com", "reason" => ""}]}
 
     response =
       conn
@@ -175,7 +191,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     simple_config = %{"reject" => [{"example.com", ""}, {"other.site", ""}]}
     clear_config(:mrf_simple, simple_config)
 
-    expected_config = %{"reject" => [["example.com", ""]]}
+    expected_config = %{"reject" => [%{"instance" => "example.com", "reason" => ""}]}
 
     response =
       conn

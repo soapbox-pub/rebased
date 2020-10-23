@@ -95,7 +95,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       {:ok, data} = MRF.describe()
 
       data
-      |> Map.merge(%{quarantined_instances: quarantined})
+      |> Map.merge(%{
+        quarantined_instances:
+          quarantined
+          |> Enum.map(fn {instance, reason} -> %{"instance" => instance, "reason" => reason} end)
+      })
     else
       %{}
     end

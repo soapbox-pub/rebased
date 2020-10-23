@@ -263,6 +263,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     mrf_simple =
       Config.get(:mrf_simple)
       |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn {v, _} -> v in exclusions end)} end)
+      |> Enum.map(fn {k, v} ->
+        {k, Enum.map(v, fn {i, r} -> %{"instance" => i, "reason" => r} end)}
+      end)
       |> Enum.into(%{})
 
     {:ok, %{mrf_simple: mrf_simple}}
