@@ -206,6 +206,16 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.note_count == 1
     end
 
+    test "it works for incoming notices without the sensitive property but an nsfw hashtag" do
+      data = File.read!("test/fixtures/mastodon-post-activity-nsfw.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      object_data = Object.normalize(data["object"], false).data
+
+      assert object_data["sensitive"] == true
+    end
+
     test "it works for incoming notices with hashtags" do
       data = File.read!("test/fixtures/mastodon-post-activity-hashtag.json") |> Poison.decode!()
 
