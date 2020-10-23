@@ -47,7 +47,8 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
-- Allow sending chat messages to yourself
+- Allow sending chat messages to yourself.
+- Fix remote users with a whitespace name.
 
 ## Unreleased (Patch)
 
