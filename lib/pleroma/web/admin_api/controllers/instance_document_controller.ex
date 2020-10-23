@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.InstanceStatic
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.InstanceDocument
+  alias Pleroma.Web.Plugs.InstanceStatic
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 

@@ -9,7 +9,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Delivery
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
-  alias Pleroma.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
@@ -23,8 +22,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.FederatingPlug
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
+  alias Pleroma.Web.Plugs.FederatingPlug
 
   require Logger
 
@@ -45,8 +45,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:read_inbox, :update_outbox, :whoami, :upload_media]
   )
 
+  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:upload_media])
+
   plug(
-    Pleroma.Plugs.Cache,
+    Pleroma.Web.Plugs.Cache,
     [query_params: false, tracking_fun: &__MODULE__.track_object_fetch/2]
     when action in [:activity, :object]
   )
@@ -412,7 +414,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       object =
         object
         |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", user.ap_id())
+        |> Map.put("attributedTo", user.ap_id)
         |> Transmogrifier.fix_object()
 
       ActivityPub.create(%{
@@ -456,7 +458,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    actor = user.ap_id()
+    actor = user.ap_id
 
     params =
       params

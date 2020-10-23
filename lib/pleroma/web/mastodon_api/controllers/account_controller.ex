@@ -15,9 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     ]
 
   alias Pleroma.Maps
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
@@ -29,6 +26,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.OAuthView
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
@@ -177,7 +177,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     user_params =
       [
         :no_rich_text,
-        :locked,
         :hide_followers_count,
         :hide_follows_count,
         :hide_followers,
@@ -186,7 +185,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
-        :discoverable,
         :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->
@@ -210,6 +208,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
+      |> Maps.put_if_present(:is_locked, params[:locked])
+      |> Maps.put_if_present(:is_discoverable, params[:discoverable])
 
     # What happens here:
     #

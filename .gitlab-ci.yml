@@ -25,6 +25,8 @@ before_script:
   - apt-get update && apt-get install -y cmake
   - mix local.hex --force
   - mix local.rebar --force
+  - apt-get -qq update
+  - apt-get install -y libmagic-dev
 
 build:
   stage: build
@@ -196,7 +198,7 @@ amd64:
   variables: &release-variables
     MIX_ENV: prod
   before_script: &before-release
-  - apt-get update && apt-get install -y cmake
+  - apt-get update && apt-get install -y cmake libmagic-dev
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -215,7 +217,7 @@ amd64-musl:
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git gcc g++ musl-dev make cmake
+  - apk add git gcc g++ musl-dev make cmake file-dev
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.SideEffects do
   @moduledoc """
   This module looks at an inserted object and executes the side effects that it
@@ -98,7 +102,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = followed <- User.get_cached_by_ap_id(followed_user),
          {_, {:ok, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
-      if followed.local && !followed.locked do
+      if followed.local && !followed.is_locked do
         {:ok, accept_data, _} = Builder.accept(followed, object)
         {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
       end
@@ -302,6 +306,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
       streamables =
         [[actor, recipient], [recipient, actor]]
+        |> Enum.uniq()
         |> Enum.map(fn [user, other_user] ->
           if user.local do
             {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)

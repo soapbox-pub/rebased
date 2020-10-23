@@ -113,7 +113,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.ActivityExpiration` to be enabled for processing the scheduled delections.
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
@@ -218,12 +218,6 @@ config :pleroma, :mrf_user_allowlist, %{
 * `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
-
-## Pleroma.ActivityExpiration
-
-Enables the worker which processes posts scheduled for deletion. Pinned posts are exempt from expiration.
-
-* `enabled`: whether expired activities will be sent to the job queue to be deleted
 
 ## FedSockets
 FedSockets is an experimental feature allowing for Pleroma backends to federate using a persistant websocket connection as opposed to making each federation a seperate http connection. This feature is currently off by default. It is configurable throught he following options.
@@ -416,12 +410,12 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
 * ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
 
-### Pleroma.Plugs.RemoteIp
+### Pleroma.Web.Plugs.RemoteIp
 
 !!! warning
     If your instance is not behind at least one reverse proxy, you should not enable this plug.
 
-`Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+`Pleroma.Web.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
 
 Available options:
 
@@ -434,7 +428,7 @@ Available options:
 ### :rate_limit
 
 !!! note
-   If your instance is behind a reverse proxy ensure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip) is enabled (it is enabled by default).
+   If your instance is behind a reverse proxy ensure [`Pleroma.Web.Plugs.RemoteIp`](#pleroma-plugs-remoteip) is enabled (it is enabled by default).
 
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
