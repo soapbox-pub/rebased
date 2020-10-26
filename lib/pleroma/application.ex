@@ -95,11 +95,12 @@ defmodule Pleroma.Application do
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
+          {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
         dont_run_in_test(@env) ++
-        chat_child(@env, chat_enabled?()) ++
+        chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
           Pleroma.Gopher.Server
@@ -150,7 +151,10 @@ defmodule Pleroma.Application do
 
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-    Pleroma.Web.Endpoint.Instrumenter.setup()
+
+    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
+    # Pleroma.Web.Endpoint.Instrumenter.setup()
+    PrometheusPhx.setup()
   end
 
   defp cachex_children do
@@ -201,11 +205,14 @@ defmodule Pleroma.Application do
     ]
   end
 
-  defp chat_child(_env, true) do
-    [Pleroma.Web.ChatChannel.ChatChannelState]
+  defp chat_child(true) do
+    [
+      Pleroma.Web.ChatChannel.ChatChannelState,
+      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
+    ]
   end
 
-  defp chat_child(_, _), do: []
+  defp chat_child(_), do: []
 
   defp task_children(:test) do
     [

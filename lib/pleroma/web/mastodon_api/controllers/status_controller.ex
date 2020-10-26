@@ -127,9 +127,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc """
   POST /api/v1/statuses
-
-  Creates a scheduled status when `scheduled_at` param is present and it's far enough
   """
+  # Creates a scheduled status when `scheduled_at` param is present and it's far enough
   def create(
         %{
           assigns: %{user: user},
@@ -160,11 +159,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
-  @doc """
-  POST /api/v1/statuses
-
-  Creates a regular status
-  """
+  # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
     params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
 

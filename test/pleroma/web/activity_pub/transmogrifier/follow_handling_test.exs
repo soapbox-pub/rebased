@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
     end
 
     test "with locked accounts, it does create a Follow, but not an Accept" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
@@ -188,7 +188,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
     test "it works for incoming follows to locked account" do
       pending_follower = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")

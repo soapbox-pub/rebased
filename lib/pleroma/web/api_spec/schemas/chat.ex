@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
           "fields" => []
         },
         "statuses_count" => 1,
-        "locked" => false,
+        "is_locked" => false,
         "created_at" => "2020-04-16T13:40:15.000Z",
         "display_name" => "lain",
         "fields" => [],

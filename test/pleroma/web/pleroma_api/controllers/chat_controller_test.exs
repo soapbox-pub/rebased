@@ -105,7 +105,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
     test "it works with an attachment", %{conn: conn, user: user} do
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }

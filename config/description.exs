@@ -829,13 +829,7 @@ config :pleroma, :config_description, [
         key: :autofollowed_nicknames,
         type: {:list, :string},
         description:
-          "Set to nicknames of (local) users that every new user should automatically follow",
-        suggestions: [
-          "lain",
-          "kaniini",
-          "lanodan",
-          "rinpatch"
-        ]
+          "Set to nicknames of (local) users that every new user should automatically follow"
       },
       %{
         key: :attachment_links,
@@ -3711,6 +3705,20 @@ config :pleroma, :config_description, [
           Pleroma.Web.Preload.Providers.Timelines,
           Pleroma.Web.Preload.Providers.StatusNet
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :majic_pool,
+    type: :group,
+    description: "Majic/libmagic configuration",
+    children: [
+      %{
+        key: :size,
+        type: :integer,
+        description: "Number of majic workers to start.",
+        suggestions: [2]
       }
     ]
   }

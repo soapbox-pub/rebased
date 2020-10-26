@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "name" => user.name,
       "summary" => user.bio,
       "url" => user.ap_id,
-      "manuallyApprovesFollowers" => user.locked,
+      "manuallyApprovesFollowers" => user.is_locked,
       "publicKey" => %{
         "id" => "#{user.ap_id}#main-key",
         "owner" => user.ap_id,
@@ -110,7 +110,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "endpoints" => endpoints,
       "attachment" => fields,
       "tag" => emoji_tags,
-      "discoverable" => user.discoverable,
+      "discoverable" => user.is_discoverable,
       "capabilities" => capabilities
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))

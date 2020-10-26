@@ -27,22 +27,23 @@ Other than things bundled in the OTP release Pleroma depends on:
 * PostgreSQL (also utilizes extensions in postgresql-contrib)
 * nginx (could be swapped with another reverse proxy but this guide covers only it)
 * certbot (for Let's Encrypt certificates, could be swapped with another ACME client, but this guide covers only it)
+* libmagic/file
 
 === "Alpine"
     ```
     echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
     apk update
-    apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot
+    apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot file-dev
     ```
 
 === "Debian/Ubuntu"
     ```
-    apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot
+    apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot libmagic-dev
     ```
 
 ### Installing optional packages
 
-Per [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+Per [`docs/installation/optional/media_graphics_packages.md`](optional/media_graphics_packages.md):
   * ImageMagick
   * ffmpeg
   * exiftool
@@ -148,6 +149,9 @@ chown -R pleroma /etc/pleroma
 # Run the config generator
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
 
+# Run the environment file generator.
+su pleroma -s $SHELL -lc "./bin/pleroma_ctl release_env gen"
+
 # Create the postgres database
 su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 
@@ -158,7 +162,7 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 # su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
 
 # Start the instance to verify that everything is working as expected
-su pleroma -s $SHELL -lc "./bin/pleroma daemon"
+su pleroma -s $SHELL -lc "export $(cat /opt/pleroma/config/pleroma.env); ./bin/pleroma daemon"
 
 # Wait for about 20 seconds and query the instance endpoint, if it shows your uri, name and email correctly, you are configured correctly
 sleep 20 && curl http://localhost:4000/api/v1/instance
@@ -310,4 +314,3 @@ This will create an account withe the username of 'joeuser' with the email addre
 ## Questions
 
 Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
-

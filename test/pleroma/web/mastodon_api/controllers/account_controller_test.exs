@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "works by nickname" do
       user = insert(:user)
 
-      assert %{"id" => user_id} =
+      assert %{"id" => _user_id} =
                build_conn()
                |> get("/api/v1/accounts/#{user.nickname}")
                |> json_response_and_validate_schema(200)
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
-      assert %{"id" => user_id} =
+      assert %{"id" => _user_id} =
                build_conn()
                |> get("/api/v1/accounts/#{user.nickname}")
                |> json_response_and_validate_schema(200)
@@ -380,7 +380,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       other_user = insert(:user)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -706,7 +706,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "cancelling follow request", %{conn: conn} do
-      %{id: other_user_id} = insert(:user, %{locked: true})
+      %{id: other_user_id} = insert(:user, %{is_locked: true})
 
       assert %{"id" => ^other_user_id, "following" => false, "requested" => true} =
                conn
@@ -1429,10 +1429,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "returns lists to which the account belongs" do
       %{user: user, conn: conn} = oauth_access(["read:lists"])
       other_user = insert(:user)
-      assert {:ok, %Pleroma.List{id: list_id} = list} = Pleroma.List.create("Test List", user)
+      assert {:ok, %Pleroma.List{id: _list_id} = list} = Pleroma.List.create("Test List", user)
       {:ok, %{following: _following}} = Pleroma.List.follow(list, other_user)
 
-      assert [%{"id" => list_id, "title" => "Test List"}] =
+      assert [%{"id" => _list_id, "title" => "Test List"}] =
                conn
                |> get("/api/v1/accounts/#{other_user.id}/lists")
                |> json_response_and_validate_schema(200)
