@@ -1,0 +1,46 @@
+{
+   "@context" : [
+      "https://www.w3.org/ns/activitystreams",
+      "https://princess.cat/schemas/litepub-0.1.jsonld",
+      {
+         "@language" : "und"
+      }
+   ],
+   "attachment" : [],
+   "capabilities" : {
+      "acceptsChatMessages" : true
+   },
+   "discoverable" : false,
+   "endpoints" : {
+      "oauthAuthorizationEndpoint" : "https://princess.cat/oauth/authorize",
+      "oauthRegistrationEndpoint" : "https://princess.cat/api/v1/apps",
+      "oauthTokenEndpoint" : "https://princess.cat/oauth/token",
+      "sharedInbox" : "https://princess.cat/inbox",
+      "uploadMedia" : "https://princess.cat/api/ap/upload_media"
+   },
+   "followers" : "https://princess.cat/users/mewmew/followers",
+   "following" : "https://princess.cat/users/mewmew/following",
+   "icon" : {
+      "type" : "Image",
+      "url" : "https://princess.cat/media/12794fb50e86911e65be97f69196814049dcb398a2f8b58b99bb6591576e648c.png?name=blobcatpresentpink.png"
+   },
+   "id" : "https://princess.cat/users/mewmew",
+   "image" : {
+      "type" : "Image",
+      "url" : "https://princess.cat/media/05d8bf3953ab6028fc920494ffc643fbee9dcef40d7bdd06f107e19acbfbd7f9.png"
+   },
+   "inbox" : "https://princess.cat/users/mewmew/inbox",
+   "manuallyApprovesFollowers" : true,
+   "name" : " ",
+   "outbox" : "https://princess.cat/users/mewmew/outbox",
+   "preferredUsername" : "mewmew",
+   "publicKey" : {
+      "id" : "https://princess.cat/users/mewmew#main-key",
+      "owner" : "https://princess.cat/users/mewmew",
+      "publicKeyPem" : "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAru7VpygVef4zrFwnj0Mh\nrbO/2z2EdKN3rERtNrT8zWsLXNLQ50lfpRPnGDrd+xq7Rva4EIu0d5KJJ9n4vtY0\nuxK3On9vA2oyjLlR9O0lI3XTrHJborG3P7IPXrmNUMFpHiFHNqHp5tugUrs1gUFq\n7tmOmM92IP4Wjk8qNHFcsfnUbaPTX7sNIhteQKdi5HrTb/6lrEIe4G/FlMKRqxo3\nRNHuv6SNFQuiUKvFzjzazvjkjvBSm+aFROgdHa2tKl88StpLr7xmuY8qNFCRT6W0\nLacRp6c8ah5f03Kd+xCBVhCKvKaF1K0ERnQTBiitUh85md+Mtx/CoDoLnmpnngR3\nvQIDAQAB\n-----END PUBLIC KEY-----\n\n"
+   },
+   "summary" : "please reply to my posts as direct messages if you have many followers",
+   "tag" : [],
+   "type" : "Person",
+   "url" : "https://princess.cat/users/mewmew"
+}
