@@ -569,7 +569,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
     test "for pack name with special chars", %{conn: conn} do
       assert %{
-               "files" => files,
+               "files" => _files,
                "files_count" => 1,
                "pack" => %{
                  "can-download" => true,

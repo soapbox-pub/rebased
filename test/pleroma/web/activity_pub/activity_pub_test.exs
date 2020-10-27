@@ -505,22 +505,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       # public
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "public"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 1
 
       # unlisted
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "unlisted"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # private
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "private"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # direct
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "direct"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
     end
   end
@@ -750,6 +750,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_activities([], %{blocking_user: blocker, skip_preload: true})
 
     refute repeat_activity in activities
+  end
+
+  test "returns your own posts regardless of mute" do
+    user = insert(:user)
+    muted = insert(:user)
+
+    {:ok, muted_post} = CommonAPI.post(muted, %{status: "Im stupid"})
+
+    {:ok, reply} =
+      CommonAPI.post(user, %{status: "I'm muting you", in_reply_to_status_id: muted_post.id})
+
+    {:ok, _} = User.mute(user, muted)
+
+    [activity] = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
+
+    assert activity.id == reply.id
   end
 
   test "doesn't return muted activities" do
