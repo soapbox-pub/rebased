@@ -2257,4 +2257,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert length(activities) == 2
     end
   end
+
+  test "allow fetching of accounts with an empty string name field" do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://princess.cat/users/mewmew"} ->
+        file = File.read!("test/fixtures/mewmew_no_name.json")
+        %Tesla.Env{status: 200, body: file}
+    end)
+
+    {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")
+    assert user.name == " "
+  end
 end

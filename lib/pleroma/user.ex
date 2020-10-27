@@ -426,7 +426,6 @@ defmodule Pleroma.User do
       params,
       [
         :bio,
-        :name,
         :emoji,
         :ap_id,
         :inbox,
@@ -455,7 +454,9 @@ defmodule Pleroma.User do
         :accepts_chat_messages
       ]
     )
-    |> validate_required([:name, :ap_id])
+    |> cast(params, [:name], empty_values: [])
+    |> validate_required([:ap_id])
+    |> validate_required([:name], trim: false)
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, @email_regex)
     |> validate_length(:bio, max: bio_limit)

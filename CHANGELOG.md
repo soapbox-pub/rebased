@@ -53,6 +53,7 @@ switched to a new configuration mechanism, however it was not officially removed
 - Allow sending out emails again.
 - Allow sending chat messages to yourself
 - OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
+- Fix remote users with a whitespace name.
 
 ### Upgrade notes
 
