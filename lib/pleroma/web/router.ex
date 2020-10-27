@@ -223,6 +223,9 @@ defmodule Pleroma.Web.Router do
     get("/chats/:id", ChatController, :show)
     get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+
+    get("/frontends", FrontendController, :index)
+    post("/frontends", FrontendController, :install)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do

@@ -560,7 +560,8 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 5,
-    new_users_digest: 1
+    new_users_digest: 1,
+    frontend_installer: 1
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
