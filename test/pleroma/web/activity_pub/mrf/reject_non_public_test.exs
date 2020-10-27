@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
         "type" => "Create"
       }
 
-      assert {:ok, message} = RejectNonPublic.filter(message)
+      assert {:ok, _message} = RejectNonPublic.filter(message)
     end
 
     test "it's allowed when cc address contain public address" do
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
         "type" => "Create"
       }
 
-      assert {:ok, message} = RejectNonPublic.filter(message)
+      assert {:ok, _message} = RejectNonPublic.filter(message)
     end
   end
 
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
       }
 
       Pleroma.Config.put([:mrf_rejectnonpublic, :allow_followersonly], true)
-      assert {:ok, message} = RejectNonPublic.filter(message)
+      assert {:ok, _message} = RejectNonPublic.filter(message)
     end
 
     test "it's rejected when addrer of message in the follower addresses of user and it disabled in config" do
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
       }
 
       Pleroma.Config.put([:mrf_rejectnonpublic, :allow_direct], true)
-      assert {:ok, message} = RejectNonPublic.filter(message)
+      assert {:ok, _message} = RejectNonPublic.filter(message)
     end
 
     test "it's reject when direct messages aren't allow" do

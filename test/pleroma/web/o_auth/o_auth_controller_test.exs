@@ -77,7 +77,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 302)
+      assert html_response(conn, 302)
 
       redirect_query = URI.parse(redirected_to(conn)).query
       assert %{"state" => state_param} = URI.decode_query(redirect_query)
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 302)
+      assert html_response(conn, 302)
       assert redirected_to(conn) =~ ~r/#{redirect_uri}\?code=.+/
     end
 
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 302)
+      assert html_response(conn, 302)
       assert redirected_to(conn) == app.redirect_uris
       assert get_flash(conn, :error) == "Failed to authenticate: (error description)."
     end
@@ -238,7 +238,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 302)
+      assert html_response(conn, 302)
       assert redirected_to(conn) =~ ~r/#{redirect_uri}\?code=.+/
     end
 
@@ -268,7 +268,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 401)
+      assert html_response(conn, 401)
     end
 
     test "with invalid params, POST /oauth/register?op=register renders registration_details page",
@@ -336,7 +336,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 302)
+      assert html_response(conn, 302)
       assert redirected_to(conn) =~ ~r/#{redirect_uri}\?code=.+/
     end
 
@@ -367,7 +367,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert response = html_response(conn, 401)
+      assert html_response(conn, 401)
     end
 
     test "with invalid params, POST /oauth/register?op=connect renders registration_details page",

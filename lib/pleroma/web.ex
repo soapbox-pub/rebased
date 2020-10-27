@@ -172,7 +172,7 @@ defmodule Pleroma.Web do
   def channel do
     quote do
       # credo:disable-for-next-line Credo.Check.Consistency.MultiAliasImportRequireUse
-      use Phoenix.Channel
+      import Phoenix.Channel
       import Pleroma.Web.Gettext
     end
   end
