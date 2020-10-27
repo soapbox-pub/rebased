@@ -38,7 +38,6 @@ defmodule Pleroma.Web.Endpoint.MetricsExporterTest do
       for metric <- [
             "http_requests_total",
             "http_request_duration_microseconds",
-            "phoenix_controller_render_duration",
             "phoenix_controller_call_duration",
             "telemetry_scrape_duration",
             "erlang_vm_memory_atom_bytes_total"
