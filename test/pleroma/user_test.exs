@@ -388,6 +388,7 @@ defmodule Pleroma.UserTest do
     }
 
     setup do: clear_config([:instance, :autofollowed_nicknames])
+    setup do: clear_config([:instance, :autofollowing_nicknames])
     setup do: clear_config([:welcome])
     setup do: clear_config([:instance, :account_activation_required])
 
@@ -406,6 +407,23 @@ defmodule Pleroma.UserTest do
 
       assert User.following?(registered_user, user)
       refute User.following?(registered_user, remote_user)
+    end
+
+    test "it adds automatic followers for new registered accounts" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      Pleroma.Config.put([:instance, :autofollowing_nicknames], [
+        user1.nickname,
+        user2.nickname
+      ])
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      {:ok, registered_user} = User.register(cng)
+
+      assert User.following?(user1, registered_user)
+      assert User.following?(user2, registered_user)
     end
 
     test "it sends a welcome message if it is set" do
