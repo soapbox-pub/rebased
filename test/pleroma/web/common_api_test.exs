@@ -95,6 +95,20 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "posting chat messages" do
     setup do: clear_config([:instance, :chat_limit])
 
+    test "it posts a self-chat" do
+      author = insert(:user)
+      recipient = author
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "remember to buy milk when milk truk arive"
+        )
+
+      assert activity.data["type"] == "Create"
+    end
+
     test "it posts a chat message without content but with an attachment" do
       author = insert(:user)
       recipient = insert(:user)
@@ -622,7 +636,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{status: "foobar"})
 
-      assert {:ok, activity} = CommonAPI.post(user, %{status: "12345"})
+      assert {:ok, _activity} = CommonAPI.post(user, %{status: "12345"})
     end
 
     test "it can handle activities that expire" do

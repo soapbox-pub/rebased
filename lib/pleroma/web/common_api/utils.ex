@@ -263,7 +263,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def format_input(text, format, options \\ [])
 
   @doc """
-  Formatting text to plain text.
+  Formatting text to plain text, BBCode, HTML, or Markdown
   """
   def format_input(text, "text/plain", options) do
     text
@@ -274,9 +274,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         end).()
   end
 
-  @doc """
-  Formatting text as BBCode.
-  """
   def format_input(text, "text/bbcode", options) do
     text
     |> String.replace(~r/\r/, "")
@@ -286,18 +283,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.linkify(options)
   end
 
-  @doc """
-  Formatting text to html.
-  """
   def format_input(text, "text/html", options) do
     text
     |> Formatter.html_escape("text/html")
     |> Formatter.linkify(options)
   end
 
-  @doc """
-  Formatting text to markdown.
-  """
   def format_input(text, "text/markdown", options) do
     text
     |> Formatter.mentions_escape(options)

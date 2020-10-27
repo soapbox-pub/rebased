@@ -43,7 +43,7 @@ Other than things bundled in the OTP release Pleroma depends on:
 
 ### Installing optional packages
 
-Per [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+Per [`docs/installation/optional/media_graphics_packages.md`](optional/media_graphics_packages.md):
   * ImageMagick
   * ffmpeg
   * exiftool
