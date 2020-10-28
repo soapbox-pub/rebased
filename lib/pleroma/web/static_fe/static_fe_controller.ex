@@ -19,7 +19,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
 
-  @doc "Renders requested local public activity"
+  @doc "Renders requested local public activity or public activities of requested user"
   def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
     with %Activity{local: true} = activity <-
            Activity.get_by_id_with_object(notice_id),
@@ -46,7 +46,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     end
   end
 
-  @doc "Renders public activities of requested user"
   def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
     with {_, %User{local: true} = user} <-
            {:fetch_user, User.get_cached_by_nickname_or_id(username_or_id)},
