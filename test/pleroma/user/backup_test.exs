@@ -82,7 +82,7 @@ defmodule Pleroma.User.BackupTest do
 
     assert {:ok, job1} = Backup.create(user)
 
-    assert {:ok, %Backup{id: backup1_id}} = ObanHelpers.perform(job1)
+    assert {:ok, %Backup{}} = ObanHelpers.perform(job1)
     assert {:ok, job2} = Backup.create(user)
     assert Pleroma.Repo.aggregate(Backup, :count) == 2
     assert {:ok, backup2} = ObanHelpers.perform(job2)
