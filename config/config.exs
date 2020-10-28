@@ -234,6 +234,7 @@ config :pleroma, :instance,
     "text/bbcode"
   ],
   autofollowed_nicknames: [],
+  autofollowing_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
   max_report_comment_size: 1000,
