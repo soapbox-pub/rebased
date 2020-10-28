@@ -112,28 +112,6 @@ defmodule Pleroma.Web.ConnCase do
       defp json_response_and_validate_schema(conn, _status) do
         flunk("Response schema not found for #{conn.method} #{conn.request_path} #{conn.status}")
       end
-
-      defp ensure_federating_or_authenticated(conn, url, user) do
-        initial_setting = Config.get([:instance, :federating])
-        on_exit(fn -> Config.put([:instance, :federating], initial_setting) end)
-
-        Config.put([:instance, :federating], false)
-
-        conn
-        |> get(url)
-        |> response(403)
-
-        conn
-        |> assign(:user, user)
-        |> get(url)
-        |> response(200)
-
-        Config.put([:instance, :federating], true)
-
-        conn
-        |> get(url)
-        |> response(200)
-      end
     end
   end
 
