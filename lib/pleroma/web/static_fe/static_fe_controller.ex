@@ -17,11 +17,95 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   plug(:put_view, Pleroma.Web.StaticFE.StaticFEView)
   plug(:assign_id)
 
-  plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug,
-    unless_func: &Pleroma.Web.Plugs.FederatingPlug.federating?/1
-  )
-
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
+
+  @doc "Renders requested local public activity or public activities of requested user"
+  def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
+    with %Activity{local: true} = activity <-
+           Activity.get_by_id_with_object(notice_id),
+         true <- Visibility.is_public?(activity.object),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, _reading_user = nil)},
+         %User{} = user <- User.get_by_ap_id(activity.object.data["actor"]) do
+      meta = Metadata.build_tags(%{activity_id: notice_id, object: activity.object, user: user})
+
+      timeline =
+        activity.object.data["context"]
+        |> ActivityPub.fetch_activities_for_context(%{})
+        |> Enum.reverse()
+        |> Enum.map(&represent(&1, &1.object.id == activity.object.id))
+
+      render(conn, "conversation.html", %{activities: timeline, meta: meta})
+    else
+      %Activity{object: %Object{data: data}} ->
+        conn
+        |> put_status(:found)
+        |> redirect(external: data["url"] || data["external_url"] || data["id"])
+
+      _ ->
+        not_found(conn, "Post not found.")
+    end
+  end
+
+  def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
+    with {_, %User{local: true} = user} <-
+           {:fetch_user, User.get_cached_by_nickname_or_id(username_or_id)},
+         {_, :visible} <- {:visibility, User.visible_for(user, _reading_user = nil)} do
+      meta = Metadata.build_tags(%{user: user})
+
+      params =
+        params
+        |> Map.take(@page_keys)
+        |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
+
+      timeline =
+        user
+        |> ActivityPub.fetch_user_activities(_reading_user = nil, params)
+        |> Enum.map(&represent/1)
+
+      prev_page_id =
+        (params["min_id"] || params["max_id"]) &&
+          List.first(timeline) && List.first(timeline).id
+
+      next_page_id = List.last(timeline) && List.last(timeline).id
+
+      render(conn, "profile.html", %{
+        user: User.sanitize_html(user),
+        timeline: timeline,
+        prev_page_id: prev_page_id,
+        next_page_id: next_page_id,
+        meta: meta
+      })
+    else
+      _ ->
+        not_found(conn, "User not found.")
+    end
+  end
+
+  def show(%{assigns: %{object_id: _}} = conn, _params) do
+    url = Helpers.url(conn) <> conn.request_path
+
+    case Activity.get_create_by_object_ap_id_with_object(url) do
+      %Activity{} = activity ->
+        to = Helpers.o_status_path(Pleroma.Web.Endpoint, :notice, activity)
+        redirect(conn, to: to)
+
+      _ ->
+        not_found(conn, "Post not found.")
+    end
+  end
+
+  def show(%{assigns: %{activity_id: _}} = conn, _params) do
+    url = Helpers.url(conn) <> conn.request_path
+
+    case Activity.get_by_ap_id(url) do
+      %Activity{} = activity ->
+        to = Helpers.o_status_path(Pleroma.Web.Endpoint, :notice, activity)
+        redirect(conn, to: to)
+
+      _ ->
+        not_found(conn, "Post not found.")
+    end
+  end
 
   defp get_title(%Object{data: %{"name" => name}}) when is_binary(name),
     do: name
@@ -79,91 +163,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       counts: get_counts(activity),
       id: activity.id
     }
-  end
-
-  def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
-    with %Activity{local: true} = activity <-
-           Activity.get_by_id_with_object(notice_id),
-         true <- Visibility.is_public?(activity.object),
-         %User{} = user <- User.get_by_ap_id(activity.object.data["actor"]) do
-      meta = Metadata.build_tags(%{activity_id: notice_id, object: activity.object, user: user})
-
-      timeline =
-        activity.object.data["context"]
-        |> ActivityPub.fetch_activities_for_context(%{})
-        |> Enum.reverse()
-        |> Enum.map(&represent(&1, &1.object.id == activity.object.id))
-
-      render(conn, "conversation.html", %{activities: timeline, meta: meta})
-    else
-      %Activity{object: %Object{data: data}} ->
-        conn
-        |> put_status(:found)
-        |> redirect(external: data["url"] || data["external_url"] || data["id"])
-
-      _ ->
-        not_found(conn, "Post not found.")
-    end
-  end
-
-  def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
-    case User.get_cached_by_nickname_or_id(username_or_id) do
-      %User{} = user ->
-        meta = Metadata.build_tags(%{user: user})
-
-        params =
-          params
-          |> Map.take(@page_keys)
-          |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
-
-        timeline =
-          user
-          |> ActivityPub.fetch_user_activities(nil, params)
-          |> Enum.map(&represent/1)
-
-        prev_page_id =
-          (params["min_id"] || params["max_id"]) &&
-            List.first(timeline) && List.first(timeline).id
-
-        next_page_id = List.last(timeline) && List.last(timeline).id
-
-        render(conn, "profile.html", %{
-          user: User.sanitize_html(user),
-          timeline: timeline,
-          prev_page_id: prev_page_id,
-          next_page_id: next_page_id,
-          meta: meta
-        })
-
-      _ ->
-        not_found(conn, "User not found.")
-    end
-  end
-
-  def show(%{assigns: %{object_id: _}} = conn, _params) do
-    url = Helpers.url(conn) <> conn.request_path
-
-    case Activity.get_create_by_object_ap_id_with_object(url) do
-      %Activity{} = activity ->
-        to = Helpers.o_status_path(Pleroma.Web.Endpoint, :notice, activity)
-        redirect(conn, to: to)
-
-      _ ->
-        not_found(conn, "Post not found.")
-    end
-  end
-
-  def show(%{assigns: %{activity_id: _}} = conn, _params) do
-    url = Helpers.url(conn) <> conn.request_path
-
-    case Activity.get_by_ap_id(url) do
-      %Activity{} = activity ->
-        to = Helpers.o_status_path(Pleroma.Web.Endpoint, :notice, activity)
-        redirect(conn, to: to)
-
-      _ ->
-        not_found(conn, "Post not found.")
-    end
   end
 
   defp assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
