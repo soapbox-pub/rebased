@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
 - App metrics: ability to restrict access to specified IP whitelist.
+- Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
 ### Changed
 
@@ -49,7 +50,8 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
-- Allow sending chat messages to yourself
+- Allow sending chat messages to yourself.
+- Fix remote users with a whitespace name.
 
 ## Unreleased (Patch)
 
