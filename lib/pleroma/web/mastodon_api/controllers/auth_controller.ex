@@ -24,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
     redirect(conn, to: local_mastodon_root_path(conn))
   end
 
-  @doc "Local Mastodon FE login init action"
+  # Local Mastodon FE login init action
   def login(conn, %{"code" => auth_token}) do
     with {:ok, app} <- get_or_make_app(),
          {:ok, auth} <- Authorization.get_by_token(app, auth_token),
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
     end
   end
 
-  @doc "Local Mastodon FE callback action"
+  # Local Mastodon FE callback action
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =

@@ -9,12 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
 - Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
 - Mix task option for force-unfollowing relays
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Pleroma API: Importing the mutes users from CSV files.
+- Experimental websocket-based federation between Pleroma instances.
+- App metrics: ability to restrict access to specified IP whitelist.
+- Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
 ### Changed
 
 - **Breaking** Requires `libmagic` (or `file`) to guess file types.
 - **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
 - **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- **Breaking:** App metrics endpoint (`/api/pleroma/app_metrics`) is disabled by default, check `docs/API/prometheus.md` on enabling and configuring. 
 - Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
@@ -22,11 +28,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Users with the `discoverable` field set to false will not show up in searches.
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 - Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
-
-### Added
-- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
-- Pleroma API: Importing the mutes users from CSV files.
-- Experimental websocket-based federation between Pleroma instances.
 
 <details>
   <summary>API Changes</summary>
@@ -49,6 +50,8 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
+- Allow sending chat messages to yourself.
+- Fix remote users with a whitespace name.
 - OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
 
 ## Unreleased (Patch)
