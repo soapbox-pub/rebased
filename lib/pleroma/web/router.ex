@@ -149,16 +149,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
 
-    post("/users/follow", AdminAPIController, :user_follow)
-    post("/users/unfollow", AdminAPIController, :user_unfollow)
-
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
-    delete("/users", AdminAPIController, :user_delete)
-    post("/users", AdminAPIController, :users_create)
-    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
-    patch("/users/activate", AdminAPIController, :user_activate)
-    patch("/users/deactivate", AdminAPIController, :user_deactivate)
-    patch("/users/approve", AdminAPIController, :user_approve)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
@@ -181,6 +172,15 @@ defmodule Pleroma.Web.Router do
       :right_delete_multiple
     )
 
+    post("/users/follow", UserController, :follow)
+    post("/users/unfollow", UserController, :unfollow)
+    delete("/users", UserController, :delete)
+    post("/users", UserController, :create)
+    patch("/users/:nickname/toggle_activation", UserController, :toggle_activation)
+    patch("/users/activate", UserController, :activate)
+    patch("/users/deactivate", UserController, :deactivate)
+    patch("/users/approve", UserController, :approve)
+
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
@@ -195,8 +195,8 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
     patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
 
-    get("/users", AdminAPIController, :list_users)
-    get("/users/:nickname", AdminAPIController, :user_show)
+    get("/users", UserController, :list)
+    get("/users/:nickname", UserController, :show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
