@@ -8,16 +8,16 @@ defmodule Pleroma.Frontend do
   require Logger
 
   def install(name, opts \\ []) do
-    cmd_frontend_info = %{
+    frontend_info = %{
       "ref" => opts[:ref],
       "build_url" => opts[:build_url],
       "build_dir" => opts[:build_dir]
     }
 
-    config_frontend_info = Config.get([:frontends, :available, name], %{})
-
     frontend_info =
-      Map.merge(config_frontend_info, cmd_frontend_info, fn _key, config, cmd ->
+      [:frontends, :available, name]
+      |> Config.get(%{})
+      |> Map.merge(frontend_info, fn _key, config, cmd ->
         # This only overrides things that are actually set
         cmd || config
       end)

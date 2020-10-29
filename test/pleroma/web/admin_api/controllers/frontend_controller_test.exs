@@ -48,7 +48,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
   end
 
   describe "POST /api/pleroma/admin/frontends" do
-    test "it installs a frontend", %{conn: conn} do
+    test "from available frontends", %{conn: conn} do
       clear_config([:frontends, :available], %{
         "pleroma" => %{
           "ref" => "fantasy",
@@ -89,6 +89,56 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
                  "ref" => "fantasy"
                }
              ]
+    end
+
+    test "from a file", %{conn: conn} do
+      clear_config([:frontends, :available], %{
+        "pleroma" => %{
+          "ref" => "fantasy",
+          "name" => "pleroma",
+          "build_dir" => ""
+        }
+      })
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/frontends", %{
+        name: "pleroma",
+        file: "test/fixtures/tesla_mock/frontend.zip"
+      })
+      |> json_response_and_validate_schema(:ok)
+
+      assert_enqueued(
+        worker: FrontendInstallerWorker,
+        args: %{
+          "name" => "pleroma",
+          "opts" => %{"file" => "test/fixtures/tesla_mock/frontend.zip"}
+        }
+      )
+
+      ObanHelpers.perform(all_enqueued(worker: FrontendInstallerWorker))
+
+      assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
+    end
+
+    test "from an URL", %{conn: conn} do
+      Tesla.Mock.mock(fn %{url: "http://gensokyo.2hu/madeup.zip"} ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend.zip")}
+      end)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/frontends", %{
+        name: "unknown",
+        ref: "baka",
+        build_url: "http://gensokyo.2hu/madeup.zip",
+        build_dir: ""
+      })
+      |> json_response_and_validate_schema(:ok)
+
+      ObanHelpers.perform(all_enqueued(worker: FrontendInstallerWorker))
+
+      assert File.exists?(Path.join([@dir, "frontends", "unknown", "baka", "test.txt"]))
     end
   end
 end

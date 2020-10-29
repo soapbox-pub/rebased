@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
         properties: %{
           name: %Schema{type: :string},
           git: %Schema{type: :string, format: :uri, nullable: true},
-          build_url: %Schema{type: :string, format: :uri},
+          build_url: %Schema{type: :string, format: :uri, nullable: true},
           ref: %Schema{type: :string},
           installed: %Schema{type: :boolean}
         }
@@ -64,12 +64,19 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
       required: [:name],
       properties: %{
         name: %Schema{
-          type: :string,
-          nullable: false
+          type: :string
         },
         ref: %Schema{
-          type: :string,
-          nullable: false
+          type: :string
+        },
+        file: %Schema{
+          type: :string
+        },
+        build_url: %Schema{
+          type: :string
+        },
+        build_dir: %Schema{
+          type: :string
         }
       }
     }
