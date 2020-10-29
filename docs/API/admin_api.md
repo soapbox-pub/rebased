@@ -1497,3 +1497,61 @@ Returns the content of the document
   "url": "https://example.com/instance/panel.html"
 }
 ```
+
+## `GET /api/pleroma/admin/frontends
+
+### List available frontends
+
+- Response:
+
+```json
+[
+   {
+    "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/pleroma/fedi-fe",
+    "installed": true,
+    "name": "fedi-fe",
+    "ref": "master"
+  },
+  {
+    "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/lambadalambda/kenoma",
+    "installed": false,
+    "name": "kenoma",
+    "ref": "master"
+  }
+]
+```
+
+
+## `POST /api/pleroma/admin/frontends
+
+### Install a frontend
+
+- Params:
+  - `name`: frontend name, required
+  - `ref`: frontend ref
+  - `file`: path to a frontend zip file
+  - `build_url`: build URL
+  - `build_dir`: build directory
+
+- Response:
+
+```json
+[
+   {
+    "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/pleroma/fedi-fe",
+    "installed": true,
+    "name": "fedi-fe",
+    "ref": "master"
+  },
+  {
+    "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/lambadalambda/kenoma",
+    "installed": false,
+    "name": "kenoma",
+    "ref": "master"
+  }
+]
+```

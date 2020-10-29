@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task option for force-unfollowing relays
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
 - Pleroma API: Importing the mutes users from CSV files.
+- Pleroma API: An endpoint to manage frontends
 - Experimental websocket-based federation between Pleroma instances.
 
 ### Changed
