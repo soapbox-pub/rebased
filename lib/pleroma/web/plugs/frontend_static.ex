@@ -34,22 +34,26 @@ defmodule Pleroma.Web.Plugs.FrontendStatic do
   end
 
   def call(conn, opts) do
-    frontend_type = Map.get(opts, :frontend_type, :primary)
-    path = file_path("", frontend_type)
-
-    if path do
-      conn
-      |> call_static(opts, path)
+    with false <- invalid_path?(conn.path_info),
+         frontend_type <- Map.get(opts, :frontend_type, :primary),
+         path when not is_nil(path) <- file_path("", frontend_type) do
+      call_static(conn, opts, path)
     else
-      conn
+      _ ->
+        conn
     end
   end
 
-  defp call_static(conn, opts, from) do
-    opts =
-      opts
-      |> Map.put(:from, from)
+  defp invalid_path?(list) do
+    invalid_path?(list, :binary.compile_pattern(["/", "\\", ":", "\0"]))
+  end
 
+  defp invalid_path?([h | _], _match) when h in [".", "..", ""], do: true
+  defp invalid_path?([h | t], match), do: String.contains?(h, match) or invalid_path?(t)
+  defp invalid_path?([], _match), do: false
+
+  defp call_static(conn, opts, from) do
+    opts = Map.put(opts, :from, from)
     Plug.Static.call(conn, opts)
   end
 end
