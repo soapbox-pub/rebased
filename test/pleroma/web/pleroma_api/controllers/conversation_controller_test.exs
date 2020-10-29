@@ -121,7 +121,7 @@ defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == false
     assert Participation.get(participation1.id).read == false
-    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 2
+    assert Participation.unread_count(other_user) == 2
 
     [%{"unread" => false}, %{"unread" => false}] =
       conn
@@ -131,6 +131,6 @@ defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == true
     assert Participation.get(participation1.id).read == true
-    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 0
+    assert Participation.unread_count(other_user) == 0
   end
 end
