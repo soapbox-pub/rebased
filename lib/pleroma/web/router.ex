@@ -148,7 +148,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
-    
+
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
