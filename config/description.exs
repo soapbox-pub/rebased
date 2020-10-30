@@ -1757,28 +1757,37 @@ config :pleroma, :config_description, [
     related_policy: "Pleroma.Web.ActivityPub.MRF.KeywordPolicy",
     label: "MRF Keyword",
     type: :group,
-    description: "Reject or Word-Replace messages with a keyword or regex",
+    description:
+      "Reject or Word-Replace messages matching a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html).",
     children: [
       %{
         key: :reject,
         type: {:list, :string},
-        description:
-          "A list of patterns which result in message being rejected. Each pattern can be a string or a regular expression.",
+        description: """
+          A list of patterns which result in message being rejected.
+
+          Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+        """,
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :federated_timeline_removal,
         type: {:list, :string},
-        description:
-          "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted). Each pattern can be a string or a regular expression.",
+        description: """
+          A list of patterns which result in message being removed from federated timelines (a.k.a unlisted).
+
+          Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+        """,
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :replace,
         type: {:list, :tuple},
-        description:
-          "A list of tuples containing {pattern, replacement}. Each pattern can be a string or a regular expression.",
-        suggestions: [{"foo", "bar"}, {~r/foo/iu, "bar"}]
+        description: """
+          **Pattern**: a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+
+          **Replacement**: a string. Leaving the field empty is permitted.
+        """
       }
     ]
   },

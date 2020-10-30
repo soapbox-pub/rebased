@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
 - Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
+- Support pagination of blocks and mutes
 - App metrics: ability to restrict access to specified IP whitelist.
 - Account backup
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
@@ -36,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Importing the mutes users from CSV files.
 - Admin API: Importing emoji from a zip file
 - Pleroma API: Pagination for remote/local packs and emoji.
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
 
 </details>
 
@@ -53,6 +56,7 @@ switched to a new configuration mechanism, however it was not officially removed
 - Allow sending out emails again.
 - Allow sending chat messages to yourself.
 - Fix remote users with a whitespace name.
+- OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
 
 ## Unreleased (Patch)
 
