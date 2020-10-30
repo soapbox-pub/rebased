@@ -54,14 +54,35 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
              ] = response
 
       account_ids = Enum.map(res_accounts, & &1["id"])
-      assert length(res_accounts) == 3
-      assert user_one.id in account_ids
+      assert length(res_accounts) == 2
+      assert user_one.id not in account_ids
       assert user_two.id in account_ids
       assert user_three.id in account_ids
       assert is_binary(res_id)
       assert unread == false
       assert res_last_status["id"] == direct.id
+      assert res_last_status["account"]["id"] == user_one.id
       assert Participation.unread_count(user_one) == 0
+    end
+
+    test "special behaviour when conversation have only one user", %{
+      user: user_one,
+      user_two: user_two,
+      conn: conn
+    } do
+      {:ok, direct} = create_direct_message(user_one, [])
+
+      res_conn = get(conn, "/api/v1/conversations")
+
+      assert response = json_response_and_validate_schema(res_conn, 200)
+      assert [
+               %{
+                 "accounts" => res_accounts,
+                 "last_status" => res_last_status
+               }
+             ] = response
+      assert length(res_accounts) == 1
+      assert res_accounts[0]["id"] == user_one.id
     end
 
     test "observes limit params", %{
