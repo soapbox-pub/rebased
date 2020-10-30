@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   import Pleroma.Factory
   import Tesla.Mock
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 

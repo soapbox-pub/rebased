@@ -7,7 +7,6 @@ defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.User

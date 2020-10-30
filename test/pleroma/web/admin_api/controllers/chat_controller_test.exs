@@ -9,7 +9,6 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Repo

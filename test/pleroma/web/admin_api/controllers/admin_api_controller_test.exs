@@ -11,7 +11,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   import Swoosh.TestAssertions
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Repo

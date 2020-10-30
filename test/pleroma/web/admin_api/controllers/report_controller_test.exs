@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.ReportNote
