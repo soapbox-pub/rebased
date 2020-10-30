@@ -43,6 +43,7 @@ defmodule Pleroma.User.Query do
             active: boolean(),
             deactivated: boolean(),
             need_approval: boolean(),
+            unconfirmed: boolean(),
             is_admin: boolean(),
             is_moderator: boolean(),
             super_users: boolean(),
@@ -55,7 +56,8 @@ defmodule Pleroma.User.Query do
             ap_id: [String.t()],
             order_by: term(),
             select: term(),
-            limit: pos_integer()
+            limit: pos_integer(),
+            actor_types: [String.t()]
           }
           | map()
 
@@ -114,6 +116,10 @@ defmodule Pleroma.User.Query do
     where(query, [u], u.is_admin == ^bool)
   end
 
+  defp compose_query({:actor_types, actor_types}, query) when is_list(actor_types) do
+    where(query, [u], u.actor_type in ^actor_types)
+  end
+
   defp compose_query({:is_moderator, bool}, query) do
     where(query, [u], u.is_moderator == ^bool)
   end
@@ -154,6 +160,10 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:need_approval, _}, query) do
     where(query, [u], u.approval_pending)
+  end
+
+  defp compose_query({:unconfirmed, _}, query) do
+    where(query, [u], u.confirmation_pending)
   end
 
   defp compose_query({:followers, %User{id: id}}, query) do

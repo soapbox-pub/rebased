@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
 - Support for local-only statuses
+- Support pagination of blocks and mutes
 - App metrics: ability to restrict access to specified IP whitelist.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
@@ -37,6 +38,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Importing the mutes users from CSV files.
 - Admin API: Importing emoji from a zip file
 - Pleroma API: Pagination for remote/local packs and emoji.
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
 
 </details>
 
