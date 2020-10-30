@@ -9,7 +9,6 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   import Mock
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
