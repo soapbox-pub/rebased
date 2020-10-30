@@ -75,14 +75,17 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       res_conn = get(conn, "/api/v1/conversations")
 
       assert response = json_response_and_validate_schema(res_conn, 200)
+
       assert [
                %{
                  "accounts" => res_accounts,
                  "last_status" => res_last_status
                }
              ] = response
+
+      account_ids = Enum.map(res_accounts, & &1["id"])
       assert length(res_accounts) == 1
-      assert res_accounts[0]["id"] == user_one.id
+      assert user_one.id in account_ids
     end
 
     test "observes limit params", %{
