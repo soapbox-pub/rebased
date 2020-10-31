@@ -312,6 +312,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
             {:ok, cm_ref} = MessageReference.create(chat, object, user.ap_id != actor.ap_id)
 
+            Cachex.put(
+              :chat_message_id_idempotency_key_cache,
+              cm_ref.id,
+              meta[:idempotency_key]
+            )
+
             {
               ["user", "user:pleroma_chat"],
               {user, %{cm_ref | chat: chat, object: object}}
