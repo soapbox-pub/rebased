@@ -977,6 +977,73 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                response["status_visibility"]
     end
   end
+
+  describe "/api/pleroma/backups" do
+    test "it creates a backup", %{conn: conn} do
+      admin = %{id: admin_id, nickname: admin_nickname} = insert(:user, is_admin: true)
+      token = insert(:oauth_admin_token, user: admin)
+      user = %{id: user_id, nickname: user_nickname} = insert(:user)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert [backup] = Repo.all(Pleroma.User.Backup)
+
+      ObanHelpers.perform_all()
+
+      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id)
+
+      assert String.contains?(email.html_body, "Admin @#{admin.nickname} requested a full backup")
+      assert_email_sent(to: {user.name, user.email}, html_body: email.html_body)
+
+      log_message = "@#{admin_nickname} requested account backup for @#{user_nickname}"
+
+      assert [
+               %{
+                 data: %{
+                   "action" => "create_backup",
+                   "actor" => %{
+                     "id" => ^admin_id,
+                     "nickname" => ^admin_nickname
+                   },
+                   "message" => ^log_message,
+                   "subject" => %{
+                     "id" => ^user_id,
+                     "nickname" => ^user_nickname
+                   }
+                 }
+               }
+             ] = Pleroma.ModerationLog |> Repo.all()
+    end
+
+    test "it doesn't limit admins", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      token = insert(:oauth_admin_token, user: admin)
+      user = insert(:user)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert [_backup] = Repo.all(Pleroma.User.Backup)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert Repo.aggregate(Pleroma.User.Backup, :count) == 2
+    end
+  end
 end
 
 # Needed for testing

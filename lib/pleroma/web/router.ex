@@ -243,6 +243,8 @@ defmodule Pleroma.Web.Router do
     get("/chats/:id", ChatController, :show)
     get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+
+    post("/backups", AdminAPIController, :create_backup)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -373,6 +375,9 @@ defmodule Pleroma.Web.Router do
       put("/mascot", MascotController, :update)
 
       post("/scrobble", ScrobbleController, :create)
+
+      get("/backups", BackupController, :index)
+      post("/backups", BackupController, :create)
     end
 
     scope [] do

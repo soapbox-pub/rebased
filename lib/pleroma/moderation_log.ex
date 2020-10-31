@@ -655,6 +655,16 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} deleted chat message ##{subject_id}"
   end
 
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "create_backup",
+          "subject" => %{"nickname" => user_nickname}
+        }
+      }) do
+    "@#{actor_nickname} requested account backup for @#{user_nickname}"
+  end
+
   defp nicknames_to_string(nicknames) do
     nicknames
     |> Enum.map(&"@#{&1}")

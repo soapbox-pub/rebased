@@ -2298,6 +2298,12 @@ config :pleroma, :config_description, [
             suggestions: [10]
           },
           %{
+            key: :backup,
+            type: :integer,
+            description: "Backup queue",
+            suggestions: [1]
+          },
+          %{
             key: :attachments_cleanup,
             type: :integer,
             description: "Attachment deletion queue",
@@ -3729,6 +3735,26 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Number of majic workers to start.",
         suggestions: [2]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.User.Backup,
+    type: :group,
+    description: "Account Backup",
+    children: [
+      %{
+        key: :purge_after_days,
+        type: :integer,
+        description: "Remove backup achives after N days",
+        suggestions: [30]
+      },
+      %{
+        key: :limit_days,
+        type: :integer,
+        description: "Limit user to export not more often than once per N days",
+        suggestions: [7]
       }
     ]
   },

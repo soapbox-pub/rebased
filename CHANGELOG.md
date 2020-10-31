@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Experimental websocket-based federation between Pleroma instances.
 - Support pagination of blocks and mutes
 - App metrics: ability to restrict access to specified IP whitelist.
+- Account backup
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
 ### Changed
