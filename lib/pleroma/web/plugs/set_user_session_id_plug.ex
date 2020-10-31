@@ -11,8 +11,7 @@ defmodule Pleroma.Web.Plugs.SetUserSessionIdPlug do
   end
 
   def call(%{assigns: %{user: %User{id: id}}} = conn, _) do
-    conn
-    |> put_session(:user_id, id)
+    put_session(conn, :user_id, id)
   end
 
   def call(conn, _), do: conn

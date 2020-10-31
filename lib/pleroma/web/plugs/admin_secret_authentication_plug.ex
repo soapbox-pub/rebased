@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
   import Plug.Conn
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.User
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
   def init(options) do
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
   defp assign_admin_user(conn) do
     conn
     |> assign(:user, %User{is_admin: true})
-    |> OAuthScopesPlug.skip_plug()
+    |> AuthHelper.skip_oauth()
   end
 
   defp handle_bad_token(conn) do

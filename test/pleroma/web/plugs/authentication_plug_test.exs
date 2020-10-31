@@ -48,6 +48,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user == conn.assigns.auth_user
+    assert conn.assigns.token == nil
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
   end
 
@@ -62,6 +63,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert conn.assigns.token == nil
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
 
     user = User.get_by_id(user.id)
@@ -83,6 +85,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert conn.assigns.token == nil
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
 
     user = User.get_by_id(user.id)

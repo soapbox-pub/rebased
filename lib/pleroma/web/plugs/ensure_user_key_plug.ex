@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.Plugs.EnsureUserKeyPlug do
   import Plug.Conn
 
+  @moduledoc "Ensures `conn.assigns.user` is initialized."
+
   def init(opts) do
     opts
   end
@@ -12,7 +14,6 @@ defmodule Pleroma.Web.Plugs.EnsureUserKeyPlug do
   def call(%{assigns: %{user: _}} = conn, _), do: conn
 
   def call(conn, _) do
-    conn
-    |> assign(:user, nil)
+    assign(conn, :user, nil)
   end
 end
