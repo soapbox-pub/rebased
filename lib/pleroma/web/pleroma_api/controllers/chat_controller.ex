@@ -15,7 +15,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
-  alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   import Ecto.Query
@@ -121,9 +120,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
          {_n, _} <- MessageReference.set_all_seen_for_chat(chat, last_read_id) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
     end
   end
 
@@ -142,32 +139,30 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def index(%{assigns: %{user: %{id: user_id} = user}} = conn, _params) do
-    blocked_ap_ids = User.blocked_users_ap_ids(user)
+    exclude_users =
+      user
+      |> User.blocked_users_ap_ids()
+      |> Enum.concat(User.muted_users_ap_ids(user))
 
     chats =
-      Chat.for_user_query(user_id)
-      |> where([c], c.recipient not in ^blocked_ap_ids)
+      user_id
+      |> Chat.for_user_query()
+      |> where([c], c.recipient not in ^exclude_users)
       |> Repo.all()
 
-    conn
-    |> put_view(ChatView)
-    |> render("index.json", chats: chats)
+    render(conn, "index.json", chats: chats)
   end
 
   def create(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %User{ap_id: recipient} <- User.get_cached_by_id(id),
          {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
     end
   end
 
   def show(%{assigns: %{user: user}} = conn, %{id: id}) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
     end
   end
 
