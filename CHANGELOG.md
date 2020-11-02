@@ -13,12 +13,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Importing the mutes users from CSV files.
 - Pleroma API: An endpoint to manage frontends
 - Experimental websocket-based federation between Pleroma instances.
+- Support pagination of blocks and mutes
+- App metrics: ability to restrict access to specified IP whitelist.
+- Account backup
+- Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
 ### Changed
 
 - **Breaking** Requires `libmagic` (or `file`) to guess file types.
 - **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
 - **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- **Breaking:** App metrics endpoint (`/api/pleroma/app_metrics`) is disabled by default, check `docs/API/prometheus.md` on enabling and configuring. 
 - Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
@@ -33,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Importing the mutes users from CSV files.
 - Admin API: Importing emoji from a zip file
 - Pleroma API: Pagination for remote/local packs and emoji.
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
+- Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 
 </details>
 
@@ -48,7 +56,9 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
-- Allow sending chat messages to yourself
+- Allow sending chat messages to yourself.
+- Fix remote users with a whitespace name.
+- OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
 
 ## Unreleased (Patch)
 

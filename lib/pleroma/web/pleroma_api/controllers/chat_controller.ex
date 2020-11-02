@@ -80,7 +80,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
          %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
          {:ok, activity} <-
            CommonAPI.post_chat_message(user, recipient, params[:content],
-             media_id: params[:media_id]
+             media_id: params[:media_id],
+             idempotency_key: idempotency_key(conn)
            ),
          message <- Object.normalize(activity, false),
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
@@ -167,6 +168,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       conn
       |> put_view(ChatView)
       |> render("show.json", chat: chat)
+    end
+  end
+
+  defp idempotency_key(conn) do
+    case get_req_header(conn, "idempotency-key") do
+      [key] -> key
+      _ -> nil
     end
   end
 end

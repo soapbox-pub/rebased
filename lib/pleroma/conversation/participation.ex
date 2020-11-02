@@ -63,21 +63,10 @@ defmodule Pleroma.Conversation.Participation do
     end
   end
 
-  def mark_as_read(participation) do
-    __MODULE__
-    |> where(id: ^participation.id)
-    |> update(set: [read: true])
-    |> select([p], p)
-    |> Repo.update_all([])
-    |> case do
-      {1, [participation]} ->
-        participation = Repo.preload(participation, :user)
-        User.set_unread_conversation_count(participation.user)
-        {:ok, participation}
-
-      error ->
-        error
-    end
+  def mark_as_read(%__MODULE__{} = participation) do
+    participation
+    |> change(read: true)
+    |> Repo.update()
   end
 
   def mark_all_as_read(%User{local: true} = user, %User{} = target_user) do
@@ -93,7 +82,6 @@ defmodule Pleroma.Conversation.Participation do
     |> update([p], set: [read: true])
     |> Repo.update_all([])
 
-    {:ok, user} = User.set_unread_conversation_count(user)
     {:ok, user, []}
   end
 
@@ -108,7 +96,6 @@ defmodule Pleroma.Conversation.Participation do
       |> select([p], p)
       |> Repo.update_all([])
 
-    {:ok, user} = User.set_unread_conversation_count(user)
     {:ok, user, participations}
   end
 
@@ -218,6 +205,12 @@ defmodule Pleroma.Conversation.Participation do
     end)
 
     {:ok, Repo.preload(participation, :recipients, force: true)}
+  end
+
+  @spec unread_count(User.t()) :: integer()
+  def unread_count(%User{id: user_id}) do
+    from(q in __MODULE__, where: q.user_id == ^user_id and q.read == false)
+    |> Repo.aggregate(:count, :id)
   end
 
   def unread_conversation_count_for_user(user) do

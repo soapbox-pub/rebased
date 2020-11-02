@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
   alias Pleroma.User
