@@ -48,7 +48,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
       %{url: "https://channels.tests.funkwhale.audio/federation/actors/compositions"} ->
         %Tesla.Env{
           status: 200,
-          body: File.read!("test/fixtures/tesla_mock/funkwhale_channel.json")
+          body: File.read!("test/fixtures/tesla_mock/funkwhale_channel.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
         }
     end)
 

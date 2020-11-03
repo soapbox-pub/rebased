@@ -1410,19 +1410,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       mock(fn env ->
         case env.url do
           "http://localhost:4001/users/masto_hidden_counters/following" ->
-            json(%{
-              "@context" => "https://www.w3.org/ns/activitystreams",
-              "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
-            })
+            json(
+              %{
+                "@context" => "https://www.w3.org/ns/activitystreams",
+                "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+              },
+              headers: HttpRequestMock.activitypub_object_headers()
+            )
 
           "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
           "http://localhost:4001/users/masto_hidden_counters/followers" ->
-            json(%{
-              "@context" => "https://www.w3.org/ns/activitystreams",
-              "id" => "http://localhost:4001/users/masto_hidden_counters/following"
-            })
+            json(
+              %{
+                "@context" => "https://www.w3.org/ns/activitystreams",
+                "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+              },
+              headers: HttpRequestMock.activitypub_object_headers()
+            )
 
           "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
             %Tesla.Env{status: 403, body: ""}
@@ -2262,7 +2268,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     Tesla.Mock.mock(fn
       %{method: :get, url: "https://princess.cat/users/mewmew"} ->
         file = File.read!("test/fixtures/mewmew_no_name.json")
-        %Tesla.Env{status: 200, body: file}
+        %Tesla.Env{status: 200, body: file, headers: HttpRequestMock.activitypub_object_headers()}
     end)
 
     {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")
