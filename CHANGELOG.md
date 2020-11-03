@@ -58,6 +58,8 @@ switched to a new configuration mechanism, however it was not officially removed
 - Allow sending chat messages to yourself.
 - Fix remote users with a whitespace name.
 - OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
+- Mastodon API: Current user is now included in conversation if it's the only participant
+- Mastodon API: Fixed last_status.account being not filled with account data
 
 ## Unreleased (Patch)
 
