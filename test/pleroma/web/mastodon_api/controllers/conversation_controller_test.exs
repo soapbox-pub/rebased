@@ -65,12 +65,11 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       assert Participation.unread_count(user_one) == 0
     end
 
-    test "special behaviour when conversation have only one user", %{
+    test "includes the user if the user is the only participant", %{
       user: user_one,
-      user_two: user_two,
       conn: conn
     } do
-      {:ok, direct} = create_direct_message(user_one, [])
+      {:ok, _direct} = create_direct_message(user_one, [])
 
       res_conn = get(conn, "/api/v1/conversations")
 
@@ -78,14 +77,11 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
       assert [
                %{
-                 "accounts" => res_accounts,
-                 "last_status" => res_last_status
+                 "accounts" => [account]
                }
              ] = response
 
-      account_ids = Enum.map(res_accounts, & &1["id"])
-      assert length(res_accounts) == 1
-      assert user_one.id in account_ids
+      assert user_one.id == account["id"]
     end
 
     test "observes limit params", %{

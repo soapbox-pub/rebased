@@ -34,7 +34,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     activity = Activity.get_by_id_with_object(last_activity_id)
 
-    # Conversations return all users except current user when current user is not only participant
+    # Conversations return all users except the current user,
+    # except when the current user is the only participant
     users =
       if length(participation.recipients) > 1 do
         Enum.reject(participation.recipients, &(&1.id == user.id))
