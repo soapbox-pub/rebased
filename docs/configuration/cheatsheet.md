@@ -1078,6 +1078,20 @@ Control favicons for instances.
 
 * `enabled`: Allow/disallow displaying and getting instances favicons
 
+## Pleroma.User.Backup
+
+!!! note
+    Requires enabled email
+
+* `:purge_after_days` an integer, remove backup achives after N days.
+* `:limit_days` an integer, limit user to export not more often than once per N days.
+* `:dir` a string with a path to backup temporary directory or `nil` to let Pleroma choose temporary directory in the following order:
+    1. the directory named by the TMPDIR environment variable
+    2. the directory named by the TEMP environment variable
+    3. the directory named by the TMP environment variable
+    4. C:\TMP on Windows or /tmp on Unix-like operating systems
+    5. as a last resort, the current working directory
+
 ## Frontend management
 
 Frontends in Pleroma are swappable - you can specify which one to use here.

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Experimental websocket-based federation between Pleroma instances.
 - Support pagination of blocks and mutes
 - App metrics: ability to restrict access to specified IP whitelist.
+- Account backup
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
 ### Changed
@@ -38,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Pagination for remote/local packs and emoji.
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
+- Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 
 </details>
 

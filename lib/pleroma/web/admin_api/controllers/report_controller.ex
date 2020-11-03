@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   end
 
   def show(conn, %{id: id}) do
-    with %Activity{} = report <- Activity.get_by_id(id) do
+    with %Activity{} = report <- Activity.get_report(id) do
       render(conn, "show.json", Report.extract_report_info(report))
     else
       _ -> {:error, :not_found}
