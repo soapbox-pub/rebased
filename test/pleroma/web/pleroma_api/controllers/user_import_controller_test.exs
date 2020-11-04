@@ -6,7 +6,6 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
 
   import Pleroma.Factory

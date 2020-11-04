@@ -255,7 +255,9 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       other_user = insert(:user)
 
-      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
+      {:ok, create_activity} =
+        CommonAPI.post_chat_message(other_user, user, "hey cirno", idempotency_key: "123")
+
       object = Object.normalize(create_activity, false)
       chat = Chat.get(user.id, other_user.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)

@@ -551,6 +551,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     token_expiration: 5,
+    backup: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
     ingestion_queue: 50,
@@ -834,6 +835,11 @@ config :pleroma, :instances_favicons, enabled: false
 config :floki, :html_parser, Floki.HTMLParser.FastHtml
 
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
+
+config :pleroma, Pleroma.User.Backup,
+  purge_after_days: 30,
+  limit_days: 7,
+  dir: nil
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

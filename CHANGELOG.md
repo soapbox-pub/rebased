@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support for local-only statuses
 - Support pagination of blocks and mutes
 - App metrics: ability to restrict access to specified IP whitelist.
+- Account backup
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 
 
@@ -40,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Pagination for remote/local packs and emoji.
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
+- Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 
 </details>
 
@@ -58,6 +60,8 @@ switched to a new configuration mechanism, however it was not officially removed
 - Allow sending chat messages to yourself.
 - Fix remote users with a whitespace name.
 - OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
+- Mastodon API: Current user is now included in conversation if it's the only participant
+- Mastodon API: Fixed last_status.account being not filled with account data
 
 ## Unreleased (Patch)
 

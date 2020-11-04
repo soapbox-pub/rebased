@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.AdminAPI.InstanceDocumentControllerTest do
   use Pleroma.Web.ConnCase, async: true
   import Pleroma.Factory
-  alias Pleroma.Config
 
   @dir "test/tmp/instance_static"
   @default_instance_panel ~s(<p>Welcome to <a href="https://pleroma.social" target="_blank">Pleroma!</a></p>)

@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.Web
 
   setup do
