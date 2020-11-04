@@ -19,7 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       expired: expired,
       multiple: multiple,
       votes_count: votes_count,
-      voters_count: (multiple || nil) && voters_count(object),
+      voters_count: voters_count(object),
       options: options,
       voted: voted?(params),
       emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"])
