@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.ModerationLog do
   use Ecto.Schema
 
@@ -320,6 +324,19 @@ defmodule Pleroma.ModerationLog do
     |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, action: String.t(), subject_id: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
+  def insert_log(%{actor: %User{} = actor, action: "chat_message_delete", subject_id: subject_id}) do
+    %ModerationLog{
+      data: %{
+        "actor" => %{"nickname" => actor.nickname},
+        "action" => "chat_message_delete",
+        "subject_id" => subject_id
+      }
+    }
+    |> insert_log_entry_with_message()
+  end
+
   @spec insert_log_entry_with_message(ModerationLog) :: {:ok, ModerationLog} | {:error, any}
   defp insert_log_entry_with_message(entry) do
     entry.data["message"]
@@ -625,6 +642,27 @@ defmodule Pleroma.ModerationLog do
         }
       }) do
     "@#{actor_nickname} updated users: #{users_to_nicknames_string(subjects)}"
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "chat_message_delete",
+          "subject_id" => subject_id
+        }
+      }) do
+    "@#{actor_nickname} deleted chat message ##{subject_id}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "create_backup",
+          "subject" => %{"nickname" => user_nickname}
+        }
+      }) do
+    "@#{actor_nickname} requested account backup for @#{user_nickname}"
   end
 
   defp nicknames_to_string(nicknames) do

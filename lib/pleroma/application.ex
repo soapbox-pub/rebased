@@ -52,11 +52,10 @@ defmodule Pleroma.Application do
     Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
-    Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
+    Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
-    check_system_commands()
     Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
@@ -89,18 +88,19 @@ defmodule Pleroma.Application do
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
-        Pleroma.Plugs.RateLimiter.Supervisor
+        Pleroma.Web.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
         http_children(adapter, @env) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
+          {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
-        streamer_child(@env) ++
-        chat_child(@env, chat_enabled?()) ++
+        dont_run_in_test(@env) ++
+        chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
           Pleroma.Gopher.Server
@@ -151,7 +151,10 @@ defmodule Pleroma.Application do
 
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-    Pleroma.Web.Endpoint.Instrumenter.setup()
+
+    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
+    # Pleroma.Web.Endpoint.Instrumenter.setup()
+    PrometheusPhx.setup()
   end
 
   defp cachex_children do
@@ -165,7 +168,11 @@ defmodule Pleroma.Application do
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
       build_cachex("failed_proxy_url", limit: 2500),
-      build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000)
+      build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000),
+      build_cachex("chat_message_id_idempotency_key",
+        expiration: chat_message_id_idempotency_key_expiration(),
+        limit: 500_000
+      )
     ]
   end
 
@@ -174,6 +181,9 @@ defmodule Pleroma.Application do
 
   defp idempotency_expiration,
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
+
+  defp chat_message_id_idempotency_key_expiration,
+    do: expiration(default: :timer.minutes(2), interval: :timer.seconds(60))
 
   defp seconds_valid_interval,
     do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
@@ -188,24 +198,28 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Config.get([:chat, :enabled])
 
-  defp streamer_child(env) when env in [:test, :benchmark], do: []
+  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
-  defp streamer_child(_) do
+  defp dont_run_in_test(_) do
     [
       {Registry,
        [
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]}
+       ]},
+      Pleroma.Web.FedSockets.Supervisor
     ]
   end
 
-  defp chat_child(_env, true) do
-    [Pleroma.Web.ChatChannel.ChatChannelState]
+  defp chat_child(true) do
+    [
+      Pleroma.Web.ChatChannel.ChatChannelState,
+      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
+    ]
   end
 
-  defp chat_child(_, _), do: []
+  defp chat_child(_), do: []
 
   defp task_children(:test) do
     [
@@ -259,21 +273,4 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(_, _), do: []
-
-  defp check_system_commands do
-    filters = Config.get([Pleroma.Upload, :filters])
-
-    check_filter = fn filter, command_required ->
-      with true <- filter in filters,
-           false <- Pleroma.Utils.command_available?(command_required) do
-        Logger.error(
-          "#{filter} is specified in list of Pleroma.Upload filters, but the #{command_required} command is not found"
-        )
-      end
-    end
-
-    check_filter.(Pleroma.Upload.Filters.Exiftool, "exiftool")
-    check_filter.(Pleroma.Upload.Filters.Mogrify, "mogrify")
-    check_filter.(Pleroma.Upload.Filters.Mogrifun, "mogrify")
-  end
 end

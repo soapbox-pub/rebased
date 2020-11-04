@@ -335,6 +335,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.mutes",
       description: "Accounts the user has muted.",
       security: [%{"oAuth" => ["follow", "read:mutes"]}],
+      parameters: pagination_params(),
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -348,6 +349,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.blocks",
       description: "View your blocks. See also accounts/:id/{block,unblock}",
       security: [%{"oAuth" => ["read:blocks"]}],
+      parameters: pagination_params(),
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -372,6 +374,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       tags: ["accounts"],
       summary: "Identity proofs",
       operationId: "AccountController.identity_proofs",
+      # Validators complains about unused path params otherwise
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
+      ],
       description: "Not implemented",
       responses: %{
         200 => empty_array_response()
@@ -469,7 +475,6 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         identifier: %Schema{type: :string},
         message: %Schema{type: :string}
       },
-      required: [],
       # Note: example of successful registration with failed login response:
       # example: %{
       #   "identifier" => "missing_confirmed_email",
@@ -530,7 +535,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           oneOf: [
             %Schema{type: :array, items: attribute_field()},
-            %Schema{type: :object, additionalProperties: %Schema{type: attribute_field()}}
+            %Schema{type: :object, additionalProperties: attribute_field()}
           ]
         },
         # NOTE: `source` field is not supported

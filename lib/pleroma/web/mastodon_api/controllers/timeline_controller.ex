@@ -10,11 +10,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   alias Pleroma.Config
   alias Pleroma.Pagination
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:public, :hashtag])
@@ -111,6 +111,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:muting_user, user)
         |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:instance, params[:instance])
         |> ActivityPub.fetch_public_activities()
 
       conn

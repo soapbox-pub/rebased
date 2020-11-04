@@ -31,10 +31,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
 
   defp maybe_add_expiration(activity) do
     days = Pleroma.Config.get([:mrf_activity_expiration, :days], 365)
-    expires_at = NaiveDateTime.utc_now() |> Timex.shift(days: days)
+    expires_at = DateTime.utc_now() |> Timex.shift(days: days)
 
     with %{"expires_at" => existing_expires_at} <- activity,
-         :lt <- NaiveDateTime.compare(existing_expires_at, expires_at) do
+         :lt <- DateTime.compare(existing_expires_at, expires_at) do
       activity
     else
       _ -> Map.put(activity, "expires_at", expires_at)

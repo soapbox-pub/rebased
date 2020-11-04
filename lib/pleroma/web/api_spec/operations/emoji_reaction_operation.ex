@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
       parameters: [
         Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
         Operation.parameter(:emoji, :path, :string, "Filter by a single unicode emoji",
-          required: false
+          required: nil
         )
       ],
       security: [%{"oAuth" => ["read:statuses"]}],

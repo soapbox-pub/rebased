@@ -13,10 +13,15 @@ defmodule Pleroma.Web.ApiSpec do
   @impl OpenApi
   def spec do
     %OpenApi{
-      servers: [
-        # Populate the Server info from a phoenix endpoint
-        OpenApiSpex.Server.from_endpoint(Endpoint)
-      ],
+      servers:
+        if Phoenix.Endpoint.server?(:pleroma, Endpoint) do
+          [
+            # Populate the Server info from a phoenix endpoint
+            OpenApiSpex.Server.from_endpoint(Endpoint)
+          ]
+        else
+          []
+        end,
       info: %OpenApiSpex.Info{
         title: "Pleroma",
         description: Application.spec(:pleroma, :description) |> to_string(),

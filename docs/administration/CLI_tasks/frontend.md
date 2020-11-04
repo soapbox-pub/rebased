@@ -1,12 +1,23 @@
 # Managing frontends
 
-`mix pleroma.frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>]`
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>]
+    ```
 
 Frontend can be installed either from local zip file, or automatically downloaded from the web.
 
-You can give all the options directly on the command like, but missing information will be filled out by looking at the data configured under `frontends.available` in the config files.
+You can give all the options directly on the command line, but missing information will be filled out by looking at the data configured under `frontends.available` in the config files.
 
-Currently known `<frontend>` values are:
+Currently, known `<frontend>` values are:
+
 - [admin-fe](https://git.pleroma.social/pleroma/admin-fe)
 - [kenoma](http://git.pleroma.social/lambadalambda/kenoma)
 - [pleroma-fe](http://git.pleroma.social/pleroma/pleroma-fe)
@@ -19,51 +30,67 @@ You can still install frontends that are not configured, see below.
 
 For a frontend configured under the `available` key, it's enough to install it by name.
 
-```sh tab="OTP"
-./bin/pleroma_ctl frontend install pleroma
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.frontend install pleroma
-```
+    ```sh
+    ./bin/pleroma_ctl frontend install pleroma
+    ```
 
-This will download the latest build for the the pre-configured `ref` and install it. It can then be configured as the one of the served frontends in the config file (see `primary` or `admin`).
+=== "From Source"
 
-You can override any of the details. To install a pleroma build from a different url, you could do this:
+    ```sh
+    mix pleroma.frontend install pleroma
+    ```
 
-```sh tab="OPT"
-./bin/pleroma_ctl frontend install pleroma --ref 2hu_edition --build-url https://example.org/raymoo.zip
-```
+This will download the latest build for the pre-configured `ref` and install it. It can then be configured as the one of the served frontends in the config file (see `primary` or `admin`).
 
-```sh tab="From Source"
-mix pleroma.frontend install pleroma --ref 2hu_edition --build-url https://example.org/raymoo.zip
-```
+You can override any of the details. To install a pleroma build from a different URL, you could do this:
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl frontend install pleroma --ref 2hu_edition --build-url https://example.org/raymoo.zip
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.frontend install pleroma --ref 2hu_edition --build-url https://example.org/raymoo.zip
+    ```
 
 Similarly, you can also install from a local zip file.
 
-```sh tab="OTP"
-./bin/pleroma_ctl frontend install pleroma --ref mybuild --file ~/Downloads/doomfe.zip
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.frontend install pleroma --ref mybuild --file ~/Downloads/doomfe.zip
-```
+    ```sh
+    ./bin/pleroma_ctl frontend install pleroma --ref mybuild --file ~/Downloads/doomfe.zip
+    ```
 
-The resulting frontend will always be installed into a folder of this template: `${instance_static}/frontends/${name}/${ref}`
+=== "From Source"
 
-Careful: This folder will be completely replaced on installation
+    ```sh
+    mix pleroma.frontend install pleroma --ref mybuild --file ~/Downloads/doomfe.zip
+    ```
+
+The resulting frontend will always be installed into a folder of this template: `${instance_static}/frontends/${name}/${ref}`.
+
+Careful: This folder will be completely replaced on installation.
 
 ## Example installation for an unknown frontend
 
-The installation process is the same, but you will have to give all the needed options on the commond line. For example:
+The installation process is the same, but you will have to give all the needed options on the command line. For example:
 
-```sh tab="OTP"
-./bin/pleroma_ctl frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
-```
+    ```sh
+    ./bin/pleroma_ctl frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
+    ```
 
-If you don't have a zip file but just want to install a frontend from a local path, you can simply copy the files over a folder of this template: `${instance_static}/frontends/${name}/${ref}`
+=== "From Source"
+
+    ```sh
+    mix pleroma.frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
+    ```
+
+If you don't have a zip file but just want to install a frontend from a local path, you can simply copy the files over a folder of this template: `${instance_static}/frontends/${name}/${ref}`.
 

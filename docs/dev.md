@@ -6,7 +6,7 @@ This document contains notes and guidelines for Pleroma developers.
 
 * Pleroma supports hierarchical OAuth scopes, just like Mastodon but with added granularity of admin scopes. For a reference, see [Mastodon OAuth scopes](https://docs.joinmastodon.org/api/oauth-scopes/).
 
-* It is important to either define OAuth scope restrictions or explicitly mark OAuth scope check as skipped, for every controller action. To define scopes, call `plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: [...]})`. To explicitly set OAuth scopes check skipped, call `plug(:skip_plug, Pleroma.Plugs.OAuthScopesPlug <when ...>)`.
+* It is important to either define OAuth scope restrictions or explicitly mark OAuth scope check as skipped, for every controller action. To define scopes, call `plug(Pleroma.Web.Plugs.OAuthScopesPlug, %{scopes: [...]})`. To explicitly set OAuth scopes check skipped, call `plug(:skip_plug, Pleroma.Web.Plugs.OAuthScopesPlug <when ...>)`.
 
 * In controllers, `use Pleroma.Web, :controller` will result in `action/2` (see `Pleroma.Web.controller/0` for definition) be called prior to actual controller action, and it'll perform security / privacy checks before passing control to actual controller action.
 
@@ -16,7 +16,7 @@ This document contains notes and guidelines for Pleroma developers.
 
 ## [HTTP Basic Authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization)
 
-* With HTTP Basic Auth, OAuth scopes check is _not_ performed for any action (since password is provided during the auth, requester is able to obtain a token with full permissions anyways). `Pleroma.Plugs.AuthenticationPlug` and `Pleroma.Plugs.LegacyAuthenticationPlug` both call `Pleroma.Plugs.OAuthScopesPlug.skip_plug(conn)` when password is provided.
+* With HTTP Basic Auth, OAuth scopes check is _not_ performed for any action (since password is provided during the auth, requester is able to obtain a token with full permissions anyways). `Pleroma.Web.Plugs.AuthenticationPlug` and `Pleroma.Web.Plugs.LegacyAuthenticationPlug` both call `Pleroma.Web.Plugs.OAuthScopesPlug.skip_plug(conn)` when password is provided.
 
 ## Auth-related configuration, OAuth consumer mode etc.
 

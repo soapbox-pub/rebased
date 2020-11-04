@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.Chat
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
 
@@ -132,7 +133,10 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       tags: ["chat"],
       summary: "Get a list of chats that you participated in",
       operationId: "ChatController.index",
-      parameters: pagination_params(),
+      parameters: [
+        Operation.parameter(:with_muted, :query, BooleanLike, "Include chats from muted users")
+        | pagination_params()
+      ],
       responses: %{
         200 => Operation.response("The chats of the user", "application/json", chats_response())
       },
@@ -158,7 +162,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
             "The messages in the chat",
             "application/json",
             chat_messages_response()
-          )
+          ),
+        404 => Operation.response("Not Found", "application/json", ApiError)
       },
       security: [
         %{
@@ -184,7 +189,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
             "application/json",
             ChatMessage
           ),
-        400 => Operation.response("Bad Request", "application/json", ApiError)
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        422 => Operation.response("MRF Rejection", "application/json", ApiError)
       },
       security: [
         %{

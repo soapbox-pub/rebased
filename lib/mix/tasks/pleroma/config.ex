@@ -32,7 +32,8 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   @spec migrate_to_db(Path.t() | nil) :: any()
   def migrate_to_db(file_path \\ nil) do
-    if Pleroma.Config.get([:configurable_from_database]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]),
+         :ok <- Pleroma.Config.DeprecationWarnings.warn() do
       config_file =
         if file_path do
           file_path
@@ -46,7 +47,8 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       do_migrate_to_db(config_file)
     else
-      migration_error()
+      :error -> deprecation_error()
+      _ -> migration_error()
     end
   end
 
@@ -118,6 +120,10 @@ defmodule Mix.Tasks.Pleroma.Config do
     shell_error(
       "Migration is not allowed in config. You can change this behavior by setting `config :pleroma, configurable_from_database: true`"
     )
+  end
+
+  defp deprecation_error do
+    shell_error("Migration is not allowed until all deprecation warnings have been resolved.")
   end
 
   if Code.ensure_loaded?(Config.Reader) do

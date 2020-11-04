@@ -10,9 +10,10 @@ defmodule Pleroma.MFA.Token do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Authorization
-  alias Pleroma.Web.OAuth.Token, as: OAuthToken
 
   @expires 300
+
+  @type t() :: %__MODULE__{}
 
   schema "mfa_tokens" do
     field(:token, :string)
@@ -24,6 +25,7 @@ defmodule Pleroma.MFA.Token do
     timestamps()
   end
 
+  @spec get_by_token(String.t()) :: {:ok, t()} | {:error, :not_found}
   def get_by_token(token) do
     from(
       t in __MODULE__,
@@ -33,33 +35,40 @@ defmodule Pleroma.MFA.Token do
     |> Repo.find_resource()
   end
 
-  def validate(token) do
-    with {:fetch_token, {:ok, token}} <- {:fetch_token, get_by_token(token)},
-         {:expired, false} <- {:expired, is_expired?(token)} do
+  @spec validate(String.t()) :: {:ok, t()} | {:error, :not_found} | {:error, :expired_token}
+  def validate(token_str) do
+    with {:ok, token} <- get_by_token(token_str),
+         false <- expired?(token) do
       {:ok, token}
-    else
-      {:expired, _} -> {:error, :expired_token}
-      {:fetch_token, _} -> {:error, :not_found}
-      error -> {:error, error}
     end
   end
 
-  def create_token(%User{} = user) do
-    %__MODULE__{}
-    |> change
-    |> assign_user(user)
-    |> put_token
-    |> put_valid_until
-    |> Repo.insert()
+  defp expired?(%__MODULE__{valid_until: valid_until}) do
+    with true <- NaiveDateTime.diff(NaiveDateTime.utc_now(), valid_until) > 0 do
+      {:error, :expired_token}
+    end
   end
 
-  def create_token(user, authorization) do
+  @spec create(User.t(), Authorization.t() | nil) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def create(user, authorization \\ nil) do
+    with {:ok, token} <- do_create(user, authorization) do
+      Pleroma.Workers.PurgeExpiredToken.enqueue(%{
+        token_id: token.id,
+        valid_until: DateTime.from_naive!(token.valid_until, "Etc/UTC"),
+        mod: __MODULE__
+      })
+
+      {:ok, token}
+    end
+  end
+
+  defp do_create(user, authorization) do
     %__MODULE__{}
-    |> change
+    |> change()
     |> assign_user(user)
-    |> assign_authorization(authorization)
-    |> put_token
-    |> put_valid_until
+    |> maybe_assign_authorization(authorization)
+    |> put_token()
+    |> put_valid_until()
     |> Repo.insert()
   end
 
@@ -69,15 +78,19 @@ defmodule Pleroma.MFA.Token do
     |> validate_required([:user])
   end
 
-  defp assign_authorization(changeset, authorization) do
+  defp maybe_assign_authorization(changeset, %Authorization{} = authorization) do
     changeset
     |> put_assoc(:authorization, authorization)
     |> validate_required([:authorization])
   end
 
+  defp maybe_assign_authorization(changeset, _), do: changeset
+
   defp put_token(changeset) do
+    token = Pleroma.Web.OAuth.Token.Utils.generate_token()
+
     changeset
-    |> change(%{token: OAuthToken.Utils.generate_token()})
+    |> change(%{token: token})
     |> validate_required([:token])
     |> unique_constraint(:token)
   end
@@ -88,19 +101,5 @@ defmodule Pleroma.MFA.Token do
     changeset
     |> change(%{valid_until: expires_in})
     |> validate_required([:valid_until])
-  end
-
-  def is_expired?(%__MODULE__{valid_until: valid_until}) do
-    NaiveDateTime.diff(NaiveDateTime.utc_now(), valid_until) > 0
-  end
-
-  def is_expired?(_), do: false
-
-  def delete_expired_tokens do
-    from(
-      q in __MODULE__,
-      where: fragment("?", q.valid_until) < ^Timex.now()
-    )
-    |> Repo.delete_all()
   end
 end

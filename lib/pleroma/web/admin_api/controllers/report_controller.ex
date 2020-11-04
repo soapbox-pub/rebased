@@ -9,12 +9,12 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
 
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.ReportNote
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
 
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   end
 
   def show(conn, %{id: id}) do
-    with %Activity{} = report <- Activity.get_by_id(id) do
+    with %Activity{} = report <- Activity.get_report(id) do
       render(conn, "show.json", Report.extract_report_info(report))
     else
       _ -> {:error, :not_found}

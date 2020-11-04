@@ -39,7 +39,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       :fields,
       :name,
       :nickname,
-      :locked,
+      :is_locked,
       :no_rich_text,
       :default_scope,
       :hide_follows,
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       :skip_thread_containment,
       :pleroma_settings_store,
       :raw_fields,
-      :discoverable,
+      :is_discoverable,
       :actor_type
     ])
     |> Map.merge(%{

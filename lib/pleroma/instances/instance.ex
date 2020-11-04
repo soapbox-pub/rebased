@@ -119,6 +119,17 @@ defmodule Pleroma.Instances.Instance do
 
   def set_unreachable(_, _), do: {:error, nil}
 
+  def get_consistently_unreachable do
+    reachability_datetime_threshold = Instances.reachability_datetime_threshold()
+
+    from(i in Instance,
+      where: ^reachability_datetime_threshold > i.unreachable_since,
+      order_by: i.unreachable_since,
+      select: {i.host, i.unreachable_since}
+    )
+    |> Repo.all()
+  end
+
   defp parse_datetime(datetime) when is_binary(datetime) do
     NaiveDateTime.from_iso8601(datetime)
   end
@@ -156,16 +167,12 @@ defmodule Pleroma.Instances.Instance do
   defp scrape_favicon(%URI{} = instance_uri) do
     try do
       with {:ok, %Tesla.Env{body: html}} <-
-             Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}],
-               adapter: [pool: :media]
-             ),
-           favicon_rel <-
-             html
-             |> Floki.parse_document!()
-             |> Floki.attribute("link[rel=icon]", "href")
-             |> List.first(),
-           favicon <- URI.merge(instance_uri, favicon_rel) |> to_string(),
-           true <- is_binary(favicon) do
+             Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}], pool: :media),
+           {_, [favicon_rel | _]} when is_binary(favicon_rel) <-
+             {:parse,
+              html |> Floki.parse_document!() |> Floki.attribute("link[rel=icon]", "href")},
+           {_, favicon} when is_binary(favicon) <-
+             {:merge, URI.merge(instance_uri, favicon_rel) |> to_string()} do
         favicon
       else
         _ -> nil

@@ -181,7 +181,7 @@
 							</div>
 						</div>
 					<% end %>
-					<%= render @view_module, @view_template, assigns %>
+					<%= @inner_content %>
 
 				</td>
 			</tr>

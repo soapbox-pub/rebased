@@ -7,19 +7,23 @@ defmodule Pleroma.Web.Endpoint do
 
   require Pleroma.Constants
 
+  alias Pleroma.Config
+
   socket("/socket", Pleroma.Web.UserSocket)
 
-  plug(Pleroma.Plugs.SetLocalePlug)
+  plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
+
+  plug(Pleroma.Web.Plugs.SetLocalePlug)
   plug(CORSPlug)
-  plug(Pleroma.Plugs.HTTPSecurityPlug)
-  plug(Pleroma.Plugs.UploadedMedia)
+  plug(Pleroma.Web.Plugs.HTTPSecurityPlug)
+  plug(Pleroma.Web.Plugs.UploadedMedia)
 
   @static_cache_control "public, no-cache"
 
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
   # Cache-control headers are duplicated in case we turn off etags in the future
-  plug(Pleroma.Plugs.InstanceStatic,
+  plug(Pleroma.Web.Plugs.InstanceStatic,
     at: "/",
     gzip: true,
     cache_control_for_etags: @static_cache_control,
@@ -29,7 +33,7 @@ defmodule Pleroma.Web.Endpoint do
   )
 
   # Careful! No `only` restriction here, as we don't know what frontends contain.
-  plug(Pleroma.Plugs.FrontendStatic,
+  plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/",
     frontend_type: :primary,
     gzip: true,
@@ -41,7 +45,7 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Plug.Static.IndexHtml, at: "/pleroma/admin/")
 
-  plug(Pleroma.Plugs.FrontendStatic,
+  plug(Pleroma.Web.Plugs.FrontendStatic,
     at: "/pleroma/admin",
     frontend_type: :admin,
     gzip: true,
@@ -79,26 +83,26 @@ defmodule Pleroma.Web.Endpoint do
     plug(Phoenix.CodeReloader)
   end
 
-  plug(Pleroma.Plugs.TrailingFormatPlug)
+  plug(Pleroma.Web.Plugs.TrailingFormatPlug)
   plug(Plug.RequestId)
   plug(Plug.Logger, log: :debug)
 
   plug(Plug.Parsers,
     parsers: [
       :urlencoded,
-      {:multipart, length: {Pleroma.Config, :get, [[:instance, :upload_limit]]}},
+      {:multipart, length: {Config, :get, [[:instance, :upload_limit]]}},
       :json
     ],
     pass: ["*/*"],
     json_decoder: Jason,
-    length: Pleroma.Config.get([:instance, :upload_limit]),
+    length: Config.get([:instance, :upload_limit]),
     body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
   )
 
   plug(Plug.MethodOverride)
   plug(Plug.Head)
 
-  secure_cookies = Pleroma.Config.get([__MODULE__, :secure_cookie_flag])
+  secure_cookies = Config.get([__MODULE__, :secure_cookie_flag])
 
   cookie_name =
     if secure_cookies,
@@ -106,7 +110,7 @@ defmodule Pleroma.Web.Endpoint do
       else: "pleroma_key"
 
   extra =
-    Pleroma.Config.get([__MODULE__, :extra_cookie_attrs])
+    Config.get([__MODULE__, :extra_cookie_attrs])
     |> Enum.join(";")
 
   # The session will be stored in the cookie and signed,
@@ -116,13 +120,13 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Session,
     store: :cookie,
     key: cookie_name,
-    signing_salt: Pleroma.Config.get([__MODULE__, :signing_salt], "CqaoopA2"),
+    signing_salt: Config.get([__MODULE__, :signing_salt], "CqaoopA2"),
     http_only: true,
     secure: secure_cookies,
     extra: extra
   )
 
-  plug(Pleroma.Plugs.RemoteIp)
+  plug(Pleroma.Web.Plugs.RemoteIp)
 
   defmodule Instrumenter do
     use Prometheus.PhoenixInstrumenter
@@ -136,8 +140,34 @@ defmodule Pleroma.Web.Endpoint do
     use Prometheus.PlugExporter
   end
 
+  defmodule MetricsExporterCaller do
+    @behaviour Plug
+
+    def init(opts), do: opts
+
+    def call(conn, opts) do
+      prometheus_config = Application.get_env(:prometheus, MetricsExporter, [])
+      ip_whitelist = List.wrap(prometheus_config[:ip_whitelist])
+
+      cond do
+        !prometheus_config[:enabled] ->
+          conn
+
+        ip_whitelist != [] and
+            !Enum.find(ip_whitelist, fn ip ->
+              Pleroma.Helpers.InetHelper.parse_address(ip) == {:ok, conn.remote_ip}
+            end) ->
+          conn
+
+        true ->
+          MetricsExporter.call(conn, opts)
+      end
+    end
+  end
+
   plug(PipelineInstrumenter)
-  plug(MetricsExporter)
+
+  plug(MetricsExporterCaller)
 
   plug(Pleroma.Web.Router)
 
