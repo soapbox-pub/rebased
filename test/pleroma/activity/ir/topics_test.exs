@@ -104,6 +104,13 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
 
       assert Enum.member?(topics, "public:remote:lain.com")
     end
+
+    test "local action doesn't produce public:remote topic", %{activity: activity} do
+      activity = %{activity | local: true, actor: "https://lain.com/users/lain"}
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public:remote:lain.com")
+    end
   end
 
   describe "public visibility create events with attachments" do
