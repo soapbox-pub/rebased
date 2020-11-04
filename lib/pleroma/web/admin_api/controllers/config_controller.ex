@@ -7,7 +7,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
 
   alias Pleroma.Config
   alias Pleroma.ConfigDB
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :update)

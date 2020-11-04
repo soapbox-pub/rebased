@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Filter
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   @oauth_read_actions [:show, :index]
 

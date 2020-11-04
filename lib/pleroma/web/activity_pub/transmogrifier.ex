@@ -40,6 +40,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_in_reply_to(options)
     |> fix_emoji
     |> fix_tag
+    |> set_sensitive
     |> fix_content_map
     |> fix_addressing
     |> fix_summary
@@ -313,18 +314,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags =
       tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
-      |> Enum.map(fn data -> String.slice(data["name"], 1..-1) end)
+      |> Enum.map(fn %{"name" => name} ->
+        name
+        |> String.slice(1..-1)
+        |> String.downcase()
+      end)
 
     Map.put(object, "tag", tag ++ tags)
   end
 
-  def fix_tag(%{"tag" => %{"type" => "Hashtag", "name" => hashtag} = tag} = object) do
-    combined = [tag, String.slice(hashtag, 1..-1)]
-
-    Map.put(object, "tag", combined)
+  def fix_tag(%{"tag" => %{} = tag} = object) do
+    object
+    |> Map.put("tag", [tag])
+    |> fix_tag
   end
-
-  def fix_tag(%{"tag" => %{} = tag} = object), do: Map.put(object, "tag", [tag])
 
   def fix_tag(object), do: object
 
@@ -515,15 +518,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => objtype}} = data,
+        %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
         _options
       )
       when objtype in ~w{Question Answer ChatMessage Audio Video Event Article} do
     data = Map.put(data, "object", strip_internal_fields(data["object"]))
 
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         nil <- Activity.get_create_by_object_ap_id(obj_id),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
+    else
+      %Activity{} = activity -> {:ok, activity}
+      e -> e
     end
   end
 
@@ -923,7 +930,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "conversation", object["context"])
   end
 
-  def set_sensitive(%{"sensitive" => true} = object) do
+  def set_sensitive(%{"sensitive" => _} = object) do
     object
   end
 

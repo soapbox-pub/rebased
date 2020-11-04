@@ -1,4 +1,4 @@
-# Managing emails
+# EMail administration tasks
 
 {! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
@@ -29,4 +29,18 @@ Example:
 
     ```sh
     mix pleroma.email test --to root@example.org
+    ```
+
+## Send confirmation emails to all unconfirmed user accounts
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl email send_confirmation_mails
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.email send_confirmation_mails
     ```

@@ -10,10 +10,10 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
   alias Pleroma.Chat.MessageReference
   alias Pleroma.ModerationLog
   alias Pleroma.Pagination
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
 

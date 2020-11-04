@@ -18,6 +18,7 @@ defmodule Pleroma.Chat do
   It is a helper only, to make it easy to display a list of chats with other people, ordered by last bump. The actual messages are retrieved by querying the recipients of the ChatMessages.
   """
 
+  @type t :: %__MODULE__{}
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   schema "chats" do
@@ -41,16 +42,28 @@ defmodule Pleroma.Chat do
     |> unique_constraint(:user_id, name: :chats_user_id_recipient_index)
   end
 
+  @spec get_by_user_and_id(User.t(), FlakeId.Ecto.CompatType.t()) ::
+          {:ok, t()} | {:error, :not_found}
+  def get_by_user_and_id(%User{id: user_id}, id) do
+    from(c in __MODULE__,
+      where: c.id == ^id,
+      where: c.user_id == ^user_id
+    )
+    |> Repo.find_resource()
+  end
+
+  @spec get_by_id(FlakeId.Ecto.CompatType.t()) :: t() | nil
   def get_by_id(id) do
-    __MODULE__
-    |> Repo.get(id)
+    Repo.get(__MODULE__, id)
   end
 
+  @spec get(FlakeId.Ecto.CompatType.t(), String.t()) :: t() | nil
   def get(user_id, recipient) do
-    __MODULE__
-    |> Repo.get_by(user_id: user_id, recipient: recipient)
+    Repo.get_by(__MODULE__, user_id: user_id, recipient: recipient)
   end
 
+  @spec get_or_create(FlakeId.Ecto.CompatType.t(), String.t()) ::
+          {:ok, t()} | {:error, Ecto.Changeset.t()}
   def get_or_create(user_id, recipient) do
     %__MODULE__{}
     |> changeset(%{user_id: user_id, recipient: recipient})
@@ -62,6 +75,8 @@ defmodule Pleroma.Chat do
     )
   end
 
+  @spec bump_or_create(FlakeId.Ecto.CompatType.t(), String.t()) ::
+          {:ok, t()} | {:error, Ecto.Changeset.t()}
   def bump_or_create(user_id, recipient) do
     %__MODULE__{}
     |> changeset(%{user_id: user_id, recipient: recipient})

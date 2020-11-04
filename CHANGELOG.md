@@ -5,20 +5,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+- Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
+- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task option for force-unfollowing relays
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Pleroma API: Importing the mutes users from CSV files.
+- Experimental websocket-based federation between Pleroma instances.
+- Support pagination of blocks and mutes
+- App metrics: ability to restrict access to specified IP whitelist.
+- Account backup
+- Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
+- Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`
+
 ### Changed
 
+- **Breaking** Requires `libmagic` (or `file`) to guess file types.
+- **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
+- **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- **Breaking:** App metrics endpoint (`/api/pleroma/app_metrics`) is disabled by default, check `docs/API/prometheus.md` on enabling and configuring. 
+- Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 - The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
 - Users with the `discoverable` field set to false will not show up in searches.
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+- Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
+- Polls now always return a `voters_count`, even if they are single-choice
 
-### Added
-- Media preview proxy (requires media proxy be enabled; see `:media_preview_proxy` config for more details).
+<details>
+  <summary>API Changes</summary>
+
 - Pleroma API: Importing the mutes users from CSV files.
-- Experimental websocket-based federation between Pleroma instances.
 - Admin API: Importing emoji from a zip file
-- User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
+- Pleroma API: Pagination for remote/local packs and emoji.
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
+- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
+- Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
+- Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
+- Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
+
+</details>
 
 ### Removed
 
@@ -29,7 +56,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 switched to a new configuration mechanism, however it was not officially removed until now.
 
 ### Fixed
+
+- Add documented-but-missing chat pagination.
 - Allow sending out emails again.
+- Allow sending chat messages to yourself.
+- Fix remote users with a whitespace name.
+- OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
+- Mastodon API: Current user is now included in conversation if it's the only participant
+- Mastodon API: Fixed last_status.account being not filled with account data
+
+## Unreleased (Patch)
+
+### Changed
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
 
 ## [2.1.2] - 2020-09-17
 

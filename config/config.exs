@@ -123,7 +123,6 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
-  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     ip: {127, 0, 0, 1},
@@ -143,7 +142,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
+  pubsub_server: Pleroma.PubSub,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
@@ -235,6 +234,7 @@ config :pleroma, :instance,
     "text/bbcode"
   ],
   autofollowed_nicknames: [],
+  autofollowing_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
   max_report_comment_size: 1000,
@@ -551,6 +551,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     token_expiration: 5,
+    backup: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
     ingestion_queue: 50,
@@ -637,7 +638,12 @@ config :pleroma, Pleroma.Emails.UserEmail,
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
-config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter,
+  enabled: false,
+  auth: false,
+  ip_whitelist: [],
+  path: "/api/pleroma/app_metrics",
+  format: :text
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
@@ -678,7 +684,18 @@ config :pleroma, :rate_limit,
 
 config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
-config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
+config :pleroma, Pleroma.Web.Plugs.RemoteIp,
+  enabled: true,
+  headers: ["x-forwarded-for"],
+  proxies: [],
+  reserved: [
+    "127.0.0.0/8",
+    "::1/128",
+    "fc00::/7",
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+  ]
 
 config :pleroma, :static_fe, enabled: false
 
@@ -792,6 +809,8 @@ config :pleroma, :hackney_pools,
     timeout: 300_000
   ]
 
+config :pleroma, :majic_pool, size: 2
+
 private_instance? = :if_instance_is_private
 
 config :pleroma, :restrict_unauthenticated,
@@ -810,13 +829,18 @@ config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
 
-config :web_push_encryption, http_client: Pleroma.HTTP
+config :web_push_encryption, http_client: Pleroma.HTTP.WebPush
 
 config :pleroma, :instances_favicons, enabled: false
 
 config :floki, :html_parser, Floki.HTMLParser.FastHtml
 
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
+
+config :pleroma, Pleroma.User.Backup,
+  purge_after_days: 30,
+  limit_days: 7,
+  dir: nil
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

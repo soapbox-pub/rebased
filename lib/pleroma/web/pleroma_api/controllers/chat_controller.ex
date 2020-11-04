@@ -4,17 +4,18 @@
 defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
 
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
+
   alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
   alias Pleroma.Pagination
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
-  alias Pleroma.Web.PleromaAPI.ChatView
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   import Ecto.Query
 
@@ -47,7 +48,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       }) do
     with %MessageReference{} = cm_ref <-
            MessageReference.get_by_id(message_id),
-         ^chat_id <- cm_ref.chat_id |> to_string(),
+         ^chat_id <- to_string(cm_ref.chat_id),
          %Chat{user_id: ^user_id} <- Chat.get_by_id(chat_id),
          {:ok, _} <- remove_or_delete(cm_ref, user) do
       conn
@@ -68,22 +69,18 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  defp remove_or_delete(cm_ref, _) do
-    cm_ref
-    |> MessageReference.delete()
-  end
+  defp remove_or_delete(cm_ref, _), do: MessageReference.delete(cm_ref)
 
   def post_chat_message(
-        %{body_params: params, assigns: %{user: %{id: user_id} = user}} = conn,
-        %{
-          id: id
-        }
+        %{body_params: params, assigns: %{user: user}} = conn,
+        %{id: id}
       ) do
-    with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
+    with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
          %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
          {:ok, activity} <-
            CommonAPI.post_chat_message(user, recipient, params[:content],
-             media_id: params[:media_id]
+             media_id: params[:media_id],
+             idempotency_key: idempotency_key(conn)
            ),
          message <- Object.normalize(activity, false),
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
@@ -103,13 +100,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def mark_message_as_read(%{assigns: %{user: %{id: user_id}}} = conn, %{
-        id: chat_id,
-        message_id: message_id
-      }) do
-    with %MessageReference{} = cm_ref <-
-           MessageReference.get_by_id(message_id),
-         ^chat_id <- cm_ref.chat_id |> to_string(),
+  def mark_message_as_read(
+        %{assigns: %{user: %{id: user_id}}} = conn,
+        %{id: chat_id, message_id: message_id}
+      ) do
+    with %MessageReference{} = cm_ref <- MessageReference.get_by_id(message_id),
+         ^chat_id <- to_string(cm_ref.chat_id),
          %Chat{user_id: ^user_id} <- Chat.get_by_id(chat_id),
          {:ok, cm_ref} <- MessageReference.mark_as_read(cm_ref) do
       conn
@@ -119,66 +115,60 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def mark_as_read(
-        %{
-          body_params: %{last_read_id: last_read_id},
-          assigns: %{user: %{id: user_id}}
-        } = conn,
+        %{body_params: %{last_read_id: last_read_id}, assigns: %{user: user}} = conn,
         %{id: id}
       ) do
-    with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
-         {_n, _} <-
-           MessageReference.set_all_seen_for_chat(chat, last_read_id) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+    with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
+         {_n, _} <- MessageReference.set_all_seen_for_chat(chat, last_read_id) do
+      render(conn, "show.json", chat: chat)
     end
   end
 
-  def messages(%{assigns: %{user: %{id: user_id}}} = conn, %{id: id} = params) do
-    with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
-      cm_refs =
+  def messages(%{assigns: %{user: user}} = conn, %{id: id} = params) do
+    with {:ok, chat} <- Chat.get_by_user_and_id(user, id) do
+      chat_message_refs =
         chat
         |> MessageReference.for_chat_query()
         |> Pagination.fetch_paginated(params)
 
       conn
+      |> add_link_headers(chat_message_refs)
       |> put_view(MessageReferenceView)
-      |> render("index.json", chat_message_references: cm_refs)
-    else
-      _ ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "not found"})
+      |> render("index.json", chat_message_references: chat_message_refs)
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, _params) do
-    blocked_ap_ids = User.blocked_users_ap_ids(user)
+  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
+    exclude_users =
+      User.blocked_users_ap_ids(user) ++
+        if params[:with_muted], do: [], else: User.muted_users_ap_ids(user)
 
     chats =
-      Chat.for_user_query(user_id)
-      |> where([c], c.recipient not in ^blocked_ap_ids)
+      user_id
+      |> Chat.for_user_query()
+      |> where([c], c.recipient not in ^exclude_users)
       |> Repo.all()
 
-    conn
-    |> put_view(ChatView)
-    |> render("index.json", chats: chats)
+    render(conn, "index.json", chats: chats)
   end
 
-  def create(%{assigns: %{user: user}} = conn, params) do
-    with %User{ap_id: recipient} <- User.get_by_id(params[:id]),
+  def create(%{assigns: %{user: user}} = conn, %{id: id}) do
+    with %User{ap_id: recipient} <- User.get_cached_by_id(id),
          {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
     end
   end
 
-  def show(%{assigns: %{user: user}} = conn, params) do
-    with %Chat{} = chat <- Repo.get_by(Chat, user_id: user.id, id: params[:id]) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+    with {:ok, chat} <- Chat.get_by_user_and_id(user, id) do
+      render(conn, "show.json", chat: chat)
+    end
+  end
+
+  defp idempotency_key(conn) do
+    case get_req_header(conn, "idempotency-key") do
+      [key] -> key
+      _ -> nil
     end
   end
 end

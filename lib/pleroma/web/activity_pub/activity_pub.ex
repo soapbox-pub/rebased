@@ -790,7 +790,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       [activity, object] in query,
       where:
         fragment(
-          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          """
+          ?->>'type' != 'Create'     -- This isn't a Create      
+          OR ?->>'inReplyTo' is null -- this isn't a reply
+          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends, 
+                                     -- unless they are the author (because authors 
+                                     -- are also part of the recipients). This leads
+                                     -- to a bug that self-replies by friends won't
+                                     -- show up.
+          OR ? = ?                   -- The actor is us
+          """,
+          activity.data,
           object.data,
           ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
           activity.recipients,
@@ -817,7 +827,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query =
       from([activity] in query,
         where: fragment("not (? = ANY(?))", activity.actor, ^mutes),
-        where: fragment("not (?->'to' \\?| ?)", activity.data, ^mutes)
+        where:
+          fragment(
+            "not (?->'to' \\?| ?) or ? = ?",
+            activity.data,
+            ^mutes,
+            activity.actor,
+            ^user.ap_id
+          )
       )
 
     unless opts[:skip_preload] do
@@ -920,16 +937,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
-  defp restrict_instance(query, %{instance: instance}) do
-    users =
-      from(
-        u in User,
-        select: u.ap_id,
-        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
-      )
-      |> Repo.all()
-
-    from(activity in query, where: activity.actor in ^users)
+  defp restrict_instance(query, %{instance: instance}) when is_binary(instance) do
+    from(
+      activity in query,
+      where: fragment("split_part(actor::text, '/'::text, 3) = ?", ^instance)
+    )
   end
 
   defp restrict_instance(query, _), do: query
@@ -1218,11 +1230,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {String.trim(name, ":"), url}
       end)
 
-    locked = data["manuallyApprovesFollowers"] || false
+    is_locked = data["manuallyApprovesFollowers"] || false
     capabilities = data["capabilities"] || %{}
     accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
-    discoverable = data["discoverable"] || false
+    is_discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
@@ -1247,8 +1259,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       banner: banner,
       fields: fields,
       emoji: emojis,
-      locked: locked,
-      discoverable: discoverable,
+      is_locked: is_locked,
+      is_discoverable: is_discoverable,
       invisible: invisible,
       avatar: avatar,
       name: data["name"],
@@ -1361,6 +1373,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, data} <- user_data_from_user_object(data) do
       {:ok, maybe_update_follow_information(data)}
     else
+      # If this has been deleted, only log a debug and not an error
       {:error, "Object has been deleted" = e} ->
         Logger.debug("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
         {:error, e}

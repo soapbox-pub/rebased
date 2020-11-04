@@ -196,17 +196,24 @@ defmodule Mix.Tasks.Pleroma.User do
       OptionParser.parse(
         rest,
         strict: [
-          moderator: :boolean,
           admin: :boolean,
-          locked: :boolean
+          confirmed: :boolean,
+          locked: :boolean,
+          moderator: :boolean
         ]
       )
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       user =
-        case Keyword.get(options, :moderator) do
+        case Keyword.get(options, :admin) do
           nil -> user
-          value -> set_moderator(user, value)
+          value -> set_admin(user, value)
+        end
+
+      user =
+        case Keyword.get(options, :confirmed) do
+          nil -> user
+          value -> set_confirmed(user, value)
         end
 
       user =
@@ -216,9 +223,9 @@ defmodule Mix.Tasks.Pleroma.User do
         end
 
       _user =
-        case Keyword.get(options, :admin) do
+        case Keyword.get(options, :moderator) do
           nil -> user
-          value -> set_admin(user, value)
+          value -> set_moderator(user, value)
         end
     else
       _ ->
@@ -353,6 +360,42 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["confirm_all"]) do
+    start_pleroma()
+
+    Pleroma.User.Query.build(%{
+      local: true,
+      deactivated: false,
+      is_moderator: false,
+      is_admin: false,
+      invisible: false
+    })
+    |> Pleroma.Repo.chunk_stream(500, :batches)
+    |> Stream.each(fn users ->
+      users
+      |> Enum.each(fn user -> User.need_confirmation(user, false) end)
+    end)
+    |> Stream.run()
+  end
+
+  def run(["unconfirm_all"]) do
+    start_pleroma()
+
+    Pleroma.User.Query.build(%{
+      local: true,
+      deactivated: false,
+      is_moderator: false,
+      is_admin: false,
+      invisible: false
+    })
+    |> Pleroma.Repo.chunk_stream(500, :batches)
+    |> Stream.each(fn users ->
+      users
+      |> Enum.each(fn user -> User.need_confirmation(user, true) end)
+    end)
+    |> Stream.run()
+  end
+
   def run(["sign_out", nickname]) do
     start_pleroma()
 
@@ -376,7 +419,7 @@ defmodule Mix.Tasks.Pleroma.User do
       |> Enum.each(fn user ->
         shell_info(
           "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
-            user.locked
+            user.is_locked
           }, deactivated: #{user.deactivated}"
         )
       end)
@@ -404,10 +447,17 @@ defmodule Mix.Tasks.Pleroma.User do
   defp set_locked(user, value) do
     {:ok, user} =
       user
-      |> Changeset.change(%{locked: value})
+      |> Changeset.change(%{is_locked: value})
       |> User.update_and_set_cache()
 
-    shell_info("Locked status of #{user.nickname}: #{user.locked}")
+    shell_info("Locked status of #{user.nickname}: #{user.is_locked}")
+    user
+  end
+
+  defp set_confirmed(user, value) do
+    {:ok, user} = User.need_confirmation(user, !value)
+
+    shell_info("Confirmation pending status of #{user.nickname}: #{user.confirmation_pending}")
     user
   end
 end

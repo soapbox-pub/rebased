@@ -17,6 +17,8 @@ Environment="MIX_ENV=prod"
 Environment="HOME=/var/lib/pleroma"
 ; Path to the folder containing the Pleroma installation.
 WorkingDirectory=/opt/pleroma
+; Path to the environment file. the file contains RELEASE_COOKIE and etc 
+EnvironmentFile=/opt/pleroma/config/pleroma.env
 ; Path to the Mix binary.
 ExecStart=/usr/bin/mix phx.server
 
@@ -29,8 +31,6 @@ ProtectHome=true
 ProtectSystem=full
 ; Sets up a new /dev mount for the process and only adds API pseudo devices like /dev/null, /dev/zero or /dev/random but not physical devices. Disabled by default because it may not work on devices like the Raspberry Pi.
 PrivateDevices=false
-; Ensures that the service process and all its children can never gain new privileges through execve().
-NoNewPrivileges=true
 ; Drops the sysadmin capability from the daemon.
 CapabilityBoundingSet=~CAP_SYS_ADMIN
 

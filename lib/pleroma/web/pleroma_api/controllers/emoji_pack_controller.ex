@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
   use Pleroma.Web, :controller
 
@@ -6,7 +10,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
-    Pleroma.Plugs.OAuthScopesPlug,
+    Pleroma.Web.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
     when action in [
            :import_from_filesystem,
@@ -18,13 +22,17 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
          ]
   )
 
-  @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
-  plug(:skip_plug, @skip_plugs when action in [:index, :show, :archive])
+  @skip_plugs [
+    Pleroma.Web.Plugs.OAuthScopesPlug,
+    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
+  ]
+  plug(:skip_plug, @skip_plugs when action in [:index, :archive, :show])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
-  def remote(conn, %{url: url}) do
-    with {:ok, packs} <- Pack.list_remote(url) do
+  def remote(conn, params) do
+    with {:ok, packs} <-
+           Pack.list_remote(url: params.url, page_size: params.page_size, page: params.page) do
       json(conn, packs)
     else
       {:error, :not_shareable} ->

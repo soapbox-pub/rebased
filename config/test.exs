@@ -83,8 +83,6 @@ config :web_push_encryption, :vapid_details,
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
 
-config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
-
 config :pleroma, Oban,
   queues: false,
   crontab: false,
@@ -115,7 +113,7 @@ config :pleroma, Pleroma.Gun, Pleroma.GunMock
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 
-config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+config :pleroma, Pleroma.Web.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 

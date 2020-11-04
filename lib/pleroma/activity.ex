@@ -14,6 +14,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.ReportNote
   alias Pleroma.ThreadMute
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Ecto.Changeset
   import Ecto.Query
@@ -152,6 +153,18 @@ defmodule Pleroma.Activity do
   end
 
   def get_bookmark(_, _), do: nil
+
+  def get_report(activity_id) do
+    opts = %{
+      type: "Flag",
+      skip_preload: true,
+      preload_report_notes: true
+    }
+
+    ActivityPub.fetch_activities_query([], opts)
+    |> where(id: ^activity_id)
+    |> Repo.one()
+  end
 
   def change(struct, params \\ %{}) do
     struct

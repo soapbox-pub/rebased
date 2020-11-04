@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.ModerationLog do
   use Ecto.Schema
 
@@ -649,6 +653,16 @@ defmodule Pleroma.ModerationLog do
         }
       }) do
     "@#{actor_nickname} deleted chat message ##{subject_id}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "create_backup",
+          "subject" => %{"nickname" => user_nickname}
+        }
+      }) do
+    "@#{actor_nickname} requested account backup for @#{user_nickname}"
   end
 
   defp nicknames_to_string(nicknames) do

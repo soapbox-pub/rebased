@@ -126,7 +126,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
   end
 
   defp name_param do
-    Operation.parameter(:name, :path, :string, "Pack Name", example: "cofe", required: true)
+    Operation.parameter(:name, :query, :string, "Pack Name", example: "cofe", required: true)
   end
 
   defp files_object do

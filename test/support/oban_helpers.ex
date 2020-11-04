@@ -7,6 +7,8 @@ defmodule Pleroma.Tests.ObanHelpers do
   Oban test helpers.
   """
 
+  require Ecto.Query
+
   alias Pleroma.Repo
 
   def wipe_all do
@@ -15,6 +17,7 @@ defmodule Pleroma.Tests.ObanHelpers do
 
   def perform_all do
     Oban.Job
+    |> Ecto.Query.where(state: "available")
     |> Repo.all()
     |> perform()
   end

@@ -71,3 +71,7 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 config :joken, default_signer: "<%= jwt_secret %>"
 
 config :pleroma, configurable_from_database: <%= db_configurable? %>
+
+<%= if Kernel.length(upload_filters) > 0 do
+"config :pleroma, Pleroma.Upload, filters: #{inspect(upload_filters)}"
+end %>
