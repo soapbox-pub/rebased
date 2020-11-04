@@ -59,6 +59,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         local_param(),
+        instance_param(),
         only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
@@ -155,6 +156,15 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       :query,
       %Schema{allOf: [BooleanLike], default: false},
       "Show only local statuses?"
+    )
+  end
+
+  defp instance_param do
+    Operation.parameter(
+      :instance,
+      :query,
+      %Schema{type: :string},
+      "Show only statuses from the given domain"
     )
   end
 
