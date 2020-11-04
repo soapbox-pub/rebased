@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
   end
 
   defp with_muted_param do
-    Operation.parameter(:with_muted, :query, BooleanLike, "Includeactivities by muted users")
+    Operation.parameter(:with_muted, :query, BooleanLike, "Include activities by muted users")
   end
 
   defp exclude_visibilities_param do
