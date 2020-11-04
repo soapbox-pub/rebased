@@ -10,7 +10,7 @@ defmodule Pleroma.Captcha.Kocaptcha do
   def new do
     endpoint = Pleroma.Config.get!([__MODULE__, :endpoint])
 
-    case Tesla.get(endpoint <> "/new") do
+    case Pleroma.HTTP.get(endpoint <> "/new") do
       {:error, _} ->
         %{error: :kocaptcha_service_unavailable}
 

@@ -45,7 +45,8 @@ defmodule Pleroma.Web.CommonAPI do
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,
             Pipeline.common_pipeline(create_activity_data,
-              local: true
+              local: true,
+              idempotency_key: opts[:idempotency_key]
             )} do
       {:ok, activity}
     else

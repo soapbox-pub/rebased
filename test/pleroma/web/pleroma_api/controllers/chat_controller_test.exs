@@ -82,11 +82,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       result =
         conn
         |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", "123")
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "Hallo!!"})
         |> json_response_and_validate_schema(200)
 
       assert result["content"] == "Hallo!!"
       assert result["chat_id"] == chat.id |> to_string()
+      assert result["idempotency_key"] == "123"
     end
 
     test "it fails if there is no content", %{conn: conn, user: user} do
@@ -339,6 +341,35 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert length(result) == 0
+    end
+
+    test "it does not return chats with users you muted", %{conn: conn, user: user} do
+      recipient = insert(:user)
+
+      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 1
+
+      User.mute(user, recipient)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 0
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 1
     end
 
     test "it returns all chats", %{conn: conn, user: user} do
