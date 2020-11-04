@@ -363,6 +363,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert length(result) == 0
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 1
     end
 
     test "it returns all chats", %{conn: conn, user: user} do

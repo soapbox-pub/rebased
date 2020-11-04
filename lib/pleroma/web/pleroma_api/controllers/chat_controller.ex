@@ -138,11 +138,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, _params) do
+  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
     exclude_users =
-      user
-      |> User.blocked_users_ap_ids()
-      |> Enum.concat(User.muted_users_ap_ids(user))
+      User.blocked_users_ap_ids(user) ++
+        if params[:with_muted], do: [], else: User.muted_users_ap_ids(user)
 
     chats =
       user_id
