@@ -42,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
+- Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
 
 </details>
 
