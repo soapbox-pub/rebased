@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Plug.Conn
 
   describe "http security enabled" do

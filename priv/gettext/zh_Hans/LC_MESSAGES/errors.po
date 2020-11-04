@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-09-20 13:18+0000\n"
-"PO-Revision-Date: 2020-09-20 14:48+0000\n"
-"Last-Translator: Kana <gudzpoz@live.com>\n"
+"PO-Revision-Date: 2020-10-22 18:25+0000\n"
+"Last-Translator: shironeko <shironeko@tesaguri.club>\n"
 "Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -49,7 +49,7 @@ msgstr "是被保留的"
 
 ## From Ecto.Changeset.validate_confirmation/3
 msgid "does not match confirmation"
-msgstr ""
+msgstr "与验证不符"
 
 ## From Ecto.Changeset.no_assoc_constraint/3
 msgid "is still associated with this entry"
@@ -138,12 +138,12 @@ msgstr "不能获取收藏"
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:438
 #, elixir-format
 msgid "Can't like object"
-msgstr ""
+msgstr "不能喜欢对象"
 
 #: lib/pleroma/web/common_api/utils.ex:563
 #, elixir-format
 msgid "Cannot post an empty status without attachments"
-msgstr ""
+msgstr "无法发送空白且不包含附件的状态"
 
 #: lib/pleroma/web/common_api/utils.ex:511
 #, elixir-format
@@ -153,100 +153,100 @@ msgstr ""
 #: lib/pleroma/config/config_db.ex:191
 #, elixir-format
 msgid "Config with params %{params} not found"
-msgstr ""
+msgstr "无法找到包含参数 %{params} 的配置"
 
 #: lib/pleroma/web/common_api/common_api.ex:181
 #: lib/pleroma/web/common_api/common_api.ex:185
 #, elixir-format
 msgid "Could not delete"
-msgstr ""
+msgstr "无法删除"
 
 #: lib/pleroma/web/common_api/common_api.ex:231
 #, elixir-format
 msgid "Could not favorite"
-msgstr ""
+msgstr "无法收藏"
 
 #: lib/pleroma/web/common_api/common_api.ex:453
 #, elixir-format
 msgid "Could not pin"
-msgstr ""
+msgstr "无法置顶"
 
 #: lib/pleroma/web/common_api/common_api.ex:278
 #, elixir-format
 msgid "Could not unfavorite"
-msgstr ""
+msgstr "无法取消收藏"
 
 #: lib/pleroma/web/common_api/common_api.ex:463
 #, elixir-format
 msgid "Could not unpin"
-msgstr ""
+msgstr "无法取消置顶"
 
 #: lib/pleroma/web/common_api/common_api.ex:216
 #, elixir-format
 msgid "Could not unrepeat"
-msgstr ""
+msgstr "无法取消转发"
 
 #: lib/pleroma/web/common_api/common_api.ex:512
 #: lib/pleroma/web/common_api/common_api.ex:521
 #, elixir-format
 msgid "Could not update state"
-msgstr ""
+msgstr "无法更新状态"
 
 #: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:207
 #, elixir-format
 msgid "Error."
-msgstr ""
+msgstr "错误。"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:106
 #, elixir-format
 msgid "Invalid CAPTCHA"
-msgstr ""
+msgstr "无效的验证码"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:116
 #: lib/pleroma/web/oauth/oauth_controller.ex:568
 #, elixir-format
 msgid "Invalid credentials"
-msgstr ""
+msgstr "无效的凭据"
 
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:38
 #, elixir-format
 msgid "Invalid credentials."
-msgstr ""
+msgstr "无效的凭据。"
 
 #: lib/pleroma/web/common_api/common_api.ex:355
 #, elixir-format
 msgid "Invalid indices"
-msgstr ""
+msgstr "无效的索引"
 
 #: lib/pleroma/web/admin_api/controllers/fallback_controller.ex:29
 #, elixir-format
 msgid "Invalid parameters"
-msgstr ""
+msgstr "无效的参数"
 
 #: lib/pleroma/web/common_api/utils.ex:414
 #, elixir-format
 msgid "Invalid password."
-msgstr ""
+msgstr "无效的密码。"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:220
 #, elixir-format
 msgid "Invalid request"
-msgstr ""
+msgstr "无效的请求"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:109
 #, elixir-format
 msgid "Kocaptcha service unavailable"
-msgstr ""
+msgstr "Kocaptcha 服务不可用"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:112
 #, elixir-format
 msgid "Missing parameters"
-msgstr ""
+msgstr "缺少参数"
 
 #: lib/pleroma/web/common_api/utils.ex:547
 #, elixir-format
 msgid "No such conversation"
-msgstr ""
+msgstr "没有该对话"
 
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:388
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:414 lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:456

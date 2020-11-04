@@ -414,7 +414,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       object =
         object
         |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", user.ap_id())
+        |> Map.put("attributedTo", user.ap_id)
         |> Transmogrifier.fix_object()
 
       ActivityPub.create(%{
@@ -458,7 +458,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    actor = user.ap_id()
+    actor = user.ap_id
 
     params =
       params
@@ -525,19 +525,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     {new_user, for_user}
   end
 
-  @doc """
-  Endpoint based on <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
-
-  Parameters:
-  - (required) `file`: data of the media
-  - (optionnal) `description`: description of the media, intended for accessibility
-
-  Response:
-  - HTTP Code: 201 Created
-  - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
-
-  Note: Will not point to a URL with a `Location` header because no standalone Activity has been created.
-  """
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
            ActivityPub.upload(

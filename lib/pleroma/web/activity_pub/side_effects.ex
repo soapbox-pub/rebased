@@ -187,7 +187,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
 
-      if in_reply_to = object.data["inReplyTo"] do
+      if in_reply_to = object.data["inReplyTo"] && object.data["type"] != "Answer" do
         Object.increase_replies_count(in_reply_to)
       end
 
@@ -306,10 +306,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
       streamables =
         [[actor, recipient], [recipient, actor]]
+        |> Enum.uniq()
         |> Enum.map(fn [user, other_user] ->
           if user.local do
             {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
             {:ok, cm_ref} = MessageReference.create(chat, object, user.ap_id != actor.ap_id)
+
+            Cachex.put(
+              :chat_message_id_idempotency_key_cache,
+              cm_ref.id,
+              meta[:idempotency_key]
+            )
 
             {
               ["user", "user:pleroma_chat"],

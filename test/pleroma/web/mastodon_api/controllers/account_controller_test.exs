@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "works by nickname" do
       user = insert(:user)
 
-      assert %{"id" => user_id} =
+      assert %{"id" => _user_id} =
                build_conn()
                |> get("/api/v1/accounts/#{user.nickname}")
                |> json_response_and_validate_schema(200)
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
-      assert %{"id" => user_id} =
+      assert %{"id" => _user_id} =
                build_conn()
                |> get("/api/v1/accounts/#{user.nickname}")
                |> json_response_and_validate_schema(200)
@@ -1429,10 +1429,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "returns lists to which the account belongs" do
       %{user: user, conn: conn} = oauth_access(["read:lists"])
       other_user = insert(:user)
-      assert {:ok, %Pleroma.List{id: list_id} = list} = Pleroma.List.create("Test List", user)
+      assert {:ok, %Pleroma.List{id: _list_id} = list} = Pleroma.List.create("Test List", user)
       {:ok, %{following: _following}} = Pleroma.List.follow(list, other_user)
 
-      assert [%{"id" => list_id, "title" => "Test List"}] =
+      assert [%{"id" => _list_id, "title" => "Test List"}] =
                conn
                |> get("/api/v1/accounts/#{other_user.id}/lists")
                |> json_response_and_validate_schema(200)
@@ -1509,28 +1509,103 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
   test "getting a list of mutes" do
     %{user: user, conn: conn} = oauth_access(["read:mutes"])
-    other_user = insert(:user)
+    %{id: id1} = other_user1 = insert(:user)
+    %{id: id2} = other_user2 = insert(:user)
+    %{id: id3} = other_user3 = insert(:user)
 
-    {:ok, _user_relationships} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user1)
+    {:ok, _user_relationships} = User.mute(user, other_user2)
+    {:ok, _user_relationships} = User.mute(user, other_user3)
 
-    conn = get(conn, "/api/v1/mutes")
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes")
+      |> json_response_and_validate_schema(200)
 
-    other_user_id = to_string(other_user.id)
-    assert [%{"id" => ^other_user_id}] = json_response_and_validate_schema(conn, 200)
+    assert [id1, id2, id3] == Enum.map(result, & &1["id"])
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes?limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id1}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes?since_id=#{id1}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}, %{"id" => ^id3}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes?since_id=#{id1}&max_id=#{id3}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes?since_id=#{id1}&limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
   end
 
   test "getting a list of blocks" do
     %{user: user, conn: conn} = oauth_access(["read:blocks"])
-    other_user = insert(:user)
+    %{id: id1} = other_user1 = insert(:user)
+    %{id: id2} = other_user2 = insert(:user)
+    %{id: id3} = other_user3 = insert(:user)
 
-    {:ok, _user_relationship} = User.block(user, other_user)
+    {:ok, _user_relationship} = User.block(user, other_user1)
+    {:ok, _user_relationship} = User.block(user, other_user3)
+    {:ok, _user_relationship} = User.block(user, other_user2)
 
-    conn =
+    result =
       conn
       |> assign(:user, user)
       |> get("/api/v1/blocks")
+      |> json_response_and_validate_schema(200)
 
-    other_user_id = to_string(other_user.id)
-    assert [%{"id" => ^other_user_id}] = json_response_and_validate_schema(conn, 200)
+    assert [id1, id2, id3] == Enum.map(result, & &1["id"])
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id1}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?since_id=#{id1}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}, %{"id" => ^id3}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?since_id=#{id1}&max_id=#{id3}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?since_id=#{id1}&limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
   end
 end

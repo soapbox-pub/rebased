@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.User

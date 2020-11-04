@@ -6,14 +6,12 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 
   setup_all do: clear_config([:static_fe, :enabled], true)
-  setup do: clear_config([:instance, :federating], true)
 
   setup %{conn: conn} do
     conn = put_req_header(conn, "accept", "text/html")
@@ -74,8 +72,27 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       refute html =~ ">test29<"
     end
 
-    test "it requires authentication if instance is NOT federating", %{conn: conn, user: user} do
-      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}", user)
+    test "does not require authentication on non-federating instances", %{
+      conn: conn,
+      user: user
+    } do
+      clear_config([:instance, :federating], false)
+
+      conn = get(conn, "/users/#{user.nickname}")
+
+      assert html_response(conn, 200) =~ user.nickname
+    end
+
+    test "returns 404 for local user with `restrict_unauthenticated/profiles/local` setting", %{
+      conn: conn
+    } do
+      clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+      local_user = insert(:user, local: true)
+
+      conn
+      |> get("/users/#{local_user.nickname}")
+      |> html_response(404)
     end
   end
 
@@ -187,10 +204,28 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html_response(conn, 302) =~ "redirected"
     end
 
-    test "it requires authentication if instance is NOT federating", %{conn: conn, user: user} do
+    test "does not require authentication on non-federating instances", %{
+      conn: conn,
+      user: user
+    } do
+      clear_config([:instance, :federating], false)
+
       {:ok, activity} = CommonAPI.post(user, %{status: "testing a thing!"})
 
-      ensure_federating_or_authenticated(conn, "/notice/#{activity.id}", user)
+      conn = get(conn, "/notice/#{activity.id}")
+
+      assert html_response(conn, 200) =~ "testing a thing!"
+    end
+
+    test "returns 404 for local public activity with `restrict_unauthenticated/activities/local` setting",
+         %{conn: conn, user: user} do
+      clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "testing a thing!"})
+
+      conn
+      |> get("/notice/#{activity.id}")
+      |> html_response(404)
     end
   end
 end

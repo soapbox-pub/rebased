@@ -52,7 +52,7 @@ defmodule Pleroma.Web.FedSockets.FedRegistryTest do
     end
 
     test "will be ignored" do
-      assert {:ok, %SocketInfo{origin: origin, pid: pid_one}} =
+      assert {:ok, %SocketInfo{origin: origin, pid: _pid_one}} =
                FedRegistry.get_fed_socket(@good_domain_origin)
 
       assert origin == "good.domain:80"
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.FedSockets.FedRegistryTest do
     test "the newer process will be closed" do
       pid_two = build_test_socket(@good_domain)
 
-      assert {:ok, %SocketInfo{origin: origin, pid: pid_one}} =
+      assert {:ok, %SocketInfo{origin: origin, pid: _pid_one}} =
                FedRegistry.get_fed_socket(@good_domain_origin)
 
       assert origin == "good.domain:80"

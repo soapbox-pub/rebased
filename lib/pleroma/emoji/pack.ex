@@ -594,7 +594,7 @@ defmodule Pleroma.Emoji.Pack do
   end
 
   defp download_archive(url, sha) do
-    with {:ok, %{body: archive}} <- Tesla.get(url) do
+    with {:ok, %{body: archive}} <- Pleroma.HTTP.get(url) do
       if Base.decode16!(sha) == :crypto.hash(:sha256, archive) do
         {:ok, archive}
       else
@@ -617,7 +617,7 @@ defmodule Pleroma.Emoji.Pack do
   end
 
   defp update_sha_and_save_metadata(pack, data) do
-    with {:ok, %{body: zip}} <- Tesla.get(data[:"fallback-src"]),
+    with {:ok, %{body: zip}} <- Pleroma.HTTP.get(data[:"fallback-src"]),
          :ok <- validate_has_all_files(pack, zip) do
       fallback_sha = :sha256 |> :crypto.hash(zip) |> Base.encode16()
 

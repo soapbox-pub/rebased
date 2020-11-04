@@ -33,8 +33,15 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
       end
 
     activity = Activity.get_by_id_with_object(last_activity_id)
-    # Conversations return all users except the current user.
-    users = Enum.reject(participation.recipients, &(&1.id == user.id))
+
+    # Conversations return all users except the current user,
+    # except when the current user is the only participant
+    users =
+      if length(participation.recipients) > 1 do
+        Enum.reject(participation.recipients, &(&1.id == user.id))
+      else
+        participation.recipients
+      end
 
     %{
       id: participation.id |> to_string(),
@@ -43,7 +50,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
       last_status:
         render(StatusView, "show.json",
           activity: activity,
-          direct_conversation_id: participation.id
+          direct_conversation_id: participation.id,
+          for: user
         )
     }
   end
