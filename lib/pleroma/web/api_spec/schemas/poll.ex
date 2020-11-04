@@ -28,8 +28,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
       },
       votes_count: %Schema{
         type: :integer,
-        nullable: true,
-        description: "How many votes have been received. Number, or null if `multiple` is false."
+        description: "How many votes have been received. Number."
+      },
+      voters_count: %Schema{
+        type: :integer,
+        description: "How many unique accounts have voted. Number."
       },
       voted: %Schema{
         type: :boolean,
@@ -61,7 +64,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
       expired: true,
       multiple: false,
       votes_count: 10,
-      voters_count: nil,
+      voters_count: 10,
       voted: true,
       own_votes: [
         1

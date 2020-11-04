@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Conversation.Participation
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -28,10 +29,10 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       user_three: user_three,
       conn: conn
     } do
-      assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
+      assert Participation.unread_count(user_two) == 0
       {:ok, direct} = create_direct_message(user_one, [user_two, user_three])
 
-      assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
+      assert Participation.unread_count(user_two) == 1
 
       {:ok, _follower_only} =
         CommonAPI.post(user_one, %{
@@ -54,12 +55,33 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
       account_ids = Enum.map(res_accounts, & &1["id"])
       assert length(res_accounts) == 2
+      assert user_one.id not in account_ids
       assert user_two.id in account_ids
       assert user_three.id in account_ids
       assert is_binary(res_id)
       assert unread == false
       assert res_last_status["id"] == direct.id
-      assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
+      assert res_last_status["account"]["id"] == user_one.id
+      assert Participation.unread_count(user_one) == 0
+    end
+
+    test "includes the user if the user is the only participant", %{
+      user: user_one,
+      conn: conn
+    } do
+      {:ok, _direct} = create_direct_message(user_one, [])
+
+      res_conn = get(conn, "/api/v1/conversations")
+
+      assert response = json_response_and_validate_schema(res_conn, 200)
+
+      assert [
+               %{
+                 "accounts" => [account]
+               }
+             ] = response
+
+      assert user_one.id == account["id"]
     end
 
     test "observes limit params", %{
@@ -134,8 +156,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     user_two = insert(:user)
     {:ok, direct} = create_direct_message(user_one, [user_two])
 
-    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
-    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
+    assert Participation.unread_count(user_one) == 0
+    assert Participation.unread_count(user_two) == 1
 
     user_two_conn =
       build_conn()
@@ -155,8 +177,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       |> post("/api/v1/conversations/#{direct_conversation_id}/read")
       |> json_response_and_validate_schema(200)
 
-    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
-    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
+    assert Participation.unread_count(user_one) == 0
+    assert Participation.unread_count(user_two) == 0
 
     # The conversation is marked as unread on reply
     {:ok, _} =
@@ -171,8 +193,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       |> get("/api/v1/conversations")
       |> json_response_and_validate_schema(200)
 
-    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
-    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
+    assert Participation.unread_count(user_one) == 1
+    assert Participation.unread_count(user_two) == 0
 
     # A reply doesn't increment the user's unread_conversation_count if the conversation is unread
     {:ok, _} =
@@ -182,8 +204,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         in_reply_to_status_id: direct.id
       })
 
-    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
-    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
+    assert Participation.unread_count(user_one) == 1
+    assert Participation.unread_count(user_two) == 0
   end
 
   test "(vanilla) Mastodon frontend behaviour", %{user: user_one, conn: conn} do
