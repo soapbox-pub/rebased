@@ -174,7 +174,7 @@ defmodule Pleroma.UserTest do
 
   test "returns all pending follow requests" do
     unlocked = insert(:user)
-    locked = insert(:user, locked: true)
+    locked = insert(:user, is_locked: true)
     follower = insert(:user)
 
     CommonAPI.follow(follower, unlocked)
@@ -187,7 +187,7 @@ defmodule Pleroma.UserTest do
   end
 
   test "doesn't return already accepted or duplicate follow requests" do
-    locked = insert(:user, locked: true)
+    locked = insert(:user, is_locked: true)
     pending_follower = insert(:user)
     accepted_follower = insert(:user)
 
@@ -201,7 +201,7 @@ defmodule Pleroma.UserTest do
   end
 
   test "doesn't return follow requests for deactivated accounts" do
-    locked = insert(:user, locked: true)
+    locked = insert(:user, is_locked: true)
     pending_follower = insert(:user, %{deactivated: true})
 
     CommonAPI.follow(pending_follower, locked)
@@ -211,7 +211,7 @@ defmodule Pleroma.UserTest do
   end
 
   test "clears follow requests when requester is blocked" do
-    followed = insert(:user, locked: true)
+    followed = insert(:user, is_locked: true)
     follower = insert(:user)
 
     CommonAPI.follow(follower, followed)
@@ -299,8 +299,8 @@ defmodule Pleroma.UserTest do
   end
 
   test "local users do not automatically follow local locked accounts" do
-    follower = insert(:user, locked: true)
-    followed = insert(:user, locked: true)
+    follower = insert(:user, is_locked: true)
+    followed = insert(:user, is_locked: true)
 
     {:ok, follower} = User.maybe_direct_follow(follower, followed)
 
@@ -388,6 +388,7 @@ defmodule Pleroma.UserTest do
     }
 
     setup do: clear_config([:instance, :autofollowed_nicknames])
+    setup do: clear_config([:instance, :autofollowing_nicknames])
     setup do: clear_config([:welcome])
     setup do: clear_config([:instance, :account_activation_required])
 
@@ -406,6 +407,23 @@ defmodule Pleroma.UserTest do
 
       assert User.following?(registered_user, user)
       refute User.following?(registered_user, remote_user)
+    end
+
+    test "it adds automatic followers for new registered accounts" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      Pleroma.Config.put([:instance, :autofollowing_nicknames], [
+        user1.nickname,
+        user2.nickname
+      ])
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      {:ok, registered_user} = User.register(cng)
+
+      assert User.following?(user1, registered_user)
+      assert User.following?(user2, registered_user)
     end
 
     test "it sends a welcome message if it is set" do
@@ -1360,7 +1378,7 @@ defmodule Pleroma.UserTest do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
-      locked_user = insert(:user, name: "locked", locked: true)
+      locked_user = insert(:user, name: "locked", is_locked: true)
       {:ok, _} = User.follow(user, locked_user, :follow_pending)
 
       object = insert(:note, user: user)
@@ -1450,7 +1468,7 @@ defmodule Pleroma.UserTest do
         note_count: 9,
         follower_count: 9,
         following_count: 9001,
-        locked: true,
+        is_locked: true,
         confirmation_pending: true,
         password_reset_pending: true,
         approval_pending: true,
@@ -1467,7 +1485,7 @@ defmodule Pleroma.UserTest do
         pleroma_settings_store: %{"q" => "x"},
         fields: [%{"gg" => "qq"}],
         raw_fields: [%{"gg" => "qq"}],
-        discoverable: true,
+        is_discoverable: true,
         also_known_as: ["https://lol.olo/users/loll"]
       })
 
@@ -1492,7 +1510,7 @@ defmodule Pleroma.UserTest do
              note_count: 0,
              follower_count: 0,
              following_count: 0,
-             locked: false,
+             is_locked: false,
              confirmation_pending: false,
              password_reset_pending: false,
              approval_pending: false,
@@ -1509,7 +1527,7 @@ defmodule Pleroma.UserTest do
              pleroma_settings_store: %{},
              fields: [],
              raw_fields: [],
-             discoverable: false,
+             is_discoverable: false,
              also_known_as: []
            } = user
   end

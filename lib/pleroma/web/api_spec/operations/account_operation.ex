@@ -335,6 +335,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.mutes",
       description: "Accounts the user has muted.",
       security: [%{"oAuth" => ["follow", "read:mutes"]}],
+      parameters: pagination_params(),
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -348,6 +349,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.blocks",
       description: "View your blocks. See also accounts/:id/{block,unblock}",
       security: [%{"oAuth" => ["read:blocks"]}],
+      parameters: pagination_params(),
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }

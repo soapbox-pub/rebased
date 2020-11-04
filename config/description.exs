@@ -829,13 +829,13 @@ config :pleroma, :config_description, [
         key: :autofollowed_nicknames,
         type: {:list, :string},
         description:
-          "Set to nicknames of (local) users that every new user should automatically follow",
-        suggestions: [
-          "lain",
-          "kaniini",
-          "lanodan",
-          "rinpatch"
-        ]
+          "Set to nicknames of (local) users that every new user should automatically follow"
+      },
+      %{
+        key: :autofollowing_nicknames,
+        type: {:list, :string},
+        description:
+          "Set to nicknames of (local) users that automatically follows every newly registered user"
       },
       %{
         key: :attachment_links,
@@ -1757,28 +1757,37 @@ config :pleroma, :config_description, [
     related_policy: "Pleroma.Web.ActivityPub.MRF.KeywordPolicy",
     label: "MRF Keyword",
     type: :group,
-    description: "Reject or Word-Replace messages with a keyword or regex",
+    description:
+      "Reject or Word-Replace messages matching a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html).",
     children: [
       %{
         key: :reject,
         type: {:list, :string},
-        description:
-          "A list of patterns which result in message being rejected. Each pattern can be a string or a regular expression.",
+        description: """
+          A list of patterns which result in message being rejected.
+
+          Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+        """,
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :federated_timeline_removal,
         type: {:list, :string},
-        description:
-          "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted). Each pattern can be a string or a regular expression.",
+        description: """
+          A list of patterns which result in message being removed from federated timelines (a.k.a unlisted).
+
+          Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+        """,
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :replace,
         type: {:list, :tuple},
-        description:
-          "A list of tuples containing {pattern, replacement}. Each pattern can be a string or a regular expression.",
-        suggestions: [{"foo", "bar"}, {~r/foo/iu, "bar"}]
+        description: """
+          **Pattern**: a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+
+          **Replacement**: a string. Leaving the field empty is permitted.
+        """
       }
     ]
   },
@@ -2287,6 +2296,12 @@ config :pleroma, :config_description, [
             type: :integer,
             description: "Activity expiration queue",
             suggestions: [10]
+          },
+          %{
+            key: :backup,
+            type: :integer,
+            description: "Backup queue",
+            suggestions: [1]
           },
           %{
             key: :attachments_cleanup,
@@ -3706,6 +3721,77 @@ config :pleroma, :config_description, [
           Pleroma.Web.Preload.Providers.Timelines,
           Pleroma.Web.Preload.Providers.StatusNet
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :majic_pool,
+    type: :group,
+    description: "Majic/libmagic configuration",
+    children: [
+      %{
+        key: :size,
+        type: :integer,
+        description: "Number of majic workers to start.",
+        suggestions: [2]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.User.Backup,
+    type: :group,
+    description: "Account Backup",
+    children: [
+      %{
+        key: :purge_after_days,
+        type: :integer,
+        description: "Remove backup achives after N days",
+        suggestions: [30]
+      },
+      %{
+        key: :limit_days,
+        type: :integer,
+        description: "Limit user to export not more often than once per N days",
+        suggestions: [7]
+      }
+    ]
+  },
+  %{
+    group: :prometheus,
+    key: Pleroma.Web.Endpoint.MetricsExporter,
+    type: :group,
+    description: "Prometheus app metrics endpoint configuration",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "[Pleroma extension] Enables app metrics endpoint."
+      },
+      %{
+        key: :ip_whitelist,
+        type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
+        description:
+          "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+      },
+      %{
+        key: :auth,
+        type: [:boolean, :tuple],
+        description: "Enables HTTP Basic Auth for app metrics endpoint.",
+        suggestion: [false, {:basic, "myusername", "mypassword"}]
+      },
+      %{
+        key: :path,
+        type: :string,
+        description: "App metrics endpoint URI path.",
+        suggestions: ["/api/pleroma/app_metrics"]
+      },
+      %{
+        key: :format,
+        type: :atom,
+        description: "App metrics endpoint output format.",
+        suggestions: [:text, :protobuf]
       }
     ]
   }

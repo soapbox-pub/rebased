@@ -19,13 +19,15 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     recipient = insert(:user)
 
     file = %Plug.Upload{
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
 
     {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
-    {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "kippis :firefox:")
+
+    {:ok, activity} =
+      CommonAPI.post_chat_message(user, recipient, "kippis :firefox:", idempotency_key: "123")
 
     chat = Chat.get(user.id, recipient.ap_id)
 
@@ -42,6 +44,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert chat_message[:created_at]
     assert chat_message[:unread] == false
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
+    assert chat_message[:idempotency_key] == "123"
 
     clear_config([:rich_media, :enabled], true)
 

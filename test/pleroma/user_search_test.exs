@@ -66,7 +66,7 @@ defmodule Pleroma.UserSearchTest do
     end
 
     test "excludes users when discoverable is false" do
-      insert(:user, %{nickname: "john 3000", discoverable: false})
+      insert(:user, %{nickname: "john 3000", is_discoverable: false})
       insert(:user, %{nickname: "john 3001"})
 
       users = User.search("john")

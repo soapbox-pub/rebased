@@ -156,21 +156,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert response == "Not found"
     end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-
-      conn =
-        put_req_header(
-          conn,
-          "accept",
-          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
-        )
-
-      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}.json", user)
-    end
   end
 
   describe "mastodon compatibility routes" do
@@ -338,18 +323,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert "Not found" == json_response(conn2, :not_found)
     end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      note = insert(:note)
-      uuid = String.split(note.data["id"], "/") |> List.last()
-
-      conn = put_req_header(conn, "accept", "application/activity+json")
-
-      ensure_federating_or_authenticated(conn, "/objects/#{uuid}", user)
-    end
   end
 
   describe "/activities/:uuid" do
@@ -420,18 +393,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/activities/#{uuid}")
 
       assert "Not found" == json_response(conn2, :not_found)
-    end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      activity = insert(:note_activity)
-      uuid = String.split(activity.data["id"], "/") |> List.last()
-
-      conn = put_req_header(conn, "accept", "application/activity+json")
-
-      ensure_federating_or_authenticated(conn, "/activities/#{uuid}", user)
     end
   end
 
@@ -892,15 +853,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
-    end
-
-    test "it requires authentication if instance is NOT federating", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      conn = put_req_header(conn, "accept", "application/activity+json")
-
-      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}/outbox", user)
     end
   end
 
@@ -1487,9 +1439,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       desc = "Description of the image"
 
       image = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "bad/content-type",
         path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an_image.jpg"
+        filename: "an_image.png"
       }
 
       object =
@@ -1504,6 +1456,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert [%{"href" => object_href, "mediaType" => object_mediatype}] = object["url"]
       assert is_binary(object_href)
       assert object_mediatype == "image/jpeg"
+      assert String.ends_with?(object_href, ".jpg")
 
       activity_request = %{
         "@context" => "https://www.w3.org/ns/activitystreams",

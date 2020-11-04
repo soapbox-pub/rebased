@@ -36,9 +36,11 @@ defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
 
     assert conversation.id == participation.id |> to_string()
     assert conversation.last_status.id == activity.id
+    assert conversation.last_status.account.id == user.id
 
     assert [account] = conversation.accounts
     assert account.id == other_user.id
+
     assert conversation.last_status.pleroma.direct_conversation_id == participation.id
   end
 end

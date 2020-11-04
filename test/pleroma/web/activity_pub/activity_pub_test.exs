@@ -505,22 +505,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       # public
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "public"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 1
 
       # unlisted
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "unlisted"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # private
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "private"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # direct
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "direct"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
     end
   end
@@ -750,6 +750,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_activities([], %{blocking_user: blocker, skip_preload: true})
 
     refute repeat_activity in activities
+  end
+
+  test "returns your own posts regardless of mute" do
+    user = insert(:user)
+    muted = insert(:user)
+
+    {:ok, muted_post} = CommonAPI.post(muted, %{status: "Im stupid"})
+
+    {:ok, reply} =
+      CommonAPI.post(user, %{status: "I'm muting you", in_reply_to_status_id: muted_post.id})
+
+    {:ok, _} = User.mute(user, muted)
+
+    [activity] = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
+
+    assert activity.id == reply.id
   end
 
   test "doesn't return muted activities" do
@@ -1029,7 +1045,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "uploading files" do
     setup do
       test_file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -1120,7 +1136,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "creates an undo activity for a pending follow request" do
       follower = insert(:user)
-      followed = insert(:user, %{locked: true})
+      followed = insert(:user, %{is_locked: true})
 
       {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
@@ -2256,5 +2272,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert length(activities) == 2
     end
+  end
+
+  test "allow fetching of accounts with an empty string name field" do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://princess.cat/users/mewmew"} ->
+        file = File.read!("test/fixtures/mewmew_no_name.json")
+        %Tesla.Env{status: 200, body: file}
+    end)
+
+    {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")
+    assert user.name == " "
   end
 end

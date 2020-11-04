@@ -143,6 +143,20 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert user2 in users
     end
 
+    test "it returns users by actor_types" do
+      user_service = insert(:user, actor_type: "Service")
+      user_application = insert(:user, actor_type: "Application")
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, [^user_service], 1} = Search.user(%{actor_types: ["Service"]})
+      {:ok, [^user_application], 1} = Search.user(%{actor_types: ["Application"]})
+      {:ok, [^user1, ^user2], 2} = Search.user(%{actor_types: ["Person"]})
+
+      {:ok, [^user_service, ^user1, ^user2], 3} =
+        Search.user(%{actor_types: ["Person", "Service"]})
+    end
+
     test "it returns user by display name" do
       user = insert(:user, name: "Display name")
       insert(:user)
@@ -178,9 +192,20 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert count == 1
     end
 
+    test "it returns unconfirmed user" do
+      unconfirmed = insert(:user, confirmation_pending: true)
+      insert(:user)
+      insert(:user)
+
+      {:ok, _results, total} = Search.user()
+      {:ok, [^unconfirmed], count} = Search.user(%{unconfirmed: true})
+      assert total == 3
+      assert count == 1
+    end
+
     test "it returns non-discoverable users" do
       insert(:user)
-      insert(:user, discoverable: false)
+      insert(:user, is_discoverable: false)
 
       {:ok, _results, total} = Search.user()
 

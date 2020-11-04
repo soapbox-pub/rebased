@@ -346,7 +346,7 @@ defmodule Pleroma.NotificationTest do
   describe "follow / follow_request notifications" do
     test "it creates `follow` notification for approved Follow activity" do
       user = insert(:user)
-      followed_user = insert(:user, locked: false)
+      followed_user = insert(:user, is_locked: false)
 
       {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
       assert FollowingRelationship.following?(user, followed_user)
@@ -361,7 +361,7 @@ defmodule Pleroma.NotificationTest do
 
     test "it creates `follow_request` notification for pending Follow activity" do
       user = insert(:user)
-      followed_user = insert(:user, locked: true)
+      followed_user = insert(:user, is_locked: true)
 
       {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
       refute FollowingRelationship.following?(user, followed_user)
@@ -383,7 +383,7 @@ defmodule Pleroma.NotificationTest do
 
     test "it doesn't create a notification for follow-unfollow-follow chains" do
       user = insert(:user)
-      followed_user = insert(:user, locked: false)
+      followed_user = insert(:user, is_locked: false)
 
       {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
       assert FollowingRelationship.following?(user, followed_user)
@@ -397,10 +397,10 @@ defmodule Pleroma.NotificationTest do
     end
 
     test "dismisses the notification on follow request rejection" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       follower = insert(:user)
       {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, user)
-      assert [notification] = Notification.for_user(user)
+      assert [_notification] = Notification.for_user(user)
       {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
       assert [] = Notification.for_user(user)
     end

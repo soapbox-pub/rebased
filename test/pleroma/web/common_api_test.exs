@@ -95,12 +95,26 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "posting chat messages" do
     setup do: clear_config([:instance, :chat_limit])
 
+    test "it posts a self-chat" do
+      author = insert(:user)
+      recipient = author
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "remember to buy milk when milk truk arive"
+        )
+
+      assert activity.data["type"] == "Create"
+    end
+
     test "it posts a chat message without content but with an attachment" do
       author = insert(:user)
       recipient = insert(:user)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -622,7 +636,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{status: "foobar"})
 
-      assert {:ok, activity} = CommonAPI.post(user, %{status: "12345"})
+      assert {:ok, _activity} = CommonAPI.post(user, %{status: "12345"})
     end
 
     test "it can handle activities that expire" do
@@ -1071,7 +1085,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "cancels a pending follow for a local user" do
       follower = insert(:user)
-      followed = insert(:user, locked: true)
+      followed = insert(:user, is_locked: true)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
@@ -1093,7 +1107,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "cancels a pending follow for a remote user" do
       follower = insert(:user)
-      followed = insert(:user, locked: true, local: false, ap_enabled: true)
+      followed = insert(:user, is_locked: true, local: false, ap_enabled: true)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
@@ -1116,7 +1130,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
   describe "accept_follow_request/2" do
     test "after acceptance, it sets all existing pending follow request states to 'accept'" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 
@@ -1136,7 +1150,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "after rejection, it sets all existing pending follow request states to 'reject'" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 
@@ -1156,7 +1170,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "doesn't create a following relationship if the corresponding follow request doesn't exist" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       not_follower = insert(:user)
       CommonAPI.accept_follow_request(not_follower, user)
 
