@@ -255,6 +255,10 @@ There is an additional `user:pleroma_chat` stream. Incoming chat messages will m
 
 For viewing remote server timelines, there are `public:remote` and `public:remote:media` streams. Each of these accept a parameter like `?instance=lain.com`.
 
+## User muting and thread muting
+
+Both user muting and thread muting can be done for only a certain time by adding an `expires_in` parameter to the API calls and giving the expiration time in seconds.
+
 ## Not implemented
 
 Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer features and non-essential features are omitted. These features usually return an HTTP 200 status code, but with an empty response. While they may be added in the future, they are considered low priority.

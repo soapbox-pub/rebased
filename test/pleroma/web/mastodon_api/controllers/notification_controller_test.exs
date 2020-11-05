@@ -502,7 +502,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response_and_validate_schema(ret_conn, 200)) == 1
 
-    {:ok, _user_relationships} = User.mute(user, user2, false)
+    {:ok, _user_relationships} = User.mute(user, user2, %{notifications: false})
 
     conn = get(conn, "/api/v1/notifications")
 
