@@ -30,6 +30,7 @@ Check your OS documentation to adopt a similar strategy on other platforms.
 Disable the busy-waiting
 
 **vm.args:**
+
 ```
 +sbwt none
 +sbwtdcpu none
@@ -41,6 +42,7 @@ Disable the busy-waiting
 Enable more busy waiting, increase the internal maximum limit of BEAM processes and ports
 
 **vm.args:**
+
 ```
 +P 16777216
 +Q 16777216
