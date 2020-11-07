@@ -182,7 +182,6 @@ sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.se
 ```
 
 * Edit the service file and make sure that all paths fit your installation
-* Check that `EnvironmentFile` contains the correct path to the env file. Or generate the env file: `sudo -Hu pleroma mix pleroma.release_env gen`
 * Enable and start `pleroma.service`:
 
 ```shell
