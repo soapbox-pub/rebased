@@ -17,8 +17,6 @@ Environment="MIX_ENV=prod"
 Environment="HOME=/var/lib/pleroma"
 ; Path to the folder containing the Pleroma installation.
 WorkingDirectory=/opt/pleroma
-; Path to the environment file. the file contains RELEASE_COOKIE and etc 
-EnvironmentFile=/opt/pleroma/config/pleroma.env
 ; Path to the Mix binary.
 ExecStart=/usr/bin/mix phx.server
 
