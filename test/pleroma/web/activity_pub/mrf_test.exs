@@ -87,4 +87,21 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       {:ok, ^expected} = MRF.describe()
     end
   end
+
+  test "config_descriptions/0" do
+    descriptions = MRF.config_descriptions()
+
+    good_mrf = Enum.find(descriptions, fn %{key: key} -> key == :good_mrf end)
+
+    assert good_mrf == %{
+             key: :good_mrf,
+             related_policy: "Fixtures.Modules.GoodMRF",
+             label: "Good MRF",
+             description: "Some description",
+             children: [],
+             group: :pleroma,
+             tab: :mrf,
+             type: :group
+           }
+  end
 end

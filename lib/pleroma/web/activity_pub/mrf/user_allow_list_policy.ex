@@ -41,4 +41,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
 
     {:ok, %{mrf_user_allowlist: mrf_user_allowlist}}
   end
+
+  @impl true
+  def config_description do
+    %{
+      key: :mrf_user_allowlist,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy",
+      description:
+        "The keys in this section are the domain names that the policy should apply to." <>
+          " Each key should be assigned a list of users that should be allowed through by their ActivityPub ID",
+      suggestions: [
+        %{"example.org" => ["https://example.org/users/admin"]}
+      ]
+    }
+  end
 end

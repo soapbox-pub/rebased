@@ -3,7 +3,26 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF do
+  require Logger
+
+  @default_description %{
+    label: "",
+    description: "",
+    children: []
+  }
+
+  @required_description_keys [:key, :related_policy]
+
   @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
+  @callback describe() :: {:ok | :error, Map.t()}
+  @callback config_description() :: %{
+              optional(:children) => [map()],
+              key: atom(),
+              related_policy: String.t(),
+              label: String.t(),
+              description: String.t()
+            }
+  @optional_callbacks config_description: 0
 
   def filter(policies, %{} = message) do
     policies
@@ -51,8 +70,6 @@ defmodule Pleroma.Web.ActivityPub.MRF do
     Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
   end
 
-  @callback describe() :: {:ok | :error, Map.t()}
-
   def describe(policies) do
     {:ok, policy_configs} =
       policies
@@ -82,4 +99,41 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   end
 
   def describe, do: get_policies() |> describe()
+
+  def config_descriptions do
+    Pleroma.Web.ActivityPub.MRF
+    |> Pleroma.Docs.Generator.list_behaviour_implementations()
+    |> config_descriptions()
+  end
+
+  def config_descriptions(policies) do
+    Enum.reduce(policies, [], fn policy, acc ->
+      if function_exported?(policy, :config_description, 0) do
+        description =
+          @default_description
+          |> Map.merge(policy.config_description)
+          |> Map.put(:group, :pleroma)
+          |> Map.put(:tab, :mrf)
+          |> Map.put(:type, :group)
+
+        if Enum.all?(@required_description_keys, &Map.has_key?(description, &1)) do
+          [description | acc]
+        else
+          Logger.warn(
+            "#{policy} config description doesn't have one or all required keys #{
+              inspect(@required_description_keys)
+            }"
+          )
+
+          acc
+        end
+      else
+        Logger.info(
+          "#{policy} is excluded from config descriptions, because does not implement `config_description/0` method."
+        )
+
+        acc
+      end
+    end)
+  end
 end
