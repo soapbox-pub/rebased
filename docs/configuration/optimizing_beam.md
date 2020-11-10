@@ -39,7 +39,7 @@ Disable the busy-waiting. This should generally only be done if you're on a plat
 
 ### Dedicated Hardware
 
-Enable more busy waiting, increase the internal maximum limit of BEAM processes and ports
+Enable more busy waiting, increase the internal maximum limit of BEAM processes and ports. You can use this if you run on dedicated hardware, but it is not necessary.
 
 **vm.args:**
 
