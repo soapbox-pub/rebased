@@ -83,7 +83,7 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def activity_content(_), do: ""
 
-  def activity_context(activity), do: activity.data["context"]
+  def activity_context(activity), do: escape(activity.data["context"])
 
   def attachment_href(attachment) do
     attachment["url"]
