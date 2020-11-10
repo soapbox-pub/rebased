@@ -12,7 +12,7 @@ Please only change these settings if you are experiencing issues or really know 
 
 ### Good
 
-* ????
+* Hetzner Cloud
 
 ### Bad
 
