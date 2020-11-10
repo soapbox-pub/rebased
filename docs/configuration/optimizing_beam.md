@@ -27,7 +27,7 @@ Check your OS documentation to adopt a similar strategy on other platforms.
 
 ### Virtual Machine and/or few CPU cores
 
-Disable the busy-waiting
+Disable the busy-waiting. This should generally only be done if you're on a platform that does burst scheduling, like AWS.
 
 **vm.args:**
 
