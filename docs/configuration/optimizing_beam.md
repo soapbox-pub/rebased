@@ -6,6 +6,8 @@ This strategy is very successful in making a performant and responsive applicati
 
 More adventurous admins can be creative with CPU affinity (e.g., *taskset* for Linux and *cpuset* on FreeBSD) to pin processes to specific CPUs and eliminate much of this contention. The most important advice is to run as few processes as possible on your server to achieve the best performance. Even idle background processes can occasionally create [software interrupts](https://en.wikipedia.org/wiki/Interrupt) and take attention away from the executing process creating latency spikes and invalidation of the CPU caches as they must be cleared when switching between processes for security.
 
+Please only change these settings if you are experiencing issues or really know what you are doing. In general, there's no need to change these settings.
+
 ## VPS Provider Recommendations
 
 ### Good
