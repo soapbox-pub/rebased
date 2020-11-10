@@ -12,7 +12,7 @@
   <link href="<%= activity_context(@activity) %>" rel="ostatus:conversation"/>
 
   <%= if @data["summary"] do %>
-    <summary><%= @data["summary"] %></summary>
+    <summary><%= escape(@data["summary"]) %></summary>
   <% end %>
 
   <%= if @activity.local do %>
