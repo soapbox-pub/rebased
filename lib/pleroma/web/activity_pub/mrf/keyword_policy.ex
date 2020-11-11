@@ -126,4 +126,46 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
     {:ok, %{mrf_keyword: mrf_keyword}}
   end
+
+  @impl true
+  def config_description do
+    %{
+      key: :mrf_keyword,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.KeywordPolicy",
+      label: "MRF Keyword",
+      description:
+        "Reject or Word-Replace messages matching a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html).",
+      children: [
+        %{
+          key: :reject,
+          type: {:list, :string},
+          description: """
+            A list of patterns which result in message being rejected.
+
+            Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+          """,
+          suggestions: ["foo", ~r/foo/iu]
+        },
+        %{
+          key: :federated_timeline_removal,
+          type: {:list, :string},
+          description: """
+            A list of patterns which result in message being removed from federated timelines (a.k.a unlisted).
+
+            Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+          """,
+          suggestions: ["foo", ~r/foo/iu]
+        },
+        %{
+          key: :replace,
+          type: {:list, :tuple},
+          description: """
+            **Pattern**: a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+
+            **Replacement**: a string. Leaving the field empty is permitted.
+          """
+        }
+      ]
+    }
+  end
 end
