@@ -164,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           acc
         end
       else
-        Logger.info(
+        Logger.debug(
           "#{policy} is excluded from config descriptions, because does not implement `config_description/0` method."
         )
 
