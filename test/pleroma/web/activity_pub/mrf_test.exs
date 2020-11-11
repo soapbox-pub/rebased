@@ -98,7 +98,6 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
              related_policy: "Fixtures.Modules.GoodMRF",
              label: "Good MRF",
              description: "Some description",
-             children: [],
              group: :pleroma,
              tab: :mrf,
              type: :group

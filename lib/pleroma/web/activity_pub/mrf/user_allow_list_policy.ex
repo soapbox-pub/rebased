@@ -55,7 +55,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   #         type: :map,
   #         description:
   #           "The keys in this section are the domain names that the policy should apply to." <>
-  #             " Each key should be assigned a list of users that should be allowed through by their ActivityPub ID",
+  #             " Each key should be assigned a list of users that should be allowed " <>
+  #             "through by their ActivityPub ID",
   #         suggestions: [%{"example.org" => ["https://example.org/users/admin"]}]
   #       }
   #     ]
