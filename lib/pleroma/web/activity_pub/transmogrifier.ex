@@ -252,6 +252,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           }
           |> Maps.put_if_present("mediaType", media_type)
           |> Maps.put_if_present("name", data["name"])
+          |> Maps.put_if_present("blurhash", data["blurhash"])
         else
           nil
         end
