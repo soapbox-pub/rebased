@@ -69,6 +69,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
                "mediaType" => "audio/ogg",
                "type" => "Link",
                "name" => nil,
+               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>

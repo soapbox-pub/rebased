@@ -420,6 +420,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
           "href" => "someurl"
         }
       ],
+      "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
       "uuid" => 6
     }
 
@@ -431,7 +432,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       preview_url: "someurl",
       text_url: "someurl",
       description: nil,
-      pleroma: %{mime_type: "image/png"}
+      pleroma: %{mime_type: "image/png"},
+      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
     }
 
     api_spec = Pleroma.Web.ApiSpec.spec()
