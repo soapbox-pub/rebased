@@ -9,8 +9,12 @@ Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mas
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
+
 Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+
 Adding the parameter `reply_visibility` to the public and home timelines queries will filter replies. Possible values: without parameter (default) shows all replies, `following` - replies directed to you or users you follow, `self` - replies directed to you.
+
+Adding the parameter `instance=lain.com` to the public timeline will show only statuses originating from `lain.com` (or any remote instance).
 
 ## Statuses
 
@@ -248,6 +252,12 @@ Has these additional fields under the `pleroma` object:
 ## Streaming
 
 There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+For viewing remote server timelines, there are `public:remote` and `public:remote:media` streams. Each of these accept a parameter like `?instance=lain.com`.
+
+## User muting and thread muting
+
+Both user muting and thread muting can be done for only a certain time by adding an `expires_in` parameter to the API calls and giving the expiration time in seconds.
 
 ## Not implemented
 

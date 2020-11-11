@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - App metrics: ability to restrict access to specified IP whitelist.
 - Account backup
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
+- Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`
 
 ### Changed
 
@@ -31,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Users with the `discoverable` field set to false will not show up in searches.
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 - Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
+- Polls now always return a `voters_count`, even if they are single-choice
+- Admin Emails: The ap id is used as the user link in emails now.
 
 <details>
   <summary>API Changes</summary>
@@ -41,6 +44,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
 - Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
+- Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
+- Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 
 </details>
 

@@ -44,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
       ],
       voted: false,
       votes_count: 0,
-      voters_count: nil
+      voters_count: 0
     }
 
     result = PollView.render("show.json", %{object: object})
