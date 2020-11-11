@@ -7,7 +7,6 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
 
   alias Pleroma.Config
   alias Pleroma.Web.Plugs.OAuthScopesPlug
-  alias Pleroma.Workers.FrontendInstallerWorker
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :install)
@@ -30,7 +29,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   end
 
   def install(%{body_params: params} = conn, _params) do
-    FrontendInstallerWorker.install(params.name, Map.delete(params, :name))
+    Pleroma.Frontend.install(params.name, Map.delete(params, :name))
 
     index(conn, %{})
   end

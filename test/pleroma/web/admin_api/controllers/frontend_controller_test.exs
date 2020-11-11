@@ -4,13 +4,10 @@
 
 defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
   use Pleroma.Web.ConnCase
-  use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
 
   alias Pleroma.Config
-  alias Pleroma.Tests.ObanHelpers
-  alias Pleroma.Workers.FrontendInstallerWorker
 
   @dir "test/frontend_static_test"
 
@@ -66,13 +63,6 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
       |> post("/api/pleroma/admin/frontends", %{name: "pleroma"})
       |> json_response_and_validate_schema(:ok)
 
-      assert_enqueued(
-        worker: FrontendInstallerWorker,
-        args: %{"name" => "pleroma", "opts" => %{}}
-      )
-
-      ObanHelpers.perform(all_enqueued(worker: FrontendInstallerWorker))
-
       assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
 
       response =
@@ -108,16 +98,6 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
       })
       |> json_response_and_validate_schema(:ok)
 
-      assert_enqueued(
-        worker: FrontendInstallerWorker,
-        args: %{
-          "name" => "pleroma",
-          "opts" => %{"file" => "test/fixtures/tesla_mock/frontend.zip"}
-        }
-      )
-
-      ObanHelpers.perform(all_enqueued(worker: FrontendInstallerWorker))
-
       assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
     end
 
@@ -135,8 +115,6 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
         build_dir: ""
       })
       |> json_response_and_validate_schema(:ok)
-
-      ObanHelpers.perform(all_enqueued(worker: FrontendInstallerWorker))
 
       assert File.exists?(Path.join([@dir, "frontends", "unknown", "baka", "test.txt"]))
     end

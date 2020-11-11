@@ -563,9 +563,7 @@ config :pleroma, Oban,
     remote_fetcher: 2,
     attachments_cleanup: 5,
     new_users_digest: 1,
-    frontend_installer: 1,
     mute_expire: 5
-    
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
