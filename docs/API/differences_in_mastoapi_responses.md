@@ -14,7 +14,7 @@ Adding the parameter `reply_visibility` to the public and home timelines queries
 
 ## Statuses
 
-- `visibility`: has an additional possible value `list`
+- `visibility`: has additional possible values `list` and `local` (for local-only statuses)
 
 Has these additional fields under the `pleroma` object:
 
@@ -28,7 +28,6 @@ Has these additional fields under the `pleroma` object:
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 - `parent_visible`: If the parent of this post is visible to the user or not.
-- `local_only`: true for local-only, non-federated posts.
 
 ## Media Attachments
 
@@ -152,10 +151,9 @@ Additional parameters can be added to the JSON body/Form data:
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
 - `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
-- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
+- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted`, `local` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
-- `local_only`: boolean, if set to `true` the post won't be federated.
 
 ## GET `/api/v1/statuses`
 

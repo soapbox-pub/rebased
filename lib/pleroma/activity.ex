@@ -19,8 +19,6 @@ defmodule Pleroma.Activity do
   import Ecto.Changeset
   import Ecto.Query
 
-  require Pleroma.Constants
-
   @type t :: %__MODULE__{}
   @type actor :: String.t()
 
@@ -357,13 +355,5 @@ defmodule Pleroma.Activity do
   def pinned_by_actor?(%Activity{} = activity) do
     actor = user_actor(activity)
     activity.id in actor.pinned_activities
-  end
-
-  def local_only?(activity) do
-    recipients = Enum.concat(activity.data["to"], Map.get(activity.data, "cc", []))
-    public = Pleroma.Constants.as_public()
-    local = Pleroma.Constants.as_local_public()
-
-    Enum.member?(recipients, local) and not Enum.member?(recipients, public)
   end
 end

@@ -222,7 +222,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
         actor.ap_id == Relay.ap_id() ->
           [actor.follower_address]
 
-        public? and Pleroma.Activity.local_only?(object) ->
+        public? and Visibility.is_local_public?(object) ->
           [actor.follower_address, object.data["actor"], Pleroma.Constants.as_local_public()]
 
         public? ->

@@ -176,7 +176,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     with true <- Config.get!([:instance, :federating]),
          true <- type != "Block" || outgoing_blocks,
-         false <- Activity.local_only?(activity) do
+         false <- Visibility.is_local_public?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 

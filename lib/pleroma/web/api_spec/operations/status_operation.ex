@@ -475,10 +475,6 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           type: :string,
           description:
             "Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`."
-        },
-        local_only: %Schema{
-          type: :boolean,
-          description: "Post the status as local only"
         }
       },
       example: %{

@@ -368,8 +368,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
-        parent_visible: visible_for_user?(reply_to, opts[:for]),
-        local_only: Activity.local_only?(activity)
+        parent_visible: visible_for_user?(reply_to, opts[:for])
       }
     }
   end

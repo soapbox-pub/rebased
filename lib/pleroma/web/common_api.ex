@@ -359,7 +359,7 @@ defmodule Pleroma.Web.CommonAPI do
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
   def get_visibility(%{visibility: visibility}, in_reply_to, _)
-      when visibility in ~w{public unlisted private direct},
+      when visibility in ~w{public local unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
   def get_visibility(%{visibility: "list:" <> list_id}, in_reply_to, _) do

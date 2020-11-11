@@ -65,8 +65,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     {Enum.map(participation.recipients, & &1.ap_id), []}
   end
 
-  def get_to_and_cc(%{visibility: "public"} = draft) do
-    to = [public_uri(draft) | draft.mentions]
+  def get_to_and_cc(%{visibility: visibility} = draft) when visibility in ["public", "local"] do
+
+    to =
+      case visibility do
+        "public" -> [Pleroma.Constants.as_public() | draft.mentions]
+        "local" -> [Pleroma.Constants.as_local_public() | draft.mentions]
+      end
+
     cc = [draft.user.follower_address]
 
     if draft.in_reply_to do
@@ -78,7 +84,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(%{visibility: "unlisted"} = draft) do
     to = [draft.user.follower_address | draft.mentions]
-    cc = [public_uri(draft)]
+    cc = [Pleroma.Constants.as_public()]
 
     if draft.in_reply_to do
       {Enum.uniq([draft.in_reply_to.data["actor"] | to]), cc}
@@ -102,9 +108,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def get_to_and_cc(%{visibility: {:list, _}, mentions: mentions}), do: {mentions, []}
-
-  defp public_uri(%{params: %{local_only: true}}), do: Pleroma.Constants.as_local_public()
-  defp public_uri(_), do: Pleroma.Constants.as_public()
 
   def get_addressed_users(_, to) when is_list(to) do
     User.get_ap_ids_by_nicknames(to)
