@@ -1525,7 +1525,7 @@ Returns the content of the document
 ]
 ```
 
-## `POST /api/pleroma/admin/frontends/install
+## `POST /api/pleroma/admin/frontends/install`
 
 ### Install a frontend
 
