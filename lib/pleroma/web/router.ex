@@ -245,7 +245,7 @@ defmodule Pleroma.Web.Router do
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
 
     get("/frontends", FrontendController, :index)
-    post("/frontends", FrontendController, :install)
+    post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
   end

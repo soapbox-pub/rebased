@@ -44,7 +44,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
     end
   end
 
-  describe "POST /api/pleroma/admin/frontends" do
+  describe "POST /api/pleroma/admin/frontends/install" do
     test "from available frontends", %{conn: conn} do
       clear_config([:frontends, :available], %{
         "pleroma" => %{
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
 
       conn
       |> put_req_header("content-type", "application/json")
-      |> post("/api/pleroma/admin/frontends", %{name: "pleroma"})
+      |> post("/api/pleroma/admin/frontends/install", %{name: "pleroma"})
       |> json_response_and_validate_schema(:ok)
 
       assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
 
       conn
       |> put_req_header("content-type", "application/json")
-      |> post("/api/pleroma/admin/frontends", %{
+      |> post("/api/pleroma/admin/frontends/install", %{
         name: "pleroma",
         file: "test/fixtures/tesla_mock/frontend.zip"
       })
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
 
       conn
       |> put_req_header("content-type", "application/json")
-      |> post("/api/pleroma/admin/frontends", %{
+      |> post("/api/pleroma/admin/frontends/install", %{
         name: "unknown",
         ref: "baka",
         build_url: "http://gensokyo.2hu/madeup.zip",
