@@ -5,10 +5,46 @@
 defmodule Pleroma.Web.ActivityPub.MRF do
   require Logger
 
+  @mrf_config_descriptions [
+    %{
+      group: :pleroma,
+      key: :mrf,
+      tab: :mrf,
+      label: "MRF",
+      type: :group,
+      description: "General MRF settings",
+      children: [
+        %{
+          key: :policies,
+          type: [:module, {:list, :module}],
+          description:
+            "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
+        },
+        %{
+          key: :transparency,
+          label: "MRF transparency",
+          type: :boolean,
+          description:
+            "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
+        },
+        %{
+          key: :transparency_exclusions,
+          label: "MRF transparency exclusions",
+          type: {:list, :string},
+          description:
+            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+          suggestions: [
+            "exclusion.com"
+          ]
+        }
+      ]
+    }
+  ]
+
   @default_description %{
     label: "",
-    description: "",
-    children: []
+    description: ""
   }
 
   @required_description_keys [:key, :related_policy]
@@ -107,7 +143,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   end
 
   def config_descriptions(policies) do
-    Enum.reduce(policies, [], fn policy, acc ->
+    Enum.reduce(policies, @mrf_config_descriptions, fn policy, acc ->
       if function_exported?(policy, :config_description, 0) do
         description =
           @default_description
