@@ -66,7 +66,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def get_to_and_cc(%{visibility: visibility} = draft) when visibility in ["public", "local"] do
-
     to =
       case visibility do
         "public" -> [Pleroma.Constants.as_public() | draft.mentions]
