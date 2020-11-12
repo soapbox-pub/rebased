@@ -181,6 +181,7 @@ amd64:
   - develop@pleroma/pleroma
   - /^maint/.*$/@pleroma/pleroma
   - /^release/.*$/@pleroma/pleroma
+  - /^build-release/.*$/@pleroma/pleroma
   artifacts: &release-artifacts
     name: "pleroma-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
     paths:
@@ -198,7 +199,7 @@ amd64:
   variables: &release-variables
     MIX_ENV: prod
   before_script: &before-release
-  - apt-get update && apt-get install -y cmake
+  - apt-get update && apt-get install -y cmake libmagic-dev
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -217,7 +218,7 @@ amd64-musl:
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git gcc g++ musl-dev make cmake
+  - apk add git gcc g++ musl-dev make cmake file-dev
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
