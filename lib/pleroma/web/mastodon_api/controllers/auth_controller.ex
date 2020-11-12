@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.AuthController do
   use Pleroma.Web, :controller
 
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
@@ -13,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  plug(Pleroma.Plugs.RateLimiter, [name: :password_reset] when action == :password_reset)
+  plug(Pleroma.Web.Plugs.RateLimiter, [name: :password_reset] when action == :password_reset)
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -22,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
     redirect(conn, to: local_mastodon_root_path(conn))
   end
 
-  @doc "Local Mastodon FE login init action"
+  # Local Mastodon FE login init action
   def login(conn, %{"code" => auth_token}) do
     with {:ok, app} <- get_or_make_app(),
          {:ok, auth} <- Authorization.get_by_token(app, auth_token),
@@ -33,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
     end
   end
 
-  @doc "Local Mastodon FE callback action"
+  # Local Mastodon FE callback action
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =
@@ -61,9 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
     TwitterAPI.password_reset(nickname_or_email)
 
-    conn
-    |> put_status(:no_content)
-    |> json("")
+    json_response(conn, :no_content, "")
   end
 
   defp local_mastodon_root_path(conn) do

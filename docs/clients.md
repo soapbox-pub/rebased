@@ -71,7 +71,7 @@ Feel free to contact us to be added to this list!
 ### Indigenous
 - Homepage: <https://indigenous.realize.be/>
 - Source Code: <https://github.com/swentel/indigenous-android/>
-- Contact: [@realize.be@realize.be](@realize.be@realize.be)
+- Contact: [@swentel@realize.be](https://realize.be)
 - Platforms: Android
 - Features: No Streaming
 

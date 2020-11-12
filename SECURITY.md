@@ -6,7 +6,7 @@ Currently, Pleroma offers bugfixes and security patches only for the latest mino
 
 | Version | Support 
 |---------| --------
-| 2.0     | Bugfixes and security patches
+| 2.2     | Bugfixes and security patches
 
 ## Reporting a vulnerability
 

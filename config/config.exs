@@ -123,13 +123,15 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
-  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     ip: {127, 0, 0, 1},
     dispatch: [
       {:_,
        [
+         # FedSockets are commented out of the dispatch table on stable because they can't even
+         # fail properly when they are disabled. They will hang the connection instead of returning a 404.
+         #         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -142,10 +144,20 @@ config :pleroma, Pleroma.Web.Endpoint,
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
+  pubsub_server: Pleroma.PubSub,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
+  ]
+
+config :pleroma, :fed_sockets,
+  enabled: false,
+  connection_duration: :timer.hours(8),
+  rejection_duration: :timer.minutes(15),
+  fed_socket_fetches: [
+    default: 12_000,
+    interval: 3_000,
+    lazy: false
   ]
 
 # Configures Elixir's Logger
@@ -216,7 +228,6 @@ config :pleroma, :instance,
   allow_relay: true,
   public: true,
   quarantined_instances: [],
-  managed_config: true,
   static_dir: "instance/static/",
   allowed_post_formats: [
     "text/plain",
@@ -424,6 +435,8 @@ config :pleroma, :media_proxy,
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
+    # Note: max_read_duration defaults to Pleroma.ReverseProxy.max_read_duration_default/1
+    max_read_duration: 30_000,
     http: [
       follow_redirect: true,
       pool: :media
@@ -437,6 +450,14 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
   options: []
 
 config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
+
+# Note: media preview proxy depends on media proxy to be enabled
+config :pleroma, :media_preview_proxy,
+  enabled: false,
+  thumbnail_max_width: 600,
+  thumbnail_max_height: 600,
+  image_quality: 85,
+  min_content_length: 100 * 1024
 
 config :pleroma, :chat, enabled: true
 
@@ -530,8 +551,10 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
+    token_expiration: 5,
     federator_incoming: 50,
     federator_outgoing: 50,
+    ingestion_queue: 50,
     web_push: 50,
     mailer: 10,
     transmogrifier: 20,
@@ -543,9 +566,6 @@ config :pleroma, Oban,
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
-    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-    {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
-    {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
@@ -617,7 +637,12 @@ config :pleroma, Pleroma.Emails.UserEmail,
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
-config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter,
+  enabled: false,
+  auth: false,
+  ip_whitelist: [],
+  path: "/api/pleroma/app_metrics",
+  format: :text
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
@@ -656,9 +681,20 @@ config :pleroma, :rate_limit,
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
 
-config :pleroma, Pleroma.ActivityExpiration, enabled: true
+config :pleroma, Pleroma.Workers.PurgeExpiredActivity, enabled: true, min_lifetime: 600
 
-config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
+config :pleroma, Pleroma.Web.Plugs.RemoteIp,
+  enabled: true,
+  headers: ["x-forwarded-for"],
+  proxies: [],
+  reserved: [
+    "127.0.0.0/8",
+    "::1/128",
+    "fc00::/7",
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+  ]
 
 config :pleroma, :static_fe, enabled: false
 
@@ -670,7 +706,7 @@ config :pleroma, :static_fe, enabled: false
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
 #
-# config :pleroma, :frontends, 
+# config :pleroma, :frontends,
 # primary: %{"name" => "pleroma-fe", "ref" => "develop"},
 # admin: %{"name" => "admin-fe", "ref" => "stable"},
 # available: %{...}
@@ -734,28 +770,28 @@ config :pleroma, :connections_pool,
   max_connections: 250,
   max_idle_time: 30_000,
   retry: 0,
-  await_up_timeout: 5_000
+  connect_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
     max_waiting: 10,
-    timeout: 10_000
+    recv_timeout: 10_000
   ],
   media: [
     size: 50,
-    max_waiting: 10,
-    timeout: 10_000
+    max_waiting: 20,
+    recv_timeout: 15_000
   ],
   upload: [
     size: 25,
     max_waiting: 5,
-    timeout: 15_000
+    recv_timeout: 15_000
   ],
   default: [
     size: 10,
     max_waiting: 2,
-    timeout: 5_000
+    recv_timeout: 5_000
   ]
 
 config :pleroma, :hackney_pools,
@@ -771,6 +807,8 @@ config :pleroma, :hackney_pools,
     max_connections: 25,
     timeout: 300_000
   ]
+
+config :pleroma, :majic_pool, size: 2
 
 private_instance? = :if_instance_is_private
 
@@ -789,6 +827,8 @@ config :pleroma, :mrf,
 config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
+config :web_push_encryption, http_client: Pleroma.HTTP.WebPush
 
 config :pleroma, :instances_favicons, enabled: false
 

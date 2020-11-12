@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
 
   plug(
     :skip_plug,
-    [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
+    [Pleroma.Web.Plugs.OAuthScopesPlug, Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug]
     when action in [:show, :peers]
   )
 

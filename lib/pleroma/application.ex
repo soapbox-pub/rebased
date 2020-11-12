@@ -22,13 +22,18 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    case Config.get([:http, :user_agent], :default) do
-      :default ->
-        info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
-        named_version() <> "; " <> info
+    if Process.whereis(Pleroma.Web.Endpoint) do
+      case Config.get([:http, :user_agent], :default) do
+        :default ->
+          info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
+          named_version() <> "; " <> info
 
-      custom ->
-        custom
+        custom ->
+          custom
+      end
+    else
+      # fallback, if endpoint is not started yet
+      "Pleroma Data Loader"
     end
   end
 
@@ -39,15 +44,18 @@ defmodule Pleroma.Application do
     # every time the application is restarted, so we disable module
     # conflicts at runtime
     Code.compiler_options(ignore_module_conflict: true)
+    # Disable warnings_as_errors at runtime, it breaks Phoenix live reload
+    # due to protocol consolidation warnings
+    Code.compiler_options(warnings_as_errors: false)
     Pleroma.Telemetry.Logger.attach()
     Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
+    Pleroma.Config.Oban.warn()
     Config.DeprecationWarnings.warn()
-    Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
+    Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
-    check_system_commands()
     Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
@@ -80,18 +88,19 @@ defmodule Pleroma.Application do
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
-        Pleroma.Plugs.RateLimiter.Supervisor
+        Pleroma.Web.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
         http_children(adapter, @env) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
+          {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
-        streamer_child(@env) ++
-        chat_child(@env, chat_enabled?()) ++
+        dont_run_in_test(@env) ++
+        chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
           Pleroma.Gopher.Server
@@ -142,7 +151,10 @@ defmodule Pleroma.Application do
 
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-    Pleroma.Web.Endpoint.Instrumenter.setup()
+
+    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
+    # Pleroma.Web.Endpoint.Instrumenter.setup()
+    PrometheusPhx.setup()
   end
 
   defp cachex_children do
@@ -179,24 +191,28 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Config.get([:chat, :enabled])
 
-  defp streamer_child(env) when env in [:test, :benchmark], do: []
+  defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
-  defp streamer_child(_) do
+  defp dont_run_in_test(_) do
     [
       {Registry,
        [
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]}
+       ]},
+      Pleroma.Web.FedSockets.Supervisor
     ]
   end
 
-  defp chat_child(_env, true) do
-    [Pleroma.Web.ChatChannel.ChatChannelState]
+  defp chat_child(true) do
+    [
+      Pleroma.Web.ChatChannel.ChatChannelState,
+      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
+    ]
   end
 
-  defp chat_child(_, _), do: []
+  defp chat_child(_), do: []
 
   defp task_children(:test) do
     [
@@ -250,21 +266,4 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(_, _), do: []
-
-  defp check_system_commands do
-    filters = Config.get([Pleroma.Upload, :filters])
-
-    check_filter = fn filter, command_required ->
-      with true <- filter in filters,
-           false <- Pleroma.Utils.command_available?(command_required) do
-        Logger.error(
-          "#{filter} is specified in list of Pleroma.Upload filters, but the #{command_required} command is not found"
-        )
-      end
-    end
-
-    check_filter.(Pleroma.Upload.Filters.Exiftool, "exiftool")
-    check_filter.(Pleroma.Upload.Filters.Mogrify, "mogrify")
-    check_filter.(Pleroma.Upload.Filters.Mogrifun, "mogrify")
-  end
 end

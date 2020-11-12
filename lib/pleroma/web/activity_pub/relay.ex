@@ -30,16 +30,28 @@ defmodule Pleroma.Web.ActivityPub.Relay do
     end
   end
 
-  @spec unfollow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
-  def unfollow(target_instance) do
+  @spec unfollow(String.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def unfollow(target_instance, opts \\ %{}) do
     with %User{} = local_user <- get_actor(),
-         {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_instance),
+         {:ok, target_user} <- fetch_target_user(target_instance, opts),
          {:ok, activity} <- ActivityPub.unfollow(local_user, target_user) do
-      User.unfollow(local_user, target_user)
+      case target_user.id do
+        nil -> User.update_following_count(local_user)
+        _ -> User.unfollow(local_user, target_user)
+      end
+
       Logger.info("relay: unfollowed instance: #{target_instance}: id=#{activity.data["id"]}")
       {:ok, activity}
     else
       error -> format_error(error)
+    end
+  end
+
+  defp fetch_target_user(ap_id, opts) do
+    case {opts[:force], User.get_or_fetch_by_ap_id(ap_id)} do
+      {_, {:ok, %User{} = user}} -> {:ok, user}
+      {true, _} -> {:ok, %User{ap_id: ap_id}}
+      {_, error} -> error
     end
   end
 

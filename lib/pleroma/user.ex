@@ -25,7 +25,6 @@ defmodule Pleroma.User do
   alias Pleroma.Object
   alias Pleroma.Registration
   alias Pleroma.Repo
-  alias Pleroma.RepoStreamer
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web
@@ -83,7 +82,7 @@ defmodule Pleroma.User do
   ]
 
   schema "users" do
-    field(:bio, :string)
+    field(:bio, :string, default: "")
     field(:raw_bio, :string)
     field(:email, :string)
     field(:name, :string)
@@ -108,7 +107,7 @@ defmodule Pleroma.User do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:following_count, :integer, default: 0)
-    field(:locked, :boolean, default: false)
+    field(:is_locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
     field(:approval_pending, :boolean, default: false)
@@ -276,9 +275,9 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
-  def account_status(%User{approval_pending: true}), do: :approval_pending
+  def account_status(%User{local: true, approval_pending: true}), do: :approval_pending
 
-  def account_status(%User{confirmation_pending: true}) do
+  def account_status(%User{local: true, confirmation_pending: true}) do
     if Config.get([:instance, :account_activation_required]) do
       :confirmation_pending
     else
@@ -427,7 +426,6 @@ defmodule Pleroma.User do
       params,
       [
         :bio,
-        :name,
         :emoji,
         :ap_id,
         :inbox,
@@ -437,7 +435,7 @@ defmodule Pleroma.User do
         :avatar,
         :ap_enabled,
         :banner,
-        :locked,
+        :is_locked,
         :last_refreshed_at,
         :uri,
         :follower_address,
@@ -456,7 +454,9 @@ defmodule Pleroma.User do
         :accepts_chat_messages
       ]
     )
-    |> validate_required([:name, :ap_id])
+    |> cast(params, [:name], empty_values: [])
+    |> validate_required([:ap_id])
+    |> validate_required([:name], trim: false)
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, @email_regex)
     |> validate_length(:bio, max: bio_limit)
@@ -480,7 +480,7 @@ defmodule Pleroma.User do
         :public_key,
         :inbox,
         :shared_inbox,
-        :locked,
+        :is_locked,
         :no_rich_text,
         :default_scope,
         :banner,
@@ -814,7 +814,8 @@ defmodule Pleroma.User do
   def send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{confirmation_pending: true} = user) do
+  def try_send_confirmation_email(%User{confirmation_pending: true, email: email} = user)
+      when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
       {:ok, :enqueued}
@@ -847,7 +848,7 @@ defmodule Pleroma.User do
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
 
   # "Locked" (self-locked) users demand explicit authorization of follow requests
-  def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
+  def maybe_direct_follow(%User{} = follower, %User{local: true, is_locked: true} = followed) do
     follow(follower, followed, :follow_pending)
   end
 
@@ -915,9 +916,7 @@ defmodule Pleroma.User do
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
-        {:ok, follower} =
-          follower
-          |> update_following_count()
+        {:ok, follower} = update_following_count(follower)
 
         {:ok, follower, followed}
 
@@ -956,7 +955,7 @@ defmodule Pleroma.User do
   end
 
   def locked?(%User{} = user) do
-    user.locked || false
+    user.is_locked || false
   end
 
   def get_by_id(id) do
@@ -1587,7 +1586,7 @@ defmodule Pleroma.User do
     # "Right to be forgotten"
     # https://gdpr.eu/right-to-be-forgotten/
     change(user, %{
-      bio: nil,
+      bio: "",
       raw_bio: nil,
       email: nil,
       name: nil,
@@ -1603,7 +1602,7 @@ defmodule Pleroma.User do
       note_count: 0,
       follower_count: 0,
       following_count: 0,
-      locked: false,
+      is_locked: false,
       confirmation_pending: false,
       password_reset_pending: false,
       approval_pending: false,
@@ -1686,42 +1685,6 @@ defmodule Pleroma.User do
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
 
-  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
-  def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
-      when is_list(blocked_identifiers) do
-    Enum.map(
-      blocked_identifiers,
-      fn blocked_identifier ->
-        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, _block} <- CommonAPI.block(blocker, blocked) do
-          blocked
-        else
-          err ->
-            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
-  def perform(:follow_import, %User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    Enum.map(
-      followed_identifiers,
-      fn followed_identifier ->
-        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
-             {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
-          followed
-        else
-          err ->
-            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do
     User.Query.build(%{
@@ -1750,21 +1713,6 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    BackgroundWorker.enqueue("blocks_import", %{
-      "blocker_id" => blocker.id,
-      "blocked_identifiers" => blocked_identifiers
-    })
-  end
-
-  def follow_import(%User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    BackgroundWorker.enqueue("follow_import", %{
-      "follower_id" => follower.id,
-      "followed_identifiers" => followed_identifiers
-    })
-  end
-
   def delete_notifications_from_user_activities(%User{ap_id: ap_id}) do
     Notification
     |> join(:inner, [n], activity in assoc(n, :activity))
@@ -1775,7 +1723,7 @@ defmodule Pleroma.User do
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id
     |> Activity.Queries.by_actor()
-    |> RepoStreamer.chunk_stream(50)
+    |> Repo.chunk_stream(50, :batches)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity -> delete_activity(activity, user) end)
     end)
@@ -1821,12 +1769,12 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: Config.get([:markup, :scrub_policy])
 
-  def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
+  def fetch_by_ap_id(ap_id, opts \\ []), do: ActivityPub.make_user_from_ap_id(ap_id, opts)
 
-  def get_or_fetch_by_ap_id(ap_id) do
+  def get_or_fetch_by_ap_id(ap_id, opts \\ []) do
     cached_user = get_cached_by_ap_id(ap_id)
 
-    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id, opts)
 
     case {cached_user, maybe_fetched_user} do
       {_, {:ok, %User{} = user}} ->
@@ -1899,8 +1847,8 @@ defmodule Pleroma.User do
 
   def public_key(_), do: {:error, "key not found"}
 
-  def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
+  def get_public_key_for_ap_id(ap_id, opts \\ []) do
+    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id, opts),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
@@ -2123,6 +2071,13 @@ defmodule Pleroma.User do
     Enum.map(users, &toggle_confirmation/1)
   end
 
+  @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def need_confirmation(%User{} = user, bool) do
+    user
+    |> confirmation_changeset(need_confirmation: bool)
+    |> update_and_set_cache()
+  end
+
   def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do
     mascot
   end
@@ -2315,6 +2270,11 @@ defmodule Pleroma.User do
       max_pinned_statuses = Config.get([:instance, :max_pinned_statuses], 0)
       params = %{pinned_activities: user.pinned_activities ++ [id]}
 
+      # if pinned activity was scheduled for deletion, we remove job
+      if expiration = Pleroma.Workers.PurgeExpiredActivity.get_expiration(id) do
+        Oban.cancel_job(expiration.id)
+      end
+
       user
       |> cast(params, [:pinned_activities])
       |> validate_length(:pinned_activities,
@@ -2327,8 +2287,20 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def remove_pinnned_activity(user, %Pleroma.Activity{id: id}) do
+  def remove_pinnned_activity(user, %Pleroma.Activity{id: id, data: data}) do
     params = %{pinned_activities: List.delete(user.pinned_activities, id)}
+
+    # if pinned activity was scheduled for deletion, we reschedule it for deletion
+    if data["expires_at"] do
+      # MRF.ActivityExpirationPolicy used UTC timestamps for expires_at in original implementation
+      {:ok, expires_at} =
+        data["expires_at"] |> Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime.cast()
+
+      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+        activity_id: id,
+        expires_at: expires_at
+      })
+    end
 
     user
     |> cast(params, [:pinned_activities])

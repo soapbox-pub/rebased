@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.PleromaAuthenticator do
-  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.AuthenticationPlug
 
   import Pleroma.Web.Auth.Authenticator,
     only: [fetch_credentials: 1, fetch_user: 1]
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     nickname = value([registration_attrs["nickname"], Registration.nickname(registration)])
     email = value([registration_attrs["email"], Registration.email(registration)])
     name = value([registration_attrs["name"], Registration.name(registration)]) || nickname
-    bio = value([registration_attrs["bio"], Registration.description(registration)])
+    bio = value([registration_attrs["bio"], Registration.description(registration)]) || ""
 
     random_password = :crypto.strong_rand_bytes(64) |> Base.encode64()
 

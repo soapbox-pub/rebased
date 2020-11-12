@@ -23,8 +23,8 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     with params <- Enum.into(:cow_qs.parse_qs(qs), %{}),
          sec_websocket <- :cowboy_req.header("sec-websocket-protocol", req, nil),
          access_token <- Map.get(params, "access_token"),
-         {:ok, user} <- authenticate_request(access_token, sec_websocket),
-         {:ok, topic} <- Streamer.get_topic(Map.get(params, "stream"), user, params) do
+         {:ok, user, oauth_token} <- authenticate_request(access_token, sec_websocket),
+         {:ok, topic} <- Streamer.get_topic(params["stream"], user, oauth_token, params) do
       req =
         if sec_websocket do
           :cowboy_req.set_resp_header("sec-websocket-protocol", sec_websocket, req)
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   # Public streams without authentication.
   defp authenticate_request(nil, nil) do
-    {:ok, nil}
+    {:ok, nil, nil}
   end
 
   # Authenticated streams.
@@ -125,9 +125,9 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     token = access_token || sec_websocket
 
     with true <- is_bitstring(token),
-         %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
+         oauth_token = %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          user = %User{} <- User.get_cached_by_id(user_id) do
-      {:ok, user}
+      {:ok, user, oauth_token}
     else
       _ -> {:error, :unauthorized}
     end

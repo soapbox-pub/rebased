@@ -11,20 +11,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.Notification
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
-  plug(Pleroma.Web.FederatingPlug when action == :remote_subscribe)
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["follow", "write:follows"]}
-    when action == :follow_import
-  )
-
-  plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
+  plug(Pleroma.Web.Plugs.FederatingPlug when action == :remote_subscribe)
 
   plug(
     OAuthScopesPlug,
@@ -82,11 +74,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def frontend_configurations(conn, _params) do
-    config =
-      Config.get(:frontend_configurations, %{})
-      |> Enum.into(%{})
-
-    json(conn, config)
+    render(conn, "frontend_configurations.json")
   end
 
   def emoji(conn, _params) do
@@ -102,33 +90,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     with {:ok, _} <- User.update_notification_settings(user, params) do
       json(conn, %{status: "success"})
     end
-  end
-
-  def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
-    follow_import(conn, %{"list" => File.read!(listfile.path)})
-  end
-
-  def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
-    followed_identifiers =
-      list
-      |> String.split("\n")
-      |> Enum.map(&(&1 |> String.split(",") |> List.first()))
-      |> List.delete("Account address")
-      |> Enum.map(&(&1 |> String.trim() |> String.trim_leading("@")))
-      |> Enum.reject(&(&1 == ""))
-
-    User.follow_import(follower, followed_identifiers)
-    json(conn, "job started")
-  end
-
-  def blocks_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
-    blocks_import(conn, %{"list" => File.read!(listfile.path)})
-  end
-
-  def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
-    blocked_identifiers = list |> String.split() |> Enum.map(&String.trim_leading(&1, "@"))
-    User.blocks_import(blocker, blocked_identifiers)
-    json(conn, "job started")
   end
 
   def change_password(%{assigns: %{user: user}} = conn, params) do

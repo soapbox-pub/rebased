@@ -1,12 +1,13 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.HTTP.AdapterHelper.Hackney do
   @behaviour Pleroma.HTTP.AdapterHelper
 
   @defaults [
-    connect_timeout: 10_000,
-    recv_timeout: 20_000,
     follow_redirect: true,
-    force_redirect: true,
-    pool: :federation
+    force_redirect: true
   ]
 
   @spec options(keyword(), URI.t()) :: keyword()
@@ -19,6 +20,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Hackney do
     |> Keyword.merge(config_opts)
     |> Keyword.merge(connection_opts)
     |> add_scheme_opts(uri)
+    |> maybe_add_with_body()
     |> Pleroma.HTTP.AdapterHelper.maybe_add_proxy(proxy)
   end
 
@@ -28,6 +30,11 @@ defmodule Pleroma.HTTP.AdapterHelper.Hackney do
 
   defp add_scheme_opts(opts, _), do: opts
 
-  @spec get_conn(URI.t(), keyword()) :: {:ok, keyword()}
-  def get_conn(_uri, opts), do: {:ok, opts}
+  defp maybe_add_with_body(opts) do
+    if opts[:max_body] do
+      Keyword.put(opts, :with_body, true)
+    else
+      opts
+    end
+  end
 end

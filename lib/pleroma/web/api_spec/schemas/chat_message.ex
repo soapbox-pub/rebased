@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
 
   require OpenApiSpex
 
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
       chat_id: %Schema{type: :string},
       content: %Schema{type: :string, nullable: true},
       created_at: %Schema{type: :string, format: :"date-time"},
-      emojis: %Schema{type: :array},
+      emojis: %Schema{type: :array, items: Emoji},
       attachment: %Schema{type: :object, nullable: true},
       card: %Schema{
         type: :object,

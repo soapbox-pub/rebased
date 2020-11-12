@@ -3,6 +3,70 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.2.0] - 2020-11-12
+
+### Security
+- Fixed the possibility of using file uploads to spoof posts.
+
+### Changed
+
+- **Breaking** Requires `libmagic` (or `file`) to guess file types.
+- **Breaking:** App metrics endpoint (`/api/pleroma/app_metrics`) is disabled by default, check `docs/API/prometheus.md` on enabling and configuring. 
+- **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
+- **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
+- Search: Users are now findable by their urls.
+- Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
+- Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
+- The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
+- Users with the `discoverable` field set to false will not show up in searches.
+- Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
+- Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
+- <details>
+  <summary>API Changes</summary>
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
+</details>
+
+### Removed
+
+- **Breaking:** `Pleroma.Workers.Cron.StatsWorker` setting from Oban `:crontab` (moved to a simpler implementation).
+- **Breaking:** `Pleroma.Workers.Cron.ClearOauthTokenWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- **Breaking:** `Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker` setting from Oban `:crontab` (moved to scheduled jobs).
+- Removed `:managed_config` option. In practice, it was accidentally removed with 2.0.0 release when frontends were
+switched to a new configuration mechanism, however it was not officially removed until now.
+
+### Added
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
+- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task option for force-unfollowing relays
+- App metrics: ability to restrict access to specified IP whitelist.
+- <details>
+  <summary>API Changes</summary>
+
+- Admin API: Importing emoji from a zip file
+- Pleroma API: Importing the mutes users from CSV files.
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
+
+
+### Fixed
+
+- Add documented-but-missing chat pagination.
+- Allow sending out emails again.
+- Allow sending chat messages to yourself
+- OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
+- Fix remote users with a whitespace name.
+
+### Upgrade notes
+
+1. Install libmagic and development headers (`libmagic-dev` on Ubuntu/Debian, `file-dev` on Alpine Linux)
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+3. Restart Pleroma
+
+
 ## [2.1.2] - 2020-09-17
 
 ### Security
@@ -39,6 +103,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Rich media failure tracking (along with `:failure_backoff` option).
+
+<details>
+  <summary>Admin API Changes</summary>
+
+- Add `PATCH /api/pleroma/admin/instance_document/:document_name` to modify the Terms of Service and Instance Panel HTML pages via Admin API
+</details>
 
 ### Fixed
 - Default HTTP adapter not respecting pool setting, leading to possible OOM.

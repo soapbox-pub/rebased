@@ -181,8 +181,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
-    image = User.avatar_url(user) |> MediaProxy.url()
+    avatar = User.avatar_url(user) |> MediaProxy.url()
+    avatar_static = User.avatar_url(user) |> MediaProxy.preview_url(static: true)
     header = User.banner_url(user) |> MediaProxy.url()
+    header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
 
     following_count =
       if !user.hide_follows_count or !user.hide_follows or opts[:for] == user do
@@ -240,17 +242,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       username: username_from_nickname(user.nickname),
       acct: user.nickname,
       display_name: display_name,
-      locked: user.locked,
+      locked: user.is_locked,
       created_at: Utils.to_masto_date(user.inserted_at),
       followers_count: followers_count,
       following_count: following_count,
       statuses_count: user.note_count,
-      note: user.bio || "",
+      note: user.bio,
       url: user.uri || user.ap_id,
-      avatar: image,
-      avatar_static: image,
+      avatar: avatar,
+      avatar_static: avatar_static,
       header: header,
-      header_static: header,
+      header_static: header_static,
       emojis: emojis,
       fields: user.fields,
       bot: bot,

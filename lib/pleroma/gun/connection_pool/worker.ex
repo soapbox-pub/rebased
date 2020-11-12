@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Gun.ConnectionPool.Worker do
   alias Pleroma.Gun
   use GenServer, restart: :temporary
@@ -15,7 +19,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   @impl true
   def handle_continue({:connect, [key, uri, opts, client_pid]}, _) do
-    with {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
+    with {:ok, conn_pid, protocol} <- Gun.Conn.open(uri, opts),
          Process.link(conn_pid) do
       time = :erlang.monotonic_time(:millisecond)
 
@@ -27,8 +31,12 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       send(client_pid, {:conn_pid, conn_pid})
 
       {:noreply,
-       %{key: key, timer: nil, client_monitors: %{client_pid => Process.monitor(client_pid)}},
-       :hibernate}
+       %{
+         key: key,
+         timer: nil,
+         client_monitors: %{client_pid => Process.monitor(client_pid)},
+         protocol: protocol
+       }, :hibernate}
     else
       err ->
         {:stop, {:shutdown, err}, nil}
@@ -53,13 +61,19 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   end
 
   @impl true
-  def handle_call(:add_client, {client_pid, _}, %{key: key} = state) do
+  def handle_call(:add_client, {client_pid, _}, %{key: key, protocol: protocol} = state) do
     time = :erlang.monotonic_time(:millisecond)
 
-    {{conn_pid, _, _, _}, _} =
+    {{conn_pid, used_by, _, _}, _} =
       Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
         {conn_pid, [client_pid | used_by], crf(time - last_reference, crf), time}
       end)
+
+    :telemetry.execute(
+      [:pleroma, :connection_pool, :client, :add],
+      %{client_pid: client_pid, clients: used_by},
+      %{key: state.key, protocol: protocol}
+    )
 
     state =
       if state.timer != nil do
@@ -83,25 +97,18 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       end)
 
     {ref, state} = pop_in(state.client_monitors[client_pid])
-    # DOWN message can receive right after `remove_client` call and cause worker to terminate
-    state =
-      if is_nil(ref) do
-        state
+
+    Process.demonitor(ref, [:flush])
+
+    timer =
+      if used_by == [] do
+        max_idle = Pleroma.Config.get([:connections_pool, :max_idle_time], 30_000)
+        Process.send_after(self(), :idle_close, max_idle)
       else
-        Process.demonitor(ref)
-
-        timer =
-          if used_by == [] do
-            max_idle = Pleroma.Config.get([:connections_pool, :max_idle_time], 30_000)
-            Process.send_after(self(), :idle_close, max_idle)
-          else
-            nil
-          end
-
-        %{state | timer: timer}
+        nil
       end
 
-    {:reply, :ok, state, :hibernate}
+    {:reply, :ok, %{state | timer: timer}, :hibernate}
   end
 
   @impl true
@@ -131,7 +138,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
     :telemetry.execute(
-      [:pleroma, :connection_pool, :client_death],
+      [:pleroma, :connection_pool, :client, :dead],
       %{client_pid: pid, reason: reason},
       %{key: state.key}
     )

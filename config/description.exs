@@ -44,11 +44,13 @@ frontend_options = [
   },
   %{
     key: "git",
+    label: "Git Repository URL",
     type: :string,
     description: "URL of the git repository of the frontend"
   },
   %{
     key: "build_url",
+    label: "Build URL",
     type: :string,
     description:
       "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
@@ -56,6 +58,7 @@ frontend_options = [
   },
   %{
     key: "build_dir",
+    label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
   }
@@ -763,12 +766,6 @@ config :pleroma, :config_description, [
           "quarantined.com",
           "*.quarantined.com"
         ]
-      },
-      %{
-        key: :managed_config,
-        type: :boolean,
-        description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
       },
       %{
         key: :static_dir,
@@ -1880,6 +1877,7 @@ config :pleroma, :config_description, [
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
+          max_read_duration: 30_000,
           http: [
             follow_redirect: true,
             pool: :media
@@ -1899,6 +1897,11 @@ config :pleroma, :config_description, [
             description:
               "Limits the content length to be approximately the " <>
                 "specified length. It is validated with the `content-length` header and also verified when proxying."
+          },
+          %{
+            key: :max_read_duration,
+            type: :integer,
+            description: "Timeout (in milliseconds) of GET request to remote URI."
           },
           %{
             key: :http,
@@ -1943,6 +1946,43 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of hosts with scheme to bypass the mediaproxy",
         suggestions: ["http://example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :media_preview_proxy,
+    type: :group,
+    description: "Media preview proxy",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description:
+          "Enables proxying of remote media preview to the instance's proxy. Requires enabled media proxy."
+      },
+      %{
+        key: :thumbnail_max_width,
+        type: :integer,
+        description:
+          "Max width of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :thumbnail_max_height,
+        type: :integer,
+        description:
+          "Max height of preview thumbnail for images (video preview always has original dimensions)."
+      },
+      %{
+        key: :image_quality,
+        type: :integer,
+        description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
+      },
+      %{
+        key: :min_content_length,
+        type: :integer,
+        description:
+          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
       }
     ]
   },
@@ -2290,9 +2330,6 @@ config :pleroma, :config_description, [
         type: {:list, :tuple},
         description: "Settings for cron background jobs",
         suggestions: [
-          {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-          {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
-          {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
           {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
           {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
         ]
@@ -2398,7 +2435,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: Pleroma.Formatter,
-    label: "Auto Linker",
+    label: "Linkify",
     type: :group,
     description:
       "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
@@ -2475,14 +2512,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.ActivityExpiration,
+    key: Pleroma.Workers.PurgeExpiredActivity,
     type: :group,
-    description: "Expired activity settings",
+    description: "Expired activities settings",
     children: [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether expired activities will be sent to the job queue to be deleted"
+        description: "Enables expired activities addition & deletion"
+      },
+      %{
+        key: :min_lifetime,
+        type: :integer,
+        description: "Minimum lifetime for ephemeral activity (in seconds)",
+        suggestions: [600]
       }
     ]
   },
@@ -3194,10 +3237,10 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.Plugs.RemoteIp,
+    key: Pleroma.Web.Plugs.RemoteIp,
     type: :group,
     description: """
-    `Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+    `Pleroma.Web.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
     **If your instance is not behind at least one reverse proxy, you should not enable this plug.**
     """,
     children: [
@@ -3209,20 +3252,22 @@ config :pleroma, :config_description, [
       %{
         key: :headers,
         type: {:list, :string},
-        description:
-          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Default: `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+        description: """
+          A list of strings naming the HTTP headers to use when deriving the true client IP. Default: `["x-forwarded-for"]`.
+        """
       },
       %{
         key: :proxies,
         type: {:list, :string},
         description:
-          "A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Default: `[]`."
+          "A list of upstream proxy IP subnets in CIDR notation from which we will parse the content of `headers`. Defaults to `[]`. IPv4 entries without a bitmask will be assumed to be /32 and IPv6 /128."
       },
       %{
         key: :reserved,
         type: {:list, :string},
-        description:
-          "Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network)."
+        description: """
+          A list of reserved IP subnets in CIDR notation which should be ignored if found in `headers`. Defaults to `["127.0.0.0/8", "::1/128", "fc00::/7", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]`
+        """
       }
     ]
   },
@@ -3378,7 +3423,7 @@ config :pleroma, :config_description, [
         suggestions: [250]
       },
       %{
-        key: :await_up_timeout,
+        key: :connect_timeout,
         type: :integer,
         description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
         suggestions: [5000]
@@ -3416,6 +3461,12 @@ config :pleroma, :config_description, [
               description:
                 "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
               suggestions: [10]
+            },
+            %{
+              key: :recv_timeout,
+              type: :integer,
+              description: "Timeout for the pool while gun will wait for response",
+              suggestions: [10_000]
             }
           ]
         }
@@ -3622,9 +3673,7 @@ config :pleroma, :config_description, [
         type: :map,
         description:
           "A map containing available frontends and parameters for their installation.",
-        children: [
-          frontend_options
-        ]
+        children: frontend_options
       }
     ]
   },
@@ -3644,6 +3693,57 @@ config :pleroma, :config_description, [
           Pleroma.Web.Preload.Providers.Timelines,
           Pleroma.Web.Preload.Providers.StatusNet
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :majic_pool,
+    type: :group,
+    description: "Majic/libmagic configuration",
+    children: [
+      %{
+        key: :size,
+        type: :integer,
+        description: "Number of majic workers to start.",
+        suggestions: [2]
+      }
+    ]
+  },
+  %{
+    group: :prometheus,
+    key: Pleroma.Web.Endpoint.MetricsExporter,
+    type: :group,
+    description: "Prometheus app metrics endpoint configuration",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "[Pleroma extension] Enables app metrics endpoint."
+      },
+      %{
+        key: :ip_whitelist,
+        type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
+        description:
+          "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+      },
+      %{
+        key: :auth,
+        type: [:boolean, :tuple],
+        description: "Enables HTTP Basic Auth for app metrics endpoint.",
+        suggestion: [false, {:basic, "myusername", "mypassword"}]
+      },
+      %{
+        key: :path,
+        type: :string,
+        description: "App metrics endpoint URI path.",
+        suggestions: ["/api/pleroma/app_metrics"]
+      },
+      %{
+        key: :format,
+        type: :atom,
+        description: "App metrics endpoint output format.",
+        suggestions: [:text, :protobuf]
       }
     ]
   }

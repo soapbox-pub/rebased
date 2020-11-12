@@ -37,3 +37,6 @@ If any of the options are left unspecified, you will be prompted interactively.
 - `--static-dir <path>` - the directory custom public files should be read from (custom emojis, frontend bundle overrides, robots.txt, etc.)
 - `--listen-ip <ip>` - the ip the app should listen to, defaults to 127.0.0.1
 - `--listen-port <port>` - the port the app should listen to, defaults to 4000
+- `--strip-uploads <Y|N>` - use ExifTool to strip uploads of sensitive location data
+- `--anonymize-uploads <Y|N>` - randomize uploaded filenames
+- `--dedupe-uploads <Y|N>` - store files based on their hash to reduce data storage requirements if duplicates are uploaded with different filenames

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Telemetry.Logger do
   @moduledoc "Transforms Pleroma telemetry events to logs"
 
@@ -7,7 +11,8 @@ defmodule Pleroma.Telemetry.Logger do
     [:pleroma, :connection_pool, :reclaim, :start],
     [:pleroma, :connection_pool, :reclaim, :stop],
     [:pleroma, :connection_pool, :provision_failure],
-    [:pleroma, :connection_pool, :client_death]
+    [:pleroma, :connection_pool, :client, :dead],
+    [:pleroma, :connection_pool, :client, :add]
   ]
   def attach do
     :telemetry.attach_many("pleroma-logger", @events, &handle_event/4, [])
@@ -62,7 +67,7 @@ defmodule Pleroma.Telemetry.Logger do
   end
 
   def handle_event(
-        [:pleroma, :connection_pool, :client_death],
+        [:pleroma, :connection_pool, :client, :dead],
         %{client_pid: client_pid, reason: reason},
         %{key: key},
         _
@@ -73,4 +78,17 @@ defmodule Pleroma.Telemetry.Logger do
       }"
     end)
   end
+
+  def handle_event(
+        [:pleroma, :connection_pool, :client, :add],
+        %{clients: [_, _ | _] = clients},
+        %{key: key, protocol: :http},
+        _
+      ) do
+    Logger.info(fn ->
+      "Pool worker for #{key}: #{length(clients)} clients are using an HTTP1 connection at the same time, head-of-line blocking might occur."
+    end)
+  end
+
+  def handle_event([:pleroma, :connection_pool, :client, :add], _, _, _), do: :ok
 end
