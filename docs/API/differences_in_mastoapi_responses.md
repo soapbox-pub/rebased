@@ -129,12 +129,30 @@ The `type` value is `pleroma:emoji_reaction`. Has these fields:
 - `account`: The account of the user who reacted
 - `status`: The status that was reacted on
 
+### ChatMention Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:chat_mention`
+
+- `account`: The account who sent the message
+- `chat_message`: The chat message
+
+### Report Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:report`
+
+- `account`: The account who reported
+- `report`: The report
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
-- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
+- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`, `pleroma:chat_mention`, `pleroma:report`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
 
 ## DELETE `/api/v1/notifications/destroy_multiple`
 

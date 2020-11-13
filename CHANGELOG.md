@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
 - Mix task option for force-unfollowing relays
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Reports now generate notifications for admins and mods.
 - Pleroma API: Importing the mutes users from CSV files.
 - Experimental websocket-based federation between Pleroma instances.
 - Support pagination of blocks and mutes
