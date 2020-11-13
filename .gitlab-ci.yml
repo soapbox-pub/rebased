@@ -241,7 +241,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32on64
-  image: arm32v7/elixir:1.10.3
+  image: arm32v7/elixir:1.10.3-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
