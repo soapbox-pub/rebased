@@ -42,7 +42,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
         |> json(%{error: "pack name, shortcode or filename cannot be empty"})
 
       {:error, _} = error ->
-        handle_error(conn, error, %{pack_name: pack_name})
+        handle_error(conn, error, %{
+          pack_name: pack_name,
+          message: "Unexpected error occurred while adding file to pack."
+        })
     end
   end
 
@@ -69,7 +72,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
         |> json(%{error: "new_shortcode or new_filename cannot be empty"})
 
       {:error, _} = error ->
-        handle_error(conn, error, %{pack_name: pack_name, code: shortcode})
+        handle_error(conn, error, %{
+          pack_name: pack_name,
+          code: shortcode,
+          message: "Unexpected error occurred while updating."
+        })
     end
   end
 
@@ -84,7 +91,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
         |> json(%{error: "pack name or shortcode cannot be empty"})
 
       {:error, _} = error ->
-        handle_error(conn, error, %{pack_name: pack_name, code: shortcode})
+        handle_error(conn, error, %{
+          pack_name: pack_name,
+          code: shortcode,
+          message: "Unexpected error occurred while deleting emoji file."
+        })
     end
   end
 
@@ -94,18 +105,24 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
     |> json(%{error: "Emoji \"#{emoji_code}\" does not exist"})
   end
 
-  defp handle_error(conn, {:error, :not_found}, %{pack_name: pack_name}) do
+  defp handle_error(conn, {:error, :enoent}, %{pack_name: pack_name}) do
     conn
     |> put_status(:not_found)
     |> json(%{error: "pack \"#{pack_name}\" is not found"})
   end
 
-  defp handle_error(conn, {:error, _}, _) do
-    render_error(
-      conn,
-      :internal_server_error,
-      "Unexpected error occurred while adding file to pack."
-    )
+  defp handle_error(conn, {:error, error}, opts) do
+    message =
+      [
+        Map.get(opts, :message, "Unexpected error occurred."),
+        Pleroma.Utils.posix_error_message(error)
+      ]
+      |> Enum.join(" ")
+      |> String.trim()
+
+    conn
+    |> put_status(:internal_server_error)
+    |> json(%{error: message})
   end
 
   defp get_filename(%Plug.Upload{filename: filename}), do: filename
