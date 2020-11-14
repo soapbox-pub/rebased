@@ -72,6 +72,9 @@ switched to a new configuration mechanism, however it was not officially removed
 ### Changed
 - API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
 
+### Fixes
+- Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`
+
 ## [2.1.2] - 2020-09-17
 
 ### Security
