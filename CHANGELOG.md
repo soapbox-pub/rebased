@@ -67,6 +67,9 @@ switched to a new configuration mechanism, however it was not officially removed
 3. Restart Pleroma
 
 
+### Fixes
+- Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`
+
 ## [2.1.2] - 2020-09-17
 
 ### Security
