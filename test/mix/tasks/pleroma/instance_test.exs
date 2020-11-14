@@ -88,7 +88,7 @@ defmodule Mix.Tasks.Pleroma.InstanceTest do
     assert generated_config =~ "password: \"dbpass\""
     assert generated_config =~ "configurable_from_database: true"
     assert generated_config =~ "http: [ip: {127, 0, 0, 1}, port: 4000]"
-    assert generated_config =~ "filters: [Pleroma.Upload.Filter.ExifTool]"
+    assert generated_config =~ "filters: [Pleroma.Upload.Filter.Exiftool]"
     assert File.read!(tmp_path() <> "setup.psql") == generated_setup_psql()
     assert File.exists?(Path.expand("./test/instance/static/robots.txt"))
   end
