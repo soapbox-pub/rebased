@@ -169,7 +169,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       responses: %{
         200 => ok_response(),
         400 => Operation.response("Bad Request", "application/json", ApiError),
-        404 => Operation.response("Not Found", "application/json", ApiError)
+        404 => Operation.response("Not Found", "application/json", ApiError),
+        500 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -184,7 +185,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       parameters: [name_param()],
       responses: %{
         200 => Operation.response("Metadata", "application/json", metadata()),
-        400 => Operation.response("Bad Request", "application/json", ApiError)
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        500 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end

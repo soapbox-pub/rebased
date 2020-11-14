@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
 
   import Tesla.Mock
   import Pleroma.Factory
@@ -346,7 +346,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     end
   end
 
-  describe "PATCH /api/pleroma/emoji/pack?name=:name" do
+  describe "PATCH/update /api/pleroma/emoji/pack?name=:name" do
     setup do
       pack_file = "#{@emoji_path}/test_pack/pack.json"
       original_content = File.read!(pack_file)
@@ -363,6 +363,24 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
          "description" => "Test description",
          "share-files" => false
        }}
+    end
+
+    test "returns error when file system not writable", %{admin_conn: conn} = ctx do
+      {:ok, %File.Stat{mode: mode}} = File.stat(@emoji_path)
+
+      try do
+        File.chmod!(@emoji_path, 0o400)
+
+        assert conn
+               |> put_req_header("content-type", "multipart/form-data")
+               |> patch(
+                 "/api/pleroma/emoji/pack?name=test_pack",
+                 %{"metadata" => ctx[:new_data]}
+               )
+               |> json_response_and_validate_schema(500)
+      after
+        File.chmod!(@emoji_path, mode)
+      end
     end
 
     test "for a pack without a fallback source", ctx do
@@ -424,6 +442,43 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   end
 
   describe "POST/DELETE /api/pleroma/emoji/pack?name=:name" do
+    test "returns error when file system not writable", %{admin_conn: admin_conn} do
+      {:ok, %File.Stat{mode: mode}} = File.stat(@emoji_path)
+
+      try do
+        File.chmod!(@emoji_path, 0o400)
+
+        assert admin_conn
+               |> post("/api/pleroma/emoji/pack?name=test_pack")
+               |> json_response_and_validate_schema(500) == %{
+                 "error" =>
+                   "Unexpected error occurred while creating pack. (POSIX error: Permission denied)"
+               }
+      after
+        File.chmod!(@emoji_path, mode)
+      end
+    end
+
+    test "returns an error on deletes pack when the file system is not writable", %{
+      admin_conn: admin_conn
+    } do
+      {:ok, _pack} = Pleroma.Emoji.Pack.create("test_pack2")
+      {:ok, %File.Stat{mode: mode}} = File.stat(@emoji_path)
+
+      try do
+        File.chmod!(@emoji_path, 0o400)
+
+        assert admin_conn
+               |> delete("/api/pleroma/emoji/pack?name=test_pack")
+               |> json_response_and_validate_schema(500) == %{
+                 "error" => "Couldn't delete the pack test_pack (POSIX error: Permission denied)"
+               }
+      after
+        File.chmod!(@emoji_path, mode)
+        File.rm_rf!(Path.join([@emoji_path, "test_pack2"]))
+      end
+    end
+
     test "creating and deleting a pack", %{admin_conn: admin_conn} do
       assert admin_conn
              |> post("/api/pleroma/emoji/pack?name=test_created")
