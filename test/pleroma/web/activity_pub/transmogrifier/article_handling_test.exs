@@ -13,7 +13,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ArticleHandlingTest do
 
   test "Pterotype (Wordpress Plugin) Article" do
     Tesla.Mock.mock(fn %{url: "https://wedistribute.org/wp-json/pterotype/v1/actor/-blog"} ->
-      %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/wedistribute-user.json")}
+      %Tesla.Env{
+        status: 200,
+        body: File.read!("test/fixtures/tesla_mock/wedistribute-user.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
+      }
     end)
 
     data =
@@ -36,13 +40,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ArticleHandlingTest do
       %{url: "https://baptiste.gelez.xyz/~/PlumeDevelopment/this-month-in-plume-june-2018/"} ->
         %Tesla.Env{
           status: 200,
-          body: File.read!("test/fixtures/tesla_mock/baptiste.gelex.xyz-article.json")
+          body: File.read!("test/fixtures/tesla_mock/baptiste.gelex.xyz-article.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
         }
 
       %{url: "https://baptiste.gelez.xyz/@/BaptisteGelez"} ->
         %Tesla.Env{
           status: 200,
-          body: File.read!("test/fixtures/tesla_mock/baptiste.gelex.xyz-user.json")
+          body: File.read!("test/fixtures/tesla_mock/baptiste.gelex.xyz-user.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
         }
     end)
 
@@ -61,7 +67,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ArticleHandlingTest do
     Tesla.Mock.mock(fn %{url: "https://prismo.news/@mxb"} ->
       %Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/https___prismo.news__mxb.json")
+        body: File.read!("test/fixtures/tesla_mock/https___prismo.news__mxb.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       }
     end)
 

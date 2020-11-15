@@ -52,7 +52,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   end
 
   def render("index_notes.json", %{notes: notes}) when is_list(notes) do
-    Enum.map(notes, &render(__MODULE__, "show_note.json", &1))
+    Enum.map(notes, &render(__MODULE__, "show_note.json", Map.from_struct(&1)))
   end
 
   def render("index_notes.json", _), do: []

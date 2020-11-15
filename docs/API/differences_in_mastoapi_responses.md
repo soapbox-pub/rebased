@@ -9,8 +9,12 @@ Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mas
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
+
 Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+
 Adding the parameter `reply_visibility` to the public and home timelines queries will filter replies. Possible values: without parameter (default) shows all replies, `following` - replies directed to you or users you follow, `self` - replies directed to you.
+
+Adding the parameter `instance=lain.com` to the public timeline will show only statuses originating from `lain.com` (or any remote instance).
 
 ## Statuses
 
@@ -125,12 +129,30 @@ The `type` value is `pleroma:emoji_reaction`. Has these fields:
 - `account`: The account of the user who reacted
 - `status`: The status that was reacted on
 
+### ChatMention Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:chat_mention`
+
+- `account`: The account who sent the message
+- `chat_message`: The chat message
+
+### Report Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:report`
+
+- `account`: The account who reported
+- `report`: The report
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
-- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
+- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`, `pleroma:chat_mention`, `pleroma:report`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
 
 ## DELETE `/api/v1/notifications/destroy_multiple`
 
@@ -248,6 +270,12 @@ Has these additional fields under the `pleroma` object:
 ## Streaming
 
 There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+For viewing remote server timelines, there are `public:remote` and `public:remote:media` streams. Each of these accept a parameter like `?instance=lain.com`.
+
+## User muting and thread muting
+
+Both user muting and thread muting can be done for only a certain time by adding an `expires_in` parameter to the API calls and giving the expiration time in seconds.
 
 ## Not implemented
 

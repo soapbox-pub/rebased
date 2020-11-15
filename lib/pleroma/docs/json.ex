@@ -11,7 +11,11 @@ defmodule Pleroma.Docs.JSON do
 
   @spec compile :: :ok
   def compile do
-    :persistent_term.put(@term, Pleroma.Docs.Generator.convert_to_strings(@raw_descriptions))
+    descriptions =
+      Pleroma.Web.ActivityPub.MRF.config_descriptions()
+      |> Enum.reduce(@raw_descriptions, fn description, acc -> [description | acc] end)
+
+    :persistent_term.put(@term, Pleroma.Docs.Generator.convert_to_strings(descriptions))
   end
 
   @spec compiled_descriptions :: Map.t()

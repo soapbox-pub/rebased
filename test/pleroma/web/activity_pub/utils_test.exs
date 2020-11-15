@@ -193,7 +193,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   describe "update_follow_state_for_all/2" do
     test "updates the state of all Follow activities with the same actor and object" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       follower = insert(:user)
 
       {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
@@ -217,7 +217,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   describe "update_follow_state/2" do
     test "updates the state of the given follow activity" do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       follower = insert(:user)
 
       {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)

@@ -111,6 +111,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:muting_user, user)
         |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:instance, params[:instance])
         |> ActivityPub.fetch_public_activities()
 
       conn

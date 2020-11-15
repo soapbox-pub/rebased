@@ -82,7 +82,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], false)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -116,7 +116,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -155,7 +155,7 @@ defmodule Pleroma.ObjectTest do
       File.mkdir_p!(uploads_dir)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -188,7 +188,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -225,7 +225,7 @@ defmodule Pleroma.ObjectTest do
       Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
@@ -281,7 +281,11 @@ defmodule Pleroma.ObjectTest do
     setup do
       mock(fn
         %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_original.json")}
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/tesla_mock/poll_original.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
+          }
 
         env ->
           apply(HttpRequestMock, :request, [env])
@@ -315,7 +319,8 @@ defmodule Pleroma.ObjectTest do
 
       mock_modified.(%Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
@@ -359,7 +364,8 @@ defmodule Pleroma.ObjectTest do
 
       mock_modified.(%Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: 100)
@@ -387,7 +393,8 @@ defmodule Pleroma.ObjectTest do
 
       mock_modified.(%Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)

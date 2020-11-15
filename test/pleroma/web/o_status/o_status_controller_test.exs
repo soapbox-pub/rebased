@@ -7,7 +7,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -21,7 +20,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     :ok
   end
 
-  setup do: clear_config([:instance, :federating], true)
+  setup do: clear_config([:static_fe, :enabled], false)
 
   describe "Mastodon compatibility routes" do
     setup %{conn: conn} do
@@ -215,15 +214,16 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       assert response(conn, 404)
     end
 
-    test "it requires authentication if instance is NOT federating", %{
+    test "does not require authentication on non-federating instances", %{
       conn: conn
     } do
-      user = insert(:user)
+      clear_config([:instance, :federating], false)
       note_activity = insert(:note_activity)
 
-      conn = put_req_header(conn, "accept", "text/html")
-
-      ensure_federating_or_authenticated(conn, "/notice/#{note_activity.id}", user)
+      conn
+      |> put_req_header("accept", "text/html")
+      |> get("/notice/#{note_activity.id}")
+      |> response(200)
     end
   end
 
@@ -325,14 +325,16 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> response(404)
     end
 
-    test "it requires authentication if instance is NOT federating", %{
+    test "does not require authentication on non-federating instances", %{
       conn: conn,
       note_activity: note_activity
     } do
-      user = insert(:user)
-      conn = put_req_header(conn, "accept", "text/html")
+      clear_config([:instance, :federating], false)
 
-      ensure_federating_or_authenticated(conn, "/notice/#{note_activity.id}/embed_player", user)
+      conn
+      |> put_req_header("accept", "text/html")
+      |> get("/notice/#{note_activity.id}/embed_player")
+      |> response(200)
     end
   end
 end

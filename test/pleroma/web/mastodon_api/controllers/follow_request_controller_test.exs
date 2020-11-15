@@ -12,7 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
   describe "locked accounts" do
     setup do
-      user = insert(:user, locked: true)
+      user = insert(:user, is_locked: true)
       %{conn: conn} = oauth_access(["follow"], user: user)
       %{user: user, conn: conn}
     end

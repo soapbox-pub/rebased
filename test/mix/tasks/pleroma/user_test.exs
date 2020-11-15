@@ -248,14 +248,19 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       user = User.get_cached_by_nickname(user.nickname)
       assert user.is_moderator
-      assert user.locked
+      assert user.is_locked
       assert user.is_admin
       refute user.confirmation_pending
     end
 
     test "All statuses unset" do
       user =
-        insert(:user, locked: true, is_moderator: true, is_admin: true, confirmation_pending: true)
+        insert(:user,
+          is_locked: true,
+          is_moderator: true,
+          is_admin: true,
+          confirmation_pending: true
+        )
 
       Mix.Tasks.Pleroma.User.run([
         "set",
@@ -280,7 +285,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       user = User.get_cached_by_nickname(user.nickname)
       refute user.is_moderator
-      refute user.locked
+      refute user.is_locked
       refute user.is_admin
       assert user.confirmation_pending
     end

@@ -29,6 +29,14 @@ defmodule Pleroma.Web.StreamerTest do
       assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", nil, nil)
     end
 
+    test "allows instance streams" do
+      assert {:ok, "public:remote:lain.com"} =
+               Streamer.get_topic("public:remote", nil, nil, %{"instance" => "lain.com"})
+
+      assert {:ok, "public:remote:media:lain.com"} =
+               Streamer.get_topic("public:remote:media", nil, nil, %{"instance" => "lain.com"})
+    end
+
     test "allows hashtag streams" do
       assert {:ok, "hashtag:cofe"} = Streamer.get_topic("hashtag", nil, nil, %{"tag" => "cofe"})
     end
@@ -255,7 +263,9 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       other_user = insert(:user)
 
-      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
+      {:ok, create_activity} =
+        CommonAPI.post_chat_message(other_user, user, "hey cirno", idempotency_key: "123")
+
       object = Object.normalize(create_activity, false)
       chat = Chat.get(user.id, other_user.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)

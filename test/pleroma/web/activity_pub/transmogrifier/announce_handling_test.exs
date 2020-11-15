@@ -60,7 +60,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
 
     Tesla.Mock.mock(fn
       %{method: :get} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/mastodon-note-object.json")}
+        %Tesla.Env{
+          status: 200,
+          body: File.read!("test/fixtures/mastodon-note-object.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
+        }
     end)
 
     _user = insert(:user, local: false, ap_id: data["actor"])
@@ -144,7 +148,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
 
     _user = insert(:user, local: false, ap_id: data["actor"])
 
-    assert {:error, e} = Transmogrifier.handle_incoming(data)
+    assert {:error, _e} = Transmogrifier.handle_incoming(data)
   end
 
   test "it does not clobber the addressing on announce activities" do

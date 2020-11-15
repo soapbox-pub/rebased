@@ -154,6 +154,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
     {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(update_data)
 
     user = User.get_cached_by_ap_id(user.ap_id)
-    assert user.locked == true
+    assert user.is_locked == true
   end
 end

@@ -242,7 +242,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       username: username_from_nickname(user.nickname),
       acct: user.nickname,
       display_name: display_name,
-      locked: user.locked,
+      locked: user.is_locked,
       created_at: Utils.to_masto_date(user.inserted_at),
       followers_count: followers_count,
       following_count: following_count,
@@ -261,7 +261,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
-          discoverable: user.discoverable,
+          discoverable: user.is_discoverable,
           actor_type: user.actor_type
         }
       },
@@ -388,7 +388,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     data
     |> Kernel.put_in(
       [:pleroma, :unread_conversation_count],
-      user.unread_conversation_count
+      Pleroma.Conversation.Participation.unread_count(user)
     )
   end
 

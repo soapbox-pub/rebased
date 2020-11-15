@@ -33,7 +33,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
           "http://mastodon.example.org/system/media_attachments/files/000/000/002/original/334ce029e7bfb920.jpg",
         "type" => "Document",
         "name" => nil,
-        "mediaType" => "image/jpeg"
+        "mediaType" => "image/jpeg",
+        "blurhash" => "UD9jJz~VSbR#xT$~%KtQX9R,WAs9RjWBs:of"
       }
 
       {:ok, attachment} =
@@ -50,13 +51,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
              ] = attachment.url
 
       assert attachment.mediaType == "image/jpeg"
+      assert attachment.blurhash == "UD9jJz~VSbR#xT$~%KtQX9R,WAs9RjWBs:of"
     end
 
     test "it handles our own uploads" do
       user = insert(:user)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }

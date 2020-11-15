@@ -119,6 +119,17 @@ defmodule Pleroma.Instances.Instance do
 
   def set_unreachable(_, _), do: {:error, nil}
 
+  def get_consistently_unreachable do
+    reachability_datetime_threshold = Instances.reachability_datetime_threshold()
+
+    from(i in Instance,
+      where: ^reachability_datetime_threshold > i.unreachable_since,
+      order_by: i.unreachable_since,
+      select: {i.host, i.unreachable_since}
+    )
+    |> Repo.all()
+  end
+
   defp parse_datetime(datetime) when is_binary(datetime) do
     NaiveDateTime.from_iso8601(datetime)
   end

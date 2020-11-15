@@ -27,6 +27,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnswerHandlingTest do
       })
 
     object = Object.normalize(activity)
+    assert object.data["repliesCount"] == nil
 
     data =
       File.read!("test/fixtures/mastodon-vote.json")
@@ -41,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnswerHandlingTest do
     assert answer_object.data["inReplyTo"] == object.data["id"]
 
     new_object = Object.get_by_ap_id(object.data["id"])
-    assert new_object.data["replies_count"] == object.data["replies_count"]
+    assert new_object.data["repliesCount"] == nil
 
     assert Enum.any?(
              new_object.data["oneOf"],

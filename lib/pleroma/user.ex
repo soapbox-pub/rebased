@@ -107,7 +107,7 @@ defmodule Pleroma.User do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:following_count, :integer, default: 0)
-    field(:locked, :boolean, default: false)
+    field(:is_locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
     field(:approval_pending, :boolean, default: false)
@@ -128,7 +128,6 @@ defmodule Pleroma.User do
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
-    field(:unread_conversation_count, :integer, default: 0)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:email_notifications, :map, default: %{"digest" => false})
     field(:mascot, :map, default: nil)
@@ -136,7 +135,7 @@ defmodule Pleroma.User do
     field(:pleroma_settings_store, :map, default: %{})
     field(:fields, {:array, :map}, default: [])
     field(:raw_fields, {:array, :map}, default: [])
-    field(:discoverable, :boolean, default: false)
+    field(:is_discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
@@ -426,7 +425,6 @@ defmodule Pleroma.User do
       params,
       [
         :bio,
-        :name,
         :emoji,
         :ap_id,
         :inbox,
@@ -436,7 +434,7 @@ defmodule Pleroma.User do
         :avatar,
         :ap_enabled,
         :banner,
-        :locked,
+        :is_locked,
         :last_refreshed_at,
         :uri,
         :follower_address,
@@ -448,14 +446,16 @@ defmodule Pleroma.User do
         :follower_count,
         :fields,
         :following_count,
-        :discoverable,
+        :is_discoverable,
         :invisible,
         :actor_type,
         :also_known_as,
         :accepts_chat_messages
       ]
     )
-    |> validate_required([:name, :ap_id])
+    |> cast(params, [:name], empty_values: [])
+    |> validate_required([:ap_id])
+    |> validate_required([:name], trim: false)
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, @email_regex)
     |> validate_length(:bio, max: bio_limit)
@@ -479,7 +479,7 @@ defmodule Pleroma.User do
         :public_key,
         :inbox,
         :shared_inbox,
-        :locked,
+        :is_locked,
         :no_rich_text,
         :default_scope,
         :banner,
@@ -495,7 +495,7 @@ defmodule Pleroma.User do
         :fields,
         :raw_fields,
         :pleroma_settings_store,
-        :discoverable,
+        :is_discoverable,
         :actor_type,
         :also_known_as,
         :accepts_chat_messages
@@ -765,6 +765,16 @@ defmodule Pleroma.User do
     follow_all(user, autofollowed_users)
   end
 
+  defp autofollowing_users(user) do
+    candidates = Config.get([:instance, :autofollowing_nicknames])
+
+    User.Query.build(%{nickname: candidates, local: true, deactivated: false})
+    |> Repo.all()
+    |> Enum.each(&follow(&1, user, :follow_accept))
+
+    {:ok, :success}
+  end
+
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
@@ -787,6 +797,7 @@ defmodule Pleroma.User do
 
   def post_register_action(%User{approval_pending: false, confirmation_pending: false} = user) do
     with {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
          {:ok, _} <- send_welcome_email(user),
          {:ok, _} <- send_welcome_message(user),
@@ -879,7 +890,7 @@ defmodule Pleroma.User do
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
 
   # "Locked" (self-locked) users demand explicit authorization of follow requests
-  def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
+  def maybe_direct_follow(%User{} = follower, %User{local: true, is_locked: true} = followed) do
     follow(follower, followed, :follow_pending)
   end
 
@@ -986,7 +997,7 @@ defmodule Pleroma.User do
   end
 
   def locked?(%User{} = user) do
-    user.locked || false
+    user.is_locked || false
   end
 
   def get_by_id(id) do
@@ -1325,47 +1336,6 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def set_unread_conversation_count(%User{local: true} = user) do
-    unread_query = Participation.unread_conversation_count_for_user(user)
-
-    User
-    |> join(:inner, [u], p in subquery(unread_query))
-    |> update([u, p],
-      set: [unread_conversation_count: p.count]
-    )
-    |> where([u], u.id == ^user.id)
-    |> select([u], u)
-    |> Repo.update_all([])
-    |> case do
-      {1, [user]} -> set_cache(user)
-      _ -> {:error, user}
-    end
-  end
-
-  def set_unread_conversation_count(user), do: {:ok, user}
-
-  def increment_unread_conversation_count(conversation, %User{local: true} = user) do
-    unread_query =
-      Participation.unread_conversation_count_for_user(user)
-      |> where([p], p.conversation_id == ^conversation.id)
-
-    User
-    |> join(:inner, [u], p in subquery(unread_query))
-    |> update([u, p],
-      inc: [unread_conversation_count: 1]
-    )
-    |> where([u], u.id == ^user.id)
-    |> where([u, p], p.count == 0)
-    |> select([u], u)
-    |> Repo.update_all([])
-    |> case do
-      {1, [user]} -> set_cache(user)
-      _ -> {:error, user}
-    end
-  end
-
-  def increment_unread_conversation_count(_, user), do: {:ok, user}
-
   @spec get_users_from_set([String.t()], keyword()) :: [User.t()]
   def get_users_from_set(ap_ids, opts \\ []) do
     local_only = Keyword.get(opts, :local_only, true)
@@ -1386,14 +1356,48 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  @spec mute(User.t(), User.t(), boolean()) ::
+  @spec mute(User.t(), User.t(), map()) ::
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
-  def mute(%User{} = muter, %User{} = mutee, notifications? \\ true) do
-    add_to_mutes(muter, mutee, notifications?)
+  def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
+    notifications? = Map.get(params, :notifications, true)
+    expires_in = Map.get(params, :expires_in, 0)
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+         {:ok, user_notification_mute} <-
+           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+             {:ok, nil} do
+      if expires_in > 0 do
+        Pleroma.Workers.MuteExpireWorker.enqueue(
+          "unmute_user",
+          %{"muter_id" => muter.id, "mutee_id" => mutee.id},
+          schedule_in: expires_in
+        )
+      end
+
+      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
+    end
   end
 
   def unmute(%User{} = muter, %User{} = mutee) do
-    remove_from_mutes(muter, mutee)
+    with {:ok, user_mute} <- UserRelationship.delete_mute(muter, mutee),
+         {:ok, user_notification_mute} <-
+           UserRelationship.delete_notification_mute(muter, mutee) do
+      {:ok, [user_mute, user_notification_mute]}
+    end
+  end
+
+  def unmute(muter_id, mutee_id) do
+    with {:muter, %User{} = muter} <- {:muter, User.get_by_id(muter_id)},
+         {:mutee, %User{} = mutee} <- {:mutee, User.get_by_id(mutee_id)} do
+      unmute(muter, mutee)
+    else
+      {who, result} = error ->
+        Logger.warn(
+          "User.unmute/2 failed. #{who}: #{result}, muter_id: #{muter_id}, mutee_id: #{mutee_id}"
+        )
+
+        {:error, error}
+    end
   end
 
   def subscribe(%User{} = subscriber, %User{} = target) do
@@ -1656,7 +1660,7 @@ defmodule Pleroma.User do
       note_count: 0,
       follower_count: 0,
       following_count: 0,
-      locked: false,
+      is_locked: false,
       confirmation_pending: false,
       password_reset_pending: false,
       approval_pending: false,
@@ -1673,7 +1677,7 @@ defmodule Pleroma.User do
       pleroma_settings_store: %{},
       fields: [],
       raw_fields: [],
-      discoverable: false,
+      is_discoverable: false,
       also_known_as: []
     })
   end
@@ -2391,23 +2395,6 @@ defmodule Pleroma.User do
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
     UserRelationship.delete_block(user, blocked)
-  end
-
-  defp add_to_mutes(%User{} = user, %User{} = muted_user, notifications?) do
-    with {:ok, user_mute} <- UserRelationship.create_mute(user, muted_user),
-         {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(user, muted_user)) ||
-             {:ok, nil} do
-      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
-    end
-  end
-
-  defp remove_from_mutes(user, %User{} = muted_user) do
-    with {:ok, user_mute} <- UserRelationship.delete_mute(user, muted_user),
-         {:ok, user_notification_mute} <-
-           UserRelationship.delete_notification_mute(user, muted_user) do
-      {:ok, [user_mute, user_notification_mute]}
-    end
   end
 
   def set_invisible(user, invisible) do

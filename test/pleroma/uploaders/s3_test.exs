@@ -56,7 +56,7 @@ defmodule Pleroma.Uploaders.S3Test do
     setup do
       file_upload = %Pleroma.Upload{
         name: "image-tet.jpg",
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: "test_folder/image-tet.jpg",
         tempfile: Path.absname("test/instance_static/add/shortcode.png")
       }

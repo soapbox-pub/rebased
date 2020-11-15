@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.ReportNote
@@ -38,12 +37,21 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
           status_ids: [activity.id]
         })
 
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+        content: "this is an admin note"
+      })
+
       response =
         conn
         |> get("/api/pleroma/admin/reports/#{report_id}")
         |> json_response_and_validate_schema(:ok)
 
       assert response["id"] == report_id
+
+      [notes] = response["notes"]
+      assert notes["content"] == "this is an admin note"
     end
 
     test "returns 404 when report id is invalid", %{conn: conn} do

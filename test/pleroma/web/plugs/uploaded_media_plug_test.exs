@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
     File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
     file = %Plug.Upload{
-      content_type: "image/jpg",
+      content_type: "image/jpeg",
       path: Path.absname("test/fixtures/image_tmp.jpg"),
       filename: "nice_tf.jpg"
     }

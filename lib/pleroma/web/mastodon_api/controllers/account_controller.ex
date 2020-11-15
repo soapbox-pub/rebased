@@ -177,7 +177,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     user_params =
       [
         :no_rich_text,
-        :locked,
         :hide_followers_count,
         :hide_follows_count,
         :hide_followers,
@@ -186,7 +185,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
-        :discoverable,
         :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->
@@ -210,6 +208,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
+      |> Maps.put_if_present(:is_locked, params[:locked])
+      |> Maps.put_if_present(:is_discoverable, params[:discoverable])
 
     # What happens here:
     #
@@ -394,7 +394,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/mute"
   def mute(%{assigns: %{user: muter, account: muted}, body_params: params} = conn, _params) do
-    with {:ok, _user_relationships} <- User.mute(muter, muted, params.notifications) do
+    with {:ok, _user_relationships} <- User.mute(muter, muted, params) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -442,15 +442,27 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/mutes"
-  def mutes(%{assigns: %{user: user}} = conn, _) do
-    users = User.muted_users(user, _restrict_deactivated = true)
-    render(conn, "index.json", users: users, for: user, as: :user)
+  def mutes(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.muted_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+
+    conn
+    |> add_link_headers(users)
+    |> render("index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/blocks"
-  def blocks(%{assigns: %{user: user}} = conn, _) do
-    users = User.blocked_users(user, _restrict_deactivated = true)
-    render(conn, "index.json", users: users, for: user, as: :user)
+  def blocks(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.blocked_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+
+    conn
+    |> add_link_headers(users)
+    |> render("index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/endorsements"
