@@ -873,7 +873,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         to: {admin.name, admin.email},
         html_body: ~r/Reported Account:/i
       )
-
     end
   end
 
