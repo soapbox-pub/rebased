@@ -31,7 +31,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "Page",
     "Question",
     "Answer",
-    "Audio"
+    "Audio",
+    "Image"
   ]
   @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
