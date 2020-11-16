@@ -109,7 +109,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = _params) do
+  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = params) do
     limit = 100
 
     activities =
@@ -121,7 +121,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     render(conn, "index.json",
       activities: activities,
       for: user,
-      as: :activity
+      as: :activity,
+      with_muted: Map.get(params, :with_muted, false)
     )
   end
 
@@ -189,13 +190,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id"
-  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def show(%{assigns: %{user: user}} = conn, %{id: id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do
       try_render(conn, "show.json",
         activity: activity,
         for: user,
-        with_direct_conversation_id: true
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       _ -> {:error, :not_found}

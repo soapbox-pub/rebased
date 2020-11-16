@@ -139,6 +139,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :query,
             %Schema{type: :array, items: VisibilityScope},
             "Exclude visibilities"
+          ),
+          Operation.parameter(
+            :with_muted,
+            :query,
+            BooleanLike,
+            "Include reactions from muted acccounts."
           )
         ] ++ pagination_params(),
       responses: %{
