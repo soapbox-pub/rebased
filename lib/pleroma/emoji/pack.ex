@@ -62,10 +62,9 @@ defmodule Pleroma.Emoji.Pack do
   @spec delete(String.t()) ::
           {:ok, [binary()]} | {:error, File.posix(), binary()} | {:error, :empty_values}
   def delete(name) do
-    with :ok <- validate_not_empty([name]) do
-      emoji_path()
-      |> Path.join(name)
-      |> File.rm_rf()
+    with :ok <- validate_not_empty([name]),
+         pack_path <- Path.join(emoji_path(), name) do
+      File.rm_rf(pack_path)
     end
   end
 
