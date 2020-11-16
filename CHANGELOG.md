@@ -75,6 +75,7 @@ switched to a new configuration mechanism, however it was not officially removed
 
 ### Fixes
 - Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`
+- S3 Uploads with Elixir 1.11
 
 ## [2.1.2] - 2020-09-17
 
