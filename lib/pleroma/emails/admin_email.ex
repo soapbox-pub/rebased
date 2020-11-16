@@ -48,6 +48,9 @@ defmodule Pleroma.Emails.AdminEmail do
               status_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, id)
               "<li><a href=\"#{status_url}\">#{status_url}</li>"
 
+            %{"id" => id} when is_binary(id) ->
+              "<li><a href=\"#{id}\">#{id}</li>"
+
             id when is_binary(id) ->
               "<li><a href=\"#{id}\">#{id}</li>"
           end)

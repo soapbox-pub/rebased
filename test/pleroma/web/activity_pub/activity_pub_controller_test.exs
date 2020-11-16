@@ -799,6 +799,82 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(ret_conn, 200)
     end
+
+    test "forwarded report", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      actor = insert(:user, local: false)
+      remote_domain = URI.parse(actor.ap_id).host
+      reported_user = insert(:user)
+
+      note = insert(:note_activity, user: reported_user)
+
+      data = %{
+        "@context" => [
+          "https://www.w3.org/ns/activitystreams",
+          "https://#{remote_domain}/schemas/litepub-0.1.jsonld",
+          %{
+            "@language" => "und"
+          }
+        ],
+        "actor" => actor.ap_id,
+        "cc" => [
+          reported_user.ap_id
+        ],
+        "content" => "test",
+        "context" => "context",
+        "id" => "http://#{remote_domain}/activities/02be56cf-35e3-46b4-b2c6-47ae08dfee9e",
+        "nickname" => reported_user.nickname,
+        "object" => [
+          reported_user.ap_id,
+          %{
+            "actor" => %{
+              "actor_type" => "Person",
+              "approval_pending" => false,
+              "avatar" => "",
+              "confirmation_pending" => false,
+              "deactivated" => false,
+              "display_name" => "test user",
+              "id" => reported_user.id,
+              "local" => false,
+              "nickname" => reported_user.nickname,
+              "registration_reason" => nil,
+              "roles" => %{
+                "admin" => false,
+                "moderator" => false
+              },
+              "tags" => [],
+              "url" => reported_user.ap_id
+            },
+            "content" => "",
+            "id" => note.data["id"],
+            "published" => note.data["published"],
+            "type" => "Note"
+          }
+        ],
+        "published" => note.data["published"],
+        "state" => "open",
+        "to" => [],
+        "type" => "Flag"
+      }
+
+      conn
+      |> assign(:valid_signature, true)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/#{reported_user.nickname}/inbox", data)
+      |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
+      assert Pleroma.Repo.aggregate(Activity, :count, :id) == 2
+
+      ObanHelpers.perform_all()
+
+      Swoosh.TestAssertions.assert_email_sent(
+        to: {admin.name, admin.email},
+        html_body: ~r/Reported Account:/i
+      )
+
+    end
   end
 
   describe "GET /users/:nickname/outbox" do
