@@ -1740,4 +1740,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              |> get("/api/v1/statuses/#{activity.id}")
              |> json_response_and_validate_schema(:ok)
   end
+
+  test "posting a local only status" do
+    %{user: _user, conn: conn} = oauth_access(["write:statuses"])
+
+    conn_one =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses", %{
+        "status" => "cofe",
+        "visibility" => "local"
+      })
+
+    local = Pleroma.Constants.as_local_public()
+
+    assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
+             json_response(conn_one, 200)
+
+    assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+  end
 end

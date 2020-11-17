@@ -22,7 +22,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             in_reply_to_conversation: nil,
             visibility: nil,
             expires_at: nil,
-            poll: nil,
+            extra: nil,
             emoji: %{},
             content_html: nil,
             mentions: [],
@@ -35,9 +35,14 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             preview?: false,
             changes: %{}
 
-  def create(user, params) do
+  def new(user, params) do
     %__MODULE__{user: user}
     |> put_params(params)
+  end
+
+  def create(user, params) do
+    user
+    |> new(params)
     |> status()
     |> summary()
     |> with_valid(&attachments/1)
@@ -55,6 +60,30 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> preview?()
     |> with_valid(&changes/1)
     |> validate()
+  end
+
+  def listen(user, params) do
+    user
+    |> new(params)
+    |> visibility()
+    |> to_and_cc()
+    |> context()
+    |> listen_object()
+    |> with_valid(&changes/1)
+    |> validate()
+  end
+
+  defp listen_object(draft) do
+    object =
+      draft.params
+      |> Map.take([:album, :artist, :title, :length])
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
+      |> Map.put("type", "Audio")
+      |> Map.put("to", draft.to)
+      |> Map.put("cc", draft.cc)
+      |> Map.put("actor", draft.user.ap_id)
+
+    %__MODULE__{draft | object: object}
   end
 
   defp put_params(draft, params) do
@@ -121,7 +150,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp poll(draft) do
     case Utils.make_poll_data(draft.params) do
       {:ok, {poll, poll_emoji}} ->
-        %__MODULE__{draft | poll: poll, emoji: Map.merge(draft.emoji, poll_emoji)}
+        %__MODULE__{draft | extra: poll, emoji: Map.merge(draft.emoji, poll_emoji)}
 
       {:error, message} ->
         add_error(draft, message)
@@ -129,32 +158,18 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp content(draft) do
-    {content_html, mentions, tags} =
-      Utils.make_content_html(
-        draft.status,
-        draft.attachments,
-        draft.params,
-        draft.visibility
-      )
+    {content_html, mentioned_users, tags} = Utils.make_content_html(draft)
+
+    mentions =
+      mentioned_users
+      |> Enum.map(fn {_, mentioned_user} -> mentioned_user.ap_id end)
+      |> Utils.get_addressed_users(draft.params[:to])
 
     %__MODULE__{draft | content_html: content_html, mentions: mentions, tags: tags}
   end
 
   defp to_and_cc(draft) do
-    addressed_users =
-      draft.mentions
-      |> Enum.map(fn {_, mentioned_user} -> mentioned_user.ap_id end)
-      |> Utils.get_addressed_users(draft.params[:to])
-
-    {to, cc} =
-      Utils.get_to_and_cc(
-        draft.user,
-        addressed_users,
-        draft.in_reply_to,
-        draft.visibility,
-        draft.in_reply_to_conversation
-      )
-
+    {to, cc} = Utils.get_to_and_cc(draft)
     %__MODULE__{draft | to: to, cc: cc}
   end
 
@@ -172,19 +187,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
     object =
-      Utils.make_note_data(
-        draft.user.ap_id,
-        draft.to,
-        draft.context,
-        draft.content_html,
-        draft.attachments,
-        draft.in_reply_to,
-        draft.tags,
-        draft.summary,
-        draft.cc,
-        draft.sensitive,
-        draft.poll
-      )
+      Utils.make_note_data(draft)
       |> Map.put("emoji", emoji)
       |> Map.put("source", draft.status)
 
