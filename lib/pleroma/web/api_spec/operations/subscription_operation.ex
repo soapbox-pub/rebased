@@ -146,6 +146,11 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
                   allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive chat notifications?"
+                },
+                "pleroma:emoji_reaction": %Schema{
+                  allOf: [BooleanLike],
+                  nullable: true,
+                  description: "Receive emoji reaction notifications?"
                 }
               }
             }

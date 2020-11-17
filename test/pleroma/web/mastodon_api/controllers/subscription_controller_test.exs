@@ -59,7 +59,12 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
         conn
         |> post("/api/v1/push/subscription", %{
           "data" => %{
-            "alerts" => %{"mention" => true, "test" => true, "pleroma:chat_mention" => true}
+            "alerts" => %{
+              "mention" => true,
+              "test" => true,
+              "pleroma:chat_mention" => true,
+              "pleroma:emoji_reaction" => true
+            }
           },
           "subscription" => @sub
         })
@@ -68,7 +73,11 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       [subscription] = Pleroma.Repo.all(Subscription)
 
       assert %{
-               "alerts" => %{"mention" => true, "pleroma:chat_mention" => true},
+               "alerts" => %{
+                 "mention" => true,
+                 "pleroma:chat_mention" => true,
+                 "pleroma:emoji_reaction" => true
+               },
                "endpoint" => subscription.endpoint,
                "id" => to_string(subscription.id),
                "server_key" => @server_key
