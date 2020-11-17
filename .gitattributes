@@ -1,2 +1,8 @@
 *.ex diff=elixir
 *.exs diff=elixir
+# At the time of writing all js/css files included
+# in the repo are minified bundles, and we don't want
+# to search/diff those as text files.
+*.js binary
+*.js.map binary
+*.css binary
