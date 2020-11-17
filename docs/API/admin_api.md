@@ -1556,3 +1556,9 @@ Returns the content of the document
   }
 ]
 ```
+
+```json
+{
+  "error": "Could not install frontend"
+}
+```
