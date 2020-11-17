@@ -129,7 +129,6 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
-         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,

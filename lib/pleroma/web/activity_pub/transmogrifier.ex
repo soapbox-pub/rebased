@@ -1008,7 +1008,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def upgrade_user_from_ap_id(ap_id) do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id, force_http: true),
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          {:ok, user} <- update_user(user, data) do
       TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}
