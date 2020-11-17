@@ -149,9 +149,6 @@ chown -R pleroma /etc/pleroma
 # Run the config generator
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
 
-# Run the environment file generator.
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl release_env gen"
-
 # Create the postgres database
 su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 

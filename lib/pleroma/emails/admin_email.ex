@@ -18,10 +18,6 @@ defmodule Pleroma.Emails.AdminEmail do
     Keyword.get(instance_config(), :notify_email, instance_config()[:email])
   end
 
-  defp user_url(user) do
-    Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, user.id)
-  end
-
   def test_email(mail_to \\ nil) do
     html_body = """
     <h3>Instance Test Email</h3>
@@ -69,8 +65,8 @@ defmodule Pleroma.Emails.AdminEmail do
       end
 
     html_body = """
-    <p>Reported by: <a href="#{user_url(reporter)}">#{reporter.nickname}</a></p>
-    <p>Reported Account: <a href="#{user_url(account)}">#{account.nickname}</a></p>
+    <p>Reported by: <a href="#{reporter.ap_id}">#{reporter.nickname}</a></p>
+    <p>Reported Account: <a href="#{account.ap_id}">#{account.nickname}</a></p>
     #{comment_html}
     #{statuses_html}
     <p>
@@ -86,7 +82,7 @@ defmodule Pleroma.Emails.AdminEmail do
 
   def new_unapproved_registration(to, account) do
     html_body = """
-    <p>New account for review: <a href="#{user_url(account)}">@#{account.nickname}</a></p>
+    <p>New account for review: <a href="#{account.ap_id}">@#{account.nickname}</a></p>
     <blockquote>#{HTML.strip_tags(account.registration_reason)}</blockquote>
     <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/users/#{account.id}/">Visit AdminFE</a>
     """

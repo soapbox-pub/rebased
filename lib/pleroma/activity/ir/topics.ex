@@ -40,7 +40,8 @@ defmodule Pleroma.Activity.Ir.Topics do
   end
 
   defp item_creation_tags(tags, object, %{data: %{"type" => "Create"}} = activity) do
-    tags ++ hashtags_to_topics(object) ++ attachment_topics(object, activity)
+    tags ++
+      remote_topics(activity) ++ hashtags_to_topics(object) ++ attachment_topics(object, activity)
   end
 
   defp item_creation_tags(tags, _, _) do
@@ -55,9 +56,19 @@ defmodule Pleroma.Activity.Ir.Topics do
 
   defp hashtags_to_topics(_), do: []
 
+  defp remote_topics(%{local: true}), do: []
+
+  defp remote_topics(%{actor: actor}) when is_binary(actor),
+    do: ["public:remote:" <> URI.parse(actor).host]
+
+  defp remote_topics(_), do: []
+
   defp attachment_topics(%{data: %{"attachment" => []}}, _act), do: []
 
   defp attachment_topics(_object, %{local: true}), do: ["public:media", "public:local:media"]
+
+  defp attachment_topics(_object, %{actor: actor}) when is_binary(actor),
+    do: ["public:media", "public:remote:media:" <> URI.parse(actor).host]
 
   defp attachment_topics(_object, _act), do: ["public:media"]
 end

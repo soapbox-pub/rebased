@@ -394,7 +394,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/mute"
   def mute(%{assigns: %{user: muter, account: muted}, body_params: params} = conn, _params) do
-    with {:ok, _user_relationships} <- User.mute(muter, muted, params.notifications) do
+    with {:ok, _user_relationships} <- User.mute(muter, muted, params) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})

@@ -116,6 +116,10 @@ The modified chat message
 This will return a list of chats that you have been involved in, sorted by their
 last update (so new chats will be at the top).
 
+Parameters:
+
+- with_muted: Include chats from muted users (boolean).
+
 Returned data:
 
 ```json

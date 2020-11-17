@@ -223,7 +223,27 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       security: [%{"oAuth" => ["write:mutes"]}],
       description: "Do not receive notifications for the thread that this status is part of.",
       operationId: "StatusController.mute_conversation",
-      parameters: [id_param()],
+      requestBody:
+        request_body("Parameters", %Schema{
+          type: :object,
+          properties: %{
+            expires_in: %Schema{
+              type: :integer,
+              nullable: true,
+              description: "Expire the mute in `expires_in` seconds. Default 0 for infinity",
+              default: 0
+            }
+          }
+        }),
+      parameters: [
+        id_param(),
+        Operation.parameter(
+          :expires_in,
+          :query,
+          %Schema{type: :integer, default: 0},
+          "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+        )
+      ],
       responses: %{
         200 => status_response(),
         400 => Operation.response("Error", "application/json", ApiError)

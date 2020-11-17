@@ -562,7 +562,8 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 5,
-    new_users_digest: 1
+    new_users_digest: 1,
+    mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -820,7 +821,7 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
+  policies: [Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy, Pleroma.Web.ActivityPub.MRF.TagPolicy],
   transparency: true,
   transparency_exclusions: []
 

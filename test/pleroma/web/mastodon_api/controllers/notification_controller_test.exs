@@ -75,6 +75,34 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [_] = result
   end
 
+  test "by default, does not contain pleroma:report" do
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+    third_user = insert(:user)
+
+    user
+    |> User.admin_api_update(%{is_moderator: true})
+
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
+
+    {:ok, _report} =
+      CommonAPI.report(third_user, %{account_id: other_user.id, status_ids: [activity.id]})
+
+    result =
+      conn
+      |> get("/api/v1/notifications")
+      |> json_response_and_validate_schema(200)
+
+    assert [] == result
+
+    result =
+      conn
+      |> get("/api/v1/notifications?include_types[]=pleroma:report")
+      |> json_response_and_validate_schema(200)
+
+    assert [_] = result
+  end
+
   test "getting a single notification" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
@@ -502,7 +530,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response_and_validate_schema(ret_conn, 200)) == 1
 
-    {:ok, _user_relationships} = User.mute(user, user2, false)
+    {:ok, _user_relationships} = User.mute(user, user2, %{notifications: false})
 
     conn = get(conn, "/api/v1/notifications")
 
