@@ -45,15 +45,44 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     end
   end
 
-  describe "creates push subscription" do
-    test "does not return unsupported types", %{conn: conn} do
+  describe "when disabled" do
+    test "POST returns error", %{conn: conn} do
       assert_error_when_disable_push do
         conn
-        |> post("/api/v1/push/subscription", %{subscription: @sub})
+        |> post("/api/v1/push/subscription", %{
+          "data" => %{"alerts" => %{"mention" => true}},
+          "subscription" => @sub
+        })
         |> json_response_and_validate_schema(403)
       end
     end
 
+    test "GET returns error", %{conn: conn} do
+      assert_error_when_disable_push do
+        conn
+        |> get("/api/v1/push/subscription", %{})
+        |> json_response_and_validate_schema(403)
+      end
+    end
+
+    test "PUT returns error", %{conn: conn} do
+      assert_error_when_disable_push do
+        conn
+        |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
+        |> json_response_and_validate_schema(403)
+      end
+    end
+
+    test "DELETE returns error", %{conn: conn} do
+      assert_error_when_disable_push do
+        conn
+        |> delete("/api/v1/push/subscription", %{})
+        |> json_response_and_validate_schema(403)
+      end
+    end
+  end
+
+  describe "creates push subscription" do
     test "ignores unsupported types", %{conn: conn} do
       result =
         conn
@@ -111,14 +140,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
   end
 
   describe "gets a user subscription" do
-    test "returns error when push disabled ", %{conn: conn} do
-      assert_error_when_disable_push do
-        conn
-        |> get("/api/v1/push/subscription", %{})
-        |> json_response_and_validate_schema(403)
-      end
-    end
-
     test "returns error when user hasn't subscription", %{conn: conn} do
       res =
         conn
@@ -173,14 +194,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       %{conn: conn, user: user, token: token, subscription: subscription}
     end
 
-    test "returns error when push disabled ", %{conn: conn} do
-      assert_error_when_disable_push do
-        conn
-        |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
-        |> json_response_and_validate_schema(403)
-      end
-    end
-
     test "returns updated subsciption", %{conn: conn, subscription: subscription} do
       res =
         conn
@@ -217,14 +230,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
   end
 
   describe "deletes the user subscription" do
-    test "returns error when push disabled ", %{conn: conn} do
-      assert_error_when_disable_push do
-        conn
-        |> delete("/api/v1/push/subscription", %{})
-        |> json_response_and_validate_schema(403)
-      end
-    end
-
     test "returns error when user hasn't subscription", %{conn: conn} do
       res =
         conn
