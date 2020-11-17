@@ -233,7 +233,7 @@ Post here request with `grant_type=refresh_token` to obtain new access token. Re
 
 `POST /api/v1/accounts`
 
-Has theses additional parameters (which are the same as in Pleroma-API):
+Has these additional parameters (which are the same as in Pleroma-API):
 
 - `fullname`: optional
 - `bio`: optional
