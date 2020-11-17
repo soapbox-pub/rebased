@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
   end
 
   describe "creates push subscription" do
-    test "returns error when push disabled ", %{conn: conn} do
+    test "does not return unsupported types", %{conn: conn} do
       assert_error_when_disable_push do
         conn
         |> post("/api/v1/push/subscription", %{subscription: @sub})
