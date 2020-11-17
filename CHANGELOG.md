@@ -8,17 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Polls now always return a `voters_count`, even if they are single-choice
+- Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
 
 ### Added
 
 - Reports now generate notifications for admins and mods.
 - Experimental websocket-based federation between Pleroma instances.
-- Support pagination of blocks and mutes
-- Account backup
+- Support pagination of blocks and mutes.
+- Account backup.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
-- Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`
+- Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
 - The site title is now injected as a `title` tag like preloads or metadata.
 
 <details>
@@ -34,15 +34,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 <details>
   <summary>API Changes</summary>
-- Mastodon API: Current user is now included in conversation if it's the only participant
-- Mastodon API: Fixed last_status.account being not filled with account data
+- Mastodon API: Current user is now included in conversation if it's the only participant.
+- Mastodon API: Fixed last_status.account being not filled with account data.
 
 </details>
 
 ## Unreleased (Patch)
 ### Fixed
 
-- Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`
+- Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
 - S3 Uploads with Elixir 1.11.
 
 ## [2.2.0] - 2020-11-12
