@@ -35,7 +35,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-devel
+sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-dev
 ```
 
 ### Install Elixir and Erlang

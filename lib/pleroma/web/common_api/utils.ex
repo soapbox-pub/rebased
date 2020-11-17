@@ -16,6 +16,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Plugs.AuthenticationPlug
 
@@ -50,67 +51,62 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     {_, descs} = Jason.decode(descs_str)
 
     Enum.map(ids, fn media_id ->
-      case Repo.get(Object, media_id) do
-        %Object{data: data} ->
-          Map.put(data, "name", descs[media_id])
-
-        _ ->
-          nil
+      with %Object{data: data} <- Repo.get(Object, media_id) do
+        Map.put(data, "name", descs[media_id])
       end
     end)
     |> Enum.reject(&is_nil/1)
   end
 
-  @spec get_to_and_cc(
-          User.t(),
-          list(String.t()),
-          Activity.t() | nil,
-          String.t(),
-          Participation.t() | nil
-        ) :: {list(String.t()), list(String.t())}
+  @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
 
-  def get_to_and_cc(_, _, _, _, %Participation{} = participation) do
+  def get_to_and_cc(%{in_reply_to_conversation: %Participation{} = participation}) do
     participation = Repo.preload(participation, :recipients)
     {Enum.map(participation.recipients, & &1.ap_id), []}
   end
 
-  def get_to_and_cc(user, mentioned_users, inReplyTo, "public", _) do
-    to = [Pleroma.Constants.as_public() | mentioned_users]
-    cc = [user.follower_address]
+  def get_to_and_cc(%{visibility: visibility} = draft) when visibility in ["public", "local"] do
+    to =
+      case visibility do
+        "public" -> [Pleroma.Constants.as_public() | draft.mentions]
+        "local" -> [Pleroma.Constants.as_local_public() | draft.mentions]
+      end
 
-    if inReplyTo do
-      {Enum.uniq([inReplyTo.data["actor"] | to]), cc}
+    cc = [draft.user.follower_address]
+
+    if draft.in_reply_to do
+      {Enum.uniq([draft.in_reply_to.data["actor"] | to]), cc}
     else
       {to, cc}
     end
   end
 
-  def get_to_and_cc(user, mentioned_users, inReplyTo, "unlisted", _) do
-    to = [user.follower_address | mentioned_users]
+  def get_to_and_cc(%{visibility: "unlisted"} = draft) do
+    to = [draft.user.follower_address | draft.mentions]
     cc = [Pleroma.Constants.as_public()]
 
-    if inReplyTo do
-      {Enum.uniq([inReplyTo.data["actor"] | to]), cc}
+    if draft.in_reply_to do
+      {Enum.uniq([draft.in_reply_to.data["actor"] | to]), cc}
     else
       {to, cc}
     end
   end
 
-  def get_to_and_cc(user, mentioned_users, inReplyTo, "private", _) do
-    {to, cc} = get_to_and_cc(user, mentioned_users, inReplyTo, "direct", nil)
-    {[user.follower_address | to], cc}
+  def get_to_and_cc(%{visibility: "private"} = draft) do
+    {to, cc} = get_to_and_cc(struct(draft, visibility: "direct"))
+    {[draft.user.follower_address | to], cc}
   end
 
-  def get_to_and_cc(_user, mentioned_users, inReplyTo, "direct", _) do
+  def get_to_and_cc(%{visibility: "direct"} = draft) do
     # If the OP is a DM already, add the implicit actor.
-    if inReplyTo && Visibility.is_direct?(inReplyTo) do
-      {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
+    if draft.in_reply_to && Visibility.is_direct?(draft.in_reply_to) do
+      {Enum.uniq([draft.in_reply_to.data["actor"] | draft.mentions]), []}
     else
-      {mentioned_users, []}
+      {draft.mentions, []}
     end
   end
 
-  def get_to_and_cc(_user, mentions, _inReplyTo, {:list, _}, _), do: {mentions, []}
+  def get_to_and_cc(%{visibility: {:list, _}, mentions: mentions}), do: {mentions, []}
 
   def get_addressed_users(_, to) when is_list(to) do
     User.get_ap_ids_by_nicknames(to)
@@ -203,30 +199,25 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_content_html(
-        status,
-        attachments,
-        data,
-        visibility
-      ) do
+  def make_content_html(%ActivityDraft{} = draft) do
     attachment_links =
-      data
+      draft.params
       |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
       |> truthy_param?()
 
-    content_type = get_content_type(data[:content_type])
+    content_type = get_content_type(draft.params[:content_type])
 
     options =
-      if visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do
+      if draft.visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do
         [safe_mention: true]
       else
         []
       end
 
-    status
+    draft.status
     |> format_input(content_type, options)
-    |> maybe_add_attachments(attachments, attachment_links)
-    |> maybe_add_nsfw_tag(data)
+    |> maybe_add_attachments(draft.attachments, attachment_links)
+    |> maybe_add_nsfw_tag(draft.params)
   end
 
   defp get_content_type(content_type) do
@@ -308,33 +299,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.html_escape("text/html")
   end
 
-  def make_note_data(
-        actor,
-        to,
-        context,
-        content_html,
-        attachments,
-        in_reply_to,
-        tags,
-        summary \\ nil,
-        cc \\ [],
-        sensitive \\ false,
-        extra_params \\ %{}
-      ) do
+  def make_note_data(%ActivityDraft{} = draft) do
     %{
       "type" => "Note",
-      "to" => to,
-      "cc" => cc,
-      "content" => content_html,
-      "summary" => summary,
-      "sensitive" => truthy_param?(sensitive),
-      "context" => context,
-      "attachment" => attachments,
-      "actor" => actor,
-      "tag" => Keyword.values(tags) |> Enum.uniq()
+      "to" => draft.to,
+      "cc" => draft.cc,
+      "content" => draft.content_html,
+      "summary" => draft.summary,
+      "sensitive" => draft.sensitive,
+      "context" => draft.context,
+      "attachment" => draft.attachments,
+      "actor" => draft.user.ap_id,
+      "tag" => Keyword.values(draft.tags) |> Enum.uniq()
     }
-    |> add_in_reply_to(in_reply_to)
-    |> Map.merge(extra_params)
+    |> add_in_reply_to(draft.in_reply_to)
+    |> Map.merge(draft.extra)
   end
 
   defp add_in_reply_to(object, nil), do: object
