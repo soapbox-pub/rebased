@@ -176,16 +176,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     test "returns error when push disabled ", %{conn: conn} do
       assert_error_when_disable_push do
         conn
-        |> put("/api/v1/push/subscription", %{
-          data: %{
-            "mention" => false,
-            "favourite" => false,
-            "follow" => false,
-            "reblog" => false,
-            "pleroma:chat_mention" => false,
-            "pleroma:emoji_reaction" => false
-          }
-        })
+        |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
         |> json_response_and_validate_schema(403)
       end
     end
