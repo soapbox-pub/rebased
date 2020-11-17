@@ -25,6 +25,7 @@ defmodule Pleroma.Web.Push.Subscription do
     timestamps()
   end
 
+  # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @supported_alert_types ~w[follow favourite mention reblog pleroma:chat_mention pleroma:emoji_reaction]a
 
   defp alerts(%{data: %{alerts: alerts}}) do
