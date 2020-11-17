@@ -45,13 +45,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
-
 ### Fixed
 
 - Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
 - S3 Uploads with Elixir 1.11.
 - Mix task pleroma.user delete_activities for source installations.
+- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
+- Forwarded reports duplication from Pleroma instances.
+
+<details>
+  <summary>API</summary>
+- Statuses were not displayed for Mastodon forwarded reports.
+
+</details>
 
 ## [2.2.0] - 2020-11-12
 
