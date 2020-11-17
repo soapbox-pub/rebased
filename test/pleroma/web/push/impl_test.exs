@@ -196,7 +196,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     object = Object.normalize(activity)
 
     assert Impl.format_body(%{activity: activity, type: "pleroma:emoji_reaction"}, user, object) ==
-             "@Bob has reacted with 👍"
+             "@Bob reacted with 👍"
 
     assert Impl.format_title(%{activity: activity, type: "pleroma:emoji_reaction"}) ==
              "New Reaction"

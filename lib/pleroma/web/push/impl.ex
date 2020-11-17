@@ -155,7 +155,7 @@ defmodule Pleroma.Web.Push.Impl do
         _object,
         _mastodon_type
       ) do
-    "@#{actor.nickname} has reacted with #{content}"
+    "@#{actor.nickname} reacted with #{content}"
   end
 
   def format_body(
