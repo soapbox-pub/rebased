@@ -118,5 +118,24 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
 
       assert File.exists?(Path.join([@dir, "frontends", "unknown", "baka", "test.txt"]))
     end
+
+    test "failing returns an error", %{conn: conn} do
+      Tesla.Mock.mock(fn %{url: "http://gensokyo.2hu/madeup.zip"} ->
+        %Tesla.Env{status: 404, body: ""}
+      end)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/frontends/install", %{
+          name: "unknown",
+          ref: "baka",
+          build_url: "http://gensokyo.2hu/madeup.zip",
+          build_dir: ""
+        })
+        |> json_response_and_validate_schema(400)
+
+      assert result == %{"error" => "Could not download or unzip the frontend"}
+    end
   end
 end

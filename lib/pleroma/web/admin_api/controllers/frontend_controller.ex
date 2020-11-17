@@ -29,9 +29,9 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   end
 
   def install(%{body_params: params} = conn, _params) do
-    Pleroma.Frontend.install(params.name, Map.delete(params, :name))
-
-    index(conn, %{})
+    with :ok <- Pleroma.Frontend.install(params.name, Map.delete(params, :name)) do
+      index(conn, %{})
+    end
   end
 
   defp installed do

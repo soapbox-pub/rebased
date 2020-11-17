@@ -36,7 +36,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
       requestBody: request_body("Parameters", install_request(), required: true),
       responses: %{
         200 => Operation.response("Response", "application/json", list_of_frontends()),
-        403 => Operation.response("Forbidden", "application/json", ApiError)
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        400 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
