@@ -61,9 +61,12 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
           "data" => %{
             "alerts" => %{
               "mention" => true,
-              "test" => true,
+              "favourite" => true,
+              "follow" => true,
+              "reblog" => true,
               "pleroma:chat_mention" => true,
-              "pleroma:emoji_reaction" => true
+              "pleroma:emoji_reaction" => true,
+              "test" => true
             }
           },
           "subscription" => @sub
@@ -75,6 +78,9 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert %{
                "alerts" => %{
                  "mention" => true,
+                 "favourite" => true,
+                 "follow" => true,
+                 "reblog" => true,
                  "pleroma:chat_mention" => true,
                  "pleroma:emoji_reaction" => true
                },
@@ -133,7 +139,16 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
         insert(:push_subscription,
           user: user,
           token: token,
-          data: %{"alerts" => %{"mention" => true}}
+          data: %{
+            "alerts" => %{
+              "mention" => true,
+              "favourite" => true,
+              "follow" => true,
+              "reblog" => true,
+              "pleroma:chat_mention" => true,
+              "pleroma:emoji_reaction" => true
+            }
+          }
         )
 
       %{conn: conn, user: user, token: token, subscription: subscription}
@@ -142,7 +157,16 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     test "returns error when push disabled ", %{conn: conn} do
       assert_error_when_disable_push do
         conn
-        |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
+        |> put("/api/v1/push/subscription", %{
+          data: %{
+            "mention" => false,
+            "favourite" => false,
+            "follow" => false,
+            "reblog" => false,
+            "pleroma:chat_mention" => false,
+            "pleroma:emoji_reaction" => false
+          }
+        })
         |> json_response_and_validate_schema(403)
       end
     end
@@ -151,12 +175,28 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       res =
         conn
         |> put("/api/v1/push/subscription", %{
-          data: %{"alerts" => %{"mention" => false, "follow" => true}}
+          data: %{
+            "alerts" => %{
+              "mention" => false,
+              "favourite" => false,
+              "follow" => false,
+              "reblog" => false,
+              "pleroma:chat_mention" => false,
+              "pleroma:emoji_reaction" => false
+            }
+          }
         })
         |> json_response_and_validate_schema(200)
 
       expect = %{
-        "alerts" => %{"follow" => true, "mention" => false},
+        "alerts" => %{
+          "mention" => false,
+          "favourite" => false,
+          "follow" => false,
+          "reblog" => false,
+          "pleroma:chat_mention" => false,
+          "pleroma:emoji_reaction" => false
+        },
         "endpoint" => "https://example.com/example/1234",
         "id" => to_string(subscription.id),
         "server_key" => @server_key
