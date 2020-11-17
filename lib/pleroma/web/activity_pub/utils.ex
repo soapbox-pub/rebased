@@ -710,6 +710,22 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Enum.map(statuses || [], &build_flag_object/1)
   end
 
+  defp build_flag_object(%Activity{} = activity) do
+    activity_actor = User.get_by_ap_id(activity.object.data["actor"])
+
+    %{
+      "type" => "Note",
+      "id" => activity.data["id"],
+      "content" => activity.object.data["content"],
+      "published" => activity.object.data["published"],
+      "actor" =>
+        AccountView.render(
+          "show.json",
+          %{user: activity_actor, skip_visibility_check: true}
+        )
+    }
+  end
+
   defp build_flag_object(act) when is_map(act) or is_binary(act) do
     id =
       case act do
@@ -720,22 +736,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     case Activity.get_by_ap_id_with_object(id) do
       %Activity{} = activity ->
-        activity_actor = User.get_by_ap_id(activity.object.data["actor"])
+        build_flag_object(activity)
 
-        %{
-          "type" => "Note",
-          "id" => activity.data["id"],
-          "content" => activity.object.data["content"],
-          "published" => activity.object.data["published"],
-          "actor" =>
-            AccountView.render(
-              "show.json",
-              %{user: activity_actor, skip_visibility_check: true}
-            )
-        }
-
-      _ ->
-        %{"id" => id, "deleted" => true}
+      nil ->
+        if activity = Activity.get_by_object_ap_id_with_object(id) do
+          build_flag_object(activity)
+        else
+          %{"id" => id, "deleted" => true}
+        end
     end
   end
 

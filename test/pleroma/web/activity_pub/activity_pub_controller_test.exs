@@ -874,6 +874,65 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         html_body: ~r/Reported Account:/i
       )
     end
+
+    test "forwarded report from mastodon", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      actor = insert(:user, local: false)
+      remote_domain = URI.parse(actor.ap_id).host
+      remote_actor = "https://#{remote_domain}/actor"
+      reported_user = insert(:user)
+
+      note = insert(:note_activity, user: reported_user)
+
+      mock_json_body =
+        "test/fixtures/mastodon/application_actor.json"
+        |> File.read!()
+        |> String.replace("{{DOMAIN}}", remote_domain)
+
+      Tesla.Mock.mock(fn %{url: ^remote_actor} ->
+        %Tesla.Env{
+          status: 200,
+          body: mock_json_body,
+          headers: [{"content-type", "application/activity+json"}]
+        }
+      end)
+
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => remote_actor,
+        "content" => "test report",
+        "id" => "https://#{remote_domain}/e3b12fd1-948c-446e-b93b-a5e67edbe1d8",
+        "nickname" => reported_user.nickname,
+        "object" => [
+          reported_user.ap_id,
+          note.data["object"]
+        ],
+        "type" => "Flag"
+      }
+
+      conn
+      |> assign(:valid_signature, true)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/#{reported_user.nickname}/inbox", data)
+      |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
+      assert Pleroma.Repo.aggregate(Activity, :count, :id) == 2
+
+      flag_activity = "Flag" |> Pleroma.Activity.Queries.by_type() |> Pleroma.Repo.one()
+      reported_user_ap_id = reported_user.ap_id
+
+      [^reported_user_ap_id, flag_data] = flag_activity.data["object"]
+
+      Enum.each(~w(actor content id published type), &Map.has_key?(flag_data, &1))
+      ObanHelpers.perform_all()
+
+      Swoosh.TestAssertions.assert_email_sent(
+        to: {admin.name, admin.email},
+        html_body: ~r/#{note.data["object"]}/i
+      )
+    end
   end
 
   describe "GET /users/:nickname/outbox" do
