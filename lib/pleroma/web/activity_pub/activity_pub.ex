@@ -1289,12 +1289,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address,
-             force_http: true
-           ),
+           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
          {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address, force_http: true),
+           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
          {:ok, hide_followers} <- collection_private(followers_data) do
       {:ok,
        %{
@@ -1368,8 +1366,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id, opts \\ []) do
-    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id, opts),
+  def fetch_and_prepare_user_from_ap_id(ap_id) do
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
          {:ok, data} <- user_data_from_user_object(data) do
       {:ok, maybe_update_follow_information(data)}
     else
@@ -1412,13 +1410,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def make_user_from_ap_id(ap_id, opts \\ []) do
+  def make_user_from_ap_id(ap_id) do
     user = User.get_cached_by_ap_id(ap_id)
 
     if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, opts) do
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
         if user do
           user
           |> User.remote_user_changeset(data)

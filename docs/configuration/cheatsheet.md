@@ -220,18 +220,6 @@ config :pleroma, :mrf_user_allowlist, %{
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
 
-## FedSockets
-FedSockets is an experimental feature allowing for Pleroma backends to federate using a persistant websocket connection as opposed to making each federation a seperate http connection. This feature is currently off by default. It is configurable throught he following options.
-
-### :fedsockets
-* `enabled`: Enables FedSockets for this instance. `false` by default.
-* `connection_duration`: Time an idle websocket is kept open.
-* `rejection_duration`: Failures to connect via FedSockets will not be retried for this period of time.
-* `fed_socket_fetches` and `fed_socket_rejections`: Settings passed to `cachex` for the fetch registry, and rejection stacks. See `Pleroma.Web.FedSockets` for more details.
-
-
-## Frontends
-
 ### :frontend_configurations
 
 This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
