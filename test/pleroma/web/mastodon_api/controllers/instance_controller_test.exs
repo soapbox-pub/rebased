@@ -13,6 +13,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result = json_response_and_validate_schema(conn, 200)
 
     email = Pleroma.Config.get([:instance, :email])
+    thumbnail = Pleroma.Web.base_url() <> Pleroma.Config.get([:instance, :instance_thumbnail])
+    background = Pleroma.Web.base_url() <> Pleroma.Config.get([:instance, :background_image])
+
     # Note: not checking for "max_toot_chars" since it's optional
     assert %{
              "uri" => _,
@@ -24,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
                "streaming_api" => _
              },
              "stats" => _,
-             "thumbnail" => _,
+             "thumbnail" => from_config_thumbnail,
              "languages" => _,
              "registrations" => _,
              "approval_required" => _,
@@ -33,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "avatar_upload_limit" => _,
              "background_upload_limit" => _,
              "banner_upload_limit" => _,
-             "background_image" => _,
+             "background_image" => from_config_background,
              "chat_limit" => _,
              "description_limit" => _
            } = result
@@ -45,6 +48,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["vapid_public_key"]
 
     assert email == from_config_email
+    assert thumbnail == from_config_thumbnail
+    assert background == from_config_background
   end
 
   test "get instance stats", %{conn: conn} do
