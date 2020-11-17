@@ -261,6 +261,16 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `pleroma.metadata.post_formats`: A list of the allowed post format types
 - `vapid_public_key`: The public key needed for push messages
 
+## Push Subscription
+
+`POST /api/v1/push/subscription`
+`PUT /api/v1/push/subscription`
+
+Permits these additional alert types:
+
+- pleroma:chat_mention
+- pleroma:emoji_reaction
+
 ## Markers
 
 Has these additional fields under the `pleroma` object:
