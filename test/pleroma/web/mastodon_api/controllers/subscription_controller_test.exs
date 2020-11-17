@@ -54,6 +54,26 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       end
     end
 
+    test "ignores unsupported types", %{conn: conn} do
+      result =
+        conn
+        |> post("/api/v1/push/subscription", %{
+          "data" => %{
+            "alerts" => %{
+              "fake_unsupported_type" => true
+            }
+          },
+          "subscription" => @sub
+        })
+        |> json_response_and_validate_schema(200)
+
+      refute %{
+               "alerts" => %{
+                 "fake_unsupported_type" => true
+               }
+             } == result
+    end
+
     test "successful creation", %{conn: conn} do
       result =
         conn
@@ -65,8 +85,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
               "follow" => true,
               "reblog" => true,
               "pleroma:chat_mention" => true,
-              "pleroma:emoji_reaction" => true,
-              "test" => true
+              "pleroma:emoji_reaction" => true
             }
           },
           "subscription" => @sub
