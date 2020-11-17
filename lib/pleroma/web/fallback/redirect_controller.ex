@@ -41,8 +41,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
 
     response =
       index_content
-      |> String.replace(~r/<title>.+?<\/title>/, title)
-      |> String.replace("<!--server-generated-meta-->", tags <> preloads)
+      |> String.replace("<!--server-generated-meta-->", tags <> preloads <> title)
 
     conn
     |> put_resp_content_type("text/html")
@@ -60,8 +59,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
 
     response =
       index_content
-      |> String.replace(~r/<title>.+?<\/title>/, title)
-      |> String.replace("<!--server-generated-meta-->", preloads)
+      |> String.replace("<!--server-generated-meta-->", preloads <> title)
 
     conn
     |> put_resp_content_type("text/html")

@@ -213,6 +213,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/objects/:uuid" do
+    test "it doesn't return a local-only object", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      object = Object.normalize(post, false)
+      uuid = String.split(object.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
+
     test "it returns a json representation of the object with accept application/json", %{
       conn: conn
     } do
@@ -326,6 +343,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/activities/:uuid" do
+    test "it doesn't return a local-only activity", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      uuid = String.split(post.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
+
     test "it returns a json representation of the activity", %{conn: conn} do
       activity = insert(:note_activity)
       uuid = String.split(activity.data["id"], "/") |> List.last()

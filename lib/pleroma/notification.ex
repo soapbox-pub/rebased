@@ -70,6 +70,7 @@ defmodule Pleroma.Notification do
     move
     pleroma:chat_mention
     pleroma:emoji_reaction
+    pleroma:report
     reblog
   }
 
@@ -367,7 +368,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
-      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact"] do
+      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag"] do
     do_create_notifications(activity, options)
   end
 
@@ -409,6 +410,9 @@ defmodule Pleroma.Notification do
 
       "EmojiReact" ->
         "pleroma:emoji_reaction"
+
+      "Flag" ->
+        "pleroma:report"
 
       # Compatibility with old reactions
       "EmojiReaction" ->
@@ -467,7 +471,7 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
-      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact"] do
+      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact", "Flag"] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
     potential_receivers =
@@ -501,6 +505,10 @@ defmodule Pleroma.Notification do
 
   def get_potential_receiver_ap_ids(%{data: %{"type" => "Follow", "object" => object_id}}) do
     [object_id]
+  end
+
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag"}}) do
+    User.all_superusers() |> Enum.map(fn user -> user.ap_id end)
   end
 
   def get_potential_receiver_ap_ids(activity) do

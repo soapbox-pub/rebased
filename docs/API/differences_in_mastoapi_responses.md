@@ -18,7 +18,7 @@ Adding the parameter `instance=lain.com` to the public timeline will show only s
 
 ## Statuses
 
-- `visibility`: has an additional possible value `list`
+- `visibility`: has additional possible values `list` and `local` (for local-only statuses)
 
 Has these additional fields under the `pleroma` object:
 
@@ -129,12 +129,30 @@ The `type` value is `pleroma:emoji_reaction`. Has these fields:
 - `account`: The account of the user who reacted
 - `status`: The status that was reacted on
 
+### ChatMention Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:chat_mention`
+
+- `account`: The account who sent the message
+- `chat_message`: The chat message
+
+### Report Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:report`
+
+- `account`: The account who reported
+- `report`: The report
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
-- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
+- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`, `pleroma:chat_mention`, `pleroma:report`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
 
 ## DELETE `/api/v1/notifications/destroy_multiple`
 
@@ -155,7 +173,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
 - `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
-- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
+- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted`, `local` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
 
