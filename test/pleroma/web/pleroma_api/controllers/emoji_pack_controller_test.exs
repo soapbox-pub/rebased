@@ -471,7 +471,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                  |> delete("/api/pleroma/emoji/pack?name=test_emoji_pack")
                  |> json_response_and_validate_schema(500) == %{
                    "error" =>
-                     "Couldn't delete the pack test_emoji_pack (POSIX error: Permission denied)"
+                     "Couldn't delete the `test_emoji_pack` pack (POSIX error: Permission denied)"
                  }
         end
       after

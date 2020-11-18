@@ -180,7 +180,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> json(%{error: "pack name cannot be empty"})
 
       {:error, error, _} ->
-        error_message = add_posix_error("Couldn't delete the #{name} pack", error)
+        error_message = add_posix_error("Couldn't delete the `#{name}` pack", error)
 
         conn
         |> put_status(:internal_server_error)
