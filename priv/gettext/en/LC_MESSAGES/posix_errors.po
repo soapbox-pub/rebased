@@ -48,7 +48,7 @@ msgid "eio"
 msgstr "Input/output error"
   
 msgid "eisdir"
-msgstr "Is a directory"
+msgstr "Illegal operation on a directory"
   
 msgid "eloop"
 msgstr "Too many levels of symbolic links"
