@@ -63,7 +63,7 @@ msgid "emultihop"
 msgstr "Multihop attempted"
   
 msgid "enametoolong"
-msgstr "File name too long"
+msgstr "File name is too long"
   
 msgid "enfile"
 msgstr "Too many open files in system"
