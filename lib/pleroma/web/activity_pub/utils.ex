@@ -702,22 +702,22 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_flag_data(_, _), do: %{}
 
-  defp build_flag_object(%{account: account, statuses: statuses} = _) do
-    [account.ap_id] ++ build_flag_object(%{statuses: statuses})
+  defp build_flag_object(%{account: account, statuses: statuses}) do
+    [account.ap_id | build_flag_object(%{statuses: statuses})]
   end
 
   defp build_flag_object(%{statuses: statuses}) do
     Enum.map(statuses || [], &build_flag_object/1)
   end
 
-  defp build_flag_object(%Activity{} = activity) do
-    activity_actor = User.get_by_ap_id(activity.object.data["actor"])
+  defp build_flag_object(%Activity{data: %{"id" => id}, object: %{data: data}}) do
+    activity_actor = User.get_by_ap_id(data["actor"])
 
     %{
       "type" => "Note",
-      "id" => activity.data["id"],
-      "content" => activity.object.data["content"],
-      "published" => activity.object.data["published"],
+      "id" => id,
+      "content" => data["content"],
+      "published" => data["published"],
       "actor" =>
         AccountView.render(
           "show.json",
