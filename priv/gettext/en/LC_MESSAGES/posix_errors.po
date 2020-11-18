@@ -93,7 +93,7 @@ msgid "enosr"
 msgstr "Out of streams resources"
   
 msgid "enostr"
-msgstr "Device not a stream"
+msgstr "Device is not a stream"
   
 msgid "enosys"
 msgstr "Function not implemented"
