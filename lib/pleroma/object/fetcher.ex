@@ -12,7 +12,6 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
-  alias Pleroma.Web.FedSockets
 
   require Logger
   require Pleroma.Constants
@@ -183,16 +182,16 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(prm, opts \\ [])
+  def fetch_and_contain_remote_object_from_id(id)
 
-  def fetch_and_contain_remote_object_from_id(%{"id" => id}, opts),
-    do: fetch_and_contain_remote_object_from_id(id, opts)
+  def fetch_and_contain_remote_object_from_id(%{"id" => id}),
+    do: fetch_and_contain_remote_object_from_id(id)
 
-  def fetch_and_contain_remote_object_from_id(id, opts) when is_binary(id) do
+  def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
     Logger.debug("Fetching object #{id} via AP")
 
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
-         {:ok, body} <- get_object(id, opts),
+         {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
       {:ok, data}
@@ -208,22 +207,10 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(_id, _opts),
+  def fetch_and_contain_remote_object_from_id(_id),
     do: {:error, "id must be a string"}
 
-  defp get_object(id, opts) do
-    with false <- Keyword.get(opts, :force_http, false),
-         {:ok, fedsocket} <- FedSockets.get_or_create_fed_socket(id) do
-      Logger.debug("fetching via fedsocket - #{inspect(id)}")
-      FedSockets.fetch(fedsocket, id)
-    else
-      _other ->
-        Logger.debug("fetching via http - #{inspect(id)}")
-        get_object_http(id)
-    end
-  end
-
-  defp get_object_http(id) do
+  defp get_object(id) do
     date = Pleroma.Signature.signed_date()
 
     headers =

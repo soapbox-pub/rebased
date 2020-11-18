@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 - Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
+- Admin API: An endpoint to manage frontends
 
 </details>
 
@@ -41,11 +42,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 </details>
 
 ## Unreleased (Patch)
+
+### Changed
+
+- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
+
 ### Fixed
 
 - Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
 - S3 Uploads with Elixir 1.11.
 - Fixed Emoji Reaction activity filtering from blocked and muted accounts
+- Mix task pleroma.user delete_activities for source installations.
 
 ## [2.2.0] - 2020-11-12
 

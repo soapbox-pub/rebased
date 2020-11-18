@@ -207,8 +207,7 @@ defmodule Pleroma.Application do
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]},
-      Pleroma.Web.FedSockets.Supervisor
+       ]}
     ]
   end
 
