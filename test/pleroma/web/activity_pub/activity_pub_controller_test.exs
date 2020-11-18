@@ -800,6 +800,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(ret_conn, 200)
     end
 
+    @tag capture_log: true
     test "forwarded report", %{conn: conn} do
       admin = insert(:user, is_admin: true)
       actor = insert(:user, local: false)
@@ -875,6 +876,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       )
     end
 
+    @tag capture_log: true
     test "forwarded report from mastodon", %{conn: conn} do
       admin = insert(:user, is_admin: true)
       actor = insert(:user, local: false)
