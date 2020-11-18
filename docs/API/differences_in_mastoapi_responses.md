@@ -233,7 +233,7 @@ Post here request with `grant_type=refresh_token` to obtain new access token. Re
 
 `POST /api/v1/accounts`
 
-Has theses additional parameters (which are the same as in Pleroma-API):
+Has these additional parameters (which are the same as in Pleroma-API):
 
 - `fullname`: optional
 - `bio`: optional
@@ -260,6 +260,16 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `pleroma.metadata.fields_limits`: A list of values detailing the length and count limitation for various instance-configurable fields.
 - `pleroma.metadata.post_formats`: A list of the allowed post format types
 - `vapid_public_key`: The public key needed for push messages
+
+## Push Subscription
+
+`POST /api/v1/push/subscription`
+`PUT /api/v1/push/subscription`
+
+Permits these additional alert types:
+
+- pleroma:chat_mention
+- pleroma:emoji_reaction
 
 ## Markers
 

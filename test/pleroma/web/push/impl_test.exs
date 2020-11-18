@@ -184,6 +184,24 @@ defmodule Pleroma.Web.Push.ImplTest do
              "New Favorite"
   end
 
+  test "renders title and body for pleroma:emoji_reaction activity" do
+    user = insert(:user, nickname: "Bob")
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "This post is a really good post!"
+      })
+
+    {:ok, activity} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+    object = Object.normalize(activity)
+
+    assert Impl.format_body(%{activity: activity, type: "pleroma:emoji_reaction"}, user, object) ==
+             "@Bob reacted with 👍"
+
+    assert Impl.format_title(%{activity: activity, type: "pleroma:emoji_reaction"}) ==
+             "New Reaction"
+  end
+
   test "renders title for create activity with direct visibility" do
     user = insert(:user, nickname: "Bob")
 
