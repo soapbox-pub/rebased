@@ -20,7 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Account backup.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 - Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
-- Pleroma API: An endpoint to manage frontends
 - The site title is now injected as a `title` tag like preloads or metadata.
 
 <details>
@@ -29,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 - Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
+- Admin API: An endpoint to manage frontends
 
 </details>
 
