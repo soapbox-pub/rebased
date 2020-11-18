@@ -33,7 +33,7 @@ msgid "efault"
 msgstr "Bad address"
   
 msgid "efbig"
-msgstr "File too large"
+msgstr "File is too large"
   
 msgid "eftype"
 msgstr "Inappropriate file type or format"
