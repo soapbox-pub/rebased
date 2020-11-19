@@ -197,6 +197,13 @@ defmodule Pleroma.ActivityTest do
     assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
   end
 
+  test "get_by_id_with_user_actor/1" do
+    user = insert(:user)
+    activity = insert(:note_activity, note: insert(:note, user: user))
+
+    assert Activity.get_by_id_with_user_actor(activity.id).user_actor == user
+  end
+
   test "get_by_id_with_object/1" do
     %{id: id} = insert(:note_activity)
 

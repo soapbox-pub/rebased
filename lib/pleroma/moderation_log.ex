@@ -112,16 +112,19 @@ defmodule Pleroma.ModerationLog do
 
   @spec insert_log(%{actor: User, subject: User, action: String.t()}) ::
           {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "report_update",
-        subject: %Activity{data: %{"type" => "Flag"}} = subject
-      }) do
+  def insert_log(
+        %{
+          actor: %User{} = actor,
+          action: "report_update",
+          subject: %Activity{data: %{"type" => "Flag"}} = subject
+        } = attrs
+      ) do
     %ModerationLog{
       data: %{
         "actor" => user_to_map(actor),
         "action" => "report_update",
         "subject" => report_to_map(subject),
+        "subject_actor" => user_to_map(attrs[:subject_actor]),
         "message" => ""
       }
     }
@@ -130,17 +133,20 @@ defmodule Pleroma.ModerationLog do
 
   @spec insert_log(%{actor: User, subject: Activity, action: String.t(), text: String.t()}) ::
           {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "report_note",
-        subject: %Activity{} = subject,
-        text: text
-      }) do
+  def insert_log(
+        %{
+          actor: %User{} = actor,
+          action: "report_note",
+          subject: %Activity{} = subject,
+          text: text
+        } = attrs
+      ) do
     %ModerationLog{
       data: %{
         "actor" => user_to_map(actor),
         "action" => "report_note",
         "subject" => report_to_map(subject),
+        "subject_actor" => user_to_map(attrs[:subject_actor]),
         "text" => text
       }
     }
@@ -149,17 +155,20 @@ defmodule Pleroma.ModerationLog do
 
   @spec insert_log(%{actor: User, subject: Activity, action: String.t(), text: String.t()}) ::
           {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "report_note_delete",
-        subject: %Activity{} = subject,
-        text: text
-      }) do
+  def insert_log(
+        %{
+          actor: %User{} = actor,
+          action: "report_note_delete",
+          subject: %Activity{} = subject,
+          text: text
+        } = attrs
+      ) do
     %ModerationLog{
       data: %{
         "actor" => user_to_map(actor),
         "action" => "report_note_delete",
         "subject" => report_to_map(subject),
+        "subject_actor" => user_to_map(attrs[:subject_actor]),
         "text" => text
       }
     }
@@ -345,16 +354,17 @@ defmodule Pleroma.ModerationLog do
   end
 
   defp user_to_map(users) when is_list(users) do
-    users |> Enum.map(&user_to_map/1)
+    Enum.map(users, &user_to_map/1)
   end
 
   defp user_to_map(%User{} = user) do
     user
-    |> Map.from_struct()
     |> Map.take([:id, :nickname])
     |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
     |> Map.put("type", "user")
   end
+
+  defp user_to_map(_), do: nil
 
   defp report_to_map(%Activity{} = report) do
     %{
@@ -512,38 +522,48 @@ defmodule Pleroma.ModerationLog do
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_update",
-          "subject" => %{"id" => subject_id, "state" => state, "type" => "report"}
-        }
-      }) do
-    "@#{actor_nickname} updated report ##{subject_id} with '#{state}' state"
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_update",
+            "subject" => %{"id" => subject_id, "state" => state, "type" => "report"}
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} updated report ##{subject_id}" <>
+      subject_actor_nickname(log, " (on user ", ")") <>
+      " with '#{state}' state"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_note",
-          "subject" => %{"id" => subject_id, "type" => "report"},
-          "text" => text
-        }
-      }) do
-    "@#{actor_nickname} added note '#{text}' to report ##{subject_id}"
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_note",
+            "subject" => %{"id" => subject_id, "type" => "report"},
+            "text" => text
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} added note '#{text}' to report ##{subject_id}" <>
+      subject_actor_nickname(log, " on user ")
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_note_delete",
-          "subject" => %{"id" => subject_id, "type" => "report"},
-          "text" => text
-        }
-      }) do
-    "@#{actor_nickname} deleted note '#{text}' from report ##{subject_id}"
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_note_delete",
+            "subject" => %{"id" => subject_id, "type" => "report"},
+            "text" => text
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} deleted note '#{text}' from report ##{subject_id}" <>
+      subject_actor_nickname(log, " on user ")
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -675,5 +695,17 @@ defmodule Pleroma.ModerationLog do
     users
     |> Enum.map(&"@#{&1["nickname"]}")
     |> Enum.join(", ")
+  end
+
+  defp subject_actor_nickname(%ModerationLog{data: data}, prefix_msg, postfix_msg \\ "") do
+    case data do
+      %{"subject_actor" => %{"nickname" => subject_actor}} ->
+        [prefix_msg, "@#{subject_actor}", postfix_msg]
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.join()
+
+      _ ->
+        ""
+    end
   end
 end

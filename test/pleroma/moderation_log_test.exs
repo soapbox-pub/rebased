@@ -186,7 +186,8 @@ defmodule Pleroma.ModerationLogTest do
         id: "9m9I1F4p8ftrTP6QTI",
         data: %{
           "type" => "Flag",
-          "state" => "resolved"
+          "state" => "resolved",
+          "actor" => "http://localhost:4000/users/max"
         }
       }
 
@@ -204,25 +205,37 @@ defmodule Pleroma.ModerationLogTest do
     end
 
     test "logging report response", %{moderator: moderator} do
+      user = insert(:user)
+
       report = %Activity{
         id: "9m9I1F4p8ftrTP6QTI",
         data: %{
-          "type" => "Note"
+          "type" => "Note",
+          "actor" => user.ap_id
         }
       }
 
-      {:ok, _} =
-        ModerationLog.insert_log(%{
-          actor: moderator,
-          action: "report_note",
-          subject: report,
-          text: "look at this"
-        })
+      attrs = %{
+        actor: moderator,
+        action: "report_note",
+        subject: report,
+        text: "look at this"
+      }
 
-      log = Repo.one(ModerationLog)
+      {:ok, log1} = ModerationLog.insert_log(attrs)
+      log = Repo.get(ModerationLog, log1.id)
 
       assert log.data["message"] ==
                "@#{moderator.nickname} added note 'look at this' to report ##{report.id}"
+
+      {:ok, log2} = ModerationLog.insert_log(Map.merge(attrs, %{subject_actor: user}))
+
+      log = Repo.get(ModerationLog, log2.id)
+
+      assert log.data["message"] ==
+               "@#{moderator.nickname} added note 'look at this' to report ##{report.id} on user @#{
+                 user.nickname
+               }"
     end
 
     test "logging status sensitivity update", %{moderator: moderator} do
