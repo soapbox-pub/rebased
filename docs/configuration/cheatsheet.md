@@ -63,6 +63,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
+* `search_function`: What search function to use for fulltext search. Possible values are `:websearch` and `:plain`. `:websearch` enables more complex search queries, but requires at least PostgreSQL 11. (default: `websearch`)
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
