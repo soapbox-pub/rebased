@@ -362,6 +362,7 @@ defmodule Pleroma.Activity do
     ap_id
     |> Queries.by_object_id()
     |> with_preloaded_object()
+    |> first()
     |> Repo.one()
   end
 

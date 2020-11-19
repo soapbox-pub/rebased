@@ -882,9 +882,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       actor = insert(:user, local: false)
       remote_domain = URI.parse(actor.ap_id).host
       remote_actor = "https://#{remote_domain}/actor"
-      reported_user = insert(:user)
+      [reported_user, another] = insert_list(2, :user)
 
       note = insert(:note_activity, user: reported_user)
+
+      Pleroma.Web.CommonAPI.favorite(another, note.id)
 
       mock_json_body =
         "test/fixtures/mastodon/application_actor.json"
@@ -919,8 +921,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> json_response(200)
 
       ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
-
-      assert Pleroma.Repo.aggregate(Activity, :count, :id) == 2
 
       flag_activity = "Flag" |> Pleroma.Activity.Queries.by_type() |> Pleroma.Repo.one()
       reported_user_ap_id = reported_user.ap_id
