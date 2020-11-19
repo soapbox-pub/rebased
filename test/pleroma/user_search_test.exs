@@ -65,8 +65,8 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
-    # NOTE: as long as users are non-discoverable by default, we can't filter out most users: #2301
-    test "does NOT exclude non-discoverable users from results (as long as it's the default)" do
+    # Note: as in Mastodon, `is_discoverable` doesn't anyhow relate to user searchability
+    test "includes non-discoverable users in results" do
       insert(:user, %{nickname: "john 3000", is_discoverable: false})
       insert(:user, %{nickname: "john 3001"})
 

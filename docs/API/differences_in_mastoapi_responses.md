@@ -84,7 +84,7 @@ Has these additional fields under the `pleroma` object:
 
 - `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
 - `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
-- `discoverable`: boolean, true when the user allows discovery of the account in search results and other services.
+- `discoverable`: boolean, true when the user allows external services (search bots) etc. to index / list the account (regardless of this setting, user will still appear in regular search results)
 - `actor_type`: string, the type of this account.
 
 ## Conversations
@@ -207,7 +207,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
 - `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
-- `discoverable` - if true, discovery of this account in search results and other services is allowed.
+- `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
 
