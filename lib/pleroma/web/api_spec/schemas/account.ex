@@ -127,7 +127,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               discoverable: %Schema{
                 type: :boolean,
                 description:
-                  "whether the user allows discovery of the account in search results and other services."
+                  "whether the user allows indexing / listing of the account by external services (search engines etc.)."
               },
               no_rich_text: %Schema{
                 type: :boolean,
