@@ -19,11 +19,13 @@ defmodule Pleroma.Activity.Search do
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
+    search_function = Pleroma.Config.get([:instance, :search_function], :plain)
+
     Activity
     |> Activity.with_preloaded_object()
     |> Activity.restrict_deactivated_users()
     |> restrict_public()
-    |> query_with(index_type, search_query)
+    |> query_with(index_type, search_query, search_function)
     |> maybe_restrict_local(user)
     |> maybe_restrict_author(author)
     |> maybe_restrict_blocked(user)
@@ -50,7 +52,7 @@ defmodule Pleroma.Activity.Search do
     )
   end
 
-  defp query_with(q, :gin, search_query) do
+  defp query_with(q, :gin, search_query, :plain) do
     from([a, o] in q,
       where:
         fragment(
@@ -61,11 +63,34 @@ defmodule Pleroma.Activity.Search do
     )
   end
 
-  defp query_with(q, :rum, search_query) do
+  defp query_with(q, :gin, search_query, :websearch) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "to_tsvector('english', ?->>'content') @@ websearch_to_tsquery('english', ?)",
+          o.data,
+          ^search_query
+        )
+    )
+  end
+
+  defp query_with(q, :rum, search_query, :plain) do
     from([a, o] in q,
       where:
         fragment(
           "? @@ plainto_tsquery('english', ?)",
+          o.fts_content,
+          ^search_query
+        ),
+      order_by: [fragment("? <=> now()::date", o.inserted_at)]
+    )
+  end
+
+  defp query_with(q, :rum, search_query, :websearch) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "? @@ websearch_to_tsquery('english', ?)",
           o.fts_content,
           ^search_query
         ),
