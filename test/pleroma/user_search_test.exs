@@ -65,12 +65,13 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
-    test "excludes users when discoverable is false" do
+    test "does NOT exclude non-discoverable users from results (as long as it's the default)" do
+      # NOTE: as long as users are non-discoverable by default, we can't filter out most users: #2301
       insert(:user, %{nickname: "john 3000", discoverable: false})
       insert(:user, %{nickname: "john 3001"})
 
       users = User.search("john")
-      assert Enum.count(users) == 1
+      assert Enum.count(users) == 2
     end
 
     test "excludes service actors from results" do

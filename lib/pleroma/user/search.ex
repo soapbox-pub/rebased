@@ -85,7 +85,7 @@ defmodule Pleroma.User.Search do
     |> base_query(following)
     |> filter_blocked_user(for_user)
     |> filter_invisible_users()
-    |> filter_discoverable_users()
+    |> filter_non_discoverable_users()
     |> filter_internal_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
@@ -163,8 +163,10 @@ defmodule Pleroma.User.Search do
     from(q in query, where: q.invisible == false)
   end
 
-  defp filter_discoverable_users(query) do
-    from(q in query, where: q.discoverable == true)
+  defp filter_non_discoverable_users(query) do
+    # Note: commented out — can't do it with users being non-discoverable by default
+    # from(q in query, where: q.is_discoverable == true)
+    query
   end
 
   defp filter_internal_users(query) do
