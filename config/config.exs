@@ -263,7 +263,8 @@ config :pleroma, :instance,
       length: 16
     ]
   ],
-  show_reactions: true
+  show_reactions: true,
+  search_function: :websearch
 
 config :pleroma, :welcome,
   direct_message: [
