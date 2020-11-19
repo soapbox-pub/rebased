@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.SearchTest do
-  use Pleroma.DataCase
-
-  import Pleroma.Factory
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Activity.Search
+  alias Pleroma.Web.CommonAPI
+  import Pleroma.Factory
+
+  use Pleroma.DataCase
 
   test "it finds something" do
     user = insert(:user)
