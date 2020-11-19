@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
+- *Breaking* Configuration: Use `websearch` function by default. If you're using a PostgreSQL version below 11, set `:instance, :search_function` to `:plain` in your configuration.
 
 ### Added
 
