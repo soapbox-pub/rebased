@@ -31,9 +31,48 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
 
       assert response =~ "<h2>Password Reset for #{user.nickname}</h2>"
     end
+
+    test "it returns an error when the token has expired", %{conn: conn} do
+      clear_config([:instance, :password_reset_token_validity], 0)
+
+      user = insert(:user)
+      {:ok, token} = PasswordResetToken.create_token(user)
+
+      :timer.sleep(2000)
+
+      response =
+        conn
+        |> get("/api/pleroma/password_reset/#{token.token}")
+        |> html_response(:ok)
+
+      assert response =~ "<h2>Invalid Token</h2>"
+    end
   end
 
   describe "POST /api/pleroma/password_reset" do
+    test "it fails for an expired token", %{conn: conn} do
+      clear_config([:instance, :password_reset_token_validity], 0)
+
+      user = insert(:user)
+      {:ok, token} = PasswordResetToken.create_token(user)
+      :timer.sleep(2000)
+      {:ok, _access_token} = Token.create(insert(:oauth_app), user, %{})
+
+      params = %{
+        "password" => "test",
+        password_confirmation: "test",
+        token: token.token
+      }
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/pleroma/password_reset", %{data: params})
+        |> html_response(:ok)
+
+      refute response =~ "<h2>Password changed!</h2>"
+    end
+
     test "it returns HTTP 200", %{conn: conn} do
       user = insert(:user)
       {:ok, token} = PasswordResetToken.create_token(user)
