@@ -245,6 +245,18 @@ defmodule Pleroma.User do
     end
   end
 
+  def cached_blocked_users_ap_ids(user) do
+    Cachex.fetch!(:user_cache, "blocked_users_ap_ids:#{user.ap_id}", fn _ ->
+      blocked_users_ap_ids(user)
+    end)
+  end
+
+  def cached_muted_users_ap_ids(user) do
+    Cachex.fetch!(:user_cache, "muted_users_ap_ids:#{user.ap_id}", fn _ ->
+      muted_users_ap_ids(user)
+    end)
+  end
+
   defdelegate following_count(user), to: FollowingRelationship
   defdelegate following(user), to: FollowingRelationship
   defdelegate following?(follower, followed), to: FollowingRelationship
@@ -1036,6 +1048,8 @@ defmodule Pleroma.User do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
     Cachex.del(:user_cache, "friends_ap_ids:#{user.ap_id}")
+    Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+    Cachex.del(:user_cache, "muted_users_ap_ids:#{user.ap_id}")
   end
 
   @spec get_cached_by_ap_id(String.t()) :: User.t() | nil
@@ -1342,6 +1356,8 @@ defmodule Pleroma.User do
         )
       end
 
+      Cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
+
       {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
     end
   end
@@ -1350,6 +1366,7 @@ defmodule Pleroma.User do
     with {:ok, user_mute} <- UserRelationship.delete_mute(muter, mutee),
          {:ok, user_notification_mute} <-
            UserRelationship.delete_notification_mute(muter, mutee) do
+      Cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
       {:ok, [user_mute, user_notification_mute]}
     end
   end
@@ -2345,13 +2362,19 @@ defmodule Pleroma.User do
   @spec add_to_block(User.t(), User.t()) ::
           {:ok, UserRelationship.t()} | {:error, Ecto.Changeset.t()}
   defp add_to_block(%User{} = user, %User{} = blocked) do
-    UserRelationship.create_block(user, blocked)
+    with {:ok, relationship} <- UserRelationship.create_block(user, blocked) do
+      Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+      {:ok, relationship}
+    end
   end
 
   @spec add_to_block(User.t(), User.t()) ::
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
-    UserRelationship.delete_block(user, blocked)
+    with {:ok, relationship} <- UserRelationship.delete_block(user, blocked) do
+      Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+      {:ok, relationship}
+    end
   end
 
   def set_invisible(user, invisible) do

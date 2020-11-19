@@ -24,6 +24,12 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
         Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
         Operation.parameter(:emoji, :path, :string, "Filter by a single unicode emoji",
           required: nil
+        ),
+        Operation.parameter(
+          :with_muted,
+          :query,
+          :boolean,
+          "Include reactions from muted acccounts."
         )
       ],
       security: [%{"oAuth" => ["read:statuses"]}],

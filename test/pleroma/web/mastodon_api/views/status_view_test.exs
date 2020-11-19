@@ -73,6 +73,50 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
            ]
   end
 
+  test "doesn't show reactions from muted and blocked users" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "dae cofe??"})
+
+    {:ok, _} = User.mute(user, other_user)
+    {:ok, _} = User.block(other_user, third_user)
+
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+    activity = Repo.get(Activity, activity.id)
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == []
+
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, third_user, "☕")
+
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 2, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: other_user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: true}
+           ]
+  end
+
   test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 

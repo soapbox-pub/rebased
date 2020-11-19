@@ -1759,4 +1759,75 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
   end
+
+  describe "muted reactions" do
+    test "index" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/statuses/?ids[]=#{activity.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/statuses/?ids[]=#{activity.id}&with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
+
+    test "show" do
+      # %{conn: conn, user: user, token: token} = oauth_access(["read:statuses"])
+      %{conn: conn, user: user, token: _token} = oauth_access(["read:statuses"])
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert %{
+               "pleroma" => %{
+                 "emoji_reactions" => []
+               }
+             } = result
+
+      result =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert %{
+               "pleroma" => %{
+                 "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+               }
+             } = result
+    end
+  end
 end
