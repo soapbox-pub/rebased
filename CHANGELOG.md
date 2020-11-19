@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Search: RUM index search speed has been fixed.
+
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Current user is now included in conversation if it's the only participant.
