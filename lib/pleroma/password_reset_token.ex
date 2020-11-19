@@ -40,6 +40,7 @@ defmodule Pleroma.PasswordResetToken do
   @spec reset_password(binary(), map()) :: {:ok, User.t()} | {:error, binary()}
   def reset_password(token, data) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
+         false <- expired?(token),
          %User{} = user <- User.get_cached_by_id(token.user_id),
          {:ok, _user} <- User.reset_password(user, data),
          {:ok, token} <- Repo.update(used_changeset(token)) do
@@ -47,5 +48,15 @@ defmodule Pleroma.PasswordResetToken do
     else
       _e -> {:error, token}
     end
+  end
+
+  def expired?(%__MODULE__{inserted_at: inserted_at}) do
+    validity = Pleroma.Config.get([:instance, :password_reset_token_validity], 0)
+
+    now = NaiveDateTime.utc_now()
+
+    difference = NaiveDateTime.diff(now, inserted_at)
+
+    difference > validity
   end
 end

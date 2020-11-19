@@ -264,6 +264,7 @@ config :pleroma, :instance,
     ]
   ],
   show_reactions: true,
+  password_reset_token_validity: 60 * 60 * 24,
   search_function: :websearch
 
 config :pleroma, :welcome,
