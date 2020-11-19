@@ -34,11 +34,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-<details>
+- <details>
   <summary>API Changes</summary>
-- Mastodon API: Current user is now included in conversation if it's the only participant.
-- Mastodon API: Fixed last_status.account being not filled with account data.
-
+  - Mastodon API: Current user is now included in conversation if it's the only participant.
+  - Mastodon API: Fixed last_status.account being not filled with account data.
 </details>
 
 ## Unreleased (Patch)
@@ -50,8 +49,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
+- Search: RUM index search speed has been fixed.
 - S3 Uploads with Elixir 1.11.
-- Fixed Emoji Reaction activity filtering from blocked and muted accounts
+- Emoji Reaction activity filtering from blocked and muted accounts.
 - Mix task pleroma.user delete_activities for source installations.
 
 ## [2.2.0] - 2020-11-12
