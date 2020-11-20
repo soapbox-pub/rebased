@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
-- *Breaking* Configuration: Use `websearch` function by default. If you're using a PostgreSQL version below 11, set `:instance, :search_function` to `:plain` in your configuration.
+- Search: When using Postgres 11+, Pleroma will use the `websearch_to_tsvector` function to parse search queries.
 
 ### Added
 
@@ -23,7 +23,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
 - The site title is now injected as a `title` tag like preloads or metadata.
 - Password reset tokens now are not accepted after a certain age.
-- Added a configuration option to use the postgresql `websearch` function for more complicated search queries.
 
 <details>
   <summary>API Changes</summary>
