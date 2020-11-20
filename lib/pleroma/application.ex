@@ -116,7 +116,7 @@ defmodule Pleroma.Application do
     result
   end
 
-  defp set_postgres_server_version() do
+  defp set_postgres_server_version do
     version =
       with %{rows: [[version]]} <- Ecto.Adapters.SQL.query!(Pleroma.Repo, "show server_version"),
            {num, _} <- Float.parse(version) do
