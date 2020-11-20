@@ -19,6 +19,7 @@ defmodule Mix.Pleroma do
   def start_pleroma do
     Pleroma.Config.Holder.save_default()
     Pleroma.Config.Oban.warn()
+    Pleroma.Application.limiters_setup()
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
 
     if Pleroma.Config.get(:env) != :test do
