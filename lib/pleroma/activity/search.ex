@@ -19,7 +19,12 @@ defmodule Pleroma.Activity.Search do
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
-    search_function = Pleroma.Config.get([:instance, :search_function], :plain)
+    search_function =
+      if Application.get_env(:postgres, :version) >= 11 do
+        :websearch
+      else
+        :plain
+      end
 
     Activity
     |> Activity.with_preloaded_object()
