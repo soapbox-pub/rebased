@@ -260,15 +260,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   def describe do
     exclusions = Config.get([:mrf, :transparency_exclusions]) |> MRF.instance_list_from_tuples()
 
-    mrf_simple =
+    mrf_simple_excluded =
       Config.get(:mrf_simple)
       |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn {v, _} -> v in exclusions end)} end)
+
+    mrf_simple =
+      mrf_simple_excluded
       |> Enum.map(fn {k, v} ->
-        {k, Enum.map(v, fn {i, r} -> %{"instance" => i, "reason" => r} end)}
+        {k, Enum.map(v, fn {instance, _} -> instance end)}
       end)
       |> Enum.into(%{})
 
-    {:ok, %{mrf_simple: mrf_simple}}
+    mrf_simple_info =
+      mrf_simple_excluded
+      |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn {_, reason} -> reason == "" end)} end)
+      |> Enum.reject(fn {_, v} -> v == [] end)
+      |> Enum.map(fn {k, l} ->
+        {k, l |> Enum.map(fn {i, r} -> {i, %{"reason" => r}} end) |> Enum.into(%{})}
+      end)
+      |> Enum.into(%{})
+
+    {:ok, %{mrf_simple: mrf_simple, mrf_simple_info: mrf_simple_info}}
   end
 
   @impl true
