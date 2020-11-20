@@ -3,14 +3,17 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-11-10 13:39+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2020-11-21 04:42+0000\n"
+"Last-Translator: Guy Sheffer <guysoft@gmail.com>\n"
+"Language-Team: Hebrew <https://translate.pleroma.social/projects/pleroma/"
+"pleroma/he/>\n"
 "Language: he\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 2.5.1\n"
+"Plural-Forms: nplurals=4; plural=(n == 1) ? 0 : ((n == 2) ? 1 : ((n > 10 && "
+"n % 10 == 0) ? 2 : 3));\n"
+"X-Generator: Weblate 4.0.4\n"
 
 ## This file is a PO Template file.
 ##
@@ -23,264 +26,264 @@ msgstr ""
 ## effect: edit them in PO (`.po`) files instead.
 ## From Ecto.Changeset.cast/4
 msgid "can't be blank"
-msgstr ""
+msgstr "לא יכול להיות ריק"
 
 ## From Ecto.Changeset.unique_constraint/3
 msgid "has already been taken"
-msgstr ""
+msgstr "כבר נלקח"
 
 ## From Ecto.Changeset.put_change/3
 msgid "is invalid"
-msgstr ""
+msgstr "אינו תקני"
 
 ## From Ecto.Changeset.validate_format/3
 msgid "has invalid format"
-msgstr ""
+msgstr "תבנית אינה תקנית"
 
 ## From Ecto.Changeset.validate_subset/3
 msgid "has an invalid entry"
-msgstr ""
+msgstr "בעל.ה רשומה לא חוקית"
 
 ## From Ecto.Changeset.validate_exclusion/3
 msgid "is reserved"
-msgstr ""
+msgstr "הינו שמור"
 
 ## From Ecto.Changeset.validate_confirmation/3
 msgid "does not match confirmation"
-msgstr ""
+msgstr "אינו תורם את האימות"
 
 ## From Ecto.Changeset.no_assoc_constraint/3
 msgid "is still associated with this entry"
-msgstr ""
+msgstr "עדיין משויך לרשומה זו"
 
 msgid "are still associated with this entry"
-msgstr ""
+msgstr "עדיין משויכים לרשומה זו"
 
 ## From Ecto.Changeset.validate_length/3
 msgid "should be %{count} character(s)"
 msgid_plural "should be %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "אחד"
+msgstr[1] "שני"
+msgstr[2] "בודדים"
+msgstr[3] "אחר"
 
 msgid "should have %{count} item(s)"
 msgid_plural "should have %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "אחד"
+msgstr[1] "שני"
+msgstr[2] "בודדים"
+msgstr[3] "אחר"
 
 msgid "should be at least %{count} character(s)"
 msgid_plural "should be at least %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "אחד"
+msgstr[1] "שנים"
+msgstr[2] "בודדים"
+msgstr[3] "אחר"
 
 msgid "should have at least %{count} item(s)"
 msgid_plural "should have at least %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "אחד"
+msgstr[1] "שניים"
+msgstr[2] "בודדים"
+msgstr[3] "אחר"
 
 msgid "should be at most %{count} character(s)"
 msgid_plural "should be at most %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "אחד"
+msgstr[1] "שניים"
+msgstr[2] "בודדים"
+msgstr[3] "אחר"
 
 msgid "should have at most %{count} item(s)"
 msgid_plural "should have at most %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "אחד"
+msgstr[1] "שניים"
+msgstr[2] "בודדים"
+msgstr[3] "אחר"
 
 ## From Ecto.Changeset.validate_number/3
 msgid "must be less than %{number}"
-msgstr ""
+msgstr "חייב להיות מתחת ל-%{number}"
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "חייב להיות מעל ל-%{number}"
 
 msgid "must be less than or equal to %{number}"
-msgstr ""
+msgstr "חייב להיות שווה ל-%{number}"
 
 msgid "must be greater than or equal to %{number}"
-msgstr ""
+msgstr "חייב להיות גדול או שווה ל-%{number}"
 
 msgid "must be equal to %{number}"
-msgstr ""
+msgstr "חייב להיות שווה ל-%{number}"
 
 #: lib/pleroma/web/common_api/common_api.ex:505
 #, elixir-format
 msgid "Account not found"
-msgstr ""
+msgstr "חשבון לא נמצא"
 
 #: lib/pleroma/web/common_api/common_api.ex:339
 #, elixir-format
 msgid "Already voted"
-msgstr ""
+msgstr "הצבעה כבר התבצעה"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:359
 #, elixir-format
 msgid "Bad request"
-msgstr ""
+msgstr "בקשה שגוייה"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:426
 #, elixir-format
 msgid "Can't delete object"
-msgstr ""
+msgstr "לא ניתן למחוק אובייקט"
 
 #: lib/pleroma/web/controller_helper.ex:105
 #: lib/pleroma/web/controller_helper.ex:111
 #, elixir-format
 msgid "Can't display this activity"
-msgstr ""
+msgstr "לא ניתן להציג פעילות"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:285
 #, elixir-format
 msgid "Can't find user"
-msgstr ""
+msgstr "לא ניתן למצוא משתמש"
 
 #: lib/pleroma/web/pleroma_api/controllers/account_controller.ex:61
 #, elixir-format
 msgid "Can't get favorites"
-msgstr ""
+msgstr "לא ניתן למצוא מועדפים"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:438
 #, elixir-format
 msgid "Can't like object"
-msgstr ""
+msgstr "לא ניתן לעשות לחבב אובייקט"
 
 #: lib/pleroma/web/common_api/utils.ex:563
 #, elixir-format
 msgid "Cannot post an empty status without attachments"
-msgstr ""
+msgstr "לא ניתן לשלוח סטטוס ריק ללא קבצים מצורפים"
 
 #: lib/pleroma/web/common_api/utils.ex:511
 #, elixir-format
 msgid "Comment must be up to %{max_size} characters"
-msgstr ""
+msgstr "תגובה חייבת להיות עד %{max_size} תווים"
 
 #: lib/pleroma/config/config_db.ex:191
 #, elixir-format
 msgid "Config with params %{params} not found"
-msgstr ""
+msgstr "הגדרה עם פרמטר %{params} לא נמצאה"
 
 #: lib/pleroma/web/common_api/common_api.ex:181
 #: lib/pleroma/web/common_api/common_api.ex:185
 #, elixir-format
 msgid "Could not delete"
-msgstr ""
+msgstr "לא ניתן למחוק"
 
 #: lib/pleroma/web/common_api/common_api.ex:231
 #, elixir-format
 msgid "Could not favorite"
-msgstr ""
+msgstr "לא ניתן לחבב"
 
 #: lib/pleroma/web/common_api/common_api.ex:453
 #, elixir-format
 msgid "Could not pin"
-msgstr ""
+msgstr "לא ניתן לנעוץ"
 
 #: lib/pleroma/web/common_api/common_api.ex:278
 #, elixir-format
 msgid "Could not unfavorite"
-msgstr ""
+msgstr "לא ניתן להסיר חיבוב"
 
 #: lib/pleroma/web/common_api/common_api.ex:463
 #, elixir-format
 msgid "Could not unpin"
-msgstr ""
+msgstr "לא ניתן לבטל נעיצה"
 
 #: lib/pleroma/web/common_api/common_api.ex:216
 #, elixir-format
 msgid "Could not unrepeat"
-msgstr ""
+msgstr "לא ניתן לבטל חזרה"
 
 #: lib/pleroma/web/common_api/common_api.ex:512
 #: lib/pleroma/web/common_api/common_api.ex:521
 #, elixir-format
 msgid "Could not update state"
-msgstr ""
+msgstr "לא ניתן לעדכן מצב"
 
 #: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:207
 #, elixir-format
 msgid "Error."
-msgstr ""
+msgstr "שגיאה."
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:106
 #, elixir-format
 msgid "Invalid CAPTCHA"
-msgstr ""
+msgstr "CAPTCHA לא תקין"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:116
 #: lib/pleroma/web/oauth/oauth_controller.ex:568
 #, elixir-format
 msgid "Invalid credentials"
-msgstr ""
+msgstr "נתוני אימות לא נכונים"
 
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:38
 #, elixir-format
 msgid "Invalid credentials."
-msgstr ""
+msgstr "נתוני אימות לא נכונים."
 
 #: lib/pleroma/web/common_api/common_api.ex:355
 #, elixir-format
 msgid "Invalid indices"
-msgstr ""
+msgstr "אינדקס לא תקין"
 
 #: lib/pleroma/web/admin_api/controllers/fallback_controller.ex:29
 #, elixir-format
 msgid "Invalid parameters"
-msgstr ""
+msgstr "פרמטרים לא תקינים"
 
 #: lib/pleroma/web/common_api/utils.ex:414
 #, elixir-format
 msgid "Invalid password."
-msgstr ""
+msgstr "סיסמה לא תקינה."
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:220
 #, elixir-format
 msgid "Invalid request"
-msgstr ""
+msgstr "בקשה לא תקינה"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:109
 #, elixir-format
 msgid "Kocaptcha service unavailable"
-msgstr ""
+msgstr "שירות Kocaptcha לא זמין"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:112
 #, elixir-format
 msgid "Missing parameters"
-msgstr ""
+msgstr "פרמטרים חסרים"
 
 #: lib/pleroma/web/common_api/utils.ex:547
 #, elixir-format
 msgid "No such conversation"
-msgstr ""
+msgstr "שיחה לא קיימת"
 
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:388
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:414 lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:456
 #, elixir-format
 msgid "No such permission_group"
-msgstr ""
+msgstr "permission_group לא קיים"
 
 #: lib/pleroma/plugs/uploaded_media.ex:84
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:486 lib/pleroma/web/admin_api/controllers/fallback_controller.ex:11
 #: lib/pleroma/web/feed/user_controller.ex:71 lib/pleroma/web/ostatus/ostatus_controller.ex:143
 #, elixir-format
 msgid "Not found"
-msgstr ""
+msgstr "לא נמצא"
 
 #: lib/pleroma/web/common_api/common_api.ex:331
 #, elixir-format
 msgid "Poll's author can't vote"
-msgstr ""
+msgstr "מחבר הסקר לא יכול.ה להצביע"
 
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:20
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:37 lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:49
@@ -288,215 +291,215 @@ msgstr ""
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:71
 #, elixir-format
 msgid "Record not found"
-msgstr ""
+msgstr "רשומה לא נמצאה"
 
 #: lib/pleroma/web/admin_api/controllers/fallback_controller.ex:35
 #: lib/pleroma/web/feed/user_controller.ex:77 lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:36
 #: lib/pleroma/web/ostatus/ostatus_controller.ex:149
 #, elixir-format
 msgid "Something went wrong"
-msgstr ""
+msgstr "משהו השתבש"
 
 #: lib/pleroma/web/common_api/activity_draft.ex:107
 #, elixir-format
 msgid "The message visibility must be direct"
-msgstr ""
+msgstr "הנראות של ההודעה חייבת להיות ישירה"
 
 #: lib/pleroma/web/common_api/utils.ex:573
 #, elixir-format
 msgid "The status is over the character limit"
-msgstr ""
+msgstr "הסטטוס מעל להגבלת התווים"
 
 #: lib/pleroma/plugs/ensure_public_or_authenticated_plug.ex:31
 #, elixir-format
 msgid "This resource requires authentication."
-msgstr ""
+msgstr "המשאב הזה דורש הרשאה."
 
 #: lib/pleroma/plugs/rate_limiter/rate_limiter.ex:206
 #, elixir-format
 msgid "Throttled"
-msgstr ""
+msgstr "מושנק"
 
 #: lib/pleroma/web/common_api/common_api.ex:356
 #, elixir-format
 msgid "Too many choices"
-msgstr ""
+msgstr "יותר מדיי אפשרויות"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:443
 #, elixir-format
 msgid "Unhandled activity type"
-msgstr ""
+msgstr "אין התמודדות לסוג הפעילות"
 
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:485
 #, elixir-format
 msgid "You can't revoke your own admin status."
-msgstr ""
+msgstr "לא ניתן לבטל את הרשאת המנהל של עצמך."
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:221
 #: lib/pleroma/web/oauth/oauth_controller.ex:308
 #, elixir-format
 msgid "Your account is currently disabled"
-msgstr ""
+msgstr "החשבון שלך כרגע מבוטל"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:183
 #: lib/pleroma/web/oauth/oauth_controller.ex:331
 #, elixir-format
 msgid "Your login is missing a confirmed e-mail address"
-msgstr ""
+msgstr "חסר לחשבון שלך כתובת דואר אלקטרוני מאושר"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:390
 #, elixir-format
 msgid "can't read inbox of %{nickname} as %{as_nickname}"
-msgstr ""
+msgstr "לא ניתן לקרוא את הדואר הנכנס של %{nickname} בתור %{as_nickname}"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:473
 #, elixir-format
 msgid "can't update outbox of %{nickname} as %{as_nickname}"
-msgstr ""
+msgstr "לא ניתן לעדכן את חשבון הדואר היוצא של %{nickname} בתור %{as_nickname}"
 
 #: lib/pleroma/web/common_api/common_api.ex:471
 #, elixir-format
 msgid "conversation is already muted"
-msgstr ""
+msgstr "שיחה כבר הושתקה"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:314
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:492
 #, elixir-format
 msgid "error"
-msgstr ""
+msgstr "שגיאה"
 
 #: lib/pleroma/web/pleroma_api/controllers/mascot_controller.ex:32
 #, elixir-format
 msgid "mascots can only be images"
-msgstr ""
+msgstr "קמע יכול להיות רק תמונות"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:62
 #, elixir-format
 msgid "not found"
-msgstr ""
+msgstr "לא נמצא"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:394
 #, elixir-format
 msgid "Bad OAuth request."
-msgstr ""
+msgstr "בקשת OAuth שגוייה."
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:115
 #, elixir-format
 msgid "CAPTCHA already used"
-msgstr ""
+msgstr "כבר נעשה שימוש ב-CAPTCHA הזה"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:112
 #, elixir-format
 msgid "CAPTCHA expired"
-msgstr ""
+msgstr "פג תוקף CAPTCHA"
 
 #: lib/pleroma/plugs/uploaded_media.ex:57
 #, elixir-format
 msgid "Failed"
-msgstr ""
+msgstr "נכשל"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:410
 #, elixir-format
 msgid "Failed to authenticate: %{message}."
-msgstr ""
+msgstr "נכשל האימות: %{message}."
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:441
 #, elixir-format
 msgid "Failed to set up user account."
-msgstr ""
+msgstr "הגדרת חשבון משתמש נכשלה."
 
 #: lib/pleroma/plugs/oauth_scopes_plug.ex:38
 #, elixir-format
 msgid "Insufficient permissions: %{permissions}."
-msgstr ""
+msgstr "אין מספיק הרשאות: %{permissions}."
 
 #: lib/pleroma/plugs/uploaded_media.ex:104
 #, elixir-format
 msgid "Internal Error"
-msgstr ""
+msgstr "שגיאה פנימית"
 
 #: lib/pleroma/web/oauth/fallback_controller.ex:22
 #: lib/pleroma/web/oauth/fallback_controller.ex:29
 #, elixir-format
 msgid "Invalid Username/Password"
-msgstr ""
+msgstr "שם משתמש/סיסמה שגויים"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:118
 #, elixir-format
 msgid "Invalid answer data"
-msgstr ""
+msgstr "תשובה שגוייה למידע"
 
 #: lib/pleroma/web/nodeinfo/nodeinfo_controller.ex:33
 #, elixir-format
 msgid "Nodeinfo schema version not handled"
-msgstr ""
+msgstr "Nodeinfo של של גרסת הסכמה לא ניתן לטיפול"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:172
 #, elixir-format
 msgid "This action is outside the authorized scopes"
-msgstr ""
+msgstr "הפעולה הזו מחוץ לתחומי ההרשאות"
 
 #: lib/pleroma/web/oauth/fallback_controller.ex:14
 #, elixir-format
 msgid "Unknown error, please check the details and try again."
-msgstr ""
+msgstr "שגיאה לא ידועה, יש לבדוק את פרטים ולנסות שוב."
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:119
 #: lib/pleroma/web/oauth/oauth_controller.ex:158
 #, elixir-format
 msgid "Unlisted redirect_uri."
-msgstr ""
+msgstr "ניתב redirect_uri לא רשום."
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:390
 #, elixir-format
 msgid "Unsupported OAuth provider: %{provider}."
-msgstr ""
+msgstr "ספק OAuth לא נתמך: %{provider}."
 
 #: lib/pleroma/uploaders/uploader.ex:72
 #, elixir-format
 msgid "Uploader callback timeout"
-msgstr ""
+msgstr "קריאה חזרה של מעלה עברה את הזמן הקצוב"
 
 #: lib/pleroma/web/uploader_controller.ex:23
 #, elixir-format
 msgid "bad request"
-msgstr ""
+msgstr "בקשה שגוייה"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:103
 #, elixir-format
 msgid "CAPTCHA Error"
-msgstr ""
+msgstr "שגיאת CAPTCHA"
 
 #: lib/pleroma/web/common_api/common_api.ex:290
 #, elixir-format
 msgid "Could not add reaction emoji"
-msgstr ""
+msgstr "לא ניתן להוסיף סמלון תגובה"
 
 #: lib/pleroma/web/common_api/common_api.ex:301
 #, elixir-format
 msgid "Could not remove reaction emoji"
-msgstr ""
+msgstr "לא ניתן להסיר סמלון תגובה"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:129
 #, elixir-format
 msgid "Invalid CAPTCHA (Missing parameter: %{name})"
-msgstr ""
+msgstr "CAPTCHA לא תקני (חסר פרמטר: %{name})"
 
 #: lib/pleroma/web/mastodon_api/controllers/list_controller.ex:92
 #, elixir-format
 msgid "List not found"
-msgstr ""
+msgstr "רשימה לא נמצאה"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:123
 #, elixir-format
 msgid "Missing parameter: %{name}"
-msgstr ""
+msgstr "חסר פרמטר: %{name}"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:210
 #: lib/pleroma/web/oauth/oauth_controller.ex:321
 #, elixir-format
 msgid "Password reset is required"
-msgstr ""
+msgstr "נדרש איפוס סיסמה"
 
 #: lib/pleroma/tests/auth_test_controller.ex:9
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:6 lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:6
@@ -533,64 +536,64 @@ msgstr ""
 #: lib/pleroma/web/uploader_controller.ex:6 lib/pleroma/web/web_finger/web_finger_controller.ex:6
 #, elixir-format
 msgid "Security violation: OAuth scopes check was neither handled nor explicitly skipped."
-msgstr ""
+msgstr "הפרת אבטחה: OAuth בבדיקת המתחם לא נבדקה או דולגה במכוון."
 
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:28
 #, elixir-format
 msgid "Two-factor authentication enabled, you must use a access token."
-msgstr ""
+msgstr "אימות דו-שלבי הופעל, יש להזין אסימון כניסה."
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:210
 #, elixir-format
 msgid "Unexpected error occurred while adding file to pack."
-msgstr ""
+msgstr "אירעה שגיאה לא צפויה בזמן הוספת הקובץ לחבילה."
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:138
 #, elixir-format
 msgid "Unexpected error occurred while creating pack."
-msgstr ""
+msgstr "אירעה שגיאה לא צפויה בזמן יצירת חבילה."
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:278
 #, elixir-format
 msgid "Unexpected error occurred while removing file from pack."
-msgstr ""
+msgstr "אירעה שגיאה לא צפויה בזמן הסרת הקובץ מהחבילה."
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:250
 #, elixir-format
 msgid "Unexpected error occurred while updating file in pack."
-msgstr ""
+msgstr "אירעה שגיאה לא צפויה בזמן עדכון הקובץ מהחבילה."
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:179
 #, elixir-format
 msgid "Unexpected error occurred while updating pack metadata."
-msgstr ""
+msgstr "אירעה שגיאה לא צפויה בזמן עדכון מטא-דאטה של החבילה."
 
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:61
 #, elixir-format
 msgid "Web push subscription is disabled on this Pleroma instance"
-msgstr ""
+msgstr "הרשמה לעדכון ווב בדחיפה מבוטלת בשרת פלרומה זה"
 
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:451
 #, elixir-format
 msgid "You can't revoke your own admin/moderator status."
-msgstr ""
+msgstr "לא ניתן לשלול את סטטוס האדמין/מנהל של עצמך."
 
 #: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:126
 #, elixir-format
 msgid "authorization required for timeline view"
-msgstr ""
+msgstr "הרשאה דרושה על מנת לצפות בציר הזמן"
 
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:24
 #, elixir-format
 msgid "Access denied"
-msgstr ""
+msgstr "גישה נדחית"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:282
 #, elixir-format
 msgid "This API requires an authenticated user"
-msgstr ""
+msgstr "ה-API דורש הרשאת משתמש"
 
 #: lib/pleroma/plugs/user_is_admin_plug.ex:21
 #, elixir-format
 msgid "User is not an admin."
-msgstr ""
+msgstr "משתמש אינו מנהל."
