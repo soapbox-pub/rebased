@@ -4,7 +4,7 @@ COPY . .
 
 ENV MIX_ENV=prod
 
-RUN apk add git gcc g++ musl-dev make cmake &&\
+RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
 	echo "import Mix.Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
@@ -33,7 +33,7 @@ ARG DATA=/var/lib/pleroma
 
 RUN echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
 	apk update &&\
-	apk add exiftool imagemagick ncurses postgresql-client &&\
+	apk add exiftool imagemagick libmagic ncurses postgresql-client &&\
 	adduser --system --shell /bin/false --home ${HOME} pleroma &&\
 	mkdir -p ${DATA}/uploads &&\
 	mkdir -p ${DATA}/static &&\
