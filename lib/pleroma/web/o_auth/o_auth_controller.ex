@@ -363,7 +363,15 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def token_revoke(%Plug.Conn{} = conn, %{"token" => _token} = params) do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
-         {:ok, _token} <- RevokeToken.revoke(app, params) do
+         {:ok, %Token{} = oauth_token} <- RevokeToken.revoke(app, params) do
+      conn =
+        with session_token = get_session(conn, :oauth_token),
+             %Token{token: ^session_token} <- oauth_token do
+          delete_session(conn, :oauth_token)
+        else
+          _ -> conn
+        end
+
       json(conn, %{})
     else
       _error ->

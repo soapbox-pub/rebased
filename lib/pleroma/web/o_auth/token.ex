@@ -27,6 +27,14 @@ defmodule Pleroma.Web.OAuth.Token do
     timestamps()
   end
 
+  @doc "Gets token by unique access token"
+  @spec get_by_token(String.t()) :: {:ok, t()} | {:error, :not_found}
+  def get_by_token(token) do
+    token
+    |> Query.get_by_token()
+    |> Repo.find_resource()
+  end
+
   @doc "Gets token for app by access token"
   @spec get_by_token(App.t(), String.t()) :: {:ok, t()} | {:error, :not_found}
   def get_by_token(%App{id: app_id} = _app, token) do

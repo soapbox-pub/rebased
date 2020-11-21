@@ -34,6 +34,7 @@ defmodule Pleroma.Web.Router do
     plug(:fetch_session)
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
   end
 
   pipeline :expect_authentication do
@@ -48,7 +49,6 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
-    plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Web.Plugs.AuthenticationPlug)
   end
 
@@ -319,17 +319,23 @@ defmodule Pleroma.Web.Router do
   scope "/oauth", Pleroma.Web.OAuth do
     scope [] do
       pipe_through(:oauth)
+
       get("/authorize", OAuthController, :authorize)
+      post("/authorize", OAuthController, :create_authorization)
     end
 
-    post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
-    post("/revoke", OAuthController, :token_revoke)
     get("/registration_details", OAuthController, :registration_details)
 
     post("/mfa/challenge", MFAController, :challenge)
     post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
     get("/mfa", MFAController, :show)
+
+    scope [] do
+      pipe_through(:fetch_session)
+
+      post("/revoke", OAuthController, :token_revoke)
+    end
 
     scope [] do
       pipe_through(:browser)

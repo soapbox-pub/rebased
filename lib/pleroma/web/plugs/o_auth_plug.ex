@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.OAuthPlug do
+  @moduledoc "Performs OAuth authentication by token from params / headers / cookies."
+
   import Plug.Conn
   import Ecto.Query
 
@@ -17,45 +19,26 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
-  def call(%{params: %{"access_token" => access_token}} = conn, _) do
-    with {:ok, user, token_record} <- fetch_user_and_token(access_token) do
-      conn
-      |> assign(:token, token_record)
-      |> assign(:user, user)
-    else
-      _ ->
-        # token found, but maybe only with app
-        with {:ok, app, token_record} <- fetch_app_and_token(access_token) do
-          conn
-          |> assign(:token, token_record)
-          |> assign(:app, app)
-        else
-          _ -> conn
-        end
-    end
-  end
-
   def call(conn, _) do
-    case fetch_token_str(conn) do
-      {:ok, token} ->
-        with {:ok, user, token_record} <- fetch_user_and_token(token) do
-          conn
-          |> assign(:token, token_record)
-          |> assign(:user, user)
-        else
-          _ ->
-            # token found, but maybe only with app
-            with {:ok, app, token_record} <- fetch_app_and_token(token) do
-              conn
-              |> assign(:token, token_record)
-              |> assign(:app, app)
-            else
-              _ -> conn
-            end
-        end
-
-      _ ->
+    with {:ok, token_str} <- fetch_token_str(conn) do
+      with {:ok, user, user_token} <- fetch_user_and_token(token_str),
+           false <- Token.is_expired?(user_token) do
         conn
+        |> assign(:token, user_token)
+        |> assign(:user, user)
+      else
+        _ ->
+          with {:ok, app, app_token} <- fetch_app_and_token(token_str),
+               false <- Token.is_expired?(app_token) do
+            conn
+            |> assign(:token, app_token)
+            |> assign(:app, app)
+          else
+            _ -> conn
+          end
+      end
+    else
+      _ -> conn
     end
   end
 
@@ -70,7 +53,6 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
         preload: [user: user]
       )
 
-    # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
     with %Token{user: user} = token_record <- Repo.one(query) do
       {:ok, user, token_record}
     end
@@ -86,28 +68,22 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
     end
   end
 
-  # Gets token from session by :oauth_token key
+  # Gets token string from conn (in params / headers / session)
   #
-  @spec fetch_token_from_session(Plug.Conn.t()) :: :no_token_found | {:ok, String.t()}
-  defp fetch_token_from_session(conn) do
-    case get_session(conn, :oauth_token) do
-      nil -> :no_token_found
-      token -> {:ok, token}
-    end
+  @spec fetch_token_str(Plug.Conn.t() | list(String.t())) :: :no_token_found | {:ok, String.t()}
+  defp fetch_token_str(%Plug.Conn{params: %{"access_token" => access_token}} = _conn) do
+    {:ok, access_token}
   end
 
-  # Gets token from headers
-  #
-  @spec fetch_token_str(Plug.Conn.t()) :: :no_token_found | {:ok, String.t()}
   defp fetch_token_str(%Plug.Conn{} = conn) do
     headers = get_req_header(conn, "authorization")
 
-    with :no_token_found <- fetch_token_str(headers),
-         do: fetch_token_from_session(conn)
+    with {:ok, token} <- fetch_token_str(headers) do
+      {:ok, token}
+    else
+      _ -> fetch_token_from_session(conn)
+    end
   end
-
-  @spec fetch_token_str(Keyword.t()) :: :no_token_found | {:ok, String.t()}
-  defp fetch_token_str([]), do: :no_token_found
 
   defp fetch_token_str([token | tail]) do
     trimmed_token = String.trim(token)
@@ -115,6 +91,16 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
     case Regex.run(@realm_reg, trimmed_token) do
       [_, match] -> {:ok, String.trim(match)}
       _ -> fetch_token_str(tail)
+    end
+  end
+
+  defp fetch_token_str([]), do: :no_token_found
+
+  @spec fetch_token_from_session(Plug.Conn.t()) :: :no_token_found | {:ok, String.t()}
+  defp fetch_token_from_session(conn) do
+    case get_session(conn, :oauth_token) do
+      nil -> :no_token_found
+      token -> {:ok, token}
     end
   end
 end

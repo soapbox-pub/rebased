@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.User
   alias Pleroma.Web.Plugs.SetUserSessionIdPlug
 
   setup %{conn: conn} do
@@ -18,28 +17,26 @@ defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
     conn =
       conn
       |> Plug.Session.call(Plug.Session.init(session_opts))
-      |> fetch_session
+      |> fetch_session()
 
     %{conn: conn}
   end
 
   test "doesn't do anything if the user isn't set", %{conn: conn} do
-    ret_conn =
-      conn
-      |> SetUserSessionIdPlug.call(%{})
+    ret_conn = SetUserSessionIdPlug.call(conn, %{})
 
     assert ret_conn == conn
   end
 
-  test "sets the user_id in the session to the user id of the user assign", %{conn: conn} do
-    Code.ensure_compiled(Pleroma.User)
+  test "sets :oauth_token in session to :token assign", %{conn: conn} do
+    %{user: user, token: oauth_token} = oauth_access(["read"])
 
-    conn =
+    ret_conn =
       conn
-      |> assign(:user, %User{id: 1})
+      |> assign(:user, user)
+      |> assign(:token, oauth_token)
       |> SetUserSessionIdPlug.call(%{})
 
-    id = get_session(conn, :user_id)
-    assert id == 1
+    assert get_session(ret_conn, :oauth_token) == oauth_token.token
   end
 end
