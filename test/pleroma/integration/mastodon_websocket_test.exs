@@ -49,6 +49,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   test "allows public streams without authentication" do
     assert {:ok, _} = start_socket("?stream=public")
     assert {:ok, _} = start_socket("?stream=public:local")
+    assert {:ok, _} = start_socket("?stream=public:remote&instance=lain.com")
     assert {:ok, _} = start_socket("?stream=hashtag&tag=lain")
   end
 

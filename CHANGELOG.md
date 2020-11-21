@@ -1,47 +1,90 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+- Polls now always return a `voters_count`, even if they are single-choice.
+- Admin Emails: The ap id is used as the user link in emails now.
+
 ### Added
-- Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
-- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
-- Mix task option for force-unfollowing relays
-- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
-- Pleroma API: Importing the mutes users from CSV files.
+
+- Reports now generate notifications for admins and mods.
 - Experimental websocket-based federation between Pleroma instances.
-- Support pagination of blocks and mutes
-- App metrics: ability to restrict access to specified IP whitelist.
-- Account backup
+- Support for local-only statuses
+- Support pagination of blocks and mutes.
+- Account backup.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
+- Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
+- The site title is now injected as a `title` tag like preloads or metadata.
+- Password reset tokens now are not accepted after a certain age.
+
+<details>
+  <summary>API Changes</summary>
+- Admin API: (`GET /api/pleroma/admin/users`) filter users by `unconfirmed` status and `actor_type`.
+- Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
+- Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
+- Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
+- Admin API: An endpoint to manage frontends
+
+</details>
+
+### Fixed
+
+- Users with `is_discoverable` field set to false (default value) will appear in in-service search results but be hidden from external services (search bots etc.).
+
+<details>
+  <summary>API Changes</summary>
+  - Mastodon API: Current user is now included in conversation if it's the only participant.
+  - Mastodon API: Fixed last_status.account being not filled with account data.
+</details>
+
+## Unreleased (Patch)
+
+### Changed
+
+### Fixed
+
+- Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
+- Search: RUM index search speed has been fixed.
+- S3 Uploads with Elixir 1.11.
+- Emoji Reaction activity filtering from blocked and muted accounts.
+- Mix task pleroma.user delete_activities for source installations.
+- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
+- Forwarded reports duplication from Pleroma instances.
+
+<details>
+  <summary>API</summary>
+- Statuses were not displayed for Mastodon forwarded reports.
+
+</details>
+
+## [2.2.0] - 2020-11-12
+
+### Security
+
+- Fixed the possibility of using file uploads to spoof posts.
 
 ### Changed
 
 - **Breaking** Requires `libmagic` (or `file`) to guess file types.
+- **Breaking:** App metrics endpoint (`/api/pleroma/app_metrics`) is disabled by default, check `docs/API/prometheus.md` on enabling and configuring.
 - **Breaking:** Pleroma Admin API: emoji packs and files routes changed.
 - **Breaking:** Sensitive/NSFW statuses no longer disable link previews.
-- **Breaking:** App metrics endpoint (`/api/pleroma/app_metrics`) is disabled by default, check `docs/API/prometheus.md` on enabling and configuring. 
 - Search: Users are now findable by their urls.
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 - The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
-- Users with the `discoverable` field set to false will not show up in searches.
+- Users with the `is_discoverable` field set to false will not show up in searches ([bug](https://git.pleroma.social/pleroma/pleroma/-/issues/2301)).
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 - Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
-- Polls now always return a `voters_count`, even if they are single-choice
-
-<details>
+- <details>
   <summary>API Changes</summary>
-
-- Pleroma API: Importing the mutes users from CSV files.
-- Admin API: Importing emoji from a zip file
-- Pleroma API: Pagination for remote/local packs and emoji.
-- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `unconfirmed` status
-- Admin API: (`GET /api/pleroma/admin/users`) added filters user by `actor_type`
-- Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
-
+- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
 </details>
 
 ### Removed
@@ -52,20 +95,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed `:managed_config` option. In practice, it was accidentally removed with 2.0.0 release when frontends were
 switched to a new configuration mechanism, however it was not officially removed until now.
 
+### Added
+
+- Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
+- Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
+- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task option for force-unfollowing relays
+- App metrics: ability to restrict access to specified IP whitelist.
+
+<details>
+  <summary>API Changes</summary>
+
+- Admin API: Importing emoji from a zip file
+- Pleroma API: Importing the mutes users from CSV files.
+- Pleroma API: Pagination for remote/local packs and emoji.
+
+</details>
+
 ### Fixed
 
 - Add documented-but-missing chat pagination.
 - Allow sending out emails again.
-- Allow sending chat messages to yourself.
-- Fix remote users with a whitespace name.
+- Allow sending chat messages to yourself
 - OStatus / static FE endpoints: fixed inaccessibility for anonymous users on non-federating instances, switched to handling per `:restrict_unauthenticated` setting.
-- Mastodon API: Current user is now included in conversation if it's the only participant
-- Mastodon API: Fixed last_status.account being not filled with account data
+- Fix remote users with a whitespace name.
 
-## Unreleased (Patch)
+### Upgrade notes
 
-### Changed
-- API: Empty parameter values for integer parameters are now ignored in non-strict validaton mode.
+1. Install libmagic and development headers (`libmagic-dev` on Ubuntu/Debian, `file-dev` on Alpine Linux)
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+3. Restart Pleroma
 
 ## [2.1.2] - 2020-09-17
 

@@ -57,6 +57,7 @@ defmodule Pleroma.Application do
     setup_instrumenters()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
+    limiters_setup()
 
     adapter = Application.get_env(:tesla, :adapter)
 
@@ -207,8 +208,7 @@ defmodule Pleroma.Application do
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]},
-      Pleroma.Web.FedSockets.Supervisor
+       ]}
     ]
   end
 
@@ -273,4 +273,10 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(_, _), do: []
+
+  @spec limiters_setup() :: :ok
+  def limiters_setup do
+    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.MediaProxy]
+    |> Enum.each(&ConcurrentLimiter.new(&1, 1, 0))
+  end
 end

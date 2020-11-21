@@ -243,6 +243,9 @@ defmodule Pleroma.Web.Router do
     get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
 
+    get("/frontends", FrontendController, :index)
+    post("/frontends/install", FrontendController, :install)
+
     post("/backups", AdminAPIController, :create_backup)
   end
 
@@ -403,6 +406,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
     get("/accounts/:id/scrobbles", ScrobbleController, :index)
+    get("/federation_status", InstancesController, :show)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

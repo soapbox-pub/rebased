@@ -48,4 +48,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   @impl true
   def describe,
     do: {:ok, %{mrf_rejectnonpublic: Config.get(:mrf_rejectnonpublic) |> Enum.into(%{})}}
+
+  @impl true
+  def config_description do
+    %{
+      key: :mrf_rejectnonpublic,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.RejectNonPublic",
+      description: "RejectNonPublic drops posts with non-public visibility settings.",
+      label: "MRF Reject Non Public",
+      children: [
+        %{
+          key: :allow_followersonly,
+          label: "Allow followers-only",
+          type: :boolean,
+          description: "Whether to allow followers-only posts"
+        },
+        %{
+          key: :allow_direct,
+          type: :boolean,
+          description: "Whether to allow direct messages"
+        }
+      ]
+    }
+  end
 end

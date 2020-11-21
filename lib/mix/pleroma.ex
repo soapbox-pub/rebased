@@ -14,11 +14,12 @@ defmodule Mix.Pleroma do
     :swoosh,
     :timex
   ]
-  @cachex_children ["object", "user", "scrubber"]
+  @cachex_children ["object", "user", "scrubber", "web_resp"]
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Pleroma.Config.Holder.save_default()
     Pleroma.Config.Oban.warn()
+    Pleroma.Application.limiters_setup()
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
 
     if Pleroma.Config.get(:env) != :test do

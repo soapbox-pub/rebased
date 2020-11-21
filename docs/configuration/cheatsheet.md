@@ -63,6 +63,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
+* `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
@@ -219,18 +220,6 @@ config :pleroma, :mrf_user_allowlist, %{
 * `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
-
-## FedSockets
-FedSockets is an experimental feature allowing for Pleroma backends to federate using a persistant websocket connection as opposed to making each federation a seperate http connection. This feature is currently off by default. It is configurable throught he following options.
-
-### :fedsockets
-* `enabled`: Enables FedSockets for this instance. `false` by default.
-* `connection_duration`: Time an idle websocket is kept open.
-* `rejection_duration`: Failures to connect via FedSockets will not be retried for this period of time.
-* `fed_socket_fetches` and `fed_socket_rejections`: Settings passed to `cachex` for the fetch registry, and rejection stacks. See `Pleroma.Web.FedSockets` for more details.
-
-
-## Frontends
 
 ### :frontend_configurations
 

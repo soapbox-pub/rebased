@@ -48,7 +48,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
     clear_config([:rich_media, :enabled], true)
 
-    Tesla.Mock.mock(fn
+    Tesla.Mock.mock_global(fn
       %{url: "https://example.com/ogp"} ->
         %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
     end)

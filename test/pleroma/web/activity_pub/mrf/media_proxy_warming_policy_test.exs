@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
-  use Pleroma.DataCase
+  use ExUnit.Case
+  use Pleroma.Tests.Helpers
 
   alias Pleroma.HTTP
-  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
 
   import Mock
@@ -25,12 +25,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
   setup do: clear_config([:media_proxy, :enabled], true)
 
   test "it prefetches media proxy URIs" do
+    Tesla.Mock.mock(fn %{method: :get, url: "http://example.com/image.jpg"} ->
+      {:ok, %Tesla.Env{status: 200, body: ""}}
+    end)
+
     with_mock HTTP, get: fn _, _, _ -> {:ok, []} end do
       MediaProxyWarmingPolicy.filter(@message)
-
-      ObanHelpers.perform_all()
-      # Performing jobs which has been just enqueued
-      ObanHelpers.perform_all()
 
       assert called(HTTP.get(:_, :_, :_))
     end

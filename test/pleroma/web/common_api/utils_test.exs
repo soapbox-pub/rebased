@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.CommonAPI.Utils
   use Pleroma.DataCase
 
@@ -235,9 +236,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for public posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "public"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "public", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert length(cc) == 1
@@ -252,9 +253,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "public",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 3
       assert length(cc) == 1
@@ -268,9 +275,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for unlisted posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "unlisted"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "unlisted", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert length(cc) == 1
@@ -285,9 +292,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "unlisted",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 3
       assert length(cc) == 1
@@ -301,9 +314,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for private posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "private"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
       assert length(to) == 2
       assert Enum.empty?(cc)
 
@@ -316,9 +329,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "private",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert Enum.empty?(cc)
@@ -330,9 +349,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for direct posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "direct"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 1
       assert Enum.empty?(cc)
@@ -345,9 +364,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "direct",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 1
       assert Enum.empty?(cc)
@@ -356,7 +381,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       {:ok, direct_activity} = CommonAPI.post(third_user, %{status: "uguu", visibility: "direct"})
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, direct_activity, "direct", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "direct",
+        in_reply_to: direct_activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert Enum.empty?(cc)
@@ -532,26 +564,26 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "make_note_data/11" do
+  describe "make_note_data/1" do
     test "returns note data" do
       user = insert(:user)
       note = insert(:note)
       user2 = insert(:user)
       user3 = insert(:user)
 
-      assert Utils.make_note_data(
-               user.ap_id,
-               [user2.ap_id],
-               "2hu",
-               "<h1>This is :moominmamma: note</h1>",
-               [],
-               note.id,
-               [name: "jimm"],
-               "test summary",
-               [user3.ap_id],
-               false,
-               %{"custom_tag" => "test"}
-             ) == %{
+      draft = %ActivityDraft{
+        user: user,
+        to: [user2.ap_id],
+        context: "2hu",
+        content_html: "<h1>This is :moominmamma: note</h1>",
+        in_reply_to: note.id,
+        tags: [name: "jimm"],
+        summary: "test summary",
+        cc: [user3.ap_id],
+        extra: %{"custom_tag" => "test"}
+      }
+
+      assert Utils.make_note_data(draft) == %{
                "actor" => user.ap_id,
                "attachment" => [],
                "cc" => [user3.ap_id],

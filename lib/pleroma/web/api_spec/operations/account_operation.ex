@@ -139,6 +139,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :query,
             %Schema{type: :array, items: VisibilityScope},
             "Exclude visibilities"
+          ),
+          Operation.parameter(
+            :with_muted,
+            :query,
+            BooleanLike,
+            "Include reactions from muted acccounts."
           )
         ] ++ pagination_params(),
       responses: %{
@@ -262,6 +268,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           :query,
           %Schema{allOf: [BooleanLike], default: true},
           "Mute notifications in addition to statuses? Defaults to `true`."
+        ),
+        Operation.parameter(
+          :expires_in,
+          :query,
+          %Schema{type: :integer, default: 0},
+          "Expire the mute in `expires_in` seconds. Default 0 for infinity"
         )
       ],
       responses: %{
@@ -612,7 +624,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           nullable: true,
           description:
-            "Discovery of this account in search results and other services is allowed."
+            "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
         actor_type: ActorType
       },
@@ -723,10 +735,17 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "Mute notifications in addition to statuses? Defaults to true.",
           default: true
+        },
+        expires_in: %Schema{
+          type: :integer,
+          nullable: true,
+          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity",
+          default: 0
         }
       },
       example: %{
-        "notifications" => true
+        "notifications" => true,
+        "expires_in" => 86_400
       }
     }
   end

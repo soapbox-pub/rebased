@@ -245,6 +245,18 @@ defmodule Pleroma.User do
     end
   end
 
+  def cached_blocked_users_ap_ids(user) do
+    Cachex.fetch!(:user_cache, "blocked_users_ap_ids:#{user.ap_id}", fn _ ->
+      blocked_users_ap_ids(user)
+    end)
+  end
+
+  def cached_muted_users_ap_ids(user) do
+    Cachex.fetch!(:user_cache, "muted_users_ap_ids:#{user.ap_id}", fn _ ->
+      muted_users_ap_ids(user)
+    end)
+  end
+
   defdelegate following_count(user), to: FollowingRelationship
   defdelegate following(user), to: FollowingRelationship
   defdelegate following?(follower, followed), to: FollowingRelationship
@@ -1036,6 +1048,8 @@ defmodule Pleroma.User do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
     Cachex.del(:user_cache, "friends_ap_ids:#{user.ap_id}")
+    Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+    Cachex.del(:user_cache, "muted_users_ap_ids:#{user.ap_id}")
   end
 
   @spec get_cached_by_ap_id(String.t()) :: User.t() | nil
@@ -1324,14 +1338,51 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  @spec mute(User.t(), User.t(), boolean()) ::
+  @spec mute(User.t(), User.t(), map()) ::
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
-  def mute(%User{} = muter, %User{} = mutee, notifications? \\ true) do
-    add_to_mutes(muter, mutee, notifications?)
+  def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
+    notifications? = Map.get(params, :notifications, true)
+    expires_in = Map.get(params, :expires_in, 0)
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+         {:ok, user_notification_mute} <-
+           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+             {:ok, nil} do
+      if expires_in > 0 do
+        Pleroma.Workers.MuteExpireWorker.enqueue(
+          "unmute_user",
+          %{"muter_id" => muter.id, "mutee_id" => mutee.id},
+          schedule_in: expires_in
+        )
+      end
+
+      Cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
+
+      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
+    end
   end
 
   def unmute(%User{} = muter, %User{} = mutee) do
-    remove_from_mutes(muter, mutee)
+    with {:ok, user_mute} <- UserRelationship.delete_mute(muter, mutee),
+         {:ok, user_notification_mute} <-
+           UserRelationship.delete_notification_mute(muter, mutee) do
+      Cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
+      {:ok, [user_mute, user_notification_mute]}
+    end
+  end
+
+  def unmute(muter_id, mutee_id) do
+    with {:muter, %User{} = muter} <- {:muter, User.get_by_id(muter_id)},
+         {:mutee, %User{} = mutee} <- {:mutee, User.get_by_id(mutee_id)} do
+      unmute(muter, mutee)
+    else
+      {who, result} = error ->
+        Logger.warn(
+          "User.unmute/2 failed. #{who}: #{result}, muter_id: #{muter_id}, mutee_id: #{mutee_id}"
+        )
+
+        {:error, error}
+    end
   end
 
   def subscribe(%User{} = subscriber, %User{} = target) do
@@ -1738,12 +1789,12 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: Config.get([:markup, :scrub_policy])
 
-  def fetch_by_ap_id(ap_id, opts \\ []), do: ActivityPub.make_user_from_ap_id(ap_id, opts)
+  def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
-  def get_or_fetch_by_ap_id(ap_id, opts \\ []) do
+  def get_or_fetch_by_ap_id(ap_id) do
     cached_user = get_cached_by_ap_id(ap_id)
 
-    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id, opts)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
 
     case {cached_user, maybe_fetched_user} do
       {_, {:ok, %User{} = user}} ->
@@ -1816,8 +1867,8 @@ defmodule Pleroma.User do
 
   def public_key(_), do: {:error, "key not found"}
 
-  def get_public_key_for_ap_id(ap_id, opts \\ []) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id, opts),
+  def get_public_key_for_ap_id(ap_id) do
+    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
@@ -2311,29 +2362,18 @@ defmodule Pleroma.User do
   @spec add_to_block(User.t(), User.t()) ::
           {:ok, UserRelationship.t()} | {:error, Ecto.Changeset.t()}
   defp add_to_block(%User{} = user, %User{} = blocked) do
-    UserRelationship.create_block(user, blocked)
+    with {:ok, relationship} <- UserRelationship.create_block(user, blocked) do
+      Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+      {:ok, relationship}
+    end
   end
 
   @spec add_to_block(User.t(), User.t()) ::
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
-    UserRelationship.delete_block(user, blocked)
-  end
-
-  defp add_to_mutes(%User{} = user, %User{} = muted_user, notifications?) do
-    with {:ok, user_mute} <- UserRelationship.create_mute(user, muted_user),
-         {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(user, muted_user)) ||
-             {:ok, nil} do
-      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
-    end
-  end
-
-  defp remove_from_mutes(user, %User{} = muted_user) do
-    with {:ok, user_mute} <- UserRelationship.delete_mute(user, muted_user),
-         {:ok, user_notification_mute} <-
-           UserRelationship.delete_notification_mute(user, muted_user) do
-      {:ok, [user_mute, user_notification_mute]}
+    with {:ok, relationship} <- UserRelationship.delete_block(user, blocked) do
+      Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+      {:ok, relationship}
     end
   end
 

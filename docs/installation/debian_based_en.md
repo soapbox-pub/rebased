@@ -35,7 +35,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-devel
+sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-dev
 ```
 
 ### Install Elixir and Erlang
@@ -182,7 +182,6 @@ sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.se
 ```
 
 * Edit the service file and make sure that all paths fit your installation
-* Check that `EnvironmentFile` contains the correct path to the env file. Or generate the env file: `sudo -Hu pleroma mix pleroma.release_env gen`
 * Enable and start `pleroma.service`:
 
 ```shell

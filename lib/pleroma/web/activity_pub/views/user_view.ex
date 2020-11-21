@@ -110,6 +110,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "endpoints" => endpoints,
       "attachment" => fields,
       "tag" => emoji_tags,
+      # Note: key name is indeed "discoverable" (not an error)
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities
     }

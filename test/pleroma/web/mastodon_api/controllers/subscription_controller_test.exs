@@ -45,13 +45,62 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     end
   end
 
-  describe "creates push subscription" do
-    test "returns error when push disabled ", %{conn: conn} do
+  describe "when disabled" do
+    test "POST returns error", %{conn: conn} do
       assert_error_when_disable_push do
         conn
-        |> post("/api/v1/push/subscription", %{subscription: @sub})
+        |> post("/api/v1/push/subscription", %{
+          "data" => %{"alerts" => %{"mention" => true}},
+          "subscription" => @sub
+        })
         |> json_response_and_validate_schema(403)
       end
+    end
+
+    test "GET returns error", %{conn: conn} do
+      assert_error_when_disable_push do
+        conn
+        |> get("/api/v1/push/subscription", %{})
+        |> json_response_and_validate_schema(403)
+      end
+    end
+
+    test "PUT returns error", %{conn: conn} do
+      assert_error_when_disable_push do
+        conn
+        |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
+        |> json_response_and_validate_schema(403)
+      end
+    end
+
+    test "DELETE returns error", %{conn: conn} do
+      assert_error_when_disable_push do
+        conn
+        |> delete("/api/v1/push/subscription", %{})
+        |> json_response_and_validate_schema(403)
+      end
+    end
+  end
+
+  describe "creates push subscription" do
+    test "ignores unsupported types", %{conn: conn} do
+      result =
+        conn
+        |> post("/api/v1/push/subscription", %{
+          "data" => %{
+            "alerts" => %{
+              "fake_unsupported_type" => true
+            }
+          },
+          "subscription" => @sub
+        })
+        |> json_response_and_validate_schema(200)
+
+      refute %{
+               "alerts" => %{
+                 "fake_unsupported_type" => true
+               }
+             } == result
     end
 
     test "successful creation", %{conn: conn} do
@@ -59,7 +108,14 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
         conn
         |> post("/api/v1/push/subscription", %{
           "data" => %{
-            "alerts" => %{"mention" => true, "test" => true, "pleroma:chat_mention" => true}
+            "alerts" => %{
+              "mention" => true,
+              "favourite" => true,
+              "follow" => true,
+              "reblog" => true,
+              "pleroma:chat_mention" => true,
+              "pleroma:emoji_reaction" => true
+            }
           },
           "subscription" => @sub
         })
@@ -68,7 +124,14 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       [subscription] = Pleroma.Repo.all(Subscription)
 
       assert %{
-               "alerts" => %{"mention" => true, "pleroma:chat_mention" => true},
+               "alerts" => %{
+                 "mention" => true,
+                 "favourite" => true,
+                 "follow" => true,
+                 "reblog" => true,
+                 "pleroma:chat_mention" => true,
+                 "pleroma:emoji_reaction" => true
+               },
                "endpoint" => subscription.endpoint,
                "id" => to_string(subscription.id),
                "server_key" => @server_key
@@ -77,14 +140,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
   end
 
   describe "gets a user subscription" do
-    test "returns error when push disabled ", %{conn: conn} do
-      assert_error_when_disable_push do
-        conn
-        |> get("/api/v1/push/subscription", %{})
-        |> json_response_and_validate_schema(403)
-      end
-    end
-
     test "returns error when user hasn't subscription", %{conn: conn} do
       res =
         conn
@@ -124,30 +179,47 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
         insert(:push_subscription,
           user: user,
           token: token,
-          data: %{"alerts" => %{"mention" => true}}
+          data: %{
+            "alerts" => %{
+              "mention" => true,
+              "favourite" => true,
+              "follow" => true,
+              "reblog" => true,
+              "pleroma:chat_mention" => true,
+              "pleroma:emoji_reaction" => true
+            }
+          }
         )
 
       %{conn: conn, user: user, token: token, subscription: subscription}
-    end
-
-    test "returns error when push disabled ", %{conn: conn} do
-      assert_error_when_disable_push do
-        conn
-        |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
-        |> json_response_and_validate_schema(403)
-      end
     end
 
     test "returns updated subsciption", %{conn: conn, subscription: subscription} do
       res =
         conn
         |> put("/api/v1/push/subscription", %{
-          data: %{"alerts" => %{"mention" => false, "follow" => true}}
+          data: %{
+            "alerts" => %{
+              "mention" => false,
+              "favourite" => false,
+              "follow" => false,
+              "reblog" => false,
+              "pleroma:chat_mention" => false,
+              "pleroma:emoji_reaction" => false
+            }
+          }
         })
         |> json_response_and_validate_schema(200)
 
       expect = %{
-        "alerts" => %{"follow" => true, "mention" => false},
+        "alerts" => %{
+          "mention" => false,
+          "favourite" => false,
+          "follow" => false,
+          "reblog" => false,
+          "pleroma:chat_mention" => false,
+          "pleroma:emoji_reaction" => false
+        },
         "endpoint" => "https://example.com/example/1234",
         "id" => to_string(subscription.id),
         "server_key" => @server_key
@@ -158,14 +230,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
   end
 
   describe "deletes the user subscription" do
-    test "returns error when push disabled ", %{conn: conn} do
-      assert_error_when_disable_push do
-        conn
-        |> delete("/api/v1/push/subscription", %{})
-        |> json_response_and_validate_schema(403)
-      end
-    end
-
     test "returns error when user hasn't subscription", %{conn: conn} do
       res =
         conn

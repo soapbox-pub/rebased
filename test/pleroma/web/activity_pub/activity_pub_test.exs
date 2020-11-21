@@ -1298,6 +1298,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert_called(Utils.maybe_federate(%{activity | data: new_data}))
     end
+
+    test_with_mock "reverts on error",
+                   %{
+                     reporter: reporter,
+                     context: context,
+                     target_account: target_account,
+                     reported_activity: reported_activity,
+                     content: content
+                   },
+                   Utils,
+                   [:passthrough],
+                   maybe_federate: fn _ -> {:error, :reverted} end do
+      assert {:error, :reverted} =
+               ActivityPub.flag(%{
+                 actor: reporter,
+                 context: context,
+                 account: target_account,
+                 statuses: [reported_activity],
+                 content: content
+               })
+
+      assert Repo.aggregate(Activity, :count, :id) == 1
+      assert Repo.aggregate(Object, :count, :id) == 2
+      assert Repo.aggregate(Notification, :count, :id) == 0
+    end
   end
 
   test "fetch_activities/2 returns activities addressed to a list " do
@@ -1426,19 +1451,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       mock(fn env ->
         case env.url do
           "http://localhost:4001/users/masto_hidden_counters/following" ->
-            json(%{
-              "@context" => "https://www.w3.org/ns/activitystreams",
-              "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
-            })
+            json(
+              %{
+                "@context" => "https://www.w3.org/ns/activitystreams",
+                "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+              },
+              headers: HttpRequestMock.activitypub_object_headers()
+            )
 
           "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
           "http://localhost:4001/users/masto_hidden_counters/followers" ->
-            json(%{
-              "@context" => "https://www.w3.org/ns/activitystreams",
-              "id" => "http://localhost:4001/users/masto_hidden_counters/following"
-            })
+            json(
+              %{
+                "@context" => "https://www.w3.org/ns/activitystreams",
+                "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+              },
+              headers: HttpRequestMock.activitypub_object_headers()
+            )
 
           "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
             %Tesla.Env{status: 403, body: ""}
@@ -2278,7 +2309,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     Tesla.Mock.mock(fn
       %{method: :get, url: "https://princess.cat/users/mewmew"} ->
         file = File.read!("test/fixtures/mewmew_no_name.json")
-        %Tesla.Env{status: 200, body: file}
+        %Tesla.Env{status: 200, body: file, headers: HttpRequestMock.activitypub_object_headers()}
     end)
 
     {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")

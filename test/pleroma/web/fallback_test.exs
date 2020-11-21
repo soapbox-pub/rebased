@@ -20,15 +20,26 @@ defmodule Pleroma.Web.FallbackTest do
     end
   end
 
+  test "GET /*path adds a title", %{conn: conn} do
+    clear_config([:instance, :name], "a cool title")
+
+    assert conn
+           |> get("/")
+           |> html_response(200) =~ "<title>a cool title</title>"
+  end
+
   describe "preloaded data and metadata attached to" do
     test "GET /:maybe_nickname_or_id", %{conn: conn} do
+      clear_config([:instance, :name], "a cool title")
+
       user = insert(:user)
       user_missing = get(conn, "/foo")
       user_present = get(conn, "/#{user.nickname}")
 
-      assert(html_response(user_missing, 200) =~ "<!--server-generated-meta-->")
+      assert html_response(user_missing, 200) =~ "<!--server-generated-meta-->"
       refute html_response(user_present, 200) =~ "<!--server-generated-meta-->"
       assert html_response(user_present, 200) =~ "initial-results"
+      assert html_response(user_present, 200) =~ "<title>a cool title</title>"
     end
 
     test "GET /*path", %{conn: conn} do
@@ -44,10 +55,13 @@ defmodule Pleroma.Web.FallbackTest do
 
   describe "preloaded data is attached to" do
     test "GET /main/public", %{conn: conn} do
+      clear_config([:instance, :name], "a cool title")
+
       public_page = get(conn, "/main/public")
 
       refute html_response(public_page, 200) =~ "<!--server-generated-meta-->"
       assert html_response(public_page, 200) =~ "initial-results"
+      assert html_response(public_page, 200) =~ "<title>a cool title</title>"
     end
 
     test "GET /main/all", %{conn: conn} do
