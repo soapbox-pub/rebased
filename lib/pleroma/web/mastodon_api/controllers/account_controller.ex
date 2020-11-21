@@ -208,7 +208,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
+      # Note: param name is indeed :locked (not an error)
       |> Maps.put_if_present(:is_locked, params[:locked])
+      # Note: param name is indeed :discoverable (not an error)
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
 
     # What happens here:
@@ -292,7 +294,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> render("index.json",
         activities: activities,
         for: reading_user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       error -> user_visibility_error(conn, error)

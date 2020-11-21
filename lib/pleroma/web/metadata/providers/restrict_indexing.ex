@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Metadata.Providers.RestrictIndexing do
   @behaviour Pleroma.Web.Metadata.Providers.Provider
 
   @moduledoc """
-  Restricts indexing of remote users.
+  Restricts indexing of remote and/or non-discoverable users.
   """
 
   @impl true

@@ -328,7 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "posting a status with OGP link preview", %{conn: conn} do
-      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
       clear_config([:rich_media, :enabled], true)
 
       conn =
@@ -1197,7 +1197,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "returns rich-media card", %{conn: conn, user: user} do
-      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp"})
 
@@ -1242,7 +1242,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp-missing-data"})
 
@@ -1739,5 +1739,95 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              conn
              |> get("/api/v1/statuses/#{activity.id}")
              |> json_response_and_validate_schema(:ok)
+  end
+
+  test "posting a local only status" do
+    %{user: _user, conn: conn} = oauth_access(["write:statuses"])
+
+    conn_one =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/statuses", %{
+        "status" => "cofe",
+        "visibility" => "local"
+      })
+
+    local = Pleroma.Constants.as_local_public()
+
+    assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
+             json_response(conn_one, 200)
+
+    assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+  end
+
+  describe "muted reactions" do
+    test "index" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/statuses/?ids[]=#{activity.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/statuses/?ids[]=#{activity.id}&with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
+
+    test "show" do
+      # %{conn: conn, user: user, token: token} = oauth_access(["read:statuses"])
+      %{conn: conn, user: user, token: _token} = oauth_access(["read:statuses"])
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert %{
+               "pleroma" => %{
+                 "emoji_reactions" => []
+               }
+             } = result
+
+      result =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert %{
+               "pleroma" => %{
+                 "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+               }
+             } = result
+    end
   end
 end

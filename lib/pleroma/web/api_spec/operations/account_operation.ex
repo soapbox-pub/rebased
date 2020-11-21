@@ -139,6 +139,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :query,
             %Schema{type: :array, items: VisibilityScope},
             "Exclude visibilities"
+          ),
+          Operation.parameter(
+            :with_muted,
+            :query,
+            BooleanLike,
+            "Include reactions from muted acccounts."
           )
         ] ++ pagination_params(),
       responses: %{
@@ -618,7 +624,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           nullable: true,
           description:
-            "Discovery of this account in search results and other services is allowed."
+            "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
         actor_type: ActorType
       },

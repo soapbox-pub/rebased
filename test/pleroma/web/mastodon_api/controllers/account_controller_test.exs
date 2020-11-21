@@ -436,6 +436,39 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_visibilities[]=direct")
       assert [%{"id" => ^public_activity_id}] = json_response_and_validate_schema(conn, 200)
     end
+
+    test "muted reactions", %{user: user, conn: conn} do
+      user2 = insert(:user)
+      User.mute(user, user2)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user2, "🎅")
+
+      result =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
   end
 
   defp local_and_remote_activities(%{local: local, remote: remote}) do

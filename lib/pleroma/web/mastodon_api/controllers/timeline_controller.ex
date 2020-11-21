@@ -62,7 +62,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity
+      as: :activity,
+      with_muted: Map.get(params, :with_muted, false)
     )
   end
 
@@ -119,7 +120,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> render("index.json",
         activities: activities,
         for: user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     end
   end
@@ -173,7 +175,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> render("index.json",
         activities: activities,
         for: user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     end
   end
@@ -202,7 +205,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       render(conn, "index.json",
         activities: activities,
         for: user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       _e -> render_error(conn, :forbidden, "Error.")

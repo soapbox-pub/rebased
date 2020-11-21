@@ -24,7 +24,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
-  alias Pleroma.Workers.BackgroundWorker
 
   require Logger
 
@@ -191,7 +190,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Object.increase_replies_count(in_reply_to)
       end
 
-      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
+      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
+        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
+      end)
 
       meta =
         meta

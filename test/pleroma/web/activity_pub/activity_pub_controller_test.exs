@@ -213,6 +213,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/objects/:uuid" do
+    test "it doesn't return a local-only object", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      object = Object.normalize(post, false)
+      uuid = String.split(object.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
+
     test "it returns a json representation of the object with accept application/json", %{
       conn: conn
     } do
@@ -326,6 +343,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/activities/:uuid" do
+    test "it doesn't return a local-only activity", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      uuid = String.split(post.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
+
     test "it returns a json representation of the activity", %{conn: conn} do
       activity = insert(:note_activity)
       uuid = String.split(activity.data["id"], "/") |> List.last()
@@ -765,6 +798,142 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/inbox")
 
       assert json_response(ret_conn, 200)
+    end
+
+    @tag capture_log: true
+    test "forwarded report", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      actor = insert(:user, local: false)
+      remote_domain = URI.parse(actor.ap_id).host
+      reported_user = insert(:user)
+
+      note = insert(:note_activity, user: reported_user)
+
+      data = %{
+        "@context" => [
+          "https://www.w3.org/ns/activitystreams",
+          "https://#{remote_domain}/schemas/litepub-0.1.jsonld",
+          %{
+            "@language" => "und"
+          }
+        ],
+        "actor" => actor.ap_id,
+        "cc" => [
+          reported_user.ap_id
+        ],
+        "content" => "test",
+        "context" => "context",
+        "id" => "http://#{remote_domain}/activities/02be56cf-35e3-46b4-b2c6-47ae08dfee9e",
+        "nickname" => reported_user.nickname,
+        "object" => [
+          reported_user.ap_id,
+          %{
+            "actor" => %{
+              "actor_type" => "Person",
+              "approval_pending" => false,
+              "avatar" => "",
+              "confirmation_pending" => false,
+              "deactivated" => false,
+              "display_name" => "test user",
+              "id" => reported_user.id,
+              "local" => false,
+              "nickname" => reported_user.nickname,
+              "registration_reason" => nil,
+              "roles" => %{
+                "admin" => false,
+                "moderator" => false
+              },
+              "tags" => [],
+              "url" => reported_user.ap_id
+            },
+            "content" => "",
+            "id" => note.data["id"],
+            "published" => note.data["published"],
+            "type" => "Note"
+          }
+        ],
+        "published" => note.data["published"],
+        "state" => "open",
+        "to" => [],
+        "type" => "Flag"
+      }
+
+      conn
+      |> assign(:valid_signature, true)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/#{reported_user.nickname}/inbox", data)
+      |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
+      assert Pleroma.Repo.aggregate(Activity, :count, :id) == 2
+
+      ObanHelpers.perform_all()
+
+      Swoosh.TestAssertions.assert_email_sent(
+        to: {admin.name, admin.email},
+        html_body: ~r/Reported Account:/i
+      )
+    end
+
+    @tag capture_log: true
+    test "forwarded report from mastodon", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      actor = insert(:user, local: false)
+      remote_domain = URI.parse(actor.ap_id).host
+      remote_actor = "https://#{remote_domain}/actor"
+      [reported_user, another] = insert_list(2, :user)
+
+      note = insert(:note_activity, user: reported_user)
+
+      Pleroma.Web.CommonAPI.favorite(another, note.id)
+
+      mock_json_body =
+        "test/fixtures/mastodon/application_actor.json"
+        |> File.read!()
+        |> String.replace("{{DOMAIN}}", remote_domain)
+
+      Tesla.Mock.mock(fn %{url: ^remote_actor} ->
+        %Tesla.Env{
+          status: 200,
+          body: mock_json_body,
+          headers: [{"content-type", "application/activity+json"}]
+        }
+      end)
+
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => remote_actor,
+        "content" => "test report",
+        "id" => "https://#{remote_domain}/e3b12fd1-948c-446e-b93b-a5e67edbe1d8",
+        "nickname" => reported_user.nickname,
+        "object" => [
+          reported_user.ap_id,
+          note.data["object"]
+        ],
+        "type" => "Flag"
+      }
+
+      conn
+      |> assign(:valid_signature, true)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/#{reported_user.nickname}/inbox", data)
+      |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
+      flag_activity = "Flag" |> Pleroma.Activity.Queries.by_type() |> Pleroma.Repo.one()
+      reported_user_ap_id = reported_user.ap_id
+
+      [^reported_user_ap_id, flag_data] = flag_activity.data["object"]
+
+      Enum.each(~w(actor content id published type), &Map.has_key?(flag_data, &1))
+      ObanHelpers.perform_all()
+
+      Swoosh.TestAssertions.assert_email_sent(
+        to: {admin.name, admin.email},
+        html_body: ~r/#{note.data["object"]}/i
+      )
     end
   end
 

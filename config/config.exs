@@ -129,7 +129,6 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
-         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -264,7 +263,8 @@ config :pleroma, :instance,
       length: 16
     ]
   ],
-  show_reactions: true
+  show_reactions: true,
+  password_reset_token_validity: 60 * 60 * 24
 
 config :pleroma, :welcome,
   direct_message: [

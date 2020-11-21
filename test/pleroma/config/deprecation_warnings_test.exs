@@ -12,7 +12,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
   alias Pleroma.Config.DeprecationWarnings
 
   test "check_old_mrf_config/0" do
-    clear_config([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.NoOpPolicy)
+    clear_config([:instance, :rewrite_policy], [])
     clear_config([:instance, :mrf_transparency], true)
     clear_config([:instance, :mrf_transparency_exclusions], [])
 

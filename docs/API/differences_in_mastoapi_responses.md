@@ -18,7 +18,7 @@ Adding the parameter `instance=lain.com` to the public timeline will show only s
 
 ## Statuses
 
-- `visibility`: has an additional possible value `list`
+- `visibility`: has additional possible values `list` and `local` (for local-only statuses)
 
 Has these additional fields under the `pleroma` object:
 
@@ -84,7 +84,7 @@ Has these additional fields under the `pleroma` object:
 
 - `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
 - `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
-- `discoverable`: boolean, true when the user allows discovery of the account in search results and other services.
+- `discoverable`: boolean, true when the user allows external services (search bots) etc. to index / list the account (regardless of this setting, user will still appear in regular search results)
 - `actor_type`: string, the type of this account.
 
 ## Conversations
@@ -173,7 +173,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
 - `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
-- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
+- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted`, `local` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
 
@@ -207,7 +207,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
 - `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
-- `discoverable` - if true, discovery of this account in search results and other services is allowed.
+- `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
 
@@ -233,7 +233,7 @@ Post here request with `grant_type=refresh_token` to obtain new access token. Re
 
 `POST /api/v1/accounts`
 
-Has theses additional parameters (which are the same as in Pleroma-API):
+Has these additional parameters (which are the same as in Pleroma-API):
 
 - `fullname`: optional
 - `bio`: optional
@@ -260,6 +260,16 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `pleroma.metadata.fields_limits`: A list of values detailing the length and count limitation for various instance-configurable fields.
 - `pleroma.metadata.post_formats`: A list of the allowed post format types
 - `vapid_public_key`: The public key needed for push messages
+
+## Push Subscription
+
+`POST /api/v1/push/subscription`
+`PUT /api/v1/push/subscription`
+
+Permits these additional alert types:
+
+- pleroma:chat_mention
+- pleroma:emoji_reaction
 
 ## Markers
 

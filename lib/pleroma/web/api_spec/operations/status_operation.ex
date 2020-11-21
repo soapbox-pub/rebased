@@ -31,6 +31,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           :query,
           %Schema{type: :array, items: FlakeID},
           "Array of status IDs"
+        ),
+        Operation.parameter(
+          :with_muted,
+          :query,
+          BooleanLike,
+          "Include reactions from muted acccounts."
         )
       ],
       operationId: "StatusController.index",
@@ -67,7 +73,15 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       description: "View information about a status",
       operationId: "StatusController.show",
       security: [%{"oAuth" => ["read:statuses"]}],
-      parameters: [id_param()],
+      parameters: [
+        id_param(),
+        Operation.parameter(
+          :with_muted,
+          :query,
+          BooleanLike,
+          "Include reactions from muted acccounts."
+        )
+      ],
       responses: %{
         200 => status_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)

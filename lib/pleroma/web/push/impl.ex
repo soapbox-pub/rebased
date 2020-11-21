@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
-  @types ["Create", "Follow", "Announce", "Like", "Move"]
+  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact"]
 
   @doc "Performs sending notifications for user subscriptions"
   @spec perform(Notification.t()) :: list(any) | :error | {:error, :unknown_type}
@@ -150,6 +150,15 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def format_body(
+        %{activity: %{data: %{"type" => "EmojiReact", "content" => content}}},
+        actor,
+        _object,
+        _mastodon_type
+      ) do
+    "@#{actor.nickname} reacted with #{content}"
+  end
+
+  def format_body(
         %{activity: %{data: %{"type" => type}}} = notification,
         actor,
         _object,
@@ -179,6 +188,7 @@ defmodule Pleroma.Web.Push.Impl do
       "reblog" -> "New Repeat"
       "favourite" -> "New Favorite"
       "pleroma:chat_mention" -> "New Chat Message"
+      "pleroma:emoji_reaction" -> "New Reaction"
       type -> "New #{String.capitalize(type || "event")}"
     end
   end

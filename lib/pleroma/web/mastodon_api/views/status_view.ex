@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.PollView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.PleromaAPI.EmojiReactionController
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
@@ -294,21 +295,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     emoji_reactions =
-      with %{data: %{"reactions" => emoji_reactions}} <- object do
-        Enum.map(emoji_reactions, fn
-          [emoji, users] when is_list(users) ->
-            build_emoji_map(emoji, users, opts[:for])
-
-          {emoji, users} when is_list(users) ->
-            build_emoji_map(emoji, users, opts[:for])
-
-          _ ->
-            nil
-        end)
-        |> Enum.reject(&is_nil/1)
-      else
-        _ -> []
-      end
+      object.data
+      |> Map.get("reactions", [])
+      |> EmojiReactionController.filter_allowed_users(
+        opts[:for],
+        Map.get(opts, :with_muted, false)
+      )
+      |> Stream.map(fn {emoji, users} ->
+        build_emoji_map(emoji, users, opts[:for])
+      end)
+      |> Enum.to_list()
 
     # Status muted state (would do 1 request per status unless user mutes are preloaded)
     muted =

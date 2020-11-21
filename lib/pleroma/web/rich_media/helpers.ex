@@ -78,11 +78,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   def fetch_data_for_activity(_), do: %{}
 
-  def perform(:fetch, %Activity{} = activity) do
-    fetch_data_for_activity(activity)
-    :ok
-  end
-
   def rich_media_get(url) do
     headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
