@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
+- Improved registration workflow for email confirmation and account approval modes.
 - **Breaking:** Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
 
 ### Added
