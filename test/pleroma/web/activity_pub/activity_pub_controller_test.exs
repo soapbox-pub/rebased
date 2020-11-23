@@ -431,7 +431,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   describe "/inbox" do
     test "it inserts an incoming activity into the database", %{conn: conn} do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
 
       conn =
         conn
@@ -459,7 +459,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("actor", user.ap_id)
         |> put_in(["object", "attridbutedTo"], user.ap_id)
 
@@ -476,7 +476,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "it clears `unreachable` federation status of the sender", %{conn: conn} do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
 
       sender_url = data["actor"]
       Instances.set_consistently_unreachable(sender_url)
@@ -534,8 +534,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
-      non_create_data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
+      non_create_data = File.read!("test/fixtures/mastodon-announce.json") |> Jason.decode!()
 
       conn = put_req_header(conn, "content-type", "application/activity+json")
 
@@ -564,7 +564,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     setup do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       [data: data]
     end
@@ -747,7 +747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       data =
         File.read!("test/fixtures/activitypub-client-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       object = Map.put(data["object"], "attributedTo", actor.ap_id)
 

@@ -31,14 +31,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       follow_data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: _, local: false}} = Transmogrifier.handle_incoming(follow_data)
 
       data =
         File.read!("test/fixtures/mastodon-unfollow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", follow_data)
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)

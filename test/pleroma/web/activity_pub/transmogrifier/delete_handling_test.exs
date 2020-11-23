@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-delete.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", deleting_user.ap_id)
       |> put_in(["object", "id"], activity.data["object"])
 
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-delete.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", deleting_user.ap_id)
       |> put_in(["object", "id"], activity.data["object"])
 
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-delete.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", ap_id)
       |> put_in(["object", "id"], activity.data["object"])
 
@@ -91,7 +91,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-delete-user.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
 
     {:ok, _} = Transmogrifier.handle_incoming(data)
     ObanHelpers.perform_all()
@@ -104,7 +104,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-delete-user.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", ap_id)
 
     assert match?({:error, _}, Transmogrifier.handle_incoming(data))

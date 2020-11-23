@@ -85,8 +85,8 @@ defmodule Pleroma.Tests.Helpers do
         assigns = Map.new(assigns)
 
         view.render(template, assigns)
-        |> Poison.encode!()
-        |> Poison.decode!()
+        |> Jason.encode!()
+        |> Jason.decode!()
       end
 
       def stringify_keys(nil), do: nil
