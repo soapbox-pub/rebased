@@ -18,7 +18,7 @@ defmodule Pleroma.Web.Metadata.Providers.RestrictIndexingTest do
              }) == []
     end
 
-    test "for local user when discoverable is false" do
+    test "for local user when `is_discoverable` is false" do
       assert Pleroma.Web.Metadata.Providers.RestrictIndexing.build_tags(%{
                user: %Pleroma.User{local: true, is_discoverable: false}
              }) == [{:meta, [name: "robots", content: "noindex, noarchive"], []}]

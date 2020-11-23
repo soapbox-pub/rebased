@@ -123,7 +123,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
 
-      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
+      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
+        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
+      end)
 
       {:ok, activity}
     else
@@ -332,15 +334,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec flag(map()) :: {:ok, Activity.t()} | {:error, any()}
-  def flag(
-        %{
-          actor: actor,
-          context: _context,
-          account: account,
-          statuses: statuses,
-          content: content
-        } = params
-      ) do
+  def flag(params) do
+    with {:ok, result} <- Repo.transaction(fn -> do_flag(params) end) do
+      result
+    end
+  end
+
+  defp do_flag(
+         %{
+           actor: actor,
+           context: _context,
+           account: account,
+           statuses: statuses,
+           content: content
+         } = params
+       ) do
     # only accept false as false value
     local = !(params[:local] == false)
     forward = !(params[:forward] == false)
@@ -358,7 +366,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
          _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(stripped_activity) do
+         :ok <-
+           maybe_federate(stripped_activity) do
       User.all_superusers()
       |> Enum.filter(fn user -> not is_nil(user.email) end)
       |> Enum.each(fn superuser ->
@@ -368,6 +377,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       {:ok, activity}
+    else
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
@@ -791,10 +802,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where:
         fragment(
           """
-          ?->>'type' != 'Create'     -- This isn't a Create      
+          ?->>'type' != 'Create'     -- This isn't a Create
           OR ?->>'inReplyTo' is null -- this isn't a reply
-          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends, 
-                                     -- unless they are the author (because authors 
+          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends,
+                                     -- unless they are the author (because authors
                                      -- are also part of the recipients). This leads
                                      -- to a bug that self-replies by friends won't
                                      -- show up.

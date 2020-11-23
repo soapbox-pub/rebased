@@ -554,7 +554,7 @@ Response:
   * `show_role`
   * `skip_thread_containment`
   * `fields`
-  * `discoverable`
+  * `is_discoverable`
   * `actor_type`
 
 * Responses:

@@ -328,7 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "posting a status with OGP link preview", %{conn: conn} do
-      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
       clear_config([:rich_media, :enabled], true)
 
       conn =
@@ -1197,7 +1197,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "returns rich-media card", %{conn: conn, user: user} do
-      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp"})
 
@@ -1242,7 +1242,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "https://example.com/ogp-missing-data"})
 

@@ -36,7 +36,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- <details>
+- Users with `is_discoverable` field set to false (default value) will appear in in-service search results but be hidden from external services (search bots etc.).
+
+<details>
   <summary>API Changes</summary>
   - Mastodon API: Current user is now included in conversation if it's the only participant.
   - Mastodon API: Fixed last_status.account being not filled with account data.
@@ -46,8 +48,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
-
 ### Fixed
 
 - Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
@@ -55,6 +55,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - S3 Uploads with Elixir 1.11.
 - Emoji Reaction activity filtering from blocked and muted accounts.
 - Mix task pleroma.user delete_activities for source installations.
+- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
+- Forwarded reports duplication from Pleroma instances.
+
+<details>
+  <summary>API</summary>
+- Statuses were not displayed for Mastodon forwarded reports.
+
+</details>
 
 ## [2.2.0] - 2020-11-12
 
@@ -72,7 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Renamed `:await_up_timeout` in `:connections_pool` namespace to `:connect_timeout`, old name is deprecated.
 - Renamed `:timeout` in `pools` namespace to `:recv_timeout`, old name is deprecated.
 - The `discoverable` field in the `User` struct will now add a NOINDEX metatag to profile pages when false.
-- Users with the `discoverable` field set to false will not show up in searches.
+- Users with the `is_discoverable` field set to false will not show up in searches ([bug](https://git.pleroma.social/pleroma/pleroma/-/issues/2301)).
 - Minimum lifetime for ephmeral activities changed to 10 minutes and made configurable (`:min_lifetime` option).
 - Introduced optional dependencies on `ffmpeg`, `ImageMagick`, `exiftool` software packages. Please refer to `docs/installation/optional/media_graphics_packages.md`.
 - <details>
