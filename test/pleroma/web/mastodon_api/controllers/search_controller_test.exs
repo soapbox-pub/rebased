@@ -279,8 +279,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     end
 
     test "search fetches remote statuses and prefers them over other results", %{conn: conn} do
-      old_config = Application.get_env(:postgres, :version)
-      Application.put_env(:postgres, :version, 10.0)
+      old_version = :persistent_term.get({Pleroma.Repo, :postgres_version})
+      :persistent_term.put({Pleroma.Repo, :postgres_version}, 10.0)
 
       capture_log(fn ->
         {:ok, %{id: activity_id}} =
@@ -299,7 +299,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
                ] = results["statuses"]
       end)
 
-      Application.put_env(:postgres, :version, old_config)
+      :persistent_term.put({Pleroma.Repo, :postgres_version}, old_version)
     end
 
     test "search doesn't show statuses that it shouldn't", %{conn: conn} do

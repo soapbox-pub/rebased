@@ -131,7 +131,7 @@ defmodule Pleroma.Application do
           9.6
       end
 
-    Application.put_env(:postgres, :version, version)
+    :persistent_term.put({Pleroma.Repo, :postgres_version}, version)
   end
 
   def load_custom_modules do

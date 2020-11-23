@@ -20,7 +20,7 @@ defmodule Pleroma.Activity.Search do
     author = Keyword.get(options, :author)
 
     search_function =
-      if Application.get_env(:postgres, :version) >= 11 do
+      if :persistent_term.get({Pleroma.Repo, :postgres_version}) >= 11 do
         :websearch
       else
         :plain

@@ -19,8 +19,8 @@ defmodule Pleroma.Activity.SearchTest do
   end
 
   test "using plainto_tsquery on postgres < 11" do
-    old_config = Application.get_env(:postgres, :version)
-    Application.put_env(:postgres, :version, 10.0)
+    old_version = :persistent_term.get({Pleroma.Repo, :postgres_version})
+    :persistent_term.put({Pleroma.Repo, :postgres_version}, 10.0)
 
     user = insert(:user)
     {:ok, post} = CommonAPI.post(user, %{status: "it's wednesday my dudes"})
@@ -31,7 +31,7 @@ defmodule Pleroma.Activity.SearchTest do
 
     assert result.id == post.id
 
-    Application.put_env(:postgres, :version, old_config)
+    :persistent_term.put({Pleroma.Repo, :postgres_version}, old_version)
   end
 
   test "using websearch_to_tsquery" do
