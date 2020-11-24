@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
 
   defp get_old_message do
     File.read!("test/fixtures/mastodon-post-activity.json")
-    |> Poison.decode!()
+    |> Jason.decode!()
   end
 
   defp get_new_message do

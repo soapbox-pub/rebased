@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.LikeHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     _actor = insert(:user, ap_id: data["actor"], local: false)
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.LikeHandlingTest do
 
     data =
       File.read!("test/fixtures/misskey-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     _actor = insert(:user, ap_id: data["actor"], local: false)
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.LikeHandlingTest do
 
     data =
       File.read!("test/fixtures/misskey-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
       |> Map.put("_misskey_reaction", "⭐")
 

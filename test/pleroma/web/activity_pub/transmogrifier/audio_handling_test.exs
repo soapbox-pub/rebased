@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
         }
     end)
 
-    data = File.read!("test/fixtures/tesla_mock/funkwhale_create_audio.json") |> Poison.decode!()
+    data = File.read!("test/fixtures/tesla_mock/funkwhale_create_audio.json") |> Jason.decode!()
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 

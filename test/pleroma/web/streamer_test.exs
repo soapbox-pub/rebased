@@ -222,7 +222,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       data =
         File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", activity.data["object"])
         |> Map.put("actor", user.ap_id)
 
