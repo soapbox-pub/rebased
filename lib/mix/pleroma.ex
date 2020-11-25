@@ -22,8 +22,8 @@ defmodule Mix.Pleroma do
     Pleroma.Application.limiters_setup()
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
 
-    if Pleroma.Config.get(:env) != :test do
-      Application.put_env(:logger, :console, level: :debug)
+    unless System.get_env("DEBUG") do
+      Logger.remove_backend(:console)
     end
 
     adapter = Application.get_env(:tesla, :adapter)
