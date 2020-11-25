@@ -140,14 +140,24 @@ If you encounter a situation where the server cannot run properly because of an 
 e.g., here is an example showing a minimal configuration in the database. Only the `config :pleroma, :instance` settings are in the table:
 
 ```
-psql -d pleroma_dev
-pleroma_dev=# select * from config;
- id |    key    |                           value                            |     inserted_at     |     updated_at      |  group
-----+-----------+------------------------------------------------------------+---------------------+---------------------+----------
-  1 | :instance | \x836c0000000168026400046e616d656d00000007426c65726f6d616a | 2020-07-12 15:33:29 | 2020-07-12 15:33:29 | :pleroma
-(1 row)
-pleroma_dev=# delete from config where key = ':instance' and group = ':pleroma';
-DELETE 1
+$ mix pleroma.config keylist
+The following configuration keys are set in ConfigDB:
+
+-  instance
+
+```
+
+```
+$ mix pleroma.config show instance
+config :pleroma, :instance, [name: "MyPleroma", description: "A fun place to hang out!", notify_email: "no-reply@mypleroma.com", email: "admin@mypleroma.com", account_activation_required: true]
+
+```
+
+To delete the saved settings for `:instance`:
+
+```
+$ mix pleroma.config keydel instance
+instance deleted from the ConfigDB.
 ```
 
 Now the `config :pleroma, :instance` settings have been removed from the database.

@@ -83,6 +83,19 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
+  def run(["reset"]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
+      Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
+      Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
+
+      shell_info("The ConfigDB settings have been removed from the database.")
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
   def run(["keydel" | dbkey]) do
     unless [] == dbkey do
       with true <- Pleroma.Config.get([:configurable_from_database]) do
