@@ -32,7 +32,7 @@
     config :pleroma, configurable_from_database: false
     ```
 
-To delete transfered settings from database optional flag `-d` can be used. `<env>` is `prod` by default.
+To delete transferred settings from database optional flag `-d` can be used. `<env>` is `prod` by default.
 
 === "OTP"
     ```sh
