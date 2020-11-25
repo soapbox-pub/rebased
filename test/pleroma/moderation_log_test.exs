@@ -182,12 +182,14 @@ defmodule Pleroma.ModerationLogTest do
     end
 
     test "logging report update", %{moderator: moderator} do
+      user = insert(:user)
+
       report = %Activity{
         id: "9m9I1F4p8ftrTP6QTI",
         data: %{
           "type" => "Flag",
           "state" => "resolved",
-          "actor" => "http://localhost:4000/users/max"
+          "actor" => user.ap_id
         }
       }
 
@@ -195,13 +197,14 @@ defmodule Pleroma.ModerationLogTest do
         ModerationLog.insert_log(%{
           actor: moderator,
           action: "report_update",
-          subject: report
+          subject: report,
+          subject_actor: user
         })
 
       log = Repo.one(ModerationLog)
 
       assert log.data["message"] ==
-               "@#{moderator.nickname} updated report ##{report.id} with 'resolved' state"
+               "@#{moderator.nickname} updated report ##{report.id} (on user @#{user.nickname}) with 'resolved' state"
     end
 
     test "logging report response", %{moderator: moderator} do
