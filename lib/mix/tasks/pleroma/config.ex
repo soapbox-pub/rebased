@@ -227,7 +227,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete(config, true) do
     {:ok, _} = Repo.delete(config)
-    shell_info("#{config.key} deleted from DB.")
+    shell_info("#{config.key} deleted from the ConfigDB.")
   end
 
   defp delete(_config, _), do: :ok
