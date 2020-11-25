@@ -87,3 +87,35 @@ e.g., this shows all the settings under `:instance`
     ```sh
     mix pleroma.config dump instance
     ```
+
+## Delete the saved configuration values for a specific group
+
+e.g., this deletes all the settings under `:instance`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config groupdel instance
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config groupdel instance
+    ```
+
+## Remove all settings from the database
+
+This forcibly removes all saved values in the database.
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config reset
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config reset
+    ```
