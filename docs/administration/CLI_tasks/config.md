@@ -43,3 +43,47 @@ To delete transferred settings from database optional flag `-d` can be used. `<e
     ```sh
     mix pleroma.config migrate_from_db [--env=<env>] [-d]
     ```
+
+## Dump all of the config settings defined in the database
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl config dump
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config dump
+    ```
+
+## List individual configuration groups in the database
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl config groups
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config groups
+    ```
+
+## Dump the saved configuration values for a specific group
+
+e.g., this shows all the settings under `:instance`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config dump instance
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config dump instance
+    ```

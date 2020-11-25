@@ -64,7 +64,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["keylist"]) do
+  def run(["groups"]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
@@ -96,7 +96,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["keydel" | dbkey]) do
+  def run(["groupdel" | dbkey]) do
     unless [] == dbkey do
       with true <- Pleroma.Config.get([:configurable_from_database]) do
         start_pleroma()
@@ -115,7 +115,7 @@ defmodule Mix.Tasks.Pleroma.Config do
       end
     else
       shell_error(
-        "You must provide a key to delete. Use the keylist command to get a list of valid keys."
+        "You must provide a group to delete. Use the groups command to get a list of valid configDB groups."
       )
     end
   end
