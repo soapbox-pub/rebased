@@ -9,12 +9,7 @@ defmodule Pleroma.Config.Holder do
   def save_default do
     default_config =
       if System.get_env("RELEASE_NAME") do
-        release_config =
-          [:code.root_dir(), "releases", System.get_env("RELEASE_VSN"), "releases.exs"]
-          |> Path.join()
-          |> Pleroma.Config.Loader.read()
-
-        Pleroma.Config.Loader.merge(@config, release_config)
+        Pleroma.Config.Loader.merge(@config, release_defaults())
       else
         @config
       end
@@ -32,4 +27,16 @@ defmodule Pleroma.Config.Holder do
   def default_config(group, key), do: get_in(get_default(), [group, key])
 
   defp get_default, do: Pleroma.Config.get(:default_config)
+
+  @spec release_defaults() :: keyword()
+  def release_defaults do
+    [
+      pleroma: [
+        {:instance, [static_dir: "/var/lib/pleroma/static"]},
+        {Pleroma.Uploaders.Local, [uploads: "/var/lib/pleroma/uploads"]},
+        {:modules, [runtime_dir: "/var/lib/pleroma/modules"]},
+        {:release, true}
+      ]
+    ]
+  end
 end
