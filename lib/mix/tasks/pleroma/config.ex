@@ -30,6 +30,83 @@ defmodule Mix.Tasks.Pleroma.Config do
     migrate_from_db(opts)
   end
 
+  def run(["dump"]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
+      header = config_header()
+
+      shell_info("#{header}")
+
+      ConfigDB
+      |> Repo.all()
+      |> Enum.each(&dump(&1))
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
+  def run(["dump" | dbkey]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
+      dbkey = dbkey |> List.first() |> String.to_atom()
+
+      ConfigDB
+      |> Repo.all()
+      |> Enum.filter(fn x ->
+        if x.key == dbkey do
+          x |> dump
+        end
+      end)
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
+  def run(["keylist"]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
+      keys =
+        ConfigDB
+        |> Repo.all()
+        |> Enum.map(fn x -> x.key end)
+
+      if length(keys) > 0 do
+        shell_info("The following configuration keys are set in ConfigDB:\r\n")
+        keys |> Enum.each(fn x -> shell_info("-  #{x}") end)
+        shell_info("\r\n")
+      end
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
+  def run(["keydel" | dbkey]) do
+    unless [] == dbkey do
+      with true <- Pleroma.Config.get([:configurable_from_database]) do
+        start_pleroma()
+
+        dbkey = dbkey |> List.first() |> String.to_atom()
+
+        ConfigDB
+        |> Repo.all()
+        |> Enum.filter(fn x ->
+          if x.key == dbkey do
+            x |> delete(true)
+          end
+        end)
+      else
+        _ -> configdb_not_enabled()
+      end
+    else
+      shell_error(
+        "You must provide a key to delete. Use the keylist command to get a list of valid keys."
+      )
+    end
+  end
+
   @spec migrate_to_db(Path.t() | nil) :: any()
   def migrate_to_db(file_path \\ nil) do
     with true <- Pleroma.Config.get([:configurable_from_database]),
@@ -154,4 +231,16 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp delete(_config, _), do: :ok
+
+  defp dump(%Pleroma.ConfigDB{} = config) do
+    value = inspect(config.value, limit: :infinity)
+
+    shell_info("config #{inspect(config.group)}, #{inspect(config.key)}, #{value}\r\n\r\n")
+  end
+
+  defp configdb_not_enabled do
+    shell_error(
+      "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
+    )
+  end
 end
