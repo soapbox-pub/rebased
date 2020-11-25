@@ -83,7 +83,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       redirect_query = URI.parse(redirected_to(conn)).query
       assert %{"state" => state_param} = URI.decode_query(redirect_query)
-      assert {:ok, state_components} = Poison.decode(state_param)
+      assert {:ok, state_components} = Jason.decode(state_param)
 
       expected_client_id = app.client_id
       expected_redirect_uri = app.redirect_uris
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
             "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
             "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
+            "state" => Jason.encode!(state_params)
           }
         )
 
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
             "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
             "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
+            "state" => Jason.encode!(state_params)
           }
         )
 
@@ -180,7 +180,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
             "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
             "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
+            "state" => Jason.encode!(state_params)
           }
         )
 

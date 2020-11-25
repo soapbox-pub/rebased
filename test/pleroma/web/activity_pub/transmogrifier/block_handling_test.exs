@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.BlockHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-block-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", user.ap_id)
 
     blocker = insert(:user, ap_id: data["actor"])
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.BlockHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-block-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", blocked.ap_id)
       |> Map.put("actor", blocker.ap_id)
 

@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
     accept_data =
       File.read!("test/fixtures/mastodon-reject-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", followed.ap_id)
 
     accept_data =
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
     reject_data =
       File.read!("test/fixtures/mastodon-reject-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", followed.ap_id)
       |> Map.put("object", follow_activity.data["id"])
 
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-follow-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", user.ap_id)
       |> Map.put("id", "")
 

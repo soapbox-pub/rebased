@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-undo-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", reaction_activity.data["id"])
       |> Map.put("actor", user.ap_id)
 
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-undo-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     assert Transmogrifier.handle_incoming(data) == :error
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     like_data =
       File.read!("test/fixtures/mastodon-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     _liker = insert(:user, ap_id: like_data["actor"], local: false)
@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-undo-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", like_data)
       |> Map.put("actor", like_data["actor"])
 
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     like_data =
       File.read!("test/fixtures/mastodon-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     _liker = insert(:user, ap_id: like_data["actor"], local: false)
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-undo-like.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", like_data["id"])
       |> Map.put("actor", like_data["actor"])
 
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     announce_data =
       File.read!("test/fixtures/mastodon-announce.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     _announcer = insert(:user, ap_id: announce_data["actor"], local: false)
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-undo-announce.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", announce_data)
       |> Map.put("actor", announce_data["actor"])
 
@@ -135,7 +135,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     follow_data =
       File.read!("test/fixtures/mastodon-follow-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", user.ap_id)
 
     _follower = insert(:user, ap_id: follow_data["actor"], local: false)
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-unfollow-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", follow_data)
 
     {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
@@ -162,7 +162,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     block_data =
       File.read!("test/fixtures/mastodon-block-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", user.ap_id)
 
     _blocker = insert(:user, ap_id: block_data["actor"], local: false)
@@ -171,7 +171,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-unblock-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", block_data)
 
     {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)

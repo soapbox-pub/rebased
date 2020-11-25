@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
     test "it rejects messages that don't contain content" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       object =
         data["object"]
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
     test "it rejects messages that don't concern local users" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       _author =
         insert(:user, ap_id: data["actor"], local: false, last_refreshed_at: DateTime.utc_now())
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
     test "it rejects messages where the `to` field of activity and object don't match" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       author = insert(:user, ap_id: data["actor"])
       _recipient = insert(:user, ap_id: List.first(data["to"]))
@@ -115,7 +115,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
 
       data =
         File.read!("test/fixtures/create-chat-message.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("actor", "http://mastodon.example.org/users/admin")
         |> put_in(["object", "actor"], "http://mastodon.example.org/users/admin")
 
@@ -127,7 +127,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
     test "it doesn't work for deactivated users" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       _author =
         insert(:user,
@@ -145,7 +145,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
     test "it inserts it and creates a chat" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       author =
         insert(:user, ap_id: data["actor"], local: false, last_refreshed_at: DateTime.utc_now())
