@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Helpers.UriHelper
   alias Pleroma.Maps
   alias Pleroma.MFA
@@ -248,7 +249,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, %{user: user} = token} <- Token.get_by_refresh_token(app, token),
          {:ok, token} <- RefreshToken.grant(token) do
-      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
+      after_token_exchange(conn, %{user: user, token: token})
     else
       _error -> render_invalid_credentials_error(conn)
     end
@@ -260,7 +261,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:ok, auth} <- Authorization.get_by_token(app, fixed_token),
          %User{} = user <- User.get_cached_by_id(auth.user_id),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
+      after_token_exchange(conn, %{user: user, token: token})
     else
       error ->
         handle_token_exchange_error(conn, error)
@@ -275,7 +276,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:ok, app} <- Token.Utils.fetch_app(conn),
          requested_scopes <- Scopes.fetch_scopes(params, app.scopes),
          {:ok, token} <- login(user, app, requested_scopes) do
-      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
+      after_token_exchange(conn, %{user: user, token: token})
     else
       error ->
         handle_token_exchange_error(conn, error)
@@ -298,7 +299,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, auth} <- Authorization.create_authorization(app, %User{}),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      json(conn, OAuthView.render("token.json", %{token: token}))
+      after_token_exchange(conn, %{token: token})
     else
       _error ->
         handle_token_exchange_error(conn, :invalid_credentails)
@@ -307,6 +308,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   # Bad request
   def token_exchange(%Plug.Conn{} = conn, params), do: bad_request(conn, params)
+
+  def after_token_exchange(%Plug.Conn{} = conn, %{token: token} = view_params) do
+    conn
+    |> AuthHelper.put_session_token(token.token)
+    |> json(OAuthView.render("token.json", view_params))
+  end
 
   defp handle_token_exchange_error(%Plug.Conn{} = conn, {:mfa_required, user, auth, _}) do
     conn
@@ -365,9 +372,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, %Token{} = oauth_token} <- RevokeToken.revoke(app, params) do
       conn =
-        with session_token = get_session(conn, :oauth_token),
+        with session_token = AuthHelper.get_session_token(conn),
              %Token{token: ^session_token} <- oauth_token do
-          delete_session(conn, :oauth_token)
+          AuthHelper.delete_session_token(conn)
         else
           _ -> conn
         end

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
          {:ok, auth} <- Authorization.get_by_token(app, auth_token),
          {:ok, token} <- Token.exchange_token(app, auth) do
       conn
-      |> put_session(:oauth_token, token.token)
+      |> AuthHelper.put_session_token(token.token)
       |> redirect(to: local_mastodon_root_path(conn))
     end
   end
@@ -53,7 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   @doc "DELETE /auth/sign_out"
   def logout(conn, _) do
     conn
-    |> clear_session
+    |> clear_session()
     |> redirect(to: "/")
   end
 

@@ -320,6 +320,11 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
+    get("/registration_details", OAuthController, :registration_details)
+
+    post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
+    get("/mfa", MFAController, :show)
+
     scope [] do
       pipe_through(:oauth)
 
@@ -327,17 +332,12 @@ defmodule Pleroma.Web.Router do
       post("/authorize", OAuthController, :create_authorization)
     end
 
-    post("/token", OAuthController, :token_exchange)
-    get("/registration_details", OAuthController, :registration_details)
-
-    post("/mfa/challenge", MFAController, :challenge)
-    post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
-    get("/mfa", MFAController, :show)
-
     scope [] do
       pipe_through(:fetch_session)
 
+      post("/token", OAuthController, :token_exchange)
       post("/revoke", OAuthController, :token_revoke)
+      post("/mfa/challenge", MFAController, :challenge)
     end
 
     scope [] do

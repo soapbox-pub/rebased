@@ -8,6 +8,7 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
   import Plug.Conn
   import Ecto.Query
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.OAuth.App
@@ -98,7 +99,7 @@ defmodule Pleroma.Web.Plugs.OAuthPlug do
 
   @spec fetch_token_from_session(Plug.Conn.t()) :: :no_token_found | {:ok, String.t()}
   defp fetch_token_from_session(conn) do
-    case get_session(conn, :oauth_token) do
+    case AuthHelper.get_session_token(conn) do
       nil -> :no_token_found
       token -> {:ok, token}
     end

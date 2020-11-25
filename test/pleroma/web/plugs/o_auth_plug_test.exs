@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Plugs.OAuthPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke
   alias Pleroma.Web.Plugs.OAuthPlug
@@ -84,7 +85,7 @@ defmodule Pleroma.Web.Plugs.OAuthPlugTest do
         conn
         |> Session.call(Session.init(session_opts))
         |> fetch_session()
-        |> put_session(:oauth_token, oauth_token.token)
+        |> AuthHelper.put_session_token(oauth_token.token)
 
       %{conn: conn}
     end

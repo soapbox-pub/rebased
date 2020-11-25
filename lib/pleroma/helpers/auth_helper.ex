@@ -4,8 +4,11 @@
 
 defmodule Pleroma.Helpers.AuthHelper do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Plug.Conn
 
   import Plug.Conn
+
+  @oauth_token_session_key :oauth_token
 
   @doc """
   Skips OAuth permissions (scopes) checks, assigns nil `:token`.
@@ -21,5 +24,17 @@ defmodule Pleroma.Helpers.AuthHelper do
     conn
     |> assign(:user, nil)
     |> assign(:token, nil)
+  end
+
+  def get_session_token(%Conn{} = conn) do
+    get_session(conn, @oauth_token_session_key)
+  end
+
+  def put_session_token(%Conn{} = conn, token) when is_binary(token) do
+    put_session(conn, @oauth_token_session_key, token)
+  end
+
+  def delete_session_token(%Conn{} = conn) do
+    delete_session(conn, @oauth_token_session_key)
   end
 end

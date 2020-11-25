@@ -4,8 +4,10 @@
 
 defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   use Pleroma.Web.ConnCase
+
   import Pleroma.Factory
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
   alias Pleroma.Repo
@@ -454,7 +456,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -478,7 +480,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -501,7 +503,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -527,7 +529,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -551,7 +553,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{

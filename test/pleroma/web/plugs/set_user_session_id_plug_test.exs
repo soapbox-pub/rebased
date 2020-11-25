@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Web.Plugs.SetUserSessionIdPlug
 
   setup %{conn: conn} do
@@ -28,7 +29,7 @@ defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
     assert ret_conn == conn
   end
 
-  test "sets :oauth_token in session to :token assign", %{conn: conn} do
+  test "sets session token basing on :token assign", %{conn: conn} do
     %{user: user, token: oauth_token} = oauth_access(["read"])
 
     ret_conn =
@@ -37,6 +38,6 @@ defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
       |> assign(:token, oauth_token)
       |> SetUserSessionIdPlug.call(%{})
 
-    assert get_session(ret_conn, :oauth_token) == oauth_token.token
+    assert AuthHelper.get_session_token(ret_conn) == oauth_token.token
   end
 end
