@@ -1003,7 +1003,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         "actor" => remote_actor,
         "content" => "test report",
         "id" => "https://#{remote_domain}/e3b12fd1-948c-446e-b93b-a5e67edbe1d8",
-        "nickname" => reported_user.nickname,
         "object" => [
           reported_user.ap_id,
           note.data["object"]
