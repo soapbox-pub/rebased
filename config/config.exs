@@ -147,16 +147,6 @@ config :pleroma, Pleroma.Web.Endpoint,
     "SameSite=Lax"
   ]
 
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: :timer.hours(8),
-  rejection_duration: :timer.minutes(15),
-  fed_socket_fetches: [
-    default: 12_000,
-    interval: 3_000,
-    lazy: false
-  ]
-
 # Configures Elixir's Logger
 config :logger, :console,
   level: :debug,
