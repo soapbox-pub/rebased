@@ -47,17 +47,21 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["dump" | args]) when is_list(args) and length(args) < 3 do
+  def run(["dump", group, key]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      if length(args) > 1 do
-        [group, key] = args
-        dump_key(group, key)
-      else
-        [group] = args
-        dump_group(group)
-      end
+      dump_key(group, key)
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
+  def run(["dump", group]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
+      dump_group(group)
     else
       _ -> configdb_not_enabled()
     end
@@ -114,36 +118,38 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
-      Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
+      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+        Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
+        Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
 
-      shell_info("The ConfigDB settings have been removed from the database.")
+        shell_info("The ConfigDB settings have been removed from the database.")
+      else
+        shell_info("No changes made.")
+      end
     else
       _ -> configdb_not_enabled()
     end
   end
 
-  def run(["groupdel" | dbkey]) do
-    unless [] == dbkey do
-      with true <- Pleroma.Config.get([:configurable_from_database]) do
-        start_pleroma()
+  def run(["delete" | args]) when is_list(args) and length(args) == 2 do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
 
-        dbkey = dbkey |> List.first() |> String.to_atom()
+      [group, key] = args
 
+      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         ConfigDB
         |> Repo.all()
         |> Enum.filter(fn x ->
-          if x.key == dbkey do
+          if x.group == group and x.key == key do
             x |> delete(true)
           end
         end)
       else
-        _ -> configdb_not_enabled()
+        shell_info("No changes made.")
       end
     else
-      shell_error(
-        "You must provide a group to delete. Use the groups command to get a list of valid configDB groups."
-      )
+      _ -> configdb_not_enabled()
     end
   end
 
