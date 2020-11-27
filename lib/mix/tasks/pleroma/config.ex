@@ -337,7 +337,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     )
   end
 
-  defp dump_key(group, key) when is_atom(group)  and is_atom(key) do
+  defp dump_key(group, key) when is_atom(group) and is_atom(key) do
     ConfigDB
     |> Repo.all()
     |> Enum.filter(fn x ->
