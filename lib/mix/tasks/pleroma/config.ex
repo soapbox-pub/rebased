@@ -36,12 +36,18 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       header = config_header()
 
-      shell_info("#{header}")
+      settings =
+        ConfigDB
+        |> Repo.all()
+        |> Enum.sort()
 
-      ConfigDB
-      |> Repo.all()
-      |> Enum.sort()
-      |> Enum.each(&dump(&1))
+      unless settings == [] do
+        shell_info("#{header}")
+
+        settings |> Enum.each(&dump(&1))
+      else
+        shell_error("No settings in ConfigDB.")
+      end
     else
       _ -> configdb_not_enabled()
     end
@@ -50,6 +56,9 @@ defmodule Mix.Tasks.Pleroma.Config do
   def run(["dump", group, key]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
+
+      group = atomize(group)
+      key = atomize(key)
 
       dump_key(group, key)
     else
@@ -60,6 +69,8 @@ defmodule Mix.Tasks.Pleroma.Config do
   def run(["dump", group]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
+
+      group = atomize(group)
 
       dump_group(group)
     else
@@ -88,9 +99,11 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["keys" | group]) do
+  def run(["keys", group]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
+
+      group = atomize(group)
 
       keys =
         ConfigDB
@@ -124,7 +137,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
         shell_info("The ConfigDB settings have been removed from the database.")
       else
-        shell_info("No changes made.")
+        shell_error("No changes made.")
       end
     else
       _ -> configdb_not_enabled()
@@ -135,18 +148,26 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = group |> String.to_atom()
+      group = atomize(group)
 
-      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-        ConfigDB
-        |> Repo.all()
-        |> Enum.filter(fn x ->
-          if x.group == group do
-            x |> delete(true)
-          end
-        end)
+      if group_exists?(group) do
+        shell_info("The following settings will be removed from ConfigDB:\n")
+
+        dump_group(group)
+
+        if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+          ConfigDB
+          |> Repo.all()
+          |> Enum.filter(fn x ->
+            if x.group == group do
+              x |> delete(true)
+            end
+          end)
+        else
+          shell_error("No changes made.")
+        end
       else
-        shell_info("No changes made.")
+        shell_error("No settings in ConfigDB for :#{group}. Aborting.")
       end
     else
       _ -> configdb_not_enabled()
@@ -157,8 +178,8 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = group |> String.to_atom()
-      key = key |> String.to_atom()
+      group = atomize(group)
+      key = atomize(key)
 
       if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         ConfigDB
@@ -169,7 +190,7 @@ defmodule Mix.Tasks.Pleroma.Config do
           end
         end)
       else
-        shell_info("No changes made.")
+        shell_error("No changes made.")
       end
     else
       _ -> configdb_not_enabled()
@@ -296,7 +317,10 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete(config, true) do
     {:ok, _} = Repo.delete(config)
-    shell_info(":#{config.group}, :#{config.key} deleted from the ConfigDB.")
+
+    shell_info(
+      "config #{inspect(config.group)}, #{inspect(config.key)} deleted from the ConfigDB."
+    )
   end
 
   defp delete(_config, _), do: :ok
@@ -313,10 +337,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     )
   end
 
-  defp dump_key(group, key) do
-    group = group |> String.to_atom()
-    key = key |> String.to_atom()
-
+  defp dump_key(group, key) when is_atom(group) and is_atom(key) do
     ConfigDB
     |> Repo.all()
     |> Enum.filter(fn x ->
@@ -326,9 +347,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     end)
   end
 
-  defp dump_group(group) do
-    group = group |> String.to_atom()
-
+  defp dump_group(group) when is_atom(group) do
     ConfigDB
     |> Repo.all()
     |> Enum.filter(fn x ->
@@ -337,4 +356,24 @@ defmodule Mix.Tasks.Pleroma.Config do
       end
     end)
   end
+
+  defp group_exists?(group) when is_atom(group) do
+    result =
+      ConfigDB
+      |> Repo.all()
+      |> Enum.filter(fn x ->
+        if x.group == group do
+          x
+        end
+      end)
+
+    unless result == [] do
+      true
+    else
+      false
+    end
+  end
+
+  defp atomize(x) when is_atom(x), do: x
+  defp atomize(x) when is_binary(x), do: String.to_atom(x)
 end
