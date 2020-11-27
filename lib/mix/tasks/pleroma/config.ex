@@ -57,8 +57,8 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = atomize(group)
-      key = atomize(key)
+      group = maybe_atomize(group)
+      key = maybe_atomize(key)
 
       dump_key(group, key)
     else
@@ -70,7 +70,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = atomize(group)
+      group = maybe_atomize(group)
 
       dump_group(group)
     else
@@ -103,7 +103,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = atomize(group)
+      group = maybe_atomize(group)
 
       keys =
         ConfigDB
@@ -148,7 +148,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = atomize(group)
+      group = maybe_atomize(group)
 
       if group_exists?(group) do
         shell_info("The following settings will be removed from ConfigDB:\n")
@@ -178,8 +178,8 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      group = atomize(group)
-      key = atomize(key)
+      group = maybe_atomize(group)
+      key = maybe_atomize(key)
 
       if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         ConfigDB
@@ -337,7 +337,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     )
   end
 
-  defp dump_key(group, key) when is_atom(group) and is_atom(key) do
+  defp dump_key(group, key) when is_atom(group)  and is_atom(key) do
     ConfigDB
     |> Repo.all()
     |> Enum.filter(fn x ->
@@ -374,6 +374,15 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  defp atomize(x) when is_atom(x), do: x
-  defp atomize(x) when is_binary(x), do: String.to_atom(x)
+  def maybe_atomize(arg) when is_atom(arg), do: arg
+
+  def maybe_atomize(arg) when is_binary(arg) do
+    chars = String.codepoints(arg)
+
+    if "." in chars do
+      :"Elixir.#{arg}"
+    else
+      String.to_atom(arg)
+    end
+  end
 end
