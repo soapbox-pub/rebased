@@ -131,6 +131,15 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
+      shell_info("The following settings will be permanently removed:")
+
+      ConfigDB
+      |> Repo.all()
+      |> Enum.sort()
+      |> Enum.each(&dump(&1))
+
+      shell_error("THIS CANNOT BE UNDONE!")
+
       if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
         Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
