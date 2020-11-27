@@ -47,19 +47,17 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["dump" | dbkey]) do
+  def run(["dump" | args]) when is_list(args) and length(args) < 3 do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      dbkey = dbkey |> List.first() |> String.to_atom()
-
-      ConfigDB
-      |> Repo.all()
-      |> Enum.filter(fn x ->
-        if x.key == dbkey do
-          x |> dump
-        end
-      end)
+      if length(args) > 1 do
+        [group, key] = args
+        dump_key(group, key)
+      else
+        [group] = args
+        dump_group(group)
+      end
     else
       _ -> configdb_not_enabled()
     end
@@ -69,13 +67,41 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
+      groups =
+        ConfigDB
+        |> Repo.all()
+        |> Enum.map(fn x -> x.group end)
+        |> Enum.sort()
+        |> Enum.uniq()
+
+      if length(groups) > 0 do
+        shell_info("The following configuration groups are set in ConfigDB:\r\n")
+        groups |> Enum.each(fn x -> shell_info("-  #{x}") end)
+        shell_info("\r\n")
+      end
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
+  def run(["keys" | group]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
       keys =
         ConfigDB
         |> Repo.all()
-        |> Enum.map(fn x -> x.key end)
+        |> Enum.map(fn x ->
+          if x.group == group do
+            x.key
+          end
+        end)
+        |> Enum.sort()
+        |> Enum.uniq()
+        |> Enum.reject(fn x -> x == nil end)
 
       if length(keys) > 0 do
-        shell_info("The following configuration keys are set in ConfigDB:\r\n")
+        shell_info("The following configuration keys under :#{group} are set in ConfigDB:\r\n")
         keys |> Enum.each(fn x -> shell_info("-  #{x}") end)
         shell_info("\r\n")
       end
@@ -256,5 +282,30 @@ defmodule Mix.Tasks.Pleroma.Config do
     shell_error(
       "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
     )
+  end
+
+  defp dump_key(group, key) do
+    group = group |> String.to_atom()
+    key = key |> String.to_atom()
+
+    ConfigDB
+    |> Repo.all()
+    |> Enum.filter(fn x ->
+      if x.group == group && x.key == key do
+        x |> dump
+      end
+    end)
+  end
+
+  defp dump_group(group) do
+    group = group |> String.to_atom()
+
+    ConfigDB
+    |> Repo.all()
+    |> Enum.filter(fn x ->
+      if x.group == group do
+        x |> dump
+      end
+    end)
   end
 end
