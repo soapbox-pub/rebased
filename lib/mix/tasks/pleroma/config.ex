@@ -40,6 +40,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       ConfigDB
       |> Repo.all()
+      |> Enum.sort()
       |> Enum.each(&dump(&1))
     else
       _ -> configdb_not_enabled()
