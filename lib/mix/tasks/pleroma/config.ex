@@ -131,11 +131,34 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["delete" | args]) when is_list(args) and length(args) == 2 do
+  def run(["delete", group]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
 
-      [group, key] = args
+      group = group |> String.to_atom()
+
+      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+        ConfigDB
+        |> Repo.all()
+        |> Enum.filter(fn x ->
+          if x.group == group do
+            x |> delete(true)
+          end
+        end)
+      else
+        shell_info("No changes made.")
+      end
+    else
+      _ -> configdb_not_enabled()
+    end
+  end
+
+  def run(["delete", group, key]) do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      start_pleroma()
+
+      group = group |> String.to_atom()
+      key = key |> String.to_atom()
 
       if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         ConfigDB
@@ -273,7 +296,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete(config, true) do
     {:ok, _} = Repo.delete(config)
-    shell_info("#{config.key} deleted from the ConfigDB.")
+    shell_info(":#{config.group}, :#{config.key} deleted from the ConfigDB.")
   end
 
   defp delete(_config, _), do: :ok
