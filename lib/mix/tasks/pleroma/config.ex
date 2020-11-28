@@ -148,7 +148,7 @@ defmodule Mix.Tasks.Pleroma.Config do
           shell_error("No changes made.")
         end
       else
-        shell_error("No settings in ConfigDB for :#{group}. Aborting.")
+        shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
       end
     else
       _ -> configdb_not_enabled()
@@ -228,7 +228,7 @@ defmodule Mix.Tasks.Pleroma.Config do
       shell_info("Settings for key #{key} migrated.")
     end)
 
-    shell_info("Settings for group :#{group} migrated.")
+    shell_info("Settings for group #{inspect(group)} migrated.")
   end
 
   defp migrate_from_db(opts) do
