@@ -72,36 +72,68 @@ To delete transferred settings from database optional flag `-d` can be used. `<e
     mix pleroma.config groups
     ```
 
-## Dump the saved configuration values for a specific group
+## Dump the saved configuration values for a specific group or key
 
-e.g., this shows all the settings under `:instance`
+e.g., this shows all the settings under `config :pleroma`
 
 === "OTP"
 
     ```sh
-    ./bin/pleroma_ctl config dump instance
+    ./bin/pleroma_ctl config dump pleroma
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.config dump instance
+    mix pleroma.config dump pleroma
     ```
 
-## Delete the saved configuration values for a specific group
+To get values under a specific key:
 
-e.g., this deletes all the settings under `:instance`
+e.g., this shows all the settings under `config :pleroma, :instance`
 
 === "OTP"
 
     ```sh
-    ./bin/pleroma_ctl config groupdel instance
+    ./bin/pleroma_ctl config dump pleroma instance
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.config groupdel instance
+    mix pleroma.config dump pleroma instance
+    ```
+
+## Delete the saved configuration values for a specific group or key
+
+e.g., this deletes all the settings under `config :tesla`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config delete tesla
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config delete tesla
+    ```
+
+To delete values under a specific key:
+
+e.g., this deletes all the settings under `config :phoenix, :stacktrace_depth`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config delete phoenix stacktrace_depth
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config delete phoenix stacktrace_depth
     ```
 
 ## Remove all settings from the database
