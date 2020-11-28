@@ -80,6 +80,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     available_scopes = (app && app.scopes) || []
     scopes = Scopes.fetch_scopes(params, available_scopes)
 
+    user =
+      with %{assigns: %{user: %User{} = user}} <- conn do
+        user
+      else
+        _ -> nil
+      end
+
     scopes =
       if scopes == [] do
         available_scopes
@@ -89,6 +96,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
     # Note: `params` might differ from `conn.params`; use `@params` not `@conn.params` in template
     render(conn, Authenticator.auth_template(), %{
+      user: user,
+      app: app && Map.delete(app, :client_secret),
       response_type: params["response_type"],
       client_id: params["client_id"],
       available_scopes: available_scopes,
@@ -132,11 +141,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  def create_authorization(
-        %Plug.Conn{} = conn,
-        %{"authorization" => _} = params,
-        opts \\ []
-      ) do
+  def create_authorization(_, _, opts \\ [])
+
+  def create_authorization(%Plug.Conn{assigns: %{user: %User{} = user}} = conn, params, []) do
+    create_authorization(conn, params, user: user)
+  end
+
+  def create_authorization(%Plug.Conn{} = conn, %{"authorization" => _} = params, opts) do
     with {:ok, auth, user} <- do_create_authorization(conn, params, opts[:user]),
          {:mfa_required, _, _, false} <- {:mfa_required, user, auth, MFA.require?(user)} do
       after_create_authorization(conn, auth, params)
