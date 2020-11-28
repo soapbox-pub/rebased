@@ -99,34 +99,6 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["keys", group]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
-
-      group = maybe_atomize(group)
-
-      keys =
-        ConfigDB
-        |> Repo.all()
-        |> Enum.map(fn x ->
-          if x.group == group do
-            x.key
-          end
-        end)
-        |> Enum.sort()
-        |> Enum.uniq()
-        |> Enum.reject(fn x -> x == nil end)
-
-      if length(keys) > 0 do
-        shell_info("The following configuration keys under :#{group} are set in ConfigDB:\r\n")
-        keys |> Enum.each(fn x -> shell_info("-  #{x}") end)
-        shell_info("\r\n")
-      end
-    else
-      _ -> configdb_not_enabled()
-    end
-  end
-
   def run(["reset"]) do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       start_pleroma()
