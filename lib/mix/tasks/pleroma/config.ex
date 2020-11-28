@@ -138,7 +138,7 @@ defmodule Mix.Tasks.Pleroma.Config do
       |> Enum.sort()
       |> Enum.each(&dump(&1))
 
-      shell_error("THIS CANNOT BE UNDONE!")
+      shell_error("\nTHIS CANNOT BE UNDONE!")
 
       if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
