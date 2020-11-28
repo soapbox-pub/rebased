@@ -150,20 +150,42 @@ defmodule Pleroma.Web.NodeInfoTest do
            )
   end
 
-  test "it shows quarantined instances data if enabled", %{conn: conn} do
-    clear_config([:mrf, :transparency], true)
+  describe "Quarantined instances" do
+    setup do
+      clear_config([:mrf, :transparency], true)
+      quarantined_instances = [{"example.com", "reason to quarantine"}]
+      clear_config([:instance, :quarantined_instances], quarantined_instances)
+    end
 
-    quarantined_instances = [{"example.com", ""}]
-    clear_config([:instance, :quarantined_instances], quarantined_instances)
+    test "shows quarantined instances data if enabled", %{conn: conn} do
+      expected_config = ["example.com"]
 
-    expected_config = [%{"instance" => "example.com", "reason" => ""}]
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
 
-    response =
-      conn
-      |> get("/nodeinfo/2.1.json")
-      |> json_response(:ok)
+      assert response["metadata"]["federation"]["quarantined_instances"] == expected_config
+    end
 
-    assert response["metadata"]["federation"]["quarantined_instances"] == expected_config
+    test "shows extra information in the quarantined_info field for relevant entries", %{
+      conn: conn
+    } do
+      clear_config([:mrf, :transparency], true)
+
+      expected_config = %{
+        "quarantined_instances" => %{
+          "example.com" => %{"reason" => "reason to quarantine"}
+        }
+      }
+
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
+
+      assert response["metadata"]["federation"]["quarantined_instances_info"] == expected_config
+    end
   end
 
   describe "MRF SimplePolicy" do
@@ -205,7 +227,7 @@ defmodule Pleroma.Web.NodeInfoTest do
       assert response["metadata"]["federation"]["exclusions"] == true
     end
 
-    test "shows extra information in the mrf_simple_extra field for relevant entries", %{
+    test "shows extra information in the mrf_simple_info field for relevant entries", %{
       conn: conn
     } do
       simple_config = %{
