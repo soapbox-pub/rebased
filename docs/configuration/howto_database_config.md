@@ -5,7 +5,7 @@ The configuration of Pleroma has traditionally been managed with a config file, 
 
 ## Migration to database config
 
-1. Run the mix task to migrate to the database. You'll receive some debugging output and a few messages informing you of what happened.
+1. Run the mix task to migrate to the database.
 
   **Source:**
 
@@ -24,21 +24,8 @@ The configuration of Pleroma has traditionally been managed with a config file, 
   ```
 
   ```
-   10:04:34.155 [debug] QUERY OK source="config" db=1.6ms decode=2.0ms queue=33.5ms idle=0.0ms
-    SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
     Migrating settings from file: /home/pleroma/config/dev.secret.exs
 
-   10:04:34.240 [debug] QUERY OK db=4.5ms queue=0.3ms idle=92.2ms
-    TRUNCATE config; []
-
-   10:04:34.244 [debug] QUERY OK db=2.8ms queue=0.3ms idle=97.2ms
-    ALTER SEQUENCE config_id_seq RESTART; []
-
-   10:04:34.256 [debug] QUERY OK source="config" db=0.8ms queue=1.4ms idle=109.8ms
-   SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 WHERE ((c0."group" = $1) AND (c0."key" = $2)) [":pleroma", ":instance"]
-
-   10:04:34.292 [debug] QUERY OK db=2.6ms queue=1.7ms idle=137.7ms
-   INSERT INTO "config" ("group","key","value","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5) RETURNING "id" [":pleroma", ":instance", <<131, 108, 0, 0, 0, 1, 104, 2, 100, 0, 4, 110, 97, 109, 101, 109, 0, 0, 0, 7, 66, 108, 101, 114, 111, 109, 97, 106>>, ~N[2020-07-12 15:04:34], ~N[2020-07-12 15:04:34]]
    Settings for key instance migrated.
    Settings for group :pleroma migrated.
   ```
