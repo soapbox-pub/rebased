@@ -14,11 +14,13 @@ defmodule Mix.Tasks.Pleroma.Config do
   @moduledoc File.read!("docs/administration/CLI_tasks/config.md")
 
   def run(["migrate_to_db"]) do
+    check_configdb()
     start_pleroma()
     migrate_to_db()
   end
 
   def run(["migrate_from_db" | options]) do
+    check_configdb()
     start_pleroma()
 
     {opts, _} =
@@ -31,142 +33,101 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   def run(["dump"]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
+    check_configdb()
+    start_pleroma()
 
-      header = config_header()
+    header = config_header()
 
-      settings =
-        ConfigDB
-        |> Repo.all()
-        |> Enum.sort()
+    settings =
+      ConfigDB
+      |> Repo.all()
+      |> Enum.sort()
 
-      unless settings == [] do
-        shell_info("#{header}")
+    unless settings == [] do
+      shell_info("#{header}")
 
-        settings |> Enum.each(&dump(&1))
-      else
-        shell_error("No settings in ConfigDB.")
-      end
+      settings |> Enum.each(&dump(&1))
     else
-      _ -> configdb_not_enabled()
+      shell_error("No settings in ConfigDB.")
     end
   end
 
   def run(["dump", group, key]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
+    check_configdb()
+    start_pleroma()
 
-      group = maybe_atomize(group)
-      key = maybe_atomize(key)
+    group = maybe_atomize(group)
+    key = maybe_atomize(key)
 
-      dump_key(group, key)
-    else
-      _ -> configdb_not_enabled()
-    end
+    dump_key(group, key)
   end
 
   def run(["dump", group]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
+    check_configdb()
+    start_pleroma()
 
-      group = maybe_atomize(group)
+    group = maybe_atomize(group)
 
-      dump_group(group)
-    else
-      _ -> configdb_not_enabled()
-    end
+    dump_group(group)
   end
 
   def run(["groups"]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
+    check_configdb()
+    start_pleroma()
 
-      groups =
-        ConfigDB
-        |> Repo.all()
-        |> Enum.map(fn x -> x.group end)
-        |> Enum.sort()
-        |> Enum.uniq()
+    groups =
+      ConfigDB
+      |> Repo.all()
+      |> Enum.map(fn x -> x.group end)
+      |> Enum.sort()
+      |> Enum.uniq()
 
-      if length(groups) > 0 do
-        shell_info("The following configuration groups are set in ConfigDB:\r\n")
-        groups |> Enum.each(fn x -> shell_info("-  #{x}") end)
-        shell_info("\r\n")
-      end
-    else
-      _ -> configdb_not_enabled()
+    if length(groups) > 0 do
+      shell_info("The following configuration groups are set in ConfigDB:\r\n")
+      groups |> Enum.each(fn x -> shell_info("-  #{x}") end)
+      shell_info("\r\n")
     end
   end
 
   def run(["reset"]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
+    check_configdb()
+    start_pleroma()
 
-      shell_info("The following settings will be permanently removed:")
+    shell_info("The following settings will be permanently removed:")
 
-      ConfigDB
-      |> Repo.all()
-      |> Enum.sort()
-      |> Enum.each(&dump(&1))
+    ConfigDB
+    |> Repo.all()
+    |> Enum.sort()
+    |> Enum.each(&dump(&1))
 
-      shell_error("\nTHIS CANNOT BE UNDONE!")
+    shell_error("\nTHIS CANNOT BE UNDONE!")
 
-      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-        Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
-        Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
+    if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+      Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
+      Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
 
-        shell_info("The ConfigDB settings have been removed from the database.")
-      else
-        shell_error("No changes made.")
-      end
+      shell_info("The ConfigDB settings have been removed from the database.")
     else
-      _ -> configdb_not_enabled()
+      shell_error("No changes made.")
     end
   end
 
   def run(["delete", group]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
+    check_configdb()
+    start_pleroma()
 
-      group = maybe_atomize(group)
+    group = maybe_atomize(group)
 
-      if group_exists?(group) do
-        shell_info("The following settings will be removed from ConfigDB:\n")
+    if group_exists?(group) do
+      shell_info("The following settings will be removed from ConfigDB:\n")
 
-        dump_group(group)
-
-        if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-          ConfigDB
-          |> Repo.all()
-          |> Enum.filter(fn x ->
-            if x.group == group do
-              x |> delete(true)
-            end
-          end)
-        else
-          shell_error("No changes made.")
-        end
-      else
-        shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
-      end
-    else
-      _ -> configdb_not_enabled()
-    end
-  end
-
-  def run(["delete", group, key]) do
-    with true <- Pleroma.Config.get([:configurable_from_database]) do
-      start_pleroma()
-
-      group = maybe_atomize(group)
-      key = maybe_atomize(key)
+      dump_group(group)
 
       if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
         ConfigDB
         |> Repo.all()
         |> Enum.filter(fn x ->
-          if x.group == group and x.key == key do
+          if x.group == group do
             x |> delete(true)
           end
         end)
@@ -174,14 +135,33 @@ defmodule Mix.Tasks.Pleroma.Config do
         shell_error("No changes made.")
       end
     else
-      _ -> configdb_not_enabled()
+      shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
+    end
+  end
+
+  def run(["delete", group, key]) do
+    check_configdb()
+    start_pleroma()
+
+    group = maybe_atomize(group)
+    key = maybe_atomize(key)
+
+    if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+      ConfigDB
+      |> Repo.all()
+      |> Enum.filter(fn x ->
+        if x.group == group and x.key == key do
+          x |> delete(true)
+        end
+      end)
+    else
+      shell_error("No changes made.")
     end
   end
 
   @spec migrate_to_db(Path.t() | nil) :: any()
   def migrate_to_db(file_path \\ nil) do
-    with true <- Pleroma.Config.get([:configurable_from_database]),
-         :ok <- Pleroma.Config.DeprecationWarnings.warn() do
+    with :ok <- Pleroma.Config.DeprecationWarnings.warn() do
       config_file =
         if file_path do
           file_path
@@ -195,8 +175,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       do_migrate_to_db(config_file)
     else
-      :error -> deprecation_error()
-      _ -> migration_error()
+      _ -> deprecation_error()
     end
   end
 
@@ -232,41 +211,31 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp migrate_from_db(opts) do
-    if Pleroma.Config.get([:configurable_from_database]) do
-      env = opts[:env] || Pleroma.Config.get(:env)
+    env = opts[:env] || Pleroma.Config.get(:env)
 
-      config_path =
-        if Pleroma.Config.get(:release) do
-          :config_path
-          |> Pleroma.Config.get()
-          |> Path.dirname()
-        else
-          "config"
-        end
-        |> Path.join("#{env}.exported_from_db.secret.exs")
+    config_path =
+      if Pleroma.Config.get(:release) do
+        :config_path
+        |> Pleroma.Config.get()
+        |> Path.dirname()
+      else
+        "config"
+      end
+      |> Path.join("#{env}.exported_from_db.secret.exs")
 
-      file = File.open!(config_path, [:write, :utf8])
+    file = File.open!(config_path, [:write, :utf8])
 
-      IO.write(file, config_header())
+    IO.write(file, config_header())
 
-      ConfigDB
-      |> Repo.all()
-      |> Enum.each(&write_and_delete(&1, file, opts[:delete]))
+    ConfigDB
+    |> Repo.all()
+    |> Enum.each(&write_and_delete(&1, file, opts[:delete]))
 
-      :ok = File.close(file)
-      System.cmd("mix", ["format", config_path])
+    :ok = File.close(file)
+    System.cmd("mix", ["format", config_path])
 
-      shell_info(
-        "Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs"
-      )
-    else
-      migration_error()
-    end
-  end
-
-  defp migration_error do
-    shell_error(
-      "Migration is not allowed in config. You can change this behavior by setting `config :pleroma, configurable_from_database: true`"
+    shell_info(
+      "Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs"
     )
   end
 
@@ -313,7 +282,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp configdb_not_enabled do
-    shell_error(
+    raise(
       "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
     )
   end
@@ -364,6 +333,14 @@ defmodule Mix.Tasks.Pleroma.Config do
       :"Elixir.#{arg}"
     else
       String.to_atom(arg)
+    end
+  end
+
+  defp check_configdb() do
+    with true <- Pleroma.Config.get([:configurable_from_database]) do
+      :ok
+    else
+      _ -> configdb_not_enabled()
     end
   end
 end
