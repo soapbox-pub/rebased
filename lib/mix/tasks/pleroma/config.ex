@@ -355,9 +355,9 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def maybe_atomize(arg) when is_atom(arg), do: arg
+  defp maybe_atomize(arg) when is_atom(arg), do: arg
 
-  def maybe_atomize(arg) when is_binary(arg) do
+  defp maybe_atomize(arg) when is_binary(arg) do
     chars = String.codepoints(arg)
 
     if "." in chars do
