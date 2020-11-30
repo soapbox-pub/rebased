@@ -1257,6 +1257,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   end
 
   describe "POST /oauth/revoke" do
+    test "when authenticated with request token, revokes it and clears it from session" do
+      oauth_token = insert(:oauth_token)
+
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session()
+        |> AuthHelper.put_session_token(oauth_token.token)
+        |> post("/oauth/revoke", %{"token" => oauth_token.token})
+
+      assert json_response(conn, 200)
+
+      refute AuthHelper.get_session_token(conn)
+      assert Token.get_by_token(oauth_token.token) == {:error, :not_found}
+    end
+
+    test "if request is authenticated with a different token, " <>
+           "revokes requested token but keeps session token" do
+      user = insert(:user)
+      oauth_token = insert(:oauth_token, user: user)
+      other_app_oauth_token = insert(:oauth_token, user: user)
+
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session()
+        |> AuthHelper.put_session_token(oauth_token.token)
+        |> post("/oauth/revoke", %{"token" => other_app_oauth_token.token})
+
+      assert json_response(conn, 200)
+
+      assert AuthHelper.get_session_token(conn) == oauth_token.token
+      assert Token.get_by_token(other_app_oauth_token.token) == {:error, :not_found}
+    end
+
     test "returns 500 on bad request" do
       response =
         build_conn()

@@ -379,9 +379,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     render_invalid_credentials_error(conn)
   end
 
-  def token_revoke(%Plug.Conn{} = conn, %{"token" => _token} = params) do
-    with {:ok, app} <- Token.Utils.fetch_app(conn),
-         {:ok, %Token{} = oauth_token} <- RevokeToken.revoke(app, params) do
+  def token_revoke(%Plug.Conn{} = conn, %{"token" => token}) do
+    with {:ok, %Token{} = oauth_token} <- Token.get_by_token(token),
+         {:ok, oauth_token} <- RevokeToken.revoke(oauth_token) do
       conn =
         with session_token = AuthHelper.get_session_token(conn),
              %Token{token: ^session_token} <- oauth_token do

@@ -6,8 +6,8 @@ defmodule Pleroma.Web.MastoFEController do
   use Pleroma.Web, :controller
 
   alias Pleroma.User
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.MastodonAPI.AuthController
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
