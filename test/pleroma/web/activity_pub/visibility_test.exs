@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     mentioned = insert(:user)
     following = insert(:user)
     unrelated = insert(:user)
-    {:ok, following} = Pleroma.User.follow(following, user)
+    {:ok, following, user} = Pleroma.User.follow(following, user)
     {:ok, list} = Pleroma.List.create("foo", user)
 
     Pleroma.List.follow(list, unrelated)

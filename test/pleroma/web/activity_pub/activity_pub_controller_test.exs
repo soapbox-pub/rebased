@@ -675,7 +675,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       recipient = insert(:user)
       actor = insert(:user, %{ap_id: "http://mastodon.example.org/users/actor"})
 
-      {:ok, recipient} = User.follow(recipient, actor)
+      {:ok, recipient, actor} = User.follow(recipient, actor)
 
       object =
         data["object"]

@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
       other_user = insert(:user)
 
       {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
-      {:ok, other_user} = User.follow(other_user, user, :follow_pending)
+      {:ok, other_user, user} = User.follow(other_user, user, :follow_pending)
 
       assert User.following?(other_user, user) == false
 
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
       other_user = insert(:user)
 
       {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
-      {:ok, other_user} = User.follow(other_user, user, :follow_pending)
+      {:ok, other_user, user} = User.follow(other_user, user, :follow_pending)
 
       user = User.get_cached_by_id(user.id)
       other_user = User.get_cached_by_id(other_user.id)

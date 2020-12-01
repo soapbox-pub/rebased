@@ -19,7 +19,7 @@ defmodule Pleroma.BBS.HandlerTest do
     user = insert(:user)
     followed = insert(:user)
 
-    {:ok, user} = User.follow(user, followed)
+    {:ok, user, followed} = User.follow(user, followed)
 
     {:ok, _first} = CommonAPI.post(user, %{status: "hey"})
     {:ok, _second} = CommonAPI.post(followed, %{status: "hello"})

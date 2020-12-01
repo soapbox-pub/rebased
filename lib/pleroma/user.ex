@@ -882,7 +882,7 @@ defmodule Pleroma.User do
     if not ap_enabled?(followed) do
       follow(follower, followed)
     else
-      {:ok, follower}
+      {:ok, follower, followed}
     end
   end
 
@@ -908,11 +908,6 @@ defmodule Pleroma.User do
 
       true ->
         FollowingRelationship.follow(follower, followed, state)
-
-        {:ok, _} = update_follower_count(followed)
-
-        follower
-        |> update_following_count()
     end
   end
 
@@ -936,11 +931,6 @@ defmodule Pleroma.User do
     case get_follow_state(follower, followed) do
       state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
-        {:ok, followed} = update_follower_count(followed)
-
-        {:ok, follower} = update_following_count(follower)
-
-        {:ok, follower, followed}
 
       nil ->
         {:error, "Not subscribed!"}

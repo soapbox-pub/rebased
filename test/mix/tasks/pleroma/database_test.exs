@@ -73,7 +73,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
   describe "running update_users_following_followers_counts" do
     test "following and followers count are updated" do
       [user, user2] = insert_pair(:user)
-      {:ok, %User{} = user} = User.follow(user, user2)
+      {:ok, %User{} = user, _user2} = User.follow(user, user2)
 
       following = User.following(user)
 
