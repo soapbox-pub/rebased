@@ -895,6 +895,13 @@ defmodule Pleroma.UserTest do
         refute cs.valid?
       end)
     end
+
+    test "it is invalid given a local user" do
+      user = insert(:user)
+      cs = User.remote_user_changeset(user, %{name: "tom from myspace"})
+
+      refute cs.valid?
+    end
   end
 
   describe "followers and friends" do
