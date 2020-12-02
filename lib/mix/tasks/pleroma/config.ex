@@ -95,7 +95,15 @@ defmodule Mix.Tasks.Pleroma.Config do
     end)
   end
 
-  def run(["reset" | options]) do
+  def run(["reset", "--force"]) do
+    check_configdb(fn ->
+      start_pleroma()
+      truncatedb()
+      shell_info("The ConfigDB settings have been removed from the database.")
+    end)
+  end
+
+  def run(["reset"]) do
     check_configdb(fn ->
       start_pleroma()
 
@@ -108,13 +116,8 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       shell_error("\nTHIS CANNOT BE UNDONE!")
 
-      proceed? =
-        "--force" in options or
-          shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y)
-
-      if proceed? do
-        Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
-        Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
+      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+        truncatedb()
 
         shell_info("The ConfigDB settings have been removed from the database.")
       else
@@ -189,8 +192,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   defp do_migrate_to_db(config_file) do
     if File.exists?(config_file) do
       shell_info("Migrating settings from file: #{Path.expand(config_file)}")
-      Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
-      Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
+      truncatedb()
 
       custom_config =
         config_file
@@ -375,5 +377,10 @@ defmodule Mix.Tasks.Pleroma.Config do
         _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
       end
     end)
+  end
+
+  defp truncatedb() do
+    Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
+    Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
   end
 end
