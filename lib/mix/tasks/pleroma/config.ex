@@ -184,7 +184,8 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       do_migrate_to_db(config_file)
     else
-      _ -> deprecation_error()
+      _ ->
+        shell_error("Migration is not allowed until all deprecation warnings have been resolved.")
     end
   end
 
@@ -248,10 +249,6 @@ defmodule Mix.Tasks.Pleroma.Config do
     )
   end
 
-  defp deprecation_error do
-    shell_error("Migration is not allowed until all deprecation warnings have been resolved.")
-  end
-
   if Code.ensure_loaded?(Config.Reader) do
     defp config_header, do: "import Config\r\n\r\n"
     defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
@@ -288,12 +285,6 @@ defmodule Mix.Tasks.Pleroma.Config do
     value = inspect(config.value, limit: :infinity)
 
     shell_info("config #{inspect(config.group)}, #{inspect(config.key)}, #{value}\r\n\r\n")
-  end
-
-  defp configdb_not_enabled do
-    shell_error(
-      "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
-    )
   end
 
   defp dump_key(group, key) when is_atom(group) and is_atom(key) do
@@ -349,7 +340,10 @@ defmodule Mix.Tasks.Pleroma.Config do
     with true <- Pleroma.Config.get([:configurable_from_database]) do
       callback.()
     else
-      _ -> configdb_not_enabled()
+      _ ->
+        shell_error(
+          "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
+        )
     end
   end
 end
