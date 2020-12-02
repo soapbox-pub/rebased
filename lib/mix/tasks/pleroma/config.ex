@@ -329,6 +329,8 @@ defmodule Mix.Tasks.Pleroma.Config do
   defp maybe_atomize(arg) when is_binary(arg) do
     chars = String.codepoints(arg)
 
+    # hack to make sure input like Pleroma.Mailer.Foo is formatted correctly
+    # for matching against values returned by Ecto
     if "." in chars do
       :"Elixir.#{arg}"
     else
