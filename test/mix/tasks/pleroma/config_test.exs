@@ -22,8 +22,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     :ok
   end
 
-  setup_all do: clear_config(:configurable_from_database, true)
-
   test "error if file with custom settings doesn't exist" do
     Mix.Tasks.Pleroma.Config.migrate_to_db("config/not_existance_config_file.exs")
 
@@ -36,6 +34,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
   describe "migrate_to_db/1" do
     setup do
+      clear_config(:configurable_from_database, true)
       initial = Application.get_env(:quack, :level)
       on_exit(fn -> Application.put_env(:quack, :level, initial) end)
     end
@@ -83,6 +82,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
   describe "with deletion temp file" do
     setup do
+      clear_config(:configurable_from_database, true)
       temp_file = "config/temp.exported_from_db.secret.exs"
 
       on_exit(fn ->
@@ -187,89 +187,114 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
   end
 
-  test "dumping a specific group" do
-    insert(:config,
-      group: :pleroma,
-      key: :instance,
-      value: [
-        name: "Pleroma Test"
-      ]
-    )
+  describe "operations on database config" do
+    setup do: clear_config(:configurable_from_database, true)
 
-    insert(:config,
-      group: :web_push_encryption,
-      key: :vapid_details,
-      value: [
-        subject: "mailto:administrator@example.com",
-        public_key:
-          "BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI",
-        private_key: "Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4"
-      ]
-    )
+    test "dumping a specific group" do
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
 
-    Mix.Tasks.Pleroma.Config.run(["dump", "pleroma"])
+      insert(:config,
+        group: :web_push_encryption,
+        key: :vapid_details,
+        value: [
+          subject: "mailto:administrator@example.com",
+          public_key:
+            "BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI",
+          private_key: "Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4"
+        ]
+      )
 
-    assert_receive {:mix_shell, :info,
-                    ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
+      Mix.Tasks.Pleroma.Config.run(["dump", "pleroma"])
 
-    refute_receive {
-      :mix_shell,
-      :info,
-      [
-        "config :web_push_encryption, :vapid_details, [subject: \"mailto:administrator@example.com\", public_key: \"BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI\", private_key: \"Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4\"]\r\n\r\n"
-      ]
-    }
+      assert_receive {:mix_shell, :info,
+                      ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
+
+      refute_receive {
+        :mix_shell,
+        :info,
+        [
+          "config :web_push_encryption, :vapid_details, [subject: \"mailto:administrator@example.com\", public_key: \"BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI\", private_key: \"Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4\"]\r\n\r\n"
+        ]
+      }
+    end
+
+    test "dumping a specific key in a group" do
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
+
+      insert(:config,
+        group: :pleroma,
+        key: Pleroma.Captcha,
+        value: [
+          enabled: false
+        ]
+      )
+
+      Mix.Tasks.Pleroma.Config.run(["dump", "pleroma", "Pleroma.Captcha"])
+
+      refute_receive {:mix_shell, :info,
+                      ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
+
+      assert_receive {:mix_shell, :info,
+                      ["config :pleroma, Pleroma.Captcha, [enabled: false]\r\n\r\n"]}
+    end
+
+    test "dumps all configuration successfully" do
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
+
+      insert(:config,
+        group: :pleroma,
+        key: Pleroma.Captcha,
+        value: [
+          enabled: false
+        ]
+      )
+
+      Mix.Tasks.Pleroma.Config.run(["dump"])
+
+      assert_receive {:mix_shell, :info,
+                      ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
+
+      assert_receive {:mix_shell, :info,
+                      ["config :pleroma, Pleroma.Captcha, [enabled: false]\r\n\r\n"]}
+    end
   end
 
-  test "dumping a specific key in a group" do
-    insert(:config,
-      group: :pleroma,
-      key: :instance,
-      value: [
-        name: "Pleroma Test"
-      ]
-    )
+  describe "when configdb disabled" do
+    test "refuses to dump" do
+      clear_config(:configurable_from_database, false)
 
-    insert(:config,
-      group: :pleroma,
-      key: Pleroma.Captcha,
-      value: [
-        enabled: false
-      ]
-    )
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
 
-    Mix.Tasks.Pleroma.Config.run(["dump", "pleroma", "Pleroma.Captcha"])
+      Mix.Tasks.Pleroma.Config.run(["dump"])
 
-    refute_receive {:mix_shell, :info,
-                    ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
-
-    assert_receive {:mix_shell, :info,
-                    ["config :pleroma, Pleroma.Captcha, [enabled: false]\r\n\r\n"]}
-  end
-
-  test "dumps all configuration successfully" do
-    insert(:config,
-      group: :pleroma,
-      key: :instance,
-      value: [
-        name: "Pleroma Test"
-      ]
-    )
-
-    insert(:config,
-      group: :pleroma,
-      key: Pleroma.Captcha,
-      value: [
-        enabled: false
-      ]
-    )
-
-    Mix.Tasks.Pleroma.Config.run(["dump"])
-
-    assert_receive {:mix_shell, :info,
-                    ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
-
-    assert_receive {:mix_shell, :info,
-                    ["config :pleroma, Pleroma.Captcha, [enabled: false]\r\n\r\n"]}
+      assert_receive {:mix_shell, :error,
+                      [
+                        "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
+                      ]}
+    end
   end
 end
