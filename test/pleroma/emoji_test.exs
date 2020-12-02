@@ -9,8 +9,12 @@ defmodule Pleroma.EmojiTest do
   describe "is_unicode_emoji?/1" do
     test "tells if a string is an unicode emoji" do
       refute Emoji.is_unicode_emoji?("X")
+      refute Emoji.is_unicode_emoji?("ね")
+
       assert Emoji.is_unicode_emoji?("☂")
       assert Emoji.is_unicode_emoji?("🥺")
+      assert Emoji.is_unicode_emoji?("🤰")
+      assert Emoji.is_unicode_emoji?("❤️")
     end
   end
 
