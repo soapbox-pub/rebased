@@ -404,15 +404,14 @@ defmodule Pleroma.Web.StreamerTest do
       refute Streamer.filtered_by_user?(user, notif)
     end
 
-    test "it sends relationships updates to the 'user' stream", %{
+    test "it sends follow relationships updates to the 'user' stream", %{
       user: user,
       token: oauth_token
     } do
       user_id = user.id
       user_url = user.ap_id
-      follower = insert(:user)
-      follower_token = insert(:oauth_token, user: follower)
-      follower_id = follower.id
+      other_user = insert(:user)
+      other_user_id = other_user.id
 
       body =
         File.read!("test/fixtures/users_mock/localhost.json")
@@ -425,47 +424,42 @@ defmodule Pleroma.Web.StreamerTest do
       end)
 
       Streamer.get_topic_and_add_socket("user", user, oauth_token)
-      Streamer.get_topic_and_add_socket("user", follower, follower_token)
-      {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(user, other_user)
 
-      # follow_pending event sent to both follower and following
       assert_receive {:text, event}
-      assert_receive {:text, ^event}
 
-      assert %{"event" => "pleroma:relationships_update", "payload" => payload} =
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
                Jason.decode!(event)
 
       assert %{
                "follower" => %{
                  "follower_count" => 0,
                  "following_count" => 0,
-                 "id" => ^follower_id
+                 "id" => ^user_id
                },
                "following" => %{
                  "follower_count" => 0,
                  "following_count" => 0,
-                 "id" => ^user_id
+                 "id" => ^other_user_id
                },
                "state" => "follow_pending"
              } = Jason.decode!(payload)
 
-      # follow_accept event sent to both follower and following
       assert_receive {:text, event}
-      assert_receive {:text, ^event}
 
-      assert %{"event" => "pleroma:relationships_update", "payload" => payload} =
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
                Jason.decode!(event)
 
       assert %{
                "follower" => %{
                  "follower_count" => 0,
                  "following_count" => 1,
-                 "id" => ^follower_id
+                 "id" => ^user_id
                },
                "following" => %{
                  "follower_count" => 1,
                  "following_count" => 0,
-                 "id" => ^user_id
+                 "id" => ^other_user_id
                },
                "state" => "follow_accept"
              } = Jason.decode!(payload)

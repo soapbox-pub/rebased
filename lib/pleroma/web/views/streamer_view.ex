@@ -74,9 +74,9 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("relationships_update.json", item) do
+  def render("follow_relationships_update.json", item) do
     %{
-      event: "pleroma:relationships_update",
+      event: "pleroma:follow_relationships_update",
       payload:
         %{
           state: item.state,

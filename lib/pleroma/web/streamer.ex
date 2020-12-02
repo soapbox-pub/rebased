@@ -186,18 +186,15 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  defp do_stream("relationships:update", item) do
-    text = StreamerView.render("relationships_update.json", item)
+  defp do_stream("follow_relationship", item) do
+    text = StreamerView.render("follow_relationships_update.json", item)
+    user_topic = "user:#{item.follower.id}"
 
-    [item.follower, item.following]
-    |> Enum.map(fn %{id: id} -> "user:#{id}" end)
-    |> Enum.each(fn user_topic ->
-      Logger.debug("Trying to push relationships:update to #{user_topic}\n\n")
+    Logger.debug("Trying to push follow relationship update to #{user_topic}\n\n")
 
-      Registry.dispatch(@registry, user_topic, fn list ->
-        Enum.each(list, fn {pid, _auth} ->
-          send(pid, {:text, text})
-        end)
+    Registry.dispatch(@registry, user_topic, fn list ->
+      Enum.each(list, fn {pid, _auth} ->
+        send(pid, {:text, text})
       end)
     end)
   end

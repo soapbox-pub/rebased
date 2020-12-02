@@ -96,7 +96,7 @@ defmodule Pleroma.FollowingRelationship do
   defp after_update(state, %User{} = follower, %User{} = following) do
     with {:ok, following} <- User.update_follower_count(following),
          {:ok, follower} <- User.update_following_count(follower) do
-      Pleroma.Web.Streamer.stream("relationships:update", %{
+      Pleroma.Web.Streamer.stream("follow_relationship", %{
         state: state,
         following: following,
         follower: follower
