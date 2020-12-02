@@ -111,13 +111,13 @@ e.g., this deletes all the settings under `config :tesla`
 === "OTP"
 
     ```sh
-    ./bin/pleroma_ctl config delete tesla
+    ./bin/pleroma_ctl config delete [--force] tesla
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.config delete tesla
+    mix pleroma.config delete [--force] tesla
     ```
 
 To delete values under a specific key:
@@ -127,13 +127,13 @@ e.g., this deletes all the settings under `config :phoenix, :stacktrace_depth`
 === "OTP"
 
     ```sh
-    ./bin/pleroma_ctl config delete phoenix stacktrace_depth
+    ./bin/pleroma_ctl config delete [--force] phoenix stacktrace_depth
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.config delete phoenix stacktrace_depth
+    mix pleroma.config delete [--force] phoenix stacktrace_depth
     ```
 
 ## Remove all settings from the database
@@ -143,11 +143,11 @@ This forcibly removes all saved values in the database.
 === "OTP"
 
     ```sh
-    ./bin/pleroma_ctl config reset
+    ./bin/pleroma_ctl config [--force] reset
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.config reset
+    mix pleroma.config [--force] reset
     ```

@@ -297,4 +297,99 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
                       ]}
     end
   end
+
+  describe "destructive operations" do
+    setup do: clear_config(:configurable_from_database, true)
+
+    test "deletes group of settings" do
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
+
+      _config_before = Repo.all(ConfigDB)
+
+      assert config_before = [
+               %Pleroma.ConfigDB{
+                 group: :pleroma,
+                 key: :instance,
+                 value: [name: "Pleroma Test"]
+               }
+             ]
+
+      Mix.Tasks.Pleroma.Config.run(["delete", "--force", "pleroma"])
+
+      config_after = Repo.all(ConfigDB)
+
+      refute config_after == config_before
+    end
+
+    test "deletes specified key" do
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
+
+      insert(:config,
+        group: :pleroma,
+        key: Pleroma.Captcha,
+        value: [
+          enabled: false
+        ]
+      )
+
+      _config_before = Repo.all(ConfigDB)
+
+      assert config_before = [
+               %Pleroma.ConfigDB{
+                 group: :pleroma,
+                 key: :instance,
+                 value: [name: "Pleroma Test"]
+               },
+               %Pleroma.ConfigDB{
+                 group: :pleroma,
+                 key: Pleroma.Captcha,
+                 value: [enabled: false]
+               }
+             ]
+
+      Mix.Tasks.Pleroma.Config.run(["delete", "--force", "pleroma", "Pleroma.Captcha"])
+
+      config_after = Repo.all(ConfigDB)
+
+      refute config_after == config_before
+    end
+
+    test "resets entire config" do
+      insert(:config,
+        group: :pleroma,
+        key: :instance,
+        value: [
+          name: "Pleroma Test"
+        ]
+      )
+
+      _config_before = Repo.all(ConfigDB)
+
+      assert config_before = [
+               %Pleroma.ConfigDB{
+                 group: :pleroma,
+                 key: :instance,
+                 value: [name: "Pleroma Test"]
+               }
+             ]
+
+      Mix.Tasks.Pleroma.Config.run(["reset", "--force"])
+
+      config_after = Repo.all(ConfigDB)
+
+      assert config_after == []
+    end
+  end
 end

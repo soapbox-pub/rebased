@@ -95,7 +95,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     end)
   end
 
-  def run(["reset"]) do
+  def run(["reset" | options]) do
     check_configdb(fn ->
       start_pleroma()
 
@@ -108,7 +108,11 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       shell_error("\nTHIS CANNOT BE UNDONE!")
 
-      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+      proceed? =
+        "--force" in options or
+          shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y)
+
+      if proceed? do
         Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
         Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
 
@@ -119,53 +123,46 @@ defmodule Mix.Tasks.Pleroma.Config do
     end)
   end
 
-  def run(["delete", group]) do
-    check_configdb(fn ->
-      start_pleroma()
+  def run(["delete", "--force", group, key]) do
+    start_pleroma()
 
-      group = maybe_atomize(group)
+    group = maybe_atomize(group)
+    key = maybe_atomize(key)
 
-      if group_exists?(group) do
-        shell_info("The following settings will be removed from ConfigDB:\n")
+    delete_key(group, key)
+  end
 
-        dump_group(group)
+  def run(["delete", "--force", group]) do
+    start_pleroma()
 
-        if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-          ConfigDB
-          |> Repo.all()
-          |> Enum.filter(fn x ->
-            if x.group == group do
-              x |> delete(true)
-            end
-          end)
-        else
-          shell_error("No changes made.")
-        end
-      else
-        shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
-      end
-    end)
+    group = maybe_atomize(group)
+
+    delete_group(group)
   end
 
   def run(["delete", group, key]) do
-    check_configdb(fn ->
-      start_pleroma()
+    start_pleroma()
 
-      group = maybe_atomize(group)
-      key = maybe_atomize(key)
+    group = maybe_atomize(group)
+    key = maybe_atomize(key)
 
-      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-        ConfigDB
-        |> Repo.all()
-        |> Enum.filter(fn x ->
-          if x.group == group and x.key == key do
-            x |> delete(true)
-          end
-        end)
-      else
-        shell_error("No changes made.")
-      end
-    end)
+    if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+      delete_key(group, key)
+    else
+      shell_error("No changes made.")
+    end
+  end
+
+  def run(["delete", group]) do
+    start_pleroma()
+
+    group = maybe_atomize(group)
+
+    if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+      delete_group(group)
+    else
+      shell_error("No changes made.")
+    end
   end
 
   @spec migrate_to_db(Path.t() | nil) :: any()
@@ -275,7 +272,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     {:ok, _} = Repo.delete(config)
 
     shell_info(
-      "config #{inspect(config.group)}, #{inspect(config.key)} deleted from the ConfigDB."
+      "config #{inspect(config.group)}, #{inspect(config.key)} was deleted from the ConfigDB."
     )
   end
 
@@ -347,5 +344,36 @@ defmodule Mix.Tasks.Pleroma.Config do
           "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
         )
     end
+  end
+
+  defp delete_key(group, key) do
+    check_configdb(fn ->
+      ConfigDB
+      |> Repo.all()
+      |> Enum.filter(fn x ->
+        if x.group == group and x.key == key do
+          x |> delete(true)
+        end
+      end)
+    end)
+  end
+
+  defp delete_group(group) do
+    check_configdb(fn ->
+      with true <- group_exists?(group) do
+        shell_info("The following settings will be removed from ConfigDB:\n")
+        dump_group(group)
+
+        ConfigDB
+        |> Repo.all()
+        |> Enum.filter(fn x ->
+          if x.group == group do
+            x |> delete(true)
+          end
+        end)
+      else
+        _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
+      end
+    end)
   end
 end
