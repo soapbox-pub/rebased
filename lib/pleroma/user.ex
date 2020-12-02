@@ -461,7 +461,6 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
-    |> validate_inclusion(:local, [true])
     |> validate_fields(true)
     |> validate_non_local()
   end
