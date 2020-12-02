@@ -108,7 +108,10 @@ defmodule Pleroma.Emoji do
     @external_resource
     |> File.read!()
     |> String.split("\n")
-    |> Enum.filter(fn line -> line != "" and not String.starts_with?(line, "#") end)
+    |> Enum.filter(fn line ->
+      line != "" and not String.starts_with?(line, "#") and
+        String.contains?(line, "fully-qualified")
+    end)
     |> Enum.map(fn line ->
       line
       |> String.split(";", parts: 2)
