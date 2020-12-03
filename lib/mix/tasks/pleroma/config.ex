@@ -289,16 +289,6 @@ defmodule Mix.Tasks.Pleroma.Config do
     shell_info("config #{inspect(config.group)}, #{inspect(config.key)}, #{value}\r\n\r\n")
   end
 
-  defp dump_key(group, key) when is_atom(group) and is_atom(key) do
-    ConfigDB
-    |> Repo.all()
-    |> Enum.filter(fn x ->
-      if x.group == group && x.key == key do
-        x |> dump
-      end
-    end)
-  end
-
   defp dump_group(group) when is_atom(group) do
     %{group: group}
     |> ConfigDB.get_by_params()
