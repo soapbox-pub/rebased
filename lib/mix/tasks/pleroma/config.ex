@@ -379,7 +379,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     end)
   end
 
-  defp truncatedb() do
+  defp truncatedb do
     Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
     Ecto.Adapters.SQL.query!(Repo, "ALTER SEQUENCE config_id_seq RESTART;")
   end
