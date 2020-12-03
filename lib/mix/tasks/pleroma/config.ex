@@ -62,7 +62,10 @@ defmodule Mix.Tasks.Pleroma.Config do
       group = maybe_atomize(group)
       key = maybe_atomize(key)
 
-      dump_key(group, key)
+      %{group: group, key: key}
+      |> ConfigDB.get_by_params()
+      |> Repo.all()
+      |> Enum.each(&dump/1)
     end)
   end
 
@@ -297,44 +300,27 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp dump_group(group) when is_atom(group) do
-    ConfigDB
+    %{group: group}
+    |> ConfigDB.get_by_params()
     |> Repo.all()
-    |> Enum.filter(fn x ->
-      if x.group == group do
-        x |> dump
-      end
-    end)
+    |> Enum.each(&dump/1)
   end
 
-  defp group_exists?(group) when is_atom(group) do
-    result =
-      ConfigDB
+  defp group_exists?(group) do
+    %{group: group}
+      |> ConfigDB.get_by_params()
       |> Repo.all()
-      |> Enum.filter(fn x ->
-        if x.group == group do
-          x
-        end
-      end)
-
-    unless result == [] do
-      true
-    else
-      false
-    end
+      |> Enum.empty?()
   end
 
   defp maybe_atomize(arg) when is_atom(arg), do: arg
 
   defp maybe_atomize(arg) when is_binary(arg) do
-    chars = String.codepoints(arg)
-
-    # hack to make sure input like Pleroma.Mailer.Foo is formatted correctly
-    # for matching against values returned by Ecto
-    if "." in chars do
-      :"Elixir.#{arg}"
+    if Pleroma.ConfigDB.module_name?(arg) do
+      String.to_existing_atom("Elixir." <> arg)
     else
       String.to_atom(arg)
-    end
+    end 
   end
 
   defp check_configdb(callback) do
@@ -350,13 +336,9 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete_key(group, key) do
     check_configdb(fn ->
-      ConfigDB
+      ConfigDB.get_by_params(%{group: group, key: key})
       |> Repo.all()
-      |> Enum.filter(fn x ->
-        if x.group == group and x.key == key do
-          x |> delete(true)
-        end
-      end)
+      |> Enum.each(&delete(&1, true))
     end)
   end
 
@@ -366,13 +348,10 @@ defmodule Mix.Tasks.Pleroma.Config do
         shell_info("The following settings will be removed from ConfigDB:\n")
         dump_group(group)
 
-        ConfigDB
-        |> Repo.all()
-        |> Enum.filter(fn x ->
-          if x.group == group do
-            x |> delete(true)
-          end
-        end)
+      ConfigDB.get_by_params(%{group: group})
+      |> Repo.all()
+      |> Enum.each(&delete(&1, true))
+
       else
         _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
       end
