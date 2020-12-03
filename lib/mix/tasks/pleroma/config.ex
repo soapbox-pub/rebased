@@ -62,9 +62,8 @@ defmodule Mix.Tasks.Pleroma.Config do
       group = maybe_atomize(group)
       key = maybe_atomize(key)
 
-      %{group: group, key: key}
-      |> ConfigDB.get_by_params()
-      |> Repo.all()
+      group
+      |> ConfigDB.get_all_by_group_and_key(key)
       |> Enum.each(&dump/1)
     end)
   end
@@ -290,17 +289,15 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp dump_group(group) when is_atom(group) do
-    %{group: group}
-    |> ConfigDB.get_by_params()
-    |> Repo.all()
+    group
+    |> ConfigDB.get_all_by_group()
     |> Enum.each(&dump/1)
   end
 
   defp group_exists?(group) do
-    %{group: group}
-      |> ConfigDB.get_by_params()
-      |> Repo.all()
-      |> Enum.empty?()
+    group
+    |> ConfigDB.get_all_by_group()
+    |> Enum.empty?()
   end
 
   defp maybe_atomize(arg) when is_atom(arg), do: arg
@@ -310,7 +307,7 @@ defmodule Mix.Tasks.Pleroma.Config do
       String.to_existing_atom("Elixir." <> arg)
     else
       String.to_atom(arg)
-    end 
+    end
   end
 
   defp check_configdb(callback) do
@@ -326,8 +323,8 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete_key(group, key) do
     check_configdb(fn ->
-      ConfigDB.get_by_params(%{group: group, key: key})
-      |> Repo.all()
+      group
+      |> ConfigDB.get_all_by_group_and_key(key)
       |> Enum.each(&delete(&1, true))
     end)
   end
@@ -338,10 +335,9 @@ defmodule Mix.Tasks.Pleroma.Config do
         shell_info("The following settings will be removed from ConfigDB:\n")
         dump_group(group)
 
-      ConfigDB.get_by_params(%{group: group})
-      |> Repo.all()
-      |> Enum.each(&delete(&1, true))
-
+        group
+        |> ConfigDB.get_all_by_group()
+        |> Enum.each(&delete(&1, true))
       else
         _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
       end
