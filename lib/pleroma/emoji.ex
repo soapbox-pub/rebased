@@ -104,6 +104,11 @@ defmodule Pleroma.Emoji do
 
   @external_resource "lib/pleroma/emoji-test.txt"
 
+  regional_indicators =
+    Enum.map(127_462..127_487, fn codepoint ->
+      <<codepoint::utf8>>
+    end)
+
   emojis =
     @external_resource
     |> File.read!()
@@ -124,6 +129,8 @@ defmodule Pleroma.Emoji do
       |> Enum.join()
     end)
     |> Enum.uniq()
+
+  emojis = emojis ++ regional_indicators
 
   for emoji <- emojis do
     def is_unicode_emoji?(unquote(emoji)), do: true
