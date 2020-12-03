@@ -579,14 +579,14 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 ### React to a post with a unicode emoji
 * Method: `PUT`
 * Authentication: required
-* Params: `emoji`: A single character unicode emoji
+* Params: `emoji`: A unicode RGI emoji or a regional indicator
 * Response: JSON, the status.
 
 ## `DELETE /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### Remove a reaction to a post with a unicode emoji
 * Method: `DELETE`
 * Authentication: required
-* Params: `emoji`: A single character unicode emoji
+* Params: `emoji`: A unicode RGI emoji or a regional indicator
 * Response: JSON, the status.
 
 ## `GET /api/v1/pleroma/statuses/:id/reactions`
