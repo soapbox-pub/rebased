@@ -344,9 +344,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     check_configdb(fn ->
       group
       |> Pleroma.ConfigDB.get_all_by_group()
-      |> Enum.each(fn config ->
-        Pleroma.ConfigDB.delete(%{group: config.group, key: config.key})
-      end)
+      |> Enum.each(&ConfigDB.delete/1)
     end)
   end
 
