@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       unsaved = build(:user)
 
       # prepare to answer yes
-      send(self(), {:mix_shell_input, :yes?, true})
+      send(self(), {:mix_shell_input, :prompt, "Y"})
 
       Mix.Tasks.Pleroma.User.run([
         "new",
@@ -55,7 +55,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "user will be created"
 
-      assert_received {:mix_shell, :yes?, [message]}
+      assert_received {:mix_shell, :prompt, [message]}
       assert message =~ "Continue"
 
       assert_received {:mix_shell, :info, [message]}
@@ -73,14 +73,14 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       unsaved = build(:user)
 
       # prepare to answer no
-      send(self(), {:mix_shell_input, :yes?, false})
+      send(self(), {:mix_shell_input, :prompt, "N"})
 
       Mix.Tasks.Pleroma.User.run(["new", unsaved.nickname, unsaved.email])
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "user will be created"
 
-      assert_received {:mix_shell, :yes?, [message]}
+      assert_received {:mix_shell, :prompt, [message]}
       assert message =~ "Continue"
 
       assert_received {:mix_shell, :info, [message]}
