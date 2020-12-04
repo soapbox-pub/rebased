@@ -334,8 +334,10 @@ defmodule Mix.Tasks.Pleroma.Config do
         dump_group(group)
 
         group
-        |> ConfigDB.get_all_by_group()
-        |> Enum.each(&delete(&1, true))
+        |> Pleroma.ConfigDB.get_all_by_group()
+        |> Enum.each(fn config ->
+          Pleroma.ConfigDB.delete(%{group: config.group, key: config.key})
+        end)
       else
         _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
       end
