@@ -142,7 +142,13 @@ defmodule Mix.Tasks.Pleroma.Config do
 
     group = maybe_atomize(group)
 
-    delete_group(group)
+    with true <- group_exists?(group) do
+      shell_info("The following settings will be removed from ConfigDB:\n")
+      dump_group(group)
+      delete_group(group)
+    else
+      _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
+    end
   end
 
   def run(["delete", group, key]) do
@@ -163,10 +169,17 @@ defmodule Mix.Tasks.Pleroma.Config do
 
     group = maybe_atomize(group)
 
-    if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-      delete_group(group)
+    with true <- group_exists?(group) do
+      shell_info("The following settings will be removed from ConfigDB:\n")
+      dump_group(group)
+
+      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+        delete_group(group)
+      else
+        shell_error("No changes made.")
+      end
     else
-      shell_error("No changes made.")
+      _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
     end
   end
 
@@ -329,18 +342,11 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete_group(group) do
     check_configdb(fn ->
-      with true <- group_exists?(group) do
-        shell_info("The following settings will be removed from ConfigDB:\n")
-        dump_group(group)
-
-        group
-        |> Pleroma.ConfigDB.get_all_by_group()
-        |> Enum.each(fn config ->
-          Pleroma.ConfigDB.delete(%{group: config.group, key: config.key})
-        end)
-      else
-        _ -> shell_error("No settings in ConfigDB for #{inspect(group)}. Aborting.")
-      end
+      group
+      |> Pleroma.ConfigDB.get_all_by_group()
+      |> Enum.each(fn config ->
+        Pleroma.ConfigDB.delete(%{group: config.group, key: config.key})
+      end)
     end)
   end
 
