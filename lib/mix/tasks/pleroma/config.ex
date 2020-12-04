@@ -297,7 +297,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   defp group_exists?(group) do
     group
     |> ConfigDB.get_all_by_group()
-    |> Enum.empty?()
+    |> Enum.any?()
   end
 
   defp maybe_atomize(arg) when is_atom(arg), do: arg
