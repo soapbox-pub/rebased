@@ -289,9 +289,9 @@ For viewing remote server timelines, there are `public:remote` and `public:remot
 
 ### Follow relationships updates
 
-Pleroma streams follow relationships updatates as `pleroma:follow_relationships_update` events to the `user` stream.
+Pleroma streams follow relationships updates as `pleroma:follow_relationships_update` events to the `user` stream.
 
-The message playload consist of:
+The message payload consist of:
 
 - `state`: a relationship state, one of `follow_pending`, `follow_accept` or `follow_reject`.
 
