@@ -11,12 +11,10 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlug do
   end
 
   def call(%{assigns: %{user: %User{} = user}} = conn, _) do
-    case User.account_status(user) do
-      :active ->
-        conn
-
-      _ ->
-        AuthHelper.drop_auth_info(conn)
+    if User.account_status(user) == :active do
+      conn
+    else
+      AuthHelper.drop_auth_info(conn)
     end
   end
 

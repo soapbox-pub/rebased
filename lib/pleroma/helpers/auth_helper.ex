@@ -20,20 +20,26 @@ defmodule Pleroma.Helpers.AuthHelper do
     |> OAuthScopesPlug.skip_plug()
   end
 
+  @doc "Drops authentication info from connection"
   def drop_auth_info(conn) do
+    # To simplify debugging, setting a private variable on `conn` if auth info is dropped
     conn
     |> assign(:user, nil)
     |> assign(:token, nil)
+    |> put_private(:authentication_ignored, true)
   end
 
+  @doc "Gets OAuth token string from session"
   def get_session_token(%Conn{} = conn) do
     get_session(conn, @oauth_token_session_key)
   end
 
+  @doc "Updates OAuth token string in session"
   def put_session_token(%Conn{} = conn, token) when is_binary(token) do
     put_session(conn, @oauth_token_session_key, token)
   end
 
+  @doc "Deletes OAuth token string from session"
   def delete_session_token(%Conn{} = conn) do
     delete_session(conn, @oauth_token_session_key)
   end

@@ -13,13 +13,6 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
     options
   end
 
-  def secret_token do
-    case Pleroma.Config.get(:admin_token) do
-      blank when blank in [nil, ""] -> nil
-      token -> token
-    end
-  end
-
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def call(conn, _) do
@@ -30,7 +23,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
     end
   end
 
-  def authenticate(%{params: %{"admin_token" => admin_token}} = conn) do
+  defp authenticate(%{params: %{"admin_token" => admin_token}} = conn) do
     if admin_token == secret_token() do
       assign_admin_user(conn)
     else
@@ -38,13 +31,20 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
     end
   end
 
-  def authenticate(conn) do
+  defp authenticate(conn) do
     token = secret_token()
 
     case get_req_header(conn, "x-admin-token") do
       blank when blank in [[], [""]] -> conn
       [^token] -> assign_admin_user(conn)
       _ -> handle_bad_token(conn)
+    end
+  end
+
+  defp secret_token do
+    case Pleroma.Config.get(:admin_token) do
+      blank when blank in [nil, ""] -> nil
+      token -> token
     end
   end
 

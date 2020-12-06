@@ -34,7 +34,7 @@ defmodule Pleroma.Web.Router do
     plug(:fetch_session)
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :expect_authentication do
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.Router do
   pipeline :after_auth do
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
     plug(Pleroma.Web.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :base_api do
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.Router do
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :well_known do
@@ -291,7 +291,6 @@ defmodule Pleroma.Web.Router do
 
     post("/main/ostatus", UtilController, :remote_subscribe)
     get("/ostatus_subscribe", RemoteFollowController, :follow)
-
     post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
 
