@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Pleroma.User do
       - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
-    proceed? = assume_yes? or shell_yes?("Continue?")
+    proceed? = assume_yes? or shell_prompt("Continue?", "n") in ~w(Yn Y y)
 
     if proceed? do
       start_pleroma()

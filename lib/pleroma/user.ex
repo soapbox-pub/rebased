@@ -473,6 +473,18 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
     |> validate_fields(true)
+    |> validate_non_local()
+  end
+
+  defp validate_non_local(cng) do
+    local? = get_field(cng, :local)
+
+    if local? do
+      cng
+      |> add_error(:local, "User is local, can't update with this changeset.")
+    else
+      cng
+    end
   end
 
   def update_changeset(struct, params \\ %{}) do
