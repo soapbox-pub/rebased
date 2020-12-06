@@ -7,6 +7,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
   import Pleroma.Factory
 
+  alias Mix.Tasks.Pleroma.Config, as: MixTask
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
 
@@ -22,29 +23,41 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     :ok
   end
 
-  test "error if file with custom settings doesn't exist" do
-    Mix.Tasks.Pleroma.Config.migrate_to_db("config/not_existance_config_file.exs")
+  defp config_records do
+    ConfigDB
+    |> Repo.all()
+    |> Enum.sort()
+  end
 
-    assert_receive {:mix_shell, :info,
-                    [
-                      "To migrate settings, you must define custom settings in config/not_existance_config_file.exs."
-                    ]},
-                   15
+  defp insert_config_record(group, key, value) do
+    insert(:config,
+      group: group,
+      key: key,
+      value: value
+    )
+  end
+
+  test "error if file with custom settings doesn't exist" do
+    MixTask.migrate_to_db("config/non_existent_config_file.exs")
+
+    msg =
+      "To migrate settings, you must define custom settings in config/non_existent_config_file.exs."
+
+    assert_receive {:mix_shell, :info, [^msg]}, 15
   end
 
   describe "migrate_to_db/1" do
     setup do
       clear_config(:configurable_from_database, true)
-      initial = Application.get_env(:quack, :level)
-      on_exit(fn -> Application.put_env(:quack, :level, initial) end)
+      clear_config([:quack, :level])
     end
 
     @tag capture_log: true
     test "config migration refused when deprecated settings are found" do
       clear_config([:media_proxy, :whitelist], ["domain_without_scheme.com"])
-      assert Repo.all(ConfigDB) == []
+      assert config_records() == []
 
-      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
+      MixTask.migrate_to_db("test/fixtures/config/temp.secret.exs")
 
       assert_received {:mix_shell, :error, [message]}
 
@@ -53,9 +66,9 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "filtered settings are migrated to db" do
-      assert Repo.all(ConfigDB) == []
+      assert config_records() == []
 
-      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
+      MixTask.migrate_to_db("test/fixtures/config/temp.secret.exs")
 
       config1 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
       config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})
@@ -70,17 +83,17 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "config table is truncated before migration" do
-      insert(:config, key: :first_setting, value: [key: "value", key2: ["Activity"]])
-      assert Repo.aggregate(ConfigDB, :count, :id) == 1
+      insert_config_record(:pleroma, :first_setting, key: "value", key2: ["Activity"])
+      assert length(config_records()) == 1
 
-      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
+      MixTask.migrate_to_db("test/fixtures/config/temp.secret.exs")
 
       config = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
       assert config.value == [key: "value", key2: [Repo]]
     end
   end
 
-  describe "with deletion temp file" do
+  describe "with deletion of temp file" do
     setup do
       clear_config(:configurable_from_database, true)
       temp_file = "config/temp.exported_from_db.secret.exs"
@@ -93,13 +106,13 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "settings are migrated to file and deleted from db", %{temp_file: temp_file} do
-      insert(:config, key: :setting_first, value: [key: "value", key2: ["Activity"]])
-      insert(:config, key: :setting_second, value: [key: "value2", key2: [Repo]])
-      insert(:config, group: :quack, key: :level, value: :info)
+      insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
+      insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
+      insert_config_record(:quack, :level, :info)
 
-      Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "--env", "temp", "-d"])
+      MixTask.run(["migrate_from_db", "--env", "temp", "-d"])
 
-      assert Repo.all(ConfigDB) == []
+      assert config_records() == []
 
       file = File.read!(temp_file)
       assert file =~ "config :pleroma, :setting_first,"
@@ -169,9 +182,9 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
         ]
       )
 
-      Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "--env", "temp", "-d"])
+      MixTask.run(["migrate_from_db", "--env", "temp", "-d"])
 
-      assert Repo.all(ConfigDB) == []
+      assert config_records() == []
       assert File.exists?(temp_file)
       {:ok, file} = File.read(temp_file)
 
@@ -191,26 +204,16 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     setup do: clear_config(:configurable_from_database, true)
 
     test "dumping a specific group" do
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
+      insert_config_record(:pleroma, :instance, name: "Pleroma Test")
+
+      insert_config_record(:web_push_encryption, :vapid_details,
+        subject: "mailto:administrator@example.com",
+        public_key:
+          "BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI",
+        private_key: "Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4"
       )
 
-      insert(:config,
-        group: :web_push_encryption,
-        key: :vapid_details,
-        value: [
-          subject: "mailto:administrator@example.com",
-          public_key:
-            "BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI",
-          private_key: "Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4"
-        ]
-      )
-
-      Mix.Tasks.Pleroma.Config.run(["dump", "pleroma"])
+      MixTask.run(["dump", "pleroma"])
 
       assert_receive {:mix_shell, :info,
                       ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
@@ -225,23 +228,10 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "dumping a specific key in a group" do
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
-      )
+      insert_config_record(:pleroma, :instance, name: "Pleroma Test")
+      insert_config_record(:pleroma, Pleroma.Captcha, enabled: false)
 
-      insert(:config,
-        group: :pleroma,
-        key: Pleroma.Captcha,
-        value: [
-          enabled: false
-        ]
-      )
-
-      Mix.Tasks.Pleroma.Config.run(["dump", "pleroma", "Pleroma.Captcha"])
+      MixTask.run(["dump", "pleroma", "Pleroma.Captcha"])
 
       refute_receive {:mix_shell, :info,
                       ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
@@ -251,23 +241,10 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "dumps all configuration successfully" do
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
-      )
+      insert_config_record(:pleroma, :instance, name: "Pleroma Test")
+      insert_config_record(:pleroma, Pleroma.Captcha, enabled: false)
 
-      insert(:config,
-        group: :pleroma,
-        key: Pleroma.Captcha,
-        value: [
-          enabled: false
-        ]
-      )
-
-      Mix.Tasks.Pleroma.Config.run(["dump"])
+      MixTask.run(["dump"])
 
       assert_receive {:mix_shell, :info,
                       ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
@@ -281,115 +258,49 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     test "refuses to dump" do
       clear_config(:configurable_from_database, false)
 
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
-      )
+      insert_config_record(:pleroma, :instance, name: "Pleroma Test")
 
-      Mix.Tasks.Pleroma.Config.run(["dump"])
+      MixTask.run(["dump"])
 
-      assert_receive {:mix_shell, :error,
-                      [
-                        "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
-                      ]}
+      msg =
+        "ConfigDB not enabled. Please check the value of :configurable_from_database in your configuration."
+
+      assert_receive {:mix_shell, :error, [^msg]}
     end
   end
 
   describe "destructive operations" do
     setup do: clear_config(:configurable_from_database, true)
 
+    setup do
+      insert_config_record(:pleroma, :instance, name: "Pleroma Test")
+      insert_config_record(:pleroma, Pleroma.Captcha, enabled: false)
+      insert_config_record(:pleroma2, :key2, z: 1)
+
+      assert length(config_records()) == 3
+
+      :ok
+    end
+
     test "deletes group of settings" do
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
-      )
+      MixTask.run(["delete", "--force", "pleroma"])
 
-      _config_before = Repo.all(ConfigDB)
-
-      assert config_before = [
-               %Pleroma.ConfigDB{
-                 group: :pleroma,
-                 key: :instance,
-                 value: [name: "Pleroma Test"]
-               }
-             ]
-
-      Mix.Tasks.Pleroma.Config.run(["delete", "--force", "pleroma"])
-
-      config_after = Repo.all(ConfigDB)
-
-      refute config_after == config_before
+      assert [%ConfigDB{group: :pleroma2, key: :key2}] = config_records()
     end
 
     test "deletes specified key" do
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
-      )
+      MixTask.run(["delete", "--force", "pleroma", "Pleroma.Captcha"])
 
-      insert(:config,
-        group: :pleroma,
-        key: Pleroma.Captcha,
-        value: [
-          enabled: false
-        ]
-      )
-
-      _config_before = Repo.all(ConfigDB)
-
-      assert config_before = [
-               %Pleroma.ConfigDB{
-                 group: :pleroma,
-                 key: :instance,
-                 value: [name: "Pleroma Test"]
-               },
-               %Pleroma.ConfigDB{
-                 group: :pleroma,
-                 key: Pleroma.Captcha,
-                 value: [enabled: false]
-               }
-             ]
-
-      Mix.Tasks.Pleroma.Config.run(["delete", "--force", "pleroma", "Pleroma.Captcha"])
-
-      config_after = Repo.all(ConfigDB)
-
-      refute config_after == config_before
+      assert [
+               %ConfigDB{group: :pleroma, key: :instance},
+               %ConfigDB{group: :pleroma2, key: :key2}
+             ] = config_records()
     end
 
     test "resets entire config" do
-      insert(:config,
-        group: :pleroma,
-        key: :instance,
-        value: [
-          name: "Pleroma Test"
-        ]
-      )
+      MixTask.run(["reset", "--force"])
 
-      _config_before = Repo.all(ConfigDB)
-
-      assert config_before = [
-               %Pleroma.ConfigDB{
-                 group: :pleroma,
-                 key: :instance,
-                 value: [name: "Pleroma Test"]
-               }
-             ]
-
-      Mix.Tasks.Pleroma.Config.run(["reset", "--force"])
-
-      config_after = Repo.all(ConfigDB)
-
-      assert config_after == []
+      assert config_records() == []
     end
   end
 end

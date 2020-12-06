@@ -5,6 +5,7 @@
 defmodule Mix.Tasks.Pleroma.Config do
   use Mix.Task
 
+  import Ecto.Query
   import Mix.Pleroma
 
   alias Pleroma.ConfigDB
@@ -48,7 +49,7 @@ defmodule Mix.Tasks.Pleroma.Config do
       unless settings == [] do
         shell_info("#{header}")
 
-        settings |> Enum.each(&dump(&1))
+        Enum.each(settings, &dump(&1))
       else
         shell_error("No settings in ConfigDB.")
       end
@@ -63,8 +64,8 @@ defmodule Mix.Tasks.Pleroma.Config do
       key = maybe_atomize(key)
 
       group
-      |> ConfigDB.get_all_by_group_and_key(key)
-      |> Enum.each(&dump/1)
+      |> ConfigDB.get_by_group_and_key(key)
+      |> dump()
     end)
   end
 
@@ -84,10 +85,9 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       groups =
         ConfigDB
+        |> distinct([c], true)
+        |> select([c], c.group)
         |> Repo.all()
-        |> Enum.map(fn x -> x.group end)
-        |> Enum.sort()
-        |> Enum.uniq()
 
       if length(groups) > 0 do
         shell_info("The following configuration groups are set in ConfigDB:\r\n")
@@ -295,11 +295,13 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete(_config, _), do: :ok
 
-  defp dump(%Pleroma.ConfigDB{} = config) do
+  defp dump(%ConfigDB{} = config) do
     value = inspect(config.value, limit: :infinity)
 
     shell_info("config #{inspect(config.group)}, #{inspect(config.key)}, #{value}\r\n\r\n")
   end
+
+  defp dump(_), do: :noop
 
   defp dump_group(group) when is_atom(group) do
     group
@@ -316,7 +318,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   defp maybe_atomize(arg) when is_atom(arg), do: arg
 
   defp maybe_atomize(arg) when is_binary(arg) do
-    if Pleroma.ConfigDB.module_name?(arg) do
+    if ConfigDB.module_name?(arg) do
       String.to_existing_atom("Elixir." <> arg)
     else
       String.to_atom(arg)
@@ -336,14 +338,14 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp delete_key(group, key) do
     check_configdb(fn ->
-      Pleroma.ConfigDB.delete(%{group: group, key: key})
+      ConfigDB.delete(%{group: group, key: key})
     end)
   end
 
   defp delete_group(group) do
     check_configdb(fn ->
       group
-      |> Pleroma.ConfigDB.get_all_by_group()
+      |> ConfigDB.get_all_by_group()
       |> Enum.each(&ConfigDB.delete/1)
     end)
   end
