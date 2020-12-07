@@ -225,6 +225,12 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
           "config :web_push_encryption, :vapid_details, [subject: \"mailto:administrator@example.com\", public_key: \"BOsPL-_KjNnjj_RMvLeR3dTOrcndi4TbMR0cu56gLGfGaT5m1gXxSfRHOcC4Dd78ycQL1gdhtx13qgKHmTM5xAI\", private_key: \"Ism6FNdS31nLCA94EfVbJbDdJXCxAZ8cZiB1JQPN_t4\"]\r\n\r\n"
         ]
       }
+
+      # Ensure operations work when using atom syntax
+      MixTask.run(["dump", ":pleroma"])
+
+      assert_receive {:mix_shell, :info,
+                      ["config :pleroma, :instance, [name: \"Pleroma Test\"]\r\n\r\n"]}
     end
 
     test "dumping a specific key in a group" do
