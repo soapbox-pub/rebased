@@ -77,7 +77,7 @@ defmodule Pleroma.Instances.Instance do
     )
   end
 
-  def reachable?(_), do: true
+  def reachable?(url_or_host) when is_binary(url_or_host), do: true
 
   def set_reachable(url_or_host) when is_binary(url_or_host) do
     with host <- host(url_or_host),

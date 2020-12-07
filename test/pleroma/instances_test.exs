@@ -32,9 +32,9 @@ defmodule Pleroma.InstancesTest do
       assert Instances.reachable?(URI.parse(url).host)
     end
 
-    test "returns true on non-binary input" do
-      assert Instances.reachable?(nil)
-      assert Instances.reachable?(1)
+    test "raises FunctionClauseError exception on non-binary input" do
+      assert_raise FunctionClauseError, fn -> Instances.reachable?(nil) end
+      assert_raise FunctionClauseError, fn -> Instances.reachable?(1) end
     end
   end
 
