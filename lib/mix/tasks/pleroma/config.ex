@@ -134,7 +134,18 @@ defmodule Mix.Tasks.Pleroma.Config do
     group = maybe_atomize(group)
     key = maybe_atomize(key)
 
-    delete_key(group, key)
+    with true <- key_exists?(group, key) do
+      shell_info("The following settings will be removed from ConfigDB:\n")
+
+      group
+      |> ConfigDB.get_by_group_and_key(key)
+      |> dump()
+
+      delete_key(group, key)
+    else
+      _ ->
+        shell_error("No settings in ConfigDB for #{inspect(group)}, #{inspect(key)}. Aborting.")
+    end
   end
 
   def run(["delete", "--force", group]) do
@@ -157,10 +168,21 @@ defmodule Mix.Tasks.Pleroma.Config do
     group = maybe_atomize(group)
     key = maybe_atomize(key)
 
-    if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
-      delete_key(group, key)
+    with true <- key_exists?(group, key) do
+      shell_info("The following settings will be removed from ConfigDB:\n")
+
+      group
+      |> ConfigDB.get_by_group_and_key(key)
+      |> dump()
+
+      if shell_prompt("Are you sure you want to continue?", "n") in ~w(Yn Y y) do
+        delete_key(group, key)
+      else
+        shell_error("No changes made.")
+      end
     else
-      shell_error("No changes made.")
+      _ ->
+        shell_error("No settings in ConfigDB for #{inspect(group)}, #{inspect(key)}. Aborting.")
     end
   end
 
@@ -313,6 +335,13 @@ defmodule Mix.Tasks.Pleroma.Config do
     group
     |> ConfigDB.get_all_by_group()
     |> Enum.any?()
+  end
+
+  defp key_exists?(group, key) do
+    group
+    |> ConfigDB.get_by_group_and_key(key)
+    |> is_nil
+    |> Kernel.!()
   end
 
   defp maybe_atomize(arg) when is_atom(arg), do: arg
