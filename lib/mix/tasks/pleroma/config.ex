@@ -316,6 +316,8 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp maybe_atomize(arg) when is_atom(arg), do: arg
+ 
+   defp maybe_atomize(":" <> arg), do: maybe_atomize(arg)
 
   defp maybe_atomize(arg) when is_binary(arg) do
     if ConfigDB.module_name?(arg) do
