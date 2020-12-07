@@ -46,13 +46,13 @@ defmodule Pleroma.ConfigDB do
     from(c in ConfigDB, where: c.group == ^group) |> Repo.all()
   end
 
-  @spec get_all_by_group_and_key(atom() | String.t(), atom() | String.t()) :: [t()]
-  def get_all_by_group_and_key(group, key) do
-    from(c in ConfigDB, where: c.group == ^group and c.key == ^key) |> Repo.all()
+  @spec get_by_group_and_key(atom() | String.t(), atom() | String.t()) :: t() | nil
+  def get_by_group_and_key(group, key) do
+    get_by_params(%{group: group, key: key})
   end
 
   @spec get_by_params(map()) :: ConfigDB.t() | nil
-  def get_by_params(params), do: Repo.get_by(ConfigDB, params)
+  def get_by_params(%{group: _, key: _} = params), do: Repo.get_by(ConfigDB, params)
 
   @spec changeset(ConfigDB.t(), map()) :: Changeset.t()
   def changeset(config, params \\ %{}) do
