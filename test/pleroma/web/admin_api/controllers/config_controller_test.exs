@@ -162,7 +162,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
   end
 
-  test "POST /api/pleroma/admin/config error", %{conn: conn} do
+  test "POST /api/pleroma/admin/config with configdb disabled", %{conn: conn} do
+    clear_config(:configurable_from_database, false)
+
     conn =
       conn
       |> put_req_header("content-type", "application/json")

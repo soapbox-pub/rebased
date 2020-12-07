@@ -6,7 +6,7 @@ defmodule Pleroma.ConfigDB do
   use Ecto.Schema
 
   import Ecto.Changeset
-  import Ecto.Query, only: [select: 3]
+  import Ecto.Query, only: [select: 3, from: 2]
   import Pleroma.Web.Gettext
 
   alias __MODULE__
@@ -41,8 +41,18 @@ defmodule Pleroma.ConfigDB do
     end)
   end
 
+  @spec get_all_by_group(atom() | String.t()) :: [t()]
+  def get_all_by_group(group) do
+    from(c in ConfigDB, where: c.group == ^group) |> Repo.all()
+  end
+
+  @spec get_by_group_and_key(atom() | String.t(), atom() | String.t()) :: t() | nil
+  def get_by_group_and_key(group, key) do
+    get_by_params(%{group: group, key: key})
+  end
+
   @spec get_by_params(map()) :: ConfigDB.t() | nil
-  def get_by_params(params), do: Repo.get_by(ConfigDB, params)
+  def get_by_params(%{group: _, key: _} = params), do: Repo.get_by(ConfigDB, params)
 
   @spec changeset(ConfigDB.t(), map()) :: Changeset.t()
   def changeset(config, params \\ %{}) do
