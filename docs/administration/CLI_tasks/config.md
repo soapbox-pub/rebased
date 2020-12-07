@@ -32,7 +32,7 @@
     config :pleroma, configurable_from_database: false
     ```
 
-To delete transfered settings from database optional flag `-d` can be used. `<env>` is `prod` by default.
+To delete transferred settings from database optional flag `-d` can be used. `<env>` is `prod` by default.
 
 === "OTP"
     ```sh
@@ -42,4 +42,112 @@ To delete transfered settings from database optional flag `-d` can be used. `<en
 === "From Source"
     ```sh
     mix pleroma.config migrate_from_db [--env=<env>] [-d]
+    ```
+
+## Dump all of the config settings defined in the database
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl config dump
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config dump
+    ```
+
+## List individual configuration groups in the database
+
+=== "OTP"
+
+    ```sh
+     ./bin/pleroma_ctl config groups
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config groups
+    ```
+
+## Dump the saved configuration values for a specific group or key
+
+e.g., this shows all the settings under `config :pleroma`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config dump pleroma
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config dump pleroma
+    ```
+
+To get values under a specific key:
+
+e.g., this shows all the settings under `config :pleroma, :instance`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config dump pleroma instance
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config dump pleroma instance
+    ```
+
+## Delete the saved configuration values for a specific group or key
+
+e.g., this deletes all the settings under `config :tesla`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config delete [--force] tesla
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config delete [--force] tesla
+    ```
+
+To delete values under a specific key:
+
+e.g., this deletes all the settings under `config :phoenix, :stacktrace_depth`
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config delete [--force] phoenix stacktrace_depth
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config delete [--force] phoenix stacktrace_depth
+    ```
+
+## Remove all settings from the database
+
+This forcibly removes all saved values in the database.
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl config [--force] reset
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.config [--force] reset
     ```
