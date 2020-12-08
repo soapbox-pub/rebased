@@ -199,7 +199,7 @@ defmodule Pleroma.ApplicationRequirements do
       `config :pleroma, :dangerzone, override_repo_pool_size: true`.
       """)
 
-      {:error, "Repo.pool_size above recommended value."}
+      {:error, "Repo.pool_size different than recommended value."}
     else
       :ok
     end
