@@ -9,29 +9,32 @@ static_dir="instance/static"
 # project_branch="pleroma"
 # static_dir="priv/static"
 
-if [[ ! -d "${static_dir}" ]]
+if [ ! -d "${static_dir}" ]
 then
 	echo "Error: ${static_dir} directory is missing, are you sure you are running this script at the root of pleroma’s repository?"
 	exit 1
 fi
 
-last_modified="$(curl -s -I 'https://git.pleroma.social/api/v4/projects/'${project_id}'/jobs/artifacts/'${project_branch}'/download?job=build' | grep '^Last-Modified:' | cut -d: -f2-)"
+last_modified="$(curl --fail -s -I 'https://git.pleroma.social/api/v4/projects/'${project_id}'/jobs/artifacts/'${project_branch}'/download?job=build' | grep '^Last-Modified:' | cut -d: -f2-)"
 
 echo "branch:${project_branch}"
 echo "Last-Modified:${last_modified}"
 
 artifact="mastofe.zip"
 
-if [[ -e mastofe.timestamp ]] && [[ "${last_modified}" != "" ]]
+if [ "${last_modified}x" = "x" ]
 then
-	if [[ "$(cat mastofe.timestamp)" == "${last_modified}" ]]
-	then
-		echo "MastoFE is up-to-date, exiting…"
-		exit 0
-	fi
+	echo "ERROR: Couldn't get the modification date of the latest build archive, maybe it expired, exiting..."
+	exit 1
 fi
 
-curl -c - "https://git.pleroma.social/api/v4/projects/${project_id}/jobs/artifacts/${project_branch}/download?job=build" -o "${artifact}" || exit
+if [ -e mastofe.timestamp ] && [ "$(cat mastofe.timestamp)" = "${last_modified}" ]
+then
+	echo "MastoFE is up-to-date, exiting..."
+	exit 0
+fi
+
+curl --fail -c - "https://git.pleroma.social/api/v4/projects/${project_id}/jobs/artifacts/${project_branch}/download?job=build" -o "${artifact}" || exit
 
 # TODO: Update the emoji as well
 rm -fr "${static_dir}/sw.js" "${static_dir}/packs" || exit
