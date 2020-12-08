@@ -12,6 +12,25 @@ defmodule Pleroma.ApplicationRequirementsTest do
   alias Pleroma.Config
   alias Pleroma.Repo
 
+  describe "check_repo_pool_size!/1" do
+    test "raises if the pool size is unexpected" do
+      clear_config([Pleroma.Repo, :pool_size], 11)
+
+      assert_raise Pleroma.ApplicationRequirements.VerifyError,
+                   "Repo.pool_size different than recommended value.",
+                   fn ->
+                     capture_log(&Pleroma.ApplicationRequirements.verify!/0)
+                   end
+    end
+
+    test "doesn't raise if the pool size is unexpected but the respective flag is set" do
+      clear_config([Pleroma.Repo, :pool_size], 11)
+      clear_config([:dangerzone, :override_repo_pool_size], true)
+
+      assert Pleroma.ApplicationRequirements.verify!() == :ok
+    end
+  end
+
   describe "check_welcome_message_config!/1" do
     setup do: clear_config([:welcome])
     setup do: clear_config([Pleroma.Emails.Mailer])
