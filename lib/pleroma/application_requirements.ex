@@ -194,9 +194,15 @@ defmodule Pleroma.ApplicationRequirements do
          not Pleroma.Config.get([:dangerzone, :override_repo_pool_size], false) do
       Logger.error("""
       !!!CONFIG WARNING!!!
-      The database pool size has been altered from the recommended value of 10.\n
-      Please revert or ensure your database is tuned appropriately and then set\n
+
+      The database pool size has been altered from the recommended value of 10.
+
+      Please revert or ensure your database is tuned appropriately and then set
       `config :pleroma, :dangerzone, override_repo_pool_size: true`.
+
+      If you are experiencing database timeouts, please check the "Optimizing
+      your PostgreSQL performance" section in the documentation. If you still
+      encounter issues after that, please open an issue on the tracker.
       """)
 
       {:error, "Repo.pool_size different than recommended value."}
