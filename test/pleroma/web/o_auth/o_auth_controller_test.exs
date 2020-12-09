@@ -1105,7 +1105,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                %{
                  "scope" => "write",
                  "token_type" => "Bearer",
-                 "expires_in" => 600,
                  "access_token" => _,
                  "refresh_token" => _,
                  "me" => ^ap_id
@@ -1145,7 +1144,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                %{
                  "scope" => "write",
                  "token_type" => "Bearer",
-                 "expires_in" => 600,
                  "access_token" => _,
                  "refresh_token" => _,
                  "me" => ^ap_id
@@ -1228,7 +1226,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                %{
                  "scope" => "write",
                  "token_type" => "Bearer",
-                 "expires_in" => 600,
                  "access_token" => _,
                  "refresh_token" => _,
                  "me" => ^ap_id
