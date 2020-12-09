@@ -64,7 +64,8 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
     end
 
     test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
-      token = insert(:oauth_token, scopes: ["read"])
+      {:ok, app} = Pleroma.Web.MastodonAPI.AuthController.local_mastofe_app()
+      token = insert(:oauth_token, app: app, scopes: ["read"])
 
       conn =
         conn

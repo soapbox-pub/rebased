@@ -1417,11 +1417,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
   describe "GET /api/pleroma/admin/config/descriptions" do
     test "structure", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
-
-      conn =
-        assign(conn, :user, admin)
-        |> get("/api/pleroma/admin/config/descriptions")
+      conn = get(conn, "/api/pleroma/admin/config/descriptions")
 
       assert [child | _others] = json_response_and_validate_schema(conn, 200)
 
@@ -1439,11 +1435,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         {:esshd}
       ])
 
-      admin = insert(:user, is_admin: true)
-
-      conn =
-        assign(conn, :user, admin)
-        |> get("/api/pleroma/admin/config/descriptions")
+      conn = get(conn, "/api/pleroma/admin/config/descriptions")
 
       children = json_response_and_validate_schema(conn, 200)
 

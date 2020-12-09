@@ -941,7 +941,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/admin/stats" do
     test "status visibility count", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
       user = insert(:user)
       CommonAPI.post(user, %{visibility: "public", status: "hey"})
       CommonAPI.post(user, %{visibility: "unlisted", status: "hey"})
@@ -949,7 +948,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response =
         conn
-        |> assign(:user, admin)
         |> get("/api/pleroma/admin/stats")
         |> json_response(200)
 
@@ -958,7 +956,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "by instance", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
       user1 = insert(:user)
       instance2 = "instance2.tld"
       user2 = insert(:user, %{ap_id: "https://#{instance2}/@actor"})
@@ -969,7 +966,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response =
         conn
-        |> assign(:user, admin)
         |> get("/api/pleroma/admin/stats", instance: instance2)
         |> json_response(200)
 

@@ -264,9 +264,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       assert length(result) == 3
 
       # Trying to get the chat of a different user
+      other_user_chat = Chat.get(other_user.id, user.ap_id)
+
       conn
-      |> assign(:user, other_user)
-      |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
+      |> get("/api/v1/pleroma/chats/#{other_user_chat.id}/messages")
       |> json_response_and_validate_schema(404)
     end
   end
