@@ -11,7 +11,7 @@ defmodule Pleroma.MFA.Token do
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Authorization
 
-  @expires 300
+  @expires 3600 * 24 * 30
 
   @type t() :: %__MODULE__{}
 
