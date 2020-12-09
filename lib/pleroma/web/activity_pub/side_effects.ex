@@ -47,10 +47,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = followed <- User.get_cached_by_ap_id(actor),
          %User{} = follower <- User.get_cached_by_ap_id(follower_id),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
+         {:ok, _follower, followed} <-
+           FollowingRelationship.update(follower, followed, :follow_accept) do
       Notification.update_notification_type(followed, follow_activity)
-      User.update_follower_count(followed)
-      User.update_following_count(follower)
     end
 
     {:ok, object, meta}
@@ -99,7 +98,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       ) do
     with %User{} = follower <- User.get_cached_by_ap_id(following_user),
          %User{} = followed <- User.get_cached_by_ap_id(followed_user),
-         {_, {:ok, _}, _, _} <-
+         {_, {:ok, _, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
       if followed.local && !followed.is_locked do
         {:ok, accept_data, _} = Builder.accept(followed, object)

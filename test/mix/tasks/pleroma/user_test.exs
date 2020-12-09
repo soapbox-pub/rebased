@@ -503,7 +503,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       moot = insert(:user, nickname: "moot")
       kawen = insert(:user, nickname: "kawen", name: "fediverse expert moon")
 
-      {:ok, user} = User.follow(user, moon)
+      {:ok, user, moon} = User.follow(user, moon)
 
       assert [moon.id, kawen.id] == User.Search.search("moon") |> Enum.map(& &1.id)
 

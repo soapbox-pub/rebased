@@ -274,8 +274,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, user} = User.follow(user, other_user)
-      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, user, other_user} = User.follow(user, other_user)
+      {:ok, other_user, user} = User.follow(other_user, user)
       {:ok, _subscription} = User.subscribe(user, other_user)
       {:ok, _user_relationships} = User.mute(user, other_user, %{notifications: true})
       {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, other_user)
@@ -301,7 +301,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
       {:ok, _subscription} = User.subscribe(user, other_user)
       {:ok, _user_relationship} = User.block(user, other_user)
       {:ok, _user_relationship} = User.block(other_user, user)

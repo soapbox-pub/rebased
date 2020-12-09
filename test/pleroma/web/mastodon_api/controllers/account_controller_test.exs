@@ -320,7 +320,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       user_two = insert(:user)
       user_three = insert(:user)
 
-      {:ok, _user_three} = User.follow(user_three, user_one)
+      {:ok, _user_three, _user_one} = User.follow(user_three, user_one)
 
       {:ok, activity} = CommonAPI.post(user_one, %{status: "HI!!!"})
 
@@ -568,7 +568,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting followers", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, %{id: user_id}} = User.follow(user, other_user)
+      {:ok, %{id: user_id}, other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
@@ -577,7 +577,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting followers, hide_followers", %{user: user, conn: conn} do
       other_user = insert(:user, hide_followers: true)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
@@ -587,7 +587,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting followers, hide_followers, same user requesting" do
       user = insert(:user)
       other_user = insert(:user, hide_followers: true)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -599,9 +599,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "getting followers, pagination", %{user: user, conn: conn} do
-      {:ok, %User{id: follower1_id}} = :user |> insert() |> User.follow(user)
-      {:ok, %User{id: follower2_id}} = :user |> insert() |> User.follow(user)
-      {:ok, %User{id: follower3_id}} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower1_id}, _user} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower2_id}, _user} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower3_id}, _user} = :user |> insert() |> User.follow(user)
 
       assert [%{"id" => ^follower3_id}, %{"id" => ^follower2_id}] =
                conn
@@ -637,7 +637,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting following", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/following")
 
@@ -648,7 +648,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting following, hide_follows, other user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -662,7 +662,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting following, hide_follows, same user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, _other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -677,9 +677,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       following1 = insert(:user)
       following2 = insert(:user)
       following3 = insert(:user)
-      {:ok, _} = User.follow(user, following1)
-      {:ok, _} = User.follow(user, following2)
-      {:ok, _} = User.follow(user, following3)
+      {:ok, _, _} = User.follow(user, following1)
+      {:ok, _, _} = User.follow(user, following2)
+      {:ok, _, _} = User.follow(user, following3)
 
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
 
@@ -1520,7 +1520,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "returns the relationships for the current user", %{user: user, conn: conn} do
       %{id: other_user_id} = other_user = insert(:user)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       assert [%{"id" => ^other_user_id}] =
                conn

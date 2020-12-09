@@ -4,7 +4,7 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 ## Flake IDs
 
-Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
+Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However, just like Mastodon's ids, they are lexically sortable strings
 
 ## Timelines
 
@@ -26,8 +26,8 @@ Has these additional fields under the `pleroma` object:
 - `conversation_id`: the ID of the AP context the status is associated with (if any)
 - `direct_conversation_id`: the ID of the Mastodon direct message conversation the status is associated with (if any)
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
-- `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
-- `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
+- `content`: a map consisting of alternate representations of the `content` property with the key being its mimetype. Currently, the only alternate representation supported is `text/plain`
+- `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being its mimetype. Currently, the only alternate representation supported is `text/plain`
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
@@ -170,9 +170,9 @@ Returns on success: 200 OK `{}`
 
 Additional parameters can be added to the JSON body/Form data:
 
-- `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
+- `preview`: boolean, if set to `true` the post won't be actually posted, but the status entity would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
-- `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
+- `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for post visibility are not affected by this and will still apply.
 - `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted`, `local` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
@@ -279,9 +279,26 @@ Has these additional fields under the `pleroma` object:
 
 ## Streaming
 
+### Chats
+
 There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
 
+### Remote timelines
+
 For viewing remote server timelines, there are `public:remote` and `public:remote:media` streams. Each of these accept a parameter like `?instance=lain.com`.
+
+### Follow relationships updates
+
+Pleroma streams follow relationships updates as `pleroma:follow_relationships_update` events to the `user` stream.
+
+The message payload consist of:
+
+- `state`: a relationship state, one of `follow_pending`, `follow_accept` or `follow_reject`.
+
+- `follower` and `following` maps with following fields:
+  - `id`: user ID
+  - `follower_count`: follower count
+  - `following_count`: following count
 
 ## User muting and thread muting
 

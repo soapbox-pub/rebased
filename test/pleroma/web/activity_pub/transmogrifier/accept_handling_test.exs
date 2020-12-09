@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
     follower = insert(:user)
     followed = insert(:user)
 
-    {:ok, follower} = User.follow(follower, followed)
+    {:ok, follower, followed} = User.follow(follower, followed)
     assert User.following?(follower, followed) == true
 
     {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)

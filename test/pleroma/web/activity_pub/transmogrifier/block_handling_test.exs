@@ -40,8 +40,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.BlockHandlingTest do
       |> Map.put("object", blocked.ap_id)
       |> Map.put("actor", blocker.ap_id)
 
-    {:ok, blocker} = User.follow(blocker, blocked)
-    {:ok, blocked} = User.follow(blocked, blocker)
+    {:ok, blocker, blocked} = User.follow(blocker, blocked)
+    {:ok, blocked, blocker} = User.follow(blocked, blocker)
 
     assert User.following?(blocker, blocked)
     assert User.following?(blocked, blocker)

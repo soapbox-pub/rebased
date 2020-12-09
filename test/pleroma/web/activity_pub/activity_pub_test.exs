@@ -726,7 +726,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
     blocker = insert(:user)
 
-    {:ok, blocker} = User.follow(blocker, domain_user)
+    {:ok, blocker, domain_user} = User.follow(blocker, domain_user)
     {:ok, blocker} = User.block_domain(blocker, domain)
 
     assert User.following?(blocker, domain_user)
@@ -853,7 +853,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     user = insert(:user)
     booster = insert(:user)
 
-    {:ok, user} = User.follow(user, booster)
+    {:ok, user, booster} = User.follow(user, booster)
 
     {:ok, announce} = CommonAPI.repeat(activity_three.id, booster)
 
@@ -1158,13 +1158,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user2 = insert(:user)
       user3 = insert(:user)
 
-      {:ok, user1} = User.follow(user1, user3)
+      {:ok, user1, user3} = User.follow(user1, user3)
       assert User.following?(user1, user3)
 
-      {:ok, user2} = User.follow(user2, user3)
+      {:ok, user2, user3} = User.follow(user2, user3)
       assert User.following?(user2, user3)
 
-      {:ok, user3} = User.follow(user3, user2)
+      {:ok, user3, user2} = User.follow(user3, user2)
       assert User.following?(user3, user2)
 
       {:ok, public_activity} = CommonAPI.post(user3, %{status: "hi 1"})
@@ -1931,13 +1931,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   defp public_messages(_) do
     [u1, u2, u3, u4] = insert_list(4, :user)
-    {:ok, u1} = User.follow(u1, u2)
-    {:ok, u2} = User.follow(u2, u1)
-    {:ok, u1} = User.follow(u1, u4)
-    {:ok, u4} = User.follow(u4, u1)
+    {:ok, u1, u2} = User.follow(u1, u2)
+    {:ok, u2, u1} = User.follow(u2, u1)
+    {:ok, u1, u4} = User.follow(u1, u4)
+    {:ok, u4, u1} = User.follow(u4, u1)
 
-    {:ok, u2} = User.follow(u2, u3)
-    {:ok, u3} = User.follow(u3, u2)
+    {:ok, u2, u3} = User.follow(u2, u3)
+    {:ok, u3, u2} = User.follow(u3, u2)
 
     {:ok, a1} = CommonAPI.post(u1, %{status: "Status"})
 
@@ -2030,15 +2030,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   defp private_messages(_) do
     [u1, u2, u3, u4] = insert_list(4, :user)
-    {:ok, u1} = User.follow(u1, u2)
-    {:ok, u2} = User.follow(u2, u1)
-    {:ok, u1} = User.follow(u1, u3)
-    {:ok, u3} = User.follow(u3, u1)
-    {:ok, u1} = User.follow(u1, u4)
-    {:ok, u4} = User.follow(u4, u1)
+    {:ok, u1, u2} = User.follow(u1, u2)
+    {:ok, u2, u1} = User.follow(u2, u1)
+    {:ok, u1, u3} = User.follow(u1, u3)
+    {:ok, u3, u1} = User.follow(u3, u1)
+    {:ok, u1, u4} = User.follow(u1, u4)
+    {:ok, u4, u1} = User.follow(u4, u1)
 
-    {:ok, u2} = User.follow(u2, u3)
-    {:ok, u3} = User.follow(u3, u2)
+    {:ok, u2, u3} = User.follow(u2, u3)
+    {:ok, u3, u2} = User.follow(u3, u2)
 
     {:ok, a1} = CommonAPI.post(u1, %{status: "Status", visibility: "private"})
 
