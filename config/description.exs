@@ -2540,7 +2540,7 @@ config :pleroma, :config_description, [
         key: :token_expires_in,
         type: :integer,
         description: "The lifetime in seconds of the access token",
-        suggestions: [600]
+        suggestions: [2_592_000]
       },
       %{
         key: :issue_new_refresh_token,

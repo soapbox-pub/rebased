@@ -171,7 +171,6 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert match?(
                %{
                  "access_token" => _,
-                 "expires_in" => 600,
                  "me" => ^ap_id,
                  "refresh_token" => _,
                  "scope" => "write",
@@ -280,7 +279,6 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert match?(
                %{
                  "access_token" => _,
-                 "expires_in" => 600,
                  "me" => ^ap_id,
                  "refresh_token" => _,
                  "scope" => "write",
