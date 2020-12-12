@@ -253,7 +253,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
-          (Enum.map(paths, &"- #{&1}\n") |> Enum.join("")) <>
+          (Enum.map(will_overwrite, &"- #{&1}\n") |> Enum.join("")) <>
           "Rerun with `--force` to overwrite them."
       )
     end
