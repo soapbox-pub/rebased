@@ -16,8 +16,7 @@
     mix pleroma.email test [--to <destination email address>]
     ```
 
-
-Example: 
+Example:
 
 === "OTP"
 
@@ -36,11 +35,11 @@ Example:
 === "OTP"
 
     ```sh
-     ./bin/pleroma_ctl email send_confirmation_mails
+     ./bin/pleroma_ctl email resend_confirmation_emails
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.email send_confirmation_mails
+    mix pleroma.email resend_confirmation_emails
     ```

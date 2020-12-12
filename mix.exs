@@ -22,7 +22,7 @@ defmodule Pleroma.Mixfile do
       docs: [
         source_url_pattern:
           "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
-        logo: "priv/static/static/logo.png",
+        logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
           "Installation manuals": Path.wildcard("docs/installation/*.md"),

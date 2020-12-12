@@ -131,7 +131,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              '#{Pleroma.Web.base_url()}/tags/pleromaart.rss'
 
     assert xpath(xml, ~x"//channel/webfeeds:logo/text()") ==
-             '#{Pleroma.Web.base_url()}/static/logo.png'
+             '#{Pleroma.Web.base_url()}/static/logo.svg'
 
     assert xpath(xml, ~x"//channel/item/title/text()"l) == [
              '42 This is :moominmamm...',
