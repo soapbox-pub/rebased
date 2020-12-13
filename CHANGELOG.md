@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Password reset tokens now are not accepted after a certain age.
 - Mix tasks to help with displaying and removing ConfigDB entries. See `mix pleroma.config`
 - OAuth form improvements: users are remembered by their cookie, the CSS is overridable by the admin, and the style has been improved.
-- OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc. 
+- OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 
 <details>
   <summary>API Changes</summary>
@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task pleroma.user delete_activities for source installations.
 - Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
 - Forwarded reports duplication from Pleroma instances.
+- Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
 
 <details>
   <summary>API</summary>
