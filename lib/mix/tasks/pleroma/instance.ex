@@ -161,12 +161,21 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
         |> Path.expand()
 
+      {strip_uploads_message, strip_uploads_default} =
+        if Pleroma.Utils.command_available?("exiftool") do
+          {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as installed. (y/n)",
+           "y"}
+        else
+          {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as not installed, please install it if you answer yes. (y/n)",
+           "n"}
+        end
+
       strip_uploads =
         get_option(
           options,
           :strip_uploads,
-          "Do you want to strip location (GPS) data from uploaded images? (y/n)",
-          "y"
+          strip_uploads_message,
+          strip_uploads_default
         ) === "y"
 
       anonymize_uploads =
@@ -253,7 +262,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
-          (Enum.map(paths, &"- #{&1}\n") |> Enum.join("")) <>
+          (Enum.map(will_overwrite, &"- #{&1}\n") |> Enum.join("")) <>
           "Rerun with `--force` to overwrite them."
       )
     end
