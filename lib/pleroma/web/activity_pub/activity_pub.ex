@@ -2,10 +2,6 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ActivityPub.Persisting do
-  @callback persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
-end
-
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics

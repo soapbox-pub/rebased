@@ -2,11 +2,6 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.SideEffects.Handling do
-  @callback handle(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
-  @callback handle_after_transaction(map()) :: map()
-end
-
 defmodule Pleroma.Web.ActivityPub.SideEffects do
   @moduledoc """
   This module looks at an inserted object and executes the side effects that it

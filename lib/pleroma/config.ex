@@ -2,11 +2,6 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Config.Getting do
-  @callback get(any()) :: any()
-  @callback get(any(), any()) :: any()
-end
-
 defmodule Pleroma.Config do
   @behaviour Pleroma.Config.Getting
   defmodule Error do

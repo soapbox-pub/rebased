@@ -8,12 +8,12 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
   import Mox
   import Pleroma.Factory
 
+  alias Pleroma.ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPubMock
   alias Pleroma.Web.ActivityPub.MRFMock
   alias Pleroma.Web.ActivityPub.ObjectValidatorMock
   alias Pleroma.Web.ActivityPub.SideEffectsMock
   alias Pleroma.Web.FederatorMock
-  alias Pleroma.ConfigMock
 
   setup :verify_on_exit!
 
