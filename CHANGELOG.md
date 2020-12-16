@@ -17,14 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Reports now generate notifications for admins and mods.
 - Experimental websocket-based federation between Pleroma instances.
-- Support for local-only statuses
+- Support for local-only statuses.
 - Support pagination of blocks and mutes.
 - Account backup.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
 - Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
 - The site title is now injected as a `title` tag like preloads or metadata.
 - Password reset tokens now are not accepted after a certain age.
-- Mix tasks to help with displaying and removing ConfigDB entries. See `mix pleroma.config`
+- Mix tasks to help with displaying and removing ConfigDB entries. See `mix pleroma.config`.
 - OAuth form improvements: users are remembered by their cookie, the CSS is overridable by the admin, and the style has been improved.
 - OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 
@@ -34,13 +34,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 - Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
-- Admin API: An endpoint to manage frontends
-- Streaming API: Add follow relationships updates  
+- Admin API: An endpoint to manage frontends.
+- Streaming API: Add follow relationships updates.
 </details>
 
 ### Fixed
 
 - Users with `is_discoverable` field set to false (default value) will appear in in-service search results but be hidden from external services (search bots etc.).
+- Streaming API: Posts and notifications are not dropped, when CLI task is executing.
 
 <details>
   <summary>API Changes</summary>
@@ -105,7 +106,7 @@ switched to a new configuration mechanism, however it was not officially removed
 
 - Media preview proxy (requires `ffmpeg` and `ImageMagick` to be installed and media proxy to be enabled; see `:media_preview_proxy` config for more details).
 - Mix tasks for controlling user account confirmation status in bulk (`mix pleroma.user confirm_all` and `mix pleroma.user unconfirm_all`)
-- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email send_confirmation_mails`)
+- Mix task for sending confirmation emails to all unconfirmed users (`mix pleroma.email resend_confirmation_emails`)
 - Mix task option for force-unfollowing relays
 - App metrics: ability to restrict access to specified IP whitelist.
 

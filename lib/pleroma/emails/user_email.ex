@@ -151,7 +151,7 @@ defmodule Pleroma.Emails.UserEmail do
 
       logo_path =
         if is_nil(logo) do
-          Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
+          Path.join(:code.priv_dir(:pleroma), "static/static/logo.svg")
         else
           Path.join(Config.get([:instance, :static_dir]), logo)
         end
@@ -162,7 +162,7 @@ defmodule Pleroma.Emails.UserEmail do
       |> subject("Your digest from #{instance_name()}")
       |> put_layout(false)
       |> render_body("digest.html", html_data)
-      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.png", type: :inline))
+      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.svg", type: :inline))
     end
   end
 

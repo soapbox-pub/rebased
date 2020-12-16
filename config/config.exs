@@ -306,7 +306,7 @@ config :pleroma, :frontend_configurations,
     hideSitename: false,
     hideUserStats: false,
     loginMethod: "password",
-    logo: "/static/logo.png",
+    logo: "/static/logo.svg",
     logoMargin: ".1em",
     logoMask: true,
     minimalScopesMode: false,
@@ -343,8 +343,8 @@ config :pleroma, :assets,
 config :pleroma, :manifest,
   icons: [
     %{
-      src: "/static/logo.png",
-      type: "image/png"
+      src: "/static/logo.svg",
+      type: "image/svg+xml"
     }
   ],
   theme_color: "#282c37",
