@@ -96,11 +96,10 @@ defmodule Pleroma.Conversation.ParticipationTest do
     {:ok, %Participation{} = participation} =
       Participation.create_for_user_and_conversation(user, conversation)
 
+    {:ok, participation} = time_travel(participation, -2)
+
     assert participation.user_id == user.id
     assert participation.conversation_id == conversation.id
-
-    # Needed because updated_at is accurate down to a second
-    :timer.sleep(1000)
 
     # Creating again returns the same participation
     {:ok, %Participation{} = participation_two} =

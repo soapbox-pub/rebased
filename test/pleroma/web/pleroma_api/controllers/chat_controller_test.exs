@@ -394,11 +394,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       tridi = insert(:user)
 
       {:ok, chat_1} = Chat.get_or_create(user.id, har.ap_id)
-      :timer.sleep(1000)
-      {:ok, _chat_2} = Chat.get_or_create(user.id, jafnhar.ap_id)
-      :timer.sleep(1000)
+      {:ok, chat_1} = time_travel(chat_1, -3)
+      {:ok, chat_2} = Chat.get_or_create(user.id, jafnhar.ap_id)
+      {:ok, _chat_2} = time_travel(chat_2, -2)
       {:ok, chat_3} = Chat.get_or_create(user.id, tridi.ap_id)
-      :timer.sleep(1000)
+      {:ok, chat_3} = time_travel(chat_3, -1)
 
       # bump the second one
       {:ok, chat_2} = Chat.bump_or_create(user.id, jafnhar.ap_id)

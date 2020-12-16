@@ -37,8 +37,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
 
       user = insert(:user)
       {:ok, token} = PasswordResetToken.create_token(user)
-
-      :timer.sleep(2000)
+      {:ok, token} = time_travel(token, -2)
 
       response =
         conn
@@ -55,7 +54,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
 
       user = insert(:user)
       {:ok, token} = PasswordResetToken.create_token(user)
-      :timer.sleep(2000)
+      {:ok, token} = time_travel(token, -2)
       {:ok, _access_token} = Token.create(insert(:oauth_app), user, %{})
 
       params = %{
