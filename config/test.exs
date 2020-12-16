@@ -124,6 +124,14 @@ config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
 
+config :pleroma, :pipeline,
+  object_validator: Pleroma.Web.ActivityPub.ObjectValidatorMock,
+  mrf: Pleroma.Web.ActivityPub.MRFMock,
+  activity_pub: Pleroma.Web.ActivityPub.ActivityPubMock,
+  side_effects: Pleroma.Web.ActivityPub.SideEffectsMock,
+  federator: Pleroma.Web.FederatorMock,
+  config: Pleroma.ConfigMock
+
 config :pleroma, :cachex, provider: Pleroma.CachexMock
 
 if File.exists?("./config/test.secret.exs") do

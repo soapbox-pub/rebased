@@ -2,12 +2,18 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
+defmodule Pleroma.Web.ActivityPub.ObjectValidator.Validating do
+  @callback validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
+end
+
 defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   @moduledoc """
   This module is responsible for validating an object (which can be an activity)
   and checking if it is both well formed and also compatible with our view of
   the system.
   """
+
+  @behaviour Pleroma.Web.ActivityPub.ObjectValidator.Validating
 
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
@@ -32,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
-  @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
+  @impl true
   def validate(object, meta)
 
   def validate(%{"type" => type} = object, meta)

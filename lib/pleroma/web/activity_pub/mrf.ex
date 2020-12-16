@@ -2,8 +2,14 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
+defmodule Pleroma.Web.ActivityPub.MRF.PipelineFiltering do
+  @callback pipeline_filter(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
+end
+
 defmodule Pleroma.Web.ActivityPub.MRF do
   require Logger
+
+  @behaviour Pleroma.Web.ActivityPub.MRF.PipelineFiltering
 
   @mrf_config_descriptions [
     %{
@@ -70,6 +76,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   def filter(%{} = object), do: get_policies() |> filter(object)
 
+  @impl true
   def pipeline_filter(%{} = message, meta) do
     object = meta[:object_data]
     ap_id = message["object"]

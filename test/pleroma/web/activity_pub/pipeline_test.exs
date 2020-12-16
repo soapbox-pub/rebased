@@ -3,14 +3,35 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.PipelineTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
-  import Mock
+  import Mox
   import Pleroma.Factory
+
+  alias Pleroma.Web.ActivityPub.ActivityPubMock
+  alias Pleroma.Web.ActivityPub.MRFMock
+  alias Pleroma.Web.ActivityPub.ObjectValidatorMock
+  alias Pleroma.Web.ActivityPub.SideEffectsMock
+  alias Pleroma.Web.FederatorMock
+  alias Pleroma.ConfigMock
+
+  setup :verify_on_exit!
 
   describe "common_pipeline/2" do
     setup do
-      clear_config([:instance, :federating], true)
+      ObjectValidatorMock
+      |> expect(:validate, fn o, m -> {:ok, o, m} end)
+
+      MRFMock
+      |> expect(:pipeline_filter, fn o, m -> {:ok, o, m} end)
+
+      ActivityPubMock
+      |> expect(:persist, fn o, m -> {:ok, o, m} end)
+
+      SideEffectsMock
+      |> expect(:handle, fn o, m -> {:ok, o, m} end)
+      |> expect(:handle_after_transaction, fn m -> m end)
+
       :ok
     end
 
@@ -21,159 +42,53 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
 
       activity_with_object = %{activity | data: Map.put(activity.data, "object", object)}
 
-      with_mocks([
-        {Pleroma.Web.ActivityPub.ObjectValidator, [], [validate: fn o, m -> {:ok, o, m} end]},
-        {
-          Pleroma.Web.ActivityPub.MRF,
-          [],
-          [pipeline_filter: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.ActivityPub,
-          [],
-          [persist: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.SideEffects,
-          [],
-          [
-            handle: fn o, m -> {:ok, o, m} end,
-            handle_after_transaction: fn m -> m end
-          ]
-        },
-        {
-          Pleroma.Web.Federator,
-          [],
-          [publish: fn _o -> :ok end]
-        }
-      ]) do
-        assert {:ok, ^activity, ^meta} =
-                 Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+      FederatorMock
+      |> expect(:publish, fn ^activity_with_object -> :ok end)
 
-        assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
-        refute called(Pleroma.Web.Federator.publish(activity))
-        assert_called(Pleroma.Web.Federator.publish(activity_with_object))
-      end
+      ConfigMock
+      |> expect(:get, fn [:instance, :federating] -> true end)
+
+      assert {:ok, ^activity, ^meta} =
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(
+                 activity,
+                 meta
+               )
     end
 
     test "it goes through validation, filtering, persisting, side effects and federation for local activities" do
       activity = insert(:note_activity)
       meta = [local: true]
 
-      with_mocks([
-        {Pleroma.Web.ActivityPub.ObjectValidator, [], [validate: fn o, m -> {:ok, o, m} end]},
-        {
-          Pleroma.Web.ActivityPub.MRF,
-          [],
-          [pipeline_filter: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.ActivityPub,
-          [],
-          [persist: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.SideEffects,
-          [],
-          [
-            handle: fn o, m -> {:ok, o, m} end,
-            handle_after_transaction: fn m -> m end
-          ]
-        },
-        {
-          Pleroma.Web.Federator,
-          [],
-          [publish: fn _o -> :ok end]
-        }
-      ]) do
-        assert {:ok, ^activity, ^meta} =
-                 Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+      FederatorMock
+      |> expect(:publish, fn ^activity -> :ok end)
 
-        assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
-        assert_called(Pleroma.Web.Federator.publish(activity))
-      end
+      ConfigMock
+      |> expect(:get, fn [:instance, :federating] -> true end)
+
+      assert {:ok, ^activity, ^meta} =
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
     end
 
     test "it goes through validation, filtering, persisting, side effects without federation for remote activities" do
       activity = insert(:note_activity)
       meta = [local: false]
 
-      with_mocks([
-        {Pleroma.Web.ActivityPub.ObjectValidator, [], [validate: fn o, m -> {:ok, o, m} end]},
-        {
-          Pleroma.Web.ActivityPub.MRF,
-          [],
-          [pipeline_filter: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.ActivityPub,
-          [],
-          [persist: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.SideEffects,
-          [],
-          [handle: fn o, m -> {:ok, o, m} end, handle_after_transaction: fn m -> m end]
-        },
-        {
-          Pleroma.Web.Federator,
-          [],
-          []
-        }
-      ]) do
-        assert {:ok, ^activity, ^meta} =
-                 Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+      ConfigMock
+      |> expect(:get, fn [:instance, :federating] -> true end)
 
-        assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
-      end
+      assert {:ok, ^activity, ^meta} =
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
     end
 
     test "it goes through validation, filtering, persisting, side effects without federation for local activities if federation is deactivated" do
-      clear_config([:instance, :federating], false)
-
       activity = insert(:note_activity)
       meta = [local: true]
 
-      with_mocks([
-        {Pleroma.Web.ActivityPub.ObjectValidator, [], [validate: fn o, m -> {:ok, o, m} end]},
-        {
-          Pleroma.Web.ActivityPub.MRF,
-          [],
-          [pipeline_filter: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.ActivityPub,
-          [],
-          [persist: fn o, m -> {:ok, o, m} end]
-        },
-        {
-          Pleroma.Web.ActivityPub.SideEffects,
-          [],
-          [handle: fn o, m -> {:ok, o, m} end, handle_after_transaction: fn m -> m end]
-        },
-        {
-          Pleroma.Web.Federator,
-          [],
-          []
-        }
-      ]) do
-        assert {:ok, ^activity, ^meta} =
-                 Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+      ConfigMock
+      |> expect(:get, fn [:instance, :federating] -> false end)
 
-        assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.MRF.pipeline_filter(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
-        assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
-      end
+      assert {:ok, ^activity, ^meta} =
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
     end
   end
 end

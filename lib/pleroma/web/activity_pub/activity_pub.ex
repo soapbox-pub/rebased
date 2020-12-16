@@ -2,6 +2,10 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
+defmodule Pleroma.Web.ActivityPub.ActivityPub.Persisting do
+  @callback persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+end
+
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
@@ -31,6 +35,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   require Logger
   require Pleroma.Constants
+
+  @behaviour Pleroma.Web.ActivityPub.ActivityPub.Persisting
 
   defp get_recipients(%{"type" => "Create"} = data) do
     to = Map.get(data, "to", [])
@@ -85,13 +91,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article]
-  @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  @impl true
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
       {:ok, object, meta}
     end
   end
 
+  @impl true
   def persist(object, meta) do
     with local <- Keyword.fetch!(meta, :local),
          {recipients, _, _} <- get_recipients(object),
