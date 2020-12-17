@@ -1254,7 +1254,7 @@ config :pleroma, :config_description, [
             hideSitename: false,
             hideUserStats: false,
             loginMethod: "password",
-            logo: "/static/logo.png",
+            logo: "/static/logo.svg",
             logoMargin: ".1em",
             logoMask: true,
             minimalScopesMode: false,
@@ -1340,7 +1340,7 @@ config :pleroma, :config_description, [
             key: :logo,
             type: {:string, :image},
             description: "URL of the logo, defaults to Pleroma's logo",
-            suggestions: ["/static/logo.png"]
+            suggestions: ["/static/logo.svg"]
           },
           %{
             key: :logoMargin,
@@ -2540,7 +2540,7 @@ config :pleroma, :config_description, [
         key: :token_expires_in,
         type: :integer,
         description: "The lifetime in seconds of the access token",
-        suggestions: [600]
+        suggestions: [2_592_000]
       },
       %{
         key: :issue_new_refresh_token,

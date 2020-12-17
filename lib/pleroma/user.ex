@@ -473,6 +473,18 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
     |> validate_fields(true)
+    |> validate_non_local()
+  end
+
+  defp validate_non_local(cng) do
+    local? = get_field(cng, :local)
+
+    if local? do
+      cng
+      |> add_error(:local, "User is local, can't update with this changeset.")
+    else
+      cng
+    end
   end
 
   def update_changeset(struct, params \\ %{}) do
@@ -914,7 +926,7 @@ defmodule Pleroma.User do
     if not ap_enabled?(followed) do
       follow(follower, followed)
     else
-      {:ok, follower}
+      {:ok, follower, followed}
     end
   end
 
@@ -940,11 +952,6 @@ defmodule Pleroma.User do
 
       true ->
         FollowingRelationship.follow(follower, followed, state)
-
-        {:ok, _} = update_follower_count(followed)
-
-        follower
-        |> update_following_count()
     end
   end
 
@@ -968,11 +975,6 @@ defmodule Pleroma.User do
     case get_follow_state(follower, followed) do
       state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
-        {:ok, followed} = update_follower_count(followed)
-
-        {:ok, follower} = update_following_count(follower)
-
-        {:ok, follower, followed}
 
       nil ->
         {:error, "Not subscribed!"}
@@ -2448,5 +2450,9 @@ defmodule Pleroma.User do
     user
     |> Map.put(:bio, HTML.filter_tags(user.bio, filter))
     |> Map.put(:fields, fields)
+  end
+
+  def get_host(%User{ap_id: ap_id} = _user) do
+    URI.parse(ap_id).host
   end
 end

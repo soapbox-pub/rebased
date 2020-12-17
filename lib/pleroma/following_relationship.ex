@@ -62,23 +62,47 @@ defmodule Pleroma.FollowingRelationship do
         follow(follower, following, state)
 
       following_relationship ->
-        following_relationship
-        |> cast(%{state: state}, [:state])
-        |> validate_required([:state])
-        |> Repo.update()
+        with {:ok, _following_relationship} <-
+               following_relationship
+               |> cast(%{state: state}, [:state])
+               |> validate_required([:state])
+               |> Repo.update() do
+          after_update(state, follower, following)
+        end
     end
   end
 
   def follow(%User{} = follower, %User{} = following, state \\ :follow_accept) do
-    %__MODULE__{}
-    |> changeset(%{follower: follower, following: following, state: state})
-    |> Repo.insert(on_conflict: :nothing)
+    with {:ok, _following_relationship} <-
+           %__MODULE__{}
+           |> changeset(%{follower: follower, following: following, state: state})
+           |> Repo.insert(on_conflict: :nothing) do
+      after_update(state, follower, following)
+    end
   end
 
   def unfollow(%User{} = follower, %User{} = following) do
     case get(follower, following) do
-      %__MODULE__{} = following_relationship -> Repo.delete(following_relationship)
-      _ -> {:ok, nil}
+      %__MODULE__{} = following_relationship ->
+        with {:ok, _following_relationship} <- Repo.delete(following_relationship) do
+          after_update(:unfollow, follower, following)
+        end
+
+      _ ->
+        {:ok, nil}
+    end
+  end
+
+  defp after_update(state, %User{} = follower, %User{} = following) do
+    with {:ok, following} <- User.update_follower_count(following),
+         {:ok, follower} <- User.update_following_count(follower) do
+      Pleroma.Web.Streamer.stream("follow_relationship", %{
+        state: state,
+        following: following,
+        follower: follower
+      })
+
+      {:ok, follower, following}
     end
   end
 

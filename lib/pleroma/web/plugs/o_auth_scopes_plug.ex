@@ -7,6 +7,7 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
   import Pleroma.Web.Gettext
 
   alias Pleroma.Config
+  alias Pleroma.Helpers.AuthHelper
 
   use Pleroma.Web, :plug
 
@@ -28,7 +29,7 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
         conn
 
       options[:fallback] == :proceed_unauthenticated ->
-        drop_auth_info(conn)
+        AuthHelper.drop_auth_info(conn)
 
       true ->
         missing_scopes = scopes -- matched_scopes
@@ -42,15 +43,6 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
         |> send_resp(:forbidden, Jason.encode!(%{error: error_message}))
         |> halt()
     end
-  end
-
-  @doc "Drops authentication info from connection"
-  def drop_auth_info(conn) do
-    # To simplify debugging, setting a private variable on `conn` if auth info is dropped
-    conn
-    |> put_private(:authentication_ignored, true)
-    |> assign(:user, nil)
-    |> assign(:token, nil)
   end
 
   @doc "Keeps those of `scopes` which are descendants of `supported_scopes`"

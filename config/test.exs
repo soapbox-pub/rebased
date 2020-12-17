@@ -19,11 +19,6 @@ config :logger, :console,
   level: :warn,
   format: "\n[$level] $message\n"
 
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: 5,
-  rejection_duration: 5
-
 config :pleroma, :auth, oauth_consumer_strategies: []
 
 config :pleroma, Pleroma.Upload,

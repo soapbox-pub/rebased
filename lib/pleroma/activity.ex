@@ -194,6 +194,19 @@ defmodule Pleroma.Activity do
     end
   end
 
+  def get_by_id_with_user_actor(id) do
+    case FlakeId.flake_id?(id) do
+      true ->
+        Activity
+        |> where([a], a.id == ^id)
+        |> with_preloaded_user_actor()
+        |> Repo.one()
+
+      _ ->
+        nil
+    end
+  end
+
   def get_by_id_with_object(id) do
     Activity
     |> where(id: ^id)

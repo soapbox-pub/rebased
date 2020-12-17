@@ -14,9 +14,9 @@ This document contains notes and guidelines for Pleroma developers.
 
   For `:api` pipeline routes, it'll be verified whether `OAuthScopesPlug` was called or explicitly skipped, and if it was not then auth information will be dropped for request. Then `EnsurePublicOrAuthenticatedPlug` will be called to ensure that either the instance is not private or user is authenticated (unless explicitly skipped). Such automated checks help to prevent human errors and result in higher security / privacy for users.
 
-## [HTTP Basic Authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization)
+## Non-OAuth authentication
 
-* With HTTP Basic Auth, OAuth scopes check is _not_ performed for any action (since password is provided during the auth, requester is able to obtain a token with full permissions anyways). `Pleroma.Web.Plugs.AuthenticationPlug` and `Pleroma.Web.Plugs.LegacyAuthenticationPlug` both call `Pleroma.Web.Plugs.OAuthScopesPlug.skip_plug(conn)` when password is provided.
+* With non-OAuth authentication ([HTTP Basic Authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization) or HTTP header- or params-provided auth), OAuth scopes check is _not_ performed for any action (since password is provided during the auth, requester is able to obtain a token with full permissions anyways); auth plugs invoke `Pleroma.Helpers.AuthHelper.skip_oauth(conn)` in this case.
 
 ## Auth-related configuration, OAuth consumer mode etc.
 

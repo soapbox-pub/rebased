@@ -12,6 +12,26 @@ defmodule Pleroma.ModerationLog do
 
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
+  @type log_subject :: Activity.t() | User.t() | list(User.t())
+  @type log_params :: %{
+          required(:actor) => User.t(),
+          required(:action) => String.t(),
+          optional(:subject) => log_subject(),
+          optional(:subject_actor) => User.t(),
+          optional(:subject_id) => String.t(),
+          optional(:subjects) => list(User.t()),
+          optional(:permission) => String.t(),
+          optional(:text) => String.t(),
+          optional(:sensitive) => String.t(),
+          optional(:visibility) => String.t(),
+          optional(:followed) => User.t(),
+          optional(:follower) => User.t(),
+          optional(:nicknames) => list(String.t()),
+          optional(:tags) => list(String.t()),
+          optional(:target) => String.t()
+        }
+
   schema "moderation_log" do
     field(:data, :map)
 
@@ -90,203 +110,105 @@ defmodule Pleroma.ModerationLog do
     parsed_datetime
   end
 
-  @spec insert_log(%{actor: User, subject: [User], action: String.t(), permission: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        subject: subjects,
-        action: action,
-        permission: permission
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "subject" => user_to_map(subjects),
-        "action" => action,
-        "permission" => permission,
-        "message" => ""
-      }
+  defp prepare_log_data(%{actor: actor, action: action} = attrs) do
+    %{
+      "actor" => user_to_map(actor),
+      "action" => action,
+      "message" => ""
     }
-    |> insert_log_entry_with_message()
+    |> Pleroma.Maps.put_if_present("subject_actor", user_to_map(attrs[:subject_actor]))
   end
 
-  @spec insert_log(%{actor: User, subject: User, action: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "report_update",
-        subject: %Activity{data: %{"type" => "Flag"}} = subject
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "report_update",
-        "subject" => report_to_map(subject),
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+  defp prepare_log_data(attrs), do: attrs
+
+  @spec insert_log(log_params()) :: {:ok, ModerationLog} | {:error, any}
+  def insert_log(%{actor: %User{}, subject: subjects, permission: permission} = attrs) do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{"subject" => user_to_map(subjects), "permission" => permission})
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, subject: Activity, action: String.t(), text: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "report_note",
-        subject: %Activity{} = subject,
-        text: text
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "report_note",
-        "subject" => report_to_map(subject),
-        "text" => text
-      }
-    }
-    |> insert_log_entry_with_message()
+  def insert_log(%{actor: %User{}, action: action, subject: %Activity{} = subject} = attrs)
+      when action in ["report_note_delete", "report_update", "report_note"] do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Pleroma.Maps.put_if_present("text", attrs[:text])
+      |> Map.merge(%{"subject" => report_to_map(subject)})
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, subject: Activity, action: String.t(), text: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "report_note_delete",
-        subject: %Activity{} = subject,
-        text: text
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "report_note_delete",
-        "subject" => report_to_map(subject),
-        "text" => text
-      }
-    }
-    |> insert_log_entry_with_message()
-  end
-
-  @spec insert_log(%{
-          actor: User,
-          subject: Activity,
-          action: String.t(),
-          sensitive: String.t(),
-          visibility: String.t()
-        }) :: {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "status_update",
-        subject: %Activity{} = subject,
-        sensitive: sensitive,
-        visibility: visibility
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "status_update",
+  def insert_log(
+        %{
+          actor: %User{},
+          action: action,
+          subject: %Activity{} = subject,
+          sensitive: sensitive,
+          visibility: visibility
+        } = attrs
+      )
+      when action == "status_update" do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{
         "subject" => status_to_map(subject),
         "sensitive" => sensitive,
-        "visibility" => visibility,
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+        "visibility" => visibility
+      })
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, action: String.t(), subject_id: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: "status_delete",
-        subject_id: subject_id
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "status_delete",
-        "subject_id" => subject_id,
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+  def insert_log(%{actor: %User{}, action: action, subject_id: subject_id} = attrs)
+      when action == "status_delete" do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{"subject_id" => subject_id})
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, subject: User, action: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{actor: %User{} = actor, subject: subject, action: action}) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => action,
-        "subject" => user_to_map(subject),
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+  def insert_log(%{actor: %User{}, subject: subject, action: _action} = attrs) do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{"subject" => user_to_map(subject)})
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, subjects: [User], action: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{actor: %User{} = actor, subjects: subjects, action: action}) do
-    subjects = Enum.map(subjects, &user_to_map/1)
+  def insert_log(%{actor: %User{}, subjects: subjects, action: _action} = attrs) do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{"subjects" => user_to_map(subjects)})
 
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => action,
-        "subjects" => subjects,
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, action: String.t(), followed: User, follower: User}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        followed: %User{} = followed,
-        follower: %User{} = follower,
-        action: "follow"
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "follow",
-        "followed" => user_to_map(followed),
-        "follower" => user_to_map(follower),
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+  def insert_log(
+        %{
+          actor: %User{},
+          followed: %User{} = followed,
+          follower: %User{} = follower,
+          action: action
+        } = attrs
+      )
+      when action in ["unfollow", "follow"] do
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{"followed" => user_to_map(followed), "follower" => user_to_map(follower)})
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, action: String.t(), followed: User, follower: User}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        followed: %User{} = followed,
-        follower: %User{} = follower,
-        action: "unfollow"
-      }) do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => "unfollow",
-        "followed" => user_to_map(followed),
-        "follower" => user_to_map(follower),
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
-  end
-
-  @spec insert_log(%{
-          actor: User,
-          action: String.t(),
-          nicknames: [String.t()],
-          tags: [String.t()]
-        }) :: {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         nicknames: nicknames,
@@ -305,27 +227,16 @@ defmodule Pleroma.ModerationLog do
     |> insert_log_entry_with_message()
   end
 
-  @spec insert_log(%{actor: User, action: String.t(), target: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
-  def insert_log(%{
-        actor: %User{} = actor,
-        action: action,
-        target: target
-      })
+  def insert_log(%{actor: %User{}, action: action, target: target} = attrs)
       when action in ["relay_follow", "relay_unfollow"] do
-    %ModerationLog{
-      data: %{
-        "actor" => user_to_map(actor),
-        "action" => action,
-        "target" => target,
-        "message" => ""
-      }
-    }
-    |> insert_log_entry_with_message()
+    data =
+      attrs
+      |> prepare_log_data
+      |> Map.merge(%{"target" => target})
+
+    insert_log_entry_with_message(%ModerationLog{data: data})
   end
 
-  @spec insert_log(%{actor: User, action: String.t(), subject_id: String.t()}) ::
-          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{actor: %User{} = actor, action: "chat_message_delete", subject_id: subject_id}) do
     %ModerationLog{
       data: %{
@@ -345,32 +256,27 @@ defmodule Pleroma.ModerationLog do
   end
 
   defp user_to_map(users) when is_list(users) do
-    users |> Enum.map(&user_to_map/1)
+    Enum.map(users, &user_to_map/1)
   end
 
   defp user_to_map(%User{} = user) do
     user
-    |> Map.from_struct()
     |> Map.take([:id, :nickname])
     |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
     |> Map.put("type", "user")
   end
 
+  defp user_to_map(_), do: nil
+
   defp report_to_map(%Activity{} = report) do
-    %{
-      "type" => "report",
-      "id" => report.id,
-      "state" => report.data["state"]
-    }
+    %{"type" => "report", "id" => report.id, "state" => report.data["state"]}
   end
 
   defp status_to_map(%Activity{} = status) do
-    %{
-      "type" => "status",
-      "id" => status.id
-    }
+    %{"type" => "status", "id" => status.id}
   end
 
+  @spec get_log_entry_message(ModerationLog.t()) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -382,7 +288,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} made @#{follower_nickname} #{action} @#{followed_nickname}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -393,7 +298,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} deleted users: #{users_to_nicknames_string(subjects)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -404,7 +308,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} created users: #{users_to_nicknames_string(subjects)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -415,7 +318,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} activated users: #{users_to_nicknames_string(users)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -426,7 +328,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} deactivated users: #{users_to_nicknames_string(users)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -437,7 +338,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} approved users: #{users_to_nicknames_string(users)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -451,7 +351,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} added tags: #{tags_string} to users: #{nicknames_to_string(nicknames)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -465,7 +364,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} removed tags: #{tags_string} from users: #{nicknames_to_string(nicknames)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -477,7 +375,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} made #{users_to_nicknames_string(users)} #{permission}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -489,7 +386,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} revoked #{permission} role from #{users_to_nicknames_string(users)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -500,7 +396,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} followed relay: #{target}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -511,42 +406,48 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} unfollowed relay: #{target}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_update",
-          "subject" => %{"id" => subject_id, "state" => state, "type" => "report"}
-        }
-      }) do
-    "@#{actor_nickname} updated report ##{subject_id} with '#{state}' state"
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_update",
+            "subject" => %{"id" => subject_id, "state" => state, "type" => "report"}
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} updated report ##{subject_id}" <>
+      subject_actor_nickname(log, " (on user ", ")") <>
+      " with '#{state}' state"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_note",
-          "subject" => %{"id" => subject_id, "type" => "report"},
-          "text" => text
-        }
-      }) do
-    "@#{actor_nickname} added note '#{text}' to report ##{subject_id}"
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_note",
+            "subject" => %{"id" => subject_id, "type" => "report"},
+            "text" => text
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} added note '#{text}' to report ##{subject_id}" <>
+      subject_actor_nickname(log, " on user ")
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_note_delete",
-          "subject" => %{"id" => subject_id, "type" => "report"},
-          "text" => text
-        }
-      }) do
-    "@#{actor_nickname} deleted note '#{text}' from report ##{subject_id}"
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_note_delete",
+            "subject" => %{"id" => subject_id, "type" => "report"},
+            "text" => text
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} deleted note '#{text}' from report ##{subject_id}" <>
+      subject_actor_nickname(log, " on user ")
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -559,7 +460,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} updated status ##{subject_id}, set visibility: '#{visibility}'"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -572,7 +472,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} updated status ##{subject_id}, set sensitive: '#{sensitive}'"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -587,7 +486,6 @@ defmodule Pleroma.ModerationLog do
     }'"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -598,7 +496,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} deleted status ##{subject_id}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -609,7 +506,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} forced password reset for users: #{users_to_nicknames_string(subjects)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -620,7 +516,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} confirmed email for users: #{users_to_nicknames_string(subjects)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -633,7 +528,6 @@ defmodule Pleroma.ModerationLog do
     }"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -644,7 +538,6 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} updated users: #{users_to_nicknames_string(subjects)}"
   end
 
-  @spec get_log_entry_message(ModerationLog) :: String.t()
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
@@ -675,5 +568,17 @@ defmodule Pleroma.ModerationLog do
     users
     |> Enum.map(&"@#{&1["nickname"]}")
     |> Enum.join(", ")
+  end
+
+  defp subject_actor_nickname(%ModerationLog{data: data}, prefix_msg, postfix_msg \\ "") do
+    case data do
+      %{"subject_actor" => %{"nickname" => subject_actor}} ->
+        [prefix_msg, "@#{subject_actor}", postfix_msg]
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.join()
+
+      _ ->
+        ""
+    end
   end
 end

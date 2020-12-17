@@ -233,7 +233,7 @@ defmodule Pleroma.UserTest do
     {:ok, _user_relationship} = User.block(user, blocked)
     {:ok, _user_relationship} = User.block(reverse_blocked, user)
 
-    {:ok, user} = User.follow(user, followed_zero)
+    {:ok, user, followed_zero} = User.follow(user, followed_zero)
 
     {:ok, user} = User.follow_all(user, [followed_one, followed_two, blocked, reverse_blocked])
 
@@ -262,7 +262,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
     followed = insert(:user)
 
-    {:ok, user} = User.follow(user, followed)
+    {:ok, user, followed} = User.follow(user, followed)
 
     user = User.get_cached_by_id(user.id)
     followed = User.get_cached_by_ap_id(followed.ap_id)
@@ -302,7 +302,7 @@ defmodule Pleroma.UserTest do
     follower = insert(:user, is_locked: true)
     followed = insert(:user, is_locked: true)
 
-    {:ok, follower} = User.maybe_direct_follow(follower, followed)
+    {:ok, follower, followed} = User.maybe_direct_follow(follower, followed)
 
     refute User.following?(follower, followed)
   end
@@ -330,7 +330,7 @@ defmodule Pleroma.UserTest do
           following_address: "http://localhost:4001/users/fuser2/following"
         })
 
-      {:ok, user} = User.follow(user, followed, :follow_accept)
+      {:ok, user, followed} = User.follow(user, followed, :follow_accept)
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
@@ -343,7 +343,7 @@ defmodule Pleroma.UserTest do
       followed = insert(:user)
       user = insert(:user)
 
-      {:ok, user} = User.follow(user, followed, :follow_accept)
+      {:ok, user, followed} = User.follow(user, followed, :follow_accept)
 
       assert User.following(user) == [user.follower_address, followed.follower_address]
 
@@ -911,6 +911,13 @@ defmodule Pleroma.UserTest do
         refute cs.valid?
       end)
     end
+
+    test "it is invalid given a local user" do
+      user = insert(:user)
+      cs = User.remote_user_changeset(user, %{name: "tom from myspace"})
+
+      refute cs.valid?
+    end
   end
 
   describe "followers and friends" do
@@ -920,8 +927,8 @@ defmodule Pleroma.UserTest do
       follower_two = insert(:user)
       not_follower = insert(:user)
 
-      {:ok, follower_one} = User.follow(follower_one, user)
-      {:ok, follower_two} = User.follow(follower_two, user)
+      {:ok, follower_one, user} = User.follow(follower_one, user)
+      {:ok, follower_two, user} = User.follow(follower_two, user)
 
       res = User.get_followers(user)
 
@@ -936,8 +943,8 @@ defmodule Pleroma.UserTest do
       followed_two = insert(:user)
       not_followed = insert(:user)
 
-      {:ok, user} = User.follow(user, followed_one)
-      {:ok, user} = User.follow(user, followed_two)
+      {:ok, user, followed_one} = User.follow(user, followed_one)
+      {:ok, user, followed_two} = User.follow(user, followed_two)
 
       res = User.get_friends(user)
 
@@ -1107,8 +1114,8 @@ defmodule Pleroma.UserTest do
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, blocker} = User.follow(blocker, blocked)
-      {:ok, blocked} = User.follow(blocked, blocker)
+      {:ok, blocker, blocked} = User.follow(blocker, blocked)
+      {:ok, blocked, blocker} = User.follow(blocked, blocker)
 
       assert User.following?(blocker, blocked)
       assert User.following?(blocked, blocker)
@@ -1126,7 +1133,7 @@ defmodule Pleroma.UserTest do
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, blocker} = User.follow(blocker, blocked)
+      {:ok, blocker, blocked} = User.follow(blocker, blocked)
 
       assert User.following?(blocker, blocked)
       refute User.following?(blocked, blocker)
@@ -1144,7 +1151,7 @@ defmodule Pleroma.UserTest do
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, blocked} = User.follow(blocked, blocker)
+      {:ok, blocked, blocker} = User.follow(blocked, blocker)
 
       refute User.following?(blocker, blocked)
       assert User.following?(blocked, blocker)
@@ -1242,7 +1249,7 @@ defmodule Pleroma.UserTest do
       good_eggo = insert(:user, %{ap_id: "https://meanies.social/user/cuteposter"})
 
       {:ok, user} = User.block_domain(user, "meanies.social")
-      {:ok, user} = User.follow(user, good_eggo)
+      {:ok, user, good_eggo} = User.follow(user, good_eggo)
 
       refute User.blocks?(user, good_eggo)
     end
@@ -1276,8 +1283,8 @@ defmodule Pleroma.UserTest do
       assert Enum.map([actor, addressed], & &1.ap_id) --
                Enum.map(User.get_recipients_from_activity(activity), & &1.ap_id) == []
 
-      {:ok, user} = User.follow(user, actor)
-      {:ok, _user_two} = User.follow(user_two, actor)
+      {:ok, user, actor} = User.follow(user, actor)
+      {:ok, _user_two, _actor} = User.follow(user_two, actor)
       recipients = User.get_recipients_from_activity(activity)
       assert length(recipients) == 3
       assert user in recipients
@@ -1298,8 +1305,8 @@ defmodule Pleroma.UserTest do
       assert Enum.map([actor, addressed], & &1.ap_id) --
                Enum.map(User.get_recipients_from_activity(activity), & &1.ap_id) == []
 
-      {:ok, _actor} = User.follow(actor, user)
-      {:ok, _actor} = User.follow(actor, user_two)
+      {:ok, _actor, _user} = User.follow(actor, user)
+      {:ok, _actor, _user_two} = User.follow(actor, user_two)
       recipients = User.get_recipients_from_activity(activity)
       assert length(recipients) == 2
       assert addressed in recipients
@@ -1320,7 +1327,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      {:ok, user} = User.follow(user, user2)
+      {:ok, user, user2} = User.follow(user, user2)
       {:ok, _user} = User.deactivate(user)
 
       user2 = User.get_cached_by_id(user2.id)
@@ -1333,7 +1340,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      {:ok, user2} = User.follow(user2, user)
+      {:ok, user2, user} = User.follow(user2, user)
       assert user2.following_count == 1
       assert User.following_count(user2) == 1
 
@@ -1351,7 +1358,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      {:ok, user2} = User.follow(user2, user)
+      {:ok, user2, user} = User.follow(user2, user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{user2.nickname}"})
 
@@ -1516,10 +1523,10 @@ defmodule Pleroma.UserTest do
 
     test "it deactivates a user, all follow relationships and all activities", %{user: user} do
       follower = insert(:user)
-      {:ok, follower} = User.follow(follower, user)
+      {:ok, follower, user} = User.follow(follower, user)
 
       locked_user = insert(:user, name: "locked", is_locked: true)
-      {:ok, _} = User.follow(user, locked_user, :follow_pending)
+      {:ok, _, _} = User.follow(user, locked_user, :follow_pending)
 
       object = insert(:note, user: user)
       activity = insert(:note_activity, user: user, note: object)
@@ -1877,9 +1884,9 @@ defmodule Pleroma.UserTest do
     follower2 = insert(:user)
     follower3 = insert(:user)
 
-    {:ok, follower} = User.follow(follower, user)
-    {:ok, _follower2} = User.follow(follower2, user)
-    {:ok, _follower3} = User.follow(follower3, user)
+    {:ok, follower, user} = User.follow(follower, user)
+    {:ok, _follower2, _user} = User.follow(follower2, user)
+    {:ok, _follower3, _user} = User.follow(follower3, user)
 
     {:ok, _user_relationship} = User.block(user, follower)
     user = refresh_record(user)
@@ -2102,8 +2109,7 @@ defmodule Pleroma.UserTest do
       assert other_user.following_count == 0
       assert other_user.follower_count == 0
 
-      {:ok, user} = Pleroma.User.follow(user, other_user)
-      other_user = Pleroma.User.get_by_id(other_user.id)
+      {:ok, user, other_user} = Pleroma.User.follow(user, other_user)
 
       assert user.following_count == 1
       assert other_user.follower_count == 1
@@ -2126,8 +2132,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 0
 
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
-      {:ok, _user} = User.follow(user, other_user)
-      other_user = User.get_by_id(other_user.id)
+      {:ok, _user, other_user} = User.follow(user, other_user)
 
       assert other_user.follower_count == 437
     end
@@ -2149,7 +2154,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 0
 
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
-      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, other_user, _user} = User.follow(other_user, user)
 
       assert other_user.following_count == 152
     end
@@ -2260,5 +2265,10 @@ defmodule Pleroma.UserTest do
     assert User.avatar_url(user) =~ "avatar.png"
 
     assert User.avatar_url(user, no_default: true) == nil
+  end
+
+  test "get_host/1" do
+    user = insert(:user, ap_id: "https://lain.com/users/lain", nickname: "lain")
+    assert User.get_host(user) == "lain.com"
   end
 end

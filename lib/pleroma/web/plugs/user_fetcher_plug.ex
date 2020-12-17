@@ -3,6 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UserFetcherPlug do
+  @moduledoc """
+  Assigns `:auth_user` basing on `:auth_credentials`.
+
+  NOTE: no checks are performed at this step, auth_credentials/username could be easily faked.
+  """
+
   alias Pleroma.User
   import Plug.Conn
 

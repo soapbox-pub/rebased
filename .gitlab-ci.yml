@@ -57,7 +57,7 @@ unit-testing:
     policy: pull
 
   services:
-  - name: postgres:9.6
+  - name: postgres:13
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -228,7 +228,7 @@ arm:
   artifacts: *release-artifacts
   only: *release-only
   tags:
-    - arm32
+    - arm32-specified
   image: arm32v7/elixir:1.10.3
   cache: *release-cache
   variables: *release-variables
@@ -240,7 +240,7 @@ arm-musl:
   artifacts: *release-artifacts
   only: *release-only
   tags:
-    - arm32
+    - arm32-specified
   image: arm32v7/elixir:1.10.3-alpine
   cache: *release-cache
   variables: *release-variables

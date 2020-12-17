@@ -22,7 +22,7 @@ defmodule Pleroma.Mixfile do
       docs: [
         source_url_pattern:
           "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
-        logo: "priv/static/static/logo.png",
+        logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
           "Installation manuals": Path.wildcard("docs/installation/*.md"),
@@ -37,7 +37,8 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
-          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1],
+          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, nil}]
         ]
       ]
     ]
@@ -157,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.2.0"},
+      {:linkify, "~> 0.4.0"},
       {:http_signatures, "~> 0.1.0"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
@@ -193,7 +194,8 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git", branch: "develop"},
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
+       ref: "4c692e544b28d1f5e543fb8a44be090f8cd96f80"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
        ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},
@@ -205,7 +207,10 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "1.15.2", override: true},
+      {:hackney,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/hackney.git",
+       ref: "7d7119f0651515d6d7669c78393fd90950a3ec6e",
+       override: true},
       {:mox, "~> 0.5", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()

@@ -50,10 +50,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
       Enum.map(reports, fn report ->
         case CommonAPI.update_report_state(report.id, report.state) do
           {:ok, activity} ->
+            report = Activity.get_by_id_with_user_actor(activity.id)
+
             ModerationLog.insert_log(%{
               action: "report_update",
               actor: admin,
-              subject: activity
+              subject: activity,
+              subject_actor: report.user_actor
             })
 
             activity
@@ -73,11 +76,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   def notes_create(%{assigns: %{user: user}, body_params: %{content: content}} = conn, %{
         id: report_id
       }) do
-    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
+    with {:ok, _} <- ReportNote.create(user.id, report_id, content),
+         report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{
         action: "report_note",
         actor: user,
-        subject: Activity.get_by_id(report_id),
+        subject: report,
+        subject_actor: report.user_actor,
         text: content
       })
 
@@ -91,11 +96,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
         id: note_id,
         report_id: report_id
       }) do
-    with {:ok, note} <- ReportNote.destroy(note_id) do
+    with {:ok, note} <- ReportNote.destroy(note_id),
+         report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{
         action: "report_note_delete",
         actor: user,
-        subject: Activity.get_by_id(report_id),
+        subject: report,
+        subject_actor: report.user_actor,
         text: note.content
       })
 

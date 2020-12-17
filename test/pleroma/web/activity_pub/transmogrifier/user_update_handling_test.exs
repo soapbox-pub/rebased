@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
   test "it works for incoming update activities" do
     user = insert(:user, local: false)
 
-    update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
+    update_data = File.read!("test/fixtures/mastodon-update.json") |> Jason.decode!()
 
     object =
       update_data["object"]
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
     {:ok, _activity} =
       "test/fixtures/mastodon-update.json"
       |> File.read!()
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", actor)
       |> Map.update!("object", fn object ->
         object
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
 
     assert user.fields == []
 
-    update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
+    update_data = File.read!("test/fixtures/mastodon-update.json") |> Jason.decode!()
 
     object =
       update_data["object"]
@@ -138,7 +138,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
   test "it works for incoming update activities which lock the account" do
     user = insert(:user, local: false)
 
-    update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
+    update_data = File.read!("test/fixtures/mastodon-update.json") |> Jason.decode!()
 
     object =
       update_data["object"]

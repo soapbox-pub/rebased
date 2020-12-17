@@ -39,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
         |> get("/web/login", %{code: auth.token})
 
       assert conn.status == 302
-      assert redirected_to(conn) == path
+      assert redirected_to(conn) =~ path
     end
 
     test "redirects to the getting-started page when referer is not present", %{conn: conn} do
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
       conn = get(conn, "/web/login", %{code: auth.token})
 
       assert conn.status == 302
-      assert redirected_to(conn) == "/web/getting-started"
+      assert redirected_to(conn) =~ "/web/getting-started"
     end
   end
 

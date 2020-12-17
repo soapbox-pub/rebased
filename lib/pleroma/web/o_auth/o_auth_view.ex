@@ -13,7 +13,7 @@ defmodule Pleroma.Web.OAuth.OAuthView do
       token_type: "Bearer",
       access_token: token.token,
       refresh_token: token.refresh_token,
-      expires_in: expires_in(),
+      expires_in: NaiveDateTime.diff(token.valid_until, NaiveDateTime.utc_now()),
       scope: Enum.join(token.scopes, " "),
       created_at: Utils.format_created_at(token)
     }
@@ -25,6 +25,4 @@ defmodule Pleroma.Web.OAuth.OAuthView do
       response
     end
   end
-
-  defp expires_in, do: Pleroma.Config.get([:oauth2, :token_expires_in], 600)
 end

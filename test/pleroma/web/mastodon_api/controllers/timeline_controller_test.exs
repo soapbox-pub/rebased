@@ -136,7 +136,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "doesn't return replies if follower is posting with blocked user" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       [blockee, friend] = insert_list(2, :user)
-      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker, friend} = User.follow(blocker, friend)
       {:ok, _} = User.block(blocker, blockee)
 
       conn = assign(conn, :user, blocker)
@@ -165,7 +165,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)
       blockee = insert(:user, ap_id: "https://example.com/users/blocked")
-      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker, friend} = User.follow(blocker, friend)
       {:ok, blocker} = User.block_domain(blocker, "example.com")
 
       conn = assign(conn, :user, blocker)
@@ -336,7 +336,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       user_one = insert(:user)
       user_two = insert(:user)
 
-      {:ok, user_two} = User.follow(user_two, user_one)
+      {:ok, user_two, user_one} = User.follow(user_two, user_one)
 
       {:ok, direct} =
         CommonAPI.post(user_one, %{

@@ -1,0 +1,141 @@
+## This file is a PO Template file.
+msgid "eperm"
+msgstr "Operation not permitted"
+
+msgid "eacces"
+msgstr "Permission denied"
+
+msgid "eagain"
+msgstr "Resource temporarily unavailable"
+  
+msgid "ebadf"
+msgstr "Bad file descriptor"
+  
+msgid "ebadmsg"
+msgstr "Bad message"
+  
+msgid "ebusy"
+msgstr "Device or resource busy"
+  
+msgid "edeadlk"
+msgstr "Resource deadlock avoided"
+  
+msgid "edeadlock"
+msgstr "Resource deadlock avoided"
+  
+msgid "edquot"
+msgstr "Disk quota exceeded"
+  
+msgid "eexist"
+msgstr "File exists"
+  
+msgid "efault"
+msgstr "Bad address"
+  
+msgid "efbig"
+msgstr "File is too large"
+  
+msgid "eftype"
+msgstr "Inappropriate file type or format"
+  
+msgid "eintr"
+msgstr "Interrupted system call"
+  
+msgid "einval"
+msgstr "Invalid argument"
+  
+msgid "eio"
+msgstr "Input/output error"
+  
+msgid "eisdir"
+msgstr "Illegal operation on a directory"
+  
+msgid "eloop"
+msgstr "Too many levels of symbolic links"
+  
+msgid "emfile"
+msgstr "Too many open files"
+  
+msgid "emlink"
+msgstr "Too many links"
+  
+msgid "emultihop"
+msgstr "Multihop attempted"
+  
+msgid "enametoolong"
+msgstr "File name is too long"
+  
+msgid "enfile"
+msgstr "Too many open files in system"
+  
+msgid "enobufs"
+msgstr "No buffer space available"
+  
+msgid "enodev"
+msgstr "No such device"
+  
+msgid "enolck"
+msgstr "No locks available"
+  
+msgid "enolink"
+msgstr "Link has been severed"
+  
+msgid "enoent"
+msgstr "No such file or directory"
+  
+msgid "enomem"
+msgstr "Cannot allocate memory"
+  
+msgid "enospc"
+msgstr "No space left on device"
+  
+msgid "enosr"
+msgstr "Out of streams resources"
+  
+msgid "enostr"
+msgstr "Device is not a stream"
+  
+msgid "enosys"
+msgstr "Function not implemented"
+  
+msgid "enotblk"
+msgstr "Block device required"
+  
+msgid "enotdir"
+msgstr "Not a directory"
+  
+msgid "enotsup"
+msgstr "Operation not supported"
+  
+msgid "enxio"
+msgstr "No such device or address"
+  
+msgid "eopnotsupp"
+msgstr "Operation not supported"
+  
+msgid "eoverflow"
+msgstr "Value too large for defined data type"
+  
+msgid "epipe"
+msgstr "Broken pipe"
+  
+msgid "erange"
+msgstr "Numerical result out of range"
+  
+msgid "erofs"
+msgstr "Read-only file system"
+  
+msgid "espipe"
+msgstr "Illegal seek"
+  
+msgid "esrch"
+msgstr "No such process"
+  
+msgid "estale"
+msgstr "Stale file handle"
+  
+msgid "etxtbsy"
+msgstr "Text file busy"
+  
+msgid "exdev"
+msgstr "Invalid cross-device link"

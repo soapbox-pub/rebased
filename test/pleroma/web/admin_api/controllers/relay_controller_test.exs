@@ -60,7 +60,7 @@ defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/relay")
 
-      assert json_response_and_validate_schema(conn, 200)["relays"] == [
+      assert json_response_and_validate_schema(conn, 200)["relays"] |> Enum.sort() == [
                %{
                  "actor" => "http://mastodon.example.org/users/admin",
                  "followed_back" => true

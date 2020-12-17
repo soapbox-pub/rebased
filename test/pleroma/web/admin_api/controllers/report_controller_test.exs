@@ -122,13 +122,13 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       })
       |> json_response_and_validate_schema(:no_content)
 
-      activity = Activity.get_by_id(id)
+      activity = Activity.get_by_id_with_user_actor(id)
       assert activity.data["state"] == "resolved"
 
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} updated report ##{id} with 'resolved' state"
+               "@#{admin.nickname} updated report ##{id} (on user @#{activity.user_actor.nickname}) with 'resolved' state"
     end
 
     test "closes report", %{conn: conn, id: id, admin: admin} do
@@ -141,13 +141,13 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       })
       |> json_response_and_validate_schema(:no_content)
 
-      activity = Activity.get_by_id(id)
+      activity = Activity.get_by_id_with_user_actor(id)
       assert activity.data["state"] == "closed"
 
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} updated report ##{id} with 'closed' state"
+               "@#{admin.nickname} updated report ##{id} (on user @#{activity.user_actor.nickname}) with 'closed' state"
     end
 
     test "returns 400 when state is unknown", %{conn: conn, id: id} do
@@ -193,18 +193,20 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       })
       |> json_response_and_validate_schema(:no_content)
 
-      activity = Activity.get_by_id(id)
-      second_activity = Activity.get_by_id(second_report_id)
+      activity = Activity.get_by_id_with_user_actor(id)
+      second_activity = Activity.get_by_id_with_user_actor(second_report_id)
       assert activity.data["state"] == "resolved"
       assert second_activity.data["state"] == "closed"
 
       [first_log_entry, second_log_entry] = Repo.all(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(first_log_entry) ==
-               "@#{admin.nickname} updated report ##{id} with 'resolved' state"
+               "@#{admin.nickname} updated report ##{id} (on user @#{activity.user_actor.nickname}) with 'resolved' state"
 
       assert ModerationLog.get_log_entry_message(second_log_entry) ==
-               "@#{admin.nickname} updated report ##{second_report_id} with 'closed' state"
+               "@#{admin.nickname} updated report ##{second_report_id} (on user @#{
+                 second_activity.user_actor.nickname
+               }) with 'closed' state"
     end
   end
 

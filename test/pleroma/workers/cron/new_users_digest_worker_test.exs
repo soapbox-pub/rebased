@@ -28,7 +28,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     assert email.html_body =~ user.nickname
     assert email.html_body =~ user2.nickname
     assert email.html_body =~ "cofe"
-    assert email.html_body =~ "#{Pleroma.Web.Endpoint.url()}/static/logo.png"
+    assert email.html_body =~ "#{Pleroma.Web.Endpoint.url()}/static/logo.svg"
   end
 
   test "it doesn't fail when admin has no email" do

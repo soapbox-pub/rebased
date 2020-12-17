@@ -147,16 +147,6 @@ config :pleroma, Pleroma.Web.Endpoint,
     "SameSite=Lax"
   ]
 
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: :timer.hours(8),
-  rejection_duration: :timer.minutes(15),
-  fed_socket_fetches: [
-    default: 12_000,
-    interval: 3_000,
-    lazy: false
-  ]
-
 # Configures Elixir's Logger
 config :logger, :console,
   level: :debug,
@@ -316,7 +306,7 @@ config :pleroma, :frontend_configurations,
     hideSitename: false,
     hideUserStats: false,
     loginMethod: "password",
-    logo: "/static/logo.png",
+    logo: "/static/logo.svg",
     logoMargin: ".1em",
     logoMask: true,
     minimalScopesMode: false,
@@ -353,8 +343,8 @@ config :pleroma, :assets,
 config :pleroma, :manifest,
   icons: [
     %{
-      src: "/static/logo.png",
-      type: "image/png"
+      src: "/static/logo.svg",
+      type: "image/svg+xml"
     }
   ],
   theme_color: "#282c37",
@@ -658,7 +648,7 @@ config :pleroma, :email_notifications,
   }
 
 config :pleroma, :oauth2,
-  token_expires_in: 600,
+  token_expires_in: 3600 * 24 * 30,
   issue_new_refresh_token: true,
   clean_expired_tokens: false
 

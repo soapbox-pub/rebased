@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
     )
 
     users
-    |> Enum.each(fn {:ok, follower} -> Pleroma.User.follow(follower, user) end)
+    |> Enum.each(fn {:ok, follower, user} -> Pleroma.User.follow(follower, user) end)
 
     Benchee.run(
       %{

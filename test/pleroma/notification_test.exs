@@ -779,7 +779,7 @@ defmodule Pleroma.NotificationTest do
       other_user = insert(:user)
 
       {:ok, other_user} = User.block_domain(other_user, blocked_domain)
-      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, other_user, user} = User.follow(other_user, user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
@@ -1070,7 +1070,7 @@ defmodule Pleroma.NotificationTest do
       blocked = insert(:user, ap_id: "http://some-domain.com")
 
       {:ok, user} = User.block_domain(user, "some-domain.com")
-      {:ok, _} = User.follow(user, blocked)
+      {:ok, _, _} = User.follow(user, blocked)
 
       {:ok, _activity} = CommonAPI.post(blocked, %{status: "hey @#{user.nickname}"})
 
