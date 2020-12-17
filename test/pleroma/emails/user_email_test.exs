@@ -45,4 +45,15 @@ defmodule Pleroma.Emails.UserEmailTest do
     assert email.html_body =~
              Router.Helpers.confirm_email_url(Endpoint, :confirm_email, user.id, "conf-token")
   end
+
+  test "build approval pending email" do
+    config = Pleroma.Config.get(:instance)
+    user = insert(:user)
+    email = UserEmail.approval_pending_email(user)
+
+    assert email.from == {config[:name], config[:notify_email]}
+    assert email.to == [{user.name, user.email}]
+    assert email.subject == "Your account is awaiting approval"
+    assert email.html_body =~ "Awaiting Approval"
+  end
 end

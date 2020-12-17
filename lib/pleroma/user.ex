@@ -806,16 +806,48 @@ defmodule Pleroma.User do
     end
   end
 
-  def post_register_action(%User{} = user) do
+  def post_register_action(%User{confirmation_pending: true} = user) do
+    with {:ok, _} <- try_send_confirmation_email(user) do
+      {:ok, user}
+    end
+  end
+
+  def post_register_action(%User{approval_pending: true} = user) do
+    with {:ok, _} <- send_user_approval_email(user),
+         {:ok, _} <- send_admin_approval_emails(user) do
+      {:ok, user}
+    end
+  end
+
+  def post_register_action(%User{approval_pending: false, confirmation_pending: false} = user) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
          {:ok, _} <- send_welcome_email(user),
          {:ok, _} <- send_welcome_message(user),
-         {:ok, _} <- send_welcome_chat_message(user),
-         {:ok, _} <- try_send_confirmation_email(user) do
+         {:ok, _} <- send_welcome_chat_message(user) do
       {:ok, user}
     end
+  end
+
+  defp send_user_approval_email(user) do
+    user
+    |> Pleroma.Emails.UserEmail.approval_pending_email()
+    |> Pleroma.Emails.Mailer.deliver_async()
+
+    {:ok, :enqueued}
+  end
+
+  defp send_admin_approval_emails(user) do
+    all_superusers()
+    |> Enum.filter(fn user -> not is_nil(user.email) end)
+    |> Enum.each(fn superuser ->
+      superuser
+      |> Pleroma.Emails.AdminEmail.new_unapproved_registration(user)
+      |> Pleroma.Emails.Mailer.deliver_async()
+    end)
+
+    {:ok, :enqueued}
   end
 
   def send_welcome_message(user) do
@@ -1590,10 +1622,33 @@ defmodule Pleroma.User do
     end)
   end
 
-  def approve(%User{} = user) do
-    change(user, approval_pending: false)
-    |> update_and_set_cache()
+  def approve(%User{approval_pending: true} = user) do
+    with chg <- change(user, approval_pending: false),
+         {:ok, user} <- update_and_set_cache(chg) do
+      post_register_action(user)
+      {:ok, user}
+    end
   end
+
+  def approve(%User{} = user), do: {:ok, user}
+
+  def confirm(users) when is_list(users) do
+    Repo.transaction(fn ->
+      Enum.map(users, fn user ->
+        with {:ok, user} <- confirm(user), do: user
+      end)
+    end)
+  end
+
+  def confirm(%User{confirmation_pending: true} = user) do
+    with chg <- confirmation_changeset(user, need_confirmation: false),
+         {:ok, user} <- update_and_set_cache(chg) do
+      post_register_action(user)
+      {:ok, user}
+    end
+  end
+
+  def confirm(%User{} = user), do: {:ok, user}
 
   def update_notification_settings(%User{} = user, settings) do
     user
@@ -2079,18 +2134,6 @@ defmodule Pleroma.User do
       |> update_and_set_cache()
 
     updated_user
-  end
-
-  @spec toggle_confirmation(User.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
-  def toggle_confirmation(%User{} = user) do
-    user
-    |> confirmation_changeset(need_confirmation: !user.confirmation_pending)
-    |> update_and_set_cache()
-  end
-
-  @spec toggle_confirmation([User.t()]) :: [{:ok, User.t()} | {:error, Changeset.t()}]
-  def toggle_confirmation(users) do
-    Enum.map(users, &toggle_confirmation/1)
   end
 
   @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}

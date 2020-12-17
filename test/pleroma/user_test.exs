@@ -535,6 +535,22 @@ defmodule Pleroma.UserTest do
       |> assert_email_sent()
     end
 
+    test "sends a pending approval email" do
+      clear_config([:instance, :account_approval_required], true)
+
+      {:ok, user} =
+        User.register_changeset(%User{}, @full_user_data)
+        |> User.register()
+
+      ObanHelpers.perform_all()
+
+      assert_email_sent(
+        from: Pleroma.Config.Helpers.sender(),
+        to: {user.name, user.email},
+        subject: "Your account is awaiting approval"
+      )
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
@@ -1393,6 +1409,98 @@ defmodule Pleroma.UserTest do
         assert false == user.approval_pending
       end)
     end
+
+    test "it sends welcome email if it is set" do
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([:welcome, :email, :sender], "tester@test.me")
+
+      user = insert(:user, approval_pending: true)
+      welcome_user = insert(:user, email: "tester@test.me")
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      User.approve(user)
+
+      ObanHelpers.perform_all()
+
+      assert_email_sent(
+        from: {instance_name, welcome_user.email},
+        to: {user.name, user.email},
+        html_body: "Welcome to #{instance_name}"
+      )
+    end
+
+    test "approving an approved user does not trigger post-register actions" do
+      clear_config([:welcome, :email, :enabled], true)
+
+      user = insert(:user, approval_pending: false)
+      User.approve(user)
+
+      ObanHelpers.perform_all()
+
+      assert_no_email_sent()
+    end
+  end
+
+  describe "confirm" do
+    test "confirms a user" do
+      user = insert(:user, confirmation_pending: true)
+      assert true == user.confirmation_pending
+      {:ok, user} = User.confirm(user)
+      assert false == user.confirmation_pending
+    end
+
+    test "confirms a list of users" do
+      unconfirmed_users = [
+        insert(:user, confirmation_pending: true),
+        insert(:user, confirmation_pending: true),
+        insert(:user, confirmation_pending: true)
+      ]
+
+      {:ok, users} = User.confirm(unconfirmed_users)
+
+      assert Enum.count(users) == 3
+
+      Enum.each(users, fn user ->
+        assert false == user.confirmation_pending
+      end)
+    end
+
+    test "sends approval emails when `approval_pending: true`" do
+      admin = insert(:user, is_admin: true)
+      user = insert(:user, confirmation_pending: true, approval_pending: true)
+      User.confirm(user)
+
+      ObanHelpers.perform_all()
+
+      user_email = Pleroma.Emails.UserEmail.approval_pending_email(user)
+      admin_email = Pleroma.Emails.AdminEmail.new_unapproved_registration(admin, user)
+
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      # User approval email
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: user_email.html_body
+      )
+
+      # Admin email
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {admin.name, admin.email},
+        html_body: admin_email.html_body
+      )
+    end
+
+    test "confirming a confirmed user does not trigger post-register actions" do
+      user = insert(:user, confirmation_pending: false, approval_pending: true)
+      User.confirm(user)
+
+      ObanHelpers.perform_all()
+
+      assert_no_email_sent()
+    end
   end
 
   describe "delete" do
@@ -1886,24 +1994,6 @@ defmodule Pleroma.UserTest do
       Enum.each(inactive, fn user ->
         assert user.id in inactive_users_ids
       end)
-    end
-  end
-
-  describe "toggle_confirmation/1" do
-    test "if user is confirmed" do
-      user = insert(:user, confirmation_pending: false)
-      {:ok, user} = User.toggle_confirmation(user)
-
-      assert user.confirmation_pending
-      assert user.confirmation_token
-    end
-
-    test "if user is unconfirmed" do
-      user = insert(:user, confirmation_pending: true, confirmation_token: "some token")
-      {:ok, user} = User.toggle_confirmation(user)
-
-      refute user.confirmation_pending
-      refute user.confirmation_token
     end
   end
 
