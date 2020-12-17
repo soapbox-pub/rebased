@@ -648,7 +648,7 @@ config :pleroma, :email_notifications,
   }
 
 config :pleroma, :oauth2,
-  token_expires_in: 3600 * 24 * 30,
+  token_expires_in: 3600 * 24 * 365 * 100,
   issue_new_refresh_token: true,
   clean_expired_tokens: false
 
