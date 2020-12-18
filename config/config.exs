@@ -47,7 +47,6 @@ use Mix.Config
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo,
-  types: Pleroma.PostgresTypes,
   telemetry_event: [Pleroma.Repo.Instrumenter],
   migration_lock: nil
 
