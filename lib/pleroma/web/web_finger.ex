@@ -116,6 +116,9 @@ defmodule Pleroma.Web.WebFinger do
           {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
             Map.put(data, "ap_id", link["href"])
 
+          {nil, "http://ostatus.org/schema/1.0/subscribe"} ->                 
+            Map.put(data, "subscribe_address", link["template"])
+
           _ ->
             Logger.debug("Unhandled type: #{inspect(link["type"])}")
             data
