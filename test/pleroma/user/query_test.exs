@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.QueryTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
 
   alias Pleroma.Repo
   alias Pleroma.User

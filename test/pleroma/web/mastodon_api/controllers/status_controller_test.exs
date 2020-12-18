@@ -67,10 +67,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "sensitive" => "0"
         })
 
-      {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
-      # Six hours
-      assert ttl > :timer.seconds(6 * 60 * 60 - 1)
-
       assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
                json_response_and_validate_schema(conn_one, 200)
 

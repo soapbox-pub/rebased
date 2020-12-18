@@ -423,10 +423,4 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert is_binary(error)
     refute User.get_cached_by_nickname("lain")
   end
-
-  setup do
-    Supervisor.terminate_child(Pleroma.Supervisor, Cachex)
-    Supervisor.restart_child(Pleroma.Supervisor, Cachex)
-    :ok
-  end
 end

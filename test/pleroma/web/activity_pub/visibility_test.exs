@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
          user: user
        } do
     Repo.delete(user)
-    Cachex.clear(:user_cache)
+    Pleroma.User.invalidate_cache(user)
     refute Visibility.is_private?(direct)
   end
 

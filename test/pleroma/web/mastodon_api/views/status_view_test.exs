@@ -160,7 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} = CommonAPI.post(user, %{status: "Hey @shp!", visibility: "direct"})
 
     Repo.delete(user)
-    Cachex.clear(:user_cache)
+    User.invalidate_cache(user)
 
     finger_url =
       "https://localhost/.well-known/webfinger?resource=acct:#{user.nickname}@localhost"
@@ -194,7 +194,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
       |> Repo.update()
 
-    Cachex.clear(:user_cache)
+    User.invalidate_cache(user)
 
     result = StatusView.render("show.json", activity: activity)
 
