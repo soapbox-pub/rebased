@@ -20,6 +20,8 @@ defmodule Pleroma.Emoji.Pack do
           name: String.t()
         }
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   alias Pleroma.Emoji
   alias Pleroma.Emoji.Pack
   alias Pleroma.Utils
@@ -415,7 +417,7 @@ defmodule Pleroma.Emoji.Pack do
     ttl_per_file = Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
     overall_ttl = :timer.seconds(ttl_per_file * Enum.count(files))
 
-    Cachex.put!(
+    @cachex.put!(
       :emoji_packs_cache,
       pack.name,
       # if pack.json MD5 changes, the cache is not valid anymore
@@ -618,7 +620,7 @@ defmodule Pleroma.Emoji.Pack do
   defp fetch_archive(pack) do
     hash = :crypto.hash(:md5, File.read!(pack.pack_file))
 
-    case Cachex.get!(:emoji_packs_cache, pack.name) do
+    case @cachex.get!(:emoji_packs_cache, pack.name) do
       %{hash: ^hash, pack_data: archive} -> archive
       _ -> create_archive_and_cache(pack, hash)
     end

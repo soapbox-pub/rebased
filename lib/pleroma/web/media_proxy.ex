@@ -12,29 +12,31 @@ defmodule Pleroma.Web.MediaProxy do
   @base64_opts [padding: false]
   @cache_table :banned_urls_cache
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   def cache_table, do: @cache_table
 
   @spec in_banned_urls(String.t()) :: boolean()
-  def in_banned_urls(url), do: elem(Cachex.exists?(@cache_table, url(url)), 1)
+  def in_banned_urls(url), do: elem(@cachex.exists?(@cache_table, url(url)), 1)
 
   def remove_from_banned_urls(urls) when is_list(urls) do
-    Cachex.execute!(@cache_table, fn cache ->
-      Enum.each(Invalidation.prepare_urls(urls), &Cachex.del(cache, &1))
+    @cachex.execute!(@cache_table, fn cache ->
+      Enum.each(Invalidation.prepare_urls(urls), &@cachex.del(cache, &1))
     end)
   end
 
   def remove_from_banned_urls(url) when is_binary(url) do
-    Cachex.del(@cache_table, url(url))
+    @cachex.del(@cache_table, url(url))
   end
 
   def put_in_banned_urls(urls) when is_list(urls) do
-    Cachex.execute!(@cache_table, fn cache ->
-      Enum.each(Invalidation.prepare_urls(urls), &Cachex.put(cache, &1, true))
+    @cachex.execute!(@cache_table, fn cache ->
+      Enum.each(Invalidation.prepare_urls(urls), &@cachex.put(cache, &1, true))
     end)
   end
 
   def put_in_banned_urls(url) when is_binary(url) do
-    Cachex.put(@cache_table, url(url), true)
+    @cachex.put(@cache_table, url(url), true)
   end
 
   def url(url) when is_nil(url) or url == "", do: nil

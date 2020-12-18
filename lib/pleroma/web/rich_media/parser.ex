@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.RichMedia.Parser do
   require Logger
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   defp parsers do
     Pleroma.Config.get([:rich_media, :parsers])
   end
@@ -24,7 +26,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end
 
     defp get_cached_or_parse(url) do
-      case Cachex.fetch(:rich_media_cache, url, fn ->
+      case @cachex.fetch(:rich_media_cache, url, fn ->
              case parse_url(url) do
                {:ok, _} = res ->
                  {:commit, res}
@@ -64,7 +66,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
     defp set_error_ttl(url, _reason) do
       ttl = Pleroma.Config.get([:rich_media, :failure_backoff], 60_000)
-      Cachex.expire(:rich_media_cache, url, ttl)
+      @cachex.expire(:rich_media_cache, url, ttl)
       :ok
     end
 
@@ -106,7 +108,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
       {:ok, ttl} when is_number(ttl) ->
         ttl = ttl * 1000
 
-        case Cachex.expire_at(:rich_media_cache, url, ttl) do
+        case @cachex.expire_at(:rich_media_cache, url, ttl) do
           {:ok, true} -> {:ok, ttl}
           {:ok, false} -> {:error, :no_key}
         end

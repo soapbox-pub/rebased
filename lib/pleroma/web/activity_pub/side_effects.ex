@@ -27,6 +27,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   require Logger
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   def handle(object, meta \\ [])
 
   # Task this handles
@@ -312,7 +314,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
             {:ok, cm_ref} = MessageReference.create(chat, object, user.ap_id != actor.ap_id)
 
-            Cachex.put(
+            @cachex.put(
               :chat_message_id_idempotency_key_cache,
               cm_ref.id,
               meta[:idempotency_key]
