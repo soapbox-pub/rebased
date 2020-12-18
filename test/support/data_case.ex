@@ -45,13 +45,29 @@ defmodule Pleroma.DataCase do
     end
   end
 
+  def clear_cachex do
+    Pleroma.Supervisor
+    |> Supervisor.which_children()
+    |> Enum.each(fn
+      {name, _, _, [Cachex]} ->
+        name
+        |> to_string
+        |> String.trim_leading("cachex_")
+        |> Kernel.<>("_cache")
+        |> String.to_existing_atom()
+        |> Cachex.clear()
+
+      _ ->
+        nil
+    end)
+  end
+
   setup tags do
-    Cachex.clear(:user_cache)
-    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+      clear_cachex()
     end
 
     if tags[:needs_streamer] do
