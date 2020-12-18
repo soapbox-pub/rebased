@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 os_exclude = if :os.type() == {:unix, :darwin}, do: [skip_on_mac: true], else: []
-ExUnit.start(exclude: [:test] ++ [:federated | os_exclude], include: [async: true])
+ExUnit.start(exclude: [:federated | os_exclude])
 
 Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, :manual)
 

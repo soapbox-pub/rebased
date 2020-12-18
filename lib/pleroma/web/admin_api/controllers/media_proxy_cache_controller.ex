@@ -40,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   defp fetch_entries(params) do
     MediaProxy.cache_table()
-    |> @cachex.stream!(@cachex.Query.create(true, :key))
+    |> @cachex.stream!(Cachex.Query.create(true, :key))
     |> filter_entries(params[:query])
   end
 

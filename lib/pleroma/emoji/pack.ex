@@ -417,7 +417,7 @@ defmodule Pleroma.Emoji.Pack do
     ttl_per_file = Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
     overall_ttl = :timer.seconds(ttl_per_file * Enum.count(files))
 
-    @cachex.put!(
+    @cachex.put(
       :emoji_packs_cache,
       pack.name,
       # if pack.json MD5 changes, the cache is not valid anymore

@@ -121,6 +121,8 @@ config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
 
+config :pleroma, :cachex, provider: Pleroma.CachexMock
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
