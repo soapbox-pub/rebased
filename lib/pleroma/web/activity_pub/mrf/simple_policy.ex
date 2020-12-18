@@ -271,6 +271,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       end)
       |> Enum.into(%{})
 
+    # This is for backwards compatibility. We originally didn't sent
+    # extra info like a reason why an instance was rejected/quarantined/etc.
+    # Because we didn't want to break backwards compatibility it was decided
+    # to add an extra "info" key.
     mrf_simple_info =
       mrf_simple_excluded
       |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn {_, reason} -> reason == "" end)} end)

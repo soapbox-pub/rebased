@@ -100,6 +100,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           quarantined
           |> Enum.map(fn {instance, _reason} -> instance end)
       })
+      # This is for backwards compatibility. We originally didn't sent
+      # extra info like a reason why an instance was rejected/quarantined/etc.
+      # Because we didn't want to break backwards compatibility it was decided
+      # to add an extra "info" key.
       |> Map.merge(%{
         quarantined_instances_info: %{
           "quarantined_instances" =>

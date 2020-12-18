@@ -688,6 +688,8 @@ config :pleroma, :config_description, [
       %{
         key: :quarantined_instances,
         type: {:list, :tuple},
+        keyPlaceholder: "instance",
+        valuePlaceholder: "reason",
         description:
           "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent and the reason for doing so",
         suggestions: [
