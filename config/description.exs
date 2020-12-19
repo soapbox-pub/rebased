@@ -1953,14 +1953,8 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Oban,
     type: :group,
-    description: """
-    [Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.
-
-    Note: if you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1),
-      it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`,
-      otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings
-      (see https://github.com/sorentwo/oban/issues/52).
-    """,
+    description:
+      "[Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.",
     children: [
       %{
         key: :log,
