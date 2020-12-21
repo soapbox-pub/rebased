@@ -21,9 +21,11 @@ defmodule Pleroma.NullCache do
   def get(_, _), do: {:ok, nil}
 
   @impl true
-  def fetch!(_, _, func) do
-    {_, res} = func.()
-    res
+  def fetch!(_, key, func) do
+    case func.(key) do
+      {_, res} -> res
+      res -> res
+    end
   end
 
   @impl true
