@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
 
   alias Pleroma.Activity
   alias Pleroma.User
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
              %{"name" => "foo1", "value" => "updated"}
            ]
 
-    Pleroma.Config.put([:instance, :max_remote_account_fields], 2)
+    clear_config([:instance, :max_remote_account_fields], 2)
 
     update_data =
       update_data

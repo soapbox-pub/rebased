@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
+  # TODO: Should not need Cachex
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User

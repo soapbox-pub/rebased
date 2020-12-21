@@ -14,18 +14,27 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
   import Pleroma.Factory
   import Ecto.Query
 
-  setup do
-    Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
-    :ok
-  end
-
   setup_all do: clear_config([:instance, :federating], true)
-  setup do: clear_config([:instance])
-  setup do: clear_config([:frontend_configurations, :pleroma_fe])
   setup do: clear_config([:user, :deny_follow_blocked])
 
   describe "GET /ostatus_subscribe - remote_follow/2" do
     test "adds status to pleroma instance if the `acct` is a status", %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://mastodon.social/users/emelie/statuses/101849165031453009"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: File.read!("test/fixtures/tesla_mock/status.emelie.json")
+          }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+      end)
+
       assert conn
              |> get(
                remote_follow_path(conn, :follow, %{
@@ -36,6 +45,15 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "show follow account page if the `acct` is a account link", %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://mastodon.social/users/emelie"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+      end)
+
       response =
         conn
         |> get(remote_follow_path(conn, :follow, %{acct: "https://mastodon.social/users/emelie"}))
@@ -45,6 +63,15 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "show follow page if the `acct` is a account link", %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://mastodon.social/users/emelie"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+      end)
+
       user = insert(:user)
 
       response =
@@ -56,7 +83,14 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       assert response =~ "Remote follow"
     end
 
-    test "show follow page with error when user cannot fecth by `acct` link", %{conn: conn} do
+    test "show follow page with error when user can not be fetched by `acct` link", %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://mastodon.social/users/not_found"} ->
+          %Tesla.Env{
+            status: 404
+          }
+      end)
+
       user = insert(:user)
 
       assert capture_log(fn ->
