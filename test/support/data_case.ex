@@ -83,7 +83,23 @@ defmodule Pleroma.DataCase do
       })
     end
 
+    stub_pipeline()
+
     :ok
+  end
+
+  def stub_pipeline do
+    Mox.stub_with(Pleroma.Web.ActivityPub.SideEffectsMock, Pleroma.Web.ActivityPub.SideEffects)
+
+    Mox.stub_with(
+      Pleroma.Web.ActivityPub.ObjectValidatorMock,
+      Pleroma.Web.ActivityPub.ObjectValidator
+    )
+
+    Mox.stub_with(Pleroma.Web.ActivityPub.MRFMock, Pleroma.Web.ActivityPub.MRF)
+    Mox.stub_with(Pleroma.Web.ActivityPub.ActivityPubMock, Pleroma.Web.ActivityPub.ActivityPub)
+    Mox.stub_with(Pleroma.Web.FederatorMock, Pleroma.Web.Federator)
+    Mox.stub_with(Pleroma.ConfigMock, Pleroma.Config)
   end
 
   def ensure_local_uploader(context) do

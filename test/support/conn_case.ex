@@ -136,6 +136,8 @@ defmodule Pleroma.Web.ConnCase do
       })
     end
 
+    Pleroma.DataCase.stub_pipeline()
+
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end
