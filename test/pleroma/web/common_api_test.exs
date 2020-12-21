@@ -493,7 +493,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     object = Object.normalize(activity)
 
-    assert object.data["tag"] == ["2hu"]
+    assert Object.tags(object) == ["2hu"]
   end
 
   test "it adds emoji in the object" do

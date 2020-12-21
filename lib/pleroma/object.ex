@@ -47,16 +47,32 @@ defmodule Pleroma.Object do
   end
 
   def create(data) do
-    Object.change(%Object{}, %{data: data})
+    %Object{}
+    |> Object.change(%{data: data})
     |> Repo.insert()
   end
 
   def change(struct, params \\ %{}) do
-    struct
-    |> cast(params, [:data])
-    |> validate_required([:data])
-    |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
+    changeset =
+      struct
+      |> cast(params, [:data])
+      |> validate_required([:data])
+      |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
+
+    if hashtags_changed?(struct, get_change(changeset, :data)) do
+      # TODO: modify assoc once it's introduced
+      changeset
+    else
+      changeset
+    end
   end
+
+  defp hashtags_changed?(%Object{} = struct, %{"tag" => _} = data) do
+    Enum.sort(embedded_hashtags(struct)) !=
+      Enum.sort(object_data_hashtags(data))
+  end
+
+  defp hashtags_changed?(_, _), do: false
 
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
@@ -344,4 +360,23 @@ defmodule Pleroma.Object do
 
   def self_replies(object, opts \\ []),
     do: replies(object, Keyword.put(opts, :self_only, true))
+
+  def tags(%Object{data: %{"tag" => tags}}) when is_list(tags), do: tags
+
+  def tags(_), do: []
+
+  def hashtags(object), do: embedded_hashtags(object)
+
+  defp embedded_hashtags(%Object{data: data}) do
+    object_data_hashtags(data)
+  end
+
+  defp embedded_hashtags(_), do: []
+
+  defp object_data_hashtags(%{"tag" => tags}) when is_list(tags) do
+    # Note: AS2 map-type elements are ignored
+    Enum.filter(tags, &is_bitstring(&1))
+  end
+
+  defp object_data_hashtags(_), do: []
 end

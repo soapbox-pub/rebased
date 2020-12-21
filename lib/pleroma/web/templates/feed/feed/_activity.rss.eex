@@ -21,7 +21,7 @@
     <link><%= @data["external_url"] %></link>
   <% end %>
 
-  <%= for tag <- @data["tag"] || [] do %>
+  <%= for tag <- Pleroma.Object.hashtags(@object) do %>
     <category term="<%= tag %>"></category>
   <% end %>
 
