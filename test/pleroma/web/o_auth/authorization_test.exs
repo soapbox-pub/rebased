@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.AuthorizationTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   import Pleroma.Factory

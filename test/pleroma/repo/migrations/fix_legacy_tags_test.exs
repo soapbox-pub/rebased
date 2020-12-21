@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Repo.Migrations.FixLegacyTagsTest do
   alias Pleroma.User
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
   import Pleroma.Tests.Helpers
 

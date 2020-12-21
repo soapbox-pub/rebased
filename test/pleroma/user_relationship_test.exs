@@ -5,7 +5,7 @@
 defmodule Pleroma.UserRelationshipTest do
   alias Pleroma.UserRelationship
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
 

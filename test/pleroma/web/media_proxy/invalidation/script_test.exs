@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy.Invalidation.ScriptTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Pleroma.Web.MediaProxy.Invalidation
 
   import ExUnit.CaptureLog

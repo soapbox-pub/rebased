@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.IdempotencyPlugTest do
+  # Relies on Cachex, has to stay synchronous
   use Pleroma.DataCase
   use Plug.Test
 

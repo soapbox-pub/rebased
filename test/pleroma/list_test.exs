@@ -4,7 +4,7 @@
 
 defmodule Pleroma.ListTest do
   alias Pleroma.Repo
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
 

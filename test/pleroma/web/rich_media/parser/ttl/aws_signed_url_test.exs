@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
+  # Relies on Cachex, needs to be synchronous
   use Pleroma.DataCase
 
   test "s3 signed url is parsed correct for expiration time" do
