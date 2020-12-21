@@ -57,7 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   defp get_cached_vote_or_vote(user, object, choices) do
     idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
 
-    @cachex.fetch!(:idempotency_cache, idempotency_key, fn ->
+    @cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
       case CommonAPI.vote(user, object, choices) do
         {:error, _message} = res -> {:ignore, res}
         res -> {:commit, res}
