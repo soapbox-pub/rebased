@@ -56,12 +56,13 @@ defmodule Pleroma.Web.WebFingerTest do
       {:ok, _data} = WebFinger.finger(user)
     end
 
-    test "returns the ActivityPub actor URI for an ActivityPub user with the ld+json mimetype" do
+    test "returns the ActivityPub actor URI and subscribe address for an ActivityPub user with the ld+json mimetype" do
       user = "kaniini@gerzilla.de"
 
       {:ok, data} = WebFinger.finger(user)
 
       assert data["ap_id"] == "https://gerzilla.de/channel/kaniini"
+      assert data["subscribe_address"] == "https://gerzilla.de/follow?f=&url={uri}"
     end
 
     test "it work for AP-only user" do
