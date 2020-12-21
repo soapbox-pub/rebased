@@ -15,6 +15,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
   describe "check_repo_pool_size!/1" do
     test "raises if the pool size is unexpected" do
       clear_config([Pleroma.Repo, :pool_size], 11)
+      clear_config([:dangerzone, :override_repo_pool_size], false)
 
       assert_raise Pleroma.ApplicationRequirements.VerifyError,
                    "Repo.pool_size different than recommended value.",
