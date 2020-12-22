@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - S3 Uploads with Elixir 1.11.
 - Mix task pleroma.user delete_activities for source installations.
 - Search: RUM index search speed has been fixed.
+- Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
+- Fixes for the autolinker.
 
 ## [2.2.0] - 2020-11-12
 
