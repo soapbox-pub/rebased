@@ -10,6 +10,7 @@ defmodule Pleroma.Object do
 
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Hashtag
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
@@ -25,6 +26,8 @@ defmodule Pleroma.Object do
 
   schema "objects" do
     field(:data, :map)
+
+    many_to_many(:hashtags, Hashtag, join_through: "hashtags_objects", on_replace: :delete)
 
     timestamps()
   end
@@ -53,17 +56,31 @@ defmodule Pleroma.Object do
   end
 
   def change(struct, params \\ %{}) do
-    changeset =
-      struct
-      |> cast(params, [:data])
-      |> validate_required([:data])
-      |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
+    struct
+    |> cast(params, [:data])
+    |> validate_required([:data])
+    |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
+    |> maybe_handle_hashtags_change(struct)
+  end
 
-    if hashtags_changed?(struct, get_change(changeset, :data)) do
-      # TODO: modify assoc once it's introduced
-      changeset
+  defp maybe_handle_hashtags_change(changeset, struct) do
+    with data_hashtags_change = get_change(changeset, :data),
+         true <- hashtags_changed?(struct, data_hashtags_change),
+         {:ok, hashtag_records} <-
+           data_hashtags_change
+           |> object_data_hashtags()
+           |> Hashtag.get_or_create_by_names() do
+      put_assoc(changeset, :hashtags, hashtag_records)
     else
-      changeset
+      false ->
+        changeset
+
+      {:error, hashtag_changeset} ->
+        failed_hashtag = get_field(hashtag_changeset, :name)
+
+        validate_change(changeset, :data, fn _, _ ->
+          [data: "error referencing hashtag: #{failed_hashtag}"]
+        end)
     end
   end
 

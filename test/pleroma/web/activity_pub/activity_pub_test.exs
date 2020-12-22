@@ -217,6 +217,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         tag_all: ["test", "reject"]
       })
 
+    [fetch_one, fetch_two, fetch_three, fetch_four] =
+      Enum.map([fetch_one, fetch_two, fetch_three, fetch_four], fn statuses ->
+        Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)
+      end)
+
     assert fetch_one == [status_one, status_three]
     assert fetch_two == [status_one, status_two, status_three]
     assert fetch_three == [status_one, status_two]
