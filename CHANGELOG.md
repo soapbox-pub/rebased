@@ -21,7 +21,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API</summary>
 - Statuses were not displayed for Mastodon forwarded reports.
-
 </details>
 
 
