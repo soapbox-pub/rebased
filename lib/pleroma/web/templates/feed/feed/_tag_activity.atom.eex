@@ -41,7 +41,7 @@
       <% end %>
     <% end %>
 
-    <%= for hashtag <- @data["hashtags"] || [] do %>
+    <%= for hashtag <- Object.hashtags(@data) do %>
       <category term="<%= hashtag %>"></category>
     <% end %>
 

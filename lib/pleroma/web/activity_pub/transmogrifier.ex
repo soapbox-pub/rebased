@@ -863,23 +863,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_object_url(data), do: data
 
   def add_hashtags(object) do
-    tags =
-      ((object["hashtags"] || []) ++ (object["tag"] || []))
-      |> Enum.map(fn
-        # Expand internal representation tags into AS2 tags.
-        tag when is_binary(tag) ->
-          %{
-            "href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}",
-            "name" => "##{tag}",
-            "type" => "Hashtag"
-          }
-
-        # Do not process tags which are already AS2 tag objects.
-        tag when is_map(tag) ->
-          tag
+    hashtags =
+      object
+      |> Object.hashtags()
+      |> Enum.map(fn tag ->
+        %{
+          "href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}",
+          "name" => "##{tag}",
+          "type" => "Hashtag"
+        }
       end)
 
-    Map.put(object, "tag", tags)
+    Map.put(object, "tag", hashtags ++ (object["tag"] || []))
   end
 
   # TODO These should be added on our side on insertion, it doesn't make much

@@ -344,4 +344,8 @@ defmodule Pleroma.Object do
 
   def self_replies(object, opts \\ []),
     do: replies(object, Keyword.put(opts, :self_only, true))
+
+  def hashtags(%{"hashtags" => hashtags}), do: hashtags || []
+  def hashtags(%{"tag" => tags}), do: Enum.filter(tags, &is_bitstring(&1))
+  def hashtags(_), do: []
 end
