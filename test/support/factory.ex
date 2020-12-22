@@ -24,7 +24,7 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def user_factory do
+  def user_factory(attrs \\ %{}) do
     user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
@@ -39,13 +39,29 @@ defmodule Pleroma.Factory do
       ap_enabled: true
     }
 
-    %{
-      user
-      | ap_id: User.ap_id(user),
-        follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user),
-        raw_bio: user.bio
-    }
+    urls =
+      if attrs[:local] == false do
+        base_domain = Enum.random(["domain1.com", "domain2.com", "domain3.com"])
+
+        ap_id = "https://#{base_domain}/users/#{user.nickname}"
+
+        %{
+          ap_id: ap_id,
+          follower_address: ap_id <> "/followers",
+          following_address: ap_id <> "/following"
+        }
+      else
+        %{
+          ap_id: User.ap_id(user),
+          follower_address: User.ap_followers(user),
+          following_address: User.ap_following(user)
+        }
+      end
+
+    user
+    |> Map.put(:raw_bio, user.bio)
+    |> Map.merge(urls)
+    |> merge_attributes(attrs)
   end
 
   def user_relationship_factory(attrs \\ %{}) do

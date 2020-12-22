@@ -231,4 +231,20 @@ defmodule Pleroma.ActivityTest do
 
     assert [%Activity{id: ^id1}, %Activity{id: ^id2}] = activities
   end
+
+  test "get_by_object_ap_id_with_object/1" do
+    user = insert(:user)
+    another = insert(:user)
+
+    {:ok, %{id: id, object: %{data: %{"id" => obj_id}}}} =
+      Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
+
+    Pleroma.Web.CommonAPI.favorite(another, id)
+
+    assert obj_id
+           |> Pleroma.Activity.Queries.by_object_id()
+           |> Repo.aggregate(:count, :id) == 2
+
+    assert %{id: ^id} = Activity.get_by_object_ap_id_with_object(obj_id)
+  end
 end
