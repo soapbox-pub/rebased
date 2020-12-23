@@ -19,9 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Forwarded reports duplication from Pleroma instances.
 
 - <details>
-  <summary>API</summary>
-- Statuses were not displayed for Mastodon forwarded reports.
-</details>
+    <summary>API</summary>
+  - Statuses were not displayed for Mastodon forwarded reports.
+  </details>
 
 ### Upgrade notes
 
