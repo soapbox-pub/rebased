@@ -18,10 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixes for the autolinker.
 - Forwarded reports duplication from Pleroma instances.
 
-<details>
-  <summary>API</summary>
-- Statuses were not displayed for Mastodon forwarded reports.
-</details>
+- <details>
+    <summary>API</summary>
+  - Statuses were not displayed for Mastodon forwarded reports.
+  </details>
 
 
 ## [2.2.0] - 2020-11-12
