@@ -3,6 +3,7 @@
 /db
 /deps
 /*.ez
+/test/instance
 /test/uploads
 /.elixir_ls
 /test/fixtures/DSCN0010_tmp.jpg
