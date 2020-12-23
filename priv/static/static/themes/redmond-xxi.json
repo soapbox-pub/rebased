@@ -240,6 +240,7 @@
     },
     "colors": {
       "bg": "#d6d6ce",
+      "wallpaper": "#396ba5",
       "text": "#000000",
       "link": "#0000ff",
       "accent": "#0a246a",
