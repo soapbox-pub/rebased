@@ -66,7 +66,8 @@ defmodule Pleroma.UserSearchTest do
     end
 
     test "does NOT exclude non-discoverable users from results (as long as it's the default)" do
-      # NOTE: as long as users are non-discoverable by default, we can't filter out most users: #2301
+      # NOTE: as long as users are non-discoverable by default,
+      # we can't filter out most users: #2301
       insert(:user, %{nickname: "john 3000", discoverable: false})
       insert(:user, %{nickname: "john 3001"})
 
