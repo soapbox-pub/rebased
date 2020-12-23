@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Users with `is_discoverable` field set to false (default value) will appear in in-service search results but be hidden from external services (search bots etc.).
 - Streaming API: Posts and notifications are not dropped, when CLI task is executing.
+- Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
 
 <details>
   <summary>API Changes</summary>
