@@ -305,7 +305,7 @@ defmodule Pleroma.Application do
   end
 
   @spec steal_emoji_policy_setup() :: :ok
-  def steal_emoji_policy_setup() do
+  defp steal_emoji_policy_setup() do
     with true <-
            Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy in Config.get!([:mrf, :policies]) do
       path =
