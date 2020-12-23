@@ -241,16 +241,14 @@ defmodule Pleroma.FormatterTest do
         "@@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me and @o and @@@jimm"
 
       o = insert(:user, %{nickname: "o"})
-      jimm = insert(:user, %{nickname: "jimm"})
-      gsimg = insert(:user, %{nickname: "gsimg"})
+      _jimm = insert(:user, %{nickname: "jimm"})
+      _gsimg = insert(:user, %{nickname: "gsimg"})
       archaeme = insert(:user, %{nickname: "archaeme"})
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
 
       expected_mentions = [
         {"@archaeme", archaeme},
         {"@archaeme@archae.me", archaeme_remote},
-        {"@gsimg", gsimg},
-        {"@jimm", jimm},
         {"@o", o}
       ]
 

@@ -3,6 +3,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.2.1] - 2020-12-22
+
+### Changed
+- Updated Pleroma FE
+
+### Fixed
+
+- Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
+- S3 Uploads with Elixir 1.11.
+- Mix task pleroma.user delete_activities for source installations.
+- Search: RUM index search speed has been fixed.
+- Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
+- Fixes for the autolinker.
+- Forwarded reports duplication from Pleroma instances.
+
+- <details>
+    <summary>API</summary>
+  - Statuses were not displayed for Mastodon forwarded reports.
+  </details>
+
+### Upgrade notes
+
+1. Restart Pleroma
+
+
 ## [2.2.0] - 2020-11-12
 
 ### Security
@@ -65,7 +90,6 @@ switched to a new configuration mechanism, however it was not officially removed
   - OTP: `./bin/pleroma_ctl migrate`
   - From Source: `mix ecto.migrate`
 3. Restart Pleroma
-
 
 ## [2.1.2] - 2020-09-17
 

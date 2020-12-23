@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.2.0"),
+      version: version("2.2.1"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -37,7 +37,8 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
-          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1],
+          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, nil}]
         ]
       ]
     ]
@@ -143,7 +144,7 @@ defmodule Pleroma.Mixfile do
        github: "ninenines/gun", ref: "921c47146b2d9567eac7e9a4d2ccc60fffd4f327", override: true},
       {:jason, "~> 1.2"},
       {:mogrify, "~> 0.7.4"},
-      {:ex_aws, "~> 2.1"},
+      {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
       {:earmark, "1.4.3"},
@@ -160,7 +161,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.2.0"},
+      {:linkify, "~> 0.4.1"},
       {:http_signatures, "~> 0.1.0"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
@@ -208,7 +209,10 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "1.15.2", override: true},
+      {:hackney,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/hackney.git",
+       ref: "7d7119f0651515d6d7669c78393fd90950a3ec6e",
+       override: true},
       {:mox, "~> 0.5", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()
