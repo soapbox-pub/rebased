@@ -101,11 +101,10 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_remote,
         type: :boolean,
-        description:
-          """
-          Proxy requests to the remote uploader.\n
-          Useful if media upload endpoint is not internet accessible.
-          """
+        description: """
+        Proxy requests to the remote uploader.\n
+        Useful if media upload endpoint is not internet accessible.
+        """
       },
       %{
         key: :filename_display_max_length,
