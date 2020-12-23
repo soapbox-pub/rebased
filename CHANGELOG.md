@@ -53,24 +53,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased (Patch)
 
+### Fixed
+
+- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
+- Emoji Reaction activity filtering from blocked and muted accounts.
+
+## [2.2.1] - 2020-12-22
+
 ### Changed
+- Updated Pleroma FE
 
 ### Fixed
 
 - Config generation: rename `Pleroma.Upload.Filter.ExifTool` to `Pleroma.Upload.Filter.Exiftool`.
-- Search: RUM index search speed has been fixed.
 - S3 Uploads with Elixir 1.11.
-- Emoji Reaction activity filtering from blocked and muted accounts.
 - Mix task pleroma.user delete_activities for source installations.
-- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
-- Forwarded reports duplication from Pleroma instances.
+- Search: RUM index search speed has been fixed.
 - Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
+- Fixes for the autolinker.
+- Forwarded reports duplication from Pleroma instances.
 
-<details>
-  <summary>API</summary>
-- Statuses were not displayed for Mastodon forwarded reports.
+- <details>
+    <summary>API</summary>
+  - Statuses were not displayed for Mastodon forwarded reports.
+  </details>
 
-</details>
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## [2.2.0] - 2020-11-12
 
