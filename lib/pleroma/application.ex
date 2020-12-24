@@ -114,9 +114,6 @@ defmodule Pleroma.Application do
 
     set_postgres_server_version()
 
-    # Requires Config.TransferTask so ConfigDB values are loaded
-    steal_emoji_policy_setup()
-
     result
   end
 
@@ -302,21 +299,5 @@ defmodule Pleroma.Application do
   def limiters_setup do
     [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.MediaProxy]
     |> Enum.each(&ConcurrentLimiter.new(&1, 1, 0))
-  end
-
-  @spec steal_emoji_policy_setup() :: :ok
-  defp steal_emoji_policy_setup() do
-    with true <-
-           Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy in Config.get!([:mrf, :policies]) do
-      path =
-        [:instance, :static_dir]
-        |> Config.get!()
-        |> Path.join("emoji/steal")
-
-      if !File.exists?(path), do: File.mkdir_p!(path)
-    else
-      _ ->
-        :ok
-    end
   end
 end

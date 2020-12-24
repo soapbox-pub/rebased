@@ -14,18 +14,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
 
   defp accept_host?(host), do: host in Config.get([:mrf_steal_emoji, :hosts], [])
 
-  defp steal_emoji({shortcode, url}) do
+  defp steal_emoji({shortcode, url}, emoji_dir_path) do
     url = Pleroma.Web.MediaProxy.url(url)
     {:ok, response} = Pleroma.HTTP.get(url)
     size_limit = Config.get([:mrf_steal_emoji, :size_limit], 50_000)
 
     if byte_size(response.body) <= size_limit do
-      emoji_dir_path =
-        Config.get(
-          [:mrf_steal_emoji, :path],
-          Path.join(Config.get([:instance, :static_dir]), "emoji/stolen")
-        )
-
       extension =
         url
         |> URI.parse()
@@ -35,11 +29,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
 
       file_path = Path.join([emoji_dir_path, shortcode <> (extension || ".png")])
 
-      try do
-        :ok = File.write(file_path, response.body)
-
+      with :ok <- File.write(file_path, response.body) do
         shortcode
-      rescue
+      else
         e ->
           Logger.warn("MRF.StealEmojiPolicy: Failed to write to #{file_path}: #{inspect(e)}")
           nil
@@ -66,6 +58,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
     if remote_host?(host) and accept_host?(host) do
       installed_emoji = Pleroma.Emoji.get_all() |> Enum.map(fn {k, _} -> k end)
 
+      emoji_dir_path =
+        Config.get(
+          [:mrf_steal_emoji, :path],
+          Path.join(Config.get([:instance, :static_dir]), "emoji/stolen")
+        )
+
+      if not Config.get([:mrf_steal_emoji, :dir_exists?], false) do
+        create_dir(emoji_dir_path)
+      end
+
       new_emojis =
         foreign_emojis
         |> Enum.filter(fn {shortcode, _url} -> shortcode not in installed_emoji end)
@@ -76,7 +78,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
 
           !reject_emoji?
         end)
-        |> Enum.map(&steal_emoji(&1))
+        |> Enum.map(&steal_emoji(&1, emoji_dir_path))
         |> Enum.filter(& &1)
 
       if !Enum.empty?(new_emojis) do
@@ -93,5 +95,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   @impl true
   def describe do
     {:ok, %{}}
+  end
+
+  defp create_dir(path) do
+    if not File.exists?(path) do
+      File.mkdir_p!(path)
+    end
+
+    Config.put([:mrf_steal_emoji, :dir_exists?], true)
   end
 end
