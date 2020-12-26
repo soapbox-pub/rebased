@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.EmojiTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Pleroma.Emoji
 
   describe "is_unicode_emoji?/1" do

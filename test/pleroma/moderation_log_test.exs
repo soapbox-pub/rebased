@@ -6,7 +6,7 @@ defmodule Pleroma.ModerationLogTest do
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
 

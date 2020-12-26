@@ -24,6 +24,8 @@ defmodule Pleroma.Activity do
 
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   schema "activities" do
     field(:data, :map)
     field(:local, :boolean, default: true)
@@ -298,7 +300,7 @@ defmodule Pleroma.Activity do
 
   defp purge_web_resp_cache(%Activity{} = activity) do
     %{path: path} = URI.parse(activity.data["id"])
-    Cachex.del(:web_resp_cache, path)
+    @cachex.del(:web_resp_cache, path)
     activity
   end
 

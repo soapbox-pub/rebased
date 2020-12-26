@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
              %{"name" => "foo1", "value" => "updated"}
            ]
 
-    Pleroma.Config.put([:instance, :max_remote_account_fields], 2)
+    clear_config([:instance, :max_remote_account_fields], 2)
 
     update_data =
       update_data

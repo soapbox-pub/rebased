@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.CacheControlTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
   alias Plug.Conn
 
   test "Verify Cache-Control header on static assets", %{conn: conn} do

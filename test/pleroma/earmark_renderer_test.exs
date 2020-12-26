@@ -2,7 +2,7 @@
 # Copyright © 2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.EarmarkRendererTest do
-  use ExUnit.Case
+  use Pleroma.DataCase, async: true
 
   test "Paragraph" do
     code = ~s[Hello\n\nWorld!]

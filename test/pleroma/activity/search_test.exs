@@ -7,7 +7,7 @@ defmodule Pleroma.Activity.SearchTest do
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   test "it finds something" do
     user = insert(:user)

@@ -73,7 +73,8 @@ defmodule Pleroma.ChatTest do
       other_user = insert(:user)
 
       {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
-      :timer.sleep(1500)
+      {:ok, chat} = time_travel(chat, -2)
+
       {:ok, chat_two} = Chat.bump_or_create(user.id, other_user.ap_id)
 
       assert chat.id == chat_two.id

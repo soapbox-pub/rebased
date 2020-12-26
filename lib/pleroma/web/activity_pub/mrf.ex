@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.MRF do
   require Logger
 
+  @behaviour Pleroma.Web.ActivityPub.MRF.PipelineFiltering
+
   @mrf_config_descriptions [
     %{
       group: :pleroma,
@@ -70,6 +72,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   def filter(%{} = object), do: get_policies() |> filter(object)
 
+  @impl true
   def pipeline_filter(%{} = message, meta) do
     object = meta[:object_data]
     ap_id = message["object"]

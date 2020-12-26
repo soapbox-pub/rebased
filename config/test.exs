@@ -47,7 +47,10 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 50
+
+config :pleroma, :dangerzone, override_repo_pool_size: true
 
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
@@ -120,6 +123,16 @@ config :pleroma, Pleroma.Uploaders.S3,
 config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
+
+config :pleroma, :pipeline,
+  object_validator: Pleroma.Web.ActivityPub.ObjectValidatorMock,
+  mrf: Pleroma.Web.ActivityPub.MRFMock,
+  activity_pub: Pleroma.Web.ActivityPub.ActivityPubMock,
+  side_effects: Pleroma.Web.ActivityPub.SideEffectsMock,
+  federator: Pleroma.Web.FederatorMock,
+  config: Pleroma.ConfigMock
+
+config :pleroma, :cachex, provider: Pleroma.CachexMock
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

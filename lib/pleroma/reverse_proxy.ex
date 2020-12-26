@@ -17,6 +17,8 @@ defmodule Pleroma.ReverseProxy do
   @failed_request_ttl :timer.seconds(60)
   @methods ~w(GET HEAD)
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   def max_read_duration_default, do: @max_read_duration
   def default_cache_control_header, do: @default_cache_control_header
 
@@ -107,7 +109,7 @@ defmodule Pleroma.ReverseProxy do
         opts
       end
 
-    with {:ok, nil} <- Cachex.get(:failed_proxy_url_cache, url),
+    with {:ok, nil} <- @cachex.get(:failed_proxy_url_cache, url),
          {:ok, code, headers, client} <- request(method, url, req_headers, client_opts),
          :ok <-
            header_length_constraint(
@@ -427,6 +429,6 @@ defmodule Pleroma.ReverseProxy do
         nil
       end
 
-    Cachex.put(:failed_proxy_url_cache, url, true, ttl: ttl)
+    @cachex.put(:failed_proxy_url_cache, url, true, ttl: ttl)
   end
 end

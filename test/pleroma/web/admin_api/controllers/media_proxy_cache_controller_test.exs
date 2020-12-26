@@ -13,10 +13,6 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
   setup do: clear_config([:media_proxy])
 
   setup do
-    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
-  end
-
-  setup do
     admin = insert(:user, is_admin: true)
     token = insert(:oauth_admin_token, user: admin)
 
