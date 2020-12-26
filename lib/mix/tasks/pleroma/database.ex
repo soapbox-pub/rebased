@@ -4,14 +4,18 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Conversation
+  alias Pleroma.Hashtag
   alias Pleroma.Maintenance
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+
   require Logger
   require Pleroma.Constants
+
   import Ecto.Query
   import Mix.Pleroma
+
   use Mix.Task
 
   @shortdoc "A collection of database related tasks"
@@ -124,6 +128,66 @@ defmodule Mix.Tasks.Pleroma.Database do
         ]
       )
       |> Repo.update_all([], timeout: :infinity)
+    end)
+    |> Stream.run()
+  end
+
+  def run(["transfer_hashtags"]) do
+    import Ecto.Query
+
+    start_pleroma()
+
+    from(
+      object in Object,
+      left_join: hashtag in assoc(object, :hashtags),
+      where: is_nil(hashtag.id),
+      where: fragment("(?)->>'tag' != '[]'", object.data),
+      select: %{
+        id: object.id,
+        inserted_at: object.inserted_at,
+        tag: fragment("(?)->>'tag'", object.data)
+      },
+      order_by: [desc: object.id]
+    )
+    |> Pleroma.Repo.chunk_stream(100, :batches)
+    |> Stream.each(fn objects ->
+      chunk_start = List.first(objects)
+      chunk_end = List.last(objects)
+
+      Logger.info(
+        "transfer_hashtags: " <>
+          "#{chunk_start.id} (#{chunk_start.inserted_at}) -- " <>
+          "#{chunk_end.id} (#{chunk_end.inserted_at})"
+      )
+
+      Enum.map(
+        objects,
+        fn object ->
+          hashtags =
+            object.tag
+            |> Jason.decode!()
+            |> Enum.filter(&is_bitstring(&1))
+
+          with {:ok, hashtag_records} <- Hashtag.get_or_create_by_names(hashtags) do
+            Repo.transaction(fn ->
+              for hashtag_record <- hashtag_records do
+                with {:error, _} <-
+                       Ecto.Adapters.SQL.query(
+                         Repo,
+                         "insert into hashtags_objects(hashtag_id, object_id) values " <>
+                           "(#{hashtag_record.id}, #{object.id});"
+                       ) do
+                  Logger.warn(
+                    "ERROR: could not link object #{object.id} and hashtag #{hashtag_record.id}"
+                  )
+                end
+              end
+            end)
+          else
+            e -> Logger.warn("ERROR: could not process object #{object.id}: #{inspect(e)}")
+          end
+        end
+      )
     end)
     |> Stream.run()
   end

@@ -660,33 +660,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_since(query, _), do: query
 
   defp restrict_tag_reject(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
-    raise "Can't use the child object without preloading!"
+    raise_on_missing_preload()
   end
 
-  defp restrict_tag_reject(query, %{tag_reject: [_ | _] = tag_reject}) do
+  defp restrict_tag_reject(query, %{tag_reject: tag_reject}) when is_list(tag_reject) do
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'tag' \\?| (?)", object.data, ^tag_reject)
     )
   end
 
+  defp restrict_tag_reject(query, %{tag_reject: tag_reject}) when is_binary(tag_reject) do
+    restrict_tag_reject(query, %{tag_reject: [tag_reject]})
+  end
+
   defp restrict_tag_reject(query, _), do: query
 
   defp restrict_tag_all(_query, %{tag_all: _tag_all, skip_preload: true}) do
-    raise "Can't use the child object without preloading!"
+    raise_on_missing_preload()
   end
 
-  defp restrict_tag_all(query, %{tag_all: [_ | _] = tag_all}) do
+  defp restrict_tag_all(query, %{tag_all: tag_all}) when is_list(tag_all) do
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?& (?)", object.data, ^tag_all)
     )
   end
 
+  defp restrict_tag_all(query, %{tag_all: tag}) when is_binary(tag) do
+    restrict_tag(query, %{tag: tag})
+  end
+
   defp restrict_tag_all(query, _), do: query
 
   defp restrict_tag(_query, %{tag: _tag, skip_preload: true}) do
-    raise "Can't use the child object without preloading!"
+    raise_on_missing_preload()
   end
 
   defp restrict_tag(query, %{tag: tag}) when is_list(tag) do
@@ -697,13 +705,79 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_tag(query, %{tag: tag}) when is_binary(tag) do
-    from(
-      [_activity, object] in query,
-      where: fragment("(?)->'tag' \\? (?)", object.data, ^tag)
-    )
+    restrict_tag(query, %{tag: [tag]})
   end
 
   defp restrict_tag(query, _), do: query
+
+  defp restrict_hashtag_reject_any(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
+    raise_on_missing_preload()
+  end
+
+  defp restrict_hashtag_reject_any(query, %{tag_reject: tags_reject}) when is_list(tags_reject) do
+    if has_named_binding?(query, :thread_mute) do
+      from(
+        [activity, object, thread_mute] in query,
+        group_by: [activity.id, object.id, thread_mute.id]
+      )
+    else
+      from(
+        [activity, object] in query,
+        group_by: [activity.id, object.id]
+      )
+    end
+    |> join(:left, [_activity, object], hashtag in assoc(object, :hashtags), as: :hashtag)
+    |> having(
+      [hashtag: hashtag],
+      fragment("not(array_agg(?) && (?))", hashtag.name, ^tags_reject)
+    )
+  end
+
+  defp restrict_hashtag_reject_any(query, %{tag_reject: tag_reject}) when is_binary(tag_reject) do
+    restrict_hashtag_reject_any(query, %{tag_reject: [tag_reject]})
+  end
+
+  defp restrict_hashtag_reject_any(query, _), do: query
+
+  defp restrict_hashtag_all(_query, %{tag_all: _tag, skip_preload: true}) do
+    raise_on_missing_preload()
+  end
+
+  defp restrict_hashtag_all(query, %{tag_all: tags}) when is_list(tags) do
+    Enum.reduce(
+      tags,
+      query,
+      fn tag, acc -> restrict_hashtag_any(acc, %{tag: tag}) end
+    )
+  end
+
+  defp restrict_hashtag_all(query, %{tag_all: tag}) when is_binary(tag) do
+    restrict_hashtag_any(query, %{tag: tag})
+  end
+
+  defp restrict_hashtag_all(query, _), do: query
+
+  defp restrict_hashtag_any(_query, %{tag: _tag, skip_preload: true}) do
+    raise_on_missing_preload()
+  end
+
+  defp restrict_hashtag_any(query, %{tag: tags}) when is_list(tags) do
+    from(
+      [_activity, object] in query,
+      join: hashtag in assoc(object, :hashtags),
+      where: hashtag.name in ^tags
+    )
+  end
+
+  defp restrict_hashtag_any(query, %{tag: tag}) when is_binary(tag) do
+    restrict_hashtag_any(query, %{tag: [tag]})
+  end
+
+  defp restrict_hashtag_any(query, _), do: query
+
+  defp raise_on_missing_preload do
+    raise "Can't use the child object without preloading!"
+  end
 
   defp restrict_recipients(query, [], _user), do: query
 
@@ -1088,40 +1162,51 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       skip_thread_containment: Config.get([:instance, :skip_thread_containment])
     }
 
-    Activity
-    |> maybe_preload_objects(opts)
-    |> maybe_preload_bookmarks(opts)
-    |> maybe_preload_report_notes(opts)
-    |> maybe_set_thread_muted_field(opts)
-    |> maybe_order(opts)
-    |> restrict_recipients(recipients, opts[:user])
-    |> restrict_replies(opts)
-    |> restrict_tag(opts)
-    |> restrict_tag_reject(opts)
-    |> restrict_tag_all(opts)
-    |> restrict_since(opts)
-    |> restrict_local(opts)
-    |> restrict_actor(opts)
-    |> restrict_type(opts)
-    |> restrict_state(opts)
-    |> restrict_favorited_by(opts)
-    |> restrict_blocked(restrict_blocked_opts)
-    |> restrict_muted(restrict_muted_opts)
-    |> restrict_filtered(opts)
-    |> restrict_media(opts)
-    |> restrict_visibility(opts)
-    |> restrict_thread_visibility(opts, config)
-    |> restrict_reblogs(opts)
-    |> restrict_pinned(opts)
-    |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
-    |> restrict_instance(opts)
-    |> restrict_announce_object_actor(opts)
-    |> restrict_filtered(opts)
-    |> Activity.restrict_deactivated_users()
-    |> exclude_poll_votes(opts)
-    |> exclude_chat_messages(opts)
-    |> exclude_invisible_actors(opts)
-    |> exclude_visibility(opts)
+    query =
+      Activity
+      |> distinct([a], true)
+      |> maybe_preload_objects(opts)
+      |> maybe_preload_bookmarks(opts)
+      |> maybe_preload_report_notes(opts)
+      |> maybe_set_thread_muted_field(opts)
+      |> maybe_order(opts)
+      |> restrict_recipients(recipients, opts[:user])
+      |> restrict_replies(opts)
+      |> restrict_since(opts)
+      |> restrict_local(opts)
+      |> restrict_actor(opts)
+      |> restrict_type(opts)
+      |> restrict_state(opts)
+      |> restrict_favorited_by(opts)
+      |> restrict_blocked(restrict_blocked_opts)
+      |> restrict_muted(restrict_muted_opts)
+      |> restrict_filtered(opts)
+      |> restrict_media(opts)
+      |> restrict_visibility(opts)
+      |> restrict_thread_visibility(opts, config)
+      |> restrict_reblogs(opts)
+      |> restrict_pinned(opts)
+      |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
+      |> restrict_instance(opts)
+      |> restrict_announce_object_actor(opts)
+      |> restrict_filtered(opts)
+      |> Activity.restrict_deactivated_users()
+      |> exclude_poll_votes(opts)
+      |> exclude_chat_messages(opts)
+      |> exclude_invisible_actors(opts)
+      |> exclude_visibility(opts)
+
+    if Config.get([:instance, :improved_hashtag_timeline]) do
+      query
+      |> restrict_hashtag_any(opts)
+      |> restrict_hashtag_all(opts)
+      |> restrict_hashtag_reject_any(opts)
+    else
+      query
+      |> restrict_tag(opts)
+      |> restrict_tag_reject(opts)
+      |> restrict_tag_all(opts)
+    end
   end
 
   def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do

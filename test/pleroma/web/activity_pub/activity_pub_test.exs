@@ -199,33 +199,37 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
     {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
 
-    fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
+    for new_timeline_enabled <- [true, false] do
+      clear_config([:instance, :improved_hashtag_timeline], new_timeline_enabled)
 
-    fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
+      fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 
-    fetch_three =
-      ActivityPub.fetch_activities([], %{
-        type: "Create",
-        tag: ["test", "essais"],
-        tag_reject: ["reject"]
-      })
+      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
 
-    fetch_four =
-      ActivityPub.fetch_activities([], %{
-        type: "Create",
-        tag: ["test"],
-        tag_all: ["test", "reject"]
-      })
+      fetch_three =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["test", "essais"],
+          tag_reject: ["reject"]
+        })
 
-    [fetch_one, fetch_two, fetch_three, fetch_four] =
-      Enum.map([fetch_one, fetch_two, fetch_three, fetch_four], fn statuses ->
-        Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)
-      end)
+      fetch_four =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["test"],
+          tag_all: ["test", "reject"]
+        })
 
-    assert fetch_one == [status_one, status_three]
-    assert fetch_two == [status_one, status_two, status_three]
-    assert fetch_three == [status_one, status_two]
-    assert fetch_four == [status_three]
+      [fetch_one, fetch_two, fetch_three, fetch_four] =
+        Enum.map([fetch_one, fetch_two, fetch_three, fetch_four], fn statuses ->
+          Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)
+        end)
+
+      assert fetch_one == [status_one, status_three]
+      assert fetch_two == [status_one, status_two, status_three]
+      assert fetch_three == [status_one, status_two]
+      assert fetch_four == [status_three]
+    end
   end
 
   describe "insertion" do
