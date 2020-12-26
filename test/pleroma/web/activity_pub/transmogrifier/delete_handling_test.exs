@@ -51,6 +51,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
       Object.normalize(activity.data["object"])
       |> Repo.delete()
 
+    # TODO: mock cachex
     Cachex.del(:object_cache, "object:#{object.data["id"]}")
 
     deleting_user = insert(:user)

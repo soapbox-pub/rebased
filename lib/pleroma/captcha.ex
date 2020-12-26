@@ -7,6 +7,8 @@ defmodule Pleroma.Captcha do
   alias Plug.Crypto.KeyGenerator
   alias Plug.Crypto.MessageEncryptor
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   @doc """
   Ask the configured captcha service for a new captcha
   """
@@ -86,7 +88,7 @@ defmodule Pleroma.Captcha do
   end
 
   defp validate_usage(token) do
-    if is_nil(Cachex.get!(:used_captcha_cache, token)) do
+    if is_nil(@cachex.get!(:used_captcha_cache, token)) do
       :ok
     else
       {:error, :already_used}
@@ -95,7 +97,7 @@ defmodule Pleroma.Captcha do
 
   defp mark_captcha_as_used(token) do
     ttl = seconds_valid() |> :timer.seconds()
-    Cachex.put(:used_captcha_cache, token, true, ttl: ttl)
+    @cachex.put(:used_captcha_cache, token, true, ttl: ttl)
   end
 
   defp method, do: Pleroma.Config.get!([__MODULE__, :method])

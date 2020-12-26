@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.InstanceTest do
-  use ExUnit.Case
+  # Modifies the Application Environment, has to stay synchronous.
+  use Pleroma.DataCase
 
   setup do
     File.mkdir_p!(tmp_path())
@@ -15,15 +16,17 @@ defmodule Mix.Tasks.Pleroma.InstanceTest do
       if File.exists?(static_dir) do
         File.rm_rf(Path.join(static_dir, "robots.txt"))
       end
-
-      Pleroma.Config.put([:instance, :static_dir], static_dir)
     end)
+
+    # Is being modified by the mix task.
+    clear_config([:instance, :static_dir])
 
     :ok
   end
 
+  @uuid Ecto.UUID.generate()
   defp tmp_path do
-    "/tmp/generated_files/"
+    "/tmp/generated_files/#{@uuid}/"
   end
 
   test "running gen" do

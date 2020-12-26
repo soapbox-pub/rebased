@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.BBS.HandlerTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   alias Pleroma.Activity
   alias Pleroma.BBS.Handler
   alias Pleroma.Object

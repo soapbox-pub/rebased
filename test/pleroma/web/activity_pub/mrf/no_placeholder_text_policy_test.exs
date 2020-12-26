@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicyTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   alias Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicy
 
   test "it clears content object" do

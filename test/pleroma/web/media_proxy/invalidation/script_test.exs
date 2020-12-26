@@ -3,14 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy.Invalidation.ScriptTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Pleroma.Web.MediaProxy.Invalidation
 
   import ExUnit.CaptureLog
-
-  setup do
-    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
-  end
 
   test "it logger error when script not found" do
     assert capture_log(fn ->

@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Builders.ActivityBuilder
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Token
 
   import Pleroma.Factory
@@ -36,22 +36,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       other_user = insert(:user)
 
       {:ok, _activity} =
-        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+        CommonAPI.post(other_user, %{
+          status: "Hey @#{current_user.nickname}"
+        })
 
       response_conn =
         conn
-        |> assign(:user, current_user)
         |> get("/api/v1/notifications")
 
-      [notification] = response = json_response(response_conn, 200)
-
-      assert length(response) == 1
+      [notification] = json_response(response_conn, 200)
 
       assert notification["pleroma"]["is_seen"] == false
 
       response_conn =
         conn
-        |> assign(:user, current_user)
         |> post("/api/qvitter/statuses/notifications/read", %{"latest_id" => notification["id"]})
 
       [notification] = response = json_response(response_conn, 200)

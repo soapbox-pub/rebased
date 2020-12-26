@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.VisibilityTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.Visibility
@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
          user: user
        } do
     Repo.delete(user)
-    Cachex.clear(:user_cache)
+    Pleroma.User.invalidate_cache(user)
     refute Visibility.is_private?(direct)
   end
 

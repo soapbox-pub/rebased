@@ -81,6 +81,8 @@ defmodule Pleroma.User do
     ]
   ]
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   schema "users" do
     field(:bio, :string, default: "")
     field(:raw_bio, :string)
@@ -246,13 +248,13 @@ defmodule Pleroma.User do
   end
 
   def cached_blocked_users_ap_ids(user) do
-    Cachex.fetch!(:user_cache, "blocked_users_ap_ids:#{user.ap_id}", fn _ ->
+    @cachex.fetch!(:user_cache, "blocked_users_ap_ids:#{user.ap_id}", fn _ ->
       blocked_users_ap_ids(user)
     end)
   end
 
   def cached_muted_users_ap_ids(user) do
-    Cachex.fetch!(:user_cache, "muted_users_ap_ids:#{user.ap_id}", fn _ ->
+    @cachex.fetch!(:user_cache, "muted_users_ap_ids:#{user.ap_id}", fn _ ->
       muted_users_ap_ids(user)
     end)
   end
@@ -1048,9 +1050,9 @@ defmodule Pleroma.User do
   def set_cache({:error, err}), do: {:error, err}
 
   def set_cache(%User{} = user) do
-    Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
-    Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
-    Cachex.put(:user_cache, "friends_ap_ids:#{user.nickname}", get_user_friends_ap_ids(user))
+    @cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+    @cachex.put(:user_cache, "nickname:#{user.nickname}", user)
+    @cachex.put(:user_cache, "friends_ap_ids:#{user.nickname}", get_user_friends_ap_ids(user))
     {:ok, user}
   end
 
@@ -1073,26 +1075,26 @@ defmodule Pleroma.User do
 
   @spec get_cached_user_friends_ap_ids(User.t()) :: [String.t()]
   def get_cached_user_friends_ap_ids(user) do
-    Cachex.fetch!(:user_cache, "friends_ap_ids:#{user.ap_id}", fn _ ->
+    @cachex.fetch!(:user_cache, "friends_ap_ids:#{user.ap_id}", fn _ ->
       get_user_friends_ap_ids(user)
     end)
   end
 
   def invalidate_cache(user) do
-    Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
-    Cachex.del(:user_cache, "nickname:#{user.nickname}")
-    Cachex.del(:user_cache, "friends_ap_ids:#{user.ap_id}")
-    Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
-    Cachex.del(:user_cache, "muted_users_ap_ids:#{user.ap_id}")
+    @cachex.del(:user_cache, "ap_id:#{user.ap_id}")
+    @cachex.del(:user_cache, "nickname:#{user.nickname}")
+    @cachex.del(:user_cache, "friends_ap_ids:#{user.ap_id}")
+    @cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+    @cachex.del(:user_cache, "muted_users_ap_ids:#{user.ap_id}")
   end
 
   @spec get_cached_by_ap_id(String.t()) :: User.t() | nil
   def get_cached_by_ap_id(ap_id) do
     key = "ap_id:#{ap_id}"
 
-    with {:ok, nil} <- Cachex.get(:user_cache, key),
+    with {:ok, nil} <- @cachex.get(:user_cache, key),
          user when not is_nil(user) <- get_by_ap_id(ap_id),
-         {:ok, true} <- Cachex.put(:user_cache, key, user) do
+         {:ok, true} <- @cachex.put(:user_cache, key, user) do
       user
     else
       {:ok, user} -> user
@@ -1104,11 +1106,11 @@ defmodule Pleroma.User do
     key = "id:#{id}"
 
     ap_id =
-      Cachex.fetch!(:user_cache, key, fn _ ->
+      @cachex.fetch!(:user_cache, key, fn _ ->
         user = get_by_id(id)
 
         if user do
-          Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+          @cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
           {:commit, user.ap_id}
         else
           {:ignore, ""}
@@ -1121,7 +1123,7 @@ defmodule Pleroma.User do
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
 
-    Cachex.fetch!(:user_cache, key, fn ->
+    @cachex.fetch!(:user_cache, key, fn _ ->
       case get_or_fetch_by_nickname(nickname) do
         {:ok, user} -> {:commit, user}
         {:error, _error} -> {:ignore, nil}
@@ -1390,7 +1392,7 @@ defmodule Pleroma.User do
         )
       end
 
-      Cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
+      @cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
 
       {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
     end
@@ -1400,7 +1402,7 @@ defmodule Pleroma.User do
     with {:ok, user_mute} <- UserRelationship.delete_mute(muter, mutee),
          {:ok, user_notification_mute} <-
            UserRelationship.delete_notification_mute(muter, mutee) do
-      Cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
+      @cachex.del(:user_cache, "muted_users_ap_ids:#{muter.ap_id}")
       {:ok, [user_mute, user_notification_mute]}
     end
   end
@@ -2408,7 +2410,7 @@ defmodule Pleroma.User do
           {:ok, UserRelationship.t()} | {:error, Ecto.Changeset.t()}
   defp add_to_block(%User{} = user, %User{} = blocked) do
     with {:ok, relationship} <- UserRelationship.create_block(user, blocked) do
-      Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+      @cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
       {:ok, relationship}
     end
   end
@@ -2417,7 +2419,7 @@ defmodule Pleroma.User do
           {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
   defp remove_from_block(%User{} = user, %User{} = blocked) do
     with {:ok, relationship} <- UserRelationship.delete_block(user, blocked) do
-      Cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
+      @cachex.del(:user_cache, "blocked_users_ap_ids:#{user.ap_id}")
       {:ok, relationship}
     end
   end

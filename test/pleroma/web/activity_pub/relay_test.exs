@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
              )
 
       Pleroma.Repo.delete(user)
-      Cachex.clear(:user_cache)
+      User.invalidate_cache(user)
 
       assert {:ok, %Activity{} = activity} = Relay.unfollow(user_ap_id, %{force: true})
 

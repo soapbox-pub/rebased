@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.LocalTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   alias Pleroma.Uploaders.Local
 
   describe "get_file/1" do

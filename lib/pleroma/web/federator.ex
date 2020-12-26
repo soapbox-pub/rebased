@@ -15,6 +15,8 @@ defmodule Pleroma.Web.Federator do
 
   require Logger
 
+  @behaviour Pleroma.Web.Federator.Publishing
+
   @doc """
   Returns `true` if the distance to target object does not exceed max configured value.
   Serves to prevent fetching of very long threads, especially useful on smaller instances.
@@ -39,10 +41,12 @@ defmodule Pleroma.Web.Federator do
     ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
   end
 
+  @impl true
   def publish(%{id: "pleroma:fakeid"} = activity) do
     perform(:publish, activity)
   end
 
+  @impl true
   def publish(activity) do
     PublisherWorker.enqueue("publish", %{"activity_id" => activity.id})
   end

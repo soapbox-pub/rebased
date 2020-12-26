@@ -10,10 +10,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
 
-  setup do
-    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
-  end
-
   describe "Media Proxy" do
     setup do
       clear_config([:media_proxy, :enabled], true)

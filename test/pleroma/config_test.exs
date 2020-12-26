@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ConfigTest do
-  use ExUnit.Case
+  use Pleroma.DataCase
 
   test "get/1 with an atom" do
     assert Pleroma.Config.get(:instance) == Application.get_env(:pleroma, :instance)

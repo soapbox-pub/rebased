@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Endpoint.MetricsExporterTest do
+  # Modifies AppEnv, has to stay synchronous
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.Endpoint.MetricsExporter

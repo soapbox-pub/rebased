@@ -1411,8 +1411,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> json_response_and_validate_schema(:ok)
 
       assert Token |> Repo.get_by(token: access_token) |> Repo.preload(:user) |> Map.get(:user)
-
-      Cachex.del(:used_captcha_cache, token)
     end
 
     test "returns 400 if any captcha field is not provided", %{conn: conn} do

@@ -33,8 +33,14 @@ defmodule Pleroma.Web.ChannelCase do
   setup tags do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
-    unless tags[:async] do
+    if tags[:async] do
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
+      Mox.set_mox_private()
+    else
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
+      Mox.set_mox_global()
+      Pleroma.DataCase.clear_cachex()
     end
 
     :ok

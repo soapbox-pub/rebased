@@ -26,6 +26,8 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PollOperation
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   @doc "GET /api/v1/polls/:id"
   def show(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),
@@ -55,7 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   defp get_cached_vote_or_vote(user, object, choices) do
     idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
 
-    Cachex.fetch!(:idempotency_cache, idempotency_key, fn ->
+    @cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
       case CommonAPI.vote(user, object, choices) do
         {:error, _message} = res -> {:ignore, res}
         res -> {:commit, res}
