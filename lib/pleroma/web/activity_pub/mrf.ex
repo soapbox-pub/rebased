@@ -33,9 +33,11 @@ defmodule Pleroma.Web.ActivityPub.MRF do
         %{
           key: :transparency_exclusions,
           label: "MRF transparency exclusions",
-          type: {:list, :string},
+          type: {:list, :tuple},
+          key_placeholder: "instance",
+          value_placeholder: "reason",
           description:
-            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value. You can also provide a reason for excluding these instance names. The instances and reasons won't be publicly disclosed.",
           suggestions: [
             "exclusion.com"
           ]
