@@ -96,6 +96,8 @@ defmodule Pleroma.Config do
     end
   end
 
+  def object_embedded_hashtags?, do: !get([:instance, :improved_hashtag_timeline])
+
   def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
 
   def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []

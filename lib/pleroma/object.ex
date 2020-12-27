@@ -384,7 +384,19 @@ defmodule Pleroma.Object do
 
   def tags(_), do: []
 
-  def hashtags(object), do: embedded_hashtags(object)
+  def hashtags(%Object{} = object) do
+    cond do
+      Config.object_embedded_hashtags?() ->
+        embedded_hashtags(object)
+
+      object.id == "pleroma:fake_object_id" ->
+        []
+
+      true ->
+        hashtag_records = Repo.preload(object, :hashtags).hashtags
+        Enum.map(hashtag_records, & &1.name)
+    end
+  end
 
   defp embedded_hashtags(%Object{data: data}) do
     object_data_hashtags(data)
