@@ -65,9 +65,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
           Path.join(Config.get([:instance, :static_dir]), "emoji/stolen")
         )
 
-      if not Config.get([:mrf_steal_emoji, :dir_exists?], false) do
-        create_dir(emoji_dir_path)
-      end
+      File.mkdir_p(emoji_dir_path)
 
       new_emojis =
         foreign_emojis
@@ -97,13 +95,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   @impl true
   def describe do
     {:ok, %{}}
-  end
-
-  defp create_dir(path) do
-    if not File.exists?(path) do
-      File.mkdir_p!(path)
-    end
-
-    Config.put([:mrf_steal_emoji, :dir_exists?], true)
   end
 end
