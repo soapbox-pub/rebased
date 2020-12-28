@@ -91,18 +91,6 @@ Can be safely re-run
     mix pleroma.database fix_likes_collections
     ```
 
-## Fill hashtags for old objects
-
-Migrate hashags fields for old objects, from now to `months_limit` months.
-
-```sh tab="OTP"
-./bin/pleroma_ctl database fill_old_hashtags <months_limit>
-```
-
-```sh tab="From Source"
-mix pleroma.database fill_old_hashtags <months_limit>
-```
-
 ## Vacuum the database
 
 ### Analyze
