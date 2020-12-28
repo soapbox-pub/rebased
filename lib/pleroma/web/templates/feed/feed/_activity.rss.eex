@@ -21,7 +21,7 @@
     <link><%= @data["external_url"] %></link>
   <% end %>
 
-  <%= for hashtag <- Object.hashtags(@data) do %>
+  <%= for hashtag <- Object.hashtags(@object) do %>
     <category term="<%= hashtag %>"></category>
   <% end %>
 

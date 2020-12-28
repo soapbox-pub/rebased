@@ -22,7 +22,7 @@
     <link type="text/html" href='<%= @data["external_url"] %>' rel="alternate"/>
   <% end %>
 
-  <%= for hashtag <- Object.hashtags(@data) do %>
+  <%= for hashtag <- Object.hashtags(@object) do %>
     <category term="<%= hashtag %>"></category>
   <% end %>
 

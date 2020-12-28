@@ -77,7 +77,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       if MRF.subdomain_match?(media_nsfw, actor_host) do
         child_object =
           child_object
-          |> Map.put("hashtags", Object.hashtags(child_object) ++ ["nsfw"])
+          |> Map.put("hashtags", Object.hashtags(%Object{data: child_object}) ++ ["nsfw"])
           |> Map.put("sensitive", true)
 
         Map.put(object, "object", child_object)

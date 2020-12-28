@@ -864,7 +864,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def add_hashtags(object) do
     hashtags =
-      object
+      %Object{data: object}
       |> Object.hashtags()
       |> Enum.map(fn tag ->
         %{

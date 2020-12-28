@@ -32,6 +32,7 @@ defmodule Pleroma.Web.Feed.FeedView do
 
     %{
       activity: activity,
+      object: object,
       data: Map.get(object, :data),
       actor: actor
     }
