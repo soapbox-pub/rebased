@@ -64,22 +64,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          %{host: actor_host} = _actor_info,
          %{
            "type" => "Create",
-           "object" => child_object
+           "object" => %{} = _child_object
          } = object
-       )
-       when is_map(child_object) do
+       ) do
     media_nsfw =
       Config.get([:mrf_simple, :media_nsfw])
       |> MRF.subdomains_regex()
 
     object =
       if MRF.subdomain_match?(media_nsfw, actor_host) do
-        child_object =
-          child_object
-          |> Map.put("tag", (child_object["tag"] || []) ++ ["nsfw"])
-          |> Map.put("sensitive", true)
-
-        Map.put(object, "object", child_object)
+        Kernel.put_in(object, ["object", "sensitive"], true)
       else
         object
       end

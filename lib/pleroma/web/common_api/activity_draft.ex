@@ -179,7 +179,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp sensitive(draft) do
-    sensitive = draft.params[:sensitive] || Enum.member?(draft.tags, {"#nsfw", "nsfw"})
+    sensitive = draft.params[:sensitive]
     %__MODULE__{draft | sensitive: sensitive}
   end
 

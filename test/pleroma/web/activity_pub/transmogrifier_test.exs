@@ -153,15 +153,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       end
     end
 
-    test "it adds the sensitive property" do
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "#nsfw hey"})
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["sensitive"]
-    end
-
     test "it adds the json-ld context and the conversation property" do
       user = insert(:user)
 
