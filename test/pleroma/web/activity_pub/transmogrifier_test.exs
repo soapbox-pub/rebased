@@ -204,30 +204,37 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "#2hu :firefox:"})
 
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+      {:ok, %{"object" => modified_object}} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert length(modified["object"]["tag"]) == 2
+      assert [
+               %{"name" => "#2hu", "type" => "Hashtag"},
+               %{"name" => ":firefox:", "type" => "Emoji"}
+             ] = modified_object["tag"]
 
-      assert is_nil(modified["object"]["emoji"])
-      assert is_nil(modified["object"]["like_count"])
-      assert is_nil(modified["object"]["announcements"])
-      assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
+      refute Map.has_key?(modified_object, "hashtags")
+      refute Map.has_key?(modified_object, "emoji")
+      refute Map.has_key?(modified_object, "like_count")
+      refute Map.has_key?(modified_object, "announcements")
+      refute Map.has_key?(modified_object, "announcement_count")
+      refute Map.has_key?(modified_object, "context_id")
     end
 
     test "it strips internal fields of article" do
       activity = insert(:article_activity)
 
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+      {:ok, %{"object" => modified_object}} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert length(modified["object"]["tag"]) == 2
+      assert [
+               %{"name" => "#2hu", "type" => "Hashtag"},
+               %{"name" => ":2hu:", "type" => "Emoji"}
+             ] = modified_object["tag"]
 
-      assert is_nil(modified["object"]["emoji"])
-      assert is_nil(modified["object"]["like_count"])
-      assert is_nil(modified["object"]["announcements"])
-      assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
-      assert is_nil(modified["object"]["likes"])
+      refute Map.has_key?(modified_object, "hashtags")
+      refute Map.has_key?(modified_object, "emoji")
+      refute Map.has_key?(modified_object, "like_count")
+      refute Map.has_key?(modified_object, "announcements")
+      refute Map.has_key?(modified_object, "announcement_count")
+      refute Map.has_key?(modified_object, "context_id")
     end
 
     test "the directMessage flag is present" do

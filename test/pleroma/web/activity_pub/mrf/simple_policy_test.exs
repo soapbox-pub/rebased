@@ -78,7 +78,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       assert SimplePolicy.filter(media_message) ==
                {:ok,
                 media_message
-                |> put_in(["object", "tag"], ["foo", "nsfw"])
+                |> put_in(["object", "hashtags"], ["foo", "nsfw"])
                 |> put_in(["object", "sensitive"], true)}
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       assert SimplePolicy.filter(media_message) ==
                {:ok,
                 media_message
-                |> put_in(["object", "tag"], ["foo", "nsfw"])
+                |> put_in(["object", "hashtags"], ["foo", "nsfw"])
                 |> put_in(["object", "sensitive"], true)}
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       "type" => "Create",
       "object" => %{
         "attachment" => [%{}],
-        "tag" => ["foo"],
+        "hashtags" => ["foo"],
         "sensitive" => false
       }
     }

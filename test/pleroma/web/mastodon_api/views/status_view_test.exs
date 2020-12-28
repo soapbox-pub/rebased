@@ -262,8 +262,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       mentions: [],
       tags: [
         %{
-          name: "#{object_data["tag"]}",
-          url: "/tag/#{object_data["tag"]}"
+          name: "2hu",
+          url: "/tag/2hu"
         }
       ],
       application: %{

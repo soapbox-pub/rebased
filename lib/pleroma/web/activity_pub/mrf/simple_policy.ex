@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   alias Pleroma.Config
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
 
@@ -74,9 +75,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
     object =
       if MRF.subdomain_match?(media_nsfw, actor_host) do
-        tags = (child_object["tag"] || []) ++ ["nsfw"]
-        child_object = Map.put(child_object, "tag", tags)
-        child_object = Map.put(child_object, "sensitive", true)
+        child_object =
+          child_object
+          |> Map.put("hashtags", Object.hashtags(%Object{data: child_object}) ++ ["nsfw"])
+          |> Map.put("sensitive", true)
+
         Map.put(object, "object", child_object)
       else
         object

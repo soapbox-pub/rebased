@@ -78,7 +78,7 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
     end
 
     test "converts tags to hash tags", %{activity: %{object: %{data: data} = object} = activity} do
-      tagged_data = Map.put(data, "tag", ["foo", "bar"])
+      tagged_data = Map.put(data, "hashtags", ["foo", "bar"])
       activity = %{activity | object: %{object | data: tagged_data}}
 
       topics = Topics.get_activity_topics(activity)

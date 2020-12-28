@@ -310,7 +310,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "context" => draft.context,
       "attachment" => draft.attachments,
       "actor" => draft.user.ap_id,
-      "tag" => Keyword.values(draft.tags) |> Enum.uniq()
+      "tag" => Enum.filter(draft.tags, &is_map(&1)) |> Enum.uniq(),
+      "hashtags" =>
+        draft.tags
+        |> Enum.reduce([], fn
+          # Why so many formats
+          {:name, x}, acc -> if is_bitstring(x), do: [x | acc], else: acc
+          {"#" <> _, x}, acc -> if is_bitstring(x), do: [x | acc], else: acc
+          x, acc -> if is_bitstring(x), do: [x | acc], else: acc
+        end)
+        |> Enum.uniq()
     }
     |> add_in_reply_to(draft.in_reply_to)
     |> Map.merge(draft.extra)
