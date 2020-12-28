@@ -591,8 +591,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
                "context" => "2hu",
                "sensitive" => false,
                "summary" => "test summary",
-               "hashtags" => ["jimm"],
-               "tag" => [],
+               "tag" => ["jimm"],
                "to" => [user2.ap_id],
                "type" => "Note",
                "custom_tag" => "test"
