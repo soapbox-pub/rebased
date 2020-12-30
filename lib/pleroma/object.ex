@@ -405,8 +405,16 @@ defmodule Pleroma.Object do
   defp embedded_hashtags(_), do: []
 
   defp object_data_hashtags(%{"tag" => tags}) when is_list(tags) do
-    # Note: AS2 map-type elements are ignored
-    Enum.filter(tags, &is_bitstring(&1))
+    # Note: Old format with copy of hashtags as strings is ignored, using AS2
+    tags
+    |> Enum.filter(fn
+      %{"type" => "Hashtag"} = data -> Map.has_key?(data, "name")
+      _ -> false
+    end)
+    |> Enum.map(fn
+      %{"name" => "#" <> hashtag} -> String.downcase(hashtag)
+      %{"name" => hashtag} -> String.downcase(hashtag)
+    end)
   end
 
   defp object_data_hashtags(_), do: []
