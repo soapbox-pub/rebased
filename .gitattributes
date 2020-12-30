@@ -1,2 +1,10 @@
 *.ex diff=elixir
 *.exs diff=elixir
+
+priv/static/instance/static.css diff=css
+
+# Most of js/css files included in the repo are minified bundles,
+#   and we don't want to search/diff those as text files.
+*.js binary
+*.js.map binary
+*.css binary

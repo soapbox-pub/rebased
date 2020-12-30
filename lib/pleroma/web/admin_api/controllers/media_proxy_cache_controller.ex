@@ -9,6 +9,8 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
@@ -38,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   defp fetch_entries(params) do
     MediaProxy.cache_table()
-    |> Cachex.stream!(Cachex.Query.create(true, :key))
+    |> @cachex.stream!(Cachex.Query.create(true, :key))
     |> filter_entries(params[:query])
   end
 

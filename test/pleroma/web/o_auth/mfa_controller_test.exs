@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.MFAControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
   import Pleroma.Factory
 
   alias Pleroma.MFA
@@ -171,7 +171,6 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert match?(
                %{
                  "access_token" => _,
-                 "expires_in" => 600,
                  "me" => ^ap_id,
                  "refresh_token" => _,
                  "scope" => "write",
@@ -280,7 +279,6 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert match?(
                %{
                  "access_token" => _,
-                 "expires_in" => 600,
                  "me" => ^ap_id,
                  "refresh_token" => _,
                  "scope" => "write",

@@ -579,14 +579,14 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 ### React to a post with a unicode emoji
 * Method: `PUT`
 * Authentication: required
-* Params: `emoji`: A single character unicode emoji
+* Params: `emoji`: A unicode RGI emoji or a regional indicator
 * Response: JSON, the status.
 
 ## `DELETE /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### Remove a reaction to a post with a unicode emoji
 * Method: `DELETE`
 * Authentication: required
-* Params: `emoji`: A single character unicode emoji
+* Params: `emoji`: A unicode RGI emoji or a regional indicator
 * Response: JSON, the status.
 
 ## `GET /api/v1/pleroma/statuses/:id/reactions`
@@ -614,4 +614,42 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 [
   {"name": "😀", "count": 2, "me": true, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]}
 ]
+```
+
+## `POST /api/v1/pleroma/backups`
+### Create a user backup archive
+
+* Method: `POST`
+* Authentication: required
+* Params: none
+* Response: JSON
+* Example response:
+
+```json
+[{
+    "content_type": "application/zip",
+    "file_size": 0,
+    "inserted_at": "2020-09-10T16:18:03.000Z",
+    "processed": false,
+    "url": "https://example.com/media/backups/archive-foobar-20200910T161803-QUhx6VYDRQ2wfV0SdA2Pfj_2CLM_ATUlw-D5l5TJf4Q.zip"
+}]
+```
+
+## `GET /api/v1/pleroma/backups`
+### Lists user backups
+
+* Method: `GET`
+* Authentication: not required
+* Params: none
+* Response: JSON
+* Example response:
+
+```json
+[{
+    "content_type": "application/zip",
+    "file_size": 55457,
+    "inserted_at": "2020-09-10T16:18:03.000Z",
+    "processed": true,
+    "url": "https://example.com/media/backups/archive-foobar-20200910T161803-QUhx6VYDRQ2wfV0SdA2Pfj_2CLM_ATUlw-D5l5TJf4Q.zip"
+}]
 ```

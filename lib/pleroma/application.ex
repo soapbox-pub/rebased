@@ -57,6 +57,7 @@ defmodule Pleroma.Application do
     setup_instrumenters()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
+    limiters_setup()
 
     adapter = Application.get_env(:tesla, :adapter)
 
@@ -100,7 +101,7 @@ defmodule Pleroma.Application do
         ] ++
         task_children(@env) ++
         dont_run_in_test(@env) ++
-        chat_child(@env, chat_enabled?()) ++
+        chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
           Pleroma.Gopher.Server
@@ -109,7 +110,28 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    set_postgres_server_version()
+
+    result
+  end
+
+  defp set_postgres_server_version do
+    version =
+      with %{rows: [[version]]} <- Ecto.Adapters.SQL.query!(Pleroma.Repo, "show server_version"),
+           {num, _} <- Float.parse(version) do
+        num
+      else
+        e ->
+          Logger.warn(
+            "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
+          )
+
+          9.6
+      end
+
+    :persistent_term.put({Pleroma.Repo, :postgres_version}, version)
   end
 
   def load_custom_modules do
@@ -151,7 +173,10 @@ defmodule Pleroma.Application do
 
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-    Pleroma.Web.Endpoint.Instrumenter.setup()
+
+    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
+    # Pleroma.Web.Endpoint.Instrumenter.setup()
+    PrometheusPhx.setup()
   end
 
   defp cachex_children do
@@ -165,7 +190,11 @@ defmodule Pleroma.Application do
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
       build_cachex("failed_proxy_url", limit: 2500),
-      build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000)
+      build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000),
+      build_cachex("chat_message_id_idempotency_key",
+        expiration: chat_message_id_idempotency_key_expiration(),
+        limit: 500_000
+      )
     ]
   end
 
@@ -174,6 +203,9 @@ defmodule Pleroma.Application do
 
   defp idempotency_expiration,
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
+
+  defp chat_message_id_idempotency_key_expiration,
+    do: expiration(default: :timer.minutes(2), interval: :timer.seconds(60))
 
   defp seconds_valid_interval,
     do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
@@ -197,16 +229,18 @@ defmodule Pleroma.Application do
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]},
-      Pleroma.Web.FedSockets.Supervisor
+       ]}
     ]
   end
 
-  defp chat_child(_env, true) do
-    [Pleroma.Web.ChatChannel.ChatChannelState]
+  defp chat_child(true) do
+    [
+      Pleroma.Web.ChatChannel.ChatChannelState,
+      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
+    ]
   end
 
-  defp chat_child(_, _), do: []
+  defp chat_child(_), do: []
 
   defp task_children(:test) do
     [
@@ -260,4 +294,10 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(_, _), do: []
+
+  @spec limiters_setup() :: :ok
+  def limiters_setup do
+    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.MediaProxy]
+    |> Enum.each(&ConcurrentLimiter.new(&1, 1, 0))
+  end
 end

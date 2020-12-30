@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.AuthenticationPlug do
+  @moduledoc "Password authentication plug."
+
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.User
 
   import Plug.Conn
@@ -10,6 +13,30 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlug do
   require Logger
 
   def init(options), do: options
+
+  def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
+
+  def call(
+        %{
+          assigns: %{
+            auth_user: %{password_hash: password_hash} = auth_user,
+            auth_credentials: %{password: password}
+          }
+        } = conn,
+        _
+      ) do
+    if checkpw(password, password_hash) do
+      {:ok, auth_user} = maybe_update_password(auth_user, password)
+
+      conn
+      |> assign(:user, auth_user)
+      |> AuthHelper.skip_oauth()
+    else
+      conn
+    end
+  end
+
+  def call(conn, _), do: conn
 
   def checkpw(password, "$6" <> _ = password_hash) do
     :crypt.crypt(password, password_hash) == password_hash
@@ -40,40 +67,6 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlug do
   def maybe_update_password(user, _), do: {:ok, user}
 
   defp do_update_password(user, password) do
-    user
-    |> User.password_update_changeset(%{
-      "password" => password,
-      "password_confirmation" => password
-    })
-    |> Pleroma.Repo.update()
+    User.reset_password(user, %{password: password, password_confirmation: password})
   end
-
-  def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
-
-  def call(
-        %{
-          assigns: %{
-            auth_user: %{password_hash: password_hash} = auth_user,
-            auth_credentials: %{password: password}
-          }
-        } = conn,
-        _
-      ) do
-    if checkpw(password, password_hash) do
-      {:ok, auth_user} = maybe_update_password(auth_user, password)
-
-      conn
-      |> assign(:user, auth_user)
-      |> Pleroma.Web.Plugs.OAuthScopesPlug.skip_plug()
-    else
-      conn
-    end
-  end
-
-  def call(%{assigns: %{auth_credentials: %{password: _}}} = conn, _) do
-    Pbkdf2.no_user_verify()
-    conn
-  end
-
-  def call(conn, _), do: conn
 end

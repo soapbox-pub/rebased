@@ -29,6 +29,14 @@ defmodule Pleroma.Web.StreamerTest do
       assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", nil, nil)
     end
 
+    test "allows instance streams" do
+      assert {:ok, "public:remote:lain.com"} =
+               Streamer.get_topic("public:remote", nil, nil, %{"instance" => "lain.com"})
+
+      assert {:ok, "public:remote:media:lain.com"} =
+               Streamer.get_topic("public:remote:media", nil, nil, %{"instance" => "lain.com"})
+    end
+
     test "allows hashtag streams" do
       assert {:ok, "hashtag:cofe"} = Streamer.get_topic("hashtag", nil, nil, %{"tag" => "cofe"})
     end
@@ -214,7 +222,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       data =
         File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", activity.data["object"])
         |> Map.put("actor", user.ap_id)
 
@@ -255,7 +263,9 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       other_user = insert(:user)
 
-      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
+      {:ok, create_activity} =
+        CommonAPI.post_chat_message(other_user, user, "hey cirno", idempotency_key: "123")
+
       object = Object.normalize(create_activity, false)
       chat = Chat.get(user.id, other_user.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
@@ -392,6 +402,67 @@ defmodule Pleroma.Web.StreamerTest do
       assert_receive {:render_with_user, _, "notification.json", notif}
       assert notif.activity.id == follow_activity.id
       refute Streamer.filtered_by_user?(user, notif)
+    end
+
+    test "it sends follow relationships updates to the 'user' stream", %{
+      user: user,
+      token: oauth_token
+    } do
+      user_id = user.id
+      user_url = user.ap_id
+      other_user = insert(:user)
+      other_user_id = other_user.id
+
+      body =
+        File.read!("test/fixtures/users_mock/localhost.json")
+        |> String.replace("{{nickname}}", user.nickname)
+        |> Jason.encode!()
+
+      Tesla.Mock.mock_global(fn
+        %{method: :get, url: ^user_url} ->
+          %Tesla.Env{status: 200, body: body}
+      end)
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(user, other_user)
+
+      assert_receive {:text, event}
+
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
+               Jason.decode!(event)
+
+      assert %{
+               "follower" => %{
+                 "follower_count" => 0,
+                 "following_count" => 0,
+                 "id" => ^user_id
+               },
+               "following" => %{
+                 "follower_count" => 0,
+                 "following_count" => 0,
+                 "id" => ^other_user_id
+               },
+               "state" => "follow_pending"
+             } = Jason.decode!(payload)
+
+      assert_receive {:text, event}
+
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
+               Jason.decode!(event)
+
+      assert %{
+               "follower" => %{
+                 "follower_count" => 0,
+                 "following_count" => 1,
+                 "id" => ^user_id
+               },
+               "following" => %{
+                 "follower_count" => 1,
+                 "following_count" => 0,
+                 "id" => ^other_user_id
+               },
+               "state" => "follow_accept"
+             } = Jason.decode!(payload)
     end
   end
 
@@ -553,7 +624,7 @@ defmodule Pleroma.Web.StreamerTest do
       user_b = insert(:user)
       user_c = insert(:user)
 
-      {:ok, user_a} = User.follow(user_a, user_b)
+      {:ok, user_a, user_b} = User.follow(user_a, user_b)
 
       {:ok, list} = List.create("Test", user_a)
       {:ok, list} = List.follow(list, user_b)
@@ -589,7 +660,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends wanted private posts to list", %{user: user_a, token: user_a_token} do
       user_b = insert(:user)
 
-      {:ok, user_a} = User.follow(user_a, user_b)
+      {:ok, user_a, user_b} = User.follow(user_a, user_b)
 
       {:ok, list} = List.create("Test", user_a)
       {:ok, list} = List.follow(list, user_b)

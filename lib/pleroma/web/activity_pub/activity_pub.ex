@@ -32,6 +32,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   require Logger
   require Pleroma.Constants
 
+  @behaviour Pleroma.Web.ActivityPub.ActivityPub.Persisting
+
   defp get_recipients(%{"type" => "Create"} = data) do
     to = Map.get(data, "to", [])
     cc = Map.get(data, "cc", [])
@@ -85,13 +87,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article]
-  @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  @impl true
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
       {:ok, object, meta}
     end
   end
 
+  @impl true
   def persist(object, meta) do
     with local <- Keyword.fetch!(meta, :local),
          {recipients, _, _} <- get_recipients(object),
@@ -123,7 +126,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
 
-      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
+      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
+        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
+      end)
 
       {:ok, activity}
     else
@@ -332,15 +337,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec flag(map()) :: {:ok, Activity.t()} | {:error, any()}
-  def flag(
-        %{
-          actor: actor,
-          context: _context,
-          account: account,
-          statuses: statuses,
-          content: content
-        } = params
-      ) do
+  def flag(params) do
+    with {:ok, result} <- Repo.transaction(fn -> do_flag(params) end) do
+      result
+    end
+  end
+
+  defp do_flag(
+         %{
+           actor: actor,
+           context: _context,
+           account: account,
+           statuses: statuses,
+           content: content
+         } = params
+       ) do
     # only accept false as false value
     local = !(params[:local] == false)
     forward = !(params[:forward] == false)
@@ -358,7 +369,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
          _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(stripped_activity) do
+         :ok <-
+           maybe_federate(stripped_activity) do
       User.all_superusers()
       |> Enum.filter(fn user -> not is_nil(user.email) end)
       |> Enum.each(fn superuser ->
@@ -368,6 +380,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       {:ok, activity}
+    else
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
@@ -791,10 +805,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where:
         fragment(
           """
-          ?->>'type' != 'Create'     -- This isn't a Create      
+          ?->>'type' != 'Create'     -- This isn't a Create
           OR ?->>'inReplyTo' is null -- this isn't a reply
-          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends, 
-                                     -- unless they are the author (because authors 
+          OR ? && array_remove(?, ?) -- The recipient is us or one of our friends,
+                                     -- unless they are the author (because authors
                                      -- are also part of the recipients). This leads
                                      -- to a bug that self-replies by friends won't
                                      -- show up.
@@ -827,7 +841,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query =
       from([activity] in query,
         where: fragment("not (? = ANY(?))", activity.actor, ^mutes),
-        where: fragment("not (?->'to' \\?| ?)", activity.data, ^mutes)
+        where:
+          fragment(
+            "not (?->'to' \\?| ?) or ? = ?",
+            activity.data,
+            ^mutes,
+            activity.actor,
+            ^user.ap_id
+          )
       )
 
     unless opts[:skip_preload] do
@@ -930,16 +951,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
-  defp restrict_instance(query, %{instance: instance}) do
-    users =
-      from(
-        u in User,
-        select: u.ap_id,
-        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
-      )
-      |> Repo.all()
-
-    from(activity in query, where: activity.actor in ^users)
+  defp restrict_instance(query, %{instance: instance}) when is_binary(instance) do
+    from(
+      activity in query,
+      where: fragment("split_part(actor::text, '/'::text, 3) = ?", ^instance)
+    )
   end
 
   defp restrict_instance(query, _), do: query
@@ -1232,7 +1248,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     capabilities = data["capabilities"] || %{}
     accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
-    discoverable = data["discoverable"] || false
+    is_discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
@@ -1258,7 +1274,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       fields: fields,
       emoji: emojis,
       is_locked: is_locked,
-      discoverable: discoverable,
+      is_discoverable: is_discoverable,
       invisible: invisible,
       avatar: avatar,
       name: data["name"],
@@ -1287,12 +1303,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address,
-             force_http: true
-           ),
+           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
          {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address, force_http: true),
+           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
          {:ok, hide_followers} <- collection_private(followers_data) do
       {:ok,
        %{
@@ -1366,11 +1380,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id, opts \\ []) do
-    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id, opts),
+  def fetch_and_prepare_user_from_ap_id(ap_id) do
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
          {:ok, data} <- user_data_from_user_object(data) do
       {:ok, maybe_update_follow_information(data)}
     else
+      # If this has been deleted, only log a debug and not an error
       {:error, "Object has been deleted" = e} ->
         Logger.debug("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
         {:error, e}
@@ -1409,13 +1424,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def make_user_from_ap_id(ap_id, opts \\ []) do
+  def make_user_from_ap_id(ap_id) do
     user = User.get_cached_by_ap_id(ap_id)
 
     if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, opts) do
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
         if user do
           user
           |> User.remote_user_changeset(data)

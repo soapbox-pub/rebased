@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   import Pleroma.Factory
   import Tesla.Mock
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -54,6 +53,42 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert unlisted_activity.id in status_ids
       assert private_activity.id in status_ids
       refute direct_activity.id in status_ids
+    end
+
+    test "muted emotions", %{user: user, conn: conn} do
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/timelines/home")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/timelines/home?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
     end
   end
 
@@ -101,7 +136,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "doesn't return replies if follower is posting with blocked user" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       [blockee, friend] = insert_list(2, :user)
-      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker, friend} = User.follow(blocker, friend)
       {:ok, _} = User.block(blocker, blockee)
 
       conn = assign(conn, :user, blocker)
@@ -130,7 +165,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)
       blockee = insert(:user, ap_id: "https://example.com/users/blocked")
-      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker, friend} = User.follow(blocker, friend)
       {:ok, blocker} = User.block_domain(blocker, "example.com")
 
       conn = assign(conn, :user, blocker)
@@ -147,6 +182,60 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       activities = json_response_and_validate_schema(res_conn, 200)
       [%{"id" => ^activity_id}] = activities
+    end
+
+    test "can be filtered by instance", %{conn: conn} do
+      user = insert(:user, ap_id: "https://lain.com/users/lain")
+      insert(:note_activity, local: false)
+      insert(:note_activity, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      conn = get(conn, "/api/v1/timelines/public?instance=lain.com")
+
+      assert length(json_response_and_validate_schema(conn, :ok)) == 1
+    end
+
+    test "muted emotions", %{conn: conn} do
+      user = insert(:user)
+      token = insert(:oauth_token, user: user, scopes: ["read:statuses"])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, token)
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
     end
   end
 
@@ -247,7 +336,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       user_one = insert(:user)
       user_two = insert(:user)
 
-      {:ok, user_two} = User.follow(user_two, user_one)
+      {:ok, user_two, user_one} = User.follow(user_two, user_one)
 
       {:ok, direct} =
         CommonAPI.post(user_one, %{
@@ -417,6 +506,44 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert id == to_string(activity_one.id)
     end
+
+    test "muted emotions", %{user: user, conn: conn} do
+      user2 = insert(:user)
+      user3 = insert(:user)
+      {:ok, activity} = CommonAPI.post(user2, %{status: "."})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user3, "🎅")
+      User.mute(user, user3)
+
+      {:ok, list} = Pleroma.List.create("name", user)
+      {:ok, list} = Pleroma.List.follow(list, user2)
+
+      result =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
   end
 
   describe "hashtag" do
@@ -464,6 +591,48 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       all_test = get(conn, "/api/v1/timelines/tag/test?all[]=none")
 
       assert [status_none] == json_response_and_validate_schema(all_test, :ok)
+    end
+
+    test "muted emotions", %{conn: conn} do
+      user = insert(:user)
+      token = insert(:oauth_token, user: user, scopes: ["read:statuses"])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, token)
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "test #2hu"})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/timelines/tag/2hu")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
     end
   end
 

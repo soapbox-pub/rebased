@@ -5,9 +5,12 @@
 defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
   use Pleroma.Web, :view
 
+  alias Pleroma.Maps
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   def render(
         "show.json",
@@ -37,6 +40,7 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
           Pleroma.Web.RichMedia.Helpers.fetch_data_for_object(object)
         )
     }
+    |> put_idempotency_key()
   end
 
   def render("index.json", opts) do
@@ -46,5 +50,14 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
       "show.json",
       Map.put(opts, :as, :chat_message_reference)
     )
+  end
+
+  defp put_idempotency_key(data) do
+    with {:ok, idempotency_key} <- @cachex.get(:chat_message_id_idempotency_key_cache, data.id) do
+      data
+      |> Maps.put_if_present(:idempotency_key, idempotency_key)
+    else
+      _ -> data
+    end
   end
 end

@@ -82,7 +82,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def object(conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)} do
+         {_, true} <- {:public?, Visibility.is_public?(object)},
+         {_, false} <- {:local?, Visibility.is_local_public?(object)} do
       conn
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
@@ -91,6 +92,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> render("object.json", object: object)
     else
       {:public?, false} ->
+        {:error, :not_found}
+
+      {:local?, true} ->
         {:error, :not_found}
     end
   end
@@ -108,7 +112,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def activity(conn, _params) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(activity)} do
+         {_, true} <- {:public?, Visibility.is_public?(activity)},
+         {_, false} <- {:local?, Visibility.is_local_public?(activity)} do
       conn
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
@@ -117,6 +122,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> render("object.json", object: activity)
     else
       {:public?, false} -> {:error, :not_found}
+      {:local?, true} -> {:error, :not_found}
       nil -> {:error, :not_found}
     end
   end
@@ -414,7 +420,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       object =
         object
         |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", user.ap_id())
+        |> Map.put("attributedTo", user.ap_id)
         |> Transmogrifier.fix_object()
 
       ActivityPub.create(%{
@@ -458,7 +464,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    actor = user.ap_id()
+    actor = user.ap_id
 
     params =
       params
@@ -525,19 +531,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     {new_user, for_user}
   end
 
-  @doc """
-  Endpoint based on <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
-
-  Parameters:
-  - (required) `file`: data of the media
-  - (optionnal) `description`: description of the media, intended for accessibility
-
-  Response:
-  - HTTP Code: 201 Created
-  - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
-
-  Note: Will not point to a URL with a `Location` header because no standalone Activity has been created.
-  """
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
            ActivityPub.upload(

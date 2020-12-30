@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Repo.Migrations.MoveWelcomeSettingsTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
   import Pleroma.Tests.Helpers
   alias Pleroma.ConfigDB

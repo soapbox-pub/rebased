@@ -20,6 +20,7 @@ defmodule Pleroma.Web do
   below.
   """
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug
@@ -75,7 +76,7 @@ defmodule Pleroma.Web do
       defp maybe_drop_authentication_if_oauth_check_ignored(conn) do
         if PlugHelper.plug_called?(conn, ExpectPublicOrAuthenticatedCheckPlug) and
              not PlugHelper.plug_called_or_skipped?(conn, OAuthScopesPlug) do
-          OAuthScopesPlug.drop_auth_info(conn)
+          AuthHelper.drop_auth_info(conn)
         else
           conn
         end
@@ -172,7 +173,7 @@ defmodule Pleroma.Web do
   def channel do
     quote do
       # credo:disable-for-next-line Credo.Check.Consistency.MultiAliasImportRequireUse
-      use Phoenix.Channel
+      import Phoenix.Channel
       import Pleroma.Web.Gettext
     end
   end

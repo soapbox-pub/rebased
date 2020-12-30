@@ -15,6 +15,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
@@ -45,7 +46,8 @@ defmodule Pleroma.Web.CommonAPI do
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,
             Pipeline.common_pipeline(create_activity_data,
-              local: true
+              local: true,
+              idempotency_key: opts[:idempotency_key]
             )} do
       {:ok, activity}
     else
@@ -357,7 +359,7 @@ defmodule Pleroma.Web.CommonAPI do
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
   def get_visibility(%{visibility: visibility}, in_reply_to, _)
-      when visibility in ~w{public unlisted private direct},
+      when visibility in ~w{public local unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
   def get_visibility(%{visibility: "list:" <> list_id}, in_reply_to, _) do
@@ -398,31 +400,13 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def listen(user, data) do
-    visibility = Map.get(data, :visibility, "public")
-
-    with {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
-         listen_data <-
-           data
-           |> Map.take([:album, :artist, :title, :length])
-           |> Map.new(fn {key, value} -> {to_string(key), value} end)
-           |> Map.put("type", "Audio")
-           |> Map.put("to", to)
-           |> Map.put("cc", cc)
-           |> Map.put("actor", user.ap_id),
-         {:ok, activity} <-
-           ActivityPub.listen(%{
-             actor: user,
-             to: to,
-             object: listen_data,
-             context: Utils.generate_context_id(),
-             additional: %{"cc" => cc}
-           }) do
-      {:ok, activity}
+    with {:ok, draft} <- ActivityDraft.listen(user, data) do
+      ActivityPub.listen(draft.changes)
     end
   end
 
   def post(user, %{status: _} = data) do
-    with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
+    with {:ok, draft} <- ActivityDraft.create(user, data) do
       ActivityPub.create(draft.changes, draft.preview?)
     end
   end
@@ -453,18 +437,44 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def add_mute(user, activity) do
+  def add_mute(user, activity, params \\ %{}) do
+    expires_in = Map.get(params, :expires_in, 0)
+
     with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),
          _ <- Pleroma.Notification.mark_context_as_read(user, activity.data["context"]) do
+      if expires_in > 0 do
+        Pleroma.Workers.MuteExpireWorker.enqueue(
+          "unmute_conversation",
+          %{"user_id" => user.id, "activity_id" => activity.id},
+          schedule_in: expires_in
+        )
+      end
+
       {:ok, activity}
     else
       {:error, _} -> {:error, dgettext("errors", "conversation is already muted")}
     end
   end
 
-  def remove_mute(user, activity) do
+  def remove_mute(%User{} = user, %Activity{} = activity) do
     ThreadMute.remove_mute(user.id, activity.data["context"])
     {:ok, activity}
+  end
+
+  def remove_mute(user_id, activity_id) do
+    with {:user, %User{} = user} <- {:user, User.get_by_id(user_id)},
+         {:activity, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)} do
+      remove_mute(user, activity)
+    else
+      {what, result} = error ->
+        Logger.warn(
+          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{
+            activity_id
+          }"
+        )
+
+        {:error, error}
+    end
   end
 
   def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})

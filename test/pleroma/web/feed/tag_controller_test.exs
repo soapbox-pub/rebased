@@ -8,6 +8,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   import Pleroma.Factory
   import SweetXml
 
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Feed.FeedView
@@ -15,7 +16,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   setup do: clear_config([:feed])
 
   test "gets a feed (ATOM)", %{conn: conn} do
-    Pleroma.Config.put(
+    Config.put(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -82,7 +83,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
-    Pleroma.Config.put(
+    Config.put(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -130,7 +131,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              '#{Pleroma.Web.base_url()}/tags/pleromaart.rss'
 
     assert xpath(xml, ~x"//channel/webfeeds:logo/text()") ==
-             '#{Pleroma.Web.base_url()}/static/logo.png'
+             '#{Pleroma.Web.base_url()}/static/logo.svg'
 
     assert xpath(xml, ~x"//channel/item/title/text()"l) == [
              '42 This is :moominmamm...',
@@ -157,7 +158,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     response =
       conn
       |> put_req_header("accept", "application/rss+xml")
-      |> get(tag_feed_path(conn, :feed, "pleromaart"))
+      |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
       |> response(200)
 
     xml = parse(response)
@@ -183,14 +184,12 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   describe "private instance" do
-    setup do: clear_config([:instance, :public])
+    setup do: clear_config([:instance, :public], false)
 
     test "returns 404 for tags feed", %{conn: conn} do
-      Config.put([:instance, :public], false)
-
       conn
       |> put_req_header("accept", "application/rss+xml")
-      |> get(tag_feed_path(conn, :feed, "pleromaart"))
+      |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
       |> response(404)
     end
   end

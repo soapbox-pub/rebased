@@ -100,7 +100,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       end)
 
       Pleroma.Repo.delete(user)
-      Cachex.clear(:user_cache)
+      User.invalidate_cache(user)
 
       Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance])
 
@@ -137,7 +137,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       end)
 
       Pleroma.Repo.delete(user)
-      Cachex.clear(:user_cache)
+      User.invalidate_cache(user)
 
       Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance, "--force"])
 

@@ -3,13 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   import Pleroma.Factory
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Repo

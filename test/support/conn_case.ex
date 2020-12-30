@@ -22,7 +22,8 @@ defmodule Pleroma.Web.ConnCase do
   using do
     quote do
       # Import conveniences for testing with connections
-      use Phoenix.ConnTest
+      import Plug.Conn
+      import Phoenix.ConnTest
       use Pleroma.Tests.Helpers
       import Pleroma.Web.Router.Helpers
 
@@ -111,38 +112,20 @@ defmodule Pleroma.Web.ConnCase do
       defp json_response_and_validate_schema(conn, _status) do
         flunk("Response schema not found for #{conn.method} #{conn.request_path} #{conn.status}")
       end
-
-      defp ensure_federating_or_authenticated(conn, url, user) do
-        initial_setting = Config.get([:instance, :federating])
-        on_exit(fn -> Config.put([:instance, :federating], initial_setting) end)
-
-        Config.put([:instance, :federating], false)
-
-        conn
-        |> get(url)
-        |> response(403)
-
-        conn
-        |> assign(:user, user)
-        |> get(url)
-        |> response(200)
-
-        Config.put([:instance, :federating], true)
-
-        conn
-        |> get(url)
-        |> response(200)
-      end
     end
   end
 
   setup tags do
-    Cachex.clear(:user_cache)
-    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
-    unless tags[:async] do
+    if tags[:async] do
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
+      Mox.set_mox_private()
+    else
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
+      Mox.set_mox_global()
+      Pleroma.DataCase.clear_cachex()
     end
 
     if tags[:needs_streamer] do
@@ -152,6 +135,8 @@ defmodule Pleroma.Web.ConnCase do
           {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
       })
     end
+
+    Pleroma.DataCase.stub_pipeline()
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end

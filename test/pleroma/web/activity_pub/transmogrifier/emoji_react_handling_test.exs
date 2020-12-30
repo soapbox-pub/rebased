@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
   alias Pleroma.Object
@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
 
     data =
       File.read!("test/fixtures/emoji-reaction.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
       |> Map.put("actor", other_user.ap_id)
 
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
 
     data =
       File.read!("test/fixtures/emoji-reaction-too-long.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
       |> Map.put("actor", other_user.ap_id)
 
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
 
     data =
       File.read!("test/fixtures/emoji-reaction-no-emoji.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
       |> Map.put("actor", other_user.ap_id)
 

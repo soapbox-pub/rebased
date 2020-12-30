@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Notification
   alias Pleroma.ScheduledActivity
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
     test "returns ok if user already followed" do
       follower = insert(:user)
       user = insert(:user)
-      {:ok, follower} = User.follow(follower, user)
+      {:ok, follower, user} = User.follow(follower, user)
       {:ok, follower} = MastodonAPI.follow(follower, refresh_record(user))
       assert User.following?(follower, user)
     end
@@ -41,8 +41,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
       follower1_user = insert(:user)
       follower2_user = insert(:user)
       user = insert(:user)
-      {:ok, _follower1_user} = User.follow(follower1_user, user)
-      {:ok, follower2_user} = User.follow(follower2_user, user)
+      {:ok, _follower1_user, _user} = User.follow(follower1_user, user)
+      {:ok, follower2_user, _user} = User.follow(follower2_user, user)
 
       assert MastodonAPI.get_followers(user, %{"limit" => 1}) == [follower2_user]
     end
@@ -55,9 +55,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
       followed_two = insert(:user)
       followed_three = insert(:user)
 
-      {:ok, user} = User.follow(user, followed_one)
-      {:ok, user} = User.follow(user, followed_two)
-      {:ok, user} = User.follow(user, followed_three)
+      {:ok, user, followed_one} = User.follow(user, followed_one)
+      {:ok, user, followed_two} = User.follow(user, followed_two)
+      {:ok, user, followed_three} = User.follow(user, followed_three)
       res = MastodonAPI.get_friends(user)
 
       assert length(res) == 3

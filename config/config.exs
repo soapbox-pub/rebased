@@ -47,7 +47,6 @@ use Mix.Config
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo,
-  types: Pleroma.PostgresTypes,
   telemetry_event: [Pleroma.Repo.Instrumenter],
   migration_lock: nil
 
@@ -123,14 +122,12 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
-  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     ip: {127, 0, 0, 1},
     dispatch: [
       {:_,
        [
-         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -143,20 +140,10 @@ config :pleroma, Pleroma.Web.Endpoint,
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
+  pubsub_server: Pleroma.PubSub,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
-  ]
-
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: :timer.hours(8),
-  rejection_duration: :timer.minutes(15),
-  fed_socket_fetches: [
-    default: 12_000,
-    interval: 3_000,
-    lazy: false
   ]
 
 # Configures Elixir's Logger
@@ -235,6 +222,7 @@ config :pleroma, :instance,
     "text/bbcode"
   ],
   autofollowed_nicknames: [],
+  autofollowing_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
   max_report_comment_size: 1000,
@@ -264,7 +252,8 @@ config :pleroma, :instance,
       length: 16
     ]
   ],
-  show_reactions: true
+  show_reactions: true,
+  password_reset_token_validity: 60 * 60 * 24
 
 config :pleroma, :welcome,
   direct_message: [
@@ -316,7 +305,7 @@ config :pleroma, :frontend_configurations,
     hideSitename: false,
     hideUserStats: false,
     loginMethod: "password",
-    logo: "/static/logo.png",
+    logo: "/static/logo.svg",
     logoMargin: ".1em",
     logoMask: true,
     minimalScopesMode: false,
@@ -353,8 +342,8 @@ config :pleroma, :assets,
 config :pleroma, :manifest,
   icons: [
     %{
-      src: "/static/logo.png",
-      type: "image/png"
+      src: "/static/logo.svg",
+      type: "image/svg+xml"
     }
   ],
   theme_color: "#282c37",
@@ -551,6 +540,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     token_expiration: 5,
+    backup: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
     ingestion_queue: 50,
@@ -561,7 +551,8 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 5,
-    new_users_digest: 1
+    new_users_digest: 1,
+    mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -636,7 +627,12 @@ config :pleroma, Pleroma.Emails.UserEmail,
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
-config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter,
+  enabled: false,
+  auth: false,
+  ip_whitelist: [],
+  path: "/api/pleroma/app_metrics",
+  format: :text
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
@@ -651,7 +647,7 @@ config :pleroma, :email_notifications,
   }
 
 config :pleroma, :oauth2,
-  token_expires_in: 600,
+  token_expires_in: 3600 * 24 * 365 * 100,
   issue_new_refresh_token: true,
   clean_expired_tokens: false
 
@@ -814,7 +810,7 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
+  policies: [Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy, Pleroma.Web.ActivityPub.MRF.TagPolicy],
   transparency: true,
   transparency_exclusions: []
 
@@ -829,6 +825,11 @@ config :pleroma, :instances_favicons, enabled: false
 config :floki, :html_parser, Floki.HTMLParser.FastHtml
 
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
+
+config :pleroma, Pleroma.User.Backup,
+  purge_after_days: 30,
+  limit_days: 7,
+  dir: nil
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

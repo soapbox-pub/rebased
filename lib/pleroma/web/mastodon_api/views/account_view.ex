@@ -187,18 +187,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     header_static = User.banner_url(user) |> MediaProxy.preview_url(static: true)
 
     following_count =
-      if !user.hide_follows_count or !user.hide_follows or opts[:for] == user do
-        user.following_count || 0
-      else
-        0
-      end
+      if !user.hide_follows_count or !user.hide_follows or opts[:for] == user,
+        do: user.following_count,
+        else: 0
 
     followers_count =
-      if !user.hide_followers_count or !user.hide_followers or opts[:for] == user do
-        user.follower_count || 0
-      else
-        0
-      end
+      if !user.hide_followers_count or !user.hide_followers or opts[:for] == user,
+        do: user.follower_count,
+        else: 0
 
     bot = user.actor_type == "Service"
 
@@ -261,7 +257,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
-          discoverable: user.discoverable,
+          discoverable: user.is_discoverable,
           actor_type: user.actor_type
         }
       },
@@ -389,7 +385,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     data
     |> Kernel.put_in(
       [:pleroma, :unread_conversation_count],
-      user.unread_conversation_count
+      Pleroma.Conversation.Participation.unread_count(user)
     )
   end
 

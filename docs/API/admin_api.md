@@ -20,12 +20,14 @@ Configuration options:
     - `external`: only external users
     - `active`: only active users
     - `need_approval`: only unapproved users
+    - `unconfirmed`: only unconfirmed users
     - `deactivated`: only deactivated users
     - `is_admin`: users with admin role
     - `is_moderator`: users with moderator role
   - *optional* `page`: **integer** page number
   - *optional* `page_size`: **integer** number of users per page (default is `50`)
   - *optional* `tags`: **[string]** tags list
+  - *optional* `actor_types`: **[string]** actor type list (`Person`, `Service`, `Application`)
   - *optional* `name`: **string** user display name
   - *optional* `email`: **string** user email
 - Example: `https://mypleroma.org/api/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10&tags[]=some_tag&tags[]=another_tag&name=display_name&email=email@example.com`
@@ -552,7 +554,7 @@ Response:
   * `show_role`
   * `skip_thread_containment`
   * `fields`
-  * `discoverable`
+  * `is_discoverable`
   * `actor_type`
 
 * Responses:
@@ -1495,5 +1497,68 @@ Returns the content of the document
 ``` json
 {
   "url": "https://example.com/instance/panel.html"
+}
+```
+
+## `GET /api/pleroma/admin/frontends
+
+### List available frontends
+
+- Response:
+
+```json
+[
+   {
+    "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/pleroma/fedi-fe",
+    "installed": true,
+    "name": "fedi-fe",
+    "ref": "master"
+  },
+  {
+    "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/lambadalambda/kenoma",
+    "installed": false,
+    "name": "kenoma",
+    "ref": "master"
+  }
+]
+```
+
+## `POST /api/pleroma/admin/frontends/install`
+
+### Install a frontend
+
+- Params:
+  - `name`: frontend name, required
+  - `ref`: frontend ref
+  - `file`: path to a frontend zip file
+  - `build_url`: build URL
+  - `build_dir`: build directory
+
+- Response:
+
+```json
+[
+   {
+    "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/pleroma/fedi-fe",
+    "installed": true,
+    "name": "fedi-fe",
+    "ref": "master"
+  },
+  {
+    "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+    "git": "https://git.pleroma.social/lambadalambda/kenoma",
+    "installed": false,
+    "name": "kenoma",
+    "ref": "master"
+  }
+]
+```
+
+```json
+{
+  "error": "Could not install frontend"
 }
 ```

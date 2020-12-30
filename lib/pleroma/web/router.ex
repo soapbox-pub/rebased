@@ -5,6 +5,26 @@
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
 
+  pipeline :accepts_html do
+    plug(:accepts, ["html"])
+  end
+
+  pipeline :accepts_html_xml do
+    plug(:accepts, ["html", "xml", "rss", "atom"])
+  end
+
+  pipeline :accepts_html_json do
+    plug(:accepts, ["html", "activity+json", "json"])
+  end
+
+  pipeline :accepts_html_xml_json do
+    plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
+  end
+
+  pipeline :accepts_xml_rss_atom do
+    plug(:accepts, ["xml", "rss", "atom"])
+  end
+
   pipeline :browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
@@ -14,6 +34,7 @@ defmodule Pleroma.Web.Router do
     plug(:fetch_session)
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :expect_authentication do
@@ -28,15 +49,13 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
-    plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Web.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Web.Plugs.AuthenticationPlug)
   end
 
   pipeline :after_auth do
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
     plug(Pleroma.Web.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :base_api do
@@ -80,7 +99,7 @@ defmodule Pleroma.Web.Router do
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :well_known do
@@ -129,16 +148,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
 
-    post("/users/follow", AdminAPIController, :user_follow)
-    post("/users/unfollow", AdminAPIController, :user_unfollow)
-
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
-    delete("/users", AdminAPIController, :user_delete)
-    post("/users", AdminAPIController, :users_create)
-    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
-    patch("/users/activate", AdminAPIController, :user_activate)
-    patch("/users/deactivate", AdminAPIController, :user_deactivate)
-    patch("/users/approve", AdminAPIController, :user_approve)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
@@ -161,6 +171,15 @@ defmodule Pleroma.Web.Router do
       :right_delete_multiple
     )
 
+    post("/users/follow", UserController, :follow)
+    post("/users/unfollow", UserController, :unfollow)
+    delete("/users", UserController, :delete)
+    post("/users", UserController, :create)
+    patch("/users/:nickname/toggle_activation", UserController, :toggle_activation)
+    patch("/users/activate", UserController, :activate)
+    patch("/users/deactivate", UserController, :deactivate)
+    patch("/users/approve", UserController, :approve)
+
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
@@ -175,8 +194,8 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
     patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
 
-    get("/users", AdminAPIController, :list_users)
-    get("/users/:nickname", AdminAPIController, :user_show)
+    get("/users", UserController, :list)
+    get("/users/:nickname", UserController, :show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
@@ -223,6 +242,11 @@ defmodule Pleroma.Web.Router do
     get("/chats/:id", ChatController, :show)
     get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+
+    get("/frontends", FrontendController, :index)
+    post("/frontends/install", FrontendController, :install)
+
+    post("/backups", AdminAPIController, :create_backup)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -267,7 +291,6 @@ defmodule Pleroma.Web.Router do
 
     post("/main/ostatus", UtilController, :remote_subscribe)
     get("/ostatus_subscribe", RemoteFollowController, :follow)
-
     post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
 
@@ -296,19 +319,25 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
-    scope [] do
-      pipe_through(:oauth)
-      get("/authorize", OAuthController, :authorize)
-    end
-
-    post("/authorize", OAuthController, :create_authorization)
-    post("/token", OAuthController, :token_exchange)
-    post("/revoke", OAuthController, :token_revoke)
     get("/registration_details", OAuthController, :registration_details)
 
-    post("/mfa/challenge", MFAController, :challenge)
     post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
     get("/mfa", MFAController, :show)
+
+    scope [] do
+      pipe_through(:oauth)
+
+      get("/authorize", OAuthController, :authorize)
+      post("/authorize", OAuthController, :create_authorization)
+    end
+
+    scope [] do
+      pipe_through(:fetch_session)
+
+      post("/token", OAuthController, :token_exchange)
+      post("/revoke", OAuthController, :token_revoke)
+      post("/mfa/challenge", MFAController, :challenge)
+    end
 
     scope [] do
       pipe_through(:browser)
@@ -353,6 +382,9 @@ defmodule Pleroma.Web.Router do
       put("/mascot", MascotController, :update)
 
       post("/scrobble", ScrobbleController, :create)
+
+      get("/backups", BackupController, :index)
+      post("/backups", BackupController, :create)
     end
 
     scope [] do
@@ -373,6 +405,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
     get("/accounts/:id/scrobbles", ScrobbleController, :index)
+    get("/federation_status", InstancesController, :show)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
@@ -566,30 +599,43 @@ defmodule Pleroma.Web.Router do
     )
   end
 
-  pipeline :ostatus do
-    plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
-    plug(Pleroma.Web.Plugs.StaticFEPlug)
-  end
-
-  pipeline :oembed do
-    plug(:accepts, ["json", "xml"])
-  end
-
   scope "/", Pleroma.Web do
-    pipe_through([:ostatus, :http_signature])
+    # Note: html format is supported only if static FE is enabled
+    # Note: http signature is only considered for json requests (no auth for non-json requests)
+    pipe_through([:accepts_html_json, :http_signature, Pleroma.Web.Plugs.StaticFEPlug])
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
     get("/notice/:id", OStatus.OStatusController, :notice)
-    get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
 
     # Mastodon compatibility routes
     get("/users/:nickname/statuses/:id", OStatus.OStatusController, :object)
     get("/users/:nickname/statuses/:id/activity", OStatus.OStatusController, :activity)
+  end
+
+  scope "/", Pleroma.Web do
+    # Note: html format is supported only if static FE is enabled
+    # Note: http signature is only considered for json requests (no auth for non-json requests)
+    pipe_through([:accepts_html_xml_json, :http_signature, Pleroma.Web.Plugs.StaticFEPlug])
+
+    # Note: returns user _profile_ for json requests, redirects to user _feed_ for non-json ones
+    get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+  end
+
+  scope "/", Pleroma.Web do
+    # Note: html format is supported only if static FE is enabled
+    pipe_through([:accepts_html_xml, Pleroma.Web.Plugs.StaticFEPlug])
 
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
-    get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+  end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:accepts_html)
+    get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:accepts_xml_rss_atom)
     get("/tags/:tag", Feed.TagController, :feed, as: :tag_feed)
   end
 

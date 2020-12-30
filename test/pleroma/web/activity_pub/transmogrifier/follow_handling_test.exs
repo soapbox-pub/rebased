@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/osada-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
@@ -116,7 +116,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("id", String.replace(data["id"], "2", "3"))
         |> Map.put("object", user.ap_id)
 
@@ -142,7 +142,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
@@ -157,7 +157,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       with_mock Pleroma.User, [:passthrough], follow: fn _, _, _ -> {:error, :testing} end do
@@ -174,7 +174,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/hubzilla-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
         |> Utils.normalize_params()
 
@@ -192,7 +192,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)

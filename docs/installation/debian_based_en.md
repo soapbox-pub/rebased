@@ -35,7 +35,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-devel
+sudo apt install git build-essential postgresql postgresql-contrib cmake libmagic-dev
 ```
 
 ### Install Elixir and Erlang
@@ -100,6 +100,7 @@ sudo -Hu pleroma mix deps.get
 ```shell
 mv config/{generated_config.exs,prod.secret.exs}
 ```
+
 
 * The previous command creates also the file `config/setup_db.psql`, with which you can create the database:
 

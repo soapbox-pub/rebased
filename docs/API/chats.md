@@ -116,6 +116,10 @@ The modified chat message
 This will return a list of chats that you have been involved in, sorted by their
 last update (so new chats will be at the top).
 
+Parameters:
+
+- with_muted: Include chats from muted users (boolean).
+
 Returned data:
 
 ```json
@@ -173,10 +177,13 @@ Returned data:
     "created_at": "2020-04-21T15:06:45.000Z",
     "emojis": [],
     "id": "12",
-    "unread": false
+    "unread": false,
+    "idempotency_key": "75442486-0874-440c-9db1-a7006c25a31f"
   }
 ]
 ```
+
+- idempotency_key: The copy of the `idempotency-key` HTTP request header that can be used for optimistic message sending. Included only during the first few minutes after the message creation.
 
 ### Posting a chat message
 

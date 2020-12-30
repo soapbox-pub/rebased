@@ -109,7 +109,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = _params) do
+  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = params) do
     limit = 100
 
     activities =
@@ -121,15 +121,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     render(conn, "index.json",
       activities: activities,
       for: user,
-      as: :activity
+      as: :activity,
+      with_muted: Map.get(params, :with_muted, false)
     )
   end
 
   @doc """
   POST /api/v1/statuses
-
-  Creates a scheduled status when `scheduled_at` param is present and it's far enough
   """
+  # Creates a scheduled status when `scheduled_at` param is present and it's far enough
   def create(
         %{
           assigns: %{user: user},
@@ -160,11 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
-  @doc """
-  POST /api/v1/statuses
-
-  Creates a regular status
-  """
+  # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
     params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
 
@@ -194,13 +190,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id"
-  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def show(%{assigns: %{user: user}} = conn, %{id: id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do
       try_render(conn, "show.json",
         activity: activity,
         for: user,
-        with_direct_conversation_id: true
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       _ -> {:error, :not_found}
@@ -289,9 +286,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/mute"
-  def mute_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def mute_conversation(%{assigns: %{user: user}, body_params: params} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         {:ok, activity} <- CommonAPI.add_mute(user, activity) do
+         {:ok, activity} <- CommonAPI.add_mute(user, activity, params) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end

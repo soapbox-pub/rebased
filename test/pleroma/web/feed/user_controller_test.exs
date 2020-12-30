@@ -12,16 +12,17 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Feed.FeedView
 
-  setup do: clear_config([:instance, :federating], true)
+  setup do: clear_config([:static_fe, :enabled], false)
 
   describe "feed" do
     setup do: clear_config([:feed])
 
-    test "gets an atom feed", %{conn: conn} do
+    setup do
       Config.put(
         [:feed, :post_title],
-        %{max_length: 10, omission: "..."}
+        %{max_length: 15, omission: "..."}
       )
 
       activity = insert(:note_activity)
@@ -29,7 +30,8 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
       note =
         insert(:note,
           data: %{
-            "content" => "This is :moominmamma: note ",
+            "content" => "This & this is :moominmamma: note ",
+            "source" => "This & this is :moominmamma: note ",
             "attachment" => [
               %{
                 "url" => [
@@ -37,7 +39,9 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
                 ]
               }
             ],
-            "inReplyTo" => activity.data["id"]
+            "inReplyTo" => activity.data["id"],
+            "context" => "2hu & as",
+            "summary" => "2hu & as"
           }
         )
 
@@ -48,7 +52,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         insert(:note,
           user: user,
           data: %{
-            "content" => "42 This is :moominmamma: note ",
+            "content" => "42 & This is :moominmamma: note ",
             "inReplyTo" => activity.data["id"]
           }
         )
@@ -56,6 +60,10 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
       note_activity2 = insert(:note_activity, note: note2)
       object = Object.normalize(note_activity)
 
+      [user: user, object: object, max_id: note_activity2.id]
+    end
+
+    test "gets an atom feed", %{conn: conn, user: user, object: object, max_id: max_id} do
       resp =
         conn
         |> put_req_header("accept", "application/atom+xml")
@@ -67,13 +75,15 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['42 This...', 'This is...']
-      assert resp =~ object.data["content"]
+      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert resp =~ FeedView.escape(object.data["content"])
+      assert resp =~ FeedView.escape(object.data["summary"])
+      assert resp =~ FeedView.escape(object.data["context"])
 
       resp =
         conn
         |> put_req_header("accept", "application/atom+xml")
-        |> get("/users/#{user.nickname}/feed", %{"max_id" => note_activity2.id})
+        |> get("/users/#{user.nickname}/feed", %{"max_id" => max_id})
         |> response(200)
 
       activity_titles =
@@ -81,47 +91,10 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['This is...']
+      assert activity_titles == ['This &amp; t...']
     end
 
-    test "gets a rss feed", %{conn: conn} do
-      Pleroma.Config.put(
-        [:feed, :post_title],
-        %{max_length: 10, omission: "..."}
-      )
-
-      activity = insert(:note_activity)
-
-      note =
-        insert(:note,
-          data: %{
-            "content" => "This is :moominmamma: note ",
-            "attachment" => [
-              %{
-                "url" => [
-                  %{"mediaType" => "image/png", "href" => "https://pleroma.gov/image.png"}
-                ]
-              }
-            ],
-            "inReplyTo" => activity.data["id"]
-          }
-        )
-
-      note_activity = insert(:note_activity, note: note)
-      user = User.get_cached_by_ap_id(note_activity.data["actor"])
-
-      note2 =
-        insert(:note,
-          user: user,
-          data: %{
-            "content" => "42 This is :moominmamma: note ",
-            "inReplyTo" => activity.data["id"]
-          }
-        )
-
-      note_activity2 = insert(:note_activity, note: note2)
-      object = Object.normalize(note_activity)
-
+    test "gets a rss feed", %{conn: conn, user: user, object: object, max_id: max_id} do
       resp =
         conn
         |> put_req_header("accept", "application/rss+xml")
@@ -133,13 +106,15 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['42 This...', 'This is...']
-      assert resp =~ object.data["content"]
+      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert resp =~ FeedView.escape(object.data["content"])
+      assert resp =~ FeedView.escape(object.data["summary"])
+      assert resp =~ FeedView.escape(object.data["context"])
 
       resp =
         conn
         |> put_req_header("accept", "application/rss+xml")
-        |> get("/users/#{user.nickname}/feed.rss", %{"max_id" => note_activity2.id})
+        |> get("/users/#{user.nickname}/feed.rss", %{"max_id" => max_id})
         |> response(200)
 
       activity_titles =
@@ -147,7 +122,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['This is...']
+      assert activity_titles == ['This &amp; t...']
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do
@@ -191,6 +166,16 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
              |> put_req_header("accept", "application/atom+xml")
              |> get(user_feed_path(conn, :feed, user.nickname))
              |> response(404)
+    end
+
+    test "does not require authentication on non-federating instances", %{conn: conn} do
+      clear_config([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> put_req_header("accept", "application/rss+xml")
+      |> get("/users/#{user.nickname}/feed.rss")
+      |> response(200)
     end
   end
 

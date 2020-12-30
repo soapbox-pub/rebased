@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.CountStatusesTest do
+  # Uses log capture, has to stay synchronous
   use Pleroma.DataCase
 
   alias Pleroma.User

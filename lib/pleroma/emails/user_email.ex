@@ -93,6 +93,19 @@ defmodule Pleroma.Emails.UserEmail do
     |> html_body(html_body)
   end
 
+  def approval_pending_email(user) do
+    html_body = """
+    <h3>Awaiting Approval</h3>
+    <p>Your account at #{instance_name()} is being reviewed by staff. You will receive another email once your account is approved.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Your account is awaiting approval")
+    |> html_body(html_body)
+  end
+
   @doc """
   Email used in digest email notifications
   Includes Mentions and New Followers data
@@ -151,7 +164,7 @@ defmodule Pleroma.Emails.UserEmail do
 
       logo_path =
         if is_nil(logo) do
-          Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
+          Path.join(:code.priv_dir(:pleroma), "static/static/logo.svg")
         else
           Path.join(Config.get([:instance, :static_dir]), logo)
         end
@@ -162,7 +175,7 @@ defmodule Pleroma.Emails.UserEmail do
       |> subject("Your digest from #{instance_name()}")
       |> put_layout(false)
       |> render_body("digest.html", html_data)
-      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.png", type: :inline))
+      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.svg", type: :inline))
     end
   end
 
@@ -188,5 +201,31 @@ defmodule Pleroma.Emails.UserEmail do
       |> Base.encode64()
 
     Router.Helpers.subscription_url(Endpoint, :unsubscribe, token)
+  end
+
+  def backup_is_ready_email(backup, admin_user_id \\ nil) do
+    %{user: user} = Pleroma.Repo.preload(backup, :user)
+    download_url = Pleroma.Web.PleromaAPI.BackupView.download_url(backup)
+
+    html_body =
+      if is_nil(admin_user_id) do
+        """
+        <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
+        <p><a href="#{download_url}">#{download_url}</a></p>
+        """
+      else
+        admin = Pleroma.Repo.get(User, admin_user_id)
+
+        """
+        <p>Admin @#{admin.nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
+        <p><a href="#{download_url}">#{download_url}</a></p>
+        """
+      end
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Your account archive is ready")
+    |> html_body(html_body)
   end
 end

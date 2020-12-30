@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-onl
 
 defmodule Mix.Tasks.Pleroma.Ecto.MigrateTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
   import ExUnit.CaptureLog
   require Logger
 

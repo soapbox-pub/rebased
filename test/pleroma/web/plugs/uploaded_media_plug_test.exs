@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
   alias Pleroma.Upload
 
   defp upload_file(context) do

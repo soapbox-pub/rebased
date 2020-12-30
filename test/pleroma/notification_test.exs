@@ -32,6 +32,19 @@ defmodule Pleroma.NotificationTest do
       refute {:ok, [nil]} == Notification.create_notifications(activity)
     end
 
+    test "creates a notification for a report" do
+      reporting_user = insert(:user)
+      reported_user = insert(:user)
+      {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+
+      {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      assert notification.user_id == moderator_user.id
+      assert notification.type == "pleroma:report"
+    end
+
     test "creates a notification for an emoji reaction" do
       user = insert(:user)
       other_user = insert(:user)
@@ -229,7 +242,7 @@ defmodule Pleroma.NotificationTest do
       muter = insert(:user)
       muted = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(muter, muted, false)
+      {:ok, _user_relationships} = User.mute(muter, muted, %{notifications: false})
 
       {:ok, activity} = CommonAPI.post(muted, %{status: "Hi @#{muter.nickname}"})
 
@@ -400,7 +413,7 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user, is_locked: true)
       follower = insert(:user)
       {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, user)
-      assert [notification] = Notification.for_user(user)
+      assert [_notification] = Notification.for_user(user)
       {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
       assert [] = Notification.for_user(user)
     end
@@ -766,7 +779,7 @@ defmodule Pleroma.NotificationTest do
       other_user = insert(:user)
 
       {:ok, other_user} = User.block_domain(other_user, blocked_domain)
-      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, other_user, user} = User.follow(other_user, user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
@@ -1015,7 +1028,7 @@ defmodule Pleroma.NotificationTest do
 
     test "it returns notifications for muted user without notifications", %{user: user} do
       muted = insert(:user)
-      {:ok, _user_relationships} = User.mute(user, muted, false)
+      {:ok, _user_relationships} = User.mute(user, muted, %{notifications: false})
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
 
@@ -1057,7 +1070,7 @@ defmodule Pleroma.NotificationTest do
       blocked = insert(:user, ap_id: "http://some-domain.com")
 
       {:ok, user} = User.block_domain(user, "some-domain.com")
-      {:ok, _} = User.follow(user, blocked)
+      {:ok, _, _} = User.follow(user, blocked)
 
       {:ok, _activity} = CommonAPI.post(blocked, %{status: "hey @#{user.nickname}"})
 

@@ -39,4 +39,28 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
 
   @impl true
   def describe, do: {:ok, %{}}
+
+  @impl true
+  def config_description do
+    %{
+      key: :mrf_subchain,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.SubchainPolicy",
+      label: "MRF Subchain",
+      description:
+        "This policy processes messages through an alternate pipeline when a given message matches certain criteria." <>
+          " All criteria are configured as a map of regular expressions to lists of policy modules.",
+      children: [
+        %{
+          key: :match_actor,
+          type: {:map, {:list, :string}},
+          description: "Matches a series of regular expressions against the actor field",
+          suggestions: [
+            %{
+              ~r/https:\/\/example.com/s => [Pleroma.Web.ActivityPub.MRF.DropPolicy]
+            }
+          ]
+        }
+      ]
+    }
+  end
 end

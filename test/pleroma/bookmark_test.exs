@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.BookmarkTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
   alias Pleroma.Bookmark
   alias Pleroma.Web.CommonAPI

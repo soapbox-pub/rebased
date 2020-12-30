@@ -4,17 +4,21 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 ## Flake IDs
 
-Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
+Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However, just like Mastodon's ids, they are lexically sortable strings
 
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
+
 Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+
 Adding the parameter `reply_visibility` to the public and home timelines queries will filter replies. Possible values: without parameter (default) shows all replies, `following` - replies directed to you or users you follow, `self` - replies directed to you.
+
+Adding the parameter `instance=lain.com` to the public timeline will show only statuses originating from `lain.com` (or any remote instance).
 
 ## Statuses
 
-- `visibility`: has an additional possible value `list`
+- `visibility`: has additional possible values `list` and `local` (for local-only statuses)
 
 Has these additional fields under the `pleroma` object:
 
@@ -22,8 +26,8 @@ Has these additional fields under the `pleroma` object:
 - `conversation_id`: the ID of the AP context the status is associated with (if any)
 - `direct_conversation_id`: the ID of the Mastodon direct message conversation the status is associated with (if any)
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
-- `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
-- `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
+- `content`: a map consisting of alternate representations of the `content` property with the key being its mimetype. Currently, the only alternate representation supported is `text/plain`
+- `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being its mimetype. Currently, the only alternate representation supported is `text/plain`
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
@@ -80,7 +84,7 @@ Has these additional fields under the `pleroma` object:
 
 - `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
 - `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
-- `discoverable`: boolean, true when the user allows discovery of the account in search results and other services.
+- `discoverable`: boolean, true when the user allows external services (search bots) etc. to index / list the account (regardless of this setting, user will still appear in regular search results)
 - `actor_type`: string, the type of this account.
 
 ## Conversations
@@ -125,12 +129,30 @@ The `type` value is `pleroma:emoji_reaction`. Has these fields:
 - `account`: The account of the user who reacted
 - `status`: The status that was reacted on
 
+### ChatMention Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:chat_mention`
+
+- `account`: The account who sent the message
+- `chat_message`: The chat message
+
+### Report Notification (not default)
+
+This notification has to be requested explicitly.
+
+The `type` value is `pleroma:report`
+
+- `account`: The account who reported
+- `report`: The report
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
-- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
+- `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`, `pleroma:chat_mention`, `pleroma:report`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
 
 ## DELETE `/api/v1/notifications/destroy_multiple`
 
@@ -148,10 +170,10 @@ Returns on success: 200 OK `{}`
 
 Additional parameters can be added to the JSON body/Form data:
 
-- `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
+- `preview`: boolean, if set to `true` the post won't be actually posted, but the status entity would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
-- `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
-- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
+- `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for post visibility are not affected by this and will still apply.
+- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted`, `local` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
 
@@ -186,7 +208,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `allow_following_move` - if true, allows automatically follow moved following accounts
 - `also_known_as` - array of ActivityPub IDs, needed for following move
 - `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
-- `discoverable` - if true, discovery of this account in search results and other services is allowed.
+- `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
 
@@ -212,7 +234,7 @@ Post here request with `grant_type=refresh_token` to obtain new access token. Re
 
 `POST /api/v1/accounts`
 
-Has theses additional parameters (which are the same as in Pleroma-API):
+Has these additional parameters (which are the same as in Pleroma-API):
 
 - `fullname`: optional
 - `bio`: optional
@@ -240,6 +262,16 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `pleroma.metadata.post_formats`: A list of the allowed post format types
 - `vapid_public_key`: The public key needed for push messages
 
+## Push Subscription
+
+`POST /api/v1/push/subscription`
+`PUT /api/v1/push/subscription`
+
+Permits these additional alert types:
+
+- pleroma:chat_mention
+- pleroma:emoji_reaction
+
 ## Markers
 
 Has these additional fields under the `pleroma` object:
@@ -248,7 +280,30 @@ Has these additional fields under the `pleroma` object:
 
 ## Streaming
 
+### Chats
+
 There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+### Remote timelines
+
+For viewing remote server timelines, there are `public:remote` and `public:remote:media` streams. Each of these accept a parameter like `?instance=lain.com`.
+
+### Follow relationships updates
+
+Pleroma streams follow relationships updates as `pleroma:follow_relationships_update` events to the `user` stream.
+
+The message payload consist of:
+
+- `state`: a relationship state, one of `follow_pending`, `follow_accept` or `follow_reject`.
+
+- `follower` and `following` maps with following fields:
+  - `id`: user ID
+  - `follower_count`: follower count
+  - `following_count`: following count
+
+## User muting and thread muting
+
+Both user muting and thread muting can be done for only a certain time by adding an `expires_in` parameter to the API calls and giving the expiration time in seconds.
 
 ## Not implemented
 

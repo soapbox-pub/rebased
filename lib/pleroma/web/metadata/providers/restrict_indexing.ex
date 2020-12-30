@@ -6,11 +6,11 @@ defmodule Pleroma.Web.Metadata.Providers.RestrictIndexing do
   @behaviour Pleroma.Web.Metadata.Providers.Provider
 
   @moduledoc """
-  Restricts indexing of remote users.
+  Restricts indexing of remote and/or non-discoverable users.
   """
 
   @impl true
-  def build_tags(%{user: %{local: true, discoverable: true}}), do: []
+  def build_tags(%{user: %{local: true, is_discoverable: true}}), do: []
 
   def build_tags(_) do
     [

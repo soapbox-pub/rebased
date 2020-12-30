@@ -6,7 +6,6 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
 
   import Pleroma.Factory
@@ -48,7 +47,8 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
                  |> json_response_and_validate_schema(200)
 
         assert [{:ok, job_result}] = ObanHelpers.perform_all()
-        assert job_result == [user2]
+        assert job_result == [refresh_record(user2)]
+        assert [%Pleroma.User{follower_count: 1}] = job_result
       end
     end
 
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportControllerTest do
                |> json_response_and_validate_schema(200)
 
       assert [{:ok, job_result}] = ObanHelpers.perform_all()
-      assert job_result == users
+      assert job_result == Enum.map(users, &refresh_record/1)
     end
   end
 

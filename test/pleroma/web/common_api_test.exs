@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPITest do
-  use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
+  use Pleroma.DataCase
 
   alias Pleroma.Activity
   alias Pleroma.Chat
@@ -94,6 +94,20 @@ defmodule Pleroma.Web.CommonAPITest do
 
   describe "posting chat messages" do
     setup do: clear_config([:instance, :chat_limit])
+
+    test "it posts a self-chat" do
+      author = insert(:user)
+      recipient = author
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "remember to buy milk when milk truk arive"
+        )
+
+      assert activity.data["type"] == "Create"
+    end
 
     test "it posts a chat message without content but with an attachment" do
       author = insert(:user)
@@ -622,7 +636,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{status: "foobar"})
 
-      assert {:ok, activity} = CommonAPI.post(user, %{status: "12345"})
+      assert {:ok, _activity} = CommonAPI.post(user, %{status: "12345"})
     end
 
     test "it can handle activities that expire" do
@@ -908,9 +922,31 @@ defmodule Pleroma.Web.CommonAPITest do
       assert CommonAPI.thread_muted?(user, activity)
     end
 
+    test "add expiring mute", %{user: user, activity: activity} do
+      {:ok, _} = CommonAPI.add_mute(user, activity, %{expires_in: 60})
+      assert CommonAPI.thread_muted?(user, activity)
+
+      worker = Pleroma.Workers.MuteExpireWorker
+      args = %{"op" => "unmute_conversation", "user_id" => user.id, "activity_id" => activity.id}
+
+      assert_enqueued(
+        worker: worker,
+        args: args
+      )
+
+      assert :ok = perform_job(worker, args)
+      refute CommonAPI.thread_muted?(user, activity)
+    end
+
     test "remove mute", %{user: user, activity: activity} do
       CommonAPI.add_mute(user, activity)
       {:ok, _} = CommonAPI.remove_mute(user, activity)
+      refute CommonAPI.thread_muted?(user, activity)
+    end
+
+    test "remove mute by ids", %{user: user, activity: activity} do
+      CommonAPI.add_mute(user, activity)
+      {:ok, _} = CommonAPI.remove_mute(user.id, activity.id)
       refute CommonAPI.thread_muted?(user, activity)
     end
 
@@ -1239,6 +1275,130 @@ defmodule Pleroma.Web.CommonAPITest do
                ap_id: "",
                nickname: "erroruser@example.com"
              } = CommonAPI.get_user("")
+    end
+  end
+
+  describe "with `local` visibility" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "post" do
+      user = insert(:user)
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+        assert Visibility.is_local_public?(activity)
+        assert_not_called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "delete" do
+      user = insert(:user)
+
+      {:ok, %Activity{id: activity_id}} =
+        CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, %Activity{data: %{"deleted_activity_id" => ^activity_id}} = activity} =
+                 CommonAPI.delete(activity_id, user)
+
+        assert Visibility.is_local_public?(activity)
+        assert_not_called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "repeat" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, %Activity{id: activity_id}} =
+        CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, %Activity{data: %{"type" => "Announce"}} = activity} =
+                 CommonAPI.repeat(activity_id, user)
+
+        assert Visibility.is_local_public?(activity)
+        refute called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "unrepeat" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, %Activity{id: activity_id}} =
+        CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
+
+      assert {:ok, _} = CommonAPI.repeat(activity_id, user)
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, %Activity{data: %{"type" => "Undo"}} = activity} =
+                 CommonAPI.unrepeat(activity_id, user)
+
+        assert Visibility.is_local_public?(activity)
+        refute called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "favorite" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, %Activity{data: %{"type" => "Like"}} = activity} =
+                 CommonAPI.favorite(user, activity.id)
+
+        assert Visibility.is_local_public?(activity)
+        refute called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "unfavorite" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
+
+      {:ok, %Activity{}} = CommonAPI.favorite(user, activity.id)
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, activity} = CommonAPI.unfavorite(activity.id, user)
+        assert Visibility.is_local_public?(activity)
+        refute called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "react_with_emoji" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, %Activity{data: %{"type" => "EmojiReact"}} = activity} =
+                 CommonAPI.react_with_emoji(activity.id, user, "👍")
+
+        assert Visibility.is_local_public?(activity)
+        refute called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "unreact_with_emoji" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe", visibility: "local"})
+
+      {:ok, _reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+
+      with_mock Pleroma.Web.Federator, publish: fn _ -> :ok end do
+        assert {:ok, %Activity{data: %{"type" => "Undo"}} = activity} =
+                 CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+
+        assert Visibility.is_local_public?(activity)
+        refute called(Pleroma.Web.Federator.publish(activity))
+      end
     end
   end
 end

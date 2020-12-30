@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
   alias Pleroma.HTTP
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Workers.BackgroundWorker
 
   require Logger
 
@@ -17,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
     recv_timeout: 10_000
   ]
 
-  def perform(:prefetch, url) do
+  defp prefetch(url) do
     # Fetching only proxiable resources
     if MediaProxy.enabled?() and MediaProxy.url_proxiable?(url) do
       # If preview proxy is enabled, it'll also hit media proxy (so we're caching both requests)
@@ -25,17 +24,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
       Logger.debug("Prefetching #{inspect(url)} as #{inspect(prefetch_url)}")
 
-      HTTP.get(prefetch_url, [], @adapter_options)
+      if Pleroma.Config.get(:env) == :test do
+        fetch(prefetch_url)
+      else
+        ConcurrentLimiter.limit(MediaProxy, fn ->
+          Task.start(fn -> fetch(prefetch_url) end)
+        end)
+      end
     end
   end
 
-  def perform(:preload, %{"object" => %{"attachment" => attachments}} = _message) do
+  defp fetch(url), do: HTTP.get(url, [], @adapter_options)
+
+  defp preload(%{"object" => %{"attachment" => attachments}} = _message) do
     Enum.each(attachments, fn
       %{"url" => url} when is_list(url) ->
         url
         |> Enum.each(fn
           %{"href" => href} ->
-            BackgroundWorker.enqueue("media_proxy_prefetch", %{"url" => href})
+            prefetch(href)
 
           x ->
             Logger.debug("Unhandled attachment URL object #{inspect(x)}")
@@ -51,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
         %{"type" => "Create", "object" => %{"attachment" => attachments} = _object} = message
       )
       when is_list(attachments) and length(attachments) > 0 do
-    BackgroundWorker.enqueue("media_proxy_preload", %{"message" => message})
+    preload(message)
 
     {:ok, message}
   end

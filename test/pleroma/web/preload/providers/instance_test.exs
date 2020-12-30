@@ -50,7 +50,7 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
     "/api/pleroma/frontend_configurations" => fe_configs
   } do
     assert %{
-             pleroma_fe: %{background: "/images/city.jpg", logo: "/static/logo.png"}
+             pleroma_fe: %{background: "/images/city.jpg", logo: "/static/logo.svg"}
            } = fe_configs
   end
 end

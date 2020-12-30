@@ -505,22 +505,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       # public
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "public"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 1
 
       # unlisted
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "unlisted"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # private
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "private"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # direct
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "direct"))
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
     end
   end
@@ -726,7 +726,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
     blocker = insert(:user)
 
-    {:ok, blocker} = User.follow(blocker, domain_user)
+    {:ok, blocker, domain_user} = User.follow(blocker, domain_user)
     {:ok, blocker} = User.block_domain(blocker, domain)
 
     assert User.following?(blocker, domain_user)
@@ -750,6 +750,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_activities([], %{blocking_user: blocker, skip_preload: true})
 
     refute repeat_activity in activities
+  end
+
+  test "returns your own posts regardless of mute" do
+    user = insert(:user)
+    muted = insert(:user)
+
+    {:ok, muted_post} = CommonAPI.post(muted, %{status: "Im stupid"})
+
+    {:ok, reply} =
+      CommonAPI.post(user, %{status: "I'm muting you", in_reply_to_status_id: muted_post.id})
+
+    {:ok, _} = User.mute(user, muted)
+
+    [activity] = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
+
+    assert activity.id == reply.id
   end
 
   test "doesn't return muted activities" do
@@ -837,7 +853,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     user = insert(:user)
     booster = insert(:user)
 
-    {:ok, user} = User.follow(user, booster)
+    {:ok, user, booster} = User.follow(user, booster)
 
     {:ok, announce} = CommonAPI.repeat(activity_three.id, booster)
 
@@ -1142,13 +1158,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user2 = insert(:user)
       user3 = insert(:user)
 
-      {:ok, user1} = User.follow(user1, user3)
+      {:ok, user1, user3} = User.follow(user1, user3)
       assert User.following?(user1, user3)
 
-      {:ok, user2} = User.follow(user2, user3)
+      {:ok, user2, user3} = User.follow(user2, user3)
       assert User.following?(user2, user3)
 
-      {:ok, user3} = User.follow(user3, user2)
+      {:ok, user3, user2} = User.follow(user3, user2)
       assert User.following?(user3, user2)
 
       {:ok, public_activity} = CommonAPI.post(user3, %{status: "hi 1"})
@@ -1282,6 +1298,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert_called(Utils.maybe_federate(%{activity | data: new_data}))
     end
+
+    test_with_mock "reverts on error",
+                   %{
+                     reporter: reporter,
+                     context: context,
+                     target_account: target_account,
+                     reported_activity: reported_activity,
+                     content: content
+                   },
+                   Utils,
+                   [:passthrough],
+                   maybe_federate: fn _ -> {:error, :reverted} end do
+      assert {:error, :reverted} =
+               ActivityPub.flag(%{
+                 actor: reporter,
+                 context: context,
+                 account: target_account,
+                 statuses: [reported_activity],
+                 content: content
+               })
+
+      assert Repo.aggregate(Activity, :count, :id) == 1
+      assert Repo.aggregate(Object, :count, :id) == 2
+      assert Repo.aggregate(Notification, :count, :id) == 0
+    end
   end
 
   test "fetch_activities/2 returns activities addressed to a list " do
@@ -1410,19 +1451,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       mock(fn env ->
         case env.url do
           "http://localhost:4001/users/masto_hidden_counters/following" ->
-            json(%{
-              "@context" => "https://www.w3.org/ns/activitystreams",
-              "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
-            })
+            json(
+              %{
+                "@context" => "https://www.w3.org/ns/activitystreams",
+                "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+              },
+              headers: HttpRequestMock.activitypub_object_headers()
+            )
 
           "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
           "http://localhost:4001/users/masto_hidden_counters/followers" ->
-            json(%{
-              "@context" => "https://www.w3.org/ns/activitystreams",
-              "id" => "http://localhost:4001/users/masto_hidden_counters/following"
-            })
+            json(
+              %{
+                "@context" => "https://www.w3.org/ns/activitystreams",
+                "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+              },
+              headers: HttpRequestMock.activitypub_object_headers()
+            )
 
           "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
             %Tesla.Env{status: 403, body: ""}
@@ -1884,13 +1931,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   defp public_messages(_) do
     [u1, u2, u3, u4] = insert_list(4, :user)
-    {:ok, u1} = User.follow(u1, u2)
-    {:ok, u2} = User.follow(u2, u1)
-    {:ok, u1} = User.follow(u1, u4)
-    {:ok, u4} = User.follow(u4, u1)
+    {:ok, u1, u2} = User.follow(u1, u2)
+    {:ok, u2, u1} = User.follow(u2, u1)
+    {:ok, u1, u4} = User.follow(u1, u4)
+    {:ok, u4, u1} = User.follow(u4, u1)
 
-    {:ok, u2} = User.follow(u2, u3)
-    {:ok, u3} = User.follow(u3, u2)
+    {:ok, u2, u3} = User.follow(u2, u3)
+    {:ok, u3, u2} = User.follow(u3, u2)
 
     {:ok, a1} = CommonAPI.post(u1, %{status: "Status"})
 
@@ -1983,15 +2030,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   defp private_messages(_) do
     [u1, u2, u3, u4] = insert_list(4, :user)
-    {:ok, u1} = User.follow(u1, u2)
-    {:ok, u2} = User.follow(u2, u1)
-    {:ok, u1} = User.follow(u1, u3)
-    {:ok, u3} = User.follow(u3, u1)
-    {:ok, u1} = User.follow(u1, u4)
-    {:ok, u4} = User.follow(u4, u1)
+    {:ok, u1, u2} = User.follow(u1, u2)
+    {:ok, u2, u1} = User.follow(u2, u1)
+    {:ok, u1, u3} = User.follow(u1, u3)
+    {:ok, u3, u1} = User.follow(u3, u1)
+    {:ok, u1, u4} = User.follow(u1, u4)
+    {:ok, u4, u1} = User.follow(u4, u1)
 
-    {:ok, u2} = User.follow(u2, u3)
-    {:ok, u3} = User.follow(u3, u2)
+    {:ok, u2, u3} = User.follow(u2, u3)
+    {:ok, u3, u2} = User.follow(u3, u2)
 
     {:ok, a1} = CommonAPI.post(u1, %{status: "Status", visibility: "private"})
 
@@ -2256,5 +2303,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert length(activities) == 2
     end
+  end
+
+  test "allow fetching of accounts with an empty string name field" do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://princess.cat/users/mewmew"} ->
+        file = File.read!("test/fixtures/mewmew_no_name.json")
+        %Tesla.Env{status: 200, body: file, headers: HttpRequestMock.activitypub_object_headers()}
+    end)
+
+    {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")
+    assert user.name == " "
   end
 end

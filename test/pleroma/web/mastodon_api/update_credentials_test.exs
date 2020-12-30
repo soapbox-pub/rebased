@@ -11,8 +11,6 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
   import Mock
   import Pleroma.Factory
 
-  setup do: clear_config([:instance, :max_account_fields])
-
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])
     setup :request_content_type
@@ -456,7 +454,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response_and_validate_schema(403)
 
-      Pleroma.Config.put([:instance, :max_account_fields], 1)
+      clear_config([:instance, :max_account_fields], 1)
 
       fields = [
         %{"name" => "foo", "value" => "bar"},

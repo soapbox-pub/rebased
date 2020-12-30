@@ -12,8 +12,9 @@ defmodule Pleroma.Web.RelMe do
   if Pleroma.Config.get(:env) == :test do
     def parse(url) when is_binary(url), do: parse_url(url)
   else
+    @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
     def parse(url) when is_binary(url) do
-      Cachex.fetch!(:rel_me_cache, url, fn _ ->
+      @cachex.fetch!(:rel_me_cache, url, fn _ ->
         {:commit, parse_url(url)}
       end)
     rescue

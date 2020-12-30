@@ -27,10 +27,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnswerHandlingTest do
       })
 
     object = Object.normalize(activity)
+    assert object.data["repliesCount"] == nil
 
     data =
       File.read!("test/fixtures/mastodon-vote.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["to"], user.ap_id)
       |> Kernel.put_in(["object", "inReplyTo"], object.data["id"])
       |> Kernel.put_in(["object", "to"], user.ap_id)
@@ -41,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnswerHandlingTest do
     assert answer_object.data["inReplyTo"] == object.data["id"]
 
     new_object = Object.get_by_ap_id(object.data["id"])
-    assert new_object.data["replies_count"] == object.data["replies_count"]
+    assert new_object.data["repliesCount"] == nil
 
     assert Enum.any?(
              new_object.data["oneOf"],
@@ -65,7 +66,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnswerHandlingTest do
     # TODO: Replace with CommonAPI vote creation when implemented
     data =
       File.read!("test/fixtures/mastodon-vote.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["to"], user.ap_id)
       |> Kernel.put_in(["object", "inReplyTo"], poll_object.data["id"])
       |> Kernel.put_in(["object", "to"], user.ap_id)

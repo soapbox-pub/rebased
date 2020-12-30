@@ -3,12 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   import Pleroma.Factory
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.User

@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Http do
       {:ok, %{status: status} = env} when 400 <= status and status < 500 ->
         {:error, env}
 
-      {:error, error} = error ->
+      {:error, _} = error ->
         error
 
       _ ->

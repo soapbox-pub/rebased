@@ -25,7 +25,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     }
 
     {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
-    {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "kippis :firefox:")
+
+    {:ok, activity} =
+      CommonAPI.post_chat_message(user, recipient, "kippis :firefox:", idempotency_key: "123")
 
     chat = Chat.get(user.id, recipient.ap_id)
 
@@ -42,10 +44,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert chat_message[:created_at]
     assert chat_message[:unread] == false
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
+    assert chat_message[:idempotency_key] == "123"
 
     clear_config([:rich_media, :enabled], true)
 
-    Tesla.Mock.mock(fn
+    Tesla.Mock.mock_global(fn
       %{url: "https://example.com/ogp"} ->
         %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
     end)

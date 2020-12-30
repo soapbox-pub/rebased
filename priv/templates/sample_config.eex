@@ -32,8 +32,7 @@ config :pleroma, Pleroma.Repo,
   username: "<%= dbuser %>",
   password: "<%= dbpass %>",
   database: "<%= dbname %>",
-  hostname: "<%= dbhost %>",
-  pool_size: 10
+  hostname: "<%= dbhost %>"
 
 # Configure web push notifications
 config :web_push_encryption, :vapid_details,

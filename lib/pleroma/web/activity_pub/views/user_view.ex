@@ -110,7 +110,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "endpoints" => endpoints,
       "attachment" => fields,
       "tag" => emoji_tags,
-      "discoverable" => user.discoverable,
+      # Note: key name is indeed "discoverable" (not an error)
+      "discoverable" => user.is_discoverable,
       "capabilities" => capabilities
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
