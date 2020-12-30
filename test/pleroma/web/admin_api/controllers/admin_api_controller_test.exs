@@ -422,10 +422,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, 200) |> length() == 3
     end
 
-    test "renders user's statuses with a limit", %{conn: conn, user: user} do
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=2")
+    test "renders user's statuses with pagination", %{conn: conn, user: user} do
+      conn1 = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=1")
 
-      assert json_response(conn, 200) |> length() == 2
+      response1 = json_response(conn1, 200)
+
+      assert response1 |> length() == 1
+
+      conn2 = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=2")
+
+      response2 = json_response(conn2, 200)
+
+      assert response2 |> length() == 1
+
+      refute response1 == response2
     end
 
     test "doesn't return private statuses by default", %{conn: conn, user: user} do
