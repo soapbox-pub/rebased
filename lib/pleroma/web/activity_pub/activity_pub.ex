@@ -608,7 +608,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       reading_user: reading_user
     }
     |> user_activities_recipients()
-    |> fetch_activities(params)
+    |> fetch_activities(params, :offset)
     |> Enum.reverse()
   end
 

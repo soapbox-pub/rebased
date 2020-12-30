@@ -106,7 +106,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       {page, page_size} = page_params(params)
 
       activities =
-        ActivityPub.fetch_statuses(user, %{
+        ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
           offset: (page - 1) * page_size,
           godmode: godmode,
