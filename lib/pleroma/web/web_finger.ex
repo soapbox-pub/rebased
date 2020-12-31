@@ -59,7 +59,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   defp gather_aliases(%User{} = user) do
-    [user.ap_id] ++ user.also_known_as
+    [user.ap_id | user.also_known_as]
   end
 
   def represent_user(user, "JSON") do
@@ -76,8 +76,9 @@ defmodule Pleroma.Web.WebFinger do
     {:ok, user} = User.ensure_keys_present(user)
 
     aliases =
-      gather_aliases(user)
-      |> Enum.map(fn the_alias -> {:Alias, the_alias} end)
+      user
+      |> gather_aliases()
+      |> Enum.map(&{:Alias, &1})
 
     links =
       gather_links(user)
