@@ -713,22 +713,92 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
+  defp restrict_hashtag(query, opts) do
+    [tag_any, tag_all, tag_reject] =
+      [:tag, :tag_all, :tag_reject]
+      |> Enum.map(&opts[&1])
+      |> Enum.map(&List.wrap(&1))
+
+    has_conditions = Enum.any?([tag_any, tag_all, tag_reject], &Enum.any?(&1))
+
+    cond do
+      !has_conditions ->
+        query
+
+      opts[:skip_preload] ->
+        raise_on_missing_preload()
+
+      true ->
+        query
+        |> group_by_all_bindings()
+        |> join(:left, [_activity, object], hashtag in assoc(object, :hashtags), as: :hashtag)
+        |> maybe_restrict_hashtag_any(tag_any)
+        |> maybe_restrict_hashtag_all(tag_all)
+        |> maybe_restrict_hashtag_reject_any(tag_reject)
+    end
+  end
+
+  # Groups by all bindings to allow aggregation on hashtags
+  defp group_by_all_bindings(query) do
+    # Expecting named bindings: :object, :bookmark, :thread_mute, :report_note
+    cond do
+      Enum.count(query.aliases) == 4 ->
+        from([a, o, b3, b4, b5] in query, group_by: [a.id, o.id, b3.id, b4.id, b5.id])
+
+      Enum.count(query.aliases) == 3 ->
+        from([a, o, b3, b4] in query, group_by: [a.id, o.id, b3.id, b4.id])
+
+      Enum.count(query.aliases) == 2 ->
+        from([a, o, b3] in query, group_by: [a.id, o.id, b3.id])
+
+      true ->
+        from([a, o] in query, group_by: [a.id, o.id])
+    end
+  end
+
+  defp maybe_restrict_hashtag_any(query, []) do
+    query
+  end
+
+  defp maybe_restrict_hashtag_any(query, tags) do
+    having(
+      query,
+      [hashtag: hashtag],
+      fragment("array_agg(?) && (?)", hashtag.name, ^tags)
+    )
+  end
+
+  defp maybe_restrict_hashtag_all(query, []) do
+    query
+  end
+
+  defp maybe_restrict_hashtag_all(query, tags) do
+    having(
+      query,
+      [hashtag: hashtag],
+      fragment("array_agg(?) @> (?)", hashtag.name, ^tags)
+    )
+  end
+
+  defp maybe_restrict_hashtag_reject_any(query, []) do
+    query
+  end
+
+  defp maybe_restrict_hashtag_reject_any(query, tags) do
+    having(
+      query,
+      [hashtag: hashtag],
+      fragment("not(array_agg(?) && (?))", hashtag.name, ^tags)
+    )
+  end
+
   defp restrict_hashtag_reject_any(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
     raise_on_missing_preload()
   end
 
   defp restrict_hashtag_reject_any(query, %{tag_reject: tags_reject}) when is_list(tags_reject) do
-    if has_named_binding?(query, :thread_mute) do
-      from(
-        [activity, object, thread_mute] in query,
-        group_by: [activity.id, object.id, thread_mute.id]
-      )
-    else
-      from(
-        [activity, object] in query,
-        group_by: [activity.id, object.id]
-      )
-    end
+    query
+    |> group_by_all_bindings()
     |> join(:left, [_activity, object], hashtag in assoc(object, :hashtags), as: :hashtag)
     |> having(
       [hashtag: hashtag],
@@ -1167,7 +1237,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     query =
       Activity
-      |> distinct([a], true)
       |> maybe_preload_objects(opts)
       |> maybe_preload_bookmarks(opts)
       |> maybe_preload_report_notes(opts)
@@ -1199,16 +1268,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> exclude_invisible_actors(opts)
       |> exclude_visibility(opts)
 
-    if Config.object_embedded_hashtags?() do
-      query
-      |> restrict_tag(opts)
-      |> restrict_tag_reject(opts)
-      |> restrict_tag_all(opts)
-    else
-      query
-      |> restrict_hashtag_any(opts)
-      |> restrict_hashtag_all(opts)
-      |> restrict_hashtag_reject_any(opts)
+    cond do
+      Config.object_embedded_hashtags?() ->
+        query
+        |> restrict_tag(opts)
+        |> restrict_tag_reject(opts)
+        |> restrict_tag_all(opts)
+
+      # TODO: benchmark (initial approach preferring non-aggregate ops when possible)
+      Config.get([:instance, :improved_hashtag_timeline]) == :join ->
+        query
+        |> distinct([activity], true)
+        |> restrict_hashtag_any(opts)
+        |> restrict_hashtag_all(opts)
+        |> restrict_hashtag_reject_any(opts)
+
+      true ->
+        restrict_hashtag(query, opts)
     end
   end
 

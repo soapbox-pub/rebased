@@ -113,6 +113,7 @@ defmodule Pleroma.Activity do
     from([a] in query,
       left_join: b in Bookmark,
       on: b.user_id == ^user.id and b.activity_id == a.id,
+      as: :bookmark,
       preload: [bookmark: b]
     )
   end
@@ -123,6 +124,7 @@ defmodule Pleroma.Activity do
     from([a] in query,
       left_join: r in ReportNote,
       on: a.id == r.activity_id,
+      as: :report_note,
       preload: [report_notes: r]
     )
   end
