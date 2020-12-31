@@ -63,8 +63,8 @@ defmodule Pleroma.Repo do
   iex> Pleroma.Repo.chunk_stream(Pleroma.Activity.Queries.by_actor(ap_id), 500, :batches)
   """
   @spec chunk_stream(Ecto.Query.t(), integer(), atom()) :: Enumerable.t()
-  def chunk_stream(query, chunk_size, returns_as \\ :one) do
-    # We don't actually need start and end funcitons of resource streaming,
+  def chunk_stream(query, chunk_size, returns_as \\ :one, query_options \\ []) do
+    # We don't actually need start and end functions of resource streaming,
     # but it seems to be the only way to not fetch records one-by-one and
     # have individual records be the elements of the stream, instead of
     # lists of records
@@ -76,7 +76,7 @@ defmodule Pleroma.Repo do
           |> order_by(asc: :id)
           |> where([r], r.id > ^last_id)
           |> limit(^chunk_size)
-          |> all()
+          |> all(query_options)
           |> case do
             [] ->
               {:halt, last_id}

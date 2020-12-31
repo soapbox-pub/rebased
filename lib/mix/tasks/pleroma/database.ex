@@ -149,9 +149,9 @@ defmodule Mix.Tasks.Pleroma.Database do
         tag: fragment("(?)->>'tag'", object.data)
       }
     )
-    |> Pleroma.Repo.chunk_stream(100, :batches)
+    |> Repo.chunk_stream(100, :batches, timeout: :infinity)
     |> Stream.each(fn objects ->
-      Logger.info("Processing #{length(objects)} objects...")
+      Logger.info("Processing #{length(objects)} objects starting from id #{hd(objects).id}...")
 
       Enum.map(
         objects,
@@ -165,10 +165,9 @@ defmodule Mix.Tasks.Pleroma.Database do
             with {:ok, hashtag_records} <- Hashtag.get_or_create_by_names(hashtags) do
               for hashtag_record <- hashtag_records do
                 with {:ok, _} <-
-                       Ecto.Adapters.SQL.query(
-                         Repo,
-                         "insert into hashtags_objects(hashtag_id, object_id) values " <>
-                           "(#{hashtag_record.id}, #{object.id});"
+                       Repo.query(
+                         "insert into hashtags_objects(hashtag_id, object_id) values ($1, $2);",
+                         [hashtag_record.id, object.id]
                        ) do
                   :noop
                 else
