@@ -2458,9 +2458,10 @@ defmodule Pleroma.User do
 
   defp validate_also_known_as(changeset) do
     validate_change(changeset, :also_known_as, fn :also_known_as, also_known_as ->
-      case Enum.all?(also_known_as, fn a -> Regex.match?(@url_regex, a) end) do
-        true -> []
-        false -> [also_known_as: "Invalid ap_id format. Must be a URL."]
+      if Enum.all?(also_known_as, fn a -> Regex.match?(@url_regex, a) end) do
+        []
+      else
+        [also_known_as: "Invalid ap_id format. Must be a URL."]
       end
     end)
   end
