@@ -605,7 +605,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     pagination_type =
       cond do
-        is_nil(params[:offset]) -> :keyset
+        !Map.has_key?(params, :offset) -> :keyset
         true -> :offset
       end
 
