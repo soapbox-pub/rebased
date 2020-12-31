@@ -80,6 +80,12 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
   end
 
+  test "renders AKAs" do
+    akas = ["https://i.tusooa.xyz/users/test-pleroma"]
+    user = insert(:user, also_known_as: akas)
+    assert %{"alsoKnownAs" => ^akas} = UserView.render("user.json", %{user: user})
+  end
+
   describe "endpoints" do
     test "local users have a usable endpoints structure" do
       user = insert(:user)
