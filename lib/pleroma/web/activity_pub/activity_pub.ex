@@ -603,12 +603,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         |> Map.put(:muting_user, reading_user)
       end
 
+    pagination_type =
+      cond do
+        !Map.has_key?(params, :offset) -> :keyset
+        true -> :offset
+      end
+
     %{
       godmode: params[:godmode],
       reading_user: reading_user
     }
     |> user_activities_recipients()
-    |> fetch_activities(params)
+    |> fetch_activities(params, pagination_type)
     |> Enum.reverse()
   end
 
