@@ -143,4 +143,29 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     assert %{} = ReportView.render("show.json", Report.extract_report_info(activity))
   end
+
+  test "reports are ordered newest first" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, report1} =
+      CommonAPI.report(user, %{
+        account_id: other_user.id,
+        comment: "first report"
+      })
+
+    {:ok, report2} =
+      CommonAPI.report(user, %{
+        account_id: other_user.id,
+        comment: "second report"
+      })
+
+    %{reports: rendered} =
+      ReportView.render("index.json",
+        reports: Pleroma.Web.ActivityPub.Utils.get_reports(%{}, 1, 50)
+      )
+
+    assert report2.id == rendered |> Enum.at(0) |> Map.get(:id)
+    assert report1.id == rendered |> Enum.at(1) |> Map.get(:id)
+  end
 end
