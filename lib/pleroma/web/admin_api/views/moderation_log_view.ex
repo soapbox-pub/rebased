@@ -21,6 +21,7 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogView do
       |> DateTime.to_unix()
 
     %{
+      id: log_entry.id,
       data: log_entry.data,
       time: time,
       message: ModerationLog.get_log_entry_message(log_entry)
