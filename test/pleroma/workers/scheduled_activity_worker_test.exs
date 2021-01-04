@@ -36,7 +36,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
 
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     activity = Repo.all(Pleroma.Activity) |> Enum.find(&(&1.actor == user.ap_id))
-    assert Pleroma.Object.normalize(activity).data["content"] == "hi"
+    assert Pleroma.Object.normalize(activity, fetch: false).data["content"] == "hi"
   end
 
   test "adds log message if ScheduledActivity isn't find" do

@@ -15,7 +15,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleView do
   alias Pleroma.Web.MastodonAPI.AccountView
 
   def render("show.json", %{activity: %Activity{data: %{"type" => "Listen"}} = activity} = opts) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])

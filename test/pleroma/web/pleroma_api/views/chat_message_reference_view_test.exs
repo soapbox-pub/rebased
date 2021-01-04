@@ -31,7 +31,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
     chat = Chat.get(user.id, recipient.ap_id)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
 
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
         media_id: upload.id
       )
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
 

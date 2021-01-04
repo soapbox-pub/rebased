@@ -59,7 +59,7 @@ defmodule Pleroma.HTML do
     key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
 
     @cachex.fetch!(:scrubber_cache, key, fn _key ->
-      object = Pleroma.Object.normalize(activity)
+      object = Pleroma.Object.normalize(activity, fetch: false)
       ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false, callback)
     end)
   end

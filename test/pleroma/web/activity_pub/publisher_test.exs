@@ -322,7 +322,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
 
       note_activity = insert(:note_activity, user: actor)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       activity_path = String.trim_leading(note_activity.data["id"], Pleroma.Web.Endpoint.url())
       object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())

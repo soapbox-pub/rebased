@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert object.data["url"] == "https://mastodon.sdf.org/@rinpatch/102070944809637304"
 
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     {:ok, reply_activity} = CommonAPI.post(user, %{status: "hewwo", in_reply_to_id: activity.id})
 
-    reply_object = Object.normalize(reply_activity, false)
+    reply_object = Object.normalize(reply_activity, fetch: false)
 
     assert reply_object.data["context"] == object.data["context"]
     assert reply_object.data["context_id"] == object.data["context_id"]
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
       |> Kernel.put_in(["object", "oneOf"], options)
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert Enum.sort(object.data["oneOf"]) == Enum.sort(options)
   end
@@ -147,7 +147,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
       |> Kernel.put_in(["object", "tag"], tag)
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert object.data["oneOf"] == options
 

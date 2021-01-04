@@ -268,7 +268,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   @impl true
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
-      Object.normalize(deleted_object, false) ||
+      Object.normalize(deleted_object, fetch: false) ||
         User.get_cached_by_ap_id(deleted_object)
 
     result =

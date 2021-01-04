@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       note_obj = %{
         "type" => "Note",

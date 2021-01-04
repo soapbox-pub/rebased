@@ -108,39 +108,42 @@ defmodule Pleroma.Object do
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
   end
 
-  def normalize(_, fetch_remote \\ true, options \\ [])
+  def normalize(_, options \\ [fetch: false])
 
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
-  def normalize(%Object{} = object, _, _), do: object
-  def normalize(%Activity{object: %Object{} = object}, _, _), do: object
+  def normalize(%Object{} = object, _), do: object
+  def normalize(%Activity{object: %Object{} = object}, _), do: object
 
   # A hack for fake activities
-  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}, _, _) do
+  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}, _) do
     %Object{id: "pleroma:fake_object_id", data: data}
   end
 
   # No preloaded object
-  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}, fetch_remote, _) do
+  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}, options) do
     warn_on_no_object_preloaded(ap_id)
-    normalize(ap_id, fetch_remote)
+    normalize(ap_id, options)
   end
 
   # No preloaded object
-  def normalize(%Activity{data: %{"object" => ap_id}}, fetch_remote, _) do
+  def normalize(%Activity{data: %{"object" => ap_id}}, options) do
     warn_on_no_object_preloaded(ap_id)
-    normalize(ap_id, fetch_remote)
+    normalize(ap_id, options)
   end
 
   # Old way, try fetching the object through cache.
-  def normalize(%{"id" => ap_id}, fetch_remote, _), do: normalize(ap_id, fetch_remote)
-  def normalize(ap_id, false, _) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
+  def normalize(%{"id" => ap_id}, options), do: normalize(ap_id, options)
 
-  def normalize(ap_id, true, options) when is_binary(ap_id) do
-    Fetcher.fetch_object_from_id!(ap_id, options)
+  def normalize(ap_id, options) when is_binary(ap_id) do
+    if Keyword.get(options, :fetch) do
+      Fetcher.fetch_object_from_id!(ap_id, options)
+    else
+      get_cached_by_ap_id(ap_id)
+    end
   end
 
-  def normalize(_, _, _), do: nil
+  def normalize(_, _), do: nil
 
   # Owned objects can only be accessed by their owner
   def authorize_access(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}) do
@@ -285,7 +288,7 @@ defmodule Pleroma.Object do
   end
 
   def increase_vote_count(ap_id, name, actor) do
-    with %Object{} = object <- Object.normalize(ap_id),
+    with %Object{} = object <- Object.normalize(ap_id, fetch: false),
          "Question" <- object.data["type"] do
       key = if poll_is_multiple?(object), do: "anyOf", else: "oneOf"
 
@@ -326,7 +329,7 @@ defmodule Pleroma.Object do
   end
 
   def replies(object, opts \\ []) do
-    object = Object.normalize(object)
+    object = Object.normalize(object, fetch: false)
 
     query =
       Object

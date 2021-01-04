@@ -128,7 +128,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   defp maybe_set_tracking_data(conn, %Activity{data: %{"type" => "Create"}} = activity) do
-    object_id = Object.normalize(activity).id
+    object_id = Object.normalize(activity, fetch: false).id
     assign(conn, :tracking_fun_data, object_id)
   end
 
@@ -434,7 +434,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"]),
+    with %Object{} = object <- Object.normalize(params["object"], fetch: false),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
@@ -445,7 +445,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   defp handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"]),
+    with %Object{} = object <- Object.normalize(params["object"], fetch: false),
          {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,

@@ -139,7 +139,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, op} = CommonAPI.post(other_user, %{status: "big oof"})
       {:ok, post} = CommonAPI.post(user, %{status: "hey", in_reply_to_id: op})
       {:ok, favorite} = CommonAPI.favorite(user, post.id)
-      object = Object.normalize(post)
+      object = Object.normalize(post, fetch: false)
       {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
       {:ok, delete_user_data, _meta} = Builder.delete(user, user.ap_id)
       {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user = User.get_by_id(user.id)
       assert user.note_count == 0
 
-      object = Object.normalize(op.data["object"], false)
+      object = Object.normalize(op.data["object"], fetch: false)
 
       assert object.data["repliesCount"] == 0
     end
@@ -211,7 +211,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user = User.get_by_id(user.id)
       assert user.note_count == 0
 
-      object = Object.normalize(op.data["object"], false)
+      object = Object.normalize(op.data["object"], fetch: false)
 
       assert object.data["repliesCount"] == 0
     end

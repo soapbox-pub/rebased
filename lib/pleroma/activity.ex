@@ -274,7 +274,7 @@ defmodule Pleroma.Activity do
   defp get_in_reply_to_activity_from_object(_), do: nil
 
   def get_in_reply_to_activity(%Activity{} = activity) do
-    get_in_reply_to_activity_from_object(Object.normalize(activity))
+    get_in_reply_to_activity_from_object(Object.normalize(activity, fetch: false))
   end
 
   def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])

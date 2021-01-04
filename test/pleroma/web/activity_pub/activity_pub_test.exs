@@ -321,7 +321,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      object = Pleroma.Object.normalize(activity)
+      object = Pleroma.Object.normalize(activity, fetch: false)
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
@@ -344,7 +344,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert object = Object.normalize(activity)
+      assert object = Object.normalize(activity, fetch: false)
       assert is_binary(object.data["id"])
     end
   end
@@ -678,7 +678,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
-    assert object = Pleroma.Object.normalize(activity_two)
+    assert object = Pleroma.Object.normalize(activity_two, fetch: false)
 
     data = %{
       "actor" => friend.ap_id,

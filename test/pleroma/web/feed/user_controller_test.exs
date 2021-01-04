@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         )
 
       note_activity2 = insert(:note_activity, note: note2)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       [user: user, object: object, max_id: note_activity2.id]
     end
