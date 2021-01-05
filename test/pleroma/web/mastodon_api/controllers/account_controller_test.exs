@@ -471,16 +471,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "paginates a user's statuses", %{user: user, conn: conn} do
-      {:ok, post1} = CommonAPI.post(user, %{status: "first post"})
-      {:ok, _} = CommonAPI.post(user, %{status: "second post"})
+      {:ok, post_1} = CommonAPI.post(user, %{status: "first post"})
+      {:ok, post_2} = CommonAPI.post(user, %{status: "second post"})
 
-      response1 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1")
-      assert json_response(response1, 200) |> length() == 1
+      response_1 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1")
+      assert [res] = json_response(response_1, 200)
+      assert res["id"] == post_2.id
 
-      response2 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1&min_id=#{post1.id}")
-      assert json_response(response2, 200) |> length() == 1
+      response_2 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1&max_id=#{res["id"]}")
+      assert [res] = json_response(response_2, 200)
+      assert res["id"] == post_1.id
 
-      refute response1 == response2
+      refute response_1 == response_2
     end
   end
 
