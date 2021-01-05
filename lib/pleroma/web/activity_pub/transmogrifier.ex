@@ -919,7 +919,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp build_emoji_tag({name, url}) do
     %{
-      "icon" => %{"url" => url, "type" => "Image"},
+      "icon" => %{"url" => "#{URI.encode(url)}", "type" => "Image"},
       "name" => ":" <> name <> ":",
       "type" => "Emoji",
       "updated" => "1970-01-01T00:00:00Z",
