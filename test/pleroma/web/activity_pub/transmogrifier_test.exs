@@ -281,6 +281,21 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, _modified} = Transmogrifier.prepare_outgoing(activity.data)
     end
+
+    test "custom emoji urls are URI encoded" do
+      # :dinosaur: filename has a space -> dino walking.gif
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
+
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(prepared["object"]["tag"]) == 1
+
+      url = prepared["object"]["tag"] |> List.first() |> Map.get("icon") |> Map.get("url")
+
+      assert url == "http://localhost:4001/emoji/dino%20walking.gif"
+    end
   end
 
   describe "user upgrade" do
