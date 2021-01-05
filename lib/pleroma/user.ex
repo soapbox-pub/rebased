@@ -142,7 +142,7 @@ defmodule Pleroma.User do
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
     field(:actor_type, :string, default: "Person")
-    field(:also_known_as, {:array, :string}, default: [])
+    field(:also_known_as, {:array, ObjectValidators.ObjectID}, default: [])
     field(:inbox, :string)
     field(:shared_inbox, :string)
     field(:accepts_chat_messages, :boolean, default: nil)
@@ -515,6 +515,7 @@ defmodule Pleroma.User do
         :hide_follows_count,
         :hide_favorites,
         :allow_following_move,
+        :also_known_as,
         :background,
         :show_role,
         :skip_thread_containment,
@@ -523,7 +524,6 @@ defmodule Pleroma.User do
         :pleroma_settings_store,
         :is_discoverable,
         :actor_type,
-        :also_known_as,
         :accepts_chat_messages
       ]
     )

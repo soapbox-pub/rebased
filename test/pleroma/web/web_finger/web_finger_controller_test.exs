@@ -30,14 +30,24 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
   end
 
   test "Webfinger JRD" do
-    user = insert(:user)
+    user =
+      insert(:user,
+        ap_id: "https://hyrule.world/users/zelda",
+        also_known_as: ["https://mushroom.kingdom/users/toad"]
+      )
 
     response =
       build_conn()
       |> put_req_header("accept", "application/jrd+json")
       |> get("/.well-known/webfinger?resource=acct:#{user.nickname}@localhost")
+      |> json_response(200)
 
-    assert json_response(response, 200)["subject"] == "acct:#{user.nickname}@localhost"
+    assert response["subject"] == "acct:#{user.nickname}@localhost"
+
+    assert response["aliases"] == [
+             "https://hyrule.world/users/zelda",
+             "https://mushroom.kingdom/users/toad"
+           ]
   end
 
   test "it returns 404 when user isn't found (JSON)" do
@@ -51,14 +61,20 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
   end
 
   test "Webfinger XML" do
-    user = insert(:user)
+    user =
+      insert(:user,
+        ap_id: "https://hyrule.world/users/zelda",
+        also_known_as: ["https://mushroom.kingdom/users/toad"]
+      )
 
     response =
       build_conn()
       |> put_req_header("accept", "application/xrd+xml")
       |> get("/.well-known/webfinger?resource=acct:#{user.nickname}@localhost")
+      |> response(200)
 
-    assert response(response, 200)
+    assert response =~ "<Alias>https://hyrule.world/users/zelda</Alias>"
+    assert response =~ "<Alias>https://mushroom.kingdom/users/toad</Alias>"
   end
 
   test "it returns 404 when user isn't found (XML)" do

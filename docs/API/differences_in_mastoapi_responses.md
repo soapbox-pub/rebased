@@ -206,6 +206,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
+- `also_known_as` - array of ActivityPub IDs, needed for following move
 - `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
 - `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
