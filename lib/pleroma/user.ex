@@ -51,7 +51,6 @@ defmodule Pleroma.User do
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
-  @url_regex ~r/^https?:\/\/[^\s]{1,256}$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
   @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
@@ -143,7 +142,7 @@ defmodule Pleroma.User do
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
     field(:actor_type, :string, default: "Person")
-    field(:also_known_as, {:array, :string}, default: [])
+    field(:also_known_as, {:array, ObjectValidators.ObjectID}, default: [])
     field(:inbox, :string)
     field(:shared_inbox, :string)
     field(:accepts_chat_messages, :boolean, default: nil)
@@ -530,7 +529,6 @@ defmodule Pleroma.User do
     )
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
-    |> validate_also_known_as()
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_inclusion(:actor_type, ["Person", "Service"])
@@ -2454,16 +2452,6 @@ defmodule Pleroma.User do
     user
     |> Map.put(:bio, HTML.filter_tags(user.bio, filter))
     |> Map.put(:fields, fields)
-  end
-
-  defp validate_also_known_as(changeset) do
-    validate_change(changeset, :also_known_as, fn :also_known_as, also_known_as ->
-      if Enum.all?(also_known_as, fn a -> Regex.match?(@url_regex, a) end) do
-        []
-      else
-        [also_known_as: "Invalid ap_id format. Must be a URL."]
-      end
-    end)
   end
 
   def get_host(%User{ap_id: ap_id} = _user) do

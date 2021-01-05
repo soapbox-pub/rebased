@@ -228,6 +228,15 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data["pleroma"]["also_known_as"] == ["https://mushroom.kingdom/users/mario"]
     end
 
+    test "doesn't update non-url akas", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["aReallyCoolGuy"]
+        })
+
+      assert json_response_and_validate_schema(conn, 403)
+    end
+
     test "updates the user's avatar", %{user: user, conn: conn} do
       new_avatar = %Plug.Upload{
         content_type: "image/jpeg",
