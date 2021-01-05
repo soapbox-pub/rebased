@@ -85,6 +85,8 @@ defmodule Pleroma.DataCase do
 
     stub_pipeline()
 
+    Mox.verify_on_exit!()
+
     :ok
   end
 

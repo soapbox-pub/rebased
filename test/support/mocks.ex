@@ -13,7 +13,10 @@ Mox.defmock(Pleroma.Web.ActivityPub.MRFMock,
 )
 
 Mox.defmock(Pleroma.Web.ActivityPub.ActivityPubMock,
-  for: Pleroma.Web.ActivityPub.ActivityPub.Persisting
+  for: [
+    Pleroma.Web.ActivityPub.ActivityPub.Persisting,
+    Pleroma.Web.ActivityPub.ActivityPub.Streaming
+  ]
 )
 
 Mox.defmock(Pleroma.Web.ActivityPub.SideEffectsMock,
@@ -23,3 +26,5 @@ Mox.defmock(Pleroma.Web.ActivityPub.SideEffectsMock,
 Mox.defmock(Pleroma.Web.FederatorMock, for: Pleroma.Web.Federator.Publishing)
 
 Mox.defmock(Pleroma.ConfigMock, for: Pleroma.Config.Getting)
+
+Mox.defmock(Pleroma.LoggerMock, for: Pleroma.Logging)

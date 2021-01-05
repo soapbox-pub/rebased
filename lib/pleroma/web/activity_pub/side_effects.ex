@@ -28,6 +28,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @ap_streamer Pleroma.Config.get([:side_effects, :ap_streamer], ActivityPub)
+  @logger Pleroma.Config.get([:side_effects, :logger], Logger)
 
   @behaviour Pleroma.Web.ActivityPub.SideEffects.Handling
 
@@ -287,12 +289,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
             MessageReference.delete_for_object(deleted_object)
 
-            ActivityPub.stream_out(object)
-            ActivityPub.stream_out_participations(deleted_object, user)
+            @ap_streamer.stream_out(object)
+            @ap_streamer.stream_out_participations(deleted_object, user)
             :ok
           else
             {:actor, _} ->
-              Logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
+              @logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
               :no_object_actor
           end
 
