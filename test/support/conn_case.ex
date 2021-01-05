@@ -138,6 +138,8 @@ defmodule Pleroma.Web.ConnCase do
 
     Pleroma.DataCase.stub_pipeline()
 
+    Mox.verify_on_exit!()
+
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end

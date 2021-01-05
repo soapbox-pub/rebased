@@ -614,6 +614,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "Allows automatically follow moved following accounts"
         },
+        also_known_as: %Schema{
+          type: :array,
+          items: %Schema{type: :string},
+          nullable: true,
+          description: "List of alternate ActivityPub IDs"
+        },
         pleroma_background_image: %Schema{
           type: :string,
           nullable: true,
@@ -644,6 +650,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         pleroma_settings_store: %{"pleroma-fe" => %{"key" => "val"}},
         skip_thread_containment: false,
         allow_following_move: false,
+        also_known_as: ["https://foo.bar/users/foo"],
         discoverable: false,
         actor_type: "Person"
       }
