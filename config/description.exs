@@ -101,74 +101,10 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_remote,
         type: :boolean,
-        description:
-          "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected"
-      },
-      %{
-        key: :proxy_opts,
-        label: "Proxy Options",
-        type: :keyword,
-        description: "Options for Pleroma.ReverseProxy",
-        suggestions: [
-          redirect_on_failure: false,
-          max_body_length: 25 * 1_048_576,
-          http: [
-            follow_redirect: true,
-            pool: :media
-          ]
-        ],
-        children: [
-          %{
-            key: :redirect_on_failure,
-            type: :boolean,
-            description:
-              "Redirects the client to the real remote URL if there's any HTTP errors. " <>
-                "Any error during body processing will not be redirected as the response is chunked."
-          },
-          %{
-            key: :max_body_length,
-            type: :integer,
-            description:
-              "Limits the content length to be approximately the " <>
-                "specified length. It is validated with the `content-length` header and also verified when proxying."
-          },
-          %{
-            key: :http,
-            label: "HTTP",
-            type: :keyword,
-            description: "HTTP options",
-            children: [
-              %{
-                key: :adapter,
-                type: :keyword,
-                description: "Adapter specific options",
-                children: [
-                  %{
-                    key: :ssl_options,
-                    type: :keyword,
-                    label: "SSL Options",
-                    description: "SSL options for HTTP adapter",
-                    children: [
-                      %{
-                        key: :versions,
-                        type: {:list, :atom},
-                        description: "List of TLS versions to use",
-                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              %{
-                key: :proxy_url,
-                label: "Proxy URL",
-                type: [:string, :tuple],
-                description: "Proxy URL",
-                suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
-              }
-            ]
-          }
-        ]
+        description: """
+        Proxy requests to the remote uploader.\n
+        Useful if media upload endpoint is not internet accessible.
+        """
       },
       %{
         key: :filename_display_max_length,
@@ -1550,7 +1486,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables proxying of remote media to the instance's proxy"
+        description: "Enables proxying of remote media via the instance's proxy"
       },
       %{
         key: :base_url,
@@ -1587,80 +1523,41 @@ config :pleroma, :config_description, [
       },
       %{
         key: :proxy_opts,
-        label: "Proxy Options",
+        label: "Advanced MediaProxy Options",
         type: :keyword,
-        description: "Options for Pleroma.ReverseProxy",
+        description: "Internal Pleroma.ReverseProxy settings",
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
-          max_read_duration: 30_000,
-          http: [
-            follow_redirect: true,
-            pool: :media
-          ]
+          max_read_duration: 30_000
         ],
         children: [
           %{
             key: :redirect_on_failure,
             type: :boolean,
-            description:
-              "Redirects the client to the real remote URL if there's any HTTP errors. " <>
-                "Any error during body processing will not be redirected as the response is chunked."
+            description: """
+            Redirects the client to the origin server upon encountering HTTP errors.\n
+            Note that files larger than Max Body Length will trigger an error. (e.g., Peertube videos)\n\n
+            **WARNING:** This setting will allow larger files to be accessed, but exposes the\n
+            IP addresses of your users to the other servers, bypassing the MediaProxy.
+            """
           },
           %{
             key: :max_body_length,
             type: :integer,
-            description:
-              "Limits the content length to be approximately the " <>
-                "specified length. It is validated with the `content-length` header and also verified when proxying."
+            description: "Maximum file size allowed through the Pleroma MediaProxy cache."
           },
           %{
             key: :max_read_duration,
             type: :integer,
-            description: "Timeout (in milliseconds) of GET request to remote URI."
-          },
-          %{
-            key: :http,
-            label: "HTTP",
-            type: :keyword,
-            description: "HTTP options",
-            children: [
-              %{
-                key: :adapter,
-                type: :keyword,
-                description: "Adapter specific options",
-                children: [
-                  %{
-                    key: :ssl_options,
-                    type: :keyword,
-                    label: "SSL Options",
-                    description: "SSL options for HTTP adapter",
-                    children: [
-                      %{
-                        key: :versions,
-                        type: {:list, :atom},
-                        description: "List of TLS version to use",
-                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              %{
-                key: :proxy_url,
-                label: "Proxy URL",
-                type: [:string, :tuple],
-                description: "Proxy URL",
-                suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
-              }
-            ]
+            description: "Timeout (in milliseconds) of GET request to the remote URI."
           }
         ]
       },
       %{
         key: :whitelist,
         type: {:list, :string},
-        description: "List of hosts with scheme to bypass the mediaproxy",
+        description: "List of hosts with scheme to bypass the MediaProxy",
         suggestions: ["http://example.com"]
       }
     ]
