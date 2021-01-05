@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   require Pleroma.Constants
 
   @behaviour Pleroma.Web.ActivityPub.ActivityPub.Persisting
+  @behaviour Pleroma.Web.ActivityPub.ActivityPub.Streaming
 
   defp get_recipients(%{"type" => "Create"} = data) do
     to = Map.get(data, "to", [])
@@ -224,6 +225,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Streamer.stream("participation", participations)
   end
 
+  @impl true
   def stream_out_participations(%Object{data: %{"context" => context}}, user) do
     with %Conversation{} = conversation <- Conversation.get_for_ap_id(context) do
       conversation = Repo.preload(conversation, :participations)
@@ -240,8 +242,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @impl true
   def stream_out_participations(_, _), do: :noop
 
+  @impl true
   def stream_out(%Activity{data: %{"type" => data_type}} = activity)
       when data_type in ["Create", "Announce", "Delete"] do
     activity
@@ -249,6 +253,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Streamer.stream(activity)
   end
 
+  @impl true
   def stream_out(_activity) do
     :noop
   end
@@ -603,12 +608,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         |> Map.put(:muting_user, reading_user)
       end
 
+    pagination_type =
+      cond do
+        !Map.has_key?(params, :offset) -> :keyset
+        true -> :offset
+      end
+
     %{
       godmode: params[:godmode],
       reading_user: reading_user
     }
     |> user_activities_recipients()
-    |> fetch_activities(params)
+    |> fetch_activities(params, pagination_type)
     |> Enum.reverse()
   end
 

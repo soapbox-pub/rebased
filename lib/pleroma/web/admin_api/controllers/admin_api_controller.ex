@@ -103,11 +103,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
-      {_, page_size} = page_params(params)
+      {page, page_size} = page_params(params)
 
       activities =
         ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
+          offset: (page - 1) * page_size,
           godmode: godmode,
           exclude_reblogs: not with_reblogs
         })
