@@ -169,8 +169,6 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(MetricsExporterCaller)
 
-  plug(Pleroma.Web.Plugs.ConfirmUserPlug)
-
   plug(Pleroma.Web.Router)
 
   @doc """
