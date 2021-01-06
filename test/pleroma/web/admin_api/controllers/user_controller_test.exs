@@ -953,6 +953,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     %{
       "deactivated" => user.deactivated,
       "id" => user.id,
+      "email" => user.email,
       "nickname" => user.nickname,
       "roles" => %{"admin" => false, "moderator" => false},
       "local" => user.local,

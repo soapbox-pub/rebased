@@ -69,6 +69,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
 
     %{
       "id" => user.id,
+      "email" => user.email,
       "avatar" => avatar,
       "nickname" => user.nickname,
       "display_name" => display_name,
