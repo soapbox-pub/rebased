@@ -65,12 +65,13 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
-    test "excludes users when discoverable is false" do
+    # Note: as in Mastodon, `is_discoverable` doesn't anyhow relate to user searchability
+    test "includes non-discoverable users in results" do
       insert(:user, %{nickname: "john 3000", is_discoverable: false})
       insert(:user, %{nickname: "john 3001"})
 
       users = User.search("john")
-      assert Enum.count(users) == 1
+      assert Enum.count(users) == 2
     end
 
     test "excludes service actors from results" do
@@ -150,8 +151,8 @@ defmodule Pleroma.UserSearchTest do
       follower = insert(:user, %{name: "Doe"})
       friend = insert(:user, %{name: "Doe"})
 
-      {:ok, follower} = User.follow(follower, u1)
-      {:ok, u1} = User.follow(u1, friend)
+      {:ok, follower, u1} = User.follow(follower, u1)
+      {:ok, u1, friend} = User.follow(u1, friend)
 
       assert [friend.id, follower.id, u2.id] --
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
@@ -164,9 +165,9 @@ defmodule Pleroma.UserSearchTest do
       following_jimi = insert(:user, %{name: "Lizz Wright"})
       follower_lizz = insert(:user, %{name: "Jimi"})
 
-      {:ok, lizz} = User.follow(lizz, following_lizz)
-      {:ok, _jimi} = User.follow(jimi, following_jimi)
-      {:ok, _follower_lizz} = User.follow(follower_lizz, lizz)
+      {:ok, lizz, following_lizz} = User.follow(lizz, following_lizz)
+      {:ok, _jimi, _following_jimi} = User.follow(jimi, following_jimi)
+      {:ok, _follower_lizz, _lizz} = User.follow(follower_lizz, lizz)
 
       assert Enum.map(User.search("jimi", following: true, for_user: lizz), & &1.id) == [
                following_lizz.id

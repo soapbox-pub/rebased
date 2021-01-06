@@ -51,7 +51,7 @@ defmodule Pleroma.Web.Feed.FeedView do
   def feed_logo do
     case Pleroma.Config.get([:feed, :logo]) do
       nil ->
-        "#{Pleroma.Web.base_url()}/static/logo.png"
+        "#{Pleroma.Web.base_url()}/static/logo.svg"
 
       logo ->
         "#{Pleroma.Web.base_url()}#{logo}"
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def activity_content(_), do: ""
 
-  def activity_context(activity), do: activity.data["context"]
+  def activity_context(activity), do: escape(activity.data["context"])
 
   def attachment_href(attachment) do
     attachment["url"]

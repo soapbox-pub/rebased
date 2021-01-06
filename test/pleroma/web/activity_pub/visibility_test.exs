@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.VisibilityTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.Visibility
@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     mentioned = insert(:user)
     following = insert(:user)
     unrelated = insert(:user)
-    {:ok, following} = Pleroma.User.follow(following, user)
+    {:ok, following, user} = Pleroma.User.follow(following, user)
     {:ok, list} = Pleroma.List.create("foo", user)
 
     Pleroma.List.follow(list, unrelated)
@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
          user: user
        } do
     Repo.delete(user)
-    Cachex.clear(:user_cache)
+    Pleroma.User.invalidate_cache(user)
     refute Visibility.is_private?(direct)
   end
 

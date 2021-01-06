@@ -4,7 +4,7 @@
 
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectIDTest do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectID
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   @uris [
     "http://lain.com/users/lain",

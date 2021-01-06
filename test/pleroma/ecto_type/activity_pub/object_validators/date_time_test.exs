@@ -4,7 +4,7 @@
 
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.DateTimeTest do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   test "it validates an xsd:Datetime" do
     valid_strings = [

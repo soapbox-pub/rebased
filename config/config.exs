@@ -47,7 +47,6 @@ use Mix.Config
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo,
-  types: Pleroma.PostgresTypes,
   telemetry_event: [Pleroma.Repo.Instrumenter],
   migration_lock: nil
 
@@ -129,7 +128,6 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
-         {"/api/fedsocket/v1", Pleroma.Web.FedSockets.IncomingHandler, []},
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
@@ -146,16 +144,6 @@ config :pleroma, Pleroma.Web.Endpoint,
   secure_cookie_flag: true,
   extra_cookie_attrs: [
     "SameSite=Lax"
-  ]
-
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: :timer.hours(8),
-  rejection_duration: :timer.minutes(15),
-  fed_socket_fetches: [
-    default: 12_000,
-    interval: 3_000,
-    lazy: false
   ]
 
 # Configures Elixir's Logger
@@ -264,7 +252,8 @@ config :pleroma, :instance,
       length: 16
     ]
   ],
-  show_reactions: true
+  show_reactions: true,
+  password_reset_token_validity: 60 * 60 * 24
 
 config :pleroma, :welcome,
   direct_message: [
@@ -316,7 +305,7 @@ config :pleroma, :frontend_configurations,
     hideSitename: false,
     hideUserStats: false,
     loginMethod: "password",
-    logo: "/static/logo.png",
+    logo: "/static/logo.svg",
     logoMargin: ".1em",
     logoMask: true,
     minimalScopesMode: false,
@@ -353,8 +342,8 @@ config :pleroma, :assets,
 config :pleroma, :manifest,
   icons: [
     %{
-      src: "/static/logo.png",
-      type: "image/png"
+      src: "/static/logo.svg",
+      type: "image/svg+xml"
     }
   ],
   theme_color: "#282c37",
@@ -563,7 +552,8 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 5,
-    new_users_digest: 1
+    new_users_digest: 1,
+    mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -658,7 +648,7 @@ config :pleroma, :email_notifications,
   }
 
 config :pleroma, :oauth2,
-  token_expires_in: 600,
+  token_expires_in: 3600 * 24 * 365 * 100,
   issue_new_refresh_token: true,
   clean_expired_tokens: false
 
@@ -821,7 +811,7 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
+  policies: [Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy, Pleroma.Web.ActivityPub.MRF.TagPolicy],
   transparency: true,
   transparency_exclusions: []
 

@@ -34,6 +34,7 @@ defmodule Pleroma.Web.Router do
     plug(:fetch_session)
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :expect_authentication do
@@ -48,15 +49,13 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
-    plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Web.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Web.Plugs.AuthenticationPlug)
   end
 
   pipeline :after_auth do
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
     plug(Pleroma.Web.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :base_api do
@@ -100,7 +99,7 @@ defmodule Pleroma.Web.Router do
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
-    plug(Pleroma.Web.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
   pipeline :well_known do
@@ -244,6 +243,9 @@ defmodule Pleroma.Web.Router do
     get("/chats/:id/messages", ChatController, :messages)
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
 
+    get("/frontends", FrontendController, :index)
+    post("/frontends/install", FrontendController, :install)
+
     post("/backups", AdminAPIController, :create_backup)
   end
 
@@ -289,7 +291,6 @@ defmodule Pleroma.Web.Router do
 
     post("/main/ostatus", UtilController, :remote_subscribe)
     get("/ostatus_subscribe", RemoteFollowController, :follow)
-
     post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
 
@@ -318,19 +319,25 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
-    scope [] do
-      pipe_through(:oauth)
-      get("/authorize", OAuthController, :authorize)
-    end
-
-    post("/authorize", OAuthController, :create_authorization)
-    post("/token", OAuthController, :token_exchange)
-    post("/revoke", OAuthController, :token_revoke)
     get("/registration_details", OAuthController, :registration_details)
 
-    post("/mfa/challenge", MFAController, :challenge)
     post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
     get("/mfa", MFAController, :show)
+
+    scope [] do
+      pipe_through(:oauth)
+
+      get("/authorize", OAuthController, :authorize)
+      post("/authorize", OAuthController, :create_authorization)
+    end
+
+    scope [] do
+      pipe_through(:fetch_session)
+
+      post("/token", OAuthController, :token_exchange)
+      post("/revoke", OAuthController, :token_revoke)
+      post("/mfa/challenge", MFAController, :challenge)
+    end
 
     scope [] do
       pipe_through(:browser)

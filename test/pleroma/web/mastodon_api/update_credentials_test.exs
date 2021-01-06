@@ -11,8 +11,6 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
   import Mock
   import Pleroma.Factory
 
-  setup do: clear_config([:instance, :max_account_fields])
-
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])
     setup :request_content_type
@@ -218,6 +216,25 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       update_activity = Repo.one(Pleroma.Activity)
       assert update_activity.data["type"] == "Update"
       assert update_activity.data["object"]["name"] == "markorepairs"
+    end
+
+    test "updates the user's AKAs", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["https://mushroom.kingdom/users/mario"]
+        })
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["pleroma"]["also_known_as"] == ["https://mushroom.kingdom/users/mario"]
+    end
+
+    test "doesn't update non-url akas", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["aReallyCoolGuy"]
+        })
+
+      assert json_response_and_validate_schema(conn, 403)
     end
 
     test "updates the user's avatar", %{user: user, conn: conn} do
@@ -446,7 +463,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response_and_validate_schema(403)
 
-      Pleroma.Config.put([:instance, :max_account_fields], 1)
+      clear_config([:instance, :max_account_fields], 1)
 
       fields = [
         %{"name" => "foo", "value" => "bar"},

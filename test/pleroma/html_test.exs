@@ -6,7 +6,7 @@ defmodule Pleroma.HTMLTest do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
 

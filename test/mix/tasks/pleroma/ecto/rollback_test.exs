@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Ecto.RollbackTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import ExUnit.CaptureLog
   require Logger
 

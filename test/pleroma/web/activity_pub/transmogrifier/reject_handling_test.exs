@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
   alias Pleroma.User
@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
     accept_data =
       File.read!("test/fixtures/mastodon-reject-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", followed.ap_id)
 
     accept_data =
@@ -35,14 +35,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
     follower = insert(:user)
     followed = insert(:user, is_locked: true)
 
-    {:ok, follower} = User.follow(follower, followed)
+    {:ok, follower, followed} = User.follow(follower, followed)
     {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
     assert User.following?(follower, followed) == true
 
     reject_data =
       File.read!("test/fixtures/mastodon-reject-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("actor", followed.ap_id)
       |> Map.put("object", follow_activity.data["id"])
 
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-follow-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", user.ap_id)
       |> Map.put("id", "")
 

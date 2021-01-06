@@ -57,6 +57,7 @@ defmodule Pleroma.Application do
     setup_instrumenters()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
+    limiters_setup()
 
     adapter = Application.get_env(:tesla, :adapter)
 
@@ -109,7 +110,28 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    set_postgres_server_version()
+
+    result
+  end
+
+  defp set_postgres_server_version do
+    version =
+      with %{rows: [[version]]} <- Ecto.Adapters.SQL.query!(Pleroma.Repo, "show server_version"),
+           {num, _} <- Float.parse(version) do
+        num
+      else
+        e ->
+          Logger.warn(
+            "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
+          )
+
+          9.6
+      end
+
+    :persistent_term.put({Pleroma.Repo, :postgres_version}, version)
   end
 
   def load_custom_modules do
@@ -207,8 +229,7 @@ defmodule Pleroma.Application do
          name: Pleroma.Web.Streamer.registry(),
          keys: :duplicate,
          partitions: System.schedulers_online()
-       ]},
-      Pleroma.Web.FedSockets.Supervisor
+       ]}
     ]
   end
 
@@ -273,4 +294,10 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(_, _), do: []
+
+  @spec limiters_setup() :: :ok
+  def limiters_setup do
+    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.MediaProxy]
+    |> Enum.each(&ConcurrentLimiter.new(&1, 1, 0))
+  end
 end

@@ -20,16 +20,18 @@ defmodule Pleroma.Emoji.Pack do
           name: String.t()
         }
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   alias Pleroma.Emoji
   alias Pleroma.Emoji.Pack
+  alias Pleroma.Utils
 
   @spec create(String.t()) :: {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
   def create(name) do
     with :ok <- validate_not_empty([name]),
          dir <- Path.join(emoji_path(), name),
          :ok <- File.mkdir(dir) do
-      %__MODULE__{pack_file: Path.join(dir, "pack.json")}
-      |> save_pack()
+      save_pack(%__MODULE__{pack_file: Path.join(dir, "pack.json")})
     end
   end
 
@@ -62,10 +64,9 @@ defmodule Pleroma.Emoji.Pack do
   @spec delete(String.t()) ::
           {:ok, [binary()]} | {:error, File.posix(), binary()} | {:error, :empty_values}
   def delete(name) do
-    with :ok <- validate_not_empty([name]) do
-      emoji_path()
-      |> Path.join(name)
-      |> File.rm_rf()
+    with :ok <- validate_not_empty([name]),
+         pack_path <- Path.join(emoji_path(), name) do
+      File.rm_rf(pack_path)
     end
   end
 
@@ -94,7 +95,7 @@ defmodule Pleroma.Emoji.Pack do
   def add_file(%Pack{} = pack, _, _, %Plug.Upload{content_type: "application/zip"} = file) do
     with {:ok, zip_files} <- :zip.table(to_charlist(file.path)),
          [_ | _] = emojies <- unpack_zip_emojies(zip_files),
-         {:ok, tmp_dir} <- Pleroma.Utils.tmp_dir("emoji") do
+         {:ok, tmp_dir} <- Utils.tmp_dir("emoji") do
       try do
         {:ok, _emoji_files} =
           :zip.unzip(
@@ -282,18 +283,21 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec load_pack(String.t()) :: {:ok, t()} | {:error, :not_found}
+  @spec load_pack(String.t()) :: {:ok, t()} | {:error, :file.posix()}
   def load_pack(name) do
     pack_file = Path.join([emoji_path(), name, "pack.json"])
 
-    if File.exists?(pack_file) do
+    with {:ok, _} <- File.stat(pack_file),
+         {:ok, pack_data} <- File.read(pack_file) do
       pack =
-        pack_file
-        |> File.read!()
-        |> from_json()
-        |> Map.put(:pack_file, pack_file)
-        |> Map.put(:path, Path.dirname(pack_file))
-        |> Map.put(:name, name)
+        from_json(
+          pack_data,
+          %{
+            pack_file: pack_file,
+            path: Path.dirname(pack_file),
+            name: name
+          }
+        )
 
       files_count =
         pack.files
@@ -301,8 +305,6 @@ defmodule Pleroma.Emoji.Pack do
         |> length()
 
       {:ok, Map.put(pack, :files_count, files_count)}
-    else
-      {:error, :not_found}
     end
   end
 
@@ -415,7 +417,7 @@ defmodule Pleroma.Emoji.Pack do
     ttl_per_file = Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
     overall_ttl = :timer.seconds(ttl_per_file * Enum.count(files))
 
-    Cachex.put!(
+    @cachex.put(
       :emoji_packs_cache,
       pack.name,
       # if pack.json MD5 changes, the cache is not valid anymore
@@ -434,10 +436,17 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  defp from_json(json) do
+  defp from_json(json, attrs) do
     map = Jason.decode!(json)
 
-    struct(__MODULE__, %{files: map["files"], pack: map["pack"]})
+    pack_attrs =
+      attrs
+      |> Map.merge(%{
+        files: map["files"],
+        pack: map["pack"]
+      })
+
+    struct(__MODULE__, pack_attrs)
   end
 
   defp validate_shareable_packs_available(uri) do
@@ -491,10 +500,10 @@ defmodule Pleroma.Emoji.Pack do
   end
 
   defp create_subdirs(file_path) do
-    if String.contains?(file_path, "/") do
-      file_path
-      |> Path.dirname()
-      |> File.mkdir_p!()
+    with true <- String.contains?(file_path, "/"),
+         path <- Path.dirname(file_path),
+         false <- File.exists?(path) do
+      File.mkdir_p!(path)
     end
   end
 
@@ -518,10 +527,15 @@ defmodule Pleroma.Emoji.Pack do
 
   defp get_filename(pack, shortcode) do
     with %{^shortcode => filename} when is_binary(filename) <- pack.files,
-         true <- pack.path |> Path.join(filename) |> File.exists?() do
+         file_path <- Path.join(pack.path, filename),
+         {:ok, _} <- File.stat(file_path) do
       {:ok, filename}
     else
-      _ -> {:error, :doesnt_exist}
+      {:error, _} = error ->
+        error
+
+      _ ->
+        {:error, :doesnt_exist}
     end
   end
 
@@ -606,7 +620,7 @@ defmodule Pleroma.Emoji.Pack do
   defp fetch_archive(pack) do
     hash = :crypto.hash(:md5, File.read!(pack.pack_file))
 
-    case Cachex.get!(:emoji_packs_cache, pack.name) do
+    case @cachex.get!(:emoji_packs_cache, pack.name) do
       %{hash: ^hash, pack_data: archive} -> archive
       _ -> create_archive_and_cache(pack, hash)
     end

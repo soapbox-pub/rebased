@@ -109,8 +109,8 @@ defmodule Pleroma.LoadTesting.Users do
   end
 
   def make_friends(%User{} = main_user, %User{} = user) do
-    {:ok, _} = User.follow(main_user, user)
-    {:ok, _} = User.follow(user, main_user)
+    {:ok, _, _} = User.follow(main_user, user)
+    {:ok, _, _} = User.follow(user, main_user)
   end
 
   @spec get_users(User.t(), keyword()) :: [User.t()]

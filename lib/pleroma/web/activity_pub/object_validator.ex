@@ -9,6 +9,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   the system.
   """
 
+  @behaviour Pleroma.Web.ActivityPub.ObjectValidator.Validating
+
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
@@ -32,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
-  @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
+  @impl true
   def validate(object, meta)
 
   def validate(%{"type" => type} = object, meta)

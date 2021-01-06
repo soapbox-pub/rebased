@@ -82,7 +82,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def object(conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)} do
+         {_, true} <- {:public?, Visibility.is_public?(object)},
+         {_, false} <- {:local?, Visibility.is_local_public?(object)} do
       conn
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
@@ -91,6 +92,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> render("object.json", object: object)
     else
       {:public?, false} ->
+        {:error, :not_found}
+
+      {:local?, true} ->
         {:error, :not_found}
     end
   end
@@ -108,7 +112,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def activity(conn, _params) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(activity)} do
+         {_, true} <- {:public?, Visibility.is_public?(activity)},
+         {_, false} <- {:local?, Visibility.is_local_public?(activity)} do
       conn
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
@@ -117,6 +122,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> render("object.json", object: activity)
     else
       {:public?, false} -> {:error, :not_found}
+      {:local?, true} -> {:error, :not_found}
       nil -> {:error, :not_found}
     end
   end

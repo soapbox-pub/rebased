@@ -27,7 +27,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
         422 => Operation.response("Unprocessable Entity", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError),
         400 => Operation.response("Bad Request", "application/json", ApiError),
-        409 => Operation.response("Conflict", "application/json", ApiError)
+        409 => Operation.response("Conflict", "application/json", ApiError),
+        500 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end

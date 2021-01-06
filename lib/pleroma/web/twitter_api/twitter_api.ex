@@ -45,7 +45,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     case User.register(changeset) do
       {:ok, user} ->
-        maybe_notify_admins(user)
         {:ok, user}
 
       {:error, changeset} ->
@@ -55,18 +54,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           |> Jason.encode!()
 
         {:error, errors}
-    end
-  end
-
-  defp maybe_notify_admins(%User{} = account) do
-    if Pleroma.Config.get([:instance, :account_approval_required]) do
-      User.all_superusers()
-      |> Enum.filter(fn user -> not is_nil(user.email) end)
-      |> Enum.each(fn superuser ->
-        superuser
-        |> Pleroma.Emails.AdminEmail.new_unapproved_registration(account)
-        |> Pleroma.Emails.Mailer.deliver_async()
-      end)
     end
   end
 

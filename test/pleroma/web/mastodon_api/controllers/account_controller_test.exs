@@ -320,7 +320,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       user_two = insert(:user)
       user_three = insert(:user)
 
-      {:ok, _user_three} = User.follow(user_three, user_one)
+      {:ok, _user_three, _user_one} = User.follow(user_three, user_one)
 
       {:ok, activity} = CommonAPI.post(user_one, %{status: "HI!!!"})
 
@@ -436,6 +436,54 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_visibilities[]=direct")
       assert [%{"id" => ^public_activity_id}] = json_response_and_validate_schema(conn, 200)
     end
+
+    test "muted reactions", %{user: user, conn: conn} do
+      user2 = insert(:user)
+      User.mute(user, user2)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user2, "🎅")
+
+      result =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
+
+    test "paginates a user's statuses", %{user: user, conn: conn} do
+      {:ok, post_1} = CommonAPI.post(user, %{status: "first post"})
+      {:ok, post_2} = CommonAPI.post(user, %{status: "second post"})
+
+      response_1 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1")
+      assert [res] = json_response(response_1, 200)
+      assert res["id"] == post_2.id
+
+      response_2 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1&max_id=#{res["id"]}")
+      assert [res] = json_response(response_2, 200)
+      assert res["id"] == post_1.id
+
+      refute response_1 == response_2
+    end
   end
 
   defp local_and_remote_activities(%{local: local, remote: remote}) do
@@ -535,7 +583,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting followers", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, %{id: user_id}} = User.follow(user, other_user)
+      {:ok, %{id: user_id}, other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
@@ -544,7 +592,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting followers, hide_followers", %{user: user, conn: conn} do
       other_user = insert(:user, hide_followers: true)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
@@ -554,7 +602,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting followers, hide_followers, same user requesting" do
       user = insert(:user)
       other_user = insert(:user, hide_followers: true)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -566,9 +614,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "getting followers, pagination", %{user: user, conn: conn} do
-      {:ok, %User{id: follower1_id}} = :user |> insert() |> User.follow(user)
-      {:ok, %User{id: follower2_id}} = :user |> insert() |> User.follow(user)
-      {:ok, %User{id: follower3_id}} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower1_id}, _user} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower2_id}, _user} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower3_id}, _user} = :user |> insert() |> User.follow(user)
 
       assert [%{"id" => ^follower3_id}, %{"id" => ^follower2_id}] =
                conn
@@ -604,7 +652,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting following", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/following")
 
@@ -615,7 +663,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting following, hide_follows, other user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -629,7 +677,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting following, hide_follows, same user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, _other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -644,9 +692,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       following1 = insert(:user)
       following2 = insert(:user)
       following3 = insert(:user)
-      {:ok, _} = User.follow(user, following1)
-      {:ok, _} = User.follow(user, following2)
-      {:ok, _} = User.follow(user, following3)
+      {:ok, _, _} = User.follow(user, following1)
+      {:ok, _, _} = User.follow(user, following2)
+      {:ok, _, _} = User.follow(user, following3)
 
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
 
@@ -1378,8 +1426,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> json_response_and_validate_schema(:ok)
 
       assert Token |> Repo.get_by(token: access_token) |> Repo.preload(:user) |> Map.get(:user)
-
-      Cachex.del(:used_captcha_cache, token)
     end
 
     test "returns 400 if any captcha field is not provided", %{conn: conn} do
@@ -1487,7 +1533,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "returns the relationships for the current user", %{user: user, conn: conn} do
       %{id: other_user_id} = other_user = insert(:user)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       assert [%{"id" => ^other_user_id}] =
                conn

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Integration.MastodonWebsocketTest do
+  # Needs a streamer, needs to stay synchronous
   use Pleroma.DataCase
 
   import ExUnit.CaptureLog

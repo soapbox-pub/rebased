@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Pleroma.User do
       - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
-    proceed? = assume_yes? or shell_yes?("Continue?")
+    proceed? = assume_yes? or shell_prompt("Continue?", "n") in ~w(Yn Y y)
 
     if proceed? do
       start_pleroma()
@@ -345,11 +345,11 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["toggle_confirmed", nickname]) do
+  def run(["confirm", nickname]) do
     start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.toggle_confirmation(user)
+      {:ok, user} = User.confirm(user)
 
       message = if user.confirmation_pending, do: "needs", else: "doesn't need"
 

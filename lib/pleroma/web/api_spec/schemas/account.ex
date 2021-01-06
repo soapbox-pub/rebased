@@ -40,6 +40,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       pleroma: %Schema{
         type: :object,
         properties: %{
+          ap_id: %Schema{type: :string},
+          also_known_as: %Schema{type: :array, items: %Schema{type: :string}},
           allow_following_move: %Schema{
             type: :boolean,
             description: "whether the user allows automatically follow moved following accounts"
@@ -127,7 +129,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               discoverable: %Schema{
                 type: :boolean,
                 description:
-                  "whether the user allows discovery of the account in search results and other services."
+                  "whether the user allows indexing / listing of the account by external services (search engines etc.)."
               },
               no_rich_text: %Schema{
                 type: :boolean,

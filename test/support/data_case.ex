@@ -45,13 +45,34 @@ defmodule Pleroma.DataCase do
     end
   end
 
+  def clear_cachex do
+    Pleroma.Supervisor
+    |> Supervisor.which_children()
+    |> Enum.each(fn
+      {name, _, _, [Cachex]} ->
+        name
+        |> to_string
+        |> String.trim_leading("cachex_")
+        |> Kernel.<>("_cache")
+        |> String.to_existing_atom()
+        |> Cachex.clear()
+
+      _ ->
+        nil
+    end)
+  end
+
   setup tags do
-    Cachex.clear(:user_cache)
-    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
-    unless tags[:async] do
+    if tags[:async] do
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
+      Mox.set_mox_private()
+    else
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
+      Mox.set_mox_global()
+      clear_cachex()
     end
 
     if tags[:needs_streamer] do
@@ -62,7 +83,25 @@ defmodule Pleroma.DataCase do
       })
     end
 
+    stub_pipeline()
+
+    Mox.verify_on_exit!()
+
     :ok
+  end
+
+  def stub_pipeline do
+    Mox.stub_with(Pleroma.Web.ActivityPub.SideEffectsMock, Pleroma.Web.ActivityPub.SideEffects)
+
+    Mox.stub_with(
+      Pleroma.Web.ActivityPub.ObjectValidatorMock,
+      Pleroma.Web.ActivityPub.ObjectValidator
+    )
+
+    Mox.stub_with(Pleroma.Web.ActivityPub.MRFMock, Pleroma.Web.ActivityPub.MRF)
+    Mox.stub_with(Pleroma.Web.ActivityPub.ActivityPubMock, Pleroma.Web.ActivityPub.ActivityPub)
+    Mox.stub_with(Pleroma.Web.FederatorMock, Pleroma.Web.Federator)
+    Mox.stub_with(Pleroma.ConfigMock, Pleroma.Config)
   end
 
   def ensure_local_uploader(context) do

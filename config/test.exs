@@ -19,11 +19,6 @@ config :logger, :console,
   level: :warn,
   format: "\n[$level] $message\n"
 
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: 5,
-  rejection_duration: 5
-
 config :pleroma, :auth, oauth_consumer_strategies: []
 
 config :pleroma, Pleroma.Upload,
@@ -52,7 +47,10 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 50
+
+config :pleroma, :dangerzone, override_repo_pool_size: true
 
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
@@ -125,6 +123,20 @@ config :pleroma, Pleroma.Uploaders.S3,
 config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
+
+config :pleroma, :pipeline,
+  object_validator: Pleroma.Web.ActivityPub.ObjectValidatorMock,
+  mrf: Pleroma.Web.ActivityPub.MRFMock,
+  activity_pub: Pleroma.Web.ActivityPub.ActivityPubMock,
+  side_effects: Pleroma.Web.ActivityPub.SideEffectsMock,
+  federator: Pleroma.Web.FederatorMock,
+  config: Pleroma.ConfigMock
+
+config :pleroma, :cachex, provider: Pleroma.CachexMock
+
+config :pleroma, :side_effects,
+  ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
+  logger: Pleroma.LoggerMock
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

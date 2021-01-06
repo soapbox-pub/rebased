@@ -24,15 +24,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
-  alias Pleroma.Workers.BackgroundWorker
 
   require Logger
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @ap_streamer Pleroma.Config.get([:side_effects, :ap_streamer], ActivityPub)
+  @logger Pleroma.Config.get([:side_effects, :logger], Logger)
+
+  @behaviour Pleroma.Web.ActivityPub.SideEffects.Handling
+
+  @impl true
   def handle(object, meta \\ [])
 
   # Task this handles
   # - Follows
   # - Sends a notification
+  @impl true
   def handle(
         %{
           data: %{
@@ -48,10 +55,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = followed <- User.get_cached_by_ap_id(actor),
          %User{} = follower <- User.get_cached_by_ap_id(follower_id),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
+         {:ok, _follower, followed} <-
+           FollowingRelationship.update(follower, followed, :follow_accept) do
       Notification.update_notification_type(followed, follow_activity)
-      User.update_follower_count(followed)
-      User.update_following_count(follower)
     end
 
     {:ok, object, meta}
@@ -61,6 +67,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Rejects all existing follow activities for this person
   # - Updates the follow state
   # - Dismisses notification
+  @impl true
   def handle(
         %{
           data: %{
@@ -87,6 +94,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Follows if possible
   # - Sends a notification
   # - Generates accept or reject if appropriate
+  @impl true
   def handle(
         %{
           data: %{
@@ -100,7 +108,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       ) do
     with %User{} = follower <- User.get_cached_by_ap_id(following_user),
          %User{} = followed <- User.get_cached_by_ap_id(followed_user),
-         {_, {:ok, _}, _, _} <-
+         {_, {:ok, _, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
       if followed.local && !followed.is_locked do
         {:ok, accept_data, _} = Builder.accept(followed, object)
@@ -128,6 +136,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   # Tasks this handles:
   # - Unfollow and block
+  @impl true
   def handle(
         %{data: %{"type" => "Block", "object" => blocked_user, "actor" => blocking_user}} =
           object,
@@ -146,6 +155,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   #
   # For a local user, we also get a changeset with the full information, so we
   # can update non-federating, non-activitypub settings as well.
+  @impl true
   def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
     if changeset = Keyword.get(meta, :user_update_changeset) do
       changeset
@@ -164,6 +174,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles:
   # - Add like to object
   # - Set up notification
+  @impl true
   def handle(%{data: %{"type" => "Like"}} = object, meta) do
     liked_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_like_to_object(object, liked_object)
@@ -181,6 +192,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Increase replies count
   # - Set up ActivityExpiration
   # - Set up notifications
+  @impl true
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], meta),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
@@ -191,7 +203,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Object.increase_replies_count(in_reply_to)
       end
 
-      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
+      ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
+        Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
+      end)
 
       meta =
         meta
@@ -207,6 +221,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Add announce to object
   # - Set up notification
   # - Stream out the announce
+  @impl true
   def handle(%{data: %{"type" => "Announce"}} = object, meta) do
     announced_object = Object.get_by_ap_id(object.data["object"])
     user = User.get_cached_by_ap_id(object.data["actor"])
@@ -224,6 +239,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
+  @impl true
   def handle(%{data: %{"type" => "Undo", "object" => undone_object}} = object, meta) do
     with undone_object <- Activity.get_by_ap_id(undone_object),
          :ok <- handle_undoing(undone_object) do
@@ -234,6 +250,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles:
   # - Add reaction to object
   # - Set up notification
+  @impl true
   def handle(%{data: %{"type" => "EmojiReact"}} = object, meta) do
     reacted_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_emoji_reaction_to_object(object, reacted_object)
@@ -250,6 +267,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Reduce the user note count
   # - Reduce the reply count
   # - Stream out the activity
+  @impl true
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
       Object.normalize(deleted_object, false) ||
@@ -271,12 +289,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
             MessageReference.delete_for_object(deleted_object)
 
-            ActivityPub.stream_out(object)
-            ActivityPub.stream_out_participations(deleted_object, user)
+            @ap_streamer.stream_out(object)
+            @ap_streamer.stream_out_participations(deleted_object, user)
             :ok
           else
             {:actor, _} ->
-              Logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
+              @logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
               :no_object_actor
           end
 
@@ -295,6 +313,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   # Nothing to do
+  @impl true
   def handle(object, meta) do
     {:ok, object, meta}
   end
@@ -312,7 +331,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
             {:ok, cm_ref} = MessageReference.create(chat, object, user.ap_id != actor.ap_id)
 
-            Cachex.put(
+            @cachex.put(
               :chat_message_id_idempotency_key_cache,
               cm_ref.id,
               meta[:idempotency_key]
@@ -439,6 +458,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     |> Keyword.put(:notifications, notifications ++ existing)
   end
 
+  @impl true
   def handle_after_transaction(meta) do
     meta
     |> send_notifications()

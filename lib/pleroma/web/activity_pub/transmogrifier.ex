@@ -252,6 +252,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           }
           |> Maps.put_if_present("mediaType", media_type)
           |> Maps.put_if_present("name", data["name"])
+          |> Maps.put_if_present("blurhash", data["blurhash"])
         else
           nil
         end
@@ -918,7 +919,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp build_emoji_tag({name, url}) do
     %{
-      "icon" => %{"url" => url, "type" => "Image"},
+      "icon" => %{"url" => "#{URI.encode(url)}", "type" => "Image"},
       "name" => ":" <> name <> ":",
       "type" => "Emoji",
       "updated" => "1970-01-01T00:00:00Z",
@@ -1007,7 +1008,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def upgrade_user_from_ap_id(ap_id) do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id, force_http: true),
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          {:ok, user} <- update_user(user, data) do
       TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}

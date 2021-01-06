@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       unsaved = build(:user)
 
       # prepare to answer yes
-      send(self(), {:mix_shell_input, :yes?, true})
+      send(self(), {:mix_shell_input, :prompt, "Y"})
 
       Mix.Tasks.Pleroma.User.run([
         "new",
@@ -55,7 +55,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "user will be created"
 
-      assert_received {:mix_shell, :yes?, [message]}
+      assert_received {:mix_shell, :prompt, [message]}
       assert message =~ "Continue"
 
       assert_received {:mix_shell, :info, [message]}
@@ -73,14 +73,14 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       unsaved = build(:user)
 
       # prepare to answer no
-      send(self(), {:mix_shell_input, :yes?, false})
+      send(self(), {:mix_shell_input, :prompt, "N"})
 
       Mix.Tasks.Pleroma.User.run(["new", unsaved.nickname, unsaved.email])
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "user will be created"
 
-      assert_received {:mix_shell, :yes?, [message]}
+      assert_received {:mix_shell, :prompt, [message]}
       assert message =~ "Continue"
 
       assert_received {:mix_shell, :info, [message]}
@@ -462,24 +462,24 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running toggle_confirmed" do
+  describe "running confirm" do
     test "user is confirmed" do
       %{id: id, nickname: nickname} = insert(:user, confirmation_pending: false)
 
-      assert :ok = Mix.Tasks.Pleroma.User.run(["toggle_confirmed", nickname])
+      assert :ok = Mix.Tasks.Pleroma.User.run(["confirm", nickname])
       assert_received {:mix_shell, :info, [message]}
-      assert message == "#{nickname} needs confirmation."
+      assert message == "#{nickname} doesn't need confirmation."
 
       user = Repo.get(User, id)
-      assert user.confirmation_pending
-      assert user.confirmation_token
+      refute user.confirmation_pending
+      refute user.confirmation_token
     end
 
     test "user is not confirmed" do
       %{id: id, nickname: nickname} =
         insert(:user, confirmation_pending: true, confirmation_token: "some token")
 
-      assert :ok = Mix.Tasks.Pleroma.User.run(["toggle_confirmed", nickname])
+      assert :ok = Mix.Tasks.Pleroma.User.run(["confirm", nickname])
       assert_received {:mix_shell, :info, [message]}
       assert message == "#{nickname} doesn't need confirmation."
 
@@ -489,7 +489,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "it prints an error message when user is not exist" do
-      Mix.Tasks.Pleroma.User.run(["toggle_confirmed", "foo"])
+      Mix.Tasks.Pleroma.User.run(["confirm", "foo"])
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No local user"
@@ -503,7 +503,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       moot = insert(:user, nickname: "moot")
       kawen = insert(:user, nickname: "kawen", name: "fediverse expert moon")
 
-      {:ok, user} = User.follow(user, moon)
+      {:ok, user, moon} = User.follow(user, moon)
 
       assert [moon.id, kawen.id] == User.Search.search("moon") |> Enum.map(& &1.id)
 

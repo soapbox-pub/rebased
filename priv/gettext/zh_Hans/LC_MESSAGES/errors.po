@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-09-20 13:18+0000\n"
-"PO-Revision-Date: 2020-10-22 18:25+0000\n"
+"PO-Revision-Date: 2020-12-14 06:00+0000\n"
 "Last-Translator: shironeko <shironeko@tesaguri.club>\n"
 "Language-Team: Chinese (Simplified) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma/zh_Hans/>\n"
@@ -146,9 +146,9 @@ msgid "Cannot post an empty status without attachments"
 msgstr "无法发送空白且不包含附件的状态"
 
 #: lib/pleroma/web/common_api/utils.ex:511
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Comment must be up to %{max_size} characters"
-msgstr ""
+msgstr "评论最多可使用 %{max_size} 字符"
 
 #: lib/pleroma/config/config_db.ex:191
 #, elixir-format
@@ -250,21 +250,21 @@ msgstr "没有该对话"
 
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:388
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:414 lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:456
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "No such permission_group"
-msgstr ""
+msgstr "没有该权限组"
 
 #: lib/pleroma/plugs/uploaded_media.ex:84
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:486 lib/pleroma/web/admin_api/controllers/fallback_controller.ex:11
 #: lib/pleroma/web/feed/user_controller.ex:71 lib/pleroma/web/ostatus/ostatus_controller.ex:143
 #, elixir-format
 msgid "Not found"
-msgstr ""
+msgstr "未找到"
 
 #: lib/pleroma/web/common_api/common_api.ex:331
 #, elixir-format
 msgid "Poll's author can't vote"
-msgstr ""
+msgstr "投票的发起者不能投票"
 
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:20
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:37 lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:49
@@ -272,39 +272,39 @@ msgstr ""
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:71
 #, elixir-format
 msgid "Record not found"
-msgstr ""
+msgstr "未找到该记录"
 
 #: lib/pleroma/web/admin_api/controllers/fallback_controller.ex:35
 #: lib/pleroma/web/feed/user_controller.ex:77 lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:36
 #: lib/pleroma/web/ostatus/ostatus_controller.ex:149
 #, elixir-format
 msgid "Something went wrong"
-msgstr ""
+msgstr "发生了一些错误"
 
 #: lib/pleroma/web/common_api/activity_draft.ex:107
 #, elixir-format
 msgid "The message visibility must be direct"
-msgstr ""
+msgstr "该消息必须为私信"
 
 #: lib/pleroma/web/common_api/utils.ex:573
 #, elixir-format
 msgid "The status is over the character limit"
-msgstr ""
+msgstr "状态超过了字符数限制"
 
 #: lib/pleroma/plugs/ensure_public_or_authenticated_plug.ex:31
 #, elixir-format
 msgid "This resource requires authentication."
-msgstr ""
+msgstr "该资源需要认证。"
 
 #: lib/pleroma/plugs/rate_limiter/rate_limiter.ex:206
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Throttled"
-msgstr ""
+msgstr "节流了"
 
 #: lib/pleroma/web/common_api/common_api.ex:356
 #, elixir-format
 msgid "Too many choices"
-msgstr ""
+msgstr "太多选项"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:443
 #, elixir-format
@@ -314,101 +314,101 @@ msgstr ""
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:485
 #, elixir-format
 msgid "You can't revoke your own admin status."
-msgstr ""
+msgstr "您不能撤消自己的管理员权限。"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:221
 #: lib/pleroma/web/oauth/oauth_controller.ex:308
 #, elixir-format
 msgid "Your account is currently disabled"
-msgstr ""
+msgstr "您的账户已被禁用"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:183
 #: lib/pleroma/web/oauth/oauth_controller.ex:331
 #, elixir-format
 msgid "Your login is missing a confirmed e-mail address"
-msgstr ""
+msgstr "您的账户缺少已认证的 e-mail 地址"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:390
 #, elixir-format
 msgid "can't read inbox of %{nickname} as %{as_nickname}"
-msgstr ""
+msgstr "无法以 %{as_nickname} 读取 %{nickname} 的收件箱"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:473
 #, elixir-format
 msgid "can't update outbox of %{nickname} as %{as_nickname}"
-msgstr ""
+msgstr "无法以 %{as_nickname} 更新 %{nickname} 的出件箱"
 
 #: lib/pleroma/web/common_api/common_api.ex:471
 #, elixir-format
 msgid "conversation is already muted"
-msgstr ""
+msgstr "对话已经被静音"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:314
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:492
 #, elixir-format
 msgid "error"
-msgstr ""
+msgstr "错误"
 
 #: lib/pleroma/web/pleroma_api/controllers/mascot_controller.ex:32
 #, elixir-format
 msgid "mascots can only be images"
-msgstr ""
+msgstr "吉祥物只能是图片"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:62
 #, elixir-format
 msgid "not found"
-msgstr ""
+msgstr "未找到"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:394
 #, elixir-format
 msgid "Bad OAuth request."
-msgstr ""
+msgstr "错误的 OAuth 请求。"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:115
 #, elixir-format
 msgid "CAPTCHA already used"
-msgstr ""
+msgstr "验证码已被使用"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:112
 #, elixir-format
 msgid "CAPTCHA expired"
-msgstr ""
+msgstr "验证码已过期"
 
 #: lib/pleroma/plugs/uploaded_media.ex:57
 #, elixir-format
 msgid "Failed"
-msgstr ""
+msgstr "失败"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:410
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Failed to authenticate: %{message}."
-msgstr ""
+msgstr "认证失败：%{message}。"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:441
 #, elixir-format
 msgid "Failed to set up user account."
-msgstr ""
+msgstr "建立用户帐号失败。"
 
 #: lib/pleroma/plugs/oauth_scopes_plug.ex:38
 #, elixir-format
 msgid "Insufficient permissions: %{permissions}."
-msgstr ""
+msgstr "权限不足：%{permissions}。"
 
 #: lib/pleroma/plugs/uploaded_media.ex:104
 #, elixir-format
 msgid "Internal Error"
-msgstr ""
+msgstr "内部错误"
 
 #: lib/pleroma/web/oauth/fallback_controller.ex:22
 #: lib/pleroma/web/oauth/fallback_controller.ex:29
 #, elixir-format
 msgid "Invalid Username/Password"
-msgstr ""
+msgstr "无效的用户名/密码"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:118
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Invalid answer data"
-msgstr ""
+msgstr "无效的回答数据"
 
 #: lib/pleroma/web/nodeinfo/nodeinfo_controller.ex:33
 #, elixir-format
@@ -418,12 +418,12 @@ msgstr ""
 #: lib/pleroma/web/oauth/oauth_controller.ex:172
 #, elixir-format
 msgid "This action is outside the authorized scopes"
-msgstr ""
+msgstr "此操作在许可范围以外"
 
 #: lib/pleroma/web/oauth/fallback_controller.ex:14
 #, elixir-format
 msgid "Unknown error, please check the details and try again."
-msgstr ""
+msgstr "未知错误，请检查并重试。"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:119
 #: lib/pleroma/web/oauth/oauth_controller.ex:158
@@ -434,53 +434,53 @@ msgstr ""
 #: lib/pleroma/web/oauth/oauth_controller.ex:390
 #, elixir-format
 msgid "Unsupported OAuth provider: %{provider}."
-msgstr ""
+msgstr "不支持的 OAuth 提供者：%{provider}。"
 
 #: lib/pleroma/uploaders/uploader.ex:72
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Uploader callback timeout"
-msgstr ""
+msgstr "上传回复超时"
 
 #: lib/pleroma/web/uploader_controller.ex:23
 #, elixir-format
 msgid "bad request"
-msgstr ""
+msgstr "错误的请求"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:103
 #, elixir-format
 msgid "CAPTCHA Error"
-msgstr ""
+msgstr "验证码错误"
 
 #: lib/pleroma/web/common_api/common_api.ex:290
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Could not add reaction emoji"
-msgstr ""
+msgstr "无法添加表情反应"
 
 #: lib/pleroma/web/common_api/common_api.ex:301
 #, elixir-format
 msgid "Could not remove reaction emoji"
-msgstr ""
+msgstr "无法移除表情反应"
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:129
 #, elixir-format
 msgid "Invalid CAPTCHA (Missing parameter: %{name})"
-msgstr ""
+msgstr "无效的验证码（缺少参数：%{name}）"
 
 #: lib/pleroma/web/mastodon_api/controllers/list_controller.ex:92
 #, elixir-format
 msgid "List not found"
-msgstr ""
+msgstr "未找到列表"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:123
 #, elixir-format
 msgid "Missing parameter: %{name}"
-msgstr ""
+msgstr "缺少参数：%{name}"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:210
 #: lib/pleroma/web/oauth/oauth_controller.ex:321
 #, elixir-format
 msgid "Password reset is required"
-msgstr ""
+msgstr "需要重置密码"
 
 #: lib/pleroma/tests/auth_test_controller.ex:9
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:6 lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:6
@@ -520,61 +520,61 @@ msgid "Security violation: OAuth scopes check was neither handled nor explicitly
 msgstr ""
 
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:28
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Two-factor authentication enabled, you must use a access token."
-msgstr ""
+msgstr "已启用两因素验证，您需要使用访问令牌。"
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:210
 #, elixir-format
 msgid "Unexpected error occurred while adding file to pack."
-msgstr ""
+msgstr "向表情包添加文件时发生了没有预料到的错误。"
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:138
 #, elixir-format
 msgid "Unexpected error occurred while creating pack."
-msgstr ""
+msgstr "创建表情包时发生了没有预料到的错误。"
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:278
 #, elixir-format
 msgid "Unexpected error occurred while removing file from pack."
-msgstr ""
+msgstr "从表情包移除文件时发生了没有预料到的错误。"
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:250
 #, elixir-format
 msgid "Unexpected error occurred while updating file in pack."
-msgstr ""
+msgstr "更新表情包内的文件时发生了没有预料到的错误。"
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:179
 #, elixir-format
 msgid "Unexpected error occurred while updating pack metadata."
-msgstr ""
+msgstr "更新表情包元数据时发生了没有预料到的错误。"
 
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:61
-#, elixir-format
+#, elixir-format, fuzzy
 msgid "Web push subscription is disabled on this Pleroma instance"
-msgstr ""
+msgstr "此 Pleroma 实例禁用了网页推送订阅"
 
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:451
 #, elixir-format
 msgid "You can't revoke your own admin/moderator status."
-msgstr ""
+msgstr "您不能撤消自己的管理员权限。"
 
 #: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:126
 #, elixir-format
 msgid "authorization required for timeline view"
-msgstr ""
+msgstr "浏览时间线需要认证"
 
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:24
 #, elixir-format
 msgid "Access denied"
-msgstr ""
+msgstr "拒绝访问"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:282
 #, elixir-format
 msgid "This API requires an authenticated user"
-msgstr ""
+msgstr "此 API 需要已认证的用户"
 
 #: lib/pleroma/plugs/user_is_admin_plug.ex:21
 #, elixir-format
 msgid "User is not an admin."
-msgstr ""
+msgstr "该用户不是管理员。"

@@ -21,6 +21,17 @@ defmodule Pleroma.Object.FetcherTest do
       %{method: :get, url: "https://mastodon.example.org/users/userisgone404"} ->
         %Tesla.Env{status: 404}
 
+      %{
+        method: :get,
+        url:
+          "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          headers: [{"content-type", "application/json"}],
+          body: File.read!("test/fixtures/spoofed-object.json")
+        }
+
       env ->
         apply(HttpRequestMock, :request, [env])
     end)
@@ -34,19 +45,22 @@ defmodule Pleroma.Object.FetcherTest do
         %{method: :get, url: "https://social.sakamoto.gq/notice/9wTkLEnuq47B25EehM"} ->
           %Tesla.Env{
             status: 200,
-            body: File.read!("test/fixtures/fetch_mocks/9wTkLEnuq47B25EehM.json")
+            body: File.read!("test/fixtures/fetch_mocks/9wTkLEnuq47B25EehM.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
           }
 
         %{method: :get, url: "https://social.sakamoto.gq/users/eal"} ->
           %Tesla.Env{
             status: 200,
-            body: File.read!("test/fixtures/fetch_mocks/eal.json")
+            body: File.read!("test/fixtures/fetch_mocks/eal.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
           }
 
         %{method: :get, url: "https://busshi.moe/users/tuxcrafting/statuses/104410921027210069"} ->
           %Tesla.Env{
             status: 200,
-            body: File.read!("test/fixtures/fetch_mocks/104410921027210069.json")
+            body: File.read!("test/fixtures/fetch_mocks/104410921027210069.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
           }
 
         %{method: :get, url: "https://busshi.moe/users/tuxcrafting"} ->
@@ -130,6 +144,13 @@ defmodule Pleroma.Object.FetcherTest do
       assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
                Fetcher.fetch_object_from_id(
                  "http://mastodon.example.org/@admin/99541947525187367"
+               )
+    end
+
+    test "it does not fetch a spoofed object uploaded on an instance as an attachment" do
+      assert {:error, _} =
+               Fetcher.fetch_object_from_id(
+                 "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
                )
     end
   end

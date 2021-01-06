@@ -35,7 +35,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f '&<>\"",
         inserted_at: ~N[2017-08-15 15:47:06.597036],
         emoji: %{"karjalanpiirakka" => "/file.png"},
-        raw_bio: "valid html. a\nb\nc\nd\nf '&<>\""
+        raw_bio: "valid html. a\nb\nc\nd\nf '&<>\"",
+        also_known_as: ["https://shitposter.zone/users/shp"]
       })
 
     expected = %{
@@ -75,6 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       },
       pleroma: %{
         ap_id: user.ap_id,
+        also_known_as: ["https://shitposter.zone/users/shp"],
         background_image: "https://example.com/images/asuka_hospital.png",
         favicon: nil,
         confirmation_pending: false,
@@ -173,6 +175,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       },
       pleroma: %{
         ap_id: user.ap_id,
+        also_known_as: [],
         background_image: nil,
         favicon: nil,
         confirmation_pending: false,
@@ -274,10 +277,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, user} = User.follow(user, other_user)
-      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, user, other_user} = User.follow(user, other_user)
+      {:ok, other_user, user} = User.follow(other_user, user)
       {:ok, _subscription} = User.subscribe(user, other_user)
-      {:ok, _user_relationships} = User.mute(user, other_user, true)
+      {:ok, _user_relationships} = User.mute(user, other_user, %{notifications: true})
       {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, other_user)
 
       expected =
@@ -301,7 +304,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
       {:ok, _subscription} = User.subscribe(user, other_user)
       {:ok, _user_relationship} = User.block(user, other_user)
       {:ok, _user_relationship} = User.block(other_user, user)

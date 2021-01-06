@@ -103,13 +103,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
-      {_, page_size} = page_params(params)
+      {page, page_size} = page_params(params)
 
       activities =
         ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
+          offset: (page - 1) * page_size,
           godmode: godmode,
-          exclude_reblogs: not with_reblogs
+          exclude_reblogs: not with_reblogs,
+          pagination_type: :offset
         })
 
       conn
@@ -415,7 +417,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
-    User.toggle_confirmation(users)
+    User.confirm(users)
 
     ModerationLog.insert_log(%{actor: admin, subject: users, action: "confirm_email"})
 

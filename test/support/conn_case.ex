@@ -116,12 +116,16 @@ defmodule Pleroma.Web.ConnCase do
   end
 
   setup tags do
-    Cachex.clear(:user_cache)
-    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
-    unless tags[:async] do
+    if tags[:async] do
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
+      Mox.set_mox_private()
+    else
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
+      Mox.set_mox_global()
+      Pleroma.DataCase.clear_cachex()
     end
 
     if tags[:needs_streamer] do
@@ -131,6 +135,10 @@ defmodule Pleroma.Web.ConnCase do
           {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
       })
     end
+
+    Pleroma.DataCase.stub_pipeline()
+
+    Mox.verify_on_exit!()
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end

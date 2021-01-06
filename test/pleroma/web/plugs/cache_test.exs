@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.CacheTest do
-  use ExUnit.Case, async: true
+  # Relies on Cachex, has to stay synchronous
+  use Pleroma.DataCase
   use Plug.Test
 
   alias Pleroma.Web.Plugs.Cache
@@ -23,11 +24,6 @@ defmodule Pleroma.Web.Plugs.CacheTest do
              ], "cofe"}
 
   @ttl 5
-
-  setup do
-    Cachex.clear(:web_resp_cache)
-    :ok
-  end
 
   test "caches a response" do
     assert @miss_resp ==

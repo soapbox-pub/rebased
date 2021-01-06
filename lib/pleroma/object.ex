@@ -23,6 +23,8 @@ defmodule Pleroma.Object do
 
   @derive {Jason.Encoder, only: [:data]}
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   schema "objects" do
     field(:data, :map)
 
@@ -156,9 +158,9 @@ defmodule Pleroma.Object do
   def get_cached_by_ap_id(ap_id) do
     key = "object:#{ap_id}"
 
-    with {:ok, nil} <- Cachex.get(:object_cache, key),
+    with {:ok, nil} <- @cachex.get(:object_cache, key),
          object when not is_nil(object) <- get_by_ap_id(ap_id),
-         {:ok, true} <- Cachex.put(:object_cache, key, object) do
+         {:ok, true} <- @cachex.put(:object_cache, key, object) do
       object
     else
       {:ok, object} -> object
@@ -216,13 +218,13 @@ defmodule Pleroma.Object do
   end
 
   def invalid_object_cache(%Object{data: %{"id" => id}}) do
-    with {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
-      Cachex.del(:web_resp_cache, URI.parse(id).path)
+    with {:ok, true} <- @cachex.del(:object_cache, "object:#{id}") do
+      @cachex.del(:web_resp_cache, URI.parse(id).path)
     end
   end
 
   def set_cache(%Object{data: %{"id" => ap_id}} = object) do
-    Cachex.put(:object_cache, "object:#{ap_id}", object)
+    @cachex.put(:object_cache, "object:#{ap_id}", object)
     {:ok, object}
   end
 

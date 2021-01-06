@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.BlockHandlingTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
   alias Pleroma.User
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.BlockHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-block-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", user.ap_id)
 
     blocker = insert(:user, ap_id: data["actor"])
@@ -36,12 +36,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.BlockHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-block-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", blocked.ap_id)
       |> Map.put("actor", blocker.ap_id)
 
-    {:ok, blocker} = User.follow(blocker, blocked)
-    {:ok, blocked} = User.follow(blocked, blocker)
+    {:ok, blocker, blocked} = User.follow(blocker, blocked)
+    {:ok, blocked, blocker} = User.follow(blocked, blocker)
 
     assert User.following?(blocker, blocked)
     assert User.following?(blocked, blocker)

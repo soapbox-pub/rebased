@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.SearchTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Web.AdminAPI.Search
 
@@ -203,6 +203,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert count == 1
     end
 
+    # Note: as in Mastodon, `is_discoverable` doesn't anyhow relate to user searchability
     test "it returns non-discoverable users" do
       insert(:user)
       insert(:user, is_discoverable: false)

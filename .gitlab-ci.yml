@@ -57,7 +57,7 @@ unit-testing:
     policy: pull
 
   services:
-  - name: postgres:9.6
+  - name: postgres:13
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -228,8 +228,8 @@ arm:
   artifacts: *release-artifacts
   only: *release-only
   tags:
-    - arm32
-  image: elixir:1.10.3
+    - arm32-specified
+  image: arm32v7/elixir:1.10.3
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -240,8 +240,8 @@ arm-musl:
   artifacts: *release-artifacts
   only: *release-only
   tags:
-    - arm32
-  image: elixir:1.10.3-alpine
+    - arm32-specified
+  image: arm32v7/elixir:1.10.3-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -253,7 +253,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: elixir:1.10.3
+  image: arm64v8/elixir:1.10.3
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -265,8 +265,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  # TODO: Replace with upstream image when 1.9.0 comes out
-  image: elixir:1.10.3-alpine
+  image: arm64v8/elixir:1.10.3-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl

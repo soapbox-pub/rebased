@@ -13,13 +13,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EventHandlingTest do
       %{url: "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"} ->
         %Tesla.Env{
           status: 200,
-          body: File.read!("test/fixtures/tesla_mock/mobilizon.org-event.json")
+          body: File.read!("test/fixtures/tesla_mock/mobilizon.org-event.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
         }
 
       %{url: "https://mobilizon.org/@tcit"} ->
         %Tesla.Env{
           status: 200,
-          body: File.read!("test/fixtures/tesla_mock/mobilizon.org-user.json")
+          body: File.read!("test/fixtures/tesla_mock/mobilizon.org-user.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
         }
     end)
 

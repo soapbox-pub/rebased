@@ -54,6 +54,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                "type" => "Link",
                "mediaType" => "video/mp4",
                "name" => nil,
+               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>
@@ -76,6 +77,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                "type" => "Link",
                "mediaType" => "video/mp4",
                "name" => nil,
+               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>

@@ -3,6 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.BasicAuthDecoderPlug do
+  @moduledoc """
+  Decodes HTTP Basic Auth information and assigns `:auth_credentials`.
+
+  NOTE: no checks are performed at this step, auth_credentials/username could be easily faked.
+  """
+
   import Plug.Conn
 
   def init(options) do

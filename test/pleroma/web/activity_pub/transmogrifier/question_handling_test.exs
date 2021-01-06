@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   end
 
   test "Mastodon Question activity" do
-    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
+    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Jason.decode!()
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-question-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["object", "oneOf"], options)
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
@@ -142,7 +142,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-question-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["object", "oneOf"], options)
       |> Kernel.put_in(["object", "tag"], tag)
 
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   end
 
   test "returns same activity if received a second time" do
-    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
+    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Jason.decode!()
 
     assert {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
@@ -168,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   test "accepts a Question with no content" do
     data =
       File.read!("test/fixtures/mastodon-question-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["object", "content"], "")
 
     assert {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)

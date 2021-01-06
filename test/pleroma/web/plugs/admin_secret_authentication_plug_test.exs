@@ -49,6 +49,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       assert conn.assigns[:user].is_admin
+      assert conn.assigns[:token] == nil
       assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
     end
 
@@ -69,6 +70,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       assert conn.assigns[:user].is_admin
+      assert conn.assigns[:token] == nil
       assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
     end
   end

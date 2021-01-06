@@ -222,7 +222,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       data =
         File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", activity.data["object"])
         |> Map.put("actor", user.ap_id)
 
@@ -403,6 +403,67 @@ defmodule Pleroma.Web.StreamerTest do
       assert notif.activity.id == follow_activity.id
       refute Streamer.filtered_by_user?(user, notif)
     end
+
+    test "it sends follow relationships updates to the 'user' stream", %{
+      user: user,
+      token: oauth_token
+    } do
+      user_id = user.id
+      user_url = user.ap_id
+      other_user = insert(:user)
+      other_user_id = other_user.id
+
+      body =
+        File.read!("test/fixtures/users_mock/localhost.json")
+        |> String.replace("{{nickname}}", user.nickname)
+        |> Jason.encode!()
+
+      Tesla.Mock.mock_global(fn
+        %{method: :get, url: ^user_url} ->
+          %Tesla.Env{status: 200, body: body}
+      end)
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(user, other_user)
+
+      assert_receive {:text, event}
+
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
+               Jason.decode!(event)
+
+      assert %{
+               "follower" => %{
+                 "follower_count" => 0,
+                 "following_count" => 0,
+                 "id" => ^user_id
+               },
+               "following" => %{
+                 "follower_count" => 0,
+                 "following_count" => 0,
+                 "id" => ^other_user_id
+               },
+               "state" => "follow_pending"
+             } = Jason.decode!(payload)
+
+      assert_receive {:text, event}
+
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
+               Jason.decode!(event)
+
+      assert %{
+               "follower" => %{
+                 "follower_count" => 0,
+                 "following_count" => 1,
+                 "id" => ^user_id
+               },
+               "following" => %{
+                 "follower_count" => 1,
+                 "following_count" => 0,
+                 "id" => ^other_user_id
+               },
+               "state" => "follow_accept"
+             } = Jason.decode!(payload)
+    end
   end
 
   describe "public streams" do
@@ -563,7 +624,7 @@ defmodule Pleroma.Web.StreamerTest do
       user_b = insert(:user)
       user_c = insert(:user)
 
-      {:ok, user_a} = User.follow(user_a, user_b)
+      {:ok, user_a, user_b} = User.follow(user_a, user_b)
 
       {:ok, list} = List.create("Test", user_a)
       {:ok, list} = List.follow(list, user_b)
@@ -599,7 +660,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends wanted private posts to list", %{user: user_a, token: user_a_token} do
       user_b = insert(:user)
 
-      {:ok, user_a} = User.follow(user_a, user_b)
+      {:ok, user_a, user_b} = User.follow(user_a, user_b)
 
       {:ok, list} = List.create("Test", user_a)
       {:ok, list} = List.follow(list, user_b)

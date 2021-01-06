@@ -80,7 +80,6 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
       assert :ok = Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer)
-      Cachex.del(:used_captcha_cache, token)
     end
 
     test "doesn't validate invalid answer" do

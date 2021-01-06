@@ -197,6 +197,13 @@ defmodule Pleroma.ActivityTest do
     assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
   end
 
+  test "get_by_id_with_user_actor/1" do
+    user = insert(:user)
+    activity = insert(:note_activity, note: insert(:note, user: user))
+
+    assert Activity.get_by_id_with_user_actor(activity.id).user_actor == user
+  end
+
   test "get_by_id_with_object/1" do
     %{id: id} = insert(:note_activity)
 
@@ -230,5 +237,21 @@ defmodule Pleroma.ActivityTest do
       |> Enum.sort(&(&1.id < &2.id))
 
     assert [%Activity{id: ^id1}, %Activity{id: ^id2}] = activities
+  end
+
+  test "get_by_object_ap_id_with_object/1" do
+    user = insert(:user)
+    another = insert(:user)
+
+    {:ok, %{id: id, object: %{data: %{"id" => obj_id}}}} =
+      Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
+
+    Pleroma.Web.CommonAPI.favorite(another, id)
+
+    assert obj_id
+           |> Pleroma.Activity.Queries.by_object_id()
+           |> Repo.aggregate(:count, :id) == 2
+
+    assert %{id: ^id} = Activity.get_by_object_ap_id_with_object(obj_id)
   end
 end

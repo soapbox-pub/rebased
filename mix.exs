@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.1.50"),
+      version: version("2.2.50"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -22,7 +22,7 @@ defmodule Pleroma.Mixfile do
       docs: [
         source_url_pattern:
           "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
-        logo: "priv/static/static/logo.png",
+        logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
           "Installation manuals": Path.wildcard("docs/installation/*.md"),
@@ -37,7 +37,8 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
-          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1],
+          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, nil}]
         ]
       ]
     ]
@@ -133,24 +134,21 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla,
-       git: "https://github.com/teamon/tesla.git",
-       ref: "9f7261ca49f9f901ceb73b60219ad6f8a9f6aa30",
-       override: true},
+      {:tesla, "~> 1.4.0", override: true},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun,
        github: "ninenines/gun", ref: "921c47146b2d9567eac7e9a4d2ccc60fffd4f327", override: true},
       {:jason, "~> 1.2"},
       {:mogrify, "~> 0.7.4"},
-      {:ex_aws, "~> 2.1"},
+      {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
       {:earmark, "1.4.3"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
-       git: "https://github.com/msantos/crypt.git",
-       ref: "f63a705f92c26955977ee62a313012e309a4d77a"},
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/crypt.git",
+       ref: "cf2aa3f11632e8b0634810a15b3e612c7526f6a3"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3"},
       {:swoosh, "~> 1.0"},
@@ -160,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.2.0"},
+      {:linkify, "~> 0.4.1"},
       {:http_signatures, "~> 0.1.0"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
@@ -196,7 +194,8 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git", branch: "develop"},
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
+       ref: "4c692e544b28d1f5e543fb8a44be090f8cd96f80"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
        ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},
@@ -208,8 +207,11 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "1.15.2", override: true},
-      {:mox, "~> 0.5", only: :test},
+      {:hackney,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/hackney.git",
+       ref: "7d7119f0651515d6d7669c78393fd90950a3ec6e",
+       override: true},
+      {:mox, "~> 1.0", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()
   end

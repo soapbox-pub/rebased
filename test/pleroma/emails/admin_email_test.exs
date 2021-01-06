@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.AdminEmailTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
 
   alias Pleroma.Emails.AdminEmail
@@ -19,8 +19,8 @@ defmodule Pleroma.Emails.AdminEmailTest do
       AdminEmail.report(to_user, reporter, account, [%{name: "Test", id: "12"}], "Test comment")
 
     status_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, "12")
-    reporter_url = Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, reporter.id)
-    account_url = Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, account.id)
+    reporter_url = reporter.ap_id
+    account_url = account.ap_id
 
     assert res.to == [{to_user.name, to_user.email}]
     assert res.from == {config[:name], config[:notify_email]}
@@ -54,7 +54,7 @@ defmodule Pleroma.Emails.AdminEmailTest do
 
     res = AdminEmail.new_unapproved_registration(to_user, account)
 
-    account_url = Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, account.id)
+    account_url = account.ap_id
 
     assert res.to == [{to_user.name, to_user.email}]
     assert res.from == {config[:name], config[:notify_email]}

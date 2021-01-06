@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UserViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
 
   alias Pleroma.User
@@ -78,6 +78,12 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     user = insert(:user, invisible: true)
 
     assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
+  end
+
+  test "renders AKAs" do
+    akas = ["https://i.tusooa.xyz/users/test-pleroma"]
+    user = insert(:user, also_known_as: akas)
+    assert %{"alsoKnownAs" => ^akas} = UserView.render("user.json", %{user: user})
   end
 
   describe "endpoints" do

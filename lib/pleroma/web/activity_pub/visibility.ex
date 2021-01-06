@@ -17,7 +17,19 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_public?(%Activity{data: %{"type" => "Move"}}), do: true
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
-  def is_public?(data), do: Utils.label_in_message?(Pleroma.Constants.as_public(), data)
+
+  def is_public?(data) do
+    Utils.label_in_message?(Pleroma.Constants.as_public(), data) or
+      Utils.label_in_message?(Pleroma.Constants.as_local_public(), data)
+  end
+
+  def is_local_public?(%Object{data: data}), do: is_local_public?(data)
+  def is_local_public?(%Activity{data: data}), do: is_local_public?(data)
+
+  def is_local_public?(data) do
+    Utils.label_in_message?(Pleroma.Constants.as_local_public(), data) and
+      not Utils.label_in_message?(Pleroma.Constants.as_public(), data)
+  end
 
   def is_private?(activity) do
     with false <- is_public?(activity),
@@ -113,6 +125,9 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
 
       Pleroma.Constants.as_public() in cc ->
         "unlisted"
+
+      Pleroma.Constants.as_local_public() in to ->
+        "local"
 
       # this should use the sql for the object's activity
       Enum.any?(to, &String.contains?(&1, "/followers")) ->

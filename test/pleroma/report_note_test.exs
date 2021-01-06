@@ -4,7 +4,7 @@
 
 defmodule Pleroma.ReportNoteTest do
   alias Pleroma.ReportNote
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
 
   test "create/3" do

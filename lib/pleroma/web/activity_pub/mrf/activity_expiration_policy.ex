@@ -40,4 +40,22 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
       _ -> Map.put(activity, "expires_at", expires_at)
     end
   end
+
+  @impl true
+  def config_description do
+    %{
+      key: :mrf_activity_expiration,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy",
+      label: "MRF Activity Expiration Policy",
+      description: "Adds automatic expiration to all local activities",
+      children: [
+        %{
+          key: :days,
+          type: :integer,
+          description: "Default global expiration time for all local activities (in days)",
+          suggestions: [90, 365]
+        }
+      ]
+    }
+  end
 end
