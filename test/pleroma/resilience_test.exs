@@ -8,13 +8,13 @@ defmodule Pleroma.ResilienceTest do
   import Pleroma.Factory
 
   alias Pleroma.Activity
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Repo
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
   setup do
     # user = insert(:user)
-    %{user: user, conn: conn} = oauth_access(["write:statuses"])
+    %{user: user, conn: conn} = oauth_access(["write", "read"])
     other_user = insert(:user)
 
     {:ok, post_one} = CommonAPI.post(user, %{status: "Here is a post"})
@@ -54,8 +54,17 @@ defmodule Pleroma.ResilienceTest do
 
     assert liking_user["id"] == other_user.id
 
+    # We have one notification
+    [notification] =
+      conn
+      |> get("/api/v1/notifications")
+      |> json_response(200)
+
+    assert notification["type"] == "favourite"
+
     # Destroying the like
     Repo.delete(like)
+    post = Repo.get(Activity, post.id)
 
     # Rendering the liked status
     rendered_for_user = StatusView.render("show.json", %{activity: post, for: user})
@@ -72,6 +81,13 @@ defmodule Pleroma.ResilienceTest do
       |> json_response(200)
 
     assert liking_user["id"] == other_user.id
+
+    # Notification is removed
+
+    assert [] ==
+             conn
+             |> get("/api/v1/notifications")
+             |> json_response(200)
 
     # Favoriting again doesn't hurt
     {:ok, _like_two} = CommonAPI.favorite(other_user, post.id)
