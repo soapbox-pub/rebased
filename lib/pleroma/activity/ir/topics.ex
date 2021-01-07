@@ -8,7 +8,7 @@ defmodule Pleroma.Activity.Ir.Topics do
 
   def get_activity_topics(activity) do
     activity
-    |> Object.normalize()
+    |> Object.normalize(fetch: false)
     |> generate_topics(activity)
     |> List.flatten()
   end

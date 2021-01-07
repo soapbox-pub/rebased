@@ -219,7 +219,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
 
-      object = Object.normalize(post, false)
+      object = Object.normalize(post, fetch: false)
       uuid = String.split(object.data["id"], "/") |> List.last()
 
       conn =
@@ -712,7 +712,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:direct_note_activity)
-      note_object = Object.normalize(note_activity)
+      note_object = Object.normalize(note_activity, fetch: false)
       user = User.get_cached_by_ap_id(hd(note_activity.data["to"]))
 
       conn =
@@ -999,7 +999,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:note_activity)
-      note_object = Object.normalize(note_activity)
+      note_object = Object.normalize(note_activity, fetch: false)
       user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
       conn =
@@ -1073,7 +1073,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert Activity.get_by_ap_id(result["id"])
       assert result["object"]
-      assert %Object{data: object} = Object.normalize(result["object"])
+      assert %Object{data: object} = Object.normalize(result["object"], fetch: false)
       assert object["content"] == activity["object"]["content"]
     end
 
@@ -1109,7 +1109,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert Activity.get_by_ap_id(response["id"])
       assert response["object"]
-      assert %Object{data: response_object} = Object.normalize(response["object"])
+      assert %Object{data: response_object} = Object.normalize(response["object"], fetch: false)
       assert response_object["sensitive"] == true
       assert response_object["content"] == activity["object"]["content"]
 
@@ -1137,7 +1137,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it erects a tombstone when receiving a delete activity", %{conn: conn} do
       note_activity = insert(:note_activity)
-      note_object = Object.normalize(note_activity)
+      note_object = Object.normalize(note_activity, fetch: false)
       user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
       data = %{
@@ -1162,7 +1162,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it rejects delete activity of object from other actor", %{conn: conn} do
       note_activity = insert(:note_activity)
-      note_object = Object.normalize(note_activity)
+      note_object = Object.normalize(note_activity, fetch: false)
       user = insert(:user)
 
       data = %{
@@ -1183,7 +1183,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it increases like count when receiving a like action", %{conn: conn} do
       note_activity = insert(:note_activity)
-      note_object = Object.normalize(note_activity)
+      note_object = Object.normalize(note_activity, fetch: false)
       user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
       data = %{
@@ -1240,7 +1240,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert cirno_outbox["attributedTo"] == nil
       assert cirno_outbox["actor"] == cirno.ap_id
 
-      assert cirno_object = Object.normalize(cirno_outbox["object"])
+      assert cirno_object = Object.normalize(cirno_outbox["object"], fetch: false)
       assert cirno_object.data["actor"] == cirno.ap_id
       assert cirno_object.data["attributedTo"] == cirno.ap_id
     end
@@ -1503,7 +1503,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it tracks a signed object fetch", %{conn: conn} do
       user = insert(:user, local: false)
       activity = insert(:note_activity)
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
 
@@ -1519,7 +1519,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it tracks a signed activity fetch", %{conn: conn} do
       user = insert(:user, local: false)
       activity = insert(:note_activity)
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       activity_path = String.trim_leading(activity.data["id"], Pleroma.Web.Endpoint.url())
 
@@ -1536,7 +1536,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user, local: false)
       other_user = insert(:user, local: false)
       activity = insert(:note_activity)
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
 
@@ -1560,7 +1560,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user, local: false)
       other_user = insert(:user, local: false)
       activity = insert(:note_activity)
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       activity_path = String.trim_leading(activity.data["id"], Pleroma.Web.Endpoint.url())
 
@@ -1650,7 +1650,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert activity_response["actor"] == user.ap_id
 
       assert %Object{data: %{"attachment" => [attachment]}} =
-               Object.normalize(activity_response["object"])
+               Object.normalize(activity_response["object"], fetch: false)
 
       assert attachment["type"] == "Document"
       assert attachment["name"] == desc

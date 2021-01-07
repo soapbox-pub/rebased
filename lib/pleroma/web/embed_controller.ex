@@ -31,7 +31,7 @@ defmodule Pleroma.Web.EmbedController do
   end
 
   defp get_counts(%Activity{} = activity) do
-    %Object{data: data} = Object.normalize(activity)
+    %Object{data: data} = Object.normalize(activity, fetch: false)
 
     %{
       likes: Map.get(data, "like_count", 0),

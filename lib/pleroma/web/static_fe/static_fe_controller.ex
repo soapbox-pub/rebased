@@ -122,7 +122,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   end
 
   defp get_counts(%Activity{} = activity) do
-    %Object{data: data} = Object.normalize(activity)
+    %Object{data: data} = Object.normalize(activity, fetch: false)
 
     %{
       likes: data["like_count"] || 0,

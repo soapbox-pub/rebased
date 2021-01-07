@@ -41,7 +41,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     activities
     |> Enum.map(fn
       %{data: %{"type" => "Create"}} = activity ->
-        object = Object.normalize(activity)
+        object = Object.normalize(activity, fetch: false)
         object && object.data["inReplyTo"] != "" && object.data["inReplyTo"]
 
       _ ->
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Activity.create_by_object_ap_id_with_object()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
       if object, do: Map.put(acc, object.data["id"], activity), else: acc
     end)
   end
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_context_id(_), do: nil
 
   defp reblogged?(activity, user) do
-    object = Object.normalize(activity) || %{}
+    object = Object.normalize(activity, fetch: false) || %{}
     present?(user && user.ap_id in (object.data["announcements"] || []))
   end
 
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     parent_activities =
       activities
       |> Enum.filter(&(&1.data["type"] == "Announce" && &1.data["object"]))
-      |> Enum.map(&Object.normalize(&1).data["id"])
+      |> Enum.map(&Object.normalize(&1, fetch: false).data["id"])
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
       |> Activity.with_preloaded_bookmark(reading_user)
@@ -124,7 +124,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       ) do
     user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
-    activity_object = Object.normalize(activity)
+    activity_object = Object.normalize(activity, fetch: false)
 
     reblogged_parent_activity =
       if opts[:parent_activities] do
@@ -193,7 +193,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     user = CommonAPI.get_user(activity.data["actor"])
     user_follower_address = user.follower_address
@@ -451,7 +451,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     with nil <- replied_to_activities[object.data["inReplyTo"]] do
       # If user didn't participate in the thread
@@ -460,7 +460,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(%{data: %{"object" => _object}} = activity, _) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])

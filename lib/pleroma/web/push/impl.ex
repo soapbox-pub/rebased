@@ -32,7 +32,7 @@ defmodule Pleroma.Web.Push.Impl do
     mastodon_type = notification.type
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
     avatar_url = User.avatar_url(actor)
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
     user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 

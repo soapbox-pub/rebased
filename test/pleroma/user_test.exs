@@ -438,7 +438,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "direct message"
+      assert Object.normalize(activity, fetch: false).data["content"] =~ "direct message"
       assert activity.actor == welcome_user.ap_id
     end
 
@@ -454,7 +454,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert Object.normalize(activity, fetch: false).data["content"] =~ "chat message"
       assert activity.actor == welcome_user.ap_id
     end
 
@@ -493,7 +493,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert Object.normalize(activity, fetch: false).data["content"] =~ "chat message"
       assert activity.actor == welcome_user.ap_id
     end
 

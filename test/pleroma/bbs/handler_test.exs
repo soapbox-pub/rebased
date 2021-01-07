@@ -54,7 +54,7 @@ defmodule Pleroma.BBS.HandlerTest do
       )
 
     assert activity.actor == user.ap_id
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
     assert object.data["content"] == "this is a test post"
   end
 
@@ -63,7 +63,7 @@ defmodule Pleroma.BBS.HandlerTest do
     another_user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(another_user, %{status: "this is a test post"})
-    activity_object = Object.normalize(activity)
+    activity_object = Object.normalize(activity, fetch: false)
 
     output =
       capture_io(fn ->
@@ -82,7 +82,7 @@ defmodule Pleroma.BBS.HandlerTest do
 
     assert reply.actor == user.ap_id
 
-    reply_object_data = Object.normalize(reply).data
+    reply_object_data = Object.normalize(reply, fetch: false).data
     assert reply_object_data["content"] == "this is a reply"
     assert reply_object_data["inReplyTo"] == activity_object.data["id"]
   end

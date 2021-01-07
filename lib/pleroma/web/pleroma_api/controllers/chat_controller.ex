@@ -82,7 +82,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
              media_id: params[:media_id],
              idempotency_key: idempotency_key(conn)
            ),
-         message <- Object.normalize(activity, false),
+         message <- Object.normalize(activity, fetch: false),
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
       conn
       |> put_view(MessageReferenceView)

@@ -129,7 +129,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     fetchers =
       with %Activity{data: %{"type" => "Delete"}} <- activity,
-           %Object{id: object_id} <- Object.normalize(activity),
+           %Object{id: object_id} <- Object.normalize(activity, fetch: false),
            fetchers <- User.get_delivered_users_by_object_id(object_id),
            _ <- Delivery.delete_all_by_object_id(object_id) do
         fetchers

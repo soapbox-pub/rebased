@@ -309,7 +309,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         })
 
       capture_log(fn ->
-        q = Object.normalize(activity).data["id"]
+        q = Object.normalize(activity, fetch: false).data["id"]
 
         results =
           conn

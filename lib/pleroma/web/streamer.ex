@@ -151,7 +151,7 @@ defmodule Pleroma.Web.Streamer do
     recipients = MapSet.new(item.recipients)
     domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.domain_blocks)
 
-    with parent <- Object.normalize(item) || item,
+    with parent <- Object.normalize(item, fetch: false) || item,
          true <- Enum.all?([blocked_ap_ids, muted_ap_ids], &(item.actor not in &1)),
          true <- item.data["type"] != "Announce" || item.actor not in reblog_muted_ap_ids,
          true <-

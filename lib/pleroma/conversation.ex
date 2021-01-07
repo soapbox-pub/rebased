@@ -5,6 +5,7 @@
 defmodule Pleroma.Conversation do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Conversation.Participation.RecipientShip
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   use Ecto.Schema
@@ -58,7 +59,7 @@ defmodule Pleroma.Conversation do
   def create_or_bump_for(activity, opts \\ []) do
     with true <- Pleroma.Web.ActivityPub.Visibility.is_direct?(activity),
          "Create" <- activity.data["type"],
-         object <- Pleroma.Object.normalize(activity),
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          true <- object.data["type"] in ["Note", "Question"],
          ap_id when is_binary(ap_id) and byte_size(ap_id) > 0 <- object.data["context"] do
       {:ok, conversation} = create_for_ap_id(ap_id)

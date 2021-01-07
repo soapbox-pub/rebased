@@ -175,8 +175,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     assert [participation_one, participation_two] = Participation.for_user(user)
 
-    object2 = Pleroma.Object.normalize(activity_two)
-    object3 = Pleroma.Object.normalize(activity_three)
+    object2 = Pleroma.Object.normalize(activity_two, fetch: false)
+    object3 = Pleroma.Object.normalize(activity_three, fetch: false)
 
     user = Repo.get(Pleroma.User, user.id)
 

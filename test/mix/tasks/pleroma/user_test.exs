@@ -114,7 +114,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
       {:ok, post2} = CommonAPI.post(user2, %{status: "test"})
-      obj = Object.normalize(post2)
+      obj = Object.normalize(post2, fetch: false)
 
       {:ok, like_object, meta} = Pleroma.Web.ActivityPub.Builder.like(user, obj)
 
@@ -130,7 +130,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       clear_config([:instance, :federating], true)
 
-      object = Object.normalize(post)
+      object = Object.normalize(post, fetch: false)
       Object.prune(object)
 
       with_mock Pleroma.Web.Federator,

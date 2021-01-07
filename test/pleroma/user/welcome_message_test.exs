@@ -28,7 +28,9 @@ defmodule Pleroma.User.WelcomeMessageTest do
       {:ok, %Pleroma.Activity{} = activity} = WelcomeMessage.post_message(user)
       assert user.ap_id in activity.recipients
       assert activity.data["directMessage"] == true
-      assert Pleroma.Object.normalize(activity).data["content"] =~ "Hello. Welcome to Pleroma"
+
+      assert Pleroma.Object.normalize(activity, fetch: false).data["content"] =~
+               "Hello. Welcome to Pleroma"
     end
   end
 end

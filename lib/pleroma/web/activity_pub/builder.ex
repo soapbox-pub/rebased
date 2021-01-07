@@ -80,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec delete(User.t(), String.t()) :: {:ok, map(), keyword()}
   def delete(actor, object_id) do
-    object = Object.normalize(object_id, false)
+    object = Object.normalize(object_id, fetch: false)
 
     user = !object && User.get_cached_by_ap_id(object_id)
 

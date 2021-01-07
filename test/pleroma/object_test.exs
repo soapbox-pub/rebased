@@ -256,23 +256,22 @@ defmodule Pleroma.ObjectTest do
   end
 
   describe "normalizer" do
-    test "fetches unknown objects by default" do
-      %Object{} =
-        object = Object.normalize("http://mastodon.example.org/@admin/99541947525187367")
-
-      assert object.data["url"] == "http://mastodon.example.org/@admin/99541947525187367"
+    @url "http://mastodon.example.org/@admin/99541947525187367"
+    test "does not fetch unknown objects by default" do
+      assert nil == Object.normalize(@url)
     end
 
-    test "fetches unknown objects when fetch_remote is explicitly true" do
-      %Object{} =
-        object = Object.normalize("http://mastodon.example.org/@admin/99541947525187367", true)
+    test "fetches unknown objects when fetch is explicitly true" do
+      %Object{} = object = Object.normalize(@url, fetch: true)
 
-      assert object.data["url"] == "http://mastodon.example.org/@admin/99541947525187367"
+      assert object.data["url"] == @url
     end
 
-    test "does not fetch unknown objects when fetch_remote is false" do
+    test "does not fetch unknown objects when fetch is false" do
       assert is_nil(
-               Object.normalize("http://mastodon.example.org/@admin/99541947525187367", false)
+               Object.normalize(@url,
+                 fetch: false
+               )
              )
     end
   end
@@ -310,7 +309,10 @@ defmodule Pleroma.ObjectTest do
       mock_modified: mock_modified
     } do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -332,7 +334,10 @@ defmodule Pleroma.ObjectTest do
 
     test "returns the old object if refetch fails", %{mock_modified: mock_modified} do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -355,7 +360,10 @@ defmodule Pleroma.ObjectTest do
       mock_modified: mock_modified
     } do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -377,7 +385,10 @@ defmodule Pleroma.ObjectTest do
 
     test "preserves internal fields on refetch", %{mock_modified: mock_modified} do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 

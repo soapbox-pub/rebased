@@ -288,7 +288,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def fetch_actor_and_object(object) do
     fetch_actor(object)
-    Object.normalize(object["object"], true)
+    Object.normalize(object["object"], fetch: true)
     :ok
   end
 end

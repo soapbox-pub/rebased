@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert object.data["title"] == "lain radio episode 1"
     assert object.data["artist"] == "lain"
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    assert object = Object.normalize(activity, false)
+    assert object = Object.normalize(activity, fetch: false)
 
     assert object.data["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
 
