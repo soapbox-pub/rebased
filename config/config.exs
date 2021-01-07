@@ -63,14 +63,6 @@ config :pleroma, Pleroma.Upload,
   filters: [Pleroma.Upload.Filter.Dedupe],
   link_name: false,
   proxy_remote: false,
-  proxy_opts: [
-    redirect_on_failure: false,
-    max_body_length: 25 * 1_048_576,
-    http: [
-      follow_redirect: true,
-      pool: :upload
-    ]
-  ],
   filename_display_max_length: 30,
   default_description: nil
 
