@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.Web.ActivityPub.ObjectValidators.UrlObjectValidator
 
   import Ecto.Changeset
 

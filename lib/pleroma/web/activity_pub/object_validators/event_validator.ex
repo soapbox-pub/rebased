@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
@@ -23,8 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     field(:cc, ObjectValidators.Recipients, default: [])
     field(:bto, ObjectValidators.Recipients, default: [])
     field(:bcc, ObjectValidators.Recipients, default: [])
-    # TODO: Write type
-    field(:tag, {:array, :map}, default: [])
+    embeds_many(:tag, TagValidator)
     field(:type, :string)
 
     field(:name, :string)
@@ -81,8 +81,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:attachment])
+    |> cast(data, __schema__(:fields) -- [:attachment, :tag])
     |> cast_embed(:attachment)
+    |> cast_embed(:tag)
   end
 
   def validate_data(data_cng) do
