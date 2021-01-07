@@ -404,7 +404,7 @@ defmodule Pleroma.Object do
 
   defp embedded_hashtags(_), do: []
 
-  defp object_data_hashtags(%{"tag" => tags}) when is_list(tags) do
+  def object_data_hashtags(%{"tag" => tags}) when is_list(tags) do
     tags
     |> Enum.filter(fn
       %{"type" => "Hashtag"} = data -> Map.has_key?(data, "name")
@@ -419,5 +419,5 @@ defmodule Pleroma.Object do
     |> Enum.uniq()
   end
 
-  defp object_data_hashtags(_), do: []
+  def object_data_hashtags(_), do: []
 end

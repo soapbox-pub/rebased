@@ -139,6 +139,7 @@ defmodule Mix.Tasks.Pleroma.Database do
 
     Logger.info("Starting transferring object embedded hashtags to `hashtags` table...")
 
+    # Note: most objects have Mention-type AS2 tags and no hashtags (but we can't filter them out)
     from(
       object in Object,
       left_join: hashtag in assoc(object, :hashtags),
@@ -153,13 +154,10 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Stream.each(fn objects ->
       Logger.info("Processing #{length(objects)} objects starting from id #{hd(objects).id}...")
 
-      Enum.map(
-        objects,
-        fn object ->
-          hashtags =
-            object.tag
-            |> Jason.decode!()
-            |> Enum.filter(&is_bitstring(&1))
+      failed_ids =
+        objects
+        |> Enum.map(fn object ->
+          hashtags = Object.object_data_hashtags(%{"tag" => Jason.decode!(object.tag)})
 
           Repo.transaction(fn ->
             with {:ok, hashtag_records} <- Hashtag.get_or_create_by_names(hashtags) do
@@ -169,7 +167,7 @@ defmodule Mix.Tasks.Pleroma.Database do
                          "insert into hashtags_objects(hashtag_id, object_id) values ($1, $2);",
                          [hashtag_record.id, object.id]
                        ) do
-                  :noop
+                  nil
                 else
                   {:error, e} ->
                     error =
@@ -177,18 +175,25 @@ defmodule Mix.Tasks.Pleroma.Database do
                         "#{hashtag_record.id}: #{inspect(e)}"
 
                     Logger.error(error)
-                    Repo.rollback(error)
+                    Repo.rollback(object.id)
                 end
               end
+
+              object.id
             else
               e ->
                 error = "ERROR: could not create hashtags for object #{object.id}: #{inspect(e)}"
                 Logger.error(error)
-                Repo.rollback(error)
+                Repo.rollback(object.id)
             end
           end)
-        end
-      )
+        end)
+        |> Enum.filter(&(elem(&1, 0) == :error))
+        |> Enum.map(&elem(&1, 1))
+
+      if Enum.any?(failed_ids) do
+        Logger.error("ERROR: transfer_hashtags iteration failed for ids: #{inspect(failed_ids)}")
+      end
     end)
     |> Stream.run()
 

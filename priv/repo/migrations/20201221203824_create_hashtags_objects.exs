@@ -2,7 +2,7 @@ defmodule Pleroma.Repo.Migrations.CreateHashtagsObjects do
   use Ecto.Migration
 
   def change do
-    create_if_not_exists table(:hashtags_objects) do
+    create_if_not_exists table(:hashtags_objects, primary_key: false) do
       add(:hashtag_id, references(:hashtags), null: false)
       add(:object_id, references(:objects), null: false)
     end
