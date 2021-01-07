@@ -504,6 +504,19 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "posting" do
+    test "it adds an emoji on an external site" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey :external_emoji:"})
+
+      assert %{"external_emoji" => url} = Object.normalize(activity).data["emoji"]
+      assert url == "https://example.com/emoji.png"
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey :blank:"})
+
+      assert %{"blank" => url} = Object.normalize(activity).data["emoji"]
+      assert url == "#{Pleroma.Web.base_url()}/emoji/blank.png"
+    end
+
     test "deactivated users can't post" do
       user = insert(:user, deactivated: true)
       assert {:error, _} = CommonAPI.post(user, %{status: "ye"})
