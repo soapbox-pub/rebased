@@ -233,6 +233,7 @@ defmodule Pleroma.Upload do
   def base_url do
     uploader = Config.get([Pleroma.Upload, :uploader])
     upload_base_url = Config.get([Pleroma.Upload, :base_url])
+    public_endpoint = Config.get([uploader, :public_endpoint])
 
     case uploader do
       Pleroma.Uploaders.Local ->
@@ -246,8 +247,8 @@ defmodule Pleroma.Upload do
 
       _ ->
         cond do
-          !is_nil(Config.get([uploader, :public_endpoint])) ->
-            Config.get([uploader, :public_endpoint])
+          !is_nil(public_endpoint) ->
+            public_endpoint
 
           true ->
             upload_base_url
