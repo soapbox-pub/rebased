@@ -69,7 +69,7 @@ defmodule Pleroma.Web.MediaProxy do
   #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
   def preview_enabled?, do: enabled?() and !!Config.get([:media_preview_proxy, :enabled])
 
-  def local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+  def local?(url), do: String.starts_with?(url, Upload.base_url())
 
   def whitelisted?(url) do
     %{host: domain} = URI.parse(url)
@@ -80,11 +80,13 @@ defmodule Pleroma.Web.MediaProxy do
       |> Enum.map(&maybe_get_domain_from_url/1)
 
     whitelist_domains =
-      if base_url = Config.get([Upload, :base_url]) do
-        %{host: base_domain} = URI.parse(base_url)
-        [base_domain | mediaproxy_whitelist_domains]
-      else
-        mediaproxy_whitelist_domains
+      cond do
+        Web.base_url() == Upload.base_url() ->
+          mediaproxy_whitelist_domains
+
+        true ->
+          %{host: base_domain} = URI.parse(Upload.base_url())
+          [base_domain | mediaproxy_whitelist_domains]
       end
 
     domain in whitelist_domains
