@@ -190,6 +190,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.accepts_chat_messages
     end
+
+    test "works for guppe actors" do
+      user_id = "https://gup.pe/u/bernie2020"
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^user_id} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/guppe-actor.json"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.name == "Bernie2020 group"
+      assert user.actor_type == "Group"
+    end
   end
 
   test "it fetches the appropriate tag-restricted posts" do
