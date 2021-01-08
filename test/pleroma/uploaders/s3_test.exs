@@ -11,11 +11,16 @@ defmodule Pleroma.Uploaders.S3Test do
   import Mock
   import ExUnit.CaptureLog
 
-  setup do:
-          clear_config(Pleroma.Uploaders.S3,
-            bucket: "test_bucket",
-            public_endpoint: "https://s3.amazonaws.com"
-          )
+  setup do
+    clear_config(Pleroma.Upload,
+      uploader: Pleroma.Uploaders.S3
+    )
+
+    clear_config(Pleroma.Uploaders.S3,
+      bucket: "test_bucket",
+      public_endpoint: "https://s3.amazonaws.com"
+    )
+  end
 
   describe "get_file/1" do
     test "it returns path to local folder for files" do

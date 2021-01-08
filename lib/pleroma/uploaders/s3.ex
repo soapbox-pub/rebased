@@ -30,7 +30,7 @@ defmodule Pleroma.Uploaders.S3 do
     {:ok,
      {:url,
       Path.join([
-        Keyword.fetch!(config, :public_endpoint),
+        Pleroma.Upload.base_url(),
         bucket_with_namespace,
         strict_encode(URI.decode(file))
       ])}}
