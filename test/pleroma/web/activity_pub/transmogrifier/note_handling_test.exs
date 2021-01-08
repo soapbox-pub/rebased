@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
+      object = Object.normalize(data["object"], fetch: false)
 
       assert object.data["emoji"] == %{
                "icon_e_smile" => "https://puckipedia.com/forum/images/smilies/icon_e_smile.png"
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data = File.read!("test/fixtures/kroeg-array-less-hashtag.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
+      object = Object.normalize(data["object"], fetch: false)
 
       assert "test" in object.data["tag"]
     end
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       assert data["to"] == []
       assert data["cc"] == to
 
-      object_data = Object.normalize(activity).data
+      object_data = Object.normalize(activity, fetch: false).data
 
       assert object_data["to"] == []
       assert object_data["cc"] == to
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Jason.decode!()
-        |> Map.put("object", Object.normalize(activity).data)
+        |> Map.put("object", Object.normalize(activity, fetch: false).data)
 
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       data = Map.put(data, "object", object)
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
-      returned_object = Object.normalize(returned_activity, false)
+      returned_object = Object.normalize(returned_activity, fetch: false)
 
       assert %Activity{} =
                Activity.get_create_by_object_ap_id(
@@ -123,7 +123,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
         allowed_thread_distance?: fn _ -> false end do
         {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
-        returned_object = Object.normalize(returned_activity, false)
+        returned_object = Object.normalize(returned_activity, fetch: false)
 
         refute Activity.get_create_by_object_ap_id(
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
@@ -179,7 +179,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
-      object_data = Object.normalize(data["object"]).data
+      object_data = Object.normalize(data["object"], fetch: false).data
 
       assert object_data["id"] ==
                "http://mastodon.example.org/users/admin/statuses/99512778738411822"
@@ -209,7 +209,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
-      object_data = Object.normalize(data["object"], false).data
+      object_data = Object.normalize(data["object"], fetch: false).data
 
       assert object_data["sensitive"] == true
     end
@@ -218,7 +218,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data = File.read!("test/fixtures/mastodon-post-activity-hashtag.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
+      object = Object.normalize(data["object"], fetch: false)
 
       assert Enum.at(object.data["tag"], 2) == "moo"
     end
@@ -227,7 +227,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data = File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
+      object = Object.normalize(data["object"], fetch: false)
 
       assert object.data["content"] ==
                "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
@@ -237,7 +237,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data = File.read!("test/fixtures/kroeg-post-activity.json") |> Jason.decode!()
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
+      object = Object.normalize(data["object"], fetch: false)
 
       assert object.data["content"] ==
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
@@ -725,7 +725,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
           in_reply_to_status_id: id1
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
       replies_uris = Enum.map([self_reply1, self_reply2], fn a -> a.object.data["id"] end)
 
       assert %{"type" => "Collection", "items" => ^replies_uris} =

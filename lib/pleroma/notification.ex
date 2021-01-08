@@ -358,7 +358,7 @@ defmodule Pleroma.Notification do
   def create_notifications(activity, options \\ [])
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity, options) do
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     if object && object.data["type"] == "Answer" do
       {:ok, []}
@@ -625,7 +625,7 @@ defmodule Pleroma.Notification do
   def skip?(:filtered, %{data: %{"type" => type}}, _) when type in ["Follow", "Move"], do: false
 
   def skip?(:filtered, activity, user) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     cond do
       is_nil(object) ->

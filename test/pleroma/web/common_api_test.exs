@@ -39,7 +39,7 @@ defmodule Pleroma.Web.CommonAPITest do
           poll: %{expires_in: 600, options: ["reimu", "marisa"]}
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["type"] == "Question"
       assert object.data["oneOf"] |> length() == 2
@@ -174,7 +174,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert other_user.ap_id not in activity.recipients
 
-      object = Object.normalize(activity, false)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] == "uguu<br/>uguuu"
     end
@@ -194,7 +194,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert other_user.ap_id not in activity.recipients
 
-      object = Object.normalize(activity, false)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] ==
                "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{
@@ -215,7 +215,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert activity.data["type"] == "Create"
       assert activity.local
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["type"] == "ChatMessage"
       assert object.data["to"] == [recipient.ap_id]
@@ -281,7 +281,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       clear_config([:instance, :federating], true)
 
-      Object.normalize(post, false)
+      Object.normalize(post, fetch: false)
       |> Object.prune()
 
       with_mock Pleroma.Web.Federator,
@@ -491,7 +491,7 @@ defmodule Pleroma.Web.CommonAPITest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU"})
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert object.data["tag"] == ["2hu"]
   end
@@ -500,10 +500,23 @@ defmodule Pleroma.Web.CommonAPITest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: ":firefox:"})
 
-    assert Object.normalize(activity).data["emoji"]["firefox"]
+    assert Object.normalize(activity, fetch: false).data["emoji"]["firefox"]
   end
 
   describe "posting" do
+    test "it adds an emoji on an external site" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey :external_emoji:"})
+
+      assert %{"external_emoji" => url} = Object.normalize(activity).data["emoji"]
+      assert url == "https://example.com/emoji.png"
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey :blank:"})
+
+      assert %{"blank" => url} = Object.normalize(activity).data["emoji"]
+      assert url == "#{Pleroma.Web.base_url()}/emoji/blank.png"
+    end
+
     test "deactivated users can't post" do
       user = insert(:user, deactivated: true)
       assert {:error, _} = CommonAPI.post(user, %{status: "ye"})
@@ -539,7 +552,7 @@ defmodule Pleroma.Web.CommonAPITest do
           content_type: "text/html"
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
       assert object.data["source"] == post
@@ -556,7 +569,7 @@ defmodule Pleroma.Web.CommonAPITest do
           content_type: "text/markdown"
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
       assert object.data["source"] == post
@@ -1211,7 +1224,7 @@ defmodule Pleroma.Web.CommonAPITest do
           poll: %{options: ["Yes", "No"], expires_in: 20}
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       {:ok, _, object} = CommonAPI.vote(other_user, object, [0])
 
@@ -1231,7 +1244,7 @@ defmodule Pleroma.Web.CommonAPITest do
           length: 180_000
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["title"] == "lain radio episode 1"
 
@@ -1250,7 +1263,7 @@ defmodule Pleroma.Web.CommonAPITest do
           visibility: "private"
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert object.data["title"] == "lain radio episode 1"
 

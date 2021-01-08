@@ -10,6 +10,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupView do
 
   def render("show.json", %{backup: %Backup{} = backup}) do
     %{
+      id: backup.id,
       content_type: backup.content_type,
       url: download_url(backup),
       file_size: backup.file_size,

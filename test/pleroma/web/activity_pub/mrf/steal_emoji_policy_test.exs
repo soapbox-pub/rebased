@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
   use Pleroma.DataCase
 
   alias Pleroma.Config
+  alias Pleroma.Emoji
   alias Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy
 
   setup_all do
@@ -14,55 +15,91 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
   end
 
   setup do
-    emoji_path = Path.join(Config.get([:instance, :static_dir]), "emoji/stolen")
-    File.rm_rf!(emoji_path)
-    File.mkdir!(emoji_path)
+    emoji_path = [:instance, :static_dir] |> Config.get() |> Path.join("emoji/stolen")
 
-    Pleroma.Emoji.reload()
+    Emoji.reload()
+
+    message = %{
+      "type" => "Create",
+      "object" => %{
+        "emoji" => [{"firedfox", "https://example.org/emoji/firedfox.png"}],
+        "actor" => "https://example.org/users/admin"
+      }
+    }
 
     on_exit(fn ->
       File.rm_rf!(emoji_path)
     end)
 
-    :ok
+    [message: message, path: emoji_path]
   end
 
-  test "does nothing by default" do
-    installed_emoji = Pleroma.Emoji.get_all() |> Enum.map(fn {k, _} -> k end)
-    refute "firedfox" in installed_emoji
+  test "does nothing by default", %{message: message} do
+    refute "firedfox" in installed()
 
-    message = %{
-      "type" => "Create",
-      "object" => %{
-        "emoji" => [{"firedfox", "https://example.org/emoji/firedfox.png"}],
-        "actor" => "https://example.org/users/admin"
-      }
-    }
+    assert {:ok, _message} = StealEmojiPolicy.filter(message)
 
-    assert {:ok, message} == StealEmojiPolicy.filter(message)
-
-    installed_emoji = Pleroma.Emoji.get_all() |> Enum.map(fn {k, _} -> k end)
-    refute "firedfox" in installed_emoji
+    refute "firedfox" in installed()
   end
 
-  test "Steals emoji on unknown shortcode from allowed remote host" do
-    installed_emoji = Pleroma.Emoji.get_all() |> Enum.map(fn {k, _} -> k end)
-    refute "firedfox" in installed_emoji
+  test "Steals emoji on unknown shortcode from allowed remote host", %{
+    message: message,
+    path: path
+  } do
+    refute "firedfox" in installed()
+    refute File.exists?(path)
 
-    message = %{
-      "type" => "Create",
-      "object" => %{
-        "emoji" => [{"firedfox", "https://example.org/emoji/firedfox.png"}],
-        "actor" => "https://example.org/users/admin"
-      }
-    }
+    clear_config(:mrf_steal_emoji, hosts: ["example.org"], size_limit: 284_468)
 
-    clear_config([:mrf_steal_emoji, :hosts], ["example.org"])
-    clear_config([:mrf_steal_emoji, :size_limit], 284_468)
+    assert {:ok, _message} = StealEmojiPolicy.filter(message)
 
-    assert {:ok, message} == StealEmojiPolicy.filter(message)
+    assert "firedfox" in installed()
+    assert File.exists?(path)
 
-    installed_emoji = Pleroma.Emoji.get_all() |> Enum.map(fn {k, _} -> k end)
-    assert "firedfox" in installed_emoji
+    assert path
+           |> Path.join("firedfox.png")
+           |> File.exists?()
   end
+
+  test "reject shortcode", %{message: message} do
+    refute "firedfox" in installed()
+
+    clear_config(:mrf_steal_emoji,
+      hosts: ["example.org"],
+      size_limit: 284_468,
+      rejected_shortcodes: [~r/firedfox/]
+    )
+
+    assert {:ok, _message} = StealEmojiPolicy.filter(message)
+
+    refute "firedfox" in installed()
+  end
+
+  test "reject if size is above the limit", %{message: message} do
+    refute "firedfox" in installed()
+
+    clear_config(:mrf_steal_emoji, hosts: ["example.org"], size_limit: 50_000)
+
+    assert {:ok, _message} = StealEmojiPolicy.filter(message)
+
+    refute "firedfox" in installed()
+  end
+
+  test "reject if host returns error", %{message: message} do
+    refute "firedfox" in installed()
+
+    Tesla.Mock.mock(fn %{method: :get, url: "https://example.org/emoji/firedfox.png"} ->
+      {:ok, %Tesla.Env{status: 404, body: "Not found"}}
+    end)
+
+    clear_config(:mrf_steal_emoji, hosts: ["example.org"], size_limit: 284_468)
+
+    ExUnit.CaptureLog.capture_log(fn ->
+      assert {:ok, _message} = StealEmojiPolicy.filter(message)
+    end) =~ "MRF.StealEmojiPolicy: Failed to fetch https://example.org/emoji/firedfox.png"
+
+    refute "firedfox" in installed()
+  end
+
+  defp installed, do: Emoji.get_all() |> Enum.map(fn {k, _} -> k end)
 end

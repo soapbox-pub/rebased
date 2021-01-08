@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     expected = %{
       emojis: [],
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     voter = insert(:user)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     {:ok, _votes, object} = CommonAPI.vote(voter, object, [0, 1])
 
@@ -98,7 +98,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert %{emojis: [%{shortcode: "blank"}]} = PollView.render("show.json", %{object: object})
   end
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     {:ok, _, object} = CommonAPI.vote(other_user, object, [1, 2])
 
@@ -129,7 +129,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
   end
 
   test "does not crash on polls with no end date" do
-    object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i")
+    object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i", fetch: true)
     result = PollView.render("show.json", %{object: object})
 
     assert result[:expires_at] == nil
@@ -153,7 +153,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert %{
              options: [

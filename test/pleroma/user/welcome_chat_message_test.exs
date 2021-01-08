@@ -28,8 +28,10 @@ defmodule Pleroma.User.WelcomeChatMessageTest do
       {:ok, %Pleroma.Activity{} = activity} = WelcomeChatMessage.post_message(user)
 
       assert user.ap_id in activity.recipients
-      assert Pleroma.Object.normalize(activity).data["type"] == "ChatMessage"
-      assert Pleroma.Object.normalize(activity).data["content"] == "Hello, welcome to Blob/Cat!"
+      assert Pleroma.Object.normalize(activity, fetch: false).data["type"] == "ChatMessage"
+
+      assert Pleroma.Object.normalize(activity, fetch: false).data["content"] ==
+               "Hello, welcome to Blob/Cat!"
     end
   end
 end

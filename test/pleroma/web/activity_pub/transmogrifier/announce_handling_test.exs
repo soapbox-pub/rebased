@@ -130,7 +130,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     assert data["id"] ==
              "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
 
-    object = Object.normalize(data["object"])
+    object = Object.normalize(data["object"], fetch: false)
 
     assert object.data["id"] == "http://mastodon.example.org/@admin/99541947525187368"
     assert object.data["content"] == "this is a private toot"
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     data =
       File.read!("test/fixtures/mastodon-announce.json")
       |> Jason.decode!()
-      |> Map.put("object", Object.normalize(activity).data["id"])
+      |> Map.put("object", Object.normalize(activity, fetch: false).data["id"])
       |> Map.put("to", ["http://mastodon.example.org/users/admin/followers"])
       |> Map.put("cc", [])
 

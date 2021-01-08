@@ -44,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     {:ok, [notification]} = Notification.create_notifications(activity)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
     chat = Chat.get(recipient.id, user.ap_id)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)

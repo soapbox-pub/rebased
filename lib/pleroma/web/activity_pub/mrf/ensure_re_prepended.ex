@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
       when is_map(child_object) do
     child =
       child_object["inReplyTo"]
-      |> Object.normalize(child_object["inReplyTo"])
+      |> Object.normalize(fetch: false)
       |> filter_by_summary(child_object)
 
     object = Map.put(object, "object", child)

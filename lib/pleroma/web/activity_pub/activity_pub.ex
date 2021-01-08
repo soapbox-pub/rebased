@@ -608,11 +608,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         |> Map.put(:muting_user, reading_user)
       end
 
-    pagination_type =
-      cond do
-        !Map.has_key?(params, :offset) -> :keyset
-        true -> :offset
-      end
+    pagination_type = Map.get(params, :pagination_type) || :keyset
 
     %{
       godmode: params[:godmode],

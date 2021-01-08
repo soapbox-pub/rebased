@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       note_obj = %{
         "type" => "Note",
@@ -280,6 +280,21 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.listen(user, %{"title" => "lain radio episode 1"})
 
       {:ok, _modified} = Transmogrifier.prepare_outgoing(activity.data)
+    end
+
+    test "custom emoji urls are URI encoded" do
+      # :dinosaur: filename has a space -> dino walking.gif
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
+
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(prepared["object"]["tag"]) == 1
+
+      url = prepared["object"]["tag"] |> List.first() |> Map.get("icon") |> Map.get("url")
+
+      assert url == "http://localhost:4001/emoji/dino%20walking.gif"
     end
   end
 

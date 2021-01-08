@@ -29,7 +29,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
     with true <- Pleroma.Config.get([:instance, :show_reactions]),
          %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => reactions}} when is_list(reactions) <-
-           Object.normalize(activity) do
+           Object.normalize(activity, fetch: false) do
       reactions =
         reactions
         |> filter(params)
