@@ -1749,6 +1749,14 @@ config :pleroma, :config_description, [
         type: :string,
         description: "Adds the specified URL to report-uri and report-to group in CSP header",
         suggestions: ["https://example.com/report-uri"]
+      },
+      %{
+        key: :service_worker_allowed,
+        label: "The Service-Worker-Allowed header",
+        type: :string,
+        description:
+          "Sets the Service-Worker-Allowed header which limits the maximum allowed Service Worker scope",
+        suggestions: ["/"]
       }
     ]
   },

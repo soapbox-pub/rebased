@@ -23,6 +23,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   defp headers do
     referrer_policy = Config.get([:http_security, :referrer_policy])
     report_uri = Config.get([:http_security, :report_uri])
+    service_worker_allowed = Config.get([:http_security, :service_worker_allowed])
 
     headers = [
       {"x-xss-protection", "1; mode=block"},
@@ -33,6 +34,13 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       {"x-download-options", "noopen"},
       {"content-security-policy", csp_string()}
     ]
+
+    headers =
+      if service_worker_allowed do
+        [{"service-worker-allowed", service_worker_allowed} | headers]
+      else
+        headers
+      end
 
     if report_uri do
       report_group = %{

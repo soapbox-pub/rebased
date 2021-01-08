@@ -72,6 +72,14 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
       assert csp =~ "media-src 'self' https:;"
       assert csp =~ "img-src 'self' data: blob: https:;"
     end
+
+    test "it sets the Service-Worker-Allowed header", %{conn: conn} do
+      clear_config([:http_security, :enabled], true)
+      clear_config([:http_security, :service_worker_allowed], "/")
+
+      conn = get(conn, "/api/v1/instance")
+      assert Conn.get_resp_header(conn, "service-worker-allowed") == ["/"]
+    end
   end
 
   describe "img-src and media-src" do
