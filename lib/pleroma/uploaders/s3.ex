@@ -12,26 +12,10 @@ defmodule Pleroma.Uploaders.S3 do
   # links with less strict filenames
   @impl true
   def get_file(file) do
-    config = Config.get([__MODULE__])
-    bucket = Keyword.fetch!(config, :bucket)
-
-    bucket_with_namespace =
-      cond do
-        truncated_namespace = Keyword.get(config, :truncated_namespace) ->
-          truncated_namespace
-
-        namespace = Keyword.get(config, :bucket_namespace) ->
-          namespace <> ":" <> bucket
-
-        true ->
-          bucket
-      end
-
     {:ok,
      {:url,
       Path.join([
         Pleroma.Upload.base_url(),
-        bucket_with_namespace,
         strict_encode(URI.decode(file))
       ])}}
   end

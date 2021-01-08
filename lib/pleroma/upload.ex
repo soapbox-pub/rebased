@@ -245,6 +245,29 @@ defmodule Pleroma.Upload do
             Pleroma.Web.base_url() <> "/media/"
         end
 
+      Pleroma.Uploaders.S3 ->
+        bucket = Config.get([Pleroma.Uploaders.S3, :bucket])
+
+        bucket_with_namespace =
+          cond do
+            truncated_namespace = Config.get([Pleroma.Uploaders.S3, :truncated_namespace]) ->
+              truncated_namespace
+
+            namespace = Config.get([Pleroma.Uploaders.S3, :bucket_namespace]) ->
+              namespace <> ":" <> bucket
+
+            true ->
+              bucket
+          end
+
+        cond do
+          !is_nil(public_endpoint) ->
+            Path.join([public_endpoint, bucket_with_namespace])
+
+          true ->
+            Path.join([upload_base_url, bucket_with_namespace])
+        end
+
       _ ->
         cond do
           !is_nil(public_endpoint) ->
