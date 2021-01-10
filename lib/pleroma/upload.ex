@@ -237,13 +237,7 @@ defmodule Pleroma.Upload do
 
     case uploader do
       Pleroma.Uploaders.Local ->
-        cond do
-          !is_nil(upload_base_url) ->
-            upload_base_url
-
-          true ->
-            Pleroma.Web.base_url() <> "/media/"
-        end
+        upload_base_url || Pleroma.Web.base_url() <> "/media/"
 
       Pleroma.Uploaders.S3 ->
         bucket = Config.get([Pleroma.Uploaders.S3, :bucket])
@@ -260,22 +254,14 @@ defmodule Pleroma.Upload do
               bucket
           end
 
-        cond do
-          !is_nil(public_endpoint) ->
-            Path.join([public_endpoint, bucket_with_namespace])
-
-          true ->
-            Path.join([upload_base_url, bucket_with_namespace])
+        if public_endpoint do
+          Path.join([public_endpoint, bucket_with_namespace])
+        else
+          Path.join([upload_base_url, bucket_with_namespace])
         end
 
       _ ->
-        cond do
-          !is_nil(public_endpoint) ->
-            public_endpoint
-
-          true ->
-            upload_base_url
-        end
+        public_endpoint || upload_base_url
     end
   end
 end
