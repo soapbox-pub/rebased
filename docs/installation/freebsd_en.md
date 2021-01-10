@@ -26,7 +26,7 @@ Setup the required services to automatically start at boot, using `sysrc(8)`.
 # service postgresql start
 ```
 
-### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md))
 
 ```shell
 # pkg install imagemagick ffmpeg p5-Image-ExifTool

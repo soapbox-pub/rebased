@@ -1,5 +1,3 @@
-This document contains notes and guidelines for Pleroma developers.
-
 # Authentication & Authorization
 
 ## OAuth token-based authentication & authorization
@@ -20,27 +18,4 @@ This document contains notes and guidelines for Pleroma developers.
 
 ## Auth-related configuration, OAuth consumer mode etc.
 
-See `Authentication` section of [the configuration cheatsheet](configuration/cheatsheet.md#authentication).
-
-## MRF policies descriptions
-
-If MRF policy depends on config, it can be added into MRF tab to adminFE by adding `config_description/0` method, which returns map with special structure.
-
-Example:
-
-```elixir
-%{
-      key: :mrf_activity_expiration,
-      related_policy: "Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy",
-      label: "MRF Activity Expiration Policy",
-      description: "Adds automatic expiration to all local activities",
-      children: [
-        %{
-          key: :days,
-          type: :integer,
-          description: "Default global expiration time for all local activities (in days)",
-          suggestions: [90, 365]
-        }
-      ]
-    }
-```
+See `Authentication` section of [the configuration cheatsheet](../configuration/cheatsheet.md#authentication).
