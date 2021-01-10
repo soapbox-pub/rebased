@@ -54,7 +54,7 @@ sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
 ```
 
-### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md)
+### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md)
 
 ```shell
 sudo apt install imagemagick ffmpeg libimage-exiftool-perl

@@ -32,7 +32,7 @@ erl_crash.dump
 
 
 # Database setup file, some may forget to delete it
-/config/setup_db.psql
+/config/setup_db*.psql
 
 .DS_Store
 .env

@@ -27,7 +27,7 @@ Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in thi
 
 #### Optional software
 
-Per [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+Per [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md):
   * ImageMagick
   * ffmpeg
   * exiftool
