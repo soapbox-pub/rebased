@@ -31,6 +31,7 @@ defmodule Pleroma.Upload do
 
   """
   alias Ecto.UUID
+  alias Pleroma.Config
   require Logger
 
   @type source ::
@@ -228,4 +229,39 @@ defmodule Pleroma.Upload do
   end
 
   defp url_from_spec(_upload, _base_url, {:url, url}), do: url
+
+  def base_url do
+    uploader = Config.get([Pleroma.Upload, :uploader])
+    upload_base_url = Config.get([Pleroma.Upload, :base_url])
+    public_endpoint = Config.get([uploader, :public_endpoint])
+
+    case uploader do
+      Pleroma.Uploaders.Local ->
+        upload_base_url || Pleroma.Web.base_url() <> "/media/"
+
+      Pleroma.Uploaders.S3 ->
+        bucket = Config.get([Pleroma.Uploaders.S3, :bucket])
+
+        bucket_with_namespace =
+          cond do
+            truncated_namespace = Config.get([Pleroma.Uploaders.S3, :truncated_namespace]) ->
+              truncated_namespace
+
+            namespace = Config.get([Pleroma.Uploaders.S3, :bucket_namespace]) ->
+              namespace <> ":" <> bucket
+
+            true ->
+              bucket
+          end
+
+        if public_endpoint do
+          Path.join([public_endpoint, bucket_with_namespace])
+        else
+          Path.join([upload_base_url, bucket_with_namespace])
+        end
+
+      _ ->
+        public_endpoint || upload_base_url
+    end
+  end
 end

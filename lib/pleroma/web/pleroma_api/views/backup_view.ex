@@ -24,6 +24,6 @@ defmodule Pleroma.Web.PleromaAPI.BackupView do
   end
 
   def download_url(%Backup{file_name: file_name}) do
-    Pleroma.Web.Endpoint.url() <> "/media/backups/" <> file_name
+    Pleroma.Upload.base_url() <> "/backups/" <> file_name
   end
 end
