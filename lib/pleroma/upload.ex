@@ -249,7 +249,7 @@ defmodule Pleroma.Upload do
         end
 
       _ ->
-        public_endpoint || upload_base_url
+        public_endpoint || upload_base_url || Pleroma.Web.base_url() <> "/media/"
     end
   end
 end
