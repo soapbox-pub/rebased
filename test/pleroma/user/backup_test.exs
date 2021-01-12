@@ -196,11 +196,11 @@ defmodule Pleroma.User.BackupTest do
   describe "it uploads and deletes a backup archive" do
     setup do
       clear_config(Pleroma.Uploaders.S3,
-        bucket: "test_bucket",
-        public_endpoint: "https://s3.amazonaws.com"
+        bucket: "test_bucket"
       )
 
       clear_config([Pleroma.Upload, :uploader])
+      clear_config([Pleroma.Upload, base_url: "https://s3.amazonaws.com"])
 
       user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
 
