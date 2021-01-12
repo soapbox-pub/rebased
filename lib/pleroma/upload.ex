@@ -131,12 +131,7 @@ defmodule Pleroma.Upload do
       uploader: Keyword.get(opts, :uploader, Pleroma.Config.get([__MODULE__, :uploader])),
       filters: Keyword.get(opts, :filters, Pleroma.Config.get([__MODULE__, :filters])),
       description: Keyword.get(opts, :description),
-      base_url:
-        Keyword.get(
-          opts,
-          :base_url,
-          Pleroma.Config.get([__MODULE__, :base_url], Pleroma.Web.base_url())
-        )
+      base_url: base_url()
     }
   end
 
@@ -217,14 +212,7 @@ defmodule Pleroma.Upload do
           ""
         end
 
-    prefix =
-      if is_nil(Pleroma.Config.get([__MODULE__, :base_url])) do
-        "media"
-      else
-        ""
-      end
-
-    [base_url, prefix, path]
+    [base_url, path]
     |> Path.join()
   end
 
