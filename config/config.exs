@@ -64,14 +64,23 @@ config :pleroma, Pleroma.Upload,
   link_name: false,
   proxy_remote: false,
   filename_display_max_length: 30,
-  default_description: nil
+  default_description: nil,
+  base_url: nil
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  streaming_enabled: true,
-  public_endpoint: "https://s3.amazonaws.com"
+  bucket_namespace: nil,
+  truncated_namespace: false,
+  streaming_enabled: true
+
+config :ex_aws, :s3,
+  # host: "s3.wasabisys.com", # required if not Amazon AWS
+  access_key_id: nil,
+  secret_access_key: nil,
+  # region: nil, # example: "us-east-1"
+  scheme: "https://"
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],

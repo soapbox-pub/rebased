@@ -117,8 +117,7 @@ config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  streaming_enabled: true,
-  public_endpoint: nil
+  streaming_enabled: true
 
 config :tzdata, :autoupdate, :disabled
 

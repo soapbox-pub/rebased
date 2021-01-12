@@ -94,6 +94,15 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
            end) =~ "Your config is using old namespace for activity expiration configuration."
   end
 
+  test "check_uploders_s3_public_endpoint/0" do
+    clear_config(Pleroma.Uploaders.S3, public_endpoint: "https://fake.amazonaws.com/bucket/")
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_uploders_s3_public_endpoint()
+           end) =~
+             "Your config is using the old setting for controlling the URL of media uploaded to your S3 bucket."
+  end
+
   describe "check_gun_pool_options/0" do
     test "await_up_timeout" do
       config = Config.get(:connections_pool)
