@@ -169,7 +169,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
-  # is_struct/1 isn't present in Elixir 1.8.x
+  # is_struct/1 appears in Elixir 1.11
   def stringify_keys(%{__struct__: _} = object) do
     object
     |> Map.from_struct()

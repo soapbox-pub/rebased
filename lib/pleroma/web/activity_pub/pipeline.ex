@@ -40,6 +40,8 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
     end
   end
 
+  def do_common_pipeline(%{__struct__: _}, _meta), do: {:error, :is_struct}
+
   def do_common_pipeline(object, meta) do
     with {_, {:ok, validated_object, meta}} <-
            {:validate_object, @object_validator.validate(object, meta)},
