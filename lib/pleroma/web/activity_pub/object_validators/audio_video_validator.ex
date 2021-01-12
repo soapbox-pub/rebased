@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     |> cast_embed(:tag)
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Audio", "Video"])
     |> validate_required([:id, :actor, :attributedTo, :type, :context, :attachment])

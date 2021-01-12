@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> cast_embed(:tag)
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
     |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
