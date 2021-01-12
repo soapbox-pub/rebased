@@ -133,7 +133,7 @@ defmodule Pleroma.UploadTest do
 
       assert %{"url" => [%{"href" => url}]} = data
 
-      assert String.starts_with?(url, Pleroma.Web.base_url() <> "/media/")
+      assert String.starts_with?(url, Pleroma.Upload.base_url())
     end
 
     test "copies the file to the configured folder with deduping" do
