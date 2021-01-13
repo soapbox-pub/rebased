@@ -53,7 +53,7 @@ config :pleroma, Pleroma.Repo,
 config :pleroma, :dangerzone, override_repo_pool_size: true
 
 # Reduce hash rounds for testing
-config :pbkdf2_elixir, rounds: 1
+config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
 
