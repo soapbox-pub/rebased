@@ -48,8 +48,6 @@ defmodule Pleroma.Uploaders.S3Test do
         bucket_namespace: "family"
       )
 
-      Config.put([Pleroma.Upload], base_url: "https://s3.amazonaws.com")
-
       assert S3.get_file("test_image.jpg") == {
                :ok,
                {:url, "https://s3.amazonaws.com/family:test_bucket/test_image.jpg"}
