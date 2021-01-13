@@ -72,7 +72,7 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
   bucket_namespace: nil,
-  truncated_namespace: false,
+  truncated_namespace: nil,
   streaming_enabled: true
 
 config :ex_aws, :s3,

@@ -229,13 +229,15 @@ defmodule Pleroma.Upload do
 
       Pleroma.Uploaders.S3 ->
         bucket = Config.get([Pleroma.Uploaders.S3, :bucket])
+        truncated_namespace = Config.get([Pleroma.Uploaders.S3, :truncated_namespace])
+        namespace = Config.get([Pleroma.Uploaders.S3, :bucket_namespace])
 
         bucket_with_namespace =
           cond do
-            truncated_namespace = Config.get([Pleroma.Uploaders.S3, :truncated_namespace]) ->
+            !is_nil(truncated_namespace) ->
               truncated_namespace
 
-            namespace = Config.get([Pleroma.Uploaders.S3, :bucket_namespace]) ->
+            !is_nil(namespace) ->
               namespace <> ":" <> bucket
 
             true ->

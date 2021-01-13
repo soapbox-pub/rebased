@@ -59,7 +59,7 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 # config :pleroma, Pleroma.Uploaders.S3,
 #   bucket: "some-bucket",
 #   bucket_namespace: "my-namespace",
-#   truncated_namespace: false,
+#   truncated_namespace: nil,
 #   streaming_enabled: true
 #
 # Configure S3 credentials:
