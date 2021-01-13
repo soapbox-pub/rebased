@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
@@ -468,6 +468,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                  }
                }
              ] = result
+    end
+
+    test "paginates a user's statuses", %{user: user, conn: conn} do
+      {:ok, post_1} = CommonAPI.post(user, %{status: "first post"})
+      {:ok, post_2} = CommonAPI.post(user, %{status: "second post"})
+
+      response_1 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1")
+      assert [res] = json_response(response_1, 200)
+      assert res["id"] == post_2.id
+
+      response_2 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1&max_id=#{res["id"]}")
+      assert [res] = json_response(response_2, 200)
+      assert res["id"] == post_1.id
+
+      refute response_1 == response_2
     end
   end
 

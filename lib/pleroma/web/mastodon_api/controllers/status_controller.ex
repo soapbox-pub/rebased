@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusController do
@@ -318,7 +318,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with true <- Pleroma.Config.get([:instance, :show_reactions]),
          %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
-         %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
+         %Object{data: %{"likes" => likes}} <- Object.normalize(activity, fetch: false) do
       users =
         User
         |> Ecto.Query.where([u], u.ap_id in ^likes)
@@ -339,7 +339,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"announcements" => announces, "id" => ap_id}} <-
-           Object.normalize(activity) do
+           Object.normalize(activity, fetch: false) do
       announces =
         "Announce"
         |> Activity.Queries.by_type()

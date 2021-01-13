@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
@@ -265,6 +265,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       # Pleroma extension
       pleroma: %{
         ap_id: user.ap_id,
+        also_known_as: user.also_known_as,
         confirmation_pending: user.confirmation_pending,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,

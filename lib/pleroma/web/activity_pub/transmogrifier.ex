@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier do
@@ -652,7 +652,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do
-    case Object.normalize(id, true, options) do
+    options = Keyword.put(options, :fetch, true)
+
+    case Object.normalize(id, options) do
       %Object{} = object -> {:ok, object}
       _ -> nil
     end
@@ -671,7 +673,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              "actor" => attributed_to,
              "object" => data
            }) do
-      {:ok, Object.normalize(activity)}
+      {:ok, Object.normalize(activity, fetch: false)}
     else
       _ -> get_obj_helper(object_id)
     end
@@ -762,7 +764,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when activity_type in ["Create", "Listen"] do
     object =
       object_id
-      |> Object.normalize()
+      |> Object.normalize(fetch: false)
       |> Map.get(:data)
       |> prepare_object
 
@@ -778,7 +780,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def prepare_outgoing(%{"type" => "Announce", "actor" => ap_id, "object" => object_id} = data) do
     object =
       object_id
-      |> Object.normalize()
+      |> Object.normalize(fetch: false)
 
     data =
       if Visibility.is_private?(object) && object.data["actor"] == ap_id do
@@ -918,7 +920,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp build_emoji_tag({name, url}) do
     %{
-      "icon" => %{"url" => url, "type" => "Image"},
+      "icon" => %{"url" => "#{URI.encode(url)}", "type" => "Image"},
       "name" => ":" <> name <> ":",
       "type" => "Emoji",
       "updated" => "1970-01-01T00:00:00Z",

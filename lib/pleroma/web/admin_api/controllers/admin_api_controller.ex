@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
@@ -103,13 +103,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
-      {_, page_size} = page_params(params)
+      {page, page_size} = page_params(params)
 
       activities =
         ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
+          offset: (page - 1) * page_size,
           godmode: godmode,
-          exclude_reblogs: not with_reblogs
+          exclude_reblogs: not with_reblogs,
+          pagination_type: :offset
         })
 
       conn

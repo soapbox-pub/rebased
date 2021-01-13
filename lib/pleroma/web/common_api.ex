@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
@@ -142,7 +142,7 @@ defmodule Pleroma.Web.CommonAPI do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(activity_id)},
          {_, %Object{} = object, _} <-
-           {:find_object, Object.normalize(activity, false), activity},
+           {:find_object, Object.normalize(activity, fetch: false), activity},
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
@@ -173,7 +173,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id, user, params \\ %{}) do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
-         object = %Object{} <- Object.normalize(activity, false),
+         object = %Object{} <- Object.normalize(activity, fetch: false),
          {_, nil} <- {:existing_announce, Utils.get_existing_announce(user.ap_id, object)},
          public = public_announce?(object, params),
          {:ok, announce, _} <- Builder.announce(user, object, public: public),
@@ -191,7 +191,7 @@ defmodule Pleroma.Web.CommonAPI do
   def unrepeat(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
-         %Object{} = note <- Object.normalize(activity, false),
+         %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
          {:ok, undo, _} <- Builder.undo(user, announce),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
@@ -253,7 +253,7 @@ defmodule Pleroma.Web.CommonAPI do
   def unfavorite(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
-         %Object{} = note <- Object.normalize(activity, false),
+         %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
          {:ok, undo, _} <- Builder.undo(user, like),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
@@ -266,7 +266,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         object <- Object.normalize(activity),
+         object <- Object.normalize(activity, fetch: false),
          {:ok, emoji_react, _} <- Builder.emoji_react(user, object, emoji),
          {:ok, activity, _} <- Pipeline.common_pipeline(emoji_react, local: true) do
       {:ok, activity}
@@ -377,7 +377,7 @@ defmodule Pleroma.Web.CommonAPI do
   def get_replied_to_visibility(nil), do: nil
 
   def get_replied_to_visibility(activity) do
-    with %Object{} = object <- Object.normalize(activity) do
+    with %Object{} = object <- Object.normalize(activity, fetch: false) do
       Visibility.get_visibility(object)
     end
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
@@ -319,7 +319,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   defp add_in_reply_to(object, nil), do: object
 
   defp add_in_reply_to(object, in_reply_to) do
-    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
       Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
     else
       _ -> object
@@ -399,7 +399,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %Activity{data: %{"to" => _to, "type" => type} = data} = activity
       )
       when type == "Create" do
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     object_data =
       cond do

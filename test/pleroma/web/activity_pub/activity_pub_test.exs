@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -190,6 +190,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.accepts_chat_messages
     end
+
+    test "works for guppe actors" do
+      user_id = "https://gup.pe/u/bernie2020"
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^user_id} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/guppe-actor.json"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.name == "Bernie2020 group"
+      assert user.actor_type == "Group"
+    end
   end
 
   test "it fetches the appropriate tag-restricted posts" do
@@ -330,7 +348,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      object = Pleroma.Object.normalize(activity)
+      object = Pleroma.Object.normalize(activity, fetch: false)
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
@@ -353,7 +371,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert object = Object.normalize(activity)
+      assert object = Object.normalize(activity, fetch: false)
       assert is_binary(object.data["id"])
     end
   end
@@ -687,7 +705,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
-    assert object = Pleroma.Object.normalize(activity_two)
+    assert object = Pleroma.Object.normalize(activity_two, fetch: false)
 
     data = %{
       "actor" => friend.ap_id,

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidator do
@@ -288,7 +288,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def fetch_actor_and_object(object) do
     fetch_actor(object)
-    Object.normalize(object["object"], true)
+    Object.normalize(object["object"], fetch: true)
     :ok
   end
 end

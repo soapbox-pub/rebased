@@ -56,7 +56,7 @@ sudo -iu postgres initdb -D /var/lib/postgres/data
 sudo systemctl enable --now postgresql.service
 ```
 
-### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md))
 
 ```shell
 sudo pacman -S ffmpeg imagemagick perl-image-exiftool

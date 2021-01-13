@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
@@ -36,7 +36,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
 
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     activity = Repo.all(Pleroma.Activity) |> Enum.find(&(&1.actor == user.ap_id))
-    assert Pleroma.Object.normalize(activity).data["content"] == "hi"
+    assert Pleroma.Object.normalize(activity, fetch: false).data["content"] == "hi"
   end
 
   test "adds log message if ScheduledActivity isn't find" do

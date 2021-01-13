@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
              media_id: params[:media_id],
              idempotency_key: idempotency_key(conn)
            ),
-         message <- Object.normalize(activity, false),
+         message <- Object.normalize(activity, fetch: false),
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
       conn
       |> put_view(MessageReferenceView)

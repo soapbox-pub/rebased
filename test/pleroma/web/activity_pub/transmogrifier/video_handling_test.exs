@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    assert object = Object.normalize(activity, false)
+    assert object = Object.normalize(activity, fetch: false)
 
     assert object.data["content"] == nil
   end
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    assert object = Object.normalize(activity, false)
+    assert object = Object.normalize(activity, fetch: false)
 
     assert object.data["content"] ==
              "<p>Après avoir mené avec un certain succès la campagne « Dégooglisons Internet » en 2014, l’association Framasoft annonce fin 2019 arrêter progressivement un certain nombre de ses services alternatifs aux GAFAM. Pourquoi ?</p><p>Transcription par @aprilorg ici : <a href=\"https://www.april.org/deframasoftisons-internet-pierre-yves-gosset-framasoft\">https://www.april.org/deframasoftisons-internet-pierre-yves-gosset-framasoft</a></p>"
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    assert object = Object.normalize(activity, false)
+    assert object = Object.normalize(activity, fetch: false)
 
     assert object.data["attachment"] == [
              %{

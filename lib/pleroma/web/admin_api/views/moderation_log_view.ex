@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ModerationLogView do
@@ -21,6 +21,7 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogView do
       |> DateTime.to_unix()
 
     %{
+      id: log_entry.id,
       data: log_entry.data,
       time: time,
       message: ModerationLog.get_log_entry_message(log_entry)

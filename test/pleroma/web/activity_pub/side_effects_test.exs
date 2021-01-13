@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
@@ -19,7 +19,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.CommonAPI
 
-  import ExUnit.CaptureLog
   import Mock
   import Pleroma.Factory
 
@@ -128,115 +127,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, _, _} = SideEffects.handle(update, user_update_changeset: changeset)
       user = User.get_by_id(user.id)
       assert user.default_scope == "direct"
-    end
-  end
-
-  describe "delete objects" do
-    setup do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, op} = CommonAPI.post(other_user, %{status: "big oof"})
-      {:ok, post} = CommonAPI.post(user, %{status: "hey", in_reply_to_id: op})
-      {:ok, favorite} = CommonAPI.favorite(user, post.id)
-      object = Object.normalize(post)
-      {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
-      {:ok, delete_user_data, _meta} = Builder.delete(user, user.ap_id)
-      {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)
-      {:ok, delete_user, _meta} = ActivityPub.persist(delete_user_data, local: true)
-
-      %{
-        user: user,
-        delete: delete,
-        post: post,
-        object: object,
-        delete_user: delete_user,
-        op: op,
-        favorite: favorite
-      }
-    end
-
-    test "it handles object deletions", %{
-      delete: delete,
-      post: post,
-      object: object,
-      user: user,
-      op: op,
-      favorite: favorite
-    } do
-      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough],
-        stream_out: fn _ -> nil end,
-        stream_out_participations: fn _, _ -> nil end do
-        {:ok, delete, _} = SideEffects.handle(delete)
-        user = User.get_cached_by_ap_id(object.data["actor"])
-
-        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(delete))
-        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out_participations(object, user))
-      end
-
-      object = Object.get_by_id(object.id)
-      assert object.data["type"] == "Tombstone"
-      refute Activity.get_by_id(post.id)
-      refute Activity.get_by_id(favorite.id)
-
-      user = User.get_by_id(user.id)
-      assert user.note_count == 0
-
-      object = Object.normalize(op.data["object"], false)
-
-      assert object.data["repliesCount"] == 0
-    end
-
-    test "it handles object deletions when the object itself has been pruned", %{
-      delete: delete,
-      post: post,
-      object: object,
-      user: user,
-      op: op
-    } do
-      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough],
-        stream_out: fn _ -> nil end,
-        stream_out_participations: fn _, _ -> nil end do
-        {:ok, delete, _} = SideEffects.handle(delete)
-        user = User.get_cached_by_ap_id(object.data["actor"])
-
-        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(delete))
-        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out_participations(object, user))
-      end
-
-      object = Object.get_by_id(object.id)
-      assert object.data["type"] == "Tombstone"
-      refute Activity.get_by_id(post.id)
-
-      user = User.get_by_id(user.id)
-      assert user.note_count == 0
-
-      object = Object.normalize(op.data["object"], false)
-
-      assert object.data["repliesCount"] == 0
-    end
-
-    test "it handles user deletions", %{delete_user: delete, user: user} do
-      {:ok, _delete, _} = SideEffects.handle(delete)
-      ObanHelpers.perform_all()
-
-      assert User.get_cached_by_ap_id(user.ap_id).deactivated
-    end
-
-    test "it logs issues with objects deletion", %{
-      delete: delete,
-      object: object
-    } do
-      {:ok, object} =
-        object
-        |> Object.change(%{data: Map.delete(object.data, "actor")})
-        |> Repo.update()
-
-      Object.invalid_object_cache(object)
-
-      assert capture_log(fn ->
-               {:error, :no_object_actor} = SideEffects.handle(delete)
-             end) =~ "object doesn't have an actor"
     end
   end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ActivityTest do
@@ -25,7 +25,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns activities by it's objects AP ids" do
     activity = insert(:note_activity)
-    object_data = Object.normalize(activity).data
+    object_data = Object.normalize(activity, fetch: false).data
 
     [found_activity] = Activity.get_all_create_by_object_ap_id(object_data["id"])
 
@@ -34,7 +34,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns the activity that created an object" do
     activity = insert(:note_activity)
-    object_data = Object.normalize(activity).data
+    object_data = Object.normalize(activity, fetch: false).data
 
     found_activity = Activity.get_create_by_object_ap_id(object_data["id"])
 

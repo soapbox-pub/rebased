@@ -80,7 +80,7 @@ sudo /etc/init.d/postgresql start
 sudo rc-update add postgresql
 ```
 
-### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md))
 
 ```shell
 sudo apk add ffmpeg imagemagick exiftool

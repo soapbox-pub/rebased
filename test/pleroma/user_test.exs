@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserTest do
@@ -438,7 +438,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "direct message"
+      assert Object.normalize(activity, fetch: false).data["content"] =~ "direct message"
       assert activity.actor == welcome_user.ap_id
     end
 
@@ -454,7 +454,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert Object.normalize(activity, fetch: false).data["content"] =~ "chat message"
       assert activity.actor == welcome_user.ap_id
     end
 
@@ -493,7 +493,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert Object.normalize(activity, fetch: false).data["content"] =~ "chat message"
       assert activity.actor == welcome_user.ap_id
     end
 

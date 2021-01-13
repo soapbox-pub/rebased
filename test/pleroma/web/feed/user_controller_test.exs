@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.UserControllerTest do
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         )
 
       note_activity2 = insert(:note_activity, note: note2)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       [user: user, object: object, max_id: note_activity2.id]
     end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.AttachmentsCleanupWorker do
@@ -32,21 +32,15 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
   defp do_clean({object_ids, attachment_urls}) do
     uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
 
-    prefix =
-      case Pleroma.Config.get([Pleroma.Upload, :base_url]) do
-        nil -> "media"
-        _ -> ""
-      end
-
     base_url =
       String.trim_trailing(
-        Pleroma.Config.get([Pleroma.Upload, :base_url], Pleroma.Web.base_url()),
+        Pleroma.Upload.base_url(),
         "/"
       )
 
     Enum.each(attachment_urls, fn href ->
       href
-      |> String.trim_leading("#{base_url}/#{prefix}")
+      |> String.trim_leading("#{base_url}")
       |> uploader.delete_file()
     end)
 

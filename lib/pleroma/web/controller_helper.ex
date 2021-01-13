@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ControllerHelper do
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.ControllerHelper do
   defp build_pagination_fields(conn, min_id, max_id, extra_params) do
     params =
       conn.params
-      |> Map.drop(Map.keys(conn.path_params))
+      |> Map.drop(Map.keys(conn.path_params) |> Enum.map(&String.to_existing_atom/1))
       |> Map.merge(extra_params)
       |> Map.drop(@id_keys)
 

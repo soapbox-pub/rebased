@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.WelcomeMessageTest do
@@ -28,7 +28,9 @@ defmodule Pleroma.User.WelcomeMessageTest do
       {:ok, %Pleroma.Activity{} = activity} = WelcomeMessage.post_message(user)
       assert user.ap_id in activity.recipients
       assert activity.data["directMessage"] == true
-      assert Pleroma.Object.normalize(activity).data["content"] =~ "Hello. Welcome to Pleroma"
+
+      assert Pleroma.Object.normalize(activity, fetch: false).data["content"] =~
+               "Hello. Welcome to Pleroma"
     end
   end
 end

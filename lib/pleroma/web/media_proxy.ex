@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy do
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.MediaProxy do
   #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
   def preview_enabled?, do: enabled?() and !!Config.get([:media_preview_proxy, :enabled])
 
-  def local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+  def local?(url), do: String.starts_with?(url, Web.base_url())
 
   def whitelisted?(url) do
     %{host: domain} = URI.parse(url)
@@ -77,17 +77,10 @@ defmodule Pleroma.Web.MediaProxy do
     mediaproxy_whitelist_domains =
       [:media_proxy, :whitelist]
       |> Config.get()
+      |> Kernel.++(["#{Upload.base_url()}"])
       |> Enum.map(&maybe_get_domain_from_url/1)
 
-    whitelist_domains =
-      if base_url = Config.get([Upload, :base_url]) do
-        %{host: base_domain} = URI.parse(base_url)
-        [base_domain | mediaproxy_whitelist_domains]
-      else
-        mediaproxy_whitelist_domains
-      end
-
-    domain in whitelist_domains
+    domain in mediaproxy_whitelist_domains
   end
 
   defp maybe_get_domain_from_url("http" <> _ = url) do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
       {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
       {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
-      object = Object.normalize(create, false)
+      object = Object.normalize(create, fetch: false)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       assert cm_ref.unread == true
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
       {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
       {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
-      object = Object.normalize(create, false)
+      object = Object.normalize(create, fetch: false)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       assert cm_ref.unread == true
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       {:ok, other_message} = CommonAPI.post_chat_message(recipient, user, "nico nico ni")
 
-      object = Object.normalize(message, false)
+      object = Object.normalize(message, fetch: false)
 
       chat = Chat.get(user.id, recipient.ap_id)
 
@@ -176,7 +176,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
 
       # Deleting other people's messages just removes the reference
-      object = Object.normalize(other_message, false)
+      object = Object.normalize(other_message, fetch: false)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       result =
@@ -211,12 +211,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert String.match?(
                next,
-               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*; rel=\"next\"$)
+               ~r(#{api_endpoint}.*/messages\?limit=\d+&max_id=.*; rel=\"next\"$)
              )
 
       assert String.match?(
                prev,
-               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&min_id=.*; rel=\"prev\"$)
+               ~r(#{api_endpoint}.*/messages\?limit=\d+&min_id=.*; rel=\"prev\"$)
              )
 
       assert length(result) == 20
@@ -229,12 +229,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert String.match?(
                next,
-               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*; rel=\"next\"$)
+               ~r(#{api_endpoint}.*/messages\?limit=\d+&max_id=.*; rel=\"next\"$)
              )
 
       assert String.match?(
                prev,
-               ~r(#{api_endpoint}.*/messages\?id=.*&limit=\d+&max_id=.*&min_id=.*; rel=\"prev\"$)
+               ~r(#{api_endpoint}.*/messages\?limit=\d+&max_id=.*&min_id=.*; rel=\"prev\"$)
              )
 
       assert length(result) == 10

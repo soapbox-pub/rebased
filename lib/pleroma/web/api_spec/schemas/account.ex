@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Account do
@@ -40,6 +40,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       pleroma: %Schema{
         type: :object,
         properties: %{
+          ap_id: %Schema{type: :string},
+          also_known_as: %Schema{type: :array, items: %Schema{type: :string}},
           allow_following_move: %Schema{
             type: :boolean,
             description: "whether the user allows automatically follow moved following accounts"

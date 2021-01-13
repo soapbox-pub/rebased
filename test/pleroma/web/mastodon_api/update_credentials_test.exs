@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
@@ -216,6 +216,25 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       update_activity = Repo.one(Pleroma.Activity)
       assert update_activity.data["type"] == "Update"
       assert update_activity.data["object"]["name"] == "markorepairs"
+    end
+
+    test "updates the user's AKAs", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["https://mushroom.kingdom/users/mario"]
+        })
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["pleroma"]["also_known_as"] == ["https://mushroom.kingdom/users/mario"]
+    end
+
+    test "doesn't update non-url akas", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["aReallyCoolGuy"]
+        })
+
+      assert json_response_and_validate_schema(conn, 403)
     end
 
     test "updates the user's avatar", %{user: user, conn: conn} do

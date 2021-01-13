@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           poll: %{options: ["what Mastodon't", "n't what Mastodoes"], expires_in: 20}
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       conn = get(conn, "/api/v1/polls/#{object.id}")
 
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           visibility: "private"
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       conn = get(conn, "/api/v1/polls/#{object.id}")
 
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           }
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       conn =
         conn
@@ -85,7 +85,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           poll: %{options: ["Yes", "No"], expires_in: 20}
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -106,7 +106,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           poll: %{options: ["half empty", "half full"], expires_in: 20}
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -129,7 +129,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           poll: %{options: ["Yes", "No"], expires_in: 20}
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       conn =
         conn
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
           visibility: "private"
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       conn =
         conn

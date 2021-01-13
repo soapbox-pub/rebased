@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Builder do
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec delete(User.t(), String.t()) :: {:ok, map(), keyword()}
   def delete(actor, object_id) do
-    object = Object.normalize(object_id, false)
+    object = Object.normalize(object_id, fetch: false)
 
     user = !object && User.get_cached_by_ap_id(object_id)
 

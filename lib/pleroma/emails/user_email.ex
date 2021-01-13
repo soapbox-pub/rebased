@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.UserEmail do
@@ -119,7 +119,7 @@ defmodule Pleroma.Emails.UserEmail do
       notifications
       |> Enum.filter(&(&1.activity.data["type"] == "Create"))
       |> Enum.map(fn notification ->
-        object = Pleroma.Object.normalize(notification.activity)
+        object = Pleroma.Object.normalize(notification.activity, fetch: false)
 
         if not is_nil(object) do
           object = update_in(object.data["content"], &format_links/1)
@@ -142,7 +142,7 @@ defmodule Pleroma.Emails.UserEmail do
         if not is_nil(from) do
           %{
             data: notification,
-            object: Pleroma.Object.normalize(notification.activity),
+            object: Pleroma.Object.normalize(notification.activity, fetch: false),
             from: User.get_by_ap_id(notification.activity.actor)
           }
         end
