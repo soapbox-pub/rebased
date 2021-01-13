@@ -4,7 +4,6 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Conversation
-  alias Pleroma.Hashtag
   alias Pleroma.Maintenance
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -170,64 +169,5 @@ defmodule Mix.Tasks.Pleroma.Database do
       end)
     end)
     |> Stream.run()
-  end
-
-  def run(["transfer_hashtags"]) do
-    import Ecto.Query
-
-    start_pleroma()
-
-    Logger.info("Starting transferring object embedded hashtags to `hashtags` table...")
-
-    # Note: most objects have Mention-type AS2 tags and no hashtags (but we can't filter them out)
-    from(
-      object in Object,
-      left_join: hashtag in assoc(object, :hashtags),
-      where: is_nil(hashtag.id),
-      where:
-        fragment("(?)->'tag' IS NOT NULL AND (?)->'tag' != '[]'::jsonb", object.data, object.data),
-      select: %{
-        id: object.id,
-        tag: fragment("(?)->'tag'", object.data)
-      }
-    )
-    |> Repo.chunk_stream(100, :one, timeout: :infinity)
-    |> Stream.each(&transfer_object_hashtags(&1))
-    |> Stream.run()
-
-    Logger.info("Done transferring hashtags. Please check logs to ensure no errors.")
-  end
-
-  defp transfer_object_hashtags(object) do
-    hashtags = Object.object_data_hashtags(%{"tag" => object.tag})
-
-    Repo.transaction(fn ->
-      with {:ok, hashtag_records} <- Hashtag.get_or_create_by_names(hashtags) do
-        for hashtag_record <- hashtag_records do
-          with {:ok, _} <-
-                 Repo.query(
-                   "insert into hashtags_objects(hashtag_id, object_id) values ($1, $2);",
-                   [hashtag_record.id, object.id]
-                 ) do
-            nil
-          else
-            {:error, e} ->
-              error =
-                "ERROR: could not link object #{object.id} and hashtag " <>
-                  "#{hashtag_record.id}: #{inspect(e)}"
-
-              Logger.error(error)
-              Repo.rollback(object.id)
-          end
-        end
-
-        object.id
-      else
-        e ->
-          error = "ERROR: could not create hashtags for object #{object.id}: #{inspect(e)}"
-          Logger.error(error)
-          Repo.rollback(object.id)
-      end
-    end)
   end
 end

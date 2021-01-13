@@ -104,7 +104,8 @@ defmodule Pleroma.Application do
         chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
-          Pleroma.Gopher.Server
+          Pleroma.Gopher.Server,
+          Pleroma.Migrators.HashtagsTableMigrator
         ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

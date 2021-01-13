@@ -1276,7 +1276,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         |> restrict_tag_all(opts)
 
       # TODO: benchmark (initial approach preferring non-aggregate ops when possible)
-      Config.get([:instance, :improved_hashtag_timeline]) == :join ->
+      Config.improved_hashtag_timeline() == :join ->
         query
         |> distinct([activity], true)
         |> restrict_hashtag_any(opts)

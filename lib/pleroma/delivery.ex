@@ -9,7 +9,6 @@ defmodule Pleroma.Delivery do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.User
 
   import Ecto.Changeset
   import Ecto.Query

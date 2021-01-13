@@ -17,3 +17,11 @@ defenum(Pleroma.FollowingRelationship.State,
   follow_accept: 2,
   follow_reject: 3
 )
+
+defenum(Pleroma.DataMigration.State,
+  pending: 1,
+  running: 2,
+  complete: 3,
+  failed: 4,
+  manual: 5
+)
