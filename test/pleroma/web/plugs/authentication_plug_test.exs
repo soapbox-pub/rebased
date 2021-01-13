@@ -17,7 +17,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
     user = %User{
       id: 1,
       name: "dude",
-      password_hash: Pbkdf2.hash_pwd_salt("guy")
+      password_hash: Pleroma.Password.hash_pwd_salt("guy")
     }
 
     conn =

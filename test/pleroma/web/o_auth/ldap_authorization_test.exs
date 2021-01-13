@@ -18,7 +18,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
   @tag @skip
   test "authorizes the existing user using LDAP credentials" do
     password = "testpassword"
-    user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
+    user = insert(:user, password_hash: Pleroma.Password.hash_pwd_salt(password))
     app = insert(:oauth_app, scopes: ["read", "write"])
 
     host = Pleroma.Config.get([:ldap, :host]) |> to_charlist
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
   @tag @skip
   test "disallow authorization for wrong LDAP credentials" do
     password = "testpassword"
-    user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
+    user = insert(:user, password_hash: Pleroma.Password.hash_pwd_salt(password))
     app = insert(:oauth_app, scopes: ["read", "write"])
 
     host = Pleroma.Config.get([:ldap, :host]) |> to_charlist

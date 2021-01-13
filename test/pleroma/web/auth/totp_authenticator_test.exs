@@ -34,7 +34,7 @@ defmodule Pleroma.Web.Auth.TOTPAuthenticatorTest do
 
     hashed_codes =
       backup_codes
-      |> Enum.map(&Pbkdf2.hash_pwd_salt(&1))
+      |> Enum.map(&Pleroma.Password.hash_pwd_salt(&1))
 
     user =
       insert(:user,

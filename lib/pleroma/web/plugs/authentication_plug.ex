@@ -48,7 +48,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlug do
   end
 
   def checkpw(password, "$pbkdf2" <> _ = password_hash) do
-    Pbkdf2.verify_pass(password, password_hash)
+    Pleroma.Password.verify_pass(password, password_hash)
   end
 
   def checkpw(_password, _password_hash) do
