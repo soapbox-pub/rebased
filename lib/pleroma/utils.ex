@@ -30,7 +30,10 @@ defmodule Pleroma.Utils do
   """
   @spec command_available?(String.t()) :: boolean()
   def command_available?(command) do
-    match?({_output, 0}, System.cmd("sh", ["-c", "command -v #{command}"]))
+    case :os.find_executable(String.to_charlist(command)) do
+      false -> false
+      _ -> true
+    end
   end
 
   @doc "creates the uniq temporary directory"
