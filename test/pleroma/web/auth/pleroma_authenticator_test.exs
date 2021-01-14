@@ -11,7 +11,13 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticatorTest do
   setup do
     password = "testpassword"
     name = "AgentSmith"
-    user = insert(:user, nickname: name, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password))
+
+    user =
+      insert(:user,
+        nickname: name,
+        password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password)
+      )
+
     {:ok, [user: user, name: name, password: password]}
   end
 
