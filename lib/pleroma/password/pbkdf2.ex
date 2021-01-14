@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Password.Pbkdf2 do
   @moduledoc """
-  This module implements Pleroma.Password.Pbkdf2 passwords in terms of Plug.Crypto.
+  This module implements Pbkdf2 passwords in terms of Plug.Crypto.
   """
 
   alias Plug.Crypto.KeyGenerator

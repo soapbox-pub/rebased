@@ -41,13 +41,13 @@ defmodule Pleroma.Web.MongooseIMControllerTest do
   end
 
   test "/check_password", %{conn: conn} do
-    user = insert(:user, password_hash: Pleroma.Password.hash_pwd_salt("cool"))
+    user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("cool"))
 
     _deactivated_user =
       insert(:user,
         nickname: "konata",
         deactivated: true,
-        password_hash: Pleroma.Password.hash_pwd_salt("cool")
+        password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("cool")
       )
 
     res =
