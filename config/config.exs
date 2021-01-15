@@ -542,7 +542,7 @@ config :pleroma, Oban,
     scheduled_activities: 10,
     background: 5,
     remote_fetcher: 2,
-    attachments_cleanup: 5,
+    attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5
   ],
