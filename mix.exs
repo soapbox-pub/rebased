@@ -229,7 +229,8 @@ defmodule Pleroma.Mixfile do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"],
       docs: ["pleroma.docs", "docs"],
-      analyze: ["credo --strict --only=warnings,todo,fixme,consistency,readability"]
+      analyze: ["credo --strict --only=warnings,todo,fixme,consistency,readability"],
+      copyright: &add_copyright/1
     ]
   end
 
@@ -331,5 +332,21 @@ defmodule Pleroma.Mixfile do
     [version, pre_release, build_metadata]
     |> Enum.filter(fn string -> string && string != "" end)
     |> Enum.join()
+  end
+
+  defp add_copyright(_) do
+    line1 = "# Pleroma: A lightweight social networking server\\n"
+
+    line2 =
+      "# Copyright © 2017-#{NaiveDateTime.utc_now().year} Pleroma Authors <https://pleroma.social/>\\n"
+
+    line3 = "# SPDX-License-Identifier: AGPL-3.0-only\\n\\n"
+    template = line1 <> line2 <> line3
+
+    find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\) -exec "
+    grep = "grep -L '# Copyright' {} \\; |"
+    xargs = "xargs -n1 sed -i '' '1s;^;#{template};'"
+
+    :os.cmd(String.to_charlist("#{find}#{grep}#{xargs}"))
   end
 end
