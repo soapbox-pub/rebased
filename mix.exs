@@ -230,7 +230,8 @@ defmodule Pleroma.Mixfile do
       test: ["ecto.create --quiet", "ecto.migrate", "test"],
       docs: ["pleroma.docs", "docs"],
       analyze: ["credo --strict --only=warnings,todo,fixme,consistency,readability"],
-      copyright: &add_copyright/1
+      copyright: &add_copyright/1,
+      "copyright.bump": &bump_copyright/1
     ]
   end
 
@@ -348,5 +349,14 @@ defmodule Pleroma.Mixfile do
     xargs = "xargs -n1 sed -i '' '1s;^;#{template};'"
 
     :os.cmd(String.to_charlist("#{find}#{grep}#{xargs}"))
+  end
+
+  defp bump_copyright(_) do
+    year = NaiveDateTime.utc_now().year
+    find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\) |"
+
+    xargs = "xargs sed -i '' 's/# Copyright © 2017-20[0-9][0-9]/# Copyright © 2017-#{year}/'"
+
+    :os.cmd(String.to_charlist("#{find}#{xargs}"))
   end
 end
