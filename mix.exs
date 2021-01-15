@@ -335,10 +335,10 @@ defmodule Pleroma.Mixfile do
   end
 
   defp add_copyright(_) do
+    year = NaiveDateTime.utc_now().year
     line1 = "# Pleroma: A lightweight social networking server\\n"
 
-    line2 =
-      "# Copyright © 2017-#{NaiveDateTime.utc_now().year} Pleroma Authors <https://pleroma.social/>\\n"
+    line2 = "# Copyright © 2017-#{year} Pleroma Authors <https://pleroma.social/>\\n"
 
     line3 = "# SPDX-License-Identifier: AGPL-3.0-only\\n\\n"
     template = line1 <> line2 <> line3
