@@ -258,6 +258,7 @@
     mix pleroma.user untag <nickname> <tags>
     ```
 
+
 ## Toggle confirmation status of the user
 
 === "OTP"
