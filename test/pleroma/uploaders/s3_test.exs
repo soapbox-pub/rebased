@@ -14,10 +14,8 @@ defmodule Pleroma.Uploaders.S3Test do
   setup do
     clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
     clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
-
-    clear_config(Pleroma.Uploaders.S3,
-      bucket: "test_bucket"
-    )
+    clear_config([Pleroma.Uploaders.S3])
+    clear_config([Pleroma.Uploaders.S3, :bucket], "test_bucket")
   end
 
   describe "get_file/1" do
@@ -34,7 +32,7 @@ defmodule Pleroma.Uploaders.S3Test do
         truncated_namespace: ""
       )
 
-      Config.put([Pleroma.Upload], base_url: "https://s3.amazonaws.com")
+      Config.put([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
 
       assert S3.get_file("test_image.jpg") == {
                :ok,

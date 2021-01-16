@@ -43,6 +43,4 @@ defmodule Pleroma.Upload.Filter do
         error
     end
   end
-
-  def filter(nil, upload), do: filter([], upload)
 end

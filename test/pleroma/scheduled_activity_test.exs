@@ -4,15 +4,14 @@
 
 defmodule Pleroma.ScheduledActivityTest do
   use Pleroma.DataCase
-  alias Pleroma.DataCase
+
   alias Pleroma.ScheduledActivity
+
   import Pleroma.Factory
 
   setup do: clear_config([ScheduledActivity, :enabled])
 
-  setup context do
-    DataCase.ensure_local_uploader(context)
-  end
+  setup [:ensure_local_uploader]
 
   describe "creation" do
     test "scheduled activities with jobs when ScheduledActivity enabled" do
