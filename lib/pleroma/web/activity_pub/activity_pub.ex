@@ -669,63 +669,66 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_since(query, _), do: query
 
-  defp restrict_tag_reject(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
+  defp restrict_embedded_tag_reject(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
     raise_on_missing_preload()
   end
 
-  defp restrict_tag_reject(query, %{tag_reject: tag_reject}) when is_list(tag_reject) do
+  defp restrict_embedded_tag_reject(query, %{tag_reject: tag_reject}) when is_list(tag_reject) do
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'tag' \\?| (?)", object.data, ^tag_reject)
     )
   end
 
-  defp restrict_tag_reject(query, %{tag_reject: tag_reject}) when is_binary(tag_reject) do
-    restrict_tag_reject(query, %{tag_reject: [tag_reject]})
+  defp restrict_embedded_tag_reject(query, %{tag_reject: tag_reject})
+       when is_binary(tag_reject) do
+    restrict_embedded_tag_reject(query, %{tag_reject: [tag_reject]})
   end
 
-  defp restrict_tag_reject(query, _), do: query
+  defp restrict_embedded_tag_reject(query, _), do: query
 
-  defp restrict_tag_all(_query, %{tag_all: _tag_all, skip_preload: true}) do
+  defp restrict_embedded_tag_all(_query, %{tag_all: _tag_all, skip_preload: true}) do
     raise_on_missing_preload()
   end
 
-  defp restrict_tag_all(query, %{tag_all: tag_all}) when is_list(tag_all) do
+  defp restrict_embedded_tag_all(query, %{tag_all: tag_all}) when is_list(tag_all) do
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?& (?)", object.data, ^tag_all)
     )
   end
 
-  defp restrict_tag_all(query, %{tag_all: tag}) when is_binary(tag) do
-    restrict_tag(query, %{tag: tag})
+  defp restrict_embedded_tag_all(query, %{tag_all: tag}) when is_binary(tag) do
+    restrict_embedded_tag(query, %{tag: tag})
   end
 
-  defp restrict_tag_all(query, _), do: query
+  defp restrict_embedded_tag_all(query, _), do: query
 
-  defp restrict_tag(_query, %{tag: _tag, skip_preload: true}) do
+  defp restrict_embedded_tag(_query, %{tag: _tag, skip_preload: true}) do
     raise_on_missing_preload()
   end
 
-  defp restrict_tag(query, %{tag: tag}) when is_list(tag) do
+  defp restrict_embedded_tag(query, %{tag: tag}) when is_list(tag) do
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?| (?)", object.data, ^tag)
     )
   end
 
-  defp restrict_tag(query, %{tag: tag}) when is_binary(tag) do
-    restrict_tag(query, %{tag: [tag]})
+  defp restrict_embedded_tag(query, %{tag: tag}) when is_binary(tag) do
+    restrict_embedded_tag(query, %{tag: [tag]})
   end
 
-  defp restrict_tag(query, _), do: query
+  defp restrict_embedded_tag(query, _), do: query
 
-  defp restrict_hashtag(query, opts) do
-    [tag_any, tag_all, tag_reject] =
-      [:tag, :tag_all, :tag_reject]
-      |> Enum.map(&opts[&1])
-      |> Enum.map(&List.wrap(&1))
+  defp hashtag_conditions(opts) do
+    [:tag, :tag_all, :tag_reject]
+    |> Enum.map(&opts[&1])
+    |> Enum.map(&List.wrap(&1))
+  end
 
+  defp restrict_hashtag_agg(query, opts) do
+    [tag_any, tag_all, tag_reject] = hashtag_conditions(opts)
     has_conditions = Enum.any?([tag_any, tag_all, tag_reject], &Enum.any?(&1))
 
     cond do
@@ -1275,15 +1278,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> exclude_invisible_actors(opts)
       |> exclude_visibility(opts)
 
-    cond do
-      Config.object_embedded_hashtags?() ->
-        query
-        |> restrict_tag(opts)
-        |> restrict_tag_reject(opts)
-        |> restrict_tag_all(opts)
+    hashtag_timeline_strategy = Config.improved_hashtag_timeline()
 
-      # TODO: benchmark (initial approach preferring non-aggregate ops when possible)
-      Config.improved_hashtag_timeline() == :join ->
+    cond do
+      !hashtag_timeline_strategy ->
+        query
+        |> restrict_embedded_tag(opts)
+        |> restrict_embedded_tag_reject(opts)
+        |> restrict_embedded_tag_all(opts)
+
+      hashtag_timeline_strategy == :prefer_aggregation ->
+        restrict_hashtag_agg(query, opts)
+
+      hashtag_timeline_strategy == :avoid_aggregation or avoid_hashtags_aggregation?(opts) ->
         query
         |> distinct([activity], true)
         |> restrict_hashtag_any(opts)
@@ -1291,8 +1298,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         |> restrict_hashtag_reject_any(opts)
 
       true ->
-        restrict_hashtag(query, opts)
+        restrict_hashtag_agg(query, opts)
     end
+  end
+
+  defp avoid_hashtags_aggregation?(opts) do
+    [tag_any, tag_all, tag_reject] = hashtag_conditions(opts)
+
+    joins_count = length(tag_all) + if Enum.any?(tag_any), do: 1, else: 0
+    Enum.empty?(tag_reject) and joins_count <= 2
   end
 
   def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do

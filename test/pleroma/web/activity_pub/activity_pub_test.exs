@@ -217,8 +217,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
     {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
 
-    for new_timeline_enabled <- [true, false] do
-      clear_config([:instance, :improved_hashtag_timeline], new_timeline_enabled)
+    for hashtag_timeline_strategy <- [true, :prefer_aggregation, :avoid_aggregation, false] do
+      clear_config([:instance, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
       fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 

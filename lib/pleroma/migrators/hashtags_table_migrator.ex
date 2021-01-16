@@ -45,25 +45,23 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   def handle_continue(:init_state, _state) do
     {:ok, _} = State.start_link(nil)
 
-    put_stat(:status, :init)
+    update_status(:init)
 
-    dm = data_migration()
+    data_migration = data_migration()
     manual_migrations = Config.get([:instance, :manual_data_migrations], [])
 
     cond do
       Config.get(:env) == :test ->
-        put_stat(:status, :noop)
+        update_status(:noop)
 
-      is_nil(dm) ->
-        put_stat(:status, :halt)
-        put_stat(:message, "Data migration does not exist.")
+      is_nil(data_migration) ->
+        update_status(:halt, "Data migration does not exist.")
 
-      dm.state == :manual or dm.name in manual_migrations ->
-        put_stat(:status, :noop)
-        put_stat(:message, "Data migration is in manual execution state.")
+      data_migration.state == :manual or data_migration.name in manual_migrations ->
+        update_status(:noop, "Data migration is in manual execution state.")
 
-      dm.state == :complete ->
-        handle_success()
+      data_migration.state == :complete ->
+        handle_success(data_migration)
 
       true ->
         send(self(), :migrate_hashtags)
@@ -81,7 +79,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     {:ok, data_migration} =
       DataMigration.update(data_migration, %{state: :running, data: persistent_data})
 
-    put_stat(:status, :running)
+    update_status(:running)
 
     Logger.info("Starting transferring object embedded hashtags to `hashtags` table...")
 
@@ -146,13 +144,12 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
            ) do
       _ = DataMigration.update_state(data_migration, :complete)
 
-      handle_success()
+      handle_success(data_migration)
     else
       _ ->
         _ = DataMigration.update_state(data_migration, :failed)
 
-        put_stat(:status, :failed)
-        put_stat(:message, "Please check data_migration_failed_ids records.")
+        update_status(:failed, "Please check data_migration_failed_ids records.")
     end
 
     {:noreply, state}
@@ -196,14 +193,23 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     _ = DataMigration.update(data_migration, %{data: runner_state})
   end
 
-  defp handle_success do
-    put_stat(:status, :complete)
+  defp handle_success(data_migration) do
+    update_status(:complete)
 
-    unless Config.improved_hashtag_timeline() do
+    unless data_migration.feature_lock || Config.improved_hashtag_timeline() do
       Config.put(Config.improved_hashtag_timeline_path(), true)
     end
 
     :ok
+  end
+
+  def failed_objects_query do
+    from(o in Object)
+    |> join(:inner, [o], dmf in fragment("SELECT * FROM data_migration_failed_ids"),
+      on: dmf.record_id == o.id
+    )
+    |> where([_o, dmf], dmf.data_migration_id == ^data_migration().id)
+    |> order_by([o], asc: o.id)
   end
 
   def force_continue do
@@ -213,5 +219,10 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   def force_restart do
     {:ok, _} = DataMigration.update(data_migration(), %{state: :pending, data: %{}})
     force_continue()
+  end
+
+  defp update_status(status, message \\ nil) do
+    put_stat(:status, status)
+    put_stat(:message, message)
   end
 end
