@@ -337,12 +337,12 @@ defmodule Pleroma.Mixfile do
 
   defp add_copyright(_) do
     year = NaiveDateTime.utc_now().year
-    line1 = "# Pleroma: A lightweight social networking server\\n"
+    template = ~s[\
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-#{year} Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
 
-    line2 = "# Copyright © 2017-#{year} Pleroma Authors <https://pleroma.social/>\\n"
-
-    line3 = "# SPDX-License-Identifier: AGPL-3.0-only\\n\\n"
-    template = line1 <> line2 <> line3
+] |> String.replace("\n", "\\n")
 
     find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\) -exec "
     grep = "grep -L '# Copyright' {} \\; |"
