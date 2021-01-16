@@ -346,7 +346,7 @@ defmodule Pleroma.Mixfile do
 
     find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\) -exec "
     grep = "grep -L '# Copyright' {} \\; |"
-    xargs = "xargs -n1 sed -i '' '1s;^;#{template};'"
+    xargs = "xargs -n1 sed -i'' '1s;^;#{template};'"
 
     :os.cmd(String.to_charlist("#{find}#{grep}#{xargs}"))
   end
@@ -355,7 +355,7 @@ defmodule Pleroma.Mixfile do
     year = NaiveDateTime.utc_now().year
     find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\) |"
 
-    xargs = "xargs sed -i '' 's/# Copyright © 2017-20[0-9][0-9]/# Copyright © 2017-#{year}/'"
+    xargs = "xargs sed -i'' 's/# Copyright © 2017-20[0-9][0-9]/# Copyright © 2017-#{year}/'"
 
     :os.cmd(String.to_charlist("#{find}#{xargs}"))
   end
