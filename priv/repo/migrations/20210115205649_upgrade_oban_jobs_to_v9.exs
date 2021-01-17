@@ -5,6 +5,11 @@
 defmodule Pleroma.Repo.Migrations.UpgradeObanJobsToV9 do
   use Ecto.Migration
 
-  defdelegate up, to: Oban.Migrations
-  defdelegate down, to: Oban.Migrations
+  def up do
+    Oban.Migrations.up(version: 9)
+  end
+
+  def down do
+    Oban.Migrations.down(version: 9)
+  end
 end
