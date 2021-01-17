@@ -196,11 +196,17 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   defp handle_success(data_migration) do
     update_status(:complete)
 
-    unless data_migration.feature_lock || Config.improved_hashtag_timeline() do
-      Config.put(Config.improved_hashtag_timeline_path(), true)
-    end
+    cond do
+      data_migration.feature_lock ->
+        :noop
 
-    :ok
+      not is_nil(Config.improved_hashtag_timeline()) ->
+        :noop
+
+      true ->
+        Config.put(Config.improved_hashtag_timeline_path(), true)
+        :ok
+    end
   end
 
   def failed_objects_query do
