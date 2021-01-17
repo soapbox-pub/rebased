@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
+- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types
 </details>
 
 ### Fixed
@@ -57,9 +58,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Unreleased (Patch)
 
 ### Fixed
-
-- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
-- Emoji Reaction activity filtering from blocked and muted accounts.
 - StealEmojiPolicy creates dir for emojis, if it doesn't exist.
 
 ## [2.2.1] - 2020-12-22
@@ -76,6 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
 - Fixes for the autolinker.
 - Forwarded reports duplication from Pleroma instances.
+- Emoji Reaction activity filtering from blocked and muted accounts.
 
 - <details>
     <summary>API</summary>
