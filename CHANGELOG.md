@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.2.2] - 2020-01-18
+
+### Fixed
+
+- StealEmojiPolicy creates dir for emojis, if it doesn't exist.
+- Updated `elixir_make` to a non-retired version
+
+### Upgrade notes
+
+1. Restart Pleroma
+
 ## [2.2.1] - 2020-12-22
 
 ### Changed
@@ -17,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
 - Fixes for the autolinker.
 - Forwarded reports duplication from Pleroma instances.
+- Emoji Reaction activity filtering from blocked and muted accounts.
 
 - <details>
     <summary>API</summary>
