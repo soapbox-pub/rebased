@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           },
           background_image: %Schema{type: :string, nullable: true, format: :uri},
           chat_token: %Schema{type: :string},
-          confirmation_pending: %Schema{
+          is_confirmed: %Schema{
             type: :boolean,
             description:
               "whether the user account is waiting on email confirmation to be activated"
@@ -166,7 +166,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       "pleroma" => %{
         "allow_following_move" => true,
         "background_image" => nil,
-        "confirmation_pending" => true,
+        "is_confirmed" => false,
         "hide_favorites" => true,
         "hide_followers" => false,
         "hide_followers_count" => false,

@@ -256,7 +256,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "note" => "Tester Number 6",
         "pleroma" => %{
           "background_image" => nil,
-          "confirmation_pending" => false,
+          "is_confirmed" => true,
           "hide_favorites" => true,
           "hide_followers" => false,
           "hide_followers_count" => false,

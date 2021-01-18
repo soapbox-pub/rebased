@@ -193,7 +193,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns unconfirmed user" do
-      unconfirmed = insert(:user, confirmation_pending: true)
+      unconfirmed = insert(:user, is_confirmed: false)
       insert(:user)
       insert(:user)
 

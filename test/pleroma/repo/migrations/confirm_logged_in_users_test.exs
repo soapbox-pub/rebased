@@ -14,12 +14,12 @@ defmodule Pleroma.Repo.Migrations.ConfirmLoggedInUsersTest do
 
   test "up/0 confirms unconfirmed but previously-logged-in users", %{migration: migration} do
     insert_list(25, :oauth_token)
-    Repo.update_all(User, set: [confirmation_pending: true])
-    insert_list(5, :user, confirmation_pending: true)
+    Repo.update_all(User, set: [is_confirmed: false])
+    insert_list(5, :user, is_confirmed: false)
 
     count =
       User
-      |> where(confirmation_pending: true)
+      |> where(is_confirmed: false)
       |> Repo.aggregate(:count)
 
     assert count == 30
@@ -28,7 +28,7 @@ defmodule Pleroma.Repo.Migrations.ConfirmLoggedInUsersTest do
 
     count =
       User
-      |> where(confirmation_pending: true)
+      |> where(is_confirmed: false)
       |> Repo.aggregate(:count)
 
     assert count == 5
