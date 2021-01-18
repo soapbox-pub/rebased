@@ -117,7 +117,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         request_body("Parameters", %Schema{
           type: :object,
           properties: %{
-            visibility: %Schema{allOf: [VisibilityScope], default: "public"}
+            visibility: %Schema{allOf: [VisibilityScope]}
           }
         }),
       responses: %{
