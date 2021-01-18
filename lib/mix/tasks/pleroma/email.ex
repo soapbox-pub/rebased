@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Pleroma.Email do
     Pleroma.User.Query.build(%{
       local: true,
       is_active: true,
-      confirmation_pending: true,
+      is_confirmed: false,
       invisible: false
     })
     |> Pleroma.Repo.chunk_stream(500)

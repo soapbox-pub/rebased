@@ -17,10 +17,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     setup do
       {:ok, user} =
         insert(:user)
-        |> User.confirmation_changeset(need_confirmation: true)
+        |> User.confirmation_changeset(set_confirmation: false)
         |> User.update_and_set_cache()
 
-      assert user.confirmation_pending
+      refute user.is_confirmed
 
       [user: user]
     end

@@ -8,11 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- **Breaking:** Removed the toggle_activated mix task
+- **Breaking:** Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
+- **Breaking**: AdminAPI changed User field `confirmation_pending` to `is_confirmed`
+- **Breaking**: AdminAPI changed User field `approval_pending` to `is_approved`
+- **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
 - Improved registration workflow for email confirmation and account approval modes.
-- **Breaking:** Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
 - Search: When using Postgres 11+, Pleroma will use the `websearch_to_tsvector` function to parse search queries.
 - Emoji: Support the full Unicode 13.1 set of Emoji for reactions, plus regional indicators.
 - Admin API: Reports now ordered by newest
@@ -41,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
+- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types
 </details>
 
 ### Fixed
@@ -58,9 +61,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Unreleased (Patch)
 
 ### Fixed
-
-- Fix ability to update Pleroma Chat push notifications with PUT /api/v1/push/subscription and alert type pleroma:chat_mention
-- Emoji Reaction activity filtering from blocked and muted accounts.
 - StealEmojiPolicy creates dir for emojis, if it doesn't exist.
 
 ## [2.2.1] - 2020-12-22
@@ -77,6 +77,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich Media Previews sometimes showed the wrong preview due to a bug following redirects.
 - Fixes for the autolinker.
 - Forwarded reports duplication from Pleroma instances.
+- Emoji Reaction activity filtering from blocked and muted accounts.
 
 - <details>
     <summary>API</summary>

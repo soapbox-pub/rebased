@@ -1027,8 +1027,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       user = Repo.preload(token_from_db, :user).user
 
       assert user
-      refute user.confirmation_pending
-      refute user.approval_pending
+      assert user.is_confirmed
+      assert user.is_approved
     end
 
     test "registers but does not log in with :account_activation_required", %{conn: conn} do
@@ -1088,7 +1088,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       refute response["token_type"]
 
       user = Repo.get_by(User, email: "lain@example.org")
-      assert user.confirmation_pending
+      refute user.is_confirmed
     end
 
     test "registers but does not log in with :account_approval_required", %{conn: conn} do
@@ -1150,7 +1150,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       user = Repo.get_by(User, email: "lain@example.org")
 
-      assert user.approval_pending
+      refute user.is_approved
       assert user.registration_reason == "I'm a cool dude, bro"
     end
 
