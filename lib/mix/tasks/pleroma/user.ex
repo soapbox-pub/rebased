@@ -74,7 +74,7 @@ defmodule Mix.Tasks.Pleroma.User do
         bio: bio
       }
 
-      changeset = User.register_changeset(%User{}, params, need_confirmation: false)
+      changeset = User.register_changeset(%User{}, params, is_confirmed: true)
       {:ok, _user} = User.register(changeset)
 
       shell_info("User #{nickname} created")
@@ -213,7 +213,7 @@ defmodule Mix.Tasks.Pleroma.User do
       user =
         case Keyword.get(options, :confirmed) do
           nil -> user
-          value -> set_confirmed(user, value)
+          value -> set_confirmation(user, value)
         end
 
       user =
@@ -351,7 +351,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       {:ok, user} = User.confirm(user)
 
-      message = if user.confirmation_pending, do: "needs", else: "doesn't need"
+      message = if !user.is_confirmed, do: "needs", else: "doesn't need"
 
       shell_info("#{nickname} #{message} confirmation.")
     else
@@ -373,7 +373,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> User.need_confirmation(user, false) end)
+      |> Enum.each(fn user -> User.set_confirmation(user, true) end)
     end)
     |> Stream.run()
   end
@@ -391,7 +391,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> User.need_confirmation(user, true) end)
+      |> Enum.each(fn user -> User.set_confirmation(user, false) end)
     end)
     |> Stream.run()
   end
@@ -454,10 +454,10 @@ defmodule Mix.Tasks.Pleroma.User do
     user
   end
 
-  defp set_confirmed(user, value) do
-    {:ok, user} = User.need_confirmation(user, !value)
+  defp set_confirmation(user, value) do
+    {:ok, user} = User.set_confirmation(user, value)
 
-    shell_info("Confirmation pending status of #{user.nickname}: #{user.confirmation_pending}")
+    shell_info("Confirmation status of #{user.nickname}: #{user.is_confirmed}")
     user
   end
 end

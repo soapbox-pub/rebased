@@ -891,10 +891,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PATCH /confirm_email" do
     test "it confirms emails of two users", %{conn: conn, admin: admin} do
-      [first_user, second_user] = insert_pair(:user, confirmation_pending: true)
+      [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
-      assert first_user.confirmation_pending == true
-      assert second_user.confirmation_pending == true
+      refute first_user.is_confirmed
+      refute second_user.is_confirmed
 
       ret_conn =
         patch(conn, "/api/pleroma/admin/users/confirm_email", %{
@@ -906,8 +906,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert ret_conn.status == 200
 
-      assert first_user.confirmation_pending == true
-      assert second_user.confirmation_pending == true
+      first_user = User.get_by_id(first_user.id)
+      second_user = User.get_by_id(second_user.id)
+
+      assert first_user.is_confirmed
+      assert second_user.is_confirmed
 
       log_entry = Repo.one(ModerationLog)
 
@@ -920,7 +923,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PATCH /resend_confirmation_email" do
     test "it resend emails for two users", %{conn: conn, admin: admin} do
-      [first_user, second_user] = insert_pair(:user, confirmation_pending: true)
+      [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
       ret_conn =
         patch(conn, "/api/pleroma/admin/users/resend_confirmation_email", %{

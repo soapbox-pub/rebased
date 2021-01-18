@@ -191,7 +191,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
               moderator: %Schema{type: :boolean}
             }
           },
-          confirmation_pending: %Schema{type: :boolean}
+          is_confirmed: %Schema{type: :boolean}
         })
     }
   end

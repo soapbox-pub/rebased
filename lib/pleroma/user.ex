@@ -110,7 +110,7 @@ defmodule Pleroma.User do
     field(:follower_count, :integer, default: 0)
     field(:following_count, :integer, default: 0)
     field(:is_locked, :boolean, default: false)
-    field(:confirmation_pending, :boolean, default: false)
+    field(:is_confirmed, :boolean, default: true)
     field(:password_reset_pending, :boolean, default: false)
     field(:approval_pending, :boolean, default: false)
     field(:registration_reason, :string, default: nil)
@@ -290,7 +290,7 @@ defmodule Pleroma.User do
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
   def account_status(%User{local: true, approval_pending: true}), do: :approval_pending
 
-  def account_status(%User{local: true, confirmation_pending: true}) do
+  def account_status(%User{local: true, is_confirmed: false}) do
     if Config.get([:instance, :account_activation_required]) do
       :confirmation_pending
     else
@@ -704,11 +704,11 @@ defmodule Pleroma.User do
     reason_limit = Config.get([:instance, :registration_reason_length], 500)
     params = Map.put_new(params, :accepts_chat_messages, true)
 
-    need_confirmation? =
-      if is_nil(opts[:need_confirmation]) do
-        Config.get([:instance, :account_activation_required])
+    confirmed? =
+      if is_nil(opts[:confirmed]) do
+        !Config.get([:instance, :account_activation_required])
       else
-        opts[:need_confirmation]
+        opts[:confirmed]
       end
 
     need_approval? =
@@ -719,7 +719,7 @@ defmodule Pleroma.User do
       end
 
     struct
-    |> confirmation_changeset(need_confirmation: need_confirmation?)
+    |> confirmation_changeset(set_confirmation: confirmed?)
     |> approval_changeset(need_approval: need_approval?)
     |> cast(params, [
       :bio,
@@ -808,7 +808,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def post_register_action(%User{confirmation_pending: true} = user) do
+  def post_register_action(%User{is_confirmed: false} = user) do
     with {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
@@ -821,7 +821,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def post_register_action(%User{approval_pending: false, confirmation_pending: false} = user) do
+  def post_register_action(%User{approval_pending: false, is_confirmed: true} = user) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
@@ -882,7 +882,7 @@ defmodule Pleroma.User do
   def send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{confirmation_pending: true, email: email} = user)
+  def try_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
       when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
@@ -1642,8 +1642,8 @@ defmodule Pleroma.User do
     end)
   end
 
-  def confirm(%User{confirmation_pending: true} = user) do
-    with chg <- confirmation_changeset(user, need_confirmation: false),
+  def confirm(%User{is_confirmed: false} = user) do
+    with chg <- confirmation_changeset(user, set_confirmation: true),
          {:ok, user} <- update_and_set_cache(chg) do
       post_register_action(user)
       {:ok, user}
@@ -1682,7 +1682,7 @@ defmodule Pleroma.User do
       follower_count: 0,
       following_count: 0,
       is_locked: false,
-      confirmation_pending: false,
+      is_confirmed: true,
       password_reset_pending: false,
       approval_pending: false,
       registration_reason: nil,
@@ -2138,10 +2138,10 @@ defmodule Pleroma.User do
     updated_user
   end
 
-  @spec need_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
-  def need_confirmation(%User{} = user, bool) do
+  @spec set_confirmation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def set_confirmation(%User{} = user, bool) do
     user
-    |> confirmation_changeset(need_confirmation: bool)
+    |> confirmation_changeset(set_confirmation: bool)
     |> update_and_set_cache()
   end
 
@@ -2309,21 +2309,21 @@ defmodule Pleroma.User do
   end
 
   @spec confirmation_changeset(User.t(), keyword()) :: Changeset.t()
-  def confirmation_changeset(user, need_confirmation: need_confirmation?) do
+  def confirmation_changeset(user, set_confirmation: confirmed?) do
     params =
-      if need_confirmation? do
+      if confirmed? do
         %{
-          confirmation_pending: true,
-          confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+          is_confirmed: true,
+          confirmation_token: nil
         }
       else
         %{
-          confirmation_pending: false,
-          confirmation_token: nil
+          is_confirmed: false,
+          confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
         }
       end
 
-    cast(user, params, [:confirmation_pending, :confirmation_token])
+    cast(user, params, [:is_confirmed, :confirmation_token])
   end
 
   @spec approval_changeset(User.t(), keyword()) :: Changeset.t()
