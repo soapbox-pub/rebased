@@ -745,14 +745,19 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "author can repeat own private statuses" do
-      user = insert(:user)
+      author = insert(:user)
+      follower = insert(:user)
+      CommonAPI.follow(follower, author)
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "cofe", visibility: "private"})
+      {:ok, activity} = CommonAPI.post(author, %{status: "cofe", visibility: "private"})
 
-      {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, author)
 
       assert Visibility.is_private?(announce_activity)
       refute Visibility.visible_for_user?(announce_activity, nil)
+
+      assert Visibility.visible_for_user?(activity, follower)
+      assert {:error, :not_found} = CommonAPI.repeat(activity.id, follower)
     end
 
     test "favoriting a status" do
