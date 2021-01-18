@@ -112,7 +112,7 @@ defmodule Pleroma.User do
     field(:is_locked, :boolean, default: false)
     field(:is_confirmed, :boolean, default: true)
     field(:password_reset_pending, :boolean, default: false)
-    field(:approval_pending, :boolean, default: false)
+    field(:is_approved, :boolean, default: true)
     field(:registration_reason, :string, default: nil)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
@@ -288,7 +288,7 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
-  def account_status(%User{local: true, approval_pending: true}), do: :approval_pending
+  def account_status(%User{local: true, is_approved: false}), do: :approval_pending
 
   def account_status(%User{local: true, is_confirmed: false}) do
     if Config.get([:instance, :account_activation_required]) do
@@ -711,16 +711,16 @@ defmodule Pleroma.User do
         opts[:confirmed]
       end
 
-    need_approval? =
-      if is_nil(opts[:need_approval]) do
-        Config.get([:instance, :account_approval_required])
+    approved? =
+      if is_nil(opts[:approved]) do
+        !Config.get([:instance, :account_approval_required])
       else
-        opts[:need_approval]
+        opts[:approved]
       end
 
     struct
     |> confirmation_changeset(set_confirmation: confirmed?)
-    |> approval_changeset(need_approval: need_approval?)
+    |> approval_changeset(set_approval: approved?)
     |> cast(params, [
       :bio,
       :raw_bio,
@@ -814,14 +814,14 @@ defmodule Pleroma.User do
     end
   end
 
-  def post_register_action(%User{approval_pending: true} = user) do
+  def post_register_action(%User{is_approved: false} = user) do
     with {:ok, _} <- send_user_approval_email(user),
          {:ok, _} <- send_admin_approval_emails(user) do
       {:ok, user}
     end
   end
 
-  def post_register_action(%User{approval_pending: false, is_confirmed: true} = user) do
+  def post_register_action(%User{is_approved: true, is_confirmed: true} = user) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
@@ -1624,8 +1624,8 @@ defmodule Pleroma.User do
     end)
   end
 
-  def approve(%User{approval_pending: true} = user) do
-    with chg <- change(user, approval_pending: false),
+  def approve(%User{is_approved: false} = user) do
+    with chg <- change(user, is_approved: true),
          {:ok, user} <- update_and_set_cache(chg) do
       post_register_action(user)
       {:ok, user}
@@ -1684,7 +1684,7 @@ defmodule Pleroma.User do
       is_locked: false,
       is_confirmed: true,
       password_reset_pending: false,
-      approval_pending: false,
+      is_approved: true,
       registration_reason: nil,
       confirmation_token: nil,
       domain_blocks: [],
@@ -2327,9 +2327,8 @@ defmodule Pleroma.User do
   end
 
   @spec approval_changeset(User.t(), keyword()) :: Changeset.t()
-  def approval_changeset(user, need_approval: need_approval?) do
-    params = if need_approval?, do: %{approval_pending: true}, else: %{approval_pending: false}
-    cast(user, params, [:approval_pending])
+  def approval_changeset(user, set_approval: approved?) do
+    cast(user, %{is_approved: approved?}, [:is_approved])
   end
 
   def add_pinnned_activity(user, %Pleroma.Activity{id: id}) do
