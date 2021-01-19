@@ -139,6 +139,7 @@ defmodule Pleroma.User.Query do
   defp compose_query({:active, _}, query) do
     User.restrict_deactivated(query)
     |> where([u], u.is_approved == true)
+    |> where([u], u.is_confirmed == true)
   end
 
   defp compose_query({:legacy_active, _}, query) do
