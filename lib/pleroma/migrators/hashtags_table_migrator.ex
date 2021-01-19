@@ -192,13 +192,13 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     end)
   end
 
-  def count(force \\ false) do
+  def count(force \\ false, timeout \\ :infinity) do
     stored_count = state()[:count]
 
     if stored_count && !force do
       stored_count
     else
-      count = Repo.aggregate(query(), :count, :id)
+      count = Repo.aggregate(query(), :count, :id, timeout: timeout)
       put_stat(:count, count)
       count
     end
