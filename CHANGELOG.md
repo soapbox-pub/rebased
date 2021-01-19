@@ -59,8 +59,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased (Patch)
 
+
+## [2.2.2] - 2020-01-18
+
 ### Fixed
+
 - StealEmojiPolicy creates dir for emojis, if it doesn't exist.
+- Updated `elixir_make` to a non-retired version
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## [2.2.1] - 2020-12-22
 
