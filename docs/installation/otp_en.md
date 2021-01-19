@@ -89,6 +89,8 @@ RUM indexes are an alternative indexing scheme that is not included in PostgreSQ
 #### (Optional) Performance configuration
 It is encouraged to check [Optimizing your PostgreSQL performance](../configuration/postgresql.md) document, for tips on PostgreSQL tuning.
 
+Restart PostgreSQL to apply configuration changes:
+
 === "Alpine"
     ```
     rc-service postgresql restart
@@ -98,17 +100,6 @@ It is encouraged to check [Optimizing your PostgreSQL performance](../configurat
     ```
     systemctl restart postgresql
     ```
-
-If you are using PostgreSQL 12 or higher, add this to your Ecto database configuration
-
-```elixir
-#
-config :pleroma, Pleroma.Repo,
-prepare: :named,
-parameters: [
-  plan_cache_mode: "force_custom_plan"
-]
-```
 
 ### Installing Pleroma
 ```sh
