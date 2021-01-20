@@ -165,14 +165,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, delete: delete_user, user: user}
     end
 
-    test "when activation is not required", %{delete: delete, user: user} do
-      clear_config([:instance, :account_activation_required], false)
-      {:ok, _, _} = SideEffects.handle(delete)
-      ObanHelpers.perform_all()
-
-      assert User.get_cached_by_id(user.id).deactivated
-    end
-
     test "when activation is required", %{delete: delete, user: user} do
       clear_config([:instance, :account_activation_required], true)
       {:ok, _, _} = SideEffects.handle(delete)
