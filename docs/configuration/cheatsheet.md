@@ -1113,10 +1113,10 @@ Settings to enable and configure expiration for ephemeral activities
 
 ## ConcurrentLimiter
 
-Settings allow configuring restrictions for concurrently running jobs. Jobs, which can be configured:
+Settings to restrict concurrently running jobs. Jobs which can be configured:
 
-* `Pleroma.Web.RichMedia.Helpers` - configuration for getting RichMedia for activities.
-* `Pleroma.Web.MediaProxy` - configuration for MediaProxyWarmingPolicy.
+* `Pleroma.Web.RichMedia.Helpers` - generating link previews of URLs in activities
+* `Pleroma.Web.MediaProxy` - fetching remote media via MediaProxy
 
 Each job has these settings:
 
