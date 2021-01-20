@@ -18,6 +18,8 @@ defmodule Pleroma.DataCase do
 
   use ExUnit.CaseTemplate
 
+  import Pleroma.Tests.Helpers, only: [clear_config: 2]
+
   using do
     quote do
       alias Pleroma.Repo
@@ -105,17 +107,10 @@ defmodule Pleroma.DataCase do
   end
 
   def ensure_local_uploader(context) do
-    test_uploader = Map.get(context, :uploader, Pleroma.Uploaders.Local)
-    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
-    filters = Pleroma.Config.get([Pleroma.Upload, :filters])
+    test_uploader = Map.get(context, :uploader) || Pleroma.Uploaders.Local
 
-    Pleroma.Config.put([Pleroma.Upload, :uploader], test_uploader)
-    Pleroma.Config.put([Pleroma.Upload, :filters], [])
-
-    on_exit(fn ->
-      Pleroma.Config.put([Pleroma.Upload, :uploader], uploader)
-      Pleroma.Config.put([Pleroma.Upload, :filters], filters)
-    end)
+    clear_config([Pleroma.Upload, :uploader], test_uploader)
+    clear_config([Pleroma.Upload, :filters], [])
 
     :ok
   end

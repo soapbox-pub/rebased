@@ -150,17 +150,11 @@ config :pleroma, :config_description, [
         suggestions: ["pleroma"]
       },
       %{
-        key: :public_endpoint,
-        type: :string,
-        description: "S3 endpoint",
-        suggestions: ["https://s3.amazonaws.com"]
-      },
-      %{
         key: :truncated_namespace,
         type: :string,
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
-            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
+            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in Upload base_url."
       },
       %{
         key: :streaming_enabled,

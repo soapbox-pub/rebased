@@ -78,8 +78,8 @@ defmodule Pleroma.ObjectTest do
     setup do: clear_config([:instance, :cleanup_attachments])
 
     test "Disabled via config" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([:instance, :cleanup_attachments], false)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([:instance, :cleanup_attachments], false)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -112,8 +112,8 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "in subdirectories" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -146,9 +146,9 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "with dedupe enabled" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([Pleroma.Upload, :filters], [Pleroma.Upload.Filter.Dedupe])
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([Pleroma.Upload, :filters], [Pleroma.Upload.Filter.Dedupe])
+      clear_config([:instance, :cleanup_attachments], true)
 
       uploads_dir = Pleroma.Config.get!([Pleroma.Uploaders.Local, :uploads])
 
@@ -184,8 +184,8 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "with objects that have legacy data.url attribute" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -220,9 +220,9 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "With custom base_url" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([Pleroma.Upload, :base_url], "https://sub.domain.tld/dir/")
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([Pleroma.Upload, :base_url], "https://sub.domain.tld/dir/")
+      clear_config([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
