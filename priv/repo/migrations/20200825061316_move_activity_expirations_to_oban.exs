@@ -6,6 +6,8 @@ defmodule Pleroma.Repo.Migrations.MoveActivityExpirationsToOban do
   def change do
     Pleroma.Config.Oban.warn()
 
+    Application.ensure_all_started(:oban)
+
     Supervisor.start_link([{Oban, Pleroma.Config.get(Oban)}],
       strategy: :one_for_one,
       name: Pleroma.Supervisor
