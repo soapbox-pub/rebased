@@ -29,6 +29,7 @@ defmodule Pleroma.Uploaders.S3Test do
     test "it returns path without bucket when truncated_namespace set to ''" do
       Config.put([Pleroma.Uploaders.S3],
         bucket: "test_bucket",
+        bucket_namespace: "myaccount",
         truncated_namespace: ""
       )
 
