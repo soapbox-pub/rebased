@@ -79,7 +79,7 @@ config :ex_aws, :s3,
   # host: "s3.wasabisys.com", # required if not Amazon AWS
   access_key_id: nil,
   secret_access_key: nil,
-  # region: nil, # example: "us-east-1"
+  # region: "us-east-1", # may be required for Amazon AWS
   scheme: "https://"
 
 config :pleroma, :emoji,
