@@ -1830,13 +1830,6 @@ defmodule Pleroma.UserTest do
       assert User.visible_for(user, other_user) == :visible
     end
 
-    test "returns true when the account is unconfirmed and confirmation is not required" do
-      user = insert(:user, local: true, is_confirmed: false)
-      other_user = insert(:user, local: true)
-
-      assert User.visible_for(user, other_user) == :visible
-    end
-
     test "returns true when the account is unconfirmed and being viewed by a privileged account (confirmation required)" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
