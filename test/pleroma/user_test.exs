@@ -1563,31 +1563,15 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "delete/1 when confirmation is pending" do
-    setup do
-      user = insert(:user, is_confirmed: false)
-      {:ok, user: user}
-    end
+  test "delete/1 when confirmation is pending deletes the user" do
+    clear_config([:instance, :account_activation_required], true)
+    user = insert(:user, is_confirmed: false)
 
-    test "deletes user from database when activation required", %{user: user} do
-      clear_config([:instance, :account_activation_required], true)
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
 
-      {:ok, job} = User.delete(user)
-      {:ok, _} = ObanHelpers.perform(job)
-
-      refute User.get_cached_by_id(user.id)
-      refute User.get_by_id(user.id)
-    end
-
-    test "deactivates user when activation is not required", %{user: user} do
-      clear_config([:instance, :account_activation_required], false)
-
-      {:ok, job} = User.delete(user)
-      {:ok, _} = ObanHelpers.perform(job)
-
-      assert %{deactivated: true} = User.get_cached_by_id(user.id)
-      assert %{deactivated: true} = User.get_by_id(user.id)
-    end
+    refute User.get_cached_by_id(user.id)
+    refute User.get_by_id(user.id)
   end
 
   test "delete/1 when approval is pending deletes the user" do
@@ -1825,13 +1809,6 @@ defmodule Pleroma.UserTest do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
       user = insert(:user, local: false, is_confirmed: false)
-      other_user = insert(:user, local: true)
-
-      assert User.visible_for(user, other_user) == :visible
-    end
-
-    test "returns true when the account is unconfirmed and confirmation is not required" do
-      user = insert(:user, local: true, is_confirmed: false)
       other_user = insert(:user, local: true)
 
       assert User.visible_for(user, other_user) == :visible
