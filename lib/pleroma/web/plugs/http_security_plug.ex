@@ -20,10 +20,26 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     end
   end
 
-  defp headers do
+  def primary_frontend do
+    with %{"name" => frontend} <- Config.get([:frontends, :primary]),
+         available <- Config.get([:frontends, :available]),
+         %{} = primary_frontend <- Map.get(available, frontend) do
+      {:ok, primary_frontend}
+    end
+  end
+
+  def custom_http_frontend_headers do
+    with {:ok, %{"custom-http-headers" => custom_headers}} <- primary_frontend() do
+      custom_headers
+    else
+      _ -> []
+    end
+  end
+
+  def headers do
     referrer_policy = Config.get([:http_security, :referrer_policy])
     report_uri = Config.get([:http_security, :report_uri])
-    service_worker_allowed = Config.get([:http_security, :service_worker_allowed])
+    custom_http_frontend_headers = custom_http_frontend_headers()
 
     headers = [
       {"x-xss-protection", "1; mode=block"},
@@ -36,8 +52,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     ]
 
     headers =
-      if service_worker_allowed do
-        [{"service-worker-allowed", service_worker_allowed} | headers]
+      if custom_http_frontend_headers do
+        custom_http_frontend_headers ++ headers
       else
         headers
       end

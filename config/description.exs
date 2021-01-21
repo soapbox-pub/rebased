@@ -60,6 +60,12 @@ frontend_options = [
     label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
+  },
+  %{
+    key: "custom-http-headers",
+    label: "Custom HTTP headers",
+    type: {:list, :string},
+    description: "The custom HTTP headers for the frontend"
   }
 ]
 
@@ -1749,14 +1755,6 @@ config :pleroma, :config_description, [
         type: :string,
         description: "Adds the specified URL to report-uri and report-to group in CSP header",
         suggestions: ["https://example.com/report-uri"]
-      },
-      %{
-        key: :service_worker_allowed,
-        label: "The Service-Worker-Allowed header",
-        type: :string,
-        description:
-          "Sets the Service-Worker-Allowed header which limits the maximum allowed Service Worker scope",
-        suggestions: ["/"]
       }
     ]
   },
