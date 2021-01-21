@@ -105,18 +105,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       {page, page_size} = page_params(params)
 
-      activities =
+      result =
         ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
           offset: (page - 1) * page_size,
           godmode: godmode,
           exclude_reblogs: not with_reblogs,
-          pagination_type: :offset
+          pagination_type: :offset,
+          total: true
         })
 
       conn
       |> put_view(AdminAPI.StatusView)
-      |> render("index.json", %{activities: activities, as: :activity})
+      |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
     else
       _ -> {:error, :not_found}
     end
