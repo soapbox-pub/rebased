@@ -1023,6 +1023,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert response(conn, 200) =~ announce_activity.data["object"]
     end
+
+    test "It returns poll Answers when authenticated", %{conn: conn} do
+      poller = insert(:user)
+      voter = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(poller, %{
+          status: "suya...",
+          poll: %{options: ["suya", "suya.", "suya.."], expires_in: 10}
+        })
+
+      assert question = Object.normalize(activity, fetch: false)
+
+      {:ok, [activity], _object} = CommonAPI.vote(voter, question, [1])
+
+      assert outbox_get =
+               conn
+               |> assign(:user, voter)
+               |> put_req_header("accept", "application/activity+json")
+               |> get(voter.ap_id <> "/outbox?page=true")
+               |> json_response(200)
+
+      assert [answer_outbox] = outbox_get["orderedItems"]
+      assert answer_outbox["id"] == activity.data["id"]
+    end
   end
 
   describe "POST /users/:nickname/outbox (C2S)" do
