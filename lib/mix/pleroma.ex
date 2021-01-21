@@ -13,7 +13,8 @@ defmodule Mix.Pleroma do
     :flake_id,
     :swoosh,
     :timex,
-    :fast_html
+    :fast_html,
+    :oban
   ]
   @cachex_children ["object", "user", "scrubber", "web_resp"]
   @doc "Common functions to be reused in mix tasks"

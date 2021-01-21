@@ -316,7 +316,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
+      user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       redirect_uri = OAuthController.default_redirect_uri(app)
 
@@ -347,7 +347,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
+      user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       unlisted_redirect_uri = "http://cross-site-request.com"
 
@@ -790,7 +790,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do
       password = "testpassword"
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
+      user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password))
 
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -818,7 +818,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
           multi_factor_authentication_settings: %MFA.Settings{
             enabled: true,
             totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
@@ -927,8 +927,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       password = "testpassword"
 
       {:ok, user} =
-        insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
-        |> User.confirmation_changeset(need_confirmation: true)
+        insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password))
+        |> User.confirmation_changeset(set_confirmation: false)
         |> User.update_and_set_cache()
 
       refute Pleroma.User.account_status(user) == :active
@@ -955,7 +955,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
           deactivated: true
         )
 
@@ -983,7 +983,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
           password_reset_pending: true
         )
 
@@ -1012,8 +1012,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
-          confirmation_pending: true
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
+          is_confirmed: false
         )
 
       app = insert(:oauth_app, scopes: ["read", "write"])
@@ -1038,7 +1038,11 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "rejects token exchange for valid credentials belonging to an unapproved user" do
       password = "testpassword"
 
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password), approval_pending: true)
+      user =
+        insert(:user,
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
+          is_approved: false
+        )
 
       refute Pleroma.User.account_status(user) == :active
 

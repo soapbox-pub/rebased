@@ -429,7 +429,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   describe "GET /api/pleroma/admin/users" do
     test "renders users array for the first page", %{conn: conn, admin: admin} do
       user = insert(:user, local: false, tags: ["foo", "bar"])
-      user2 = insert(:user, approval_pending: true, registration_reason: "I'm a chill dude")
+      user2 = insert(:user, is_approved: false, registration_reason: "I'm a chill dude")
 
       conn = get(conn, "/api/pleroma/admin/users?page=1")
 
@@ -444,7 +444,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
             user2,
             %{
               "local" => true,
-              "approval_pending" => true,
+              "is_approved" => false,
               "registration_reason" => "I'm a chill dude",
               "actor_type" => "Person"
             }
@@ -635,11 +635,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "only unconfirmed users", %{conn: conn} do
-      sad_user = insert(:user, nickname: "sadboy", confirmation_pending: true)
-      old_user = insert(:user, nickname: "oldboy", confirmation_pending: true)
+      sad_user = insert(:user, nickname: "sadboy", is_confirmed: false)
+      old_user = insert(:user, nickname: "oldboy", is_confirmed: false)
 
-      insert(:user, nickname: "happyboy", approval_pending: false)
-      insert(:user, confirmation_pending: false)
+      insert(:user, nickname: "happyboy", is_approved: true)
+      insert(:user, is_confirmed: true)
 
       result =
         conn
@@ -649,8 +649,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       users =
         Enum.map([old_user, sad_user], fn user ->
           user_response(user, %{
-            "confirmation_pending" => true,
-            "approval_pending" => false
+            "is_confirmed" => false,
+            "is_approved" => true
           })
         end)
         |> Enum.sort_by(& &1["nickname"])
@@ -662,18 +662,18 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       user =
         insert(:user,
           nickname: "sadboy",
-          approval_pending: true,
+          is_approved: false,
           registration_reason: "Plz let me in!"
         )
 
-      insert(:user, nickname: "happyboy", approval_pending: false)
+      insert(:user, nickname: "happyboy", is_approved: true)
 
       conn = get(conn, "/api/pleroma/admin/users?filters=need_approval")
 
       users = [
         user_response(
           user,
-          %{"approval_pending" => true, "registration_reason" => "Plz let me in!"}
+          %{"is_approved" => false, "registration_reason" => "Plz let me in!"}
         )
       ]
 
@@ -816,8 +816,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "`active` filters out users pending approval", %{token: token} do
-      insert(:user, approval_pending: true)
-      %{id: user_id} = insert(:user, approval_pending: false)
+      insert(:user, is_approved: false)
+      %{id: user_id} = insert(:user, is_approved: true)
       %{id: admin_id} = token.user
 
       conn =
@@ -913,8 +913,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
-    user_one = insert(:user, approval_pending: true)
-    user_two = insert(:user, approval_pending: true)
+    user_one = insert(:user, is_approved: false)
+    user_two = insert(:user, is_approved: false)
 
     conn =
       patch(
@@ -924,7 +924,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       )
 
     response = json_response(conn, 200)
-    assert Enum.map(response["users"], & &1["approval_pending"]) == [false, false]
+    assert Enum.map(response["users"], & &1["is_approved"]) == [true, true]
 
     log_entry = Repo.one(ModerationLog)
 
@@ -960,8 +960,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       "tags" => [],
       "avatar" => User.avatar_url(user) |> MediaProxy.url(),
       "display_name" => HTML.strip_tags(user.name || user.nickname),
-      "confirmation_pending" => false,
-      "approval_pending" => false,
+      "is_confirmed" => true,
+      "is_approved" => true,
       "url" => user.ap_id,
       "registration_reason" => nil,
       "actor_type" => "Person"

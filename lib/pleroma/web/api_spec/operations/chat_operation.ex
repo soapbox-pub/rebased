@@ -236,7 +236,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "account" => %{
             "pleroma" => %{
               "is_admin" => false,
-              "confirmation_pending" => false,
+              "is_confirmed" => true,
               "hide_followers_count" => false,
               "is_moderator" => false,
               "hide_favorites" => true,

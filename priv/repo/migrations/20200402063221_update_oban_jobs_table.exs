@@ -6,6 +6,6 @@ defmodule Pleroma.Repo.Migrations.UpdateObanJobsTable do
   end
 
   def down do
-    Oban.Migrations.down(version: 7)
+    Oban.Migrations.down(version: 8)
   end
 end
