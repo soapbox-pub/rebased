@@ -1110,3 +1110,15 @@ Settings to enable and configure expiration for ephemeral activities
 
 * `:enabled` - enables ephemeral activities creation
 * `:min_lifetime` - minimum lifetime for ephemeral activities (in seconds). Default: 10 minutes.
+
+## ConcurrentLimiter
+
+Settings to restrict concurrently running jobs. Jobs which can be configured:
+
+* `Pleroma.Web.RichMedia.Helpers` - generating link previews of URLs in activities
+* `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy` - warming remote media cache via MediaProxyWarmingPolicy
+
+Each job has these settings:
+
+* `:max_running` - max concurrently runnings jobs
+* `:max_waiting` - max waiting jobs

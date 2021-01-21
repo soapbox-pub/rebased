@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth form improvements: users are remembered by their cookie, the CSS is overridable by the admin, and the style has been improved.
 - OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 - Ability to set ActivityPub aliases for follower migration.
+- Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
+
 
 <details>
   <summary>API Changes</summary>

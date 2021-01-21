@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
       if Pleroma.Config.get(:env) == :test do
         fetch(prefetch_url)
       else
-        ConcurrentLimiter.limit(MediaProxy, fn ->
+        ConcurrentLimiter.limit(__MODULE__, fn ->
           Task.start(fn -> fetch(prefetch_url) end)
         end)
       end

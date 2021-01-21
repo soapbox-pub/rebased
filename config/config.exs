@@ -832,6 +832,11 @@ config :pleroma, Pleroma.User.Backup,
   limit_days: 7,
   dir: nil
 
+config :pleroma, ConcurrentLimiter, [
+  {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
+]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
