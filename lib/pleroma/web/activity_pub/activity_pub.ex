@@ -727,6 +727,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.map(&List.wrap(&1))
   end
 
+  # Note: times out on larger instances (with default timeout), intended for complex queries
   defp restrict_hashtag_agg(query, opts) do
     [tag_any, tag_all, tag_reject] = hashtag_conditions(opts)
     has_conditions = Enum.any?([tag_any, tag_all, tag_reject], &Enum.any?(&1))
@@ -1290,23 +1291,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       hashtag_timeline_strategy == :prefer_aggregation ->
         restrict_hashtag_agg(query, opts)
 
-      hashtag_timeline_strategy == :avoid_aggregation or avoid_hashtags_aggregation?(opts) ->
+      true ->
         query
         |> distinct([activity], true)
         |> restrict_hashtag_any(opts)
         |> restrict_hashtag_all(opts)
         |> restrict_hashtag_reject_any(opts)
-
-      true ->
-        restrict_hashtag_agg(query, opts)
     end
-  end
-
-  defp avoid_hashtags_aggregation?(opts) do
-    [tag_any, tag_all, tag_reject] = hashtag_conditions(opts)
-
-    joins_count = length(tag_all) + if Enum.any?(tag_any), do: 1, else: 0
-    Enum.empty?(tag_reject) and joins_count <= 2
   end
 
   def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do

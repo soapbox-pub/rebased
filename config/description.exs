@@ -940,7 +940,7 @@ config :pleroma, :config_description, [
         key: :improved_hashtag_timeline,
         type: :keyword,
         description:
-          "If `true` / `:prefer_aggregation` / `:avoid_aggregation`, hashtags table and selected strategy will be used for hashtags timeline. When `false`, object-embedded hashtags will be used (slower). Is auto-set to `true` (unless overridden) when HashtagsTableMigrator completes."
+          "If `true` / `:prefer_aggregation`, hashtags table and selected strategy will be used for hashtags timeline. When `false`, object-embedded hashtags will be used (slower). Is auto-set to `true` (unless overridden) when HashtagsTableMigrator completes."
       }
     ]
   },

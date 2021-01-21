@@ -109,8 +109,9 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
       _ =
         Repo.query(
-          "DELETE FROM data_migration_failed_ids WHERE id = ANY($1)",
-          [object_ids -- failed_ids]
+          "DELETE FROM data_migration_failed_ids " <>
+            "WHERE data_migration_id = $1 AND record_id = ANY($2)",
+          [data_migration.id, object_ids -- failed_ids]
         )
 
       max_object_id = Enum.at(object_ids, -1)
@@ -133,12 +134,8 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     end)
     |> Stream.run()
 
-    with {:ok, %{rows: [[0]]}} <-
-           Repo.query(
-             "SELECT COUNT(record_id) FROM data_migration_failed_ids WHERE data_migration_id = $1;",
-             [data_migration.id]
-           ) do
-      _ = DataMigration.update_state(data_migration, :complete)
+    with 0 <- failures_count(data_migration.id) do
+      {:ok, data_migration} = DataMigration.update_state(data_migration, :complete)
 
       handle_success(data_migration)
     else
@@ -167,7 +164,8 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   end
 
   defp transfer_object_hashtags(object) do
-    hashtags = Object.object_data_hashtags(%{"tag" => object.tag})
+    embedded_tags = (Map.has_key?(object, :tag) && object.tag) || object.data["tag"]
+    hashtags = Object.object_data_hashtags(%{"tag" => embedded_tags})
 
     Repo.transaction(fn ->
       with {:ok, hashtag_records} <- Hashtag.get_or_create_by_names(hashtags) do
@@ -246,6 +244,36 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     |> order_by([o], asc: o.id)
   end
 
+  def failures_count(data_migration_id \\ nil) do
+    data_migration_id = data_migration_id || data_migration().id
+
+    with {:ok, %{rows: [[count]]}} <-
+           Repo.query(
+             "SELECT COUNT(record_id) FROM data_migration_failed_ids WHERE data_migration_id = $1;",
+             [data_migration_id]
+           ) do
+      count
+    end
+  end
+
+  def retry_failed do
+    data_migration = data_migration()
+
+    failed_objects_query()
+    |> Repo.chunk_stream(100, :one)
+    |> Stream.each(fn object ->
+      with {:ok, _} <- transfer_object_hashtags(object) do
+        _ =
+          Repo.query(
+            "DELETE FROM data_migration_failed_ids " <>
+              "WHERE data_migration_id = $1 AND record_id = $2",
+            [data_migration.id, object.id]
+          )
+      end
+    end)
+    |> Stream.run()
+  end
+
   def force_continue do
     send(whereis(), :migrate_hashtags)
   end
@@ -253,6 +281,12 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   def force_restart do
     {:ok, _} = DataMigration.update(data_migration(), %{state: :pending, data: %{}})
     force_continue()
+  end
+
+  def force_complete do
+    {:ok, data_migration} = DataMigration.update_state(data_migration(), :complete)
+
+    handle_success(data_migration)
   end
 
   defp update_status(status, message \\ nil) do
