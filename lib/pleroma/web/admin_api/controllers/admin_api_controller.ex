@@ -85,17 +85,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
-    activities =
+    result =
       ActivityPub.fetch_statuses(nil, %{
         instance: instance,
         limit: page_size,
         offset: (page - 1) * page_size,
-        exclude_reblogs: not with_reblogs
+        exclude_reblogs: not with_reblogs,
+        total: true
       })
 
     conn
     |> put_view(AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
   end
 
   def list_user_statuses(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = params) do

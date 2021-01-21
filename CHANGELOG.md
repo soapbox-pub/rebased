@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** AdminAPI changed User field `approval_pending` to `is_approved`
 - **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
 - **Breaking:** AdminAPI `GET /api/pleroma/admin/users/:nickname_or_id/statuses` changed response format and added the number of total users posts.
+- **Breaking:** AdminAPI `GET /api/pleroma/admin/instances/:instance/statuses` changed response format and added the number of total users posts.
 - Admin API: Reports now ordered by newest
 
 </details>
