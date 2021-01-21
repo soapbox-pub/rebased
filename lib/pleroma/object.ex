@@ -420,6 +420,8 @@ defmodule Pleroma.Object do
       hashtag when is_bitstring(hashtag) -> String.downcase(hashtag)
     end)
     |> Enum.uniq()
+    # Note: "" elements (plain text) might occur in `data.tag` for incoming objects
+    |> Enum.filter(&(&1 not in [nil, ""]))
   end
 
   def object_data_hashtags(_), do: []
