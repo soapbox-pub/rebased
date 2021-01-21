@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
   def purge(urls, opts \\ []) do
     args =
       urls
+      |> format_urls(Keyword.get(opts, :url_format))
       |> List.wrap()
       |> Enum.uniq()
       |> Enum.join(" ")
@@ -40,4 +41,22 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
     Logger.error("Error while cache purge: #{inspect(error)}")
     {:error, inspect(error)}
   end
+
+  def format_urls(urls, :htcacheclean) do
+    urls
+    |> Enum.map(fn url ->
+      uri = URI.parse(url)
+
+      query =
+        if !is_nil(uri.query) do
+          "?" <> uri.query
+        else
+          "?"
+        end
+
+      uri.scheme <> "://" <> uri.host <> ":#{inspect(uri.port)}" <> uri.path <> query
+    end)
+  end
+
+  def format_urls(urls, _), do: urls
 end
