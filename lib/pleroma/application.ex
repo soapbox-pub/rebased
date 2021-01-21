@@ -299,7 +299,7 @@ defmodule Pleroma.Application do
   def limiters_setup do
     config = Config.get(ConcurrentLimiter, [])
 
-    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.MediaProxy]
+    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy]
     |> Enum.each(fn module ->
       mod_config = Keyword.get(config, module, [])
 

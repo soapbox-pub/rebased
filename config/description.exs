@@ -3358,7 +3358,7 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: Pleroma.Web.MediaProxy,
+        key: Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
         type: :keyword,
         description: "Concurrent limits configuration for MediaProxyWarmingPolicy.",
         suggestions: [max_running: 5, max_waiting: 5],

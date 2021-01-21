@@ -1116,7 +1116,7 @@ Settings to enable and configure expiration for ephemeral activities
 Settings to restrict concurrently running jobs. Jobs which can be configured:
 
 * `Pleroma.Web.RichMedia.Helpers` - generating link previews of URLs in activities
-* `Pleroma.Web.MediaProxy` - fetching remote media via MediaProxy
+* `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy` - warming remote media cache via MediaProxyWarmingPolicy
 
 Each job has these settings:
 
