@@ -64,7 +64,7 @@ defmodule Pleroma.DataCase do
     end)
   end
 
-  setup tags do
+  def setup_multi_process_mode(tags) do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
     if tags[:async] do
@@ -72,11 +72,16 @@ defmodule Pleroma.DataCase do
       Mox.set_mox_private()
     else
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
+
       Mox.set_mox_global()
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
       clear_cachex()
     end
 
+    :ok
+  end
+
+  def setup_streamer(tags) do
     if tags[:needs_streamer] do
       start_supervised(%{
         id: Pleroma.Web.Streamer.registry(),
@@ -85,6 +90,12 @@ defmodule Pleroma.DataCase do
       })
     end
 
+    :ok
+  end
+
+  setup tags do
+    setup_multi_process_mode(tags)
+    setup_streamer(tags)
     stub_pipeline()
 
     Mox.verify_on_exit!()
