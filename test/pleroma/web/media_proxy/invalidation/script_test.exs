@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.ScriptTest do
 
   import ExUnit.CaptureLog
 
-  test "it logger error when script not found" do
+  test "it logs error when script is not found" do
     assert capture_log(fn ->
              assert Invalidation.Script.purge(
                       ["http://example.com/media/example.jpg"],
