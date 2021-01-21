@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
   def purge(urls, opts \\ []) do
     args =
       urls
-      |> format_urls(Keyword.get(opts, :url_format))
+      |> maybe_format_urls(Keyword.get(opts, :url_format))
       |> List.wrap()
       |> Enum.uniq()
       |> Enum.join(" ")
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
     {:error, inspect(error)}
   end
 
-  def format_urls(urls, :htcacheclean) do
+  def maybe_format_urls(urls, :htcacheclean) do
     urls
     |> Enum.map(fn url ->
       uri = URI.parse(url)
@@ -58,5 +58,5 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
     end)
   end
 
-  def format_urls(urls, _), do: urls
+  def maybe_format_urls(urls, _), do: urls
 end
