@@ -59,6 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   <summary>API Changes</summary>
   - Mastodon API: Current user is now included in conversation if it's the only participant.
   - Mastodon API: Fixed last_status.account being not filled with account data.
+  - Mastodon API: Fixed own_votes being not returned with poll data.
 </details>
 
 ## Unreleased (Patch)

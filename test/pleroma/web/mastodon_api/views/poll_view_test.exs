@@ -44,7 +44,8 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
       ],
       voted: false,
       votes_count: 0,
-      voters_count: 0
+      voters_count: 0,
+      own_votes: []
     }
 
     result = PollView.render("show.json", %{object: object})
@@ -123,7 +124,10 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     result = PollView.render("show.json", %{object: object, for: other_user})
 
+    _own_votes = result[:own_votes]
+
     assert result[:voted] == true
+    assert own_votes = [1, 2]
     assert Enum.at(result[:options], 1)[:votes_count] == 1
     assert Enum.at(result[:options], 2)[:votes_count] == 1
   end
