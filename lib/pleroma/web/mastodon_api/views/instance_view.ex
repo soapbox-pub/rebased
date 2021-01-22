@@ -45,6 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats])
         },
+        stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
     }

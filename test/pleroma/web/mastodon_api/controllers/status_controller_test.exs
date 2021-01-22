@@ -263,6 +263,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       fake_conn =
         conn
+        |> assign(:user, refresh_record(conn.assigns.user))
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/statuses", %{
           "status" =>
