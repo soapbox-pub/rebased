@@ -1,0 +1,74 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.Group do
+  use Ecto.Schema
+
+  import Ecto.Changeset
+
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Web
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
+
+  @moduledoc """
+  Groups contain all the additional information about a group that's not stored
+  in the user table.
+
+  Concepts:
+
+  - Groups have an owner
+  - Groups have members, invited by the owner.
+  """
+
+  @type t :: %__MODULE__{}
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
+
+  schema "groups" do
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
+    belongs_to(:owner, User, type: FlakeId.Ecto.CompatType, foreign_key: :owner_id)
+
+    field(:members, {:array, ObjectValidators.ObjectID})
+    field(:name, :string)
+    field(:description, :string)
+    field(:members_collection, :string)
+
+    timestamps()
+  end
+
+  @spec create(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def create(params) do
+    with {:ok, user} <- generate_user() do
+      %__MODULE__{user_id: user.id, members_collection: "#{user.ap_id}/members"}
+      |> changeset(params)
+      |> Repo.insert()
+    end
+  end
+
+  defp generate_ap_id(id) do
+    "#{Web.base_url()}/groups/#{id}"
+  end
+
+  defp generate_user() do
+    id = Ecto.UUID.generate()
+    ap_id = generate_ap_id(id)
+
+    %{
+      ap_id: ap_id,
+      name: id,
+      nickname: id,
+      follower_address: "#{ap_id}/followers",
+      following_address: "#{ap_id}/following",
+      local: true
+    }
+    |> User.group_changeset()
+    |> Repo.insert()
+  end
+
+  def changeset(struct, params) do
+    struct
+    |> cast(params, [:user_id, :owner_id, :name, :description, :members_collection])
+    |> validate_required([:user_id, :owner_id, :members_collection])
+  end
+end

@@ -407,6 +407,12 @@ defmodule Pleroma.User do
 
   defp fix_follower_address(params), do: params
 
+  def group_changeset(struct \\ %User{actor_type: "Group"}, params) do
+    struct
+    |> cast(params, [:ap_id, :nickname, :name, :follower_address, :following_address, :local])
+    |> validate_required([:ap_id, :nickname, :name, :follower_address, :following_address, :local])
+  end
+
   def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
