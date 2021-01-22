@@ -33,4 +33,23 @@ defmodule Pleroma.GroupTest do
     Repo.delete(group.user)
     refute Repo.get(Group, group.id)
   end
+
+  test "group members can be seen and added" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+
+    {:ok, group} = Group.create(%{owner_id: user.id, name: "cofe", description: "corndog"})
+
+    assert [] == Group.members(group)
+
+    {:ok, group} = Group.add_member(group, other_user)
+    assert [other_user] == Group.members(group)
+
+    assert Group.is_member?(group, other_user)
+    refute Group.is_member?(group, third_user)
+
+    {:ok, group} = Group.remove_member(group, other_user)
+    refute Group.is_member?(group, other_user)
+  end
 end

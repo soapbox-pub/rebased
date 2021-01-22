@@ -58,6 +58,10 @@ defmodule Pleroma.User do
   # AP ID user relationships (blocks, mutes etc.)
   # Format: [rel_type: [outgoing_rel: :outgoing_rel_target, incoming_rel: :incoming_rel_source]]
   @user_relationships_config [
+    membership: [
+      group_memberships: :group_members,
+      user_memberships: :joined_groups
+    ],
     block: [
       blocker_blocks: :blocked_users,
       blockee_blocks: :blocker_users

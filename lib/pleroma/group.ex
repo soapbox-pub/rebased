@@ -10,7 +10,7 @@ defmodule Pleroma.Group do
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Web
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.UserRelationship
 
   @moduledoc """
   Groups contain all the additional information about a group that's not stored
@@ -29,7 +29,8 @@ defmodule Pleroma.Group do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:owner, User, type: FlakeId.Ecto.CompatType, foreign_key: :owner_id)
 
-    field(:members, {:array, ObjectValidators.ObjectID})
+    has_many(:members, through: [:user, :group_members])
+
     field(:name, :string)
     field(:description, :string)
     field(:members_collection, :string)
@@ -70,5 +71,25 @@ defmodule Pleroma.Group do
     struct
     |> cast(params, [:user_id, :owner_id, :name, :description, :members_collection])
     |> validate_required([:user_id, :owner_id, :members_collection])
+  end
+
+  def is_member?(%{user_id: user_id}, member) do
+    UserRelationship.membership_exists?(%User{id: user_id}, member)
+  end
+
+  def members(group) do
+    Repo.preload(group, :members).members
+  end
+
+  def add_member(%{user_id: user_id} = group, member) do
+    with {:ok, _relationship} <- UserRelationship.create_membership(%User{id: user_id}, member) do
+      {:ok, group}
+    end
+  end
+
+  def remove_member(%{user_id: user_id} = group, member) do
+    with {:ok, _relationship} <- UserRelationship.delete_membership(%User{id: user_id}, member) do
+      {:ok, group}
+    end
   end
 end
