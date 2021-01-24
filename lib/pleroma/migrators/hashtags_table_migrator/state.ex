@@ -12,6 +12,10 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator.State do
     Agent.start_link(fn -> @init_state end, name: @reg_name)
   end
 
+  def clear do
+    Agent.update(@reg_name, fn _state -> @init_state end)
+  end
+
   def get do
     Agent.get(@reg_name, & &1)
   end

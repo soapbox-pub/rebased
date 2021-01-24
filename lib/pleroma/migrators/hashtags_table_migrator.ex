@@ -72,6 +72,8 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
   @impl true
   def handle_info(:migrate_hashtags, state) do
+    State.clear()
+
     data_migration = data_migration()
 
     persistent_data = Map.take(data_migration.data, ["max_processed_id"])
@@ -152,8 +154,6 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     # Note: most objects have Mention-type AS2 tags and no hashtags (but we can't filter them out)
     from(
       object in Object,
-      left_join: hashtag in assoc(object, :hashtags),
-      where: is_nil(hashtag.id),
       where:
         fragment("(?)->'tag' IS NOT NULL AND (?)->'tag' != '[]'::jsonb", object.data, object.data),
       select: %{
@@ -161,12 +161,24 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
         tag: fragment("(?)->'tag'", object.data)
       }
     )
+    |> join(:left, [o], hashtags_objects in fragment("SELECT object_id FROM hashtags_objects"),
+      on: hashtags_objects.object_id == o.id
+    )
+    |> where([_o, hashtags_objects], is_nil(hashtags_objects.object_id))
   end
 
   defp transfer_object_hashtags(object) do
-    embedded_tags = (Map.has_key?(object, :tag) && object.tag) || object.data["tag"]
+    embedded_tags = if Map.has_key?(object, :tag), do: object.tag, else: object.data["tag"]
     hashtags = Object.object_data_hashtags(%{"tag" => embedded_tags})
 
+    if Enum.any?(hashtags) do
+      transfer_object_hashtags(object, hashtags)
+    else
+      {:ok, object.id}
+    end
+  end
+
+  defp transfer_object_hashtags(object, hashtags) do
     Repo.transaction(fn ->
       with {:ok, hashtag_records} <- Hashtag.get_or_create_by_names(hashtags) do
         for hashtag_record <- hashtag_records do
