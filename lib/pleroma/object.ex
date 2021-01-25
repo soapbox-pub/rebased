@@ -388,24 +388,16 @@ defmodule Pleroma.Object do
   def tags(_), do: []
 
   def hashtags(%Object{} = object) do
-    cond do
-      Config.object_embedded_hashtags?() ->
-        embedded_hashtags(object)
-
-      object.id == "pleroma:fake_object_id" ->
-        []
-
-      true ->
-        hashtag_records = Repo.preload(object, :hashtags).hashtags
-        Enum.map(hashtag_records, & &1.name)
-    end
+    # Note: always using embedded hashtags regardless whether they are migrated to hashtags table
+    #   (embedded hashtags stay in sync anyways, and we avoid extra joins and preload hassle)
+    embedded_hashtags(object)
   end
 
-  defp embedded_hashtags(%Object{data: data}) do
+  def embedded_hashtags(%Object{data: data}) do
     object_data_hashtags(data)
   end
 
-  defp embedded_hashtags(_), do: []
+  def embedded_hashtags(_), do: []
 
   def object_data_hashtags(%{"tag" => tags}) when is_list(tags) do
     tags
