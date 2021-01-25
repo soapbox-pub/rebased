@@ -1293,7 +1293,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       true ->
         query
-        |> distinct([activity], true)
         |> restrict_hashtag_any(opts)
         |> restrict_hashtag_all(opts)
         |> restrict_hashtag_reject_any(opts)
