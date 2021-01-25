@@ -33,10 +33,11 @@ defmodule Pleroma.LoadTesting.Fetcher do
   end
 
   defp create_filter(user) do
-    Pleroma.Filter.create(%Pleroma.Filter{
+    Pleroma.Filter.create(%{
       user_id: user.id,
       phrase: "must be filtered",
-      hide: true
+      hide: true,
+      context: ["home"]
     })
   end
 

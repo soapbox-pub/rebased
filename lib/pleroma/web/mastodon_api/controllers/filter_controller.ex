@@ -20,6 +20,8 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.FilterOperation
 
+  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
   @doc "GET /api/v1/filters"
   def index(%{assigns: %{user: user}} = conn, _) do
     filters = Filter.get_filters(user)
@@ -29,25 +31,23 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
 
   @doc "POST /api/v1/filters"
   def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
-    query = %Filter{
-      user_id: user.id,
-      phrase: params.phrase,
-      context: params.context,
-      hide: params.irreversible,
-      whole_word: params.whole_word
-      # TODO: support `expires_in` parameter (as in Mastodon API)
-    }
-
-    {:ok, response} = Filter.create(query)
-
-    render(conn, "show.json", filter: response)
+    with {:ok, response} <-
+           params
+           |> Map.put(:user_id, user.id)
+           |> Map.put(:hide, params[:irreversible])
+           |> Map.delete(:irreversible)
+           |> Filter.create() do
+      render(conn, "show.json", filter: response)
+    end
   end
 
   @doc "GET /api/v1/filters/:id"
   def show(%{assigns: %{user: user}} = conn, %{id: filter_id}) do
-    filter = Filter.get(filter_id, user)
-
-    render(conn, "show.json", filter: filter)
+    with %Filter{} = filter <- Filter.get(filter_id, user) do
+      render(conn, "show.json", filter: filter)
+    else
+      nil -> {:error, :not_found}
+    end
   end
 
   @doc "PUT /api/v1/filters/:id"
@@ -56,28 +56,31 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
         %{id: filter_id}
       ) do
     params =
-      params
-      |> Map.delete(:irreversible)
-      |> Map.put(:hide, params[:irreversible])
-      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-      |> Map.new()
-
-    # TODO: support `expires_in` parameter (as in Mastodon API)
+      if is_boolean(params[:irreversible]) do
+        params
+        |> Map.put(:hide, params[:irreversible])
+        |> Map.delete(:irreversible)
+      else
+        params
+      end
 
     with %Filter{} = filter <- Filter.get(filter_id, user),
          {:ok, %Filter{} = filter} <- Filter.update(filter, params) do
       render(conn, "show.json", filter: filter)
+    else
+      nil -> {:error, :not_found}
+      error -> error
     end
   end
 
   @doc "DELETE /api/v1/filters/:id"
   def delete(%{assigns: %{user: user}} = conn, %{id: filter_id}) do
-    query = %Filter{
-      user_id: user.id,
-      filter_id: filter_id
-    }
-
-    {:ok, _} = Filter.delete(query)
-    json(conn, %{})
+    with %Filter{} = filter <- Filter.get(filter_id, user),
+         {:ok, _} <- Filter.delete(filter) do
+      json(conn, %{})
+    else
+      nil -> {:error, :not_found}
+      error -> error
+    end
   end
 end

@@ -7,81 +7,120 @@ defmodule Pleroma.FilterTest do
 
   import Pleroma.Factory
 
+  alias Oban.Job
   alias Pleroma.Filter
-  alias Pleroma.Repo
+
+  setup do
+    [user: insert(:user)]
+  end
 
   describe "creating filters" do
-    test "creating one filter" do
-      user = insert(:user)
+    test "creation validation error", %{user: user} do
+      attrs = %{
+        user_id: user.id,
+        expires_in: 60
+      }
 
-      query = %Filter{
+      {:error, _} = Filter.create(attrs)
+
+      assert Repo.all(Job) == []
+    end
+
+    test "use passed expires_at instead expires_in", %{user: user} do
+      now = NaiveDateTime.utc_now()
+
+      attrs = %{
+        user_id: user.id,
+        expires_at: now,
+        phrase: "knights",
+        context: ["home"],
+        expires_in: 600
+      }
+
+      {:ok, %Filter{} = filter} = Filter.create(attrs)
+
+      result = Filter.get(filter.filter_id, user)
+      assert result.expires_at == NaiveDateTime.truncate(now, :second)
+
+      [job] = Repo.all(Job)
+
+      assert DateTime.truncate(job.scheduled_at, :second) ==
+               now |> NaiveDateTime.truncate(:second) |> DateTime.from_naive!("Etc/UTC")
+    end
+
+    test "creating one filter", %{user: user} do
+      attrs = %{
         user_id: user.id,
         filter_id: 42,
         phrase: "knights",
         context: ["home"]
       }
 
-      {:ok, %Filter{} = filter} = Filter.create(query)
+      {:ok, %Filter{} = filter} = Filter.create(attrs)
       result = Filter.get(filter.filter_id, user)
-      assert query.phrase == result.phrase
+      assert attrs.phrase == result.phrase
     end
 
-    test "creating one filter without a pre-defined filter_id" do
-      user = insert(:user)
+    test "creating with expired_at", %{user: user} do
+      attrs = %{
+        user_id: user.id,
+        filter_id: 42,
+        phrase: "knights",
+        context: ["home"],
+        expires_in: 60
+      }
 
-      query = %Filter{
+      {:ok, %Filter{} = filter} = Filter.create(attrs)
+      result = Filter.get(filter.filter_id, user)
+      assert attrs.phrase == result.phrase
+
+      assert [_] = Repo.all(Job)
+    end
+
+    test "creating one filter without a pre-defined filter_id", %{user: user} do
+      attrs = %{
         user_id: user.id,
         phrase: "knights",
         context: ["home"]
       }
 
-      {:ok, %Filter{} = filter} = Filter.create(query)
+      {:ok, %Filter{} = filter} = Filter.create(attrs)
       # Should start at 1
       assert filter.filter_id == 1
     end
 
-    test "creating additional filters uses previous highest filter_id + 1" do
-      user = insert(:user)
+    test "creating additional filters uses previous highest filter_id + 1", %{user: user} do
+      filter1 = insert(:filter, user: user)
 
-      query_one = %Filter{
-        user_id: user.id,
-        filter_id: 42,
-        phrase: "knights",
-        context: ["home"]
-      }
-
-      {:ok, %Filter{} = filter_one} = Filter.create(query_one)
-
-      query_two = %Filter{
+      attrs = %{
         user_id: user.id,
         # No filter_id
         phrase: "who",
         context: ["home"]
       }
 
-      {:ok, %Filter{} = filter_two} = Filter.create(query_two)
-      assert filter_two.filter_id == filter_one.filter_id + 1
+      {:ok, %Filter{} = filter2} = Filter.create(attrs)
+      assert filter2.filter_id == filter1.filter_id + 1
     end
 
-    test "filter_id is unique per user" do
-      user_one = insert(:user)
+    test "filter_id is unique per user", %{user: user_one} do
       user_two = insert(:user)
 
-      query_one = %Filter{
+      attrs1 = %{
         user_id: user_one.id,
         phrase: "knights",
         context: ["home"]
       }
 
-      {:ok, %Filter{} = filter_one} = Filter.create(query_one)
+      {:ok, %Filter{} = filter_one} = Filter.create(attrs1)
 
-      query_two = %Filter{
+      attrs2 = %{
         user_id: user_two.id,
         phrase: "who",
         context: ["home"]
       }
 
-      {:ok, %Filter{} = filter_two} = Filter.create(query_two)
+      {:ok, %Filter{} = filter_two} = Filter.create(attrs2)
 
       assert filter_one.filter_id == 1
       assert filter_two.filter_id == 1
@@ -94,65 +133,61 @@ defmodule Pleroma.FilterTest do
     end
   end
 
-  test "deleting a filter" do
-    user = insert(:user)
+  test "deleting a filter", %{user: user} do
+    filter = insert(:filter, user: user)
 
-    query = %Filter{
-      user_id: user.id,
-      filter_id: 0,
-      phrase: "knights",
-      context: ["home"]
-    }
-
-    {:ok, _filter} = Filter.create(query)
-    {:ok, filter} = Filter.delete(query)
-    assert is_nil(Repo.get(Filter, filter.filter_id))
+    assert Repo.get(Filter, filter.id)
+    {:ok, filter} = Filter.delete(filter)
+    refute Repo.get(Filter, filter.id)
   end
 
-  test "getting all filters by an user" do
-    user = insert(:user)
-
-    query_one = %Filter{
+  test "deleting a filter with expires_at is removing Oban job too", %{user: user} do
+    attrs = %{
       user_id: user.id,
-      filter_id: 1,
-      phrase: "knights",
-      context: ["home"]
+      phrase: "cofe",
+      context: ["home"],
+      expires_in: 600
     }
 
-    query_two = %Filter{
-      user_id: user.id,
-      filter_id: 2,
-      phrase: "who",
-      context: ["home"]
-    }
+    {:ok, filter} = Filter.create(attrs)
+    assert %Job{id: job_id} = Pleroma.Workers.PurgeExpiredFilter.get_expiration(filter.id)
+    {:ok, _} = Filter.delete(filter)
 
-    {:ok, filter_one} = Filter.create(query_one)
-    {:ok, filter_two} = Filter.create(query_two)
-    filters = Filter.get_filters(user)
-    assert filter_one in filters
-    assert filter_two in filters
+    assert Repo.get(Job, job_id) == nil
   end
 
-  test "updating a filter" do
-    user = insert(:user)
+  test "getting all filters by an user", %{user: user} do
+    filter1 = insert(:filter, user: user)
+    filter2 = insert(:filter, user: user)
 
-    query_one = %Filter{
-      user_id: user.id,
-      filter_id: 1,
-      phrase: "knights",
-      context: ["home"]
-    }
+    filter_ids = user |> Filter.get_filters() |> collect_ids()
+
+    assert filter1.id in filter_ids
+    assert filter2.id in filter_ids
+  end
+
+  test "updating a filter", %{user: user} do
+    filter = insert(:filter, user: user)
 
     changes = %{
       phrase: "who",
       context: ["home", "timeline"]
     }
 
-    {:ok, filter_one} = Filter.create(query_one)
-    {:ok, filter_two} = Filter.update(filter_one, changes)
+    {:ok, updated_filter} = Filter.update(filter, changes)
 
-    assert filter_one != filter_two
-    assert filter_two.phrase == changes.phrase
-    assert filter_two.context == changes.context
+    assert filter != updated_filter
+    assert updated_filter.phrase == changes.phrase
+    assert updated_filter.context == changes.context
+  end
+
+  test "updating with error", %{user: user} do
+    filter = insert(:filter, user: user)
+
+    changes = %{
+      phrase: nil
+    }
+
+    {:error, _} = Filter.update(filter, changes)
   end
 end
