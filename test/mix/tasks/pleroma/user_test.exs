@@ -456,6 +456,37 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
+  describe "running activate" do
+    test "user is activated" do
+      %{id: id, nickname: nickname} = insert(:user, is_active: true)
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["activate", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "User #{nickname} already activated"
+
+      user = Repo.get(User, id)
+      assert user.is_active
+    end
+
+    test "user is not activated" do
+      %{id: id, nickname: nickname} = insert(:user, is_active: false)
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["activate", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "Successfully activated #{nickname}"
+
+      user = Repo.get(User, id)
+      assert user.is_active
+    end
+
+    test "it prints an error message when user is not exist" do
+      Mix.Tasks.Pleroma.User.run(["activate", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No user"
+    end
+  end
+
   describe "search" do
     test "it returns users matching" do
       user = insert(:user)
