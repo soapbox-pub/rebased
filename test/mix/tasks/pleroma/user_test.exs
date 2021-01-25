@@ -102,7 +102,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
         assert_received {:mix_shell, :info, [message]}
         assert message =~ " deleted"
-        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+        assert %{is_active: false} = User.get_by_nickname(user.nickname)
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end
@@ -140,7 +140,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
         assert_received {:mix_shell, :info, [message]}
         assert message =~ " deleted"
-        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+        assert %{is_active: false} = User.get_by_nickname(user.nickname)
 
         assert called(Pleroma.Web.Federator.publish(:_))
         refute Pleroma.Repo.get(Pleroma.Activity, like_activity.id)
@@ -157,41 +157,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running toggle_activated" do
-    test "user is deactivated" do
-      user = insert(:user)
-
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " deactivated"
-
-      user = User.get_cached_by_nickname(user.nickname)
-      assert user.deactivated
-    end
-
-    test "user is activated" do
-      user = insert(:user, deactivated: true)
-
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " activated"
-
-      user = User.get_cached_by_nickname(user.nickname)
-      refute user.deactivated
-    end
-
-    test "no user to toggle" do
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", "nonexistent"])
-
-      assert_received {:mix_shell, :error, [message]}
-      assert message =~ "No user"
-    end
-  end
-
   describe "running deactivate" do
-    test "user is unsubscribed" do
+    test "active user is deactivated and unsubscribed" do
       followed = insert(:user)
       remote_followed = insert(:user, local: false)
       user = insert(:user)
@@ -201,16 +168,26 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       Mix.Tasks.Pleroma.User.run(["deactivate", user.nickname])
 
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Deactivating"
-
       # Note that the task has delay :timer.sleep(500)
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Successfully unsubscribed"
+
+      assert message ==
+               "Successfully deactivated #{user.nickname} and unsubscribed all local followers"
 
       user = User.get_cached_by_nickname(user.nickname)
       assert Enum.empty?(Enum.filter(User.get_friends(user), & &1.local))
-      assert user.deactivated
+      refute user.is_active
+    end
+
+    test "user is deactivated" do
+      %{id: id, nickname: nickname} = insert(:user, is_active: false)
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["deactivate", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "User #{nickname} already deactivated"
+
+      user = Repo.get(User, id)
+      refute user.is_active
     end
 
     test "no user to deactivate" do
@@ -486,6 +463,37 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No local user"
+    end
+  end
+
+  describe "running activate" do
+    test "user is activated" do
+      %{id: id, nickname: nickname} = insert(:user, is_active: true)
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["activate", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "User #{nickname} already activated"
+
+      user = Repo.get(User, id)
+      assert user.is_active
+    end
+
+    test "user is not activated" do
+      %{id: id, nickname: nickname} = insert(:user, is_active: false)
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["activate", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "Successfully activated #{nickname}"
+
+      user = Repo.get(User, id)
+      assert user.is_active
+    end
+
+    test "no user to activate" do
+      Mix.Tasks.Pleroma.User.run(["activate", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No user"
     end
   end
 

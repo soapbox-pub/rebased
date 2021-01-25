@@ -172,9 +172,9 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def toggle_activation(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
 
-    {:ok, updated_user} = User.deactivate(user, !user.deactivated)
+    {:ok, updated_user} = User.set_activation(user, !user.is_active)
 
-    action = if user.deactivated, do: "activate", else: "deactivate"
+    action = if !user.is_active, do: "activate", else: "deactivate"
 
     ModerationLog.insert_log(%{
       actor: admin,
@@ -189,7 +189,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   def activate(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
-    {:ok, updated_users} = User.deactivate(users, false)
+    {:ok, updated_users} = User.set_activation(users, true)
 
     ModerationLog.insert_log(%{
       actor: admin,
@@ -204,7 +204,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   def deactivate(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
-    {:ok, updated_users} = User.deactivate(users, true)
+    {:ok, updated_users} = User.set_activation(users, false)
 
     ModerationLog.insert_log(%{
       actor: admin,

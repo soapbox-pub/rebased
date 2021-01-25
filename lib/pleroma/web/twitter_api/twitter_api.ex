@@ -59,7 +59,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def password_reset(nickname_or_email) do
     with true <- is_binary(nickname_or_email),
-         %User{local: true, email: email, deactivated: false} = user when is_binary(email) <-
+         %User{local: true, email: email, is_active: true} = user when is_binary(email) <-
            User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user

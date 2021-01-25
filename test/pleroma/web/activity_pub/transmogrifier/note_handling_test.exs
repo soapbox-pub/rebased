@@ -154,7 +154,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     test "it does not work for deactivated users" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Jason.decode!()
 
-      insert(:user, ap_id: data["actor"], deactivated: true)
+      insert(:user, ap_id: data["actor"], is_active: false)
 
       assert {:error, _} = Transmogrifier.handle_incoming(data)
     end

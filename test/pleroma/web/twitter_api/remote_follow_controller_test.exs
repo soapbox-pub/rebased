@@ -141,7 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "returns error when user is deactivated", %{conn: conn} do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
       user2 = insert(:user)
 
       response =
