@@ -10,9 +10,8 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
   def render("show.json", %{object: object, multiple: multiple, options: options} = params) do
     {end_time, expired} = end_time_and_expired(object)
     {options, votes_count} = options_and_votes_count(options)
-    {voted, own_votes} = voted_and_own_votes(params, options)
 
-    %{
+    poll = %{
       # Mastodon uses separate ids for polls, but an object can't have
       # more than one poll embedded so object id is fine
       id: to_string(object.id),
@@ -22,10 +21,16 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       votes_count: votes_count,
       voters_count: voters_count(object),
       options: options,
-      voted: voted,
-      own_votes: own_votes,
       emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"])
     }
+
+    if params[:for] do
+      # if a user is not authenticated Mastodon doesn't include `voted` & `own_votes` keys in response
+      {voted, own_votes} = voted_and_own_votes(params, options)
+      Map.merge(poll, %{voted: voted, own_votes: own_votes})
+    else
+      poll
+    end
   end
 
   def render("show.json", %{object: object} = params) do
@@ -70,20 +75,24 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
   defp voters_count(_), do: 0
 
   defp voted_and_own_votes(%{object: object} = params, options) do
-    options = options |> Enum.map(fn x -> Map.get(x, :title) end)
-
     if params[:for] do
       existing_votes =
         Pleroma.Web.ActivityPub.Utils.get_existing_votes(params[:for].ap_id, object)
 
-      own_votes =
-        for vote <- existing_votes do
-          data = Map.get(vote, :object) |> Map.get(:data)
-
-          Enum.find_index(options, fn x -> x == data["name"] end)
-        end || []
-
       voted = existing_votes != [] or params[:for].ap_id == object.data["actor"]
+
+      own_votes =
+        if voted do
+          titles = Enum.map(options, & &1[:title])
+
+          Enum.reduce(existing_votes, [], fn vote, acc ->
+            data = vote |> Map.get(:object) |> Map.get(:data)
+            index = Enum.find_index(titles, &(&1 == data["name"]))
+            [index | acc]
+          end)
+        else
+          []
+        end
 
       {voted, own_votes}
     else
