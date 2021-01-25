@@ -368,6 +368,12 @@ defmodule Pleroma.Web.Router do
     get("/statuses/:id/reactions", EmojiReactionController, :index)
   end
 
+  scope "/api/v0/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:authenticated_api)
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+  end
+
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     scope [] do
       pipe_through(:authenticated_api)
