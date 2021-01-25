@@ -158,7 +158,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
   end
 
   describe "running deactivate" do
-    test "user is unsubscribed" do
+    test "active user is deactivated and unsubscribed" do
       followed = insert(:user)
       remote_followed = insert(:user, local: false)
       user = insert(:user)
@@ -168,15 +168,25 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       Mix.Tasks.Pleroma.User.run(["deactivate", user.nickname])
 
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Deactivating"
-
       # Note that the task has delay :timer.sleep(500)
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Successfully unsubscribed"
+
+      assert message ==
+               "Successfully deactivated #{user.nickname} and unsubscribed all local followers"
 
       user = User.get_cached_by_nickname(user.nickname)
       assert Enum.empty?(Enum.filter(User.get_friends(user), & &1.local))
+      refute user.is_active
+    end
+
+    test "user is deactivated" do
+      %{id: id, nickname: nickname} = insert(:user, is_active: false)
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["deactivate", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "User #{nickname} already deactivated"
+
+      user = Repo.get(User, id)
       refute user.is_active
     end
 
@@ -479,7 +489,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert user.is_active
     end
 
-    test "it prints an error message when user is not exist" do
+    test "no user to activate" do
       Mix.Tasks.Pleroma.User.run(["activate", "foo"])
 
       assert_received {:mix_shell, :error, [message]}

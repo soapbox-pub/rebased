@@ -162,17 +162,20 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["deactivate", nickname]) do
     start_pleroma()
 
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      shell_info("Deactivating #{user.nickname}")
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         true <- user.is_active do
       User.set_activation(user, false)
       :timer.sleep(500)
 
       user = User.get_cached_by_id(user.id)
 
       if Enum.empty?(Enum.filter(User.get_friends(user), & &1.local)) do
-        shell_info("Successfully unsubscribed all local followers from #{user.nickname}")
+        shell_info("Successfully deactivated #{nickname} and unsubscribed all local followers")
       end
     else
+      false ->
+        shell_info("User #{nickname} already deactivated")
+
       _ ->
         shell_error("No user #{nickname}")
     end
