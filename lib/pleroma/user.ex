@@ -117,7 +117,7 @@ defmodule Pleroma.User do
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:domain_blocks, {:array, :string}, default: [])
-    field(:deactivated, :boolean, default: false)
+    field(:is_active, :boolean, default: true)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
@@ -217,7 +217,8 @@ defmodule Pleroma.User do
       target_users_query = assoc(user, unquote(outgoing_relation_target))
 
       if restrict_deactivated? do
-        restrict_deactivated(target_users_query)
+        target_users_query
+        |> User.Query.build(%{deactivated: false})
       else
         target_users_query
       end
@@ -286,7 +287,7 @@ defmodule Pleroma.User do
 
   @doc "Returns status account"
   @spec account_status(User.t()) :: account_status()
-  def account_status(%User{deactivated: true}), do: :deactivated
+  def account_status(%User{is_active: false}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
   def account_status(%User{local: true, is_approved: false}), do: :approval_pending
   def account_status(%User{local: true, is_confirmed: false}), do: :confirmation_pending
@@ -377,11 +378,6 @@ defmodule Pleroma.User do
   @spec ap_following(User.t()) :: String.t()
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
-
-  @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
-  def restrict_deactivated(query) do
-    from(u in query, where: u.deactivated != ^true)
-  end
 
   defp truncate_fields_param(params) do
     if Map.has_key?(params, :fields) do
@@ -777,7 +773,7 @@ defmodule Pleroma.User do
     candidates = Config.get([:instance, :autofollowed_nicknames])
 
     autofollowed_users =
-      User.Query.build(%{nickname: candidates, local: true, deactivated: false})
+      User.Query.build(%{nickname: candidates, local: true, is_active: true})
       |> Repo.all()
 
     follow_all(user, autofollowed_users)
@@ -938,7 +934,7 @@ defmodule Pleroma.User do
     deny_follow_blocked = Config.get([:user, :deny_follow_blocked])
 
     cond do
-      followed.deactivated ->
+      not followed.is_active ->
         {:error, "Could not follow user: #{followed.nickname} is deactivated."}
 
       deny_follow_blocked and blocks?(followed, follower) ->
@@ -1173,7 +1169,7 @@ defmodule Pleroma.User do
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_followers_query(%User{} = user, nil) do
-    User.Query.build(%{followers: user, deactivated: false})
+    User.Query.build(%{followers: user, is_active: true})
   end
 
   def get_followers_query(%User{} = user, page) do
@@ -1349,7 +1345,7 @@ defmodule Pleroma.User do
   @spec get_users_from_set([String.t()], keyword()) :: [User.t()]
   def get_users_from_set(ap_ids, opts \\ []) do
     local_only = Keyword.get(opts, :local_only, true)
-    criteria = %{ap_id: ap_ids, deactivated: false}
+    criteria = %{ap_id: ap_ids, is_active: true}
     criteria = if local_only, do: Map.put(criteria, :local, true), else: criteria
 
     User.Query.build(criteria)
@@ -1360,7 +1356,7 @@ defmodule Pleroma.User do
   def get_recipients_from_activity(%Activity{recipients: to, actor: actor}) do
     to = [actor | to]
 
-    query = User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
+    query = User.Query.build(%{recipients_from_activity: to, local: true, is_active: true})
 
     query
     |> Repo.all()
@@ -1579,19 +1575,19 @@ defmodule Pleroma.User do
 
   defp maybe_filter_on_ap_id(query, _ap_ids), do: query
 
-  def deactivate_async(user, status \\ true) do
-    BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
+  def set_activation_async(user, status \\ true) do
+    BackgroundWorker.enqueue("user_activation", %{"user_id" => user.id, "status" => status})
   end
 
-  def deactivate(user, status \\ true)
-
-  def deactivate(users, status) when is_list(users) do
+  @spec set_activation([User.t()], boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def set_activation(users, status) when is_list(users) do
     Repo.transaction(fn ->
-      for user <- users, do: deactivate(user, status)
+      for user <- users, do: set_activation(user, status)
     end)
   end
 
-  def deactivate(%User{} = user, status) do
+  @spec set_activation(User.t(), boolean()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def set_activation(%User{} = user, status) do
     with {:ok, user} <- set_activation_status(user, status) do
       user
       |> get_followers()
@@ -1680,7 +1676,7 @@ defmodule Pleroma.User do
       registration_reason: nil,
       confirmation_token: nil,
       domain_blocks: [],
-      deactivated: true,
+      is_active: false,
       ap_enabled: false,
       is_moderator: false,
       is_admin: false,
@@ -1754,7 +1750,7 @@ defmodule Pleroma.User do
     delete_or_deactivate(user)
   end
 
-  def perform(:deactivate_async, user, status), do: deactivate(user, status)
+  def perform(:set_activation_async, user, status), do: set_activation(user, status)
 
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do
@@ -2048,7 +2044,7 @@ defmodule Pleroma.User do
 
   @spec all_superusers() :: [User.t()]
   def all_superusers do
-    User.Query.build(%{super_users: true, local: true, deactivated: false})
+    User.Query.build(%{super_users: true, local: true, is_active: true})
     |> Repo.all()
   end
 
@@ -2089,7 +2085,7 @@ defmodule Pleroma.User do
       left_join: a in Pleroma.Activity,
       on: u.ap_id == a.actor,
       where: not is_nil(u.nickname),
-      where: u.deactivated != ^true,
+      where: u.is_active == ^true,
       where: u.id not in ^has_read_notifications,
       group_by: u.id,
       having:
@@ -2210,9 +2206,9 @@ defmodule Pleroma.User do
   end
 
   # Internal function; public one is `deactivate/2`
-  defp set_activation_status(user, deactivated) do
+  defp set_activation_status(user, status) do
     user
-    |> cast(%{deactivated: deactivated}, [:deactivated])
+    |> cast(%{is_active: status}, [:is_active])
     |> update_and_set_cache()
   end
 

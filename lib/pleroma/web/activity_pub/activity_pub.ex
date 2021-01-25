@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp check_actor_is_active(actor) when is_binary(actor) do
     case User.get_cached_by_ap_id(actor) do
-      %User{deactivated: deactivated} -> not deactivated
+      %User{is_active: true} -> true
       _ -> false
     end
   end
