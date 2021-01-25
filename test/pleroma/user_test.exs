@@ -202,11 +202,11 @@ defmodule Pleroma.UserTest do
 
   test "doesn't return follow requests for deactivated accounts" do
     locked = insert(:user, is_locked: true)
-    pending_follower = insert(:user, %{deactivated: true})
+    pending_follower = insert(:user, %{is_active: false})
 
     CommonAPI.follow(pending_follower, locked)
 
-    assert true == pending_follower.deactivated
+    refute pending_follower.is_active
     assert [] = User.get_follow_requests(locked)
   end
 
@@ -275,7 +275,7 @@ defmodule Pleroma.UserTest do
 
   test "can't follow a deactivated users" do
     user = insert(:user)
-    followed = insert(:user, %{deactivated: true})
+    followed = insert(:user, %{is_active: false})
 
     {:error, _} = User.follow(user, followed)
   end
@@ -1313,14 +1313,14 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe ".deactivate" do
+  describe ".set_activation" do
     test "can de-activate then re-activate a user" do
       user = insert(:user)
-      assert false == user.deactivated
-      {:ok, user} = User.deactivate(user)
-      assert true == user.deactivated
-      {:ok, user} = User.deactivate(user, false)
-      assert false == user.deactivated
+      assert user.is_active
+      {:ok, user} = User.set_activation(user, false)
+      refute user.is_active
+      {:ok, user} = User.set_activation(user, true)
+      assert user.is_active
     end
 
     test "hide a user from followers" do
@@ -1328,7 +1328,7 @@ defmodule Pleroma.UserTest do
       user2 = insert(:user)
 
       {:ok, user, user2} = User.follow(user, user2)
-      {:ok, _user} = User.deactivate(user)
+      {:ok, _user} = User.set_activation(user, false)
 
       user2 = User.get_cached_by_id(user2.id)
 
@@ -1344,7 +1344,7 @@ defmodule Pleroma.UserTest do
       assert user2.following_count == 1
       assert User.following_count(user2) == 1
 
-      {:ok, _user} = User.deactivate(user)
+      {:ok, _user} = User.set_activation(user, false)
 
       user2 = User.get_cached_by_id(user2.id)
 
@@ -1374,7 +1374,7 @@ defmodule Pleroma.UserTest do
                  user: user2
                })
 
-      {:ok, _user} = User.deactivate(user)
+      {:ok, _user} = User.set_activation(user, false)
 
       assert [] == ActivityPub.fetch_public_activities(%{})
       assert [] == Pleroma.Notification.for_user(user2)
@@ -1544,7 +1544,7 @@ defmodule Pleroma.UserTest do
       follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
-      assert %{deactivated: true} = User.get_by_id(user.id)
+      assert %{is_active: false} = User.get_by_id(user.id)
 
       assert [] == User.get_follow_requests(locked_user)
 
@@ -1606,7 +1606,7 @@ defmodule Pleroma.UserTest do
         registration_reason: "ahhhhh",
         confirmation_token: "qqqq",
         domain_blocks: ["lain.com"],
-        deactivated: true,
+        is_active: false,
         ap_enabled: true,
         is_moderator: true,
         is_admin: true,
@@ -1648,7 +1648,7 @@ defmodule Pleroma.UserTest do
              registration_reason: nil,
              confirmation_token: nil,
              domain_blocks: [],
-             deactivated: true,
+             is_active: false,
              ap_enabled: false,
              is_moderator: false,
              is_admin: false,
@@ -1734,7 +1734,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "returns :deactivated for deactivated user" do
-      user = insert(:user, local: true, is_confirmed: true, deactivated: true)
+      user = insert(:user, local: true, is_confirmed: true, is_active: false)
       assert User.account_status(user) == :deactivated
     end
 
@@ -1885,7 +1885,7 @@ defmodule Pleroma.UserTest do
 
       users =
         Enum.map(1..total, fn _ ->
-          insert(:user, last_digest_emailed_at: days_ago(20), deactivated: false)
+          insert(:user, last_digest_emailed_at: days_ago(20), is_active: true)
         end)
 
       inactive_users_ids =
@@ -1903,7 +1903,7 @@ defmodule Pleroma.UserTest do
 
       users =
         Enum.map(1..total, fn _ ->
-          insert(:user, last_digest_emailed_at: days_ago(20), deactivated: false)
+          insert(:user, last_digest_emailed_at: days_ago(20), is_active: true)
         end)
 
       {inactive, active} = Enum.split(users, trunc(total / 2))
@@ -1936,7 +1936,7 @@ defmodule Pleroma.UserTest do
 
       users =
         Enum.map(1..total, fn _ ->
-          insert(:user, last_digest_emailed_at: days_ago(20), deactivated: false)
+          insert(:user, last_digest_emailed_at: days_ago(20), is_active: true)
         end)
 
       [sender | recipients] = users
@@ -2006,7 +2006,7 @@ defmodule Pleroma.UserTest do
       user1 = insert(:user, local: false, ap_id: "http://localhost:4001/users/masto_closed")
       user2 = insert(:user, local: false, ap_id: "http://localhost:4001/users/fuser2")
       insert(:user, local: true)
-      insert(:user, local: false, deactivated: true)
+      insert(:user, local: false, is_active: false)
       {:ok, user1: user1, user2: user2}
     end
 

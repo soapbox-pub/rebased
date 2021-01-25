@@ -169,7 +169,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       assert user.note_count == 1
       assert user.follower_count == 1
       assert user.following_count == 1
-      refute user.deactivated
+      assert user.is_active
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end,
@@ -181,7 +181,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
         ObanHelpers.perform_all()
 
-        assert User.get_by_nickname(user.nickname).deactivated
+        refute User.get_by_nickname(user.nickname).is_active
 
         log_entry = Repo.one(ModerationLog)
 
@@ -191,7 +191,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         assert json_response(conn, 200) == [user.nickname]
 
         user = Repo.get(User, user.id)
-        assert user.deactivated
+        refute user.is_active
 
         assert user.avatar == %{}
         assert user.banner == %{}
@@ -621,7 +621,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
             "roles" => %{"admin" => true, "moderator" => false}
           }),
           user_response(old_admin, %{
-            "deactivated" => false,
+            "is_active" => true,
             "roles" => %{"admin" => true, "moderator" => false}
           })
         ]
@@ -694,11 +694,11 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       users =
         [
           user_response(admin, %{
-            "deactivated" => false,
+            "is_active" => true,
             "roles" => %{"admin" => true, "moderator" => false}
           }),
           user_response(second_admin, %{
-            "deactivated" => false,
+            "is_active" => true,
             "roles" => %{"admin" => true, "moderator" => false}
           })
         ]
@@ -723,7 +723,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "page_size" => 50,
                "users" => [
                  user_response(moderator, %{
-                   "deactivated" => false,
+                   "is_active" => true,
                    "roles" => %{"admin" => false, "moderator" => true}
                  })
                ]
@@ -839,10 +839,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     test "it works with multiple filters" do
       admin = insert(:user, nickname: "john", is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
-      user = insert(:user, nickname: "bob", local: false, deactivated: true)
+      user = insert(:user, nickname: "bob", local: false, is_active: false)
 
-      insert(:user, nickname: "ken", local: true, deactivated: true)
-      insert(:user, nickname: "bobb", local: false, deactivated: false)
+      insert(:user, nickname: "ken", local: true, is_active: false)
+      insert(:user, nickname: "bobb", local: false, is_active: true)
 
       conn =
         build_conn()
@@ -873,8 +873,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "PATCH /api/pleroma/admin/users/activate", %{admin: admin, conn: conn} do
-    user_one = insert(:user, deactivated: true)
-    user_two = insert(:user, deactivated: true)
+    user_one = insert(:user, is_active: false)
+    user_two = insert(:user, is_active: false)
 
     conn =
       patch(
@@ -884,7 +884,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       )
 
     response = json_response(conn, 200)
-    assert Enum.map(response["users"], & &1["deactivated"]) == [false, false]
+    assert Enum.map(response["users"], & &1["is_active"]) == [true, true]
 
     log_entry = Repo.one(ModerationLog)
 
@@ -893,8 +893,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "PATCH /api/pleroma/admin/users/deactivate", %{admin: admin, conn: conn} do
-    user_one = insert(:user, deactivated: false)
-    user_two = insert(:user, deactivated: false)
+    user_one = insert(:user, is_active: true)
+    user_two = insert(:user, is_active: true)
 
     conn =
       patch(
@@ -904,7 +904,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       )
 
     response = json_response(conn, 200)
-    assert Enum.map(response["users"], & &1["deactivated"]) == [true, true]
+    assert Enum.map(response["users"], & &1["is_active"]) == [false, false]
 
     log_entry = Repo.one(ModerationLog)
 
@@ -940,7 +940,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     assert json_response(conn, 200) ==
              user_response(
                user,
-               %{"deactivated" => !user.deactivated}
+               %{"is_active" => !user.is_active}
              )
 
     log_entry = Repo.one(ModerationLog)
@@ -951,7 +951,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
   defp user_response(user, attrs \\ %{}) do
     %{
-      "deactivated" => user.deactivated,
+      "is_active" => user.is_active,
       "id" => user.id,
       "email" => user.email,
       "nickname" => user.nickname,

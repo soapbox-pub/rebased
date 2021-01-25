@@ -164,7 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = User.get_cached_by_id(user.id)
 
-      assert user.deactivated == true
+      refute user.is_active
     end
 
     test "with valid permissions and invalid password, it returns an error", %{conn: conn} do
@@ -178,7 +178,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == %{"error" => "Invalid password."}
       user = User.get_cached_by_id(user.id)
 
-      refute user.deactivated
+      assert user.is_active
     end
   end
 
@@ -428,7 +428,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response(conn, 200) == %{"status" => "success"}
 
       user = User.get_by_id(user.id)
-      assert user.deactivated == true
+      refute user.is_active
       assert user.name == nil
       assert user.bio == ""
       assert user.password_hash == nil

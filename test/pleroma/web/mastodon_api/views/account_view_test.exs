@@ -211,7 +211,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   test "Represent a deactivated user for an admin" do
     admin = insert(:user, is_admin: true)
-    deactivated_user = insert(:user, deactivated: true)
+    deactivated_user = insert(:user, is_active: false)
     represented = AccountView.render("show.json", %{user: deactivated_user, for: admin})
     assert represented[:pleroma][:deactivated] == true
   end

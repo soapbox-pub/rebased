@@ -73,7 +73,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "avatar" => avatar,
       "nickname" => user.nickname,
       "display_name" => display_name,
-      "deactivated" => user.deactivated,
+      "is_active" => user.is_active,
       "local" => user.local,
       "roles" => User.roles(user),
       "tags" => user.tags || [],
