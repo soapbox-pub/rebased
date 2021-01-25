@@ -12,14 +12,10 @@ defmodule Pleroma.Uploaders.S3Test do
   import ExUnit.CaptureLog
 
   setup do
-    clear_config(Pleroma.Upload,
-      uploader: Pleroma.Uploaders.S3
-    )
-
-    clear_config(Pleroma.Uploaders.S3,
-      bucket: "test_bucket",
-      public_endpoint: "https://s3.amazonaws.com"
-    )
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
+    clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
+    clear_config([Pleroma.Uploaders.S3])
+    clear_config([Pleroma.Uploaders.S3, :bucket], "test_bucket")
   end
 
   describe "get_file/1" do
@@ -33,9 +29,11 @@ defmodule Pleroma.Uploaders.S3Test do
     test "it returns path without bucket when truncated_namespace set to ''" do
       Config.put([Pleroma.Uploaders.S3],
         bucket: "test_bucket",
-        public_endpoint: "https://s3.amazonaws.com",
+        bucket_namespace: "myaccount",
         truncated_namespace: ""
       )
+
+      Config.put([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
 
       assert S3.get_file("test_image.jpg") == {
                :ok,
@@ -46,7 +44,6 @@ defmodule Pleroma.Uploaders.S3Test do
     test "it returns path with bucket namespace when namespace is set" do
       Config.put([Pleroma.Uploaders.S3],
         bucket: "test_bucket",
-        public_endpoint: "https://s3.amazonaws.com",
         bucket_namespace: "family"
       )
 

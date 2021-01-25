@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Search: When using Postgres 11+, Pleroma will use the `websearch_to_tsvector` function to parse search queries.
 - Emoji: Support the full Unicode 13.1 set of Emoji for reactions, plus regional indicators.
 - Admin API: Reports now ordered by newest
+- Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
 
 ### Added
 
@@ -34,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth form improvements: users are remembered by their cookie, the CSS is overridable by the admin, and the style has been improved.
 - OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 - Ability to set ActivityPub aliases for follower migration.
+- Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
+
 
 <details>
   <summary>API Changes</summary>
@@ -51,6 +54,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Users with `is_discoverable` field set to false (default value) will appear in in-service search results but be hidden from external services (search bots etc.).
 - Streaming API: Posts and notifications are not dropped, when CLI task is executing.
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
+- Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
+- Tag URLs in statuses are now absolute
 
 <details>
   <summary>API Changes</summary>
@@ -60,8 +65,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased (Patch)
 
+
+## [2.2.2] - 2020-01-18
+
 ### Fixed
+
 - StealEmojiPolicy creates dir for emojis, if it doesn't exist.
+- Updated `elixir_make` to a non-retired version
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## [2.2.1] - 2020-12-22
 

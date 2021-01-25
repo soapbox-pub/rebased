@@ -195,12 +195,8 @@ defmodule Pleroma.User.BackupTest do
 
   describe "it uploads and deletes a backup archive" do
     setup do
-      clear_config(Pleroma.Uploaders.S3,
-        bucket: "test_bucket",
-        public_endpoint: "https://s3.amazonaws.com"
-      )
-
-      clear_config([Pleroma.Upload, :uploader])
+      clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
+      clear_config([Pleroma.Uploaders.S3, :bucket], "test_bucket")
 
       user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
 
@@ -219,7 +215,8 @@ defmodule Pleroma.User.BackupTest do
     end
 
     test "S3", %{path: path, backup: backup} do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
+      clear_config([Pleroma.Uploaders.S3, :streaming_enabled], false)
 
       with_mock ExAws,
         request: fn
@@ -229,13 +226,10 @@ defmodule Pleroma.User.BackupTest do
         assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
         assert {:ok, _backup} = Backup.delete(backup)
       end
-
-      with_mock ExAws, request: fn %{http_method: :delete} -> {:ok, %{status_code: 204}} end do
-      end
     end
 
     test "Local", %{path: path, backup: backup} do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
 
       assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
       assert {:ok, _backup} = Backup.delete(backup)

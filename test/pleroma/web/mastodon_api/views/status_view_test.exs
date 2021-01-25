@@ -263,7 +263,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       tags: [
         %{
           name: "#{object_data["tag"]}",
-          url: "/tag/#{object_data["tag"]}"
+          url: "http://localhost:4001/tag/#{object_data["tag"]}"
         }
       ],
       application: %{
@@ -585,9 +585,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       ]
 
       assert StatusView.build_tags(object_tags) == [
-               %{name: "fediverse", url: "/tag/fediverse"},
-               %{name: "mastodon", url: "/tag/mastodon"},
-               %{name: "nextcloud", url: "/tag/nextcloud"}
+               %{name: "fediverse", url: "http://localhost:4001/tag/fediverse"},
+               %{name: "mastodon", url: "http://localhost:4001/tag/mastodon"},
+               %{name: "nextcloud", url: "http://localhost:4001/tag/nextcloud"}
              ]
     end
   end

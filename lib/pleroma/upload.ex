@@ -131,12 +131,7 @@ defmodule Pleroma.Upload do
       uploader: Keyword.get(opts, :uploader, Pleroma.Config.get([__MODULE__, :uploader])),
       filters: Keyword.get(opts, :filters, Pleroma.Config.get([__MODULE__, :filters])),
       description: Keyword.get(opts, :description),
-      base_url:
-        Keyword.get(
-          opts,
-          :base_url,
-          Pleroma.Config.get([__MODULE__, :base_url], Pleroma.Web.base_url())
-        )
+      base_url: base_url()
     }
   end
 
@@ -217,14 +212,7 @@ defmodule Pleroma.Upload do
           ""
         end
 
-    prefix =
-      if is_nil(Pleroma.Config.get([__MODULE__, :base_url])) do
-        "media"
-      else
-        ""
-      end
-
-    [base_url, prefix, path]
+    [base_url, path]
     |> Path.join()
   end
 
@@ -241,13 +229,15 @@ defmodule Pleroma.Upload do
 
       Pleroma.Uploaders.S3 ->
         bucket = Config.get([Pleroma.Uploaders.S3, :bucket])
+        truncated_namespace = Config.get([Pleroma.Uploaders.S3, :truncated_namespace])
+        namespace = Config.get([Pleroma.Uploaders.S3, :bucket_namespace])
 
         bucket_with_namespace =
           cond do
-            truncated_namespace = Config.get([Pleroma.Uploaders.S3, :truncated_namespace]) ->
+            !is_nil(truncated_namespace) ->
               truncated_namespace
 
-            namespace = Config.get([Pleroma.Uploaders.S3, :bucket_namespace]) ->
+            !is_nil(namespace) ->
               namespace <> ":" <> bucket
 
             true ->
@@ -261,7 +251,7 @@ defmodule Pleroma.Upload do
         end
 
       _ ->
-        public_endpoint || upload_base_url
+        public_endpoint || upload_base_url || Pleroma.Web.base_url() <> "/media/"
     end
   end
 end

@@ -115,11 +115,6 @@ config :pleroma, Pleroma.Web.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
-config :pleroma, Pleroma.Uploaders.S3,
-  bucket: nil,
-  streaming_enabled: true,
-  public_endpoint: nil
-
 config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
