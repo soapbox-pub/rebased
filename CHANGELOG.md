@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- **Breaking:** Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
+- **Breaking**: Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
+- **Breaking**: Changed `mix pleroma.user toggle_activated` to `mix pleroma.user activate`
 - **Breaking**: AdminAPI changed User field `confirmation_pending` to `is_confirmed`
 - **Breaking**: AdminAPI changed User field `approval_pending` to `is_approved`
 - **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
