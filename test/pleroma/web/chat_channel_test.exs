@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ChatChannelTest do
     end
 
     test "it ignores messages above a certain length", %{socket: socket} do
-      Pleroma.Config.put([:instance, :chat_limit], 2)
+      clear_config([:instance, :chat_limit], 2)
       push(socket, "new_msg", %{"text" => "123"})
       refute_broadcast("new_msg", %{text: "123"})
     end

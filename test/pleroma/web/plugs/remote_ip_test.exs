@@ -26,7 +26,7 @@ defmodule Pleroma.Web.Plugs.RemoteIpTest do
           )
 
   test "disabled" do
-    Pleroma.Config.put(RemoteIp, enabled: false)
+    clear_config(RemoteIp, enabled: false)
 
     %{remote_ip: remote_ip} = conn(:get, "/")
 
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.Plugs.RemoteIpTest do
   end
 
   test "custom headers" do
-    Pleroma.Config.put(RemoteIp, enabled: true, headers: ["cf-connecting-ip"])
+    clear_config(RemoteIp, enabled: true, headers: ["cf-connecting-ip"])
 
     conn =
       conn(:get, "/")
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.Plugs.RemoteIpTest do
 
     refute conn.remote_ip == {1, 1, 1, 1}
 
-    Pleroma.Config.put([RemoteIp, :proxies], ["173.245.48.0/20"])
+    clear_config([RemoteIp, :proxies], ["173.245.48.0/20"])
 
     conn =
       conn(:get, "/")
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.Plugs.RemoteIpTest do
   end
 
   test "proxies set without CIDR format" do
-    Pleroma.Config.put([RemoteIp, :proxies], ["173.245.48.1"])
+    clear_config([RemoteIp, :proxies], ["173.245.48.1"])
 
     conn =
       conn(:get, "/")
@@ -95,8 +95,8 @@ defmodule Pleroma.Web.Plugs.RemoteIpTest do
   end
 
   test "proxies set `nonsensical` CIDR" do
-    Pleroma.Config.put([RemoteIp, :reserved], ["127.0.0.0/8"])
-    Pleroma.Config.put([RemoteIp, :proxies], ["10.0.0.3/24"])
+    clear_config([RemoteIp, :reserved], ["127.0.0.0/8"])
+    clear_config([RemoteIp, :proxies], ["10.0.0.3/24"])
 
     conn =
       conn(:get, "/")

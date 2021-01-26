@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Pleroma.RobotsTxtTest do
   test "creates new dir" do
     path = "test/fixtures/new_dir/"
     file_path = path <> "robots.txt"
-    Pleroma.Config.put([:instance, :static_dir], path)
+    clear_config([:instance, :static_dir], path)
 
     on_exit(fn ->
       {:ok, ["test/fixtures/new_dir/", "test/fixtures/new_dir/robots.txt"]} = File.rm_rf(path)
@@ -29,7 +29,7 @@ defmodule Mix.Tasks.Pleroma.RobotsTxtTest do
   test "to existance folder" do
     path = "test/fixtures/"
     file_path = path <> "robots.txt"
-    Pleroma.Config.put([:instance, :static_dir], path)
+    clear_config([:instance, :static_dir], path)
 
     on_exit(fn ->
       :ok = File.rm(file_path)

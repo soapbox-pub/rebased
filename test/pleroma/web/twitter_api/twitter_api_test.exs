@@ -46,12 +46,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "it sends confirmation email if :account_activation_required is specified in instance config" do
-    setting = Pleroma.Config.get([:instance, :account_activation_required])
-
-    unless setting do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
-      on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
-    end
+    clear_config([:instance, :account_activation_required], true)
 
     data = %{
       :username => "lain",

@@ -15,7 +15,7 @@ defmodule Pleroma.ScheduledActivityTest do
 
   describe "creation" do
     test "scheduled activities with jobs when ScheduledActivity enabled" do
-      Pleroma.Config.put([ScheduledActivity, :enabled], true)
+      clear_config([ScheduledActivity, :enabled], true)
       user = insert(:user)
 
       today =
@@ -34,7 +34,7 @@ defmodule Pleroma.ScheduledActivityTest do
     end
 
     test "scheduled activities without jobs when ScheduledActivity disabled" do
-      Pleroma.Config.put([ScheduledActivity, :enabled], false)
+      clear_config([ScheduledActivity, :enabled], false)
       user = insert(:user)
 
       today =

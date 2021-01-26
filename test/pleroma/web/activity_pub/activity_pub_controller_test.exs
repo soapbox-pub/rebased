@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Delivery
   alias Pleroma.Instances
   alias Pleroma.Object
@@ -46,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "with the relay disabled, it returns 404", %{conn: conn} do
-      Config.put([:instance, :allow_relay], false)
+      clear_config([:instance, :allow_relay], false)
 
       conn
       |> get(activity_pub_path(conn, :relay))
@@ -54,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "on non-federating instance, it returns 404", %{conn: conn} do
-      Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
       user = insert(:user)
 
       conn
@@ -75,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "on non-federating instance, it returns 404", %{conn: conn} do
-      Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
       user = insert(:user)
 
       conn
@@ -493,7 +492,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "accept follow activity", %{conn: conn} do
-      Pleroma.Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
       relay = Relay.get_actor()
 
       assert {:ok, %Activity{} = activity} = Relay.follow("https://relay.mastodon.host/actor")
@@ -539,7 +538,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       conn = put_req_header(conn, "content-type", "application/activity+json")
 
-      Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
 
       conn
       |> post("/inbox", data)
@@ -549,7 +548,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/inbox", non_create_data)
       |> json_response(403)
 
-      Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
 
       ret_conn = post(conn, "/inbox", data)
       assert "ok" == json_response(ret_conn, 200)
@@ -1246,7 +1245,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "Character limitation", %{conn: conn, activity: activity} do
-      Pleroma.Config.put([:instance, :limit], 5)
+      clear_config([:instance, :limit], 5)
       user = insert(:user)
 
       result =
@@ -1275,7 +1274,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "on non-federating instance, it returns 404", %{conn: conn} do
-      Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
       user = insert(:user)
 
       conn
@@ -1296,7 +1295,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "on non-federating instance, it returns 404", %{conn: conn} do
-      Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
       user = insert(:user)
 
       conn

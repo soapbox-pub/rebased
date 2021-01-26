@@ -10,12 +10,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
   setup do: clear_config(:mrf_keyword)
 
   setup do
-    Pleroma.Config.put([:mrf_keyword], %{reject: [], federated_timeline_removal: [], replace: []})
+    clear_config([:mrf_keyword], %{reject: [], federated_timeline_removal: [], replace: []})
   end
 
   describe "rejecting based on keywords" do
     test "rejects if string matches in content" do
-      Pleroma.Config.put([:mrf_keyword, :reject], ["pun"])
+      clear_config([:mrf_keyword, :reject], ["pun"])
 
       message = %{
         "type" => "Create",
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "rejects if string matches in summary" do
-      Pleroma.Config.put([:mrf_keyword, :reject], ["pun"])
+      clear_config([:mrf_keyword, :reject], ["pun"])
 
       message = %{
         "type" => "Create",
@@ -45,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "rejects if regex matches in content" do
-      Pleroma.Config.put([:mrf_keyword, :reject], [~r/comp[lL][aA][iI][nN]er/])
+      clear_config([:mrf_keyword, :reject], [~r/comp[lL][aA][iI][nN]er/])
 
       assert true ==
                Enum.all?(["complainer", "compLainer", "compLAiNer", "compLAINer"], fn content ->
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "rejects if regex matches in summary" do
-      Pleroma.Config.put([:mrf_keyword, :reject], [~r/comp[lL][aA][iI][nN]er/])
+      clear_config([:mrf_keyword, :reject], [~r/comp[lL][aA][iI][nN]er/])
 
       assert true ==
                Enum.all?(["complainer", "compLainer", "compLAiNer", "compLAINer"], fn content ->
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
 
   describe "delisting from ftl based on keywords" do
     test "delists if string matches in content" do
-      Pleroma.Config.put([:mrf_keyword, :federated_timeline_removal], ["pun"])
+      clear_config([:mrf_keyword, :federated_timeline_removal], ["pun"])
 
       message = %{
         "to" => ["https://www.w3.org/ns/activitystreams#Public"],
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "delists if string matches in summary" do
-      Pleroma.Config.put([:mrf_keyword, :federated_timeline_removal], ["pun"])
+      clear_config([:mrf_keyword, :federated_timeline_removal], ["pun"])
 
       message = %{
         "to" => ["https://www.w3.org/ns/activitystreams#Public"],
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "delists if regex matches in content" do
-      Pleroma.Config.put([:mrf_keyword, :federated_timeline_removal], [~r/comp[lL][aA][iI][nN]er/])
+      clear_config([:mrf_keyword, :federated_timeline_removal], [~r/comp[lL][aA][iI][nN]er/])
 
       assert true ==
                Enum.all?(["complainer", "compLainer", "compLAiNer", "compLAINer"], fn content ->
@@ -138,7 +138,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "delists if regex matches in summary" do
-      Pleroma.Config.put([:mrf_keyword, :federated_timeline_removal], [~r/comp[lL][aA][iI][nN]er/])
+      clear_config([:mrf_keyword, :federated_timeline_removal], [~r/comp[lL][aA][iI][nN]er/])
 
       assert true ==
                Enum.all?(["complainer", "compLainer", "compLAiNer", "compLAINer"], fn content ->
@@ -161,7 +161,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
 
   describe "replacing keywords" do
     test "replaces keyword if string matches in content" do
-      Pleroma.Config.put([:mrf_keyword, :replace], [{"opensource", "free software"}])
+      clear_config([:mrf_keyword, :replace], [{"opensource", "free software"}])
 
       message = %{
         "type" => "Create",
@@ -174,7 +174,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "replaces keyword if string matches in summary" do
-      Pleroma.Config.put([:mrf_keyword, :replace], [{"opensource", "free software"}])
+      clear_config([:mrf_keyword, :replace], [{"opensource", "free software"}])
 
       message = %{
         "type" => "Create",
@@ -187,7 +187,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "replaces keyword if regex matches in content" do
-      Pleroma.Config.put([:mrf_keyword, :replace], [
+      clear_config([:mrf_keyword, :replace], [
         {~r/open(-|\s)?source\s?(software)?/, "free software"}
       ])
 
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
     end
 
     test "replaces keyword if regex matches in summary" do
-      Pleroma.Config.put([:mrf_keyword, :replace], [
+      clear_config([:mrf_keyword, :replace], [
         {~r/open(-|\s)?source\s?(software)?/, "free software"}
       ])
 

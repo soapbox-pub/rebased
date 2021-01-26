@@ -7,8 +7,6 @@ defmodule Pleroma.Web.NodeInfoTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Config
-
   setup do: clear_config([:mrf_simple])
   setup do: clear_config(:instance)
 
@@ -93,7 +91,7 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     assert "safe_dm_mentions" in response["metadata"]["features"]
 
-    Config.put([:instance, :safe_dm_mentions], false)
+    clear_config([:instance, :safe_dm_mentions], false)
 
     response =
       conn
@@ -107,7 +105,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     setup do: clear_config([:instance, :federating])
 
     test "it shows if federation is enabled/disabled", %{conn: conn} do
-      Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
 
       response =
         conn
@@ -116,7 +114,7 @@ defmodule Pleroma.Web.NodeInfoTest do
 
       assert response["metadata"]["federation"]["enabled"] == true
 
-      Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
 
       response =
         conn

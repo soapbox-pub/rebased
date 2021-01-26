@@ -5,7 +5,6 @@
 defmodule Pleroma.User.WelcomeMessageTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User.WelcomeMessage
 
   import Pleroma.Factory
@@ -17,10 +16,10 @@ defmodule Pleroma.User.WelcomeMessageTest do
       welcome_user = insert(:user)
       user = insert(:user, name: "Jimm")
 
-      Config.put([:welcome, :direct_message, :enabled], true)
-      Config.put([:welcome, :direct_message, :sender_nickname], welcome_user.nickname)
+      clear_config([:welcome, :direct_message, :enabled], true)
+      clear_config([:welcome, :direct_message, :sender_nickname], welcome_user.nickname)
 
-      Config.put(
+      clear_config(
         [:welcome, :direct_message, :message],
         "Hello. Welcome to Pleroma"
       )

@@ -1079,15 +1079,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it sets the default description depending on the configuration", %{test_file: file} do
       clear_config([Pleroma.Upload, :default_description])
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], nil)
+      clear_config([Pleroma.Upload, :default_description], nil)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == ""
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], :filename)
+      clear_config([Pleroma.Upload, :default_description], :filename)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "an_image.jpg"
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], "unnamed attachment")
+      clear_config([Pleroma.Upload, :default_description], "unnamed attachment")
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "unnamed attachment"
     end
