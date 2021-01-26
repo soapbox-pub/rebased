@@ -16,6 +16,10 @@ Adding the parameter `reply_visibility` to the public and home timelines queries
 
 Adding the parameter `instance=lain.com` to the public timeline will show only statuses originating from `lain.com` (or any remote instance).
 
+Adding the parameter `only_media=true` to the home timeline will show only statuses with media attachments.
+
+Adding the parameter `only_remote=true` to the home timeline will show only remote statuses.
+
 ## Statuses
 
 - `visibility`: has additional possible values `list` and `local` (for local-only statuses)

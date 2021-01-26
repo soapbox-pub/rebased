@@ -48,7 +48,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
-- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types
+- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
+- Mastodon API: Added `only_media` & `only_remote` parameters to the home timeline.
 </details>
 
 ### Fixed
