@@ -90,6 +90,82 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                }
              ] = result
     end
+
+    test "local/remote filtering", %{conn: conn, user: user} do
+      local = insert(:user)
+      remote = insert(:user, local: false)
+
+      {:ok, user, local} = User.follow(user, local)
+      {:ok, _user, remote} = User.follow(user, remote)
+
+      object1 =
+        insert(:note, %{
+          data: %{
+            "to" => ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(local)]
+          },
+          user: local
+        })
+
+      activity1 =
+        insert(:note_activity, %{
+          note: object1,
+          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(local)],
+          user: local
+        })
+
+      object2 =
+        insert(:note, %{
+          data: %{
+            "to" => ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(remote)]
+          },
+          user: remote
+        })
+
+      activity2 =
+        insert(:note_activity, %{
+          note: object2,
+          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(remote)],
+          user: remote,
+          local: false
+        })
+
+      resp1 =
+        conn
+        |> get("/api/v1/timelines/home")
+        |> json_response_and_validate_schema(200)
+
+      without_filter_ids = Enum.map(resp1, & &1["id"])
+
+      assert activity1.id in without_filter_ids
+      assert activity2.id in without_filter_ids
+
+      resp2 =
+        conn
+        |> get("/api/v1/timelines/home?local=true")
+        |> json_response_and_validate_schema(200)
+
+      only_local_ids = Enum.map(resp2, & &1["id"])
+
+      assert activity1.id in only_local_ids
+      refute activity2.id in only_local_ids
+
+      resp3 =
+        conn
+        |> get("/api/v1/timelines/home?only_remote=true")
+        |> json_response_and_validate_schema(200)
+
+      only_remote_ids = Enum.map(resp3, & &1["id"])
+
+      refute activity1.id in only_remote_ids
+      assert activity2.id in only_remote_ids
+
+      resp4 =
+        conn
+        |> get("/api/v1/timelines/home?only_remote=true&local=true")
+        |> json_response_and_validate_schema(200)
+
+      assert resp4 == []
+    end
   end
 
   describe "public" do
