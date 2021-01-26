@@ -5,6 +5,13 @@
 #
 # Cmnd_Alias HTCACHECLEAN = /usr/local/sbin/htcacheclean
 # pleroma ALL=HTCACHECLEAN, NOPASSWD: HTCACHECLEAN
+#
+# Please also ensure you have enabled:
+#
+# config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, url_format: :htcacheclean
+#
+# which will correctly format the URLs passed to this script for the htcacheclean utility.
+#
 
 SCRIPTNAME=${0##*/}
 
