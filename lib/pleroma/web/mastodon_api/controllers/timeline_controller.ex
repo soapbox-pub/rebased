@@ -192,6 +192,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:user, user)
         |> Map.put(:muting_user, user)
+        |> Map.put(:local_only, params[:local])
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).

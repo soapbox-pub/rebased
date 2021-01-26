@@ -92,42 +92,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
 
     test "local/remote filtering", %{conn: conn, user: user} do
-      local = insert(:user)
-      remote = insert(:user, local: false)
+      local_user = insert(:user)
+      {:ok, user, local_user} = User.follow(user, local_user)
+      {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Status"})
 
-      {:ok, user, local} = User.follow(user, local)
-      {:ok, _user, remote} = User.follow(user, remote)
-
-      object1 =
-        insert(:note, %{
-          data: %{
-            "to" => ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(local)]
-          },
-          user: local
-        })
-
-      activity1 =
-        insert(:note_activity, %{
-          note: object1,
-          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(local)],
-          user: local
-        })
-
-      object2 =
-        insert(:note, %{
-          data: %{
-            "to" => ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(remote)]
-          },
-          user: remote
-        })
-
-      activity2 =
-        insert(:note_activity, %{
-          note: object2,
-          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(remote)],
-          user: remote,
-          local: false
-        })
+      remote_user = insert(:user, local: false)
+      {:ok, _user, remote_user} = User.follow(user, remote_user)
+      remote_activity = create_remote_activity(remote_user)
 
       resp1 =
         conn
@@ -136,8 +107,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       without_filter_ids = Enum.map(resp1, & &1["id"])
 
-      assert activity1.id in without_filter_ids
-      assert activity2.id in without_filter_ids
+      assert local_activity.id in without_filter_ids
+      assert remote_activity.id in without_filter_ids
 
       resp2 =
         conn
@@ -146,8 +117,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       only_local_ids = Enum.map(resp2, & &1["id"])
 
-      assert activity1.id in only_local_ids
-      refute activity2.id in only_local_ids
+      assert local_activity.id in only_local_ids
+      refute remote_activity.id in only_local_ids
 
       resp3 =
         conn
@@ -156,8 +127,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       only_remote_ids = Enum.map(resp3, & &1["id"])
 
-      refute activity1.id in only_remote_ids
-      assert activity2.id in only_remote_ids
+      refute local_activity.id in only_remote_ids
+      assert remote_activity.id in only_remote_ids
 
       resp4 =
         conn
@@ -171,40 +142,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       other = insert(:user)
       {:ok, _, other} = User.follow(user, other)
 
-      without_media =
-        insert(:note_activity,
-          user: other,
-          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(other)]
-        )
+      {:ok, without_media} = CommonAPI.post(other, %{status: "some status"})
 
-      obj =
-        insert(:note, %{
-          data: %{
-            "attachment" => [
-              %{
-                "mediaType" => "image/jpeg",
-                "name" => "an_image.jpg",
-                "type" => "Document",
-                "url" => [
-                  %{
-                    "href" =>
-                      "http://localhost:4001/media/8270697e-104f-4a54-a7c1-514bb6713f2c/some_image.jpg",
-                    "mediaType" => "image/jpeg",
-                    "type" => "Link"
-                  }
-                ]
-              }
-            ]
-          },
-          user: other
-        })
-
-      with_media =
-        insert(:note_activity, %{
-          note: obj,
-          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(other)],
-          user: other
-        })
+      with_media = create_with_media_activity(other)
 
       resp1 =
         conn
@@ -680,6 +620,67 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                }
              ] = result
     end
+
+    test "filering with params", %{user: user, conn: conn} do
+      {:ok, list} = Pleroma.List.create("name", user)
+
+      local_user = insert(:user)
+      {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Marisa is stupid."})
+      with_media = create_with_media_activity(local_user)
+      {:ok, list} = Pleroma.List.follow(list, local_user)
+
+      remote_user = insert(:user, local: false)
+      remote_activity = create_remote_activity(remote_user)
+      {:ok, list} = Pleroma.List.follow(list, remote_user)
+
+      resp1 =
+        conn |> get("/api/v1/timelines/list/#{list.id}") |> json_response_and_validate_schema(200)
+
+      all_ids = Enum.map(resp1, & &1["id"])
+
+      assert local_activity.id in all_ids
+      assert with_media.id in all_ids
+      assert remote_activity.id in all_ids
+
+      resp2 =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?local=true")
+        |> json_response_and_validate_schema(200)
+
+      only_local_ids = Enum.map(resp2, & &1["id"])
+
+      assert local_activity.id in only_local_ids
+      assert with_media.id in only_local_ids
+      refute remote_activity.id in only_local_ids
+
+      resp3 =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?only_remote=true")
+        |> json_response_and_validate_schema(200)
+
+      only_remote_ids = Enum.map(resp3, & &1["id"])
+
+      refute local_activity.id in only_remote_ids
+      refute with_media.id in only_remote_ids
+      assert remote_activity.id in only_remote_ids
+
+      resp4 =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?only_media=true")
+        |> json_response_and_validate_schema(200)
+
+      only_media_ids = Enum.map(resp4, & &1["id"])
+
+      refute local_activity.id in only_media_ids
+      assert with_media.id in only_media_ids
+      refute remote_activity.id in only_media_ids
+
+      assert conn
+             |> get(
+               "/api/v1/timelines/list/#{list.id}?only_media=true&local=true&only_remote=true"
+             )
+             |> json_response_and_validate_schema(200) == []
+    end
   end
 
   describe "hashtag" do
@@ -861,5 +862,38 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       ensure_authenticated_access(base_uri)
     end
+  end
+
+  defp create_remote_activity(user) do
+    obj =
+      insert(:note, %{
+        data: %{
+          "to" => [
+            "https://www.w3.org/ns/activitystreams#Public",
+            User.ap_followers(user)
+          ]
+        },
+        user: user
+      })
+
+    insert(:note_activity, %{
+      note: obj,
+      recipients: [
+        "https://www.w3.org/ns/activitystreams#Public",
+        User.ap_followers(user)
+      ],
+      user: user,
+      local: false
+    })
+  end
+
+  defp create_with_media_activity(user) do
+    obj = insert(:attachment_note, user: user)
+
+    insert(:note_activity, %{
+      note: obj,
+      recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(user)],
+      user: user
+    })
   end
 end

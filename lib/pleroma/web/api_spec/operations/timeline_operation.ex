@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         local_param(),
-        remote_param(),
+        only_remote_param(),
         only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
@@ -134,6 +134,9 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
           required: true
         ),
         with_muted_param(),
+        local_param(),
+        only_remote_param(),
+        only_media_param(),
         exclude_visibilities_param() | pagination_params()
       ],
       operationId: "TimelineController.list",
@@ -201,7 +204,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
     )
   end
 
-  defp remote_param do
+  defp only_remote_param do
     Operation.parameter(
       :only_remote,
       :query,
