@@ -321,9 +321,10 @@ This section describe PWA manifest instance-specific values. Currently this opti
 #### Pleroma.Web.MediaProxy.Invalidation.Script
 
 This strategy allow perform external shell script to purge cache.
-Urls of attachments pass to script as arguments.
+Urls of attachments are passed to the script as arguments.
 
-* `script_path`: path to external script.
+* `script_path`: Path to the external script.
+* `url_format`: Set to `:htcacheclean` if using Apache's htcacheclean utility.
 
 Example:
 
