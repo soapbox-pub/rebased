@@ -63,6 +63,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         instance_param(),
         only_media_param(),
+        only_remote_param(),
         with_muted_param(),
         exclude_visibilities_param(),
         reply_visibility_param() | pagination_params()
@@ -109,6 +110,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         ),
         local_param(),
         only_media_param(),
+        only_remote_param(),
         with_muted_param(),
         exclude_visibilities_param() | pagination_params()
       ],

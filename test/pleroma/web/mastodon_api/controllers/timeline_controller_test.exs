@@ -91,80 +91,63 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
              ] = result
     end
 
-    test "local/remote filtering", %{conn: conn, user: user} do
+    test "filtering", %{conn: conn, user: user} do
       local_user = insert(:user)
       {:ok, user, local_user} = User.follow(user, local_user)
       {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Status"})
+      with_media = create_with_media_activity(local_user)
 
       remote_user = insert(:user, local: false)
       {:ok, _user, remote_user} = User.follow(user, remote_user)
       remote_activity = create_remote_activity(remote_user)
 
-      resp1 =
+      without_filter_ids =
         conn
         |> get("/api/v1/timelines/home")
         |> json_response_and_validate_schema(200)
-
-      without_filter_ids = Enum.map(resp1, & &1["id"])
+        |> Enum.map(& &1["id"])
 
       assert local_activity.id in without_filter_ids
       assert remote_activity.id in without_filter_ids
+      assert with_media.id in without_filter_ids
 
-      resp2 =
+      only_local_ids =
         conn
         |> get("/api/v1/timelines/home?local=true")
         |> json_response_and_validate_schema(200)
-
-      only_local_ids = Enum.map(resp2, & &1["id"])
+        |> Enum.map(& &1["id"])
 
       assert local_activity.id in only_local_ids
       refute remote_activity.id in only_local_ids
+      assert with_media.id in only_local_ids
 
-      resp3 =
+      only_local_media_ids =
+        conn
+        |> get("/api/v1/timelines/home?local=true&only_media=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in only_local_media_ids
+      refute remote_activity.id in only_local_media_ids
+      assert with_media.id in only_local_media_ids
+
+      only_remote_ids =
         conn
         |> get("/api/v1/timelines/home?only_remote=true")
         |> json_response_and_validate_schema(200)
-
-      only_remote_ids = Enum.map(resp3, & &1["id"])
+        |> Enum.map(& &1["id"])
 
       refute local_activity.id in only_remote_ids
       assert remote_activity.id in only_remote_ids
+      refute with_media.id in only_remote_ids
 
-      resp4 =
-        conn
-        |> get("/api/v1/timelines/home?only_remote=true&local=true")
-        |> json_response_and_validate_schema(200)
+      assert conn
+             |> get("/api/v1/timelines/home?only_remote=true&only_media=true")
+             |> json_response_and_validate_schema(200) == []
 
-      assert resp4 == []
-    end
-
-    test "only_media flag", %{conn: conn, user: user} do
-      other = insert(:user)
-      {:ok, _, other} = User.follow(user, other)
-
-      {:ok, without_media} = CommonAPI.post(other, %{status: "some status"})
-
-      with_media = create_with_media_activity(other)
-
-      resp1 =
-        conn
-        |> get("/api/v1/timelines/home")
-        |> json_response_and_validate_schema(200)
-
-      without_filter_ids = Enum.map(resp1, & &1["id"])
-
-      assert without_media.id in without_filter_ids
-      assert with_media.id in without_filter_ids
-
-      resp2 =
-        conn
-        |> get("/api/v1/timelines/home?only_media=true")
-        |> json_response_and_validate_schema(200)
-
-      only_media_ids = Enum.map(resp2, & &1["id"])
-
-      refute without_media.id in only_media_ids
-      assert with_media.id in only_media_ids
+      assert conn
+             |> get("/api/v1/timelines/home?only_remote=true&local=true")
+             |> json_response_and_validate_schema(200) == []
     end
   end
 
@@ -174,27 +157,80 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+      with_media = create_with_media_activity(user)
 
-      _activity = insert(:note_activity, local: false)
+      remote = insert(:note_activity, local: false)
 
-      conn = get(conn, "/api/v1/timelines/public?local=False")
+      assert conn
+             |> get("/api/v1/timelines/public?local=False")
+             |> json_response_and_validate_schema(:ok)
+             |> length == 3
 
-      assert length(json_response_and_validate_schema(conn, :ok)) == 2
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=True")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      conn = get(build_conn(), "/api/v1/timelines/public?local=True")
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
 
-      assert [%{"content" => "test"}] = json_response_and_validate_schema(conn, :ok)
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=True")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      conn = get(build_conn(), "/api/v1/timelines/public?local=1")
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
 
-      assert [%{"content" => "test"}] = json_response_and_validate_schema(conn, :ok)
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=True&only_media=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
+
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=1")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
+
+      remote_id = remote.id
+
+      assert [%{"id" => ^remote_id}] =
+               conn
+               |> get("/api/v1/timelines/public?only_remote=true")
+               |> json_response_and_validate_schema(:ok)
+
+      with_media_id = with_media.id
+
+      assert [%{"id" => ^with_media_id}] =
+               conn
+               |> get("/api/v1/timelines/public?only_media=true")
+               |> json_response_and_validate_schema(:ok)
+
+      assert conn
+             |> get("/api/v1/timelines/public?only_remote=true&only_media=true")
+             |> json_response_and_validate_schema(:ok) == []
 
       # does not contain repeats
       {:ok, _} = CommonAPI.repeat(activity.id, user)
 
-      conn = get(build_conn(), "/api/v1/timelines/public?local=true")
-
-      assert [_] = json_response_and_validate_schema(conn, :ok)
+      assert [_, _] =
+               conn
+               |> get("/api/v1/timelines/public?local=true")
+               |> json_response_and_validate_schema(:ok)
     end
 
     test "the public timeline includes only public statuses for an authenticated user" do
@@ -621,7 +657,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
              ] = result
     end
 
-    test "filering with params", %{user: user, conn: conn} do
+    test "filering", %{user: user, conn: conn} do
       {:ok, list} = Pleroma.List.create("name", user)
 
       local_user = insert(:user)
@@ -633,43 +669,55 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       remote_activity = create_remote_activity(remote_user)
       {:ok, list} = Pleroma.List.follow(list, remote_user)
 
-      resp1 =
-        conn |> get("/api/v1/timelines/list/#{list.id}") |> json_response_and_validate_schema(200)
-
-      all_ids = Enum.map(resp1, & &1["id"])
+      all_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
 
       assert local_activity.id in all_ids
       assert with_media.id in all_ids
       assert remote_activity.id in all_ids
 
-      resp2 =
+      only_local_ids =
         conn
         |> get("/api/v1/timelines/list/#{list.id}?local=true")
         |> json_response_and_validate_schema(200)
-
-      only_local_ids = Enum.map(resp2, & &1["id"])
+        |> Enum.map(& &1["id"])
 
       assert local_activity.id in only_local_ids
       assert with_media.id in only_local_ids
       refute remote_activity.id in only_local_ids
 
-      resp3 =
+      only_local_media_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?local=true&only_media=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in only_local_media_ids
+      assert with_media.id in only_local_media_ids
+      refute remote_activity.id in only_local_media_ids
+
+      only_remote_ids =
         conn
         |> get("/api/v1/timelines/list/#{list.id}?only_remote=true")
         |> json_response_and_validate_schema(200)
-
-      only_remote_ids = Enum.map(resp3, & &1["id"])
+        |> Enum.map(& &1["id"])
 
       refute local_activity.id in only_remote_ids
       refute with_media.id in only_remote_ids
       assert remote_activity.id in only_remote_ids
 
-      resp4 =
+      assert conn
+             |> get("/api/v1/timelines/list/#{list.id}?only_remote=true&only_media=true")
+             |> json_response_and_validate_schema(200) == []
+
+      only_media_ids =
         conn
         |> get("/api/v1/timelines/list/#{list.id}?only_media=true")
         |> json_response_and_validate_schema(200)
-
-      only_media_ids = Enum.map(resp4, & &1["id"])
+        |> Enum.map(& &1["id"])
 
       refute local_activity.id in only_media_ids
       assert with_media.id in only_media_ids
@@ -691,19 +739,85 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       following = insert(:user)
 
       {:ok, activity} = CommonAPI.post(following, %{status: "test #2hu"})
+      with_media = create_with_media_activity(following)
 
-      nconn = get(conn, "/api/v1/timelines/tag/2hu")
+      remote = insert(:user, local: false)
+      remote_activity = create_remote_activity(remote)
 
-      assert [%{"id" => id}] = json_response_and_validate_schema(nconn, :ok)
+      all_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      assert id == to_string(activity.id)
+      assert activity.id in all_ids
+      assert with_media.id in all_ids
+      assert remote_activity.id in all_ids
 
       # works for different capitalization too
-      nconn = get(conn, "/api/v1/timelines/tag/2HU")
+      all_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2HU")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      assert [%{"id" => id}] = json_response_and_validate_schema(nconn, :ok)
+      assert activity.id in all_ids
+      assert with_media.id in all_ids
+      assert remote_activity.id in all_ids
 
-      assert id == to_string(activity.id)
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?local=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote_activity.id in local_ids
+
+      remote_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_remote=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in remote_ids
+      refute with_media.id in remote_ids
+      assert remote_activity.id in remote_ids
+
+      media_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_media=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in media_ids
+      assert with_media.id in media_ids
+      refute remote_activity.id in media_ids
+
+      media_local_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_media=true&local=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in media_local_ids
+      assert with_media.id in media_local_ids
+      refute remote_activity.id in media_local_ids
+
+      ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_media=true&local=true&only_remote=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in ids
+      refute with_media.id in ids
+      refute remote_activity.id in ids
+
+      assert conn
+             |> get("/api/v1/timelines/tag/2hu?only_media=true&only_remote=true")
+             |> json_response_and_validate_schema(:ok) == []
     end
 
     test "multi-hashtag timeline", %{conn: conn} do

@@ -49,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
 - WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
-- Mastodon API: Added `only_media` & `only_remote` parameters to the home timeline.
+- Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `only_remote` & `local` parameters for filtration.
 </details>
 
 ### Fixed
