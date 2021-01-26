@@ -25,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
     }
 
     if params[:for] do
-      # if a user is not authenticated Mastodon doesn't include `voted` & `own_votes` keys in response
+      # when unauthenticated Mastodon doesn't include `voted` & `own_votes` keys in response
       {voted, own_votes} = voted_and_own_votes(params, options)
       Map.merge(poll, %{voted: voted, own_votes: own_votes})
     else
