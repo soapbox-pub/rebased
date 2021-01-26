@@ -166,6 +166,66 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert resp4 == []
     end
+
+    test "only_media flag", %{conn: conn, user: user} do
+      other = insert(:user)
+      {:ok, _, other} = User.follow(user, other)
+
+      without_media =
+        insert(:note_activity,
+          user: other,
+          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(other)]
+        )
+
+      obj =
+        insert(:note, %{
+          data: %{
+            "attachment" => [
+              %{
+                "mediaType" => "image/jpeg",
+                "name" => "an_image.jpg",
+                "type" => "Document",
+                "url" => [
+                  %{
+                    "href" =>
+                      "http://localhost:4001/media/8270697e-104f-4a54-a7c1-514bb6713f2c/some_image.jpg",
+                    "mediaType" => "image/jpeg",
+                    "type" => "Link"
+                  }
+                ]
+              }
+            ]
+          },
+          user: other
+        })
+
+      with_media =
+        insert(:note_activity, %{
+          note: obj,
+          recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(other)],
+          user: other
+        })
+
+      resp1 =
+        conn
+        |> get("/api/v1/timelines/home")
+        |> json_response_and_validate_schema(200)
+
+      without_filter_ids = Enum.map(resp1, & &1["id"])
+
+      assert without_media.id in without_filter_ids
+      assert with_media.id in without_filter_ids
+
+      resp2 =
+        conn
+        |> get("/api/v1/timelines/home?only_media=true")
+        |> json_response_and_validate_schema(200)
+
+      only_media_ids = Enum.map(resp2, & &1["id"])
+
+      refute without_media.id in only_media_ids
+      assert with_media.id in only_media_ids
+    end
   end
 
   describe "public" do

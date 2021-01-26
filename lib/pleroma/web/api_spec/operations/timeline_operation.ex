@@ -26,6 +26,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       parameters: [
         local_param(),
         remote_param(),
+        only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
         reply_visibility_param() | pagination_params()
