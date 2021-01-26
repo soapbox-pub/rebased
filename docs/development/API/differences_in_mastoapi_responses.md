@@ -16,7 +16,7 @@ Adding the parameter `reply_visibility` to the public and home timelines queries
 
 Adding the parameter `instance=lain.com` to the public timeline will show only statuses originating from `lain.com` (or any remote instance).
 
-Home, public, hashtag & list timelines can filter statuses by accepting these parameters:
+Home, public, hashtag & list timelines accept these parameters:
 
 - `only_media`: show only statuses with media attached
 - `local`: show only local statuses
@@ -59,6 +59,16 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 
 - `/api/v1/accounts/:id`
 - `/api/v1/accounts/:id/statuses`
+
+`/api/v1/accounts/:id/statuses` endpoint accepts these parameters:
+
+- `pinned`: include only pinned statuses
+- `tagged`: with tag
+- `only_media`: include only statuses with media attached
+- `with_muted`: include statuses/reactions from muted accounts
+- `exclude_reblogs`: exclude reblogs
+- `exclude_replies`: exclude replies
+- `exclude_visibilities`: exclude visibilities
 
 Has these additional fields under the `pleroma` object:
 

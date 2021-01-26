@@ -130,7 +130,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :with_muted,
             :query,
             BooleanLike,
-            "Include statuses from muted acccounts."
+            "Include statuses from muted accounts."
           ),
           Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
           Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :with_muted,
             :query,
             BooleanLike,
-            "Include reactions from muted acccounts."
+            "Include reactions from muted accounts."
           )
         ] ++ pagination_params(),
       responses: %{
