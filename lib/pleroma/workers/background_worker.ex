@@ -9,9 +9,9 @@ defmodule Pleroma.Workers.BackgroundWorker do
 
   @impl Oban.Worker
 
-  def perform(%Job{args: %{"op" => "deactivate_user", "user_id" => user_id, "status" => status}}) do
+  def perform(%Job{args: %{"op" => "user_activation", "user_id" => user_id, "status" => status}}) do
     user = User.get_cached_by_id(user_id)
-    User.perform(:deactivate_async, user, status)
+    User.perform(:set_activation_async, user, status)
   end
 
   def perform(%Job{args: %{"op" => "delete_user", "user_id" => user_id}}) do

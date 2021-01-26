@@ -150,17 +150,11 @@ config :pleroma, :config_description, [
         suggestions: ["pleroma"]
       },
       %{
-        key: :public_endpoint,
-        type: :string,
-        description: "S3 endpoint",
-        suggestions: ["https://s3.amazonaws.com"]
-      },
-      %{
         key: :truncated_namespace,
         type: :string,
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
-            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
+            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in Upload base_url."
       },
       %{
         key: :streaming_enabled,
@@ -1633,13 +1627,20 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Pleroma.Web.MediaProxy.Invalidation.Script,
     type: :group,
-    description: "Script invalidate settings",
+    description: "Invalidation script settings",
     children: [
       %{
         key: :script_path,
         type: :string,
-        description: "Path to shell script. Which will run purge cache.",
+        description: "Path to executable script which will purge cached items.",
         suggestions: ["./installation/nginx-cache-purge.sh.example"]
+      },
+      %{
+        key: :url_format,
+        type: :string,
+        description:
+          "Optional URL format preprocessing. Only required for Apache's htcacheclean.",
+        suggestions: [":htcacheclean"]
       }
     ]
   },
@@ -3334,6 +3335,54 @@ config :pleroma, :config_description, [
         type: :atom,
         description: "App metrics endpoint output format.",
         suggestions: [:text, :protobuf]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: ConcurrentLimiter,
+    type: :group,
+    description: "Limits configuration for background tasks.",
+    children: [
+      %{
+        key: Pleroma.Web.RichMedia.Helpers,
+        type: :keyword,
+        description: "Concurrent limits configuration for getting RichMedia for activities.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
+      },
+      %{
+        key: Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
+        type: :keyword,
+        description: "Concurrent limits configuration for MediaProxyWarmingPolicy.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
       }
     ]
   }

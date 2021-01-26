@@ -47,9 +47,9 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns active/deactivated users" do
-      insert(:user, deactivated: true)
-      insert(:user, deactivated: true)
-      insert(:user, deactivated: false)
+      insert(:user, is_active: false)
+      insert(:user, is_active: false)
+      insert(:user, is_active: true)
 
       {:ok, _results, active_count} =
         Search.user(%{
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     test "it returns specific user" do
       insert(:user)
       insert(:user)
-      user = insert(:user, nickname: "bob", local: true, deactivated: false)
+      user = insert(:user, nickname: "bob", local: true, is_active: true)
 
       {:ok, _results, total_count} = Search.user(%{query: ""})
 
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns unapproved user" do
-      unapproved = insert(:user, approval_pending: true)
+      unapproved = insert(:user, is_approved: false)
       insert(:user)
       insert(:user)
 
@@ -193,7 +193,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns unconfirmed user" do
-      unconfirmed = insert(:user, confirmation_pending: true)
+      unconfirmed = insert(:user, is_confirmed: false)
       insert(:user)
       insert(:user)
 

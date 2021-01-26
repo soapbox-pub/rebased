@@ -159,18 +159,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
   describe "delete users with confirmation pending" do
     setup do
-      user = insert(:user, confirmation_pending: true)
+      user = insert(:user, is_confirmed: false)
       {:ok, delete_user_data, _meta} = Builder.delete(user, user.ap_id)
       {:ok, delete_user, _meta} = ActivityPub.persist(delete_user_data, local: true)
       {:ok, delete: delete_user, user: user}
-    end
-
-    test "when activation is not required", %{delete: delete, user: user} do
-      clear_config([:instance, :account_activation_required], false)
-      {:ok, _, _} = SideEffects.handle(delete)
-      ObanHelpers.perform_all()
-
-      assert User.get_cached_by_id(user.id).deactivated
     end
 
     test "when activation is required", %{delete: delete, user: user} do

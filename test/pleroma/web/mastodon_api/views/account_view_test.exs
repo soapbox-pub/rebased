@@ -79,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         also_known_as: ["https://shitposter.zone/users/shp"],
         background_image: "https://example.com/images/asuka_hospital.png",
         favicon: nil,
-        confirmation_pending: false,
+        is_confirmed: true,
         tags: [],
         is_admin: false,
         is_moderator: false,
@@ -178,7 +178,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         also_known_as: [],
         background_image: nil,
         favicon: nil,
-        confirmation_pending: false,
+        is_confirmed: true,
         tags: [],
         is_admin: false,
         is_moderator: false,
@@ -211,7 +211,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   test "Represent a deactivated user for an admin" do
     admin = insert(:user, is_admin: true)
-    deactivated_user = insert(:user, deactivated: true)
+    deactivated_user = insert(:user, is_active: false)
     represented = AccountView.render("show.json", %{user: deactivated_user, for: admin})
     assert represented[:pleroma][:deactivated] == true
   end

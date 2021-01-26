@@ -57,7 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     user = insert(:user, %{local: true})
 
     user2 = insert(:user, %{local: true})
-    {:ok, _user2} = User.deactivate(user2, !user2.deactivated)
+    {:ok, _user2} = User.set_activation(user2, false)
 
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})

@@ -11,9 +11,9 @@ defmodule Pleroma.Repo.Migrations.ConfirmLoggedInUsers do
 
   def up do
     User
-    |> where([u], u.confirmation_pending == true)
+    |> where([u], u.is_confirmed == false)
     |> join(:inner, [u], t in Token, on: t.user_id == u.id)
-    |> Repo.update_all(set: [confirmation_pending: false])
+    |> Repo.update_all(set: [is_confirmed: true])
   end
 
   def down do

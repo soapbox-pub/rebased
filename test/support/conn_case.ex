@@ -19,6 +19,8 @@ defmodule Pleroma.Web.ConnCase do
 
   use ExUnit.CaseTemplate
 
+  alias Pleroma.DataCase
+
   using do
     quote do
       # Import conveniences for testing with connections
@@ -116,27 +118,9 @@ defmodule Pleroma.Web.ConnCase do
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
-
-    if tags[:async] do
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
-      Mox.set_mox_private()
-    else
-      Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
-      Mox.set_mox_global()
-      Pleroma.DataCase.clear_cachex()
-    end
-
-    if tags[:needs_streamer] do
-      start_supervised(%{
-        id: Pleroma.Web.Streamer.registry(),
-        start:
-          {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
-      })
-    end
-
-    Pleroma.DataCase.stub_pipeline()
+    DataCase.setup_multi_process_mode(tags)
+    DataCase.setup_streamer(tags)
+    DataCase.stub_pipeline()
 
     Mox.verify_on_exit!()
 

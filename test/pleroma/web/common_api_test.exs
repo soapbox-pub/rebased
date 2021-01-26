@@ -518,7 +518,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "deactivated users can't post" do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
       assert {:error, _} = CommonAPI.post(user, %{status: "ye"})
     end
 
@@ -742,6 +742,22 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert Visibility.is_private?(announce_activity)
       refute Visibility.visible_for_user?(announce_activity, nil)
+    end
+
+    test "author can repeat own private statuses" do
+      author = insert(:user)
+      follower = insert(:user)
+      CommonAPI.follow(follower, author)
+
+      {:ok, activity} = CommonAPI.post(author, %{status: "cofe", visibility: "private"})
+
+      {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, author)
+
+      assert Visibility.is_private?(announce_activity)
+      refute Visibility.visible_for_user?(announce_activity, nil)
+
+      assert Visibility.visible_for_user?(activity, follower)
+      assert {:error, :not_found} = CommonAPI.repeat(activity.id, follower)
     end
 
     test "favoriting a status" do

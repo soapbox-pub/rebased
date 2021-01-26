@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# A simple shell script to delete a media from Apache's mod_disk_cache.
+# You will likely need to setup a sudo rule like the following:
+#
+# Cmnd_Alias HTCACHECLEAN = /usr/local/sbin/htcacheclean
+# pleroma ALL=HTCACHECLEAN, NOPASSWD: HTCACHECLEAN
+#
+# Please also ensure you have enabled:
+#
+# config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, url_format: :htcacheclean
+#
+# which will correctly format the URLs passed to this script for the htcacheclean utility.
+#
+
+SCRIPTNAME=${0##*/}
+
+# mod_disk_cache directory
+CACHE_DIRECTORY="/tmp/pleroma-media-cache"
+
+## Removes an item via the htcacheclean utility
+## $1 - the filename, can be a pattern .
+## $2 - the cache directory.
+purge_item() {
+    sudo htcacheclean -v -p "${2}" "${1}"
+} # purge_item
+
+purge() {
+  for url in $@
+  do
+    echo "$SCRIPTNAME delete \`$url\` from cache ($CACHE_DIRECTORY)"
+    purge_item "$url" $CACHE_DIRECTORY
+  done
+}
+
+purge $@

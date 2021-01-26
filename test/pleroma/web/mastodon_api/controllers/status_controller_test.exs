@@ -954,6 +954,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert to_string(activity.id) == id
     end
+
+    test "author can reblog own private status", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "cofe", visibility: "private"})
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses/#{activity.id}/reblog")
+
+      assert %{
+               "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 1},
+               "reblogged" => true,
+               "visibility" => "private"
+             } = json_response_and_validate_schema(conn, 200)
+
+      assert to_string(activity.id) == id
+    end
   end
 
   describe "unreblogging" do

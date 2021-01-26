@@ -42,7 +42,6 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         %{title: "yes", votes_count: 0},
         %{title: "why are you even asking?", votes_count: 0}
       ],
-      voted: false,
       votes_count: 0,
       voters_count: 0
     }
@@ -124,6 +123,8 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
     result = PollView.render("show.json", %{object: object, for: other_user})
 
     assert result[:voted] == true
+    assert 1 in result[:own_votes]
+    assert 2 in result[:own_votes]
     assert Enum.at(result[:options], 1)[:votes_count] == 1
     assert Enum.at(result[:options], 2)[:votes_count] == 1
   end

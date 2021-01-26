@@ -22,7 +22,7 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
        %{conn: conn} do
     Pleroma.Config.put([:instance, :account_activation_required], true)
 
-    user = insert(:user, confirmation_pending: true)
+    user = insert(:user, is_confirmed: false)
 
     conn =
       conn
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
   end
 
   test "with a user that is deactivated, it removes that user", %{conn: conn} do
-    user = insert(:user, deactivated: true)
+    user = insert(:user, is_active: false)
 
     conn =
       conn

@@ -8,13 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Breaking**: Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
+- **Breaking**: Changed `mix pleroma.user toggle_activated` to `mix pleroma.user activate/deactivate`
+- **Breaking**: AdminAPI changed User field `confirmation_pending` to `is_confirmed`
+- **Breaking**: AdminAPI changed User field `approval_pending` to `is_approved`
+- **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
 - Improved registration workflow for email confirmation and account approval modes.
-- **Breaking:** Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
 - Search: When using Postgres 11+, Pleroma will use the `websearch_to_tsvector` function to parse search queries.
 - Emoji: Support the full Unicode 13.1 set of Emoji for reactions, plus regional indicators.
 - Admin API: Reports now ordered by newest
+- Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
+- Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
 
 ### Added
 
@@ -31,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth form improvements: users are remembered by their cookie, the CSS is overridable by the admin, and the style has been improved.
 - OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 - Ability to set ActivityPub aliases for follower migration.
+- Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
+
 
 <details>
   <summary>API Changes</summary>
@@ -48,18 +56,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Users with `is_discoverable` field set to false (default value) will appear in in-service search results but be hidden from external services (search bots etc.).
 - Streaming API: Posts and notifications are not dropped, when CLI task is executing.
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
+- Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
+- Tag URLs in statuses are now absolute
 
 <details>
   <summary>API Changes</summary>
   - Mastodon API: Current user is now included in conversation if it's the only participant.
   - Mastodon API: Fixed last_status.account being not filled with account data.
   - Mastodon API: Fix not being able to add or remove multiple users at once in lists.
+  - Mastodon API: Fixed own_votes being not returned with poll data.
 </details>
 
 ## Unreleased (Patch)
 
+
+## [2.2.2] - 2020-01-18
+
 ### Fixed
+
 - StealEmojiPolicy creates dir for emojis, if it doesn't exist.
+- Updated `elixir_make` to a non-retired version
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## [2.2.1] - 2020-12-22
 

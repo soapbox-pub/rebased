@@ -61,18 +61,18 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
     test "Sends confirmation emails" do
       local_user1 =
         insert(:user, %{
-          confirmation_pending: true,
+          is_confirmed: false,
           confirmation_token: "mytoken",
-          deactivated: false,
+          is_active: true,
           email: "local1@pleroma.com",
           local: true
         })
 
       local_user2 =
         insert(:user, %{
-          confirmation_pending: true,
+          is_confirmed: false,
           confirmation_token: "mytoken",
-          deactivated: false,
+          is_active: true,
           email: "local2@pleroma.com",
           local: true
         })
@@ -88,30 +88,30 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
     test "Does not send confirmation email to inappropriate users" do
       # confirmed user
       insert(:user, %{
-        confirmation_pending: false,
+        is_confirmed: true,
         confirmation_token: "mytoken",
-        deactivated: false,
+        is_active: true,
         email: "confirmed@pleroma.com",
         local: true
       })
 
       # remote user
       insert(:user, %{
-        deactivated: false,
+        is_active: true,
         email: "remote@not-pleroma.com",
         local: false
       })
 
       # deactivated user =
       insert(:user, %{
-        deactivated: true,
+        is_active: false,
         email: "deactivated@pleroma.com",
         local: false
       })
 
       # invisible user
       insert(:user, %{
-        deactivated: false,
+        is_active: true,
         email: "invisible@pleroma.com",
         local: true,
         invisible: true

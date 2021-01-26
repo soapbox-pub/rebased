@@ -491,7 +491,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   def build_tags(object_tags) when is_list(object_tags) do
     object_tags
     |> Enum.filter(&is_binary/1)
-    |> Enum.map(&%{name: &1, url: "/tag/#{URI.encode(&1)}"})
+    |> Enum.map(&%{name: &1, url: "#{Pleroma.Web.base_url()}/tag/#{URI.encode(&1)}"})
   end
 
   def build_tags(_), do: []

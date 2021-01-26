@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       properties:
         Map.merge(Account.schema().properties, %{
           nickname: %Schema{type: :string},
-          deactivated: %Schema{type: :boolean},
+          is_active: %Schema{type: :boolean},
           local: %Schema{type: :boolean},
           roles: %Schema{
             type: :object,
@@ -191,7 +191,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
               moderator: %Schema{type: :boolean}
             }
           },
-          confirmation_pending: %Schema{type: :boolean}
+          is_confirmed: %Schema{type: :boolean}
         })
     }
   end
