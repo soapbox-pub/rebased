@@ -2248,4 +2248,42 @@ defmodule Pleroma.UserTest do
     user = insert(:user, ap_id: "https://lain.com/users/lain", nickname: "lain")
     assert User.get_host(user) == "lain.com"
   end
+
+  test "update_last_active_at/1" do
+    user = insert(:user)
+    assert is_nil(user.last_active_at)
+
+    test_started_at = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+    assert {:ok, user} = User.update_last_active_at(user)
+
+    assert user.last_active_at >= test_started_at
+    assert user.last_active_at <= NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+
+    last_active_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-:timer.hours(24), :millisecond)
+      |> NaiveDateTime.truncate(:second)
+
+    assert {:ok, user} =
+             user
+             |> cast(%{last_active_at: last_active_at}, [:last_active_at])
+             |> User.update_and_set_cache()
+
+    assert user.last_active_at == last_active_at
+    assert {:ok, user} = User.update_last_active_at(user)
+    assert user.last_active_at >= test_started_at
+    assert user.last_active_at <= NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+  end
+
+  test "active_user_count/1" do
+    insert(:user)
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -5)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -3)})
+    insert(:user, %{last_active_at: NaiveDateTime.utc_now()})
+
+    assert User.active_user_count() == 2
+    assert User.active_user_count(6) == 3
+    assert User.active_user_count(1) == 1
+  end
 end
