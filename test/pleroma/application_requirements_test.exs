@@ -9,7 +9,6 @@ defmodule Pleroma.ApplicationRequirementsTest do
   import Mock
 
   alias Pleroma.ApplicationRequirements
-  alias Pleroma.Config
   alias Pleroma.Repo
 
   describe "check_repo_pool_size!/1" do
@@ -37,8 +36,8 @@ defmodule Pleroma.ApplicationRequirementsTest do
     setup do: clear_config([Pleroma.Emails.Mailer])
 
     test "raises if welcome email enabled but mail disabled" do
-      Pleroma.Config.put([:welcome, :email, :enabled], true)
-      Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
 
       assert_raise Pleroma.ApplicationRequirements.VerifyError, "The mail disabled.", fn ->
         capture_log(&Pleroma.ApplicationRequirements.verify!/0)
@@ -59,8 +58,8 @@ defmodule Pleroma.ApplicationRequirementsTest do
     setup do: clear_config([:instance, :account_activation_required])
 
     test "raises if account confirmation is required but mailer isn't enable" do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
-      Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
 
       assert_raise Pleroma.ApplicationRequirements.VerifyError,
                    "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails.",
@@ -70,14 +69,14 @@ defmodule Pleroma.ApplicationRequirementsTest do
     end
 
     test "doesn't do anything if account confirmation is disabled" do
-      Pleroma.Config.put([:instance, :account_activation_required], false)
-      Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
       assert Pleroma.ApplicationRequirements.verify!() == :ok
     end
 
     test "doesn't do anything if account confirmation is required and mailer is enabled" do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
-      Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], true)
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([Pleroma.Emails.Mailer, :enabled], true)
       assert Pleroma.ApplicationRequirements.verify!() == :ok
     end
   end
@@ -93,7 +92,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
     setup do: clear_config([:database, :rum_enabled])
 
     test "raises if rum is enabled and detects unapplied rum migrations" do
-      Config.put([:database, :rum_enabled], true)
+      clear_config([:database, :rum_enabled], true)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> false end]}]) do
         assert_raise ApplicationRequirements.VerifyError,
@@ -105,7 +104,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
     end
 
     test "raises if rum is disabled and detects rum migrations" do
-      Config.put([:database, :rum_enabled], false)
+      clear_config([:database, :rum_enabled], false)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> true end]}]) do
         assert_raise ApplicationRequirements.VerifyError,
@@ -117,7 +116,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
     end
 
     test "doesn't do anything if rum enabled and applied migrations" do
-      Config.put([:database, :rum_enabled], true)
+      clear_config([:database, :rum_enabled], true)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> true end]}]) do
         assert ApplicationRequirements.verify!() == :ok
@@ -125,7 +124,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
     end
 
     test "doesn't do anything if rum disabled" do
-      Config.put([:database, :rum_enabled], false)
+      clear_config([:database, :rum_enabled], false)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> false end]}]) do
         assert ApplicationRequirements.verify!() == :ok
@@ -161,7 +160,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
     end
 
     test "doesn't do anything if disabled" do
-      Config.put([:i_am_aware_this_may_cause_data_loss, :disable_migration_check], true)
+      clear_config([:i_am_aware_this_may_cause_data_loss, :disable_migration_check], true)
 
       assert :ok == ApplicationRequirements.verify!()
     end

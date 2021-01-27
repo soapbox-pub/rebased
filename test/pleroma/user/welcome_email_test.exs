@@ -18,15 +18,15 @@ defmodule Pleroma.User.WelcomeEmailTest do
     test "send a welcome email" do
       user = insert(:user, name: "Jimm")
 
-      Config.put([:welcome, :email, :enabled], true)
-      Config.put([:welcome, :email, :sender], "welcome@pleroma.app")
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([:welcome, :email, :sender], "welcome@pleroma.app")
 
-      Config.put(
+      clear_config(
         [:welcome, :email, :subject],
         "Hello, welcome to pleroma: <%= instance_name %>"
       )
 
-      Config.put(
+      clear_config(
         [:welcome, :email, :html],
         "<h1>Hello <%= user.name %>.</h1> <p>Welcome to <%= instance_name %></p>"
       )
@@ -44,7 +44,7 @@ defmodule Pleroma.User.WelcomeEmailTest do
         html_body: "<h1>Hello #{user.name}.</h1> <p>Welcome to #{instance_name}</p>"
       )
 
-      Config.put([:welcome, :email, :sender], {"Pleroma App", "welcome@pleroma.app"})
+      clear_config([:welcome, :email, :sender], {"Pleroma App", "welcome@pleroma.app"})
 
       {:ok, _job} = WelcomeEmail.send_email(user)
 

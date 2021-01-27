@@ -234,7 +234,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "it reject messages over the local limit" do
-      Pleroma.Config.put([:instance, :chat_limit], 2)
+      clear_config([:instance, :chat_limit], 2)
 
       author = insert(:user)
       recipient = insert(:user)
@@ -475,7 +475,7 @@ defmodule Pleroma.Web.CommonAPITest do
     jafnhar = insert(:user)
     tridi = insert(:user)
 
-    Pleroma.Config.put([:instance, :safe_dm_mentions], true)
+    clear_config([:instance, :safe_dm_mentions], true)
 
     {:ok, activity} =
       CommonAPI.post(har, %{
@@ -642,7 +642,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "it validates character limits are correctly enforced" do
-      Pleroma.Config.put([:instance, :limit], 5)
+      clear_config([:instance, :limit], 5)
 
       user = insert(:user)
 
@@ -793,7 +793,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
   describe "pinned statuses" do
     setup do
-      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+      clear_config([:instance, :max_pinned_statuses], 1)
 
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{status: "HI!!!"})

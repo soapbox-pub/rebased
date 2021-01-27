@@ -18,7 +18,7 @@ defmodule Pleroma.UserSearchTest do
     setup do: clear_config([:instance, :limit_to_local_content])
 
     test "returns a resolved user as the first result" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
       user = insert(:user, %{nickname: "no_relation", ap_id: "https://lain.com/users/lain"})
       _user = insert(:user, %{nickname: "com_user"})
 
@@ -199,7 +199,7 @@ defmodule Pleroma.UserSearchTest do
     end
 
     test "find only local users for authenticated users when `limit_to_local_content` is `:all`" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
 
       %{id: id} = insert(:user, %{name: "lain"})
       insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
@@ -209,7 +209,7 @@ defmodule Pleroma.UserSearchTest do
     end
 
     test "find all users for unauthenticated users when `limit_to_local_content` is `false`" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       u1 = insert(:user, %{name: "lain"})
       u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})

@@ -7,7 +7,6 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
 
   import Mox
   import ExUnit.CaptureLog
-  alias Pleroma.Config
   alias Pleroma.Gun.ConnectionPool
 
   defp gun_mock(_) do
@@ -49,7 +48,7 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
 
   test "connection limit is respected with concurrent requests" do
     clear_config([:connections_pool, :max_connections]) do
-      Config.put([:connections_pool, :max_connections], 1)
+      clear_config([:connections_pool, :max_connections], 1)
       # The supervisor needs a reboot to apply the new config setting
       Process.exit(Process.whereis(Pleroma.Gun.ConnectionPool.WorkerSupervisor), :kill)
 

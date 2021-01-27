@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicyTest do
   setup do: clear_config([:mrf_subchain, :match_actor])
 
   test "it matches and processes subchains when the actor matches a configured target" do
-    Pleroma.Config.put([:mrf_subchain, :match_actor], %{
+    clear_config([:mrf_subchain, :match_actor], %{
       ~r/^https:\/\/banned.com/s => [DropPolicy]
     })
 
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicyTest do
   end
 
   test "it doesn't match and process subchains when the actor doesn't match a configured target" do
-    Pleroma.Config.put([:mrf_subchain, :match_actor], %{
+    clear_config([:mrf_subchain, :match_actor], %{
       ~r/^https:\/\/borked.com/s => [DropPolicy]
     })
 
