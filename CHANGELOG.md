@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
 - WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types
+- Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`)
 </details>
 
 ### Fixed
