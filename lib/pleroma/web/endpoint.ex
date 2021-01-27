@@ -63,6 +63,18 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Static,
     at: "/",
     from: :pleroma,
+    only: ["emoji", "images"],
+    gzip: true,
+    cache_control_for_etags: "public, max-age=1209600",
+    headers: %{
+      "cache-control" => "public, max-age=1209600"
+    }
+  )
+
+  plug(
+    Plug.Static,
+    at: "/",
+    from: :pleroma,
     only: Pleroma.Constants.static_only_files(),
     # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     gzip: true,
