@@ -2232,6 +2232,36 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "local_nickname/1" do
+    test "returns nickname without host" do
+      assert User.local_nickname("@mentioned") == "mentioned"
+      assert User.local_nickname("a_local_nickname") == "a_local_nickname"
+      assert User.local_nickname("nickname@host.com") == "nickname"
+    end
+  end
+
+  describe "full_nickname/1" do
+    test "returns fully qualified nickname for local and remote users" do
+      local_user =
+        insert(:user, nickname: "local_user", ap_id: "https://somehost.com/users/local_user")
+
+      remote_user = insert(:user, nickname: "remote@host.com", local: false)
+
+      assert User.full_nickname(local_user) == "local_user@somehost.com"
+      assert User.full_nickname(remote_user) == "remote@host.com"
+    end
+
+    test "strips leading @ from mentions" do
+      assert User.full_nickname("@mentioned") == "mentioned"
+      assert User.full_nickname("@nickname@host.com") == "nickname@host.com"
+    end
+
+    test "does not modify nicknames" do
+      assert User.full_nickname("nickname") == "nickname"
+      assert User.full_nickname("nickname@host.com") == "nickname@host.com"
+    end
+  end
+
   test "avatar fallback" do
     user = insert(:user)
     assert User.avatar_url(user) =~ "/images/avi.png"

@@ -2030,6 +2030,15 @@ defmodule Pleroma.User do
     |> hd()
   end
 
+  def full_nickname(%User{} = user) do
+    if String.contains?(user.nickname, "@") do
+      user.nickname
+    else
+      %{host: host} = URI.parse(user.ap_id)
+      user.nickname <> "@" <> host
+    end
+  end
+
   def full_nickname(nickname_or_mention),
     do: String.trim_leading(nickname_or_mention, "@")
 
