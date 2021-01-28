@@ -58,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
+- Creation of duplicate purge expired activities jobs
 
 <details>
   <summary>API Changes</summary>
