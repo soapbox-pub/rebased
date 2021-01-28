@@ -10,6 +10,32 @@ defmodule Pleroma.GroupTest do
 
   import Pleroma.Factory
 
+  test "get_for_object/1 gets a group based on the group object or the create activity" do
+    user = insert(:user)
+
+    {:ok, group} = Group.create(%{owner_id: user.id, name: "cofe", description: "corndog"})
+    group = Repo.preload(group, :user)
+
+    group_object = %{
+      "id" => group.user.ap_id,
+      "type" => "Group"
+    }
+
+    assert group.id == Group.get_for_object(group_object).id
+
+    # Same works if wrapped in a 'create'
+    group_create = %{
+      "type" => "Create",
+      "object" => group_object
+    }
+
+    assert group.id == Group.get_for_object(group_create).id
+
+    # Nil for nonsense
+
+    assert nil == Group.get_for_object(%{"nothing" => "PS4 games"})
+  end
+
   test "a user can create a group" do
     user = insert(:user)
     {:ok, group} = Group.create(%{owner_id: user.id, name: "cofe", description: "corndog"})

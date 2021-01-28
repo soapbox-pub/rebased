@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -103,6 +104,30 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "to" => to,
        "type" => "Delete"
      }, []}
+  end
+
+  def group(owner, name \\ nil, description \\ nil) do
+    id = Ecto.UUID.generate()
+    ap_id = "#{Web.base_url()}/groups/#{id}"
+
+    {:ok,
+     %{
+       "id" => ap_id,
+       "type" => "Group",
+       "name" => name,
+       "summary" => description,
+       "following" => "#{ap_id}/following",
+       "followers" => "#{ap_id}/followers",
+       "members" => "#{ap_id}/members",
+       # attributedTo? owner? admin?
+       "attributedTo" => owner.ap_id
+     }, []}
+  end
+
+  def create_group(owner, params \\ %{}) do
+    with {:ok, group, _} <- group(owner, params[:name], params[:description]) do
+      create(owner, group, [])
+    end
   end
 
   def create(actor, object, recipients) do

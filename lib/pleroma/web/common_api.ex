@@ -30,6 +30,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def create_group(user, params) do
+    with {:ok, group_data, _} <- Builder.create_group(user, params),
+         {:ok, group, _} <- Pipeline.common_pipeline(group_data, local: true) do
+      {:ok, group}
+    end
+  end
+
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),

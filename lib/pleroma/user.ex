@@ -18,6 +18,7 @@ defmodule Pleroma.User do
   alias Pleroma.Emoji
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
+  alias Pleroma.Group
   alias Pleroma.HTML
   alias Pleroma.Keys
   alias Pleroma.MFA
@@ -208,6 +209,9 @@ defmodule Pleroma.User do
       MFA.Settings,
       on_replace: :delete
     )
+
+    # Some `users` are actually groups. In this case, they can have a corresponding `Group`
+    has_one(:group, Group)
 
     timestamps()
   end

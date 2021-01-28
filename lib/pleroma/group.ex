@@ -92,4 +92,15 @@ defmodule Pleroma.Group do
       {:ok, group}
     end
   end
+
+  @spec get_for_object(map()) :: t() | nil
+  def get_for_object(%{"type" => "Group", "id" => id}) do
+    with %User{} = user <- User.get_cached_by_ap_id(id),
+         group <- Repo.preload(user, :group).group do
+      group
+    end
+  end
+
+  def get_for_object(%{"type" => "Create", "object" => object}), do: get_for_object(object)
+  def get_for_object(_), do: nil
 end

@@ -29,6 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EventValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.GroupValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
@@ -36,6 +37,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   @impl true
   def validate(object, meta)
+
+  def validate(%{"type" => "Group"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> GroupValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
 
   def validate(%{"type" => type} = object, meta)
       when type in ~w[Accept Reject] do
