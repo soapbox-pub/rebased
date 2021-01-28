@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.PurgeExpiredFilter do
   Worker which purges expired filters
   """
 
-  use Oban.Worker, queue: :filter_expiration, max_attempts: 1, unique: [fields: [:args]]
+  use Oban.Worker, queue: :filter_expiration, max_attempts: 1, unique: [period: :infinity]
 
   import Ecto.Query
 
