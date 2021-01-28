@@ -217,6 +217,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
     {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
 
+    {:ok, status_four} = CommonAPI.post(user, %{status: ". #any1 #any2"})
+    {:ok, status_five} = CommonAPI.post(user, %{status: ". #any2 #any1"})
+
     for hashtag_timeline_strategy <- [true, :prefer_aggregation, false] do
       clear_config([:instance, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
@@ -238,8 +241,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           tag_all: ["test", "reject"]
         })
 
-      [fetch_one, fetch_two, fetch_three, fetch_four] =
-        Enum.map([fetch_one, fetch_two, fetch_three, fetch_four], fn statuses ->
+      # This test would fail if JOIN with 2+ terms in "any" clause is done without DISTINCT.
+      # The :limit is important (w/o DISTINCT 2 records are deduped by Ecto to 1 b/c of preload).
+      fetch_five =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["any1", "any2"],
+          limit: 2
+        })
+
+      [fetch_one, fetch_two, fetch_three, fetch_four, fetch_five] =
+        Enum.map([fetch_one, fetch_two, fetch_three, fetch_four, fetch_five], fn statuses ->
           Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)
         end)
 
@@ -247,6 +259,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert fetch_two == [status_one, status_two, status_three]
       assert fetch_three == [status_one, status_two]
       assert fetch_four == [status_three]
+      assert fetch_five == [status_four, status_five]
     end
   end
 

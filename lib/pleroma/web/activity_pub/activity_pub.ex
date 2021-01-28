@@ -846,11 +846,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_hashtag_any(query, %{tag: tags}) when is_list(tags) do
-    from(
-      [_activity, object] in query,
-      join: hashtag in assoc(object, :hashtags),
-      where: hashtag.name in ^tags
-    )
+    query =
+      from(
+        [_activity, object] in query,
+        join: hashtag in assoc(object, :hashtags),
+        where: hashtag.name in ^tags
+      )
+
+    if length(tags) > 1 do
+      distinct(query, [activity], true)
+    else
+      query
+    end
   end
 
   defp restrict_hashtag_any(query, %{tag: tag}) when is_binary(tag) do

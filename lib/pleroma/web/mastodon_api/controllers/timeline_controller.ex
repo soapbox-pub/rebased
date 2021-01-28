@@ -134,9 +134,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     tags =
       [params[:tag], params[:any]]
       |> List.flatten()
-      |> Enum.uniq()
       |> Enum.reject(&is_nil/1)
       |> Enum.map(&String.downcase/1)
+      |> Enum.uniq()
 
     tag_all =
       params
