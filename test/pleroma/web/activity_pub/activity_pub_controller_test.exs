@@ -1607,9 +1607,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       desc = "Description of the image"
 
       image = %Plug.Upload{
-        content_type: "bad/content-type",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an_image.png"
+        filename: "an_image.jpg"
       }
 
       object =
