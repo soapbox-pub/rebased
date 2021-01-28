@@ -2446,7 +2446,7 @@ defmodule Pleroma.User do
     URI.parse(ap_id).host
   end
 
-  def update_last_active_at(user) do
+  def update_last_active_at(%__MODULE__{local: true} = user) do
     user
     |> cast(%{last_active_at: NaiveDateTime.utc_now()}, [:last_active_at])
     |> update_and_set_cache()
@@ -2457,6 +2457,7 @@ defmodule Pleroma.User do
 
     __MODULE__
     |> where([u], u.last_active_at >= ^active_after)
+    |> where([u], u.local == true)
     |> Repo.aggregate(:count)
   end
 end

@@ -2278,6 +2278,7 @@ defmodule Pleroma.UserTest do
 
   test "active_user_count/1" do
     insert(:user)
+    insert(:user, %{local: false})
     insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -5)})
     insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -3)})
     insert(:user, %{last_active_at: NaiveDateTime.utc_now()})
