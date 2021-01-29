@@ -54,6 +54,13 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 - `/api/v1/accounts/:id`
 - `/api/v1/accounts/:id/statuses`
 
+Endpoints which accept `with_relationships` parameter:
+
+- `/api/v1/accounts/:id`
+- `/api/v1/accounts/:id/followers`
+- `/api/v1/accounts/:id/following`
+- `/api/v1/mutes`
+
 Has these additional fields under the `pleroma` object:
 
 - `ap_id`: nullable URL string, ActivityPub id of the user

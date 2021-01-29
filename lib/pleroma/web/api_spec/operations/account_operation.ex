@@ -99,7 +99,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Account",
       operationId: "AccountController.show",
       description: "View information about a profile.",
-      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        with_relationships_param()
+      ],
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
         401 => Operation.response("Error", "application/json", ApiError),
@@ -347,7 +350,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.mutes",
       description: "Accounts the user has muted.",
       security: [%{"oAuth" => ["follow", "read:mutes"]}],
-      parameters: pagination_params(),
+      parameters: [with_relationships_param() | pagination_params()],
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
