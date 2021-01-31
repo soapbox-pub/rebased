@@ -220,7 +220,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, status_four} = CommonAPI.post(user, %{status: ". #any1 #any2"})
     {:ok, status_five} = CommonAPI.post(user, %{status: ". #any2 #any1"})
 
-    for hashtag_timeline_strategy <- [true, :prefer_aggregation, false] do
+    for hashtag_timeline_strategy <- [true, false] do
       clear_config([:instance, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
       fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
@@ -241,8 +241,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           tag_all: ["test", "reject"]
         })
 
-      # This test would fail if JOIN with 2+ terms in "any" clause is done without DISTINCT.
-      # The :limit is important (w/o DISTINCT 2 records are deduped by Ecto to 1 b/c of preload).
+      # Testing that deduplication (if needed) is done on DB (not Ecto) level; :limit is important
       fetch_five =
         ActivityPub.fetch_activities([], %{
           type: "Create",
