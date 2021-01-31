@@ -553,10 +553,12 @@ config :pleroma, Oban,
     remote_fetcher: 2,
     attachments_cleanup: 1,
     new_users_digest: 1,
+    hashtags_cleanup: 1,
     mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
+    {"0 1 * * *", Pleroma.Workers.Cron.HashtagsCleanupWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]

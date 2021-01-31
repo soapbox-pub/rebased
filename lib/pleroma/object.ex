@@ -65,6 +65,7 @@ defmodule Pleroma.Object do
     |> maybe_handle_hashtags_change(struct)
   end
 
+  # Note: not checking activity type; HashtagsCleanupWorker should clean up unused records later
   defp maybe_handle_hashtags_change(changeset, struct) do
     with data_hashtags_change = get_change(changeset, :data),
          true <- hashtags_changed?(struct, data_hashtags_change),

@@ -152,6 +152,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
   defp query do
     # Note: most objects have Mention-type AS2 tags and no hashtags (but we can't filter them out)
+    # Note: not checking activity type; HashtagsCleanupWorker should clean up unused records later
     from(
       object in Object,
       where:
