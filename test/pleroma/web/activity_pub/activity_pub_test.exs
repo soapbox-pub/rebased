@@ -249,6 +249,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           limit: 2
         })
 
+      fetch_six =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["any1", "any2"],
+          tag_all: [],
+          tag_reject: []
+        })
+
+      # Regression test: passing empty lists as filter options shouldn't affect the results
+      assert fetch_five == fetch_six
+
       [fetch_one, fetch_two, fetch_three, fetch_four, fetch_five] =
         Enum.map([fetch_one, fetch_two, fetch_three, fetch_four, fetch_five], fn statuses ->
           Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)

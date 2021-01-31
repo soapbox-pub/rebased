@@ -673,7 +673,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise_on_missing_preload()
   end
 
-  defp restrict_embedded_tag_all(query, %{tag_all: tag_all}) when is_list(tag_all) do
+  defp restrict_embedded_tag_all(query, %{tag_all: [_ | _] = tag_all}) do
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?& (?)", object.data, ^tag_all)
@@ -690,7 +690,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise_on_missing_preload()
   end
 
-  defp restrict_embedded_tag_any(query, %{tag: tag}) when is_list(tag) do
+  defp restrict_embedded_tag_any(query, %{tag: [_ | _] = tag}) do
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?| (?)", object.data, ^tag)
@@ -707,8 +707,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise_on_missing_preload()
   end
 
-  defp restrict_embedded_tag_reject_any(query, %{tag_reject: tag_reject})
-       when is_list(tag_reject) do
+  defp restrict_embedded_tag_reject_any(query, %{tag_reject: [_ | _] = tag_reject}) do
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'tag' \\?| (?)", object.data, ^tag_reject)
@@ -722,53 +721,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_embedded_tag_reject_any(query, _), do: query
 
-  # Groups by all bindings to allow aggregation on hashtags
-  defp group_by_all_bindings(query) do
-    # Expecting named bindings: :object, :bookmark, :thread_mute, :report_note
-    cond do
-      Enum.count(query.aliases) == 4 ->
-        from([a, o, b3, b4, b5] in query, group_by: [a.id, o.id, b3.id, b4.id, b5.id])
-
-      Enum.count(query.aliases) == 3 ->
-        from([a, o, b3, b4] in query, group_by: [a.id, o.id, b3.id, b4.id])
-
-      Enum.count(query.aliases) == 2 ->
-        from([a, o, b3] in query, group_by: [a.id, o.id, b3.id])
-
-      true ->
-        from([a, o] in query, group_by: [a.id, o.id])
-    end
-  end
-
-  defp restrict_hashtag_reject_any(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
-    raise_on_missing_preload()
-  end
-
-  defp restrict_hashtag_reject_any(query, %{tag_reject: tags_reject}) when is_list(tags_reject) do
-    query
-    |> group_by_all_bindings()
-    |> join(:left, [_activity, object], hashtag in assoc(object, :hashtags), as: :hashtag)
-    |> having(
-      [hashtag: hashtag],
-      fragment("not(array_agg(?) && (?))", hashtag.name, ^tags_reject)
-    )
-  end
-
-  defp restrict_hashtag_reject_any(query, %{tag_reject: tag_reject}) when is_binary(tag_reject) do
-    restrict_hashtag_reject_any(query, %{tag_reject: [tag_reject]})
-  end
-
-  defp restrict_hashtag_reject_any(query, _), do: query
-
   defp restrict_hashtag_all(_query, %{tag_all: _tag, skip_preload: true}) do
     raise_on_missing_preload()
   end
 
-  defp restrict_hashtag_all(query, %{tag_all: tags}) when is_list(tags) do
-    Enum.reduce(
-      tags,
-      query,
-      fn tag, acc -> restrict_hashtag_any(acc, %{tag: tag}) end
+  defp restrict_hashtag_all(query, %{tag_all: [_ | _] = tags}) do
+    from(
+      [_activity, object] in query,
+      where:
+        fragment(
+          """
+          (SELECT array_agg(hashtags.name) FROM hashtags JOIN hashtags_objects
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+              AND hashtags_objects.object_id = ?) @> ?
+          """,
+          ^tags,
+          object.id,
+          ^tags
+        )
     )
   end
 
@@ -782,19 +752,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise_on_missing_preload()
   end
 
-  defp restrict_hashtag_any(query, %{tag: tags}) when is_list(tags) do
-    query =
-      from(
-        [_activity, object] in query,
-        join: hashtag in assoc(object, :hashtags),
-        where: hashtag.name in ^tags
-      )
-
-    if length(tags) > 1 do
-      distinct(query, [activity], true)
-    else
-      query
-    end
+  defp restrict_hashtag_any(query, %{tag: [_ | _] = tags}) do
+    from(
+      [_activity, object] in query,
+      where:
+        fragment(
+          """
+          EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+              AND hashtags_objects.object_id = ? LIMIT 1)
+          """,
+          ^tags,
+          object.id
+        )
+    )
   end
 
   defp restrict_hashtag_any(query, %{tag: tag}) when is_binary(tag) do
@@ -802,6 +773,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_hashtag_any(query, _), do: query
+
+  defp restrict_hashtag_reject_any(_query, %{tag_reject: _tag_reject, skip_preload: true}) do
+    raise_on_missing_preload()
+  end
+
+  defp restrict_hashtag_reject_any(query, %{tag_reject: [_ | _] = tags_reject}) do
+    from(
+      [_activity, object] in query,
+      where:
+        fragment(
+          """
+          NOT EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+              AND hashtags_objects.object_id = ? LIMIT 1)
+          """,
+          ^tags_reject,
+          object.id
+        )
+    )
+  end
+
+  defp restrict_hashtag_reject_any(query, %{tag_reject: tag_reject}) when is_binary(tag_reject) do
+    restrict_hashtag_reject_any(query, %{tag_reject: [tag_reject]})
+  end
+
+  defp restrict_hashtag_reject_any(query, _), do: query
 
   defp raise_on_missing_preload do
     raise "Can't use the child object without preloading!"
