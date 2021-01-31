@@ -20,6 +20,30 @@ defmodule Mix.Tasks.Pleroma.Database do
   @shortdoc "A collection of database related tasks"
   @moduledoc File.read!("docs/administration/CLI_tasks/database.md")
 
+  # Rolls back a specific migration (leaving subsequent migrations applied)
+  # Based on https://stackoverflow.com/a/53825840
+  def run(["rollback", version]) do
+    start_pleroma()
+
+    version = String.to_integer(version)
+    re = ~r/^#{version}_.*\.exs/
+    path = Application.app_dir(:pleroma, Path.join(["priv", "repo", "migrations"]))
+
+    result =
+      with {:find, "" <> file} <- {:find, Enum.find(File.ls!(path), &String.match?(&1, re))},
+           {:compile, [{mod, _} | _]} <- {:compile, Code.compile_file(Path.join(path, file))},
+           {:rollback, :ok} <- {:rollback, Ecto.Migrator.down(Repo, version, mod)} do
+        {:ok, "Reversed migration: #{file}"}
+      else
+        {:find, _} -> {:error, "No migration found with version prefix: #{version}"}
+        {:compile, e} -> {:error, "Problem compiling migration module: #{inspect(e)}"}
+        {:rollback, e} -> {:error, "Problem reversing migration: #{inspect(e)}"}
+        e -> {:error, "Something unexpected happened: #{inspect(e)}"}
+      end
+
+    IO.inspect(result)
+  end
+
   def run(["remove_embedded_objects" | args]) do
     {options, [], []} =
       OptionParser.parse(

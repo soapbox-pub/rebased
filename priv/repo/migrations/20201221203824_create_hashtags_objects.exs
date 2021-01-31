@@ -3,8 +3,8 @@ defmodule Pleroma.Repo.Migrations.CreateHashtagsObjects do
 
   def change do
     create_if_not_exists table(:hashtags_objects, primary_key: false) do
-      add(:hashtag_id, references(:hashtags), null: false)
-      add(:object_id, references(:objects), null: false)
+      add(:hashtag_id, references(:hashtags), null: false, primary_key: true)
+      add(:object_id, references(:objects), null: false, primary_key: true)
     end
 
     create_if_not_exists(unique_index(:hashtags_objects, [:hashtag_id, :object_id]))

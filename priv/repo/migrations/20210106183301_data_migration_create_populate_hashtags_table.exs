@@ -10,5 +10,7 @@ defmodule Pleroma.Repo.Migrations.DataMigrationCreatePopulateHashtagsTable do
     )
   end
 
-  def down, do: :ok
+  def down do
+    execute("DELETE FROM data_migrations WHERE name = 'populate_hashtags_table';")
+  end
 end

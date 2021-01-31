@@ -3,8 +3,8 @@ defmodule Pleroma.Repo.Migrations.CreateDataMigrationFailedIds do
 
   def change do
     create_if_not_exists table(:data_migration_failed_ids, primary_key: false) do
-      add(:data_migration_id, references(:data_migrations), null: false)
-      add(:record_id, :bigint, null: false)
+      add(:data_migration_id, references(:data_migrations), null: false, primary_key: true)
+      add(:record_id, :bigint, null: false, primary_key: true)
     end
 
     create_if_not_exists(
