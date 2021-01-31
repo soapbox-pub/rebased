@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
   import ExUnit.CaptureLog
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.ConfigDB
 
   setup do
@@ -27,7 +26,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     setup do: clear_config(:configurable_from_database, true)
 
     test "when configuration from database is off", %{conn: conn} do
-      Config.put(:configurable_from_database, false)
+      clear_config(:configurable_from_database, false)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response_and_validate_schema(conn, 400) ==
@@ -410,8 +409,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "saving config which need pleroma reboot", %{conn: conn} do
-      chat = Config.get(:chat)
-      on_exit(fn -> Config.put(:chat, chat) end)
+      clear_config([:chat, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -456,8 +454,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
-      chat = Config.get(:chat)
-      on_exit(fn -> Config.put(:chat, chat) end)
+      clear_config([:chat, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")

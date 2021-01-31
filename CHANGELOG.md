@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Emoji: Support the full Unicode 13.1 set of Emoji for reactions, plus regional indicators.
 - Admin API: Reports now ordered by newest
 - Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
+- Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
 - Extracted object hashtags into separate table in order to improve hashtag timeline performance (via background migration in `Pleroma.Migrators.HashtagsTableMigrator`). 
 
 ### Added
@@ -38,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 - Ability to set ActivityPub aliases for follower migration.
 - Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
-
+- Ability to define custom HTTP headers per each frontend
 
 <details>
   <summary>API Changes</summary>
@@ -63,6 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   <summary>API Changes</summary>
   - Mastodon API: Current user is now included in conversation if it's the only participant.
   - Mastodon API: Fixed last_status.account being not filled with account data.
+  - Mastodon API: Fix not being able to add or remove multiple users at once in lists.
+  - Mastodon API: Fixed own_votes being not returned with poll data.
 </details>
 
 ## Unreleased (Patch)

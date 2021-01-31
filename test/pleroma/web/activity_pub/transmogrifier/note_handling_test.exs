@@ -417,7 +417,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       data: data,
       items: items
     } do
-      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 10)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 10)
 
       {:ok, _activity} = Transmogrifier.handle_incoming(data)
 
@@ -429,7 +429,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
     test "does NOT schedule background fetching of `replies` beyond max thread depth limit allows",
          %{data: data} do
-      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       {:ok, _activity} = Transmogrifier.handle_incoming(data)
 
@@ -466,7 +466,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       federation_output: federation_output,
       replies_uris: replies_uris
     } do
-      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 1)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 1)
 
       {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
 
@@ -478,7 +478,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
     test "does NOT schedule background fetching of `replies` beyond max thread depth limit allows",
          %{federation_output: federation_output} do
-      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
 
@@ -553,7 +553,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     end
 
     test "returns object with inReplyTo when denied incoming reply", %{data: data} do
-      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       object_with_reply =
         Map.put(data["object"], "inReplyTo", "https://shitposter.club/notice/2827873")
@@ -587,7 +587,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
           "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
         )
 
-      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 5)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 5)
       modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
 
       assert modified_object["inReplyTo"] ==

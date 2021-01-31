@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
 
   describe "allow" do
     test "empty" do
-      Pleroma.Config.put([:mrf_mention], %{actors: ["https://example.com/blocked"]})
+      clear_config([:mrf_mention], %{actors: ["https://example.com/blocked"]})
 
       message = %{
         "type" => "Create"
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
     end
 
     test "to" do
-      Pleroma.Config.put([:mrf_mention], %{actors: ["https://example.com/blocked"]})
+      clear_config([:mrf_mention], %{actors: ["https://example.com/blocked"]})
 
       message = %{
         "type" => "Create",
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
     end
 
     test "cc" do
-      Pleroma.Config.put([:mrf_mention], %{actors: ["https://example.com/blocked"]})
+      clear_config([:mrf_mention], %{actors: ["https://example.com/blocked"]})
 
       message = %{
         "type" => "Create",
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
     end
 
     test "both" do
-      Pleroma.Config.put([:mrf_mention], %{actors: ["https://example.com/blocked"]})
+      clear_config([:mrf_mention], %{actors: ["https://example.com/blocked"]})
 
       message = %{
         "type" => "Create",
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
 
   describe "deny" do
     test "to" do
-      Pleroma.Config.put([:mrf_mention], %{actors: ["https://example.com/blocked"]})
+      clear_config([:mrf_mention], %{actors: ["https://example.com/blocked"]})
 
       message = %{
         "type" => "Create",
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
     end
 
     test "cc" do
-      Pleroma.Config.put([:mrf_mention], %{actors: ["https://example.com/blocked"]})
+      clear_config([:mrf_mention], %{actors: ["https://example.com/blocked"]})
 
       message = %{
         "type" => "Create",

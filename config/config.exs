@@ -438,7 +438,9 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
   headers: [],
   options: []
 
-config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: nil,
+  url_format: nil
 
 # Note: media preview proxy depends on media proxy to be enabled
 config :pleroma, :media_preview_proxy,
@@ -725,7 +727,10 @@ config :pleroma, :frontends,
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
         "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
-      "ref" => "master"
+      "ref" => "master",
+      "custom-http-headers" => [
+        {"service-worker-allowed", "/"}
+      ]
     },
     "admin-fe" => %{
       "name" => "admin-fe",

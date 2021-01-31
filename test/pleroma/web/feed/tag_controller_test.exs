@@ -8,7 +8,6 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   import Pleroma.Factory
   import SweetXml
 
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Feed.FeedView
@@ -16,7 +15,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   setup do: clear_config([:feed])
 
   test "gets a feed (ATOM)", %{conn: conn} do
-    Config.put(
+    clear_config(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -83,7 +82,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
-    Config.put(
+    clear_config(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )

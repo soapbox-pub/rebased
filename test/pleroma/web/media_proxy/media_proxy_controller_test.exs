@@ -33,7 +33,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
     end
 
     test "it returns 403 for invalid signature", %{conn: conn, url: url} do
-      Pleroma.Config.put([Pleroma.Web.Endpoint, :secret_key_base], "000")
+      clear_config([Pleroma.Web.Endpoint, :secret_key_base], "000")
       %{path: path} = URI.parse(url)
 
       assert %Conn{
@@ -128,7 +128,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
     end
 
     test "it returns 403 for invalid signature", %{conn: conn, url: url} do
-      Pleroma.Config.put([Pleroma.Web.Endpoint, :secret_key_base], "000")
+      clear_config([Pleroma.Web.Endpoint, :secret_key_base], "000")
       %{path: path} = URI.parse(url)
 
       assert %Conn{

@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -29,7 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: oauth_access(["write:statuses"])
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
-      Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
       Config.get([:instance, :allow_relay], true)
 
       response =
@@ -151,8 +150,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "Get MRF reason when posting a status is rejected by one", %{conn: conn} do
-      Config.put([:mrf_keyword, :reject], ["GNO"])
-      Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
 
       assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
                conn
@@ -1204,7 +1203,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   describe "cards" do
     setup do
-      Config.put([:rich_media, :enabled], true)
+      clear_config([:rich_media, :enabled], true)
 
       oauth_access(["read:statuses"])
     end

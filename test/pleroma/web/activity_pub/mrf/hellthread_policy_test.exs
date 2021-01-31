@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
   setup do: clear_config(:mrf_hellthread)
 
   test "doesn't die on chat messages" do
-    Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 2, reject_threshold: 0})
+    clear_config([:mrf_hellthread], %{delist_threshold: 2, reject_threshold: 0})
 
     user = insert(:user)
     other_user = insert(:user)
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
     test "rejects the message if the recipient count is above reject_threshold", %{
       message: message
     } do
-      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 2})
+      clear_config([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 2})
 
       assert {:reject, "[HellthreadPolicy] 3 recipients is over the limit of 2"} ==
                filter(message)
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
     test "does not reject the message if the recipient count is below reject_threshold", %{
       message: message
     } do
-      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
+      clear_config([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
 
       assert {:ok, ^message} = filter(message)
     end
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
       user: user,
       message: message
     } do
-      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 2, reject_threshold: 0})
+      clear_config([:mrf_hellthread], %{delist_threshold: 2, reject_threshold: 0})
 
       {:ok, message} = filter(message)
       assert user.follower_address in message["to"]
@@ -78,14 +78,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
     test "does not delist the message if the recipient count is below delist_threshold", %{
       message: message
     } do
-      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 4, reject_threshold: 0})
+      clear_config([:mrf_hellthread], %{delist_threshold: 4, reject_threshold: 0})
 
       assert {:ok, ^message} = filter(message)
     end
   end
 
   test "excludes follower collection and public URI from threshold count", %{message: message} do
-    Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
+    clear_config([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
 
     assert {:ok, ^message} = filter(message)
   end

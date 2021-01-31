@@ -6,7 +6,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
 
@@ -66,7 +65,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         }
       ]
 
-      Config.put(:frontend_configurations, config)
+      clear_config(:frontend_configurations, config)
 
       response =
         conn
@@ -99,7 +98,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     setup do: clear_config([:instance, :healthcheck])
 
     test "returns 503 when healthcheck disabled", %{conn: conn} do
-      Config.put([:instance, :healthcheck], false)
+      clear_config([:instance, :healthcheck], false)
 
       response =
         conn
@@ -110,7 +109,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 200 when healthcheck enabled and all ok", %{conn: conn} do
-      Config.put([:instance, :healthcheck], true)
+      clear_config([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: true} end do
@@ -130,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 503 when healthcheck enabled and health is false", %{conn: conn} do
-      Config.put([:instance, :healthcheck], true)
+      clear_config([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: false} end do

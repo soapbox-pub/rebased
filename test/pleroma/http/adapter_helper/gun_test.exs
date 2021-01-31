@@ -8,7 +8,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
   import Mox
 
-  alias Pleroma.Config
   alias Pleroma.HTTP.AdapterHelper.Gun
 
   setup :verify_on_exit!
@@ -52,9 +51,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     end
 
     test "parses string proxy host & port" do
-      proxy = Config.get([:http, :proxy_url])
-      Config.put([:http, :proxy_url], "localhost:8123")
-      on_exit(fn -> Config.put([:http, :proxy_url], proxy) end)
+      clear_config([:http, :proxy_url], "localhost:8123")
 
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false], uri)
@@ -62,9 +59,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     end
 
     test "parses tuple proxy scheme host and port" do
-      proxy = Config.get([:http, :proxy_url])
-      Config.put([:http, :proxy_url], {:socks, 'localhost', 1234})
-      on_exit(fn -> Config.put([:http, :proxy_url], proxy) end)
+      clear_config([:http, :proxy_url], {:socks, 'localhost', 1234})
 
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false], uri)
@@ -72,9 +67,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     end
 
     test "passed opts have more weight than defaults" do
-      proxy = Config.get([:http, :proxy_url])
-      Config.put([:http, :proxy_url], {:socks5, 'localhost', 1234})
-      on_exit(fn -> Config.put([:http, :proxy_url], proxy) end)
+      clear_config([:http, :proxy_url], {:socks5, 'localhost', 1234})
       uri = URI.parse("https://some-domain.com")
       opts = Gun.options([receive_conn: false, proxy: {'example.com', 4321}], uri)
 
