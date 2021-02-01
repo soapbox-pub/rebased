@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         local_param(),
-        only_remote_param(),
+        remote_param(),
         only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         instance_param(),
         only_media_param(),
-        only_remote_param(),
+        remote_param(),
         with_muted_param(),
         exclude_visibilities_param(),
         reply_visibility_param() | pagination_params()
@@ -110,7 +110,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         ),
         local_param(),
         only_media_param(),
-        only_remote_param(),
+        remote_param(),
         with_muted_param(),
         exclude_visibilities_param() | pagination_params()
       ],
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         ),
         with_muted_param(),
         local_param(),
-        only_remote_param(),
+        remote_param(),
         only_media_param(),
         exclude_visibilities_param() | pagination_params()
       ],
@@ -206,9 +206,9 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
     )
   end
 
-  defp only_remote_param do
+  defp remote_param do
     Operation.parameter(
-      :only_remote,
+      :remote,
       :query,
       %Schema{allOf: [BooleanLike], default: false},
       "Show only remote statuses?"

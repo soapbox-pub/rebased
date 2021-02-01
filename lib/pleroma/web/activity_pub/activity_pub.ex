@@ -735,7 +735,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_local(query, _), do: query
 
-  defp restrict_remote(query, %{only_remote: true}) do
+  defp restrict_remote(query, %{remote: true}) do
     from(activity in query, where: activity.local == false)
   end
 

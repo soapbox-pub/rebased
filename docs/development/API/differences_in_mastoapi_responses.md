@@ -20,7 +20,7 @@ Home, public, hashtag & list timelines accept these parameters:
 
 - `only_media`: show only statuses with media attached
 - `local`: show only local statuses
-- `only_remote`: show only remote statuses
+- `remote`: show only remote statuses
 
 ## Statuses
 
