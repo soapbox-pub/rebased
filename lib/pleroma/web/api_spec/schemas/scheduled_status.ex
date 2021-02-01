@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Attachment
-  alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
+  alias Pleroma.Web.ApiSpec.StatusOperation
 
   require OpenApiSpex
 
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
           spoiler_text: %Schema{type: :string, nullable: true},
           visibility: %Schema{allOf: [VisibilityScope], nullable: true},
           scheduled_at: %Schema{type: :string, format: :"date-time", nullable: true},
-          poll: %Schema{allOf: [Poll], nullable: true},
+          poll: StatusOperation.poll_params(),
           in_reply_to_id: %Schema{type: :string, nullable: true}
         }
       }

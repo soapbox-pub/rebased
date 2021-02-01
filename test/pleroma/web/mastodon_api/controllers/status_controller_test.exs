@@ -515,7 +515,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              end)
 
       assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
-      refute response["poll"]["expred"]
+      assert response["poll"]["expired"] == false
 
       question = Object.get_by_id(response["poll"]["id"])
 
@@ -590,6 +590,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       %{"error" => error} = json_response_and_validate_schema(conn, 422)
       assert error == "Expiration date is too far in the future"
+    end
+
+    test "scheduled poll", %{conn: conn} do
+      clear_config([ScheduledActivity, :enabled], true)
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+        |> Kernel.<>("Z")
+
+      %{"id" => scheduled_id} =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "very cool poll",
+          "poll" => %{
+            "options" => ~w(a b c),
+            "expires_in" => 420
+          },
+          "scheduled_at" => scheduled_at
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert {:ok, %{id: activity_id}} =
+               perform_job(Pleroma.Workers.ScheduledActivityWorker, %{
+                 activity_id: scheduled_id
+               })
+
+      assert Repo.all(Oban.Job) == []
+
+      object =
+        Activity
+        |> Repo.get(activity_id)
+        |> Object.normalize()
+
+      assert object.data["content"] == "very cool poll"
+      assert object.data["type"] == "Question"
+      assert length(object.data["oneOf"]) == 3
     end
   end
 
