@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Reports now ordered by newest
 - Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
 - Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
+- Improve OAuth 2.0 provider support. A missing `fqn` field was added to the response, but does not expose the user's email address.
 
 ### Added
 
