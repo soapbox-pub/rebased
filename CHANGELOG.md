@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
 - Removed duplicate jobs to purge expired activities
+- File extensions of some attachments were incorrectly changed. This feature has been disabled for now.
 
 <details>
   <summary>API Changes</summary>
