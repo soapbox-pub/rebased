@@ -58,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
+- Mix task pleroma.instance creates missing parent directories if the configuration or SQL output paths are changed.
 
 <details>
   <summary>API Changes</summary>
