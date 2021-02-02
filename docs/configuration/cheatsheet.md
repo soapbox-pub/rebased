@@ -893,6 +893,22 @@ Pleroma account will be created with the same name as the LDAP user name.
 Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
 OpenLDAP server the value may be `uid: "uid"`.
 
+### :oauth2 (Pleroma as OAuth 2.0 provider settings)
+
+OAuth 2.0 provider settings:
+
+* `token_expires_in` - The lifetime in seconds of the access token.
+* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
+
+OAuth 2.0 provider and related endpoints:
+
+* `POST /api/v1/apps` creates client app basing on provided params.
+* `GET/POST /oauth/authorize` renders/submits authorization form.
+* `POST /oauth/token` creates/renews OAuth token.
+* `POST /oauth/revoke` revokes provided OAuth token.
+* `GET /api/v1/accounts/verify_credentials` (with proper `Authorization` header or `access_token` URI param) returns user info on requester (with `acct` field containing local nickname and `fqn` field containing fully-qualified nickname which could generally be used as email stub for OAuth software that demands email field in identity endpoint response, like Peertube).
+
 ### OAuth consumer mode
 
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
@@ -964,14 +980,6 @@ config :ueberauth, Ueberauth,
     keycloak: {Ueberauth.Strategy.Keycloak, [uid_field: :email]}
   ]
 ```
-
-### OAuth 2.0 provider - :oauth2
-
-Configure OAuth 2 provider capabilities:
-
-* `token_expires_in` - The lifetime in seconds of the access token.
-* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 
 ## Link parsing
 
