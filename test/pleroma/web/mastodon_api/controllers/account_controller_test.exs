@@ -1103,7 +1103,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{"error" => "{\"email\":[\"Invalid email\"]}"} =
                json_response_and_validate_schema(conn, 400)
 
-      Pleroma.Config.put([User, :email_blacklist], [])
+      clear_config([User, :email_blacklist], [])
 
       conn =
         build_conn()

@@ -3224,6 +3224,12 @@ config :pleroma, :config_description, [
         type: :string,
         description: "S3 host",
         suggestions: ["s3.eu-central-1.amazonaws.com"]
+      },
+      %{
+        key: :region,
+        type: :string,
+        description: "S3 region (for AWS)",
+        suggestions: ["us-east-1"]
       }
     ]
   },

@@ -923,7 +923,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "rejects token exchange for valid credentials belonging to unconfirmed user and confirmation is required" do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_activation_required], true)
       password = "testpassword"
 
       {:ok, user} =
@@ -1007,7 +1007,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "rejects token exchange for user with confirmation_pending set to true" do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_activation_required], true)
       password = "testpassword"
 
       user =
@@ -1086,7 +1086,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     setup do: clear_config([:oauth2, :issue_new_refresh_token])
 
     test "issues a new access token with keep fresh token" do
-      Pleroma.Config.put([:oauth2, :issue_new_refresh_token], true)
+      clear_config([:oauth2, :issue_new_refresh_token], true)
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -1125,7 +1125,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "issues a new access token with new fresh token" do
-      Pleroma.Config.put([:oauth2, :issue_new_refresh_token], false)
+      clear_config([:oauth2, :issue_new_refresh_token], false)
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
 

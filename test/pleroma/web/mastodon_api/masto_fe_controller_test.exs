@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.User
 
   import Pleroma.Factory
@@ -55,7 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
       conn: conn,
       path: path
     } do
-      Config.put([:instance, :public], false)
+      clear_config([:instance, :public], false)
 
       conn = get(conn, path)
 

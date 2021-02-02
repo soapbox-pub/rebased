@@ -104,7 +104,7 @@ defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
     [participation] = Participation.for_user(user)
     participation = Repo.preload(participation, :recipients)
 
-    assert user in participation.recipients
+    assert refresh_record(user) in participation.recipients
     assert other_user in participation.recipients
   end
 

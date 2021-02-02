@@ -6,7 +6,6 @@ defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
 
@@ -87,20 +86,20 @@ defmodule Pleroma.Object.FetcherTest do
     setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     test "it returns thread depth exceeded error if thread depth is exceeded" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:error, "Max thread distance exceeded."} =
                Fetcher.fetch_object_from_id(@ap_id, depth: 1)
     end
 
     test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id)
     end
 
     test "it fetches object if requested depth does not exceed max thread depth" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 10)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 10)
 
       assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id, depth: 10)
     end
@@ -245,7 +244,7 @@ defmodule Pleroma.Object.FetcherTest do
                    Pleroma.Signature,
                    [:passthrough],
                    [] do
-      Config.put([:activitypub, :sign_object_fetches], true)
+      clear_config([:activitypub, :sign_object_fetches], true)
 
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
@@ -256,7 +255,7 @@ defmodule Pleroma.Object.FetcherTest do
                    Pleroma.Signature,
                    [:passthrough],
                    [] do
-      Config.put([:activitypub, :sign_object_fetches], false)
+      clear_config([:activitypub, :sign_object_fetches], false)
 
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 

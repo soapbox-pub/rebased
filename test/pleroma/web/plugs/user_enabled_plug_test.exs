@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
 
   test "with a user that's not confirmed and a config requiring confirmation, it removes that user",
        %{conn: conn} do
-    Pleroma.Config.put([:instance, :account_activation_required], true)
+    clear_config([:instance, :account_activation_required], true)
 
     user = insert(:user, is_confirmed: false)
 

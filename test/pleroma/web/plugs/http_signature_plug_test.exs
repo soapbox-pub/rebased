@@ -32,11 +32,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
 
   describe "requires a signature when `authorized_fetch_mode` is enabled" do
     setup do
-      Pleroma.Config.put([:activitypub, :authorized_fetch_mode], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:activitypub, :authorized_fetch_mode], false)
-      end)
+      clear_config([:activitypub, :authorized_fetch_mode], true)
 
       params = %{"actor" => "http://mastodon.example.org/users/admin"}
       conn = build_conn(:get, "/doesntmattter", params) |> put_format("activity+json")

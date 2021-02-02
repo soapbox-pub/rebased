@@ -49,6 +49,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
 - WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
+- Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`).
+- Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `remote` & `local` parameters for filtration.
 - Mastodon API: `/api/v1/accounts/:id` & `/api/v1/mutes` endpoints accept `with_relationships` parameter and return filled `pleroma.relationship` field.
 </details>
 
@@ -59,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
+- Removed duplicate jobs to purge expired activities
 
 <details>
   <summary>API Changes</summary>

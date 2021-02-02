@@ -14,7 +14,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
   setup do: clear_config([ScheduledActivity, :enabled])
 
   test "creates a status from the scheduled activity" do
-    Pleroma.Config.put([ScheduledActivity, :enabled], true)
+    clear_config([ScheduledActivity, :enabled], true)
     user = insert(:user)
 
     naive_datetime =
@@ -40,7 +40,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
   end
 
   test "adds log message if ScheduledActivity isn't find" do
-    Pleroma.Config.put([ScheduledActivity, :enabled], true)
+    clear_config([ScheduledActivity, :enabled], true)
 
     assert capture_log([level: :error], fn ->
              ScheduledActivityWorker.perform(%Oban.Job{args: %{"activity_id" => 42}})

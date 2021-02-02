@@ -54,7 +54,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
   end
 
   test "it renders avatar not attachment if post is nsfw and unfurl_nsfw is disabled" do
-    Pleroma.Config.put([Pleroma.Web.Metadata, :unfurl_nsfw], false)
+    clear_config([Pleroma.Web.Metadata, :unfurl_nsfw], false)
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
     {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
 

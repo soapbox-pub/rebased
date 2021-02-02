@@ -34,7 +34,7 @@ defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
              strip_prefix: false
            ]
 
-    Pleroma.Config.put(Pleroma.Formatter, new_opts)
+    clear_config(Pleroma.Formatter, new_opts)
     assert new_opts == Pleroma.Config.get(Pleroma.Formatter)
 
     {text, _mentions, []} =

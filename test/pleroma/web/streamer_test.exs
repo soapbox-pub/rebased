@@ -510,7 +510,7 @@ defmodule Pleroma.Web.StreamerTest do
 
   describe "thread_containment/2" do
     test "it filters to user if recipients invalid and thread containment is enabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      clear_config([:instance, :skip_thread_containment], false)
       author = insert(:user)
       %{user: user, token: oauth_token} = oauth_access(["read"])
       User.follow(user, author, :follow_accept)
@@ -531,7 +531,7 @@ defmodule Pleroma.Web.StreamerTest do
     end
 
     test "it sends message if recipients invalid and thread containment is disabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], true)
+      clear_config([:instance, :skip_thread_containment], true)
       author = insert(:user)
       %{user: user, token: oauth_token} = oauth_access(["read"])
       User.follow(user, author, :follow_accept)
@@ -553,7 +553,7 @@ defmodule Pleroma.Web.StreamerTest do
     end
 
     test "it sends message if recipients invalid and thread containment is enabled but user's thread containment is disabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      clear_config([:instance, :skip_thread_containment], false)
       author = insert(:user)
       user = insert(:user, skip_thread_containment: true)
       %{token: oauth_token} = oauth_access(["read"], user: user)
