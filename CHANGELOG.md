@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Tag URLs in statuses are now absolute
 - Removed duplicate jobs to purge expired activities
 - File extensions of some attachments were incorrectly changed. This feature has been disabled for now.
+- Mix task pleroma.instance creates missing parent directories if the configuration or SQL output paths are changed.
 
 <details>
   <summary>API Changes</summary>
