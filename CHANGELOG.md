@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
 - Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`).
 - Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `remote` & `local` parameters for filtration.
+- Mastodon API: `/api/v1/accounts/:id` & `/api/v1/mutes` endpoints accept `with_relationships` parameter and return filled `pleroma.relationship` field.
 </details>
 
 ### Fixed
