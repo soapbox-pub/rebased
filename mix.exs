@@ -194,7 +194,7 @@ defmodule Pleroma.Mixfile do
       {:restarter, path: "./restarter"},
       {:majic,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
-       ref: "4c692e544b28d1f5e543fb8a44be090f8cd96f80"},
+       ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
        ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},

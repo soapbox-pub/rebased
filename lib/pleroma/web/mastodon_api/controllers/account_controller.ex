@@ -269,10 +269,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
   @doc "GET /api/v1/accounts/:id"
-  def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id}) do
+  def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id} = params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
          :visible <- User.visible_for(user, for_user) do
-      render(conn, "show.json", user: user, for: for_user)
+      render(conn, "show.json",
+        user: user,
+        for: for_user,
+        embed_relationships: embed_relationships?(params)
+      )
     else
       error -> user_visibility_error(conn, error)
     end
@@ -454,7 +458,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(users)
-    |> render("index.json", users: users, for: user, as: :user)
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/blocks"

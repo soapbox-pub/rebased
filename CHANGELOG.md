@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
 - Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`).
 - Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `remote` & `local` parameters for filtration.
+- Mastodon API: `/api/v1/accounts/:id` & `/api/v1/mutes` endpoints accept `with_relationships` parameter and return filled `pleroma.relationship` field.
 </details>
 
 ### Fixed
@@ -61,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
 - Removed duplicate jobs to purge expired activities
+- File extensions of some attachments were incorrectly changed. This feature has been disabled for now.
 - Mix task pleroma.instance creates missing parent directories if the configuration or SQL output paths are changed.
 
 <details>
