@@ -413,34 +413,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           items: %Schema{type: :string},
           description: "Array of Attachment ids to be attached as media."
         },
-        poll: %Schema{
-          nullable: true,
-          type: :object,
-          required: [:options],
-          properties: %{
-            options: %Schema{
-              type: :array,
-              items: %Schema{type: :string},
-              description: "Array of possible answers. Must be provided with `poll[expires_in]`."
-            },
-            expires_in: %Schema{
-              type: :integer,
-              nullable: true,
-              description:
-                "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
-            },
-            multiple: %Schema{
-              allOf: [BooleanLike],
-              nullable: true,
-              description: "Allow multiple choices?"
-            },
-            hide_totals: %Schema{
-              allOf: [BooleanLike],
-              nullable: true,
-              description: "Hide vote counts until the poll ends?"
-            }
-          }
-        },
+        poll: poll_params(),
         in_reply_to_id: %Schema{
           nullable: true,
           allOf: [FlakeID],
@@ -517,6 +490,37 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         "poll" => %{
           "options" => ["Cofe", "Adventure"],
           "expires_in" => 420
+        }
+      }
+    }
+  end
+
+  def poll_params do
+    %Schema{
+      nullable: true,
+      type: :object,
+      required: [:options, :expires_in],
+      properties: %{
+        options: %Schema{
+          type: :array,
+          items: %Schema{type: :string},
+          description: "Array of possible answers. Must be provided with `poll[expires_in]`."
+        },
+        expires_in: %Schema{
+          type: :integer,
+          nullable: true,
+          description:
+            "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
+        },
+        multiple: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Allow multiple choices?"
+        },
+        hide_totals: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Hide vote counts until the poll ends?"
         }
       }
     }
