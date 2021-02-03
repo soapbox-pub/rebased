@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.RichMedia.HelpersTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.RichMedia.Helpers
 
@@ -29,7 +28,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         content_type: "text/markdown"
       })
 
-    Config.put([:rich_media, :enabled], true)
+    clear_config([:rich_media, :enabled], true)
 
     assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
   end
@@ -43,7 +42,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         content_type: "text/markdown"
       })
 
-    Config.put([:rich_media, :enabled], true)
+    clear_config([:rich_media, :enabled], true)
 
     assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
   end
@@ -57,7 +56,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         content_type: "text/markdown"
       })
 
-    Config.put([:rich_media, :enabled], true)
+    clear_config([:rich_media, :enabled], true)
 
     assert %{page_url: "https://example.com/ogp", rich_media: _} =
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
@@ -74,7 +73,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
     {:ok, activity4} = CommonAPI.post(user, %{status: "https://192.168.10.40/notice/9kCP7V"})
     {:ok, activity5} = CommonAPI.post(user, %{status: "https://pleroma.local/notice/9kCP7V"})
 
-    Config.put([:rich_media, :enabled], true)
+    clear_config([:rich_media, :enabled], true)
 
     assert %{} = Helpers.fetch_data_for_activity(activity)
     assert %{} = Helpers.fetch_data_for_activity(activity2)

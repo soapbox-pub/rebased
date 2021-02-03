@@ -51,6 +51,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:reply_filtering_user, user)
       |> Map.put(:announce_filtering_user, user)
       |> Map.put(:user, user)
+      |> Map.put(:local_only, params[:local])
+      |> Map.delete(:local)
 
     activities =
       [user.ap_id | User.following(user)]
@@ -190,6 +192,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:user, user)
         |> Map.put(:muting_user, user)
+        |> Map.put(:local_only, params[:local])
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).

@@ -16,8 +16,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Get a list of available frontends",
+      tags: ["Frontend managment"],
+      summary: "Retrieve a list of available frontends",
       operationId: "AdminAPI.FrontendController.index",
       security: [%{"oAuth" => ["read"]}],
       responses: %{
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
 
   def install_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
+      tags: ["Frontend managment"],
       summary: "Install a frontend",
       operationId: "AdminAPI.FrontendController.install",
       security: [%{"oAuth" => ["read"]}],

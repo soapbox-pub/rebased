@@ -5,7 +5,6 @@
 defmodule Pleroma.User.WelcomeChatMessageTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User.WelcomeChatMessage
 
   import Pleroma.Factory
@@ -17,10 +16,10 @@ defmodule Pleroma.User.WelcomeChatMessageTest do
       welcome_user = insert(:user, name: "mewmew")
       user = insert(:user)
 
-      Config.put([:welcome, :chat_message, :enabled], true)
-      Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
+      clear_config([:welcome, :chat_message, :enabled], true)
+      clear_config([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
 
-      Config.put(
+      clear_config(
         [:welcome, :chat_message, :message],
         "Hello, welcome to Blob/Cat!"
       )

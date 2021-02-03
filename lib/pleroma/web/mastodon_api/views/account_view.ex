@@ -262,7 +262,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       },
 
-      # Pleroma extension
+      # Pleroma extensions
+      # Note: it's insecure to output :email but fully-qualified nickname may serve as safe stub
+      fqn: User.full_nickname(user),
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: user.also_known_as,

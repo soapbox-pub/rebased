@@ -104,6 +104,37 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def attachment_note_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    {length, attrs} = Map.pop(attrs, :length, 1)
+
+    data = %{
+      "attachment" =>
+        Stream.repeatedly(fn -> attachment_data(user.ap_id, attrs[:href]) end)
+        |> Enum.take(length)
+    }
+
+    build(:note, Map.put(attrs, :data, data))
+  end
+
+  defp attachment_data(ap_id, href) do
+    href = href || sequence(:href, &"#{Pleroma.Web.Endpoint.url()}/media/#{&1}.jpg")
+
+    %{
+      "url" => [
+        %{
+          "href" => href,
+          "type" => "Link",
+          "mediaType" => "image/jpeg"
+        }
+      ],
+      "name" => "some name",
+      "type" => "Document",
+      "actor" => ap_id,
+      "mediaType" => "image/jpeg"
+    }
+  end
+
   def audio_factory(attrs \\ %{}) do
     text = sequence(:text, &"lain radio episode #{&1}")
 

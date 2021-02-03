@@ -181,7 +181,7 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlugTest do
            "and [optionally] keeps only prefixed scopes, " <>
            "depending on `[:auth, :enforce_oauth_admin_scope_usage]` setting",
          %{f: f} do
-      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
+      clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
       assert f.(["read"], %{admin: true}) == ["admin:read", "read"]
 
@@ -192,7 +192,7 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlugTest do
                "write"
              ]
 
-      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
+      clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
 
       assert f.(["read:accounts"], %{admin: true}) == ["admin:read:accounts"]
 

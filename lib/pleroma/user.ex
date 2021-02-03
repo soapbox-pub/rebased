@@ -146,6 +146,7 @@ defmodule Pleroma.User do
     field(:inbox, :string)
     field(:shared_inbox, :string)
     field(:accepts_chat_messages, :boolean, default: nil)
+    field(:last_active_at, :naive_datetime)
 
     embeds_one(
       :notification_settings,
@@ -2030,6 +2031,15 @@ defmodule Pleroma.User do
     |> hd()
   end
 
+  def full_nickname(%User{} = user) do
+    if String.contains?(user.nickname, "@") do
+      user.nickname
+    else
+      %{host: host} = URI.parse(user.ap_id)
+      user.nickname <> "@" <> host
+    end
+  end
+
   def full_nickname(nickname_or_mention),
     do: String.trim_leading(nickname_or_mention, "@")
 
@@ -2443,5 +2453,20 @@ defmodule Pleroma.User do
 
   def get_host(%User{ap_id: ap_id} = _user) do
     URI.parse(ap_id).host
+  end
+
+  def update_last_active_at(%__MODULE__{local: true} = user) do
+    user
+    |> cast(%{last_active_at: NaiveDateTime.utc_now()}, [:last_active_at])
+    |> update_and_set_cache()
+  end
+
+  def active_user_count(weeks \\ 4) do
+    active_after = Timex.shift(NaiveDateTime.utc_now(), weeks: -weeks)
+
+    __MODULE__
+    |> where([u], u.last_active_at >= ^active_after)
+    |> where([u], u.local == true)
+    |> Repo.aggregate(:count)
   end
 end

@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -74,6 +73,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
@@ -173,6 +173,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: [],
@@ -556,7 +557,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       )
 
     with media_preview_enabled <- [false, true] do
-      Config.put([:media_preview_proxy, :enabled], media_preview_enabled)
+      clear_config([:media_preview_proxy, :enabled], media_preview_enabled)
 
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       |> Enum.all?(fn

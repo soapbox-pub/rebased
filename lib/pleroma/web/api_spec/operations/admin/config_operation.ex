@@ -16,8 +16,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Admin", "Config"],
-      summary: "Get list of merged default settings with saved in database",
+      tags: ["Instance configuration"],
+      summary: "Retrieve instance configuration",
       operationId: "AdminAPI.ConfigController.show",
       parameters: [
         Operation.parameter(
@@ -38,8 +38,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Admin", "Config"],
-      summary: "Update config settings",
+      tags: ["Instance configuration"],
+      summary: "Update instance configuration",
       operationId: "AdminAPI.ConfigController.update",
       security: [%{"oAuth" => ["write"]}],
       parameters: admin_api_params(),
@@ -71,8 +71,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
 
   def descriptions_operation do
     %Operation{
-      tags: ["Admin", "Config"],
-      summary: "Get JSON with config descriptions.",
+      tags: ["Instance configuration"],
+      summary: "Retrieve config description",
       operationId: "AdminAPI.ConfigController.descriptions",
       security: [%{"oAuth" => ["read"]}],
       parameters: admin_api_params(),

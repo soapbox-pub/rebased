@@ -69,7 +69,7 @@ defmodule Pleroma.CaptchaTest do
 
   describe "Captcha Wrapper" do
     test "validate" do
-      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+      clear_config([Pleroma.Captcha, :enabled], true)
 
       new = Captcha.new()
 
@@ -83,7 +83,7 @@ defmodule Pleroma.CaptchaTest do
     end
 
     test "doesn't validate invalid answer" do
-      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+      clear_config([Pleroma.Captcha, :enabled], true)
 
       new = Captcha.new()
 
@@ -99,7 +99,7 @@ defmodule Pleroma.CaptchaTest do
     end
 
     test "nil answer_data" do
-      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+      clear_config([Pleroma.Captcha, :enabled], true)
 
       new = Captcha.new()
 

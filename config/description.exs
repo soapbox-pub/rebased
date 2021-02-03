@@ -60,6 +60,12 @@ frontend_options = [
     label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
+  },
+  %{
+    key: "custom-http-headers",
+    label: "Custom HTTP headers",
+    type: {:list, :string},
+    description: "The custom HTTP headers for the frontend"
   }
 ]
 
@@ -3218,6 +3224,12 @@ config :pleroma, :config_description, [
         type: :string,
         description: "S3 host",
         suggestions: ["s3.eu-central-1.amazonaws.com"]
+      },
+      %{
+        key: :region,
+        type: :string,
+        description: "S3 region (for AWS)",
+        suggestions: ["us-east-1"]
       }
     ]
   },

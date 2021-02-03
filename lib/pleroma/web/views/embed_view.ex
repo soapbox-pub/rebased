@@ -17,6 +17,8 @@ defmodule Pleroma.Web.EmbedView do
 
   use Phoenix.HTML
 
+  defdelegate full_nickname(user), to: User
+
   @media_types ["image", "audio", "video"]
 
   defp fetch_media_type(%{"mediaType" => mediaType}) do
@@ -28,11 +30,6 @@ defmodule Pleroma.Web.EmbedView do
       [:frontend_configurations, :collapse_message_with_subjects],
       true
     )
-  end
-
-  defp full_nickname(user) do
-    %{host: host} = URI.parse(user.ap_id)
-    "@" <> user.nickname <> "@" <> host
   end
 
   defp status_title(%Activity{object: %Object{data: %{"name" => name}}}) when is_binary(name),

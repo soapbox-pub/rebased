@@ -154,7 +154,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "returns error when user is blocked", %{conn: conn} do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+      clear_config([:user, :deny_follow_blocked], true)
       user = insert(:user)
       user2 = insert(:user)
 
@@ -365,7 +365,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "returns error when user is blocked", %{conn: conn} do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+      clear_config([:user, :deny_follow_blocked], true)
       user = insert(:user)
       user2 = insert(:user)
       {:ok, _user_block} = Pleroma.User.block(user2, user)

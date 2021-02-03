@@ -168,7 +168,7 @@ defmodule Pleroma.ActivityTest do
 
     test "find only local statuses for unauthenticated users  when `limit_to_local_content` is `:all`",
          %{local_activity: local_activity} do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
       assert [^local_activity] = Activity.search(nil, "find me")
     end
 
@@ -177,7 +177,7 @@ defmodule Pleroma.ActivityTest do
            local_activity: local_activity,
            remote_activity: remote_activity
          } do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       activities = Enum.sort_by(Activity.search(nil, "find me"), & &1.id)
 
