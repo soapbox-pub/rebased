@@ -73,12 +73,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       cond do
         format in ["json", "activity+json"] ->
-          if activity.local do
-            %{data: %{"id" => redirect_url}} = Object.normalize(activity, fetch: false)
-            redirect(conn, external: redirect_url)
-          else
-            {:error, :not_found}
-          end
+          %{data: %{"id" => redirect_url}} = Object.normalize(activity, fetch: false)
+          redirect(conn, external: redirect_url)
 
         activity.data["type"] == "Create" ->
           %Object{} = object = Object.normalize(activity, fetch: false)
