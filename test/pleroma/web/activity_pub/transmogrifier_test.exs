@@ -6,6 +6,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase
 
+  require Pleroma.Constants
+
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
@@ -105,6 +107,78 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["object"] == old_user.ap_id
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
+    end
+
+    test "it accepts Add/Remove activities" do
+      user =
+        "test/fixtures/users_mock/user.json"
+        |> File.read!()
+        |> String.replace("{{nickname}}", "lain")
+
+      object_id = "c61d6733-e256-4fe1-ab13-1e369789423f"
+
+      object =
+        "test/fixtures/statuses/note.json"
+        |> File.read!()
+        |> String.replace("{{nickname}}", "lain")
+        |> String.replace("{{object_id}}", object_id)
+
+      object_url = "https://example.com/objects/#{object_id}"
+
+      actor = "https://example.com/users/lain"
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^actor
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: user,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{
+          method: :get,
+          url: ^object_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: object,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      message = %{
+        "id" => "https://example.com/objects/d61d6733-e256-4fe1-ab13-1e369789423f",
+        "actor" => actor,
+        "object" => object_url,
+        "target" => "https://example.com/users/lain/collections/featured",
+        "type" => "Add",
+        "to" => [Pleroma.Constants.as_public()],
+        "cc" => ["https://example.com/users/lain/followers"]
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+      assert activity.data == message
+      user = User.get_cached_by_ap_id(actor)
+      assert user.pinned_objects[object_url]
+
+      remove = %{
+        "id" => "http://localhost:400/objects/d61d6733-e256-4fe1-ab13-1e369789423d",
+        "actor" => actor,
+        "object" => object_url,
+        "target" => "http://example.com/users/lain/collections/featured",
+        "type" => "Remove",
+        "to" => [Pleroma.Constants.as_public()],
+        "cc" => ["https://example.com/users/lain/followers"]
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(remove)
+      assert activity.data == remove
+
+      user = refresh_record(user)
+      refute user.pinned_objects[object_url]
     end
   end
 

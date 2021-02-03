@@ -827,13 +827,17 @@ defmodule Pleroma.Web.CommonAPITest do
       [user: user, activity: activity]
     end
 
+    test "activity not found error", %{user: user} do
+      assert {:error, :not_found} = CommonAPI.pin("id", user)
+    end
+
     test "pin status", %{user: user, activity: activity} do
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
 
-      id = activity.id
+      %{data: %{"id" => object_id}} = Object.normalize(activity)
       user = refresh_record(user)
 
-      assert %User{pinned_activities: [^id]} = user
+      assert user.pinned_objects |> Map.keys() == [object_id]
     end
 
     test "pin poll", %{user: user} do
@@ -845,10 +849,11 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
 
-      id = activity.id
+      %{data: %{"id" => object_id}} = Object.normalize(activity)
+
       user = refresh_record(user)
 
-      assert %User{pinned_activities: [^id]} = user
+      assert user.pinned_objects |> Map.keys() == [object_id]
     end
 
     test "unlisted statuses can be pinned", %{user: user} do
@@ -859,7 +864,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "only self-authored can be pinned", %{activity: activity} do
       user = insert(:user)
 
-      assert {:error, "Could not pin"} = CommonAPI.pin(activity.id, user)
+      assert {:error, :ownership_error} = CommonAPI.pin(activity.id, user)
     end
 
     test "max pinned statuses", %{user: user, activity: activity_one} do
@@ -869,8 +874,12 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert {:error, "You have already pinned the maximum number of statuses"} =
-               CommonAPI.pin(activity_two.id, user)
+      assert {:error, :pinned_statuses_limit_reached} = CommonAPI.pin(activity_two.id, user)
+    end
+
+    test "only public can be pinned", %{user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "private status", visibility: "private"})
+      {:error, :visibility_error} = CommonAPI.pin(activity.id, user)
     end
 
     test "unpin status", %{user: user, activity: activity} do
@@ -884,7 +893,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{pinned_activities: []} = user
+      assert user.pinned_objects == %{}
     end
 
     test "should unpin when deleting a status", %{user: user, activity: activity} do
@@ -896,7 +905,40 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{pinned_activities: []} = user
+      assert user.pinned_objects == %{}
+    end
+
+    test "ephemeral activity won't be deleted if was pinned", %{user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "Hello!", expires_in: 601})
+
+      assert Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id)
+
+      {:ok, _activity} = CommonAPI.pin(activity.id, user)
+      refute Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id)
+
+      user = refresh_record(user)
+      {:ok, _} = CommonAPI.unpin(activity.id, user)
+
+      # recreates expiration job on unpin
+      assert Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity.id)
+    end
+
+    test "ephemeral activity deletion job won't be deleted on pinning error", %{
+      user: user,
+      activity: activity
+    } do
+      clear_config([:instance, :max_pinned_statuses], 1)
+
+      {:ok, _activity} = CommonAPI.pin(activity.id, user)
+
+      {:ok, activity2} = CommonAPI.post(user, %{status: "another status", expires_in: 601})
+
+      assert Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity2.id)
+
+      user = refresh_record(user)
+      {:error, :pinned_statuses_limit_reached} = CommonAPI.pin(activity2.id, user)
+
+      assert Pleroma.Workers.PurgeExpiredActivity.get_expiration(activity2.id)
     end
   end
 

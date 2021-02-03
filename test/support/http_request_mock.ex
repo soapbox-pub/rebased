@@ -89,6 +89,18 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.sdf.org/users/rinpatch/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "mastodon.sdf.org")
+         |> String.replace("{{nickname}}", "rinpatch"),
+       headers: [{"content-type", "application/activity+json"}]
+     }}
+  end
+
   def get("https://patch.cx/objects/tesla_mock/poll_attachment", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -902,6 +914,17 @@ defmodule HttpRequestMock do
        status: 200,
        body: File.read!("test/fixtures/lambadalambda.json"),
        headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mastodon.social/users/lambadalambda/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "mastodon.social")
+         |> String.replace("{{nickname}}", "lambadalambda")
      }}
   end
 

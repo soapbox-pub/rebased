@@ -152,6 +152,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
+    {pinned?, pinned_at} = pin_data(activity_object, user)
+
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
@@ -173,7 +175,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: false,
-      pinned: pinned?(activity, user),
+      pinned: pinned?,
       sensitive: false,
       spoiler_text: "",
       visibility: get_visibility(activity),
@@ -184,7 +186,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       language: nil,
       emojis: [],
       pleroma: %{
-        local: activity.local
+        local: activity.local,
+        pinned_at: pinned_at
       }
     }
   end
@@ -316,6 +319,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           fn for_user, user -> User.mutes?(for_user, user) end
         )
 
+    {pinned?, pinned_at} = pin_data(object, user)
+
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
@@ -339,7 +344,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: muted,
-      pinned: pinned?(activity, user),
+      pinned: pinned?,
       sensitive: sensitive,
       spoiler_text: summary,
       visibility: get_visibility(object),
@@ -360,7 +365,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
-        parent_visible: visible_for_user?(reply_to, opts[:for])
+        parent_visible: visible_for_user?(reply_to, opts[:for]),
+        pinned_at: pinned_at
       }
     }
   end
@@ -529,8 +535,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp present?(false), do: false
   defp present?(_), do: true
 
-  defp pinned?(%Activity{id: id}, %User{pinned_activities: pinned_activities}),
-    do: id in pinned_activities
+  defp pin_data(%Object{data: %{"id" => object_id}}, %User{pinned_objects: pinned_objects}) do
+    if pinned_at = pinned_objects[object_id] do
+      {true, Utils.to_masto_date(pinned_at)}
+    else
+      {false, nil}
+    end
+  end
 
   defp build_emoji_map(emoji, users, current_user) do
     %{

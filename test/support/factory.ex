@@ -48,13 +48,15 @@ defmodule Pleroma.Factory do
         %{
           ap_id: ap_id,
           follower_address: ap_id <> "/followers",
-          following_address: ap_id <> "/following"
+          following_address: ap_id <> "/following",
+          featured_address: ap_id <> "/collections/featured"
         }
       else
         %{
           ap_id: User.ap_id(user),
           follower_address: User.ap_followers(user),
-          following_address: User.ap_following(user)
+          following_address: User.ap_following(user),
+          featured_address: User.ap_featured_collection(user)
         }
       end
 

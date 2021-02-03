@@ -30,6 +30,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.EventValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.PinValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
@@ -228,6 +229,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     with {:ok, object} <-
            object
            |> AnnounceValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => type} = object, meta) when type in ~w(Add Remove) do
+    with {:ok, object} <-
+           object
+           |> PinValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object)
       {:ok, object, meta}
