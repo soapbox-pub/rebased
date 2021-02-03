@@ -18,8 +18,9 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
 
   def confirmation_resend_operation do
     %Operation{
-      tags: ["Accounts"],
-      summary: "Resend confirmation email. Expects `email` or `nickname`",
+      tags: ["Account credentials"],
+      summary: "Resend confirmation email",
+      description: "Expects `email` or `nickname`.",
       operationId: "PleromaAPI.AccountController.confirmation_resend",
       parameters: [
         Operation.parameter(:email, :query, :string, "Email of that needs to be verified",
@@ -41,8 +42,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
 
   def favourites_operation do
     %Operation{
-      tags: ["Accounts"],
-      summary: "Returns favorites timeline of any user",
+      tags: ["Retrieve account information"],
+      summary: "Favorites",
+      description:
+        "Only returns data if the user has opted into sharing it. See `hide_favorites` in [Update account credentials](#operation/AccountController.update_credentials).",
       operationId: "PleromaAPI.AccountController.favourites",
       parameters: [id_param() | pagination_params()],
       security: [%{"oAuth" => ["read:favourites"]}],
@@ -61,8 +64,9 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
 
   def subscribe_operation do
     %Operation{
-      tags: ["Accounts"],
-      summary: "Subscribe to receive notifications for all statuses posted by a user",
+      tags: ["Account actions"],
+      summary: "Subscribe",
+      description: "Receive notifications for all statuses posted by the account.",
       operationId: "PleromaAPI.AccountController.subscribe",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -75,8 +79,9 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
 
   def unsubscribe_operation do
     %Operation{
-      tags: ["Accounts"],
-      summary: "Unsubscribe to stop receiving notifications from user statuses",
+      tags: ["Account actions"],
+      summary: "Unsubscribe",
+      description: "Stop receiving notifications for all statuses posted by the account.",
       operationId: "PleromaAPI.AccountController.unsubscribe",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],

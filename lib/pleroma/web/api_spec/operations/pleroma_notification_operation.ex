@@ -18,7 +18,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
   def mark_as_read_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Mark notifications as read. Query parameters are mutually exclusive.",
+      summary: "Mark notifications as read",
+      description: "Query parameters are mutually exclusive.",
       requestBody:
         request_body("Parameters", %Schema{
           type: :object,
@@ -32,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
       responses: %{
         200 =>
           Operation.response(
-            "A Notification or array of Motifications",
+            "A Notification or array of Notifications",
             "application/json",
             %Schema{
               anyOf: [

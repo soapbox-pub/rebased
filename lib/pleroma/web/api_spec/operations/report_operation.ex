@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
 
   def create_operation do
     %Operation{
-      tags: ["reports"],
+      tags: ["Reports"],
       summary: "File a report",
       description: "Report problematic users to your moderators",
       operationId: "ReportController.create",

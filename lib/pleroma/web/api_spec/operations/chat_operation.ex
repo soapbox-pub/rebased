@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def mark_as_read_operation do
     %Operation{
-      tags: ["chat"],
+      tags: ["Chats"],
       summary: "Mark all messages in the chat as read",
       operationId: "ChatController.mark_as_read",
       parameters: [Operation.parameter(:id, :path, :string, "The ID of the Chat")],
@@ -43,8 +43,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def mark_message_as_read_operation do
     %Operation{
-      tags: ["chat"],
-      summary: "Mark one message in the chat as read",
+      tags: ["Chats"],
+      summary: "Mark a message as read",
       operationId: "ChatController.mark_message_as_read",
       parameters: [
         Operation.parameter(:id, :path, :string, "The ID of the Chat"),
@@ -68,8 +68,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def show_operation do
     %Operation{
-      tags: ["chat"],
-      summary: "Create a chat",
+      tags: ["Chats"],
+      summary: "Retrieve a chat",
       operationId: "ChatController.show",
       parameters: [
         Operation.parameter(
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def create_operation do
     %Operation{
-      tags: ["chat"],
+      tags: ["Chats"],
       summary: "Create a chat",
       operationId: "ChatController.create",
       parameters: [
@@ -130,8 +130,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def index_operation do
     %Operation{
-      tags: ["chat"],
-      summary: "Get a list of chats that you participated in",
+      tags: ["Chats"],
+      summary: "Retrieve list of chats",
       operationId: "ChatController.index",
       parameters: [
         Operation.parameter(:with_muted, :query, BooleanLike, "Include chats from muted users")
@@ -150,8 +150,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def messages_operation do
     %Operation{
-      tags: ["chat"],
-      summary: "Get the most recent messages of the chat",
+      tags: ["Chats"],
+      summary: "Retrieve chat's messages",
       operationId: "ChatController.messages",
       parameters:
         [Operation.parameter(:id, :path, :string, "The ID of the Chat")] ++
@@ -175,7 +175,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def post_chat_message_operation do
     %Operation{
-      tags: ["chat"],
+      tags: ["Chats"],
       summary: "Post a message to the chat",
       operationId: "ChatController.post_chat_message",
       parameters: [
@@ -202,8 +202,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def delete_message_operation do
     %Operation{
-      tags: ["chat"],
-      summary: "delete_message",
+      tags: ["Chats"],
+      summary: "Delete message",
       operationId: "ChatController.delete_message",
       parameters: [
         Operation.parameter(:id, :path, :string, "The ID of the Chat"),

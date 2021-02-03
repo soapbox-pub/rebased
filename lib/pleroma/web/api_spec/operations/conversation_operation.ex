@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.ConversationOperation do
   def index_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Show conversation",
+      summary: "List of conversations",
       security: [%{"oAuth" => ["read:statuses"]}],
       operationId: "ConversationController.index",
       parameters: [
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ApiSpec.ConversationOperation do
   def mark_as_read_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Mark as read",
+      summary: "Mark conversation as read",
       operationId: "ConversationController.mark_as_read",
       parameters: [
         Operation.parameter(:id, :path, :string, "Conversation ID",

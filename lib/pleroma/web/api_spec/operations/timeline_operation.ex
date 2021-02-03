@@ -41,8 +41,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       tags: ["Timelines"],
       summary: "Direct timeline",
       description:
-        "View statuses with a “direct” privacy, from your account or in your notifications",
-      deprecated: true,
+        "View statuses with a “direct” scope addressed to the account. Using this endpoint is discouraged, please use [conversations](#tag/Conversations) or [chats](#tag/Chats).",
       parameters: [with_muted_param() | pagination_params()],
       security: [%{"oAuth" => ["read:statuses"]}],
       operationId: "TimelineController.direct",

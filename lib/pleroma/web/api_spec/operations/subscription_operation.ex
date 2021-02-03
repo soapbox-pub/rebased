@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Push Subscriptions"],
+      tags: ["Push subscriptions"],
       summary: "Subscribe to push notifications",
       description:
         "Add a Web Push API subscription to receive notifications. Each access token can have one push subscription. If you create a new subscription, the old subscription is deleted.",
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
       security: [%{"oAuth" => ["push"]}],
       requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       responses: %{
-        200 => Operation.response("Push Subscription", "application/json", PushSubscription),
+        200 => Operation.response("Push subscription", "application/json", PushSubscription),
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError)
       }
@@ -34,13 +34,13 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Push Subscriptions"],
+      tags: ["Push subscriptions"],
       summary: "Get current subscription",
       description: "View the PushSubscription currently associated with this access token.",
       operationId: "SubscriptionController.show",
       security: [%{"oAuth" => ["push"]}],
       responses: %{
-        200 => Operation.response("Push Subscription", "application/json", PushSubscription),
+        200 => Operation.response("Push subscription", "application/json", PushSubscription),
         403 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Error", "application/json", ApiError)
       }
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Push Subscriptions"],
+      tags: ["Push subscriptions"],
       summary: "Change types of notifications",
       description:
         "Updates the current push subscription. Only the data part can be updated. To change fundamentals, a new subscription must be created instead.",
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
       security: [%{"oAuth" => ["push"]}],
       requestBody: Helpers.request_body("Parameters", update_request(), required: true),
       responses: %{
-        200 => Operation.response("Push Subscription", "application/json", PushSubscription),
+        200 => Operation.response("Push subscription", "application/json", PushSubscription),
         403 => Operation.response("Error", "application/json", ApiError)
       }
     }
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Push Subscriptions"],
+      tags: ["Push subscriptions"],
       summary: "Remove current subscription",
       description: "Removes the current Web Push API subscription.",
       operationId: "SubscriptionController.delete",

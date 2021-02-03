@@ -15,8 +15,8 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   def index_operation do
     %Operation{
-      tags: ["apps"],
-      summary: "View all filters",
+      tags: ["Filters"],
+      summary: "All filters",
       operationId: "FilterController.index",
       security: [%{"oAuth" => ["read:filters"]}],
       responses: %{
@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   def create_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Filters"],
       summary: "Create a filter",
       operationId: "FilterController.create",
       requestBody: Helpers.request_body("Parameters", create_request(), required: true),
@@ -38,8 +38,8 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   def show_operation do
     %Operation{
-      tags: ["apps"],
-      summary: "View all filters",
+      tags: ["Filters"],
+      summary: "Filter",
       parameters: [id_param()],
       operationId: "FilterController.show",
       security: [%{"oAuth" => ["read:filters"]}],
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   def update_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Filters"],
       summary: "Update a filter",
       parameters: [id_param()],
       operationId: "FilterController.update",
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Filters"],
       summary: "Remove a filter",
       parameters: [id_param()],
       operationId: "FilterController.delete",
