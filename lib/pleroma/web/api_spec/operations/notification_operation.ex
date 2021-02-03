@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   def index_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Get all notifications",
+      summary: "Retrieve a list of notifications",
       description:
         "Notifications concerning the user. This API returns Link headers containing links to the next/previous page. However, the links can also be constructed dynamically using query params and `id` values.",
       operationId: "NotificationController.index",
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   def show_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Get a single notification",
+      summary: "Retrieve a notification",
       description: "View information about a notification with a given ID.",
       operationId: "NotificationController.show",
       security: [%{"oAuth" => ["read:notifications"]}],
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   def dismiss_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Dismiss a single notification",
+      summary: "Dismiss a notification",
       description: "Clear a single notification from the server.",
       operationId: "NotificationController.dismiss",
       parameters: [id_param()],

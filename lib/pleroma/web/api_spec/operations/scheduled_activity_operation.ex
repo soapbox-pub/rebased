@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.ScheduledActivityOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Scheduled Statuses"],
+      tags: ["Scheduled statuses"],
       summary: "View scheduled statuses",
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: pagination_params(),
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ApiSpec.ScheduledActivityOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Scheduled Statuses"],
+      tags: ["Scheduled statuses"],
       summary: "View a single scheduled status",
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [id_param()],
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.ScheduledActivityOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Scheduled Statuses"],
+      tags: ["Scheduled statuses"],
       summary: "Schedule a status",
       operationId: "ScheduledActivity.update",
       security: [%{"oAuth" => ["write:statuses"]}],
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ApiSpec.ScheduledActivityOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Scheduled Statuses"],
+      tags: ["Scheduled statuses"],
       summary: "Cancel a scheduled status",
       security: [%{"oAuth" => ["write:statuses"]}],
       parameters: [id_param()],
