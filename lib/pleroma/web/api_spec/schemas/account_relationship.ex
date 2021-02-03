@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
 
   OpenApiSpex.schema(%{
     title: "AccountRelationship",
-    description: "Response schema for relationship",
+    description: "Relationship between current account and requested account",
     type: :object,
     properties: %{
       blocked_by: %Schema{type: :boolean},
