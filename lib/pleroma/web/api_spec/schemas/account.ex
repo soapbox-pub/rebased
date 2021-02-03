@@ -96,7 +96,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               hide_notification_contents: %Schema{type: :boolean}
             }
           },
-          relationship: AccountRelationship,
+          relationship: %Schema{allOf: [AccountRelationship], nullable: true},
           settings_store: %Schema{
             type: :object,
             description:
