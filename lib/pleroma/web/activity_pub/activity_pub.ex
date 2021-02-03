@@ -824,6 +824,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_local(query, _), do: query
 
+  defp restrict_remote(query, %{remote: true}) do
+    from(activity in query, where: activity.local == false)
+  end
+
+  defp restrict_remote(query, _), do: query
+
   defp restrict_actor(query, %{actor_id: actor_id}) do
     from(activity in query, where: activity.actor == ^actor_id)
   end
@@ -1198,6 +1204,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_replies(opts)
       |> restrict_since(opts)
       |> restrict_local(opts)
+      |> restrict_remote(opts)
       |> restrict_actor(opts)
       |> restrict_type(opts)
       |> restrict_state(opts)

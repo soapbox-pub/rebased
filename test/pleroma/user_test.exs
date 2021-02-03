@@ -2232,6 +2232,36 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "local_nickname/1" do
+    test "returns nickname without host" do
+      assert User.local_nickname("@mentioned") == "mentioned"
+      assert User.local_nickname("a_local_nickname") == "a_local_nickname"
+      assert User.local_nickname("nickname@host.com") == "nickname"
+    end
+  end
+
+  describe "full_nickname/1" do
+    test "returns fully qualified nickname for local and remote users" do
+      local_user =
+        insert(:user, nickname: "local_user", ap_id: "https://somehost.com/users/local_user")
+
+      remote_user = insert(:user, nickname: "remote@host.com", local: false)
+
+      assert User.full_nickname(local_user) == "local_user@somehost.com"
+      assert User.full_nickname(remote_user) == "remote@host.com"
+    end
+
+    test "strips leading @ from mentions" do
+      assert User.full_nickname("@mentioned") == "mentioned"
+      assert User.full_nickname("@nickname@host.com") == "nickname@host.com"
+    end
+
+    test "does not modify nicknames" do
+      assert User.full_nickname("nickname") == "nickname"
+      assert User.full_nickname("nickname@host.com") == "nickname@host.com"
+    end
+  end
+
   test "avatar fallback" do
     user = insert(:user)
     assert User.avatar_url(user) =~ "/images/avi.png"
@@ -2247,5 +2277,44 @@ defmodule Pleroma.UserTest do
   test "get_host/1" do
     user = insert(:user, ap_id: "https://lain.com/users/lain", nickname: "lain")
     assert User.get_host(user) == "lain.com"
+  end
+
+  test "update_last_active_at/1" do
+    user = insert(:user)
+    assert is_nil(user.last_active_at)
+
+    test_started_at = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+    assert {:ok, user} = User.update_last_active_at(user)
+
+    assert user.last_active_at >= test_started_at
+    assert user.last_active_at <= NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+
+    last_active_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-:timer.hours(24), :millisecond)
+      |> NaiveDateTime.truncate(:second)
+
+    assert {:ok, user} =
+             user
+             |> cast(%{last_active_at: last_active_at}, [:last_active_at])
+             |> User.update_and_set_cache()
+
+    assert user.last_active_at == last_active_at
+    assert {:ok, user} = User.update_last_active_at(user)
+    assert user.last_active_at >= test_started_at
+    assert user.last_active_at <= NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+  end
+
+  test "active_user_count/1" do
+    insert(:user)
+    insert(:user, %{local: false})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -5)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -3)})
+    insert(:user, %{last_active_at: NaiveDateTime.utc_now()})
+
+    assert User.active_user_count() == 2
+    assert User.active_user_count(6) == 3
+    assert User.active_user_count(1) == 1
   end
 end

@@ -73,6 +73,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
@@ -172,6 +173,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: [],

@@ -56,6 +56,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
     plug(Pleroma.Web.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
+    plug(Pleroma.Web.Plugs.UserTrackingPlug)
   end
 
   pipeline :base_api do
@@ -319,6 +320,8 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
+    # Note: use /api/v1/accounts/verify_credentials for userinfo of signed-in user
+
     get("/registration_details", OAuthController, :registration_details)
 
     post("/mfa/verify", MFAController, :verify, as: :mfa_verify)

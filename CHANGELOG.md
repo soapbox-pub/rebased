@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Reports now ordered by newest
 - Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
 - Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
+- Improve OAuth 2.0 provider support. A missing `fqn` field was added to the response, but does not expose the user's email address.
 - Extracted object hashtags into separate table in order to improve hashtag timeline performance (via background migration in `Pleroma.Migrators.HashtagsTableMigrator`). 
 
 ### Added
@@ -49,7 +50,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
-- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types
+- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
+- Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`).
+- Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `remote` & `local` parameters for filtration.
+- Mastodon API: `/api/v1/accounts/:id` & `/api/v1/mutes` endpoints accept `with_relationships` parameter and return filled `pleroma.relationship` field.
 </details>
 
 ### Fixed
@@ -59,6 +63,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
+- Removed duplicate jobs to purge expired activities
+- File extensions of some attachments were incorrectly changed. This feature has been disabled for now.
+- Mix task pleroma.instance creates missing parent directories if the configuration or SQL output paths are changed.
 
 <details>
   <summary>API Changes</summary>
