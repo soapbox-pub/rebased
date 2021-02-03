@@ -174,7 +174,7 @@ spec-deploy:
   before_script:
     - apk add curl
   script:
-    - curl -X POST -F"token=$API_DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" -F"variables[JOB_REF]=CI_JOB_ID" https://git.pleroma.social/api/v4/projects/1130/trigger/pipeline
+    - curl -X POST -F"token=$API_DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" -F"variables[JOB_REF]=$CI_JOB_ID" https://git.pleroma.social/api/v4/projects/1130/trigger/pipeline
   
  
 stop_review_app:
