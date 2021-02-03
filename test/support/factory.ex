@@ -486,7 +486,8 @@ defmodule Pleroma.Factory do
     %Pleroma.Filter{
       user: build(:user),
       filter_id: sequence(:filter_id, & &1),
-      phrase: "cofe"
+      phrase: "cofe",
+      context: ["home"]
     }
   end
 end

@@ -81,6 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Mastodon API: Fix not being able to add or remove multiple users at once in lists.
   - Mastodon API: Fixed own_votes being not returned with poll data.
   - Mastodon API: Fixed creation of scheduled posts with polls.
+  - Mastodon API: Support for expires_in/expires_at in the Filters.
 </details>
 
 ## Unreleased (Patch)
