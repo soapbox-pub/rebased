@@ -10,18 +10,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Breaking**: Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
 - **Breaking**: Changed `mix pleroma.user toggle_activated` to `mix pleroma.user activate/deactivate`
-- **Breaking**: AdminAPI changed User field `confirmation_pending` to `is_confirmed`
-- **Breaking**: AdminAPI changed User field `approval_pending` to `is_approved`
-- **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
 - Improved registration workflow for email confirmation and account approval modes.
 - Search: When using Postgres 11+, Pleroma will use the `websearch_to_tsvector` function to parse search queries.
 - Emoji: Support the full Unicode 13.1 set of Emoji for reactions, plus regional indicators.
-- Admin API: Reports now ordered by newest
 - Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
 - Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
 - Improve OAuth 2.0 provider support. A missing `fqn` field was added to the response, but does not expose the user's email address.
+
+<details>
+  <summary>API Changes</summary>
+
+- **Breaking:** AdminAPI changed User field `confirmation_pending` to `is_confirmed`
+- **Breaking:** AdminAPI changed User field `approval_pending` to `is_approved`
+- **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
+- **Breaking:** AdminAPI `GET /api/pleroma/admin/users/:nickname_or_id/statuses` changed response format and added the number of total users posts.
+- **Breaking:** AdminAPI `GET /api/pleroma/admin/instances/:instance/statuses` changed response format and added the number of total users posts.
+- Admin API: Reports now ordered by newest
+
+</details>
 
 ### Added
 

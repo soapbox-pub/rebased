@@ -591,7 +591,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def fetch_user_activities(user, reading_user, params \\ %{}) do
+  def fetch_user_activities(user, reading_user, params \\ %{})
+
+  def fetch_user_activities(user, reading_user, %{total: true} = params) do
+    result = fetch_activities_for_user(user, reading_user, params)
+
+    Keyword.put(result, :items, Enum.reverse(result[:items]))
+  end
+
+  def fetch_user_activities(user, reading_user, params) do
+    user
+    |> fetch_activities_for_user(reading_user, params)
+    |> Enum.reverse()
+  end
+
+  defp fetch_activities_for_user(user, reading_user, params) do
     params =
       params
       |> Map.put(:type, ["Create", "Announce"])
@@ -616,10 +630,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
     |> user_activities_recipients()
     |> fetch_activities(params, pagination_type)
-    |> Enum.reverse()
+  end
+
+  def fetch_statuses(reading_user, %{total: true} = params) do
+    result = fetch_activities_for_reading_user(reading_user, params)
+    Keyword.put(result, :items, Enum.reverse(result[:items]))
   end
 
   def fetch_statuses(reading_user, params) do
+    reading_user
+    |> fetch_activities_for_reading_user(params)
+    |> Enum.reverse()
+  end
+
+  defp fetch_activities_for_reading_user(reading_user, params) do
     params = Map.put(params, :type, ["Create", "Announce"])
 
     %{
@@ -628,7 +652,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
     |> user_activities_recipients()
     |> fetch_activities(params, :offset)
-    |> Enum.reverse()
   end
 
   defp user_activities_recipients(%{godmode: true}), do: []

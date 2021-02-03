@@ -287,7 +287,18 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
 - Response:
   - On failure: `Not found`
-  - On success: JSON array of user's latest statuses
+ - On success: JSON, where:
+    - `total`: total count of the statuses for the user
+    - `activities`: list of the statuses for the user
+
+```json
+{
+  "total" : 1,
+  "activities": [
+    // activities list
+  ]
+}
+```
 
 ## `GET /api/pleroma/admin/instances/:instance/statuses`
 
@@ -300,7 +311,18 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
 - Response:
   - On failure: `Not found`
-  - On success: JSON array of instance's latest statuses
+  - On success: JSON, where:
+    - `total`: total count of the statuses for the instance
+    - `activities`: list of the statuses for the instance
+
+```json
+{
+  "total" : 1,
+  "activities": [
+    // activities list
+  ]
+}
+```
 
 ## `GET /api/pleroma/admin/statuses`
 
