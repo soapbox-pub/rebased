@@ -798,7 +798,7 @@ defmodule Pleroma.User do
   end
 
   def post_register_action(%User{is_confirmed: false} = user) do
-    with {:ok, _} <- try_send_confirmation_email(user) do
+    with {:ok, _} <- maybe_send_confirmation_email(user) do
       {:ok, user}
     end
   end
@@ -870,8 +870,8 @@ defmodule Pleroma.User do
 
   defp maybe_send_welcome_email(_), do: {:ok, :noop}
 
-  @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
+  @spec maybe_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
+  def maybe_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
       when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
@@ -881,7 +881,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def try_send_confirmation_email(_), do: {:ok, :noop}
+  def maybe_send_confirmation_email(_), do: {:ok, :noop}
 
   @spec send_confirmation_email(Uset.t()) :: User.t()
   def send_confirmation_email(%User{} = user) do

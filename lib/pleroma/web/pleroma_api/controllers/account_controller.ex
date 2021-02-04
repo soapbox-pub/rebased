@@ -56,7 +56,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     nickname_or_email = params[:email] || params[:nickname]
 
     with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
-         {:ok, _} <- User.try_send_confirmation_email(user) do
+         {:ok, _} <- User.maybe_send_confirmation_email(user) do
       json_response(conn, :no_content, "")
     end
   end
