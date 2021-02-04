@@ -144,13 +144,19 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       assert redirect_url == expected_redirect_url
     end
 
-    test "returns a 404 on remote notice when json requested", %{conn: conn} do
+    test "redirects to a proper object URL when json requested and the object is remote", %{
+      conn: conn
+    } do
       note_activity = insert(:note_activity, local: false)
+      expected_redirect_url = Object.normalize(note_activity, fetch: false).data["id"]
 
-      conn
-      |> put_req_header("accept", "application/activity+json")
-      |> get("/notice/#{note_activity.id}")
-      |> response(404)
+      redirect_url =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/notice/#{note_activity.id}")
+        |> redirected_to()
+
+      assert redirect_url == expected_redirect_url
     end
 
     test "500s when actor not found", %{conn: conn} do

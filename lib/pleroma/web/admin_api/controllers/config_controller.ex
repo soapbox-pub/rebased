@@ -122,7 +122,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     if Config.get(:configurable_from_database) do
       :ok
     else
-      {:error, "To use this endpoint you need to enable configuration from database."}
+      {:error, "You must enable configurable_from_database in your config file."}
     end
   end
 
