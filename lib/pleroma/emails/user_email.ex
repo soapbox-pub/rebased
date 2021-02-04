@@ -81,9 +81,9 @@ defmodule Pleroma.Emails.UserEmail do
       )
 
     html_body = """
-    <h3>Welcome to #{instance_name()}!</h3>
+    <h3>Thank you for registering on #{instance_name()}</h3>
     <p>Email confirmation is required to activate the account.</p>
-    <p>Click the following link to proceed: <a href="#{confirmation_url}">activate your account</a>.</p>
+    <p>Please click the following link to <a href="#{confirmation_url}">activate your account</a>.</p>
     """
 
     new()
