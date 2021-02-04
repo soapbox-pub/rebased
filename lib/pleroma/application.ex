@@ -14,7 +14,7 @@ defmodule Pleroma.Application do
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
-  @env Mix.env()
+  @mix_env Mix.env()
 
   def name, do: @name
   def version, do: @version
@@ -92,15 +92,15 @@ defmodule Pleroma.Application do
         Pleroma.Web.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
-        http_children(adapter, @env) ++
+        http_children(adapter, @mix_env) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
           {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)}
         ] ++
-        task_children(@env) ++
-        dont_run_in_test(@env) ++
+        task_children(@mix_env) ++
+        dont_run_in_test(@mix_env) ++
         chat_child(chat_enabled?()) ++
         [
           Pleroma.Web.Endpoint,
@@ -145,7 +145,7 @@ defmodule Pleroma.Application do
           raise "Invalid custom modules"
 
         {:ok, modules, _warnings} ->
-          if @env != :test do
+          if @mix_env != :test do
             Enum.each(modules, fn mod ->
               Logger.info("Custom module loaded: #{inspect(mod)}")
             end)
