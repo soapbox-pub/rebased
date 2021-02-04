@@ -106,6 +106,20 @@ defmodule Pleroma.Emails.UserEmail do
     |> html_body(html_body)
   end
 
+  def successful_registration_email(user) do
+    html_body = """
+    <h3>Hello @#{user.nickname}</h3>
+    <p>Your account at #{instance_name()} has been registered successfully.</p>
+    <p>No further action is required to activate your account.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Account registered on #{instance_name()}")
+    |> html_body(html_body)
+  end
+
   @doc """
   Email used in digest email notifications
   Includes Mentions and New Followers data
