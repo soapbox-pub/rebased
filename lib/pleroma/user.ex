@@ -900,6 +900,7 @@ defmodule Pleroma.User do
          false <- Config.get([:instance, :account_approval_required], false) do
       user
       |> Pleroma.Emails.UserEmail.successful_registration_email()
+      |> Pleroma.Emails.Mailer.deliver_async()
 
       {:ok, :enqueued}
     else
