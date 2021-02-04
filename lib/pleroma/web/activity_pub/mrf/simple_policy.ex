@@ -262,14 +262,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
     mrf_simple_excluded =
       Config.get(:mrf_simple)
-      |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn {v, _} -> v in exclusions end)} end)
+      |> Enum.map(fn {rule, instances} ->
+        {rule, Enum.reject(instances, fn {host, _} -> host in exclusions end)}
+      end)
 
     mrf_simple =
       mrf_simple_excluded
-      |> Enum.map(fn {k, v} ->
-        {k, Enum.map(v, fn {instance, _} -> instance end)}
+      |> Enum.map(fn {rule, instances} ->
+        {rule, Enum.map(instances, fn {host, _} -> host end)}
       end)
-      |> Enum.into(%{})
+      |> Map.new()
 
     # This is for backwards compatibility. We originally didn't sent
     # extra info like a reason why an instance was rejected/quarantined/etc.
@@ -277,12 +279,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     # to add an extra "info" key.
     mrf_simple_info =
       mrf_simple_excluded
-      |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn {_, reason} -> reason == "" end)} end)
-      |> Enum.reject(fn {_, v} -> v == [] end)
-      |> Enum.map(fn {k, l} ->
-        {k, l |> Enum.map(fn {i, r} -> {i, %{"reason" => r}} end) |> Enum.into(%{})}
+      |> Enum.map(fn {rule, instances} ->
+        {rule, Enum.reject(instances, fn {_, reason} -> reason == "" end)}
       end)
-      |> Enum.into(%{})
+      |> Enum.reject(fn {_, instances} -> instances == [] end)
+      |> Enum.map(fn {rule, instances} ->
+        instances =
+          instances
+          |> Enum.map(fn {host, reason} -> {host, %{"reason" => reason}} end)
+          |> Map.new()
+
+        {rule, instances}
+      end)
+      |> Map.new()
 
     {:ok, %{mrf_simple: mrf_simple, mrf_simple_info: mrf_simple_info}}
   end

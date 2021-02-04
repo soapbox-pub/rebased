@@ -23,7 +23,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
   def check_simple_policy_tuples do
     has_strings =
       Config.get([:mrf_simple])
-      |> Enum.any?(fn {_, v} -> Enum.any?(v, fn e -> is_binary(e) end) end)
+      |> Enum.any?(fn {_, v} -> Enum.any?(v, &is_binary/1) end)
 
     if has_strings do
       Logger.warn("""
@@ -81,8 +81,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
   end
 
   def check_quarantined_instances_tuples do
-    has_strings =
-      Config.get([:instance, :quarantined_instances]) |> Enum.any?(fn e -> is_binary(e) end)
+    has_strings = Config.get([:instance, :quarantined_instances]) |> Enum.any?(&is_binary/1)
 
     if has_strings do
       Logger.warn("""
@@ -119,8 +118,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
   end
 
   def check_transparency_exclusions_tuples do
-    has_strings =
-      Config.get([:mrf, :transparency_exclusions]) |> Enum.any?(fn e -> is_binary(e) end)
+    has_strings = Config.get([:mrf, :transparency_exclusions]) |> Enum.any?(&is_binary/1)
 
     if has_strings do
       Logger.warn("""
