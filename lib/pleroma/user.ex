@@ -814,9 +814,9 @@ defmodule Pleroma.User do
     with {:ok, user} <- autofollow_users(user),
          {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
-         {:ok, _} <- send_welcome_email(user),
-         {:ok, _} <- send_welcome_message(user),
-         {:ok, _} <- send_welcome_chat_message(user) do
+         {:ok, _} <- maybe_send_welcome_email(user),
+         {:ok, _} <- maybe_send_welcome_message(user),
+         {:ok, _} <- maybe_send_welcome_chat_message(user) do
       {:ok, user}
     end
   end
@@ -841,7 +841,7 @@ defmodule Pleroma.User do
     {:ok, :enqueued}
   end
 
-  def send_welcome_message(user) do
+  defp maybe_send_welcome_message(user) do
     if User.WelcomeMessage.enabled?() do
       User.WelcomeMessage.post_message(user)
       {:ok, :enqueued}
@@ -850,7 +850,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_chat_message(user) do
+  defp maybe_send_welcome_chat_message(user) do
     if User.WelcomeChatMessage.enabled?() do
       User.WelcomeChatMessage.post_message(user)
       {:ok, :enqueued}
@@ -859,7 +859,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_email(%User{email: email} = user) when is_binary(email) do
+  defp maybe_send_welcome_email(%User{email: email} = user) when is_binary(email) do
     if User.WelcomeEmail.enabled?() do
       User.WelcomeEmail.send_email(user)
       {:ok, :enqueued}
@@ -868,7 +868,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_email(_), do: {:ok, :noop}
+  defp maybe_send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
   def try_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
