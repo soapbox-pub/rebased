@@ -77,10 +77,19 @@ defmodule Pleroma.Emoji.Loader do
     # it should run even if there are no emoji packs
     shortcode_globs = Config.get([:emoji, :shortcode_globs], [])
 
+    # for testing emoji.txt entries we do not want exposed in normal operation
+    test_emoji =
+      if Mix.env() == :test do
+        load_from_file("test/config/emoji.txt", emoji_groups)
+      else
+        []
+      end
+
     emojis_txt =
       (load_from_file("config/emoji.txt", emoji_groups) ++
          load_from_file("config/custom_emoji.txt", emoji_groups) ++
-         load_from_globs(shortcode_globs, emoji_groups))
+         load_from_globs(shortcode_globs, emoji_groups) ++
+         test_emoji)
       |> Enum.reject(fn value -> value == nil end)
 
     Enum.map(emojis ++ emojis_txt, &prepare_emoji/1)
