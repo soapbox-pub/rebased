@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ability to set ActivityPub aliases for follower migration.
 - Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
 - Ability to define custom HTTP headers per each frontend
+- New users will receive a simple email confirming their registration if no other emails will be dispatched. (e.g., Welcome, Confirmation, or Approval Required)
 
 <details>
   <summary>API Changes</summary>
