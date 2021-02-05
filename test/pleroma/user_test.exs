@@ -559,6 +559,7 @@ defmodule Pleroma.UserTest do
       {:ok, user} =
         User.register_changeset(%User{}, @full_user_data)
         |> User.register()
+
       ObanHelpers.perform_all()
 
       instance_name = Pleroma.Config.get([:instance, :name])
