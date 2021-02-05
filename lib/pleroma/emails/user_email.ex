@@ -113,7 +113,7 @@ defmodule Pleroma.Emails.UserEmail do
 
   def successful_registration_email(user) do
     html_body = """
-    <h3>Hello @#{user.nickname}</h3>
+    <h3>Hello @#{user.nickname},</h3>
     <p>Your account at #{instance_name()} has been registered successfully.</p>
     <p>No further action is required to activate your account.</p>
     """
