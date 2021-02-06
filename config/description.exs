@@ -217,7 +217,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         label: "Mailer Enabled",
-        type: :boolean,
+        type: :boolean
       },
       %{
         key: :adapter,
@@ -320,7 +320,7 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :qmail,
         label: "Qmail compat mode",
-        type: :boolean,
+        type: :boolean
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mandrill},
