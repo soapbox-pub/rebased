@@ -218,8 +218,7 @@ config :pleroma, :config_description, [
         key: :adapter,
         type: :module,
         description:
-          "One of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters)," <>
-            " or Swoosh.Adapters.Local for in-memory mailbox",
+          "One of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters)",
         suggestions: [
           Swoosh.Adapters.SMTP,
           Swoosh.Adapters.Sendgrid,
@@ -232,8 +231,7 @@ config :pleroma, :config_description, [
           Swoosh.Adapters.AmazonSES,
           Swoosh.Adapters.Dyn,
           Swoosh.Adapters.SocketLabs,
-          Swoosh.Adapters.Gmail,
-          Swoosh.Adapters.Local
+          Swoosh.Adapters.Gmail
         ]
       },
       %{
