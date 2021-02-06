@@ -292,8 +292,8 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :retries,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [5]
+        description: "SMTP temporary (4xx) error retries",
+        suggestions: [1]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendgrid},
