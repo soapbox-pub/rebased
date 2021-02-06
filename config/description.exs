@@ -237,7 +237,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Allow/disallow send emails"
+        description: "Pleroma Email sending capability"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
@@ -256,36 +256,37 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :username,
         type: :string,
-        description: "SMTP auth username",
+        description: "SMTP AUTH username",
         suggestions: ["user@example.com"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :password,
         type: :string,
-        description: "SMTP auth password",
+        description: "SMTP AUTH password",
         suggestions: ["password"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :ssl,
-        label: "SSL",
+        label: "Use SSL",
         type: :boolean,
-        description: "Use implicit SSL/TLS: e.g., port 465"
+        description: "Use implicit SSL/TLS. e.g. port 465"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :tls,
-        label: "STARTTLS",
+        label: "STARTTLS Mode",
         type: {:dropdown, :atom},
-        description: "Explicit TLS (STARTTLS) mode",
+        description: "Explicit TLS (STARTTLS) enforcement mode",
         suggestions: [:if_available, :always, :never]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :auth,
+        label: "AUTH Mode",
         type: {:dropdown, :atom},
-        description: "SMTP authentication mode",
+        description: "SMTP AUTH enforcement mode",
         suggestions: [:if_available, :always, :never]
       },
       %{
