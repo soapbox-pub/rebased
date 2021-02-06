@@ -435,26 +435,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :swoosh,
-    type: :group,
-    description: "`Swoosh.Adapters.Local` adapter specific settings",
-    children: [
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :serve_mailbox,
-        type: :boolean,
-        description: "Run the preview server together as part of your app"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :preview_port,
-        type: :integer,
-        description: "The preview server port",
-        suggestions: [4001]
-      }
-    ]
-  },
-  %{
     group: :pleroma,
     key: :uri_schemes,
     label: "URI Schemes",
