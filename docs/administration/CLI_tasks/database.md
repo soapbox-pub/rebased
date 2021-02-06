@@ -141,3 +141,21 @@ but should only be run if necessary. **It is safe to cancel this.**
     ```sh
     mix pleroma.database ensure_expiration
     ```
+
+## Change Text Search Configuration
+
+Change `default_text_search_config` for database and (if necessary) text_search_config used in index, then rebuild index (it may take time). 
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl database set_text_search_config english
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.database set_text_search_config english
+    ```
+
+See [PostgreSQL documentation](https://www.postgresql.org/docs/current/textsearch-configuration.html) and `docs/configuration/howto_search_cjk.md` for more detail.
