@@ -215,6 +215,10 @@ config :pleroma, :config_description, [
     description: "Mailer-related settings",
     children: [
       %{
+        key: :enabled,
+        type: :boolean,
+      },
+      %{
         key: :adapter,
         type: :module,
         description:
@@ -233,11 +237,6 @@ config :pleroma, :config_description, [
           Swoosh.Adapters.SocketLabs,
           Swoosh.Adapters.Gmail
         ]
-      },
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Pleroma Email sending capability"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
