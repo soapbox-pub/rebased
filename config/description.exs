@@ -243,21 +243,27 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :relay,
         type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["smtp.gmail.com"]
+        description: "Hostname or IP address",
+        suggestions: ["smtp.example.com"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :port,
+        type: :integer,
+        description: "SMTP port"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :username,
         type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["pleroma"]
+        description: "SMTP auth username",
+        suggestions: ["user@example.com"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :password,
         type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
+        description: "SMTP auth password",
         suggestions: ["password"]
       },
       %{
@@ -265,29 +271,22 @@ config :pleroma, :config_description, [
         key: :ssl,
         label: "SSL",
         type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
+        description: "Use implicit SSL/TLS: e.g., port 465",
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :tls,
-        label: "TLS",
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
+        label: "STARTTLS",
+        type: {:dropdown, :atom},
+        description: "Explicit TLS (STARTTLS) mode",
+        suggestions: [:if_available, :always, :never]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :auth,
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :port,
-        type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [1025]
+        type: {:dropdown, :atom},
+        description: "SMTP authentication mode",
+        suggestions: [:if_available, :always, :never]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
