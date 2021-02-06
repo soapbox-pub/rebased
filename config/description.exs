@@ -218,7 +218,7 @@ config :pleroma, :config_description, [
         key: :adapter,
         type: :module,
         description:
-          "One of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters)",
+          "One of the mail adapters listed in [Swoosh documentation](https://hexdocs.pm/swoosh/Swoosh.html#module-adapters)",
         suggestions: [
           Swoosh.Adapters.SMTP,
           Swoosh.Adapters.Sendgrid,
@@ -271,7 +271,7 @@ config :pleroma, :config_description, [
         key: :ssl,
         label: "SSL",
         type: :boolean,
-        description: "Use implicit SSL/TLS: e.g., port 465",
+        description: "Use implicit SSL/TLS: e.g., port 465"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
