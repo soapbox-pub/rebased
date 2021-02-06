@@ -296,13 +296,6 @@ config :pleroma, :config_description, [
         suggestions: [5]
       },
       %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :no_mx_lookups,
-        label: "No MX lookups",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
-      },
-      %{
         group: {:subgroup, Swoosh.Adapters.Sendgrid},
         key: :api_key,
         label: "API key",
