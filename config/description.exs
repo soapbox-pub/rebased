@@ -497,6 +497,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :database,
+    type: :group,
+    description: "Database-related settings",
+    children: [
+      %{
+        key: :improved_hashtag_timeline,
+        type: :keyword,
+        description:
+          "If `true`, hashtags will be fetched from `hashtags` table for hashtags timeline. When `false`, object-embedded hashtags will be used (slower). Is auto-set to `true` (unless overridden) when HashtagsTableMigrator completes."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
@@ -941,12 +955,6 @@ config :pleroma, :config_description, [
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
-      },
-      %{
-        key: :improved_hashtag_timeline,
-        type: :keyword,
-        description:
-          "If `true`, hashtags will be fetched from `hashtags` table for hashtags timeline. When `false`, object-embedded hashtags will be used (slower). Is auto-set to `true` (unless overridden) when HashtagsTableMigrator completes."
       }
     ]
   },

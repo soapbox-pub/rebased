@@ -96,9 +96,6 @@ defmodule Pleroma.Config do
     end
   end
 
-  def improved_hashtag_timeline_path, do: [:instance, :improved_hashtag_timeline]
-  def improved_hashtag_timeline, do: get(improved_hashtag_timeline_path())
-
   def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
 
   def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []

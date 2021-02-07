@@ -4,7 +4,6 @@ defmodule Pleroma.Repo.Migrations.CreateHashtags do
   def change do
     create_if_not_exists table(:hashtags) do
       add(:name, :citext, null: false)
-      add(:data, :map, default: %{})
 
       timestamps()
     end

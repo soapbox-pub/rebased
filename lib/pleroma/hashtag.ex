@@ -10,11 +10,8 @@ defmodule Pleroma.Hashtag do
   alias Pleroma.Hashtag
   alias Pleroma.Repo
 
-  @derive {Jason.Encoder, only: [:data]}
-
   schema "hashtags" do
     field(:name, :string)
-    field(:data, :map, default: %{})
 
     many_to_many(:objects, Pleroma.Object, join_through: "hashtags_objects", on_replace: :delete)
 
@@ -50,7 +47,7 @@ defmodule Pleroma.Hashtag do
 
   def changeset(%Hashtag{} = struct, params) do
     struct
-    |> cast(params, [:name, :data])
+    |> cast(params, [:name])
     |> update_change(:name, &String.downcase/1)
     |> validate_required([:name])
     |> unique_constraint(:name)

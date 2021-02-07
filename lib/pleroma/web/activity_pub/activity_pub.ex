@@ -1227,7 +1227,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> exclude_invisible_actors(opts)
       |> exclude_visibility(opts)
 
-    if Config.improved_hashtag_timeline() do
+    if Config.get([:database, :improved_hashtag_timeline]) do
       query
       |> restrict_hashtag_any(opts)
       |> restrict_hashtag_all(opts)

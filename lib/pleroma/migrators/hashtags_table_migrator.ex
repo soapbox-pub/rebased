@@ -239,11 +239,11 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
       data_migration.feature_lock ->
         :noop
 
-      not is_nil(Config.improved_hashtag_timeline()) ->
+      not is_nil(Config.get([:database, :improved_hashtag_timeline])) ->
         :noop
 
       true ->
-        Config.put(Config.improved_hashtag_timeline_path(), true)
+        Config.put([:database, :improved_hashtag_timeline], true)
         :ok
     end
   end
