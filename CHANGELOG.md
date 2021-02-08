@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
 - Improve OAuth 2.0 provider support. A missing `fqn` field was added to the response, but does not expose the user's email address.
 - Provide redirect of external posts from `/notice/:id` to their original URL
+- Admins no longer receive notifications for reports if they are the actor making the report.
 
 <details>
   <summary>API Changes</summary>
