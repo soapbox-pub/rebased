@@ -45,6 +45,20 @@ defmodule Pleroma.NotificationTest do
       assert notification.type == "pleroma:report"
     end
 
+    test "suppresses notification to reporter if reporter is an admin" do
+      reporting_admin = insert(:user, is_admin: true)
+      reported_user = insert(:user)
+      other_admin = insert(:user, is_admin: true)
+
+      {:ok, activity} = CommonAPI.report(reporting_admin, %{account_id: reported_user.id})
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      refute notification.user_id == reporting_admin.id
+      assert notification.user_id == other_admin.id
+      assert notification.type == "pleroma:report"
+    end
+
     test "creates a notification for an emoji reaction" do
       user = insert(:user)
       other_user = insert(:user)

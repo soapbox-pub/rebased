@@ -507,8 +507,8 @@ defmodule Pleroma.Notification do
     [object_id]
   end
 
-  def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag"}}) do
-    User.all_superusers() |> Enum.map(fn user -> user.ap_id end)
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
+    (User.all_superusers() |> Enum.map(fn user -> user.ap_id end)) -- [actor]
   end
 
   def get_potential_receiver_ap_ids(activity) do
