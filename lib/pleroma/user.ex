@@ -798,7 +798,7 @@ defmodule Pleroma.User do
   end
 
   def post_register_action(%User{is_confirmed: false} = user) do
-    with {:ok, _} <- try_send_confirmation_email(user) do
+    with {:ok, _} <- maybe_send_confirmation_email(user) do
       {:ok, user}
     end
   end
@@ -814,9 +814,10 @@ defmodule Pleroma.User do
     with {:ok, user} <- autofollow_users(user),
          {:ok, _} <- autofollowing_users(user),
          {:ok, user} <- set_cache(user),
-         {:ok, _} <- send_welcome_email(user),
-         {:ok, _} <- send_welcome_message(user),
-         {:ok, _} <- send_welcome_chat_message(user) do
+         {:ok, _} <- maybe_send_registration_email(user),
+         {:ok, _} <- maybe_send_welcome_email(user),
+         {:ok, _} <- maybe_send_welcome_message(user),
+         {:ok, _} <- maybe_send_welcome_chat_message(user) do
       {:ok, user}
     end
   end
@@ -841,7 +842,7 @@ defmodule Pleroma.User do
     {:ok, :enqueued}
   end
 
-  def send_welcome_message(user) do
+  defp maybe_send_welcome_message(user) do
     if User.WelcomeMessage.enabled?() do
       User.WelcomeMessage.post_message(user)
       {:ok, :enqueued}
@@ -850,7 +851,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_chat_message(user) do
+  defp maybe_send_welcome_chat_message(user) do
     if User.WelcomeChatMessage.enabled?() do
       User.WelcomeChatMessage.post_message(user)
       {:ok, :enqueued}
@@ -859,7 +860,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_email(%User{email: email} = user) when is_binary(email) do
+  defp maybe_send_welcome_email(%User{email: email} = user) when is_binary(email) do
     if User.WelcomeEmail.enabled?() do
       User.WelcomeEmail.send_email(user)
       {:ok, :enqueued}
@@ -868,10 +869,10 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_email(_), do: {:ok, :noop}
+  defp maybe_send_welcome_email(_), do: {:ok, :noop}
 
-  @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
-  def try_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
+  @spec maybe_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
+  def maybe_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
       when is_binary(email) do
     if Config.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
@@ -881,7 +882,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def try_send_confirmation_email(_), do: {:ok, :noop}
+  def maybe_send_confirmation_email(_), do: {:ok, :noop}
 
   @spec send_confirmation_email(Uset.t()) :: User.t()
   def send_confirmation_email(%User{} = user) do
@@ -891,6 +892,24 @@ defmodule Pleroma.User do
 
     user
   end
+
+  @spec maybe_send_registration_email(User.t()) :: {:ok, :enqueued | :noop}
+  defp maybe_send_registration_email(%User{email: email} = user) when is_binary(email) do
+    with false <- User.WelcomeEmail.enabled?(),
+         false <- Config.get([:instance, :account_activation_required], false),
+         false <- Config.get([:instance, :account_approval_required], false) do
+      user
+      |> Pleroma.Emails.UserEmail.successful_registration_email()
+      |> Pleroma.Emails.Mailer.deliver_async()
+
+      {:ok, :enqueued}
+    else
+      _ ->
+        {:ok, :noop}
+    end
+  end
+
+  defp maybe_send_registration_email(_), do: {:ok, :noop}
 
   def needs_update?(%User{local: true}), do: false
 
