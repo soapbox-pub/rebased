@@ -99,7 +99,8 @@ config :pleroma, :config_description, [
         key: :base_url,
         label: "Base URL",
         type: :string,
-        description: "Base URL for the uploads, needed if you use CDN",
+        description:
+          "Base URL for the uploads. Required if you use a CDN or host attachments under a different domain.",
         suggestions: [
           "https://cdn-host.com"
         ]
@@ -1545,7 +1546,8 @@ config :pleroma, :config_description, [
           %{
             key: :max_body_length,
             type: :integer,
-            description: "Maximum file size allowed through the Pleroma MediaProxy cache."
+            description:
+              "Maximum file size (in bytes) allowed through the Pleroma MediaProxy cache."
           },
           %{
             key: :max_read_duration,
@@ -1595,7 +1597,7 @@ config :pleroma, :config_description, [
         key: :min_content_length,
         type: :integer,
         description:
-          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
+          "Min content length (in bytes) to perform preview. Media smaller in size will be served without thumbnailing."
       }
     ]
   },
@@ -1643,6 +1645,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :url_format,
+        label: "URL Format",
         type: :string,
         description:
           "Optional URL format preprocessing. Only required for Apache's htcacheclean.",
@@ -3326,9 +3329,9 @@ config :pleroma, :config_description, [
       },
       %{
         key: :ip_whitelist,
+        label: "IP Whitelist",
         type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
-        description:
-          "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+        description: "Restrict access of app metrics endpoint to the specified IP addresses."
       },
       %{
         key: :auth,
