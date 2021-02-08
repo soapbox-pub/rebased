@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ability to set ActivityPub aliases for follower migration.
 - Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
 - Ability to define custom HTTP headers per each frontend
+- MRF (`NoEmptyPolicy`): New MRF Policy which will deny empty statuses or statuses of only mentions from being created by local users
 
 <details>
   <summary>API Changes</summary>
