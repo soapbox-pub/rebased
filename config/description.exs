@@ -99,7 +99,8 @@ config :pleroma, :config_description, [
         key: :base_url,
         label: "Base URL",
         type: :string,
-        description: "Base URL for the uploads, needed if you use CDN",
+        description:
+          "Base URL for the uploads. Required if you use a CDN or host attachments under a different domain.",
         suggestions: [
           "https://cdn-host.com"
         ]
@@ -215,252 +216,215 @@ config :pleroma, :config_description, [
     description: "Mailer-related settings",
     children: [
       %{
+        key: :enabled,
+        label: "Mailer Enabled",
+        type: :boolean
+      },
+      %{
         key: :adapter,
         type: :module,
         description:
-          "One of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters)," <>
-            " or Swoosh.Adapters.Local for in-memory mailbox",
+          "One of the mail adapters listed in [Swoosh documentation](https://hexdocs.pm/swoosh/Swoosh.html#module-adapters)",
         suggestions: [
+          Swoosh.Adapters.AmazonSES,
+          Swoosh.Adapters.Dyn,
+          Swoosh.Adapters.Gmail,
+          Swoosh.Adapters.Mailgun,
+          Swoosh.Adapters.Mailjet,
+          Swoosh.Adapters.Mandrill,
+          Swoosh.Adapters.Postmark,
           Swoosh.Adapters.SMTP,
           Swoosh.Adapters.Sendgrid,
           Swoosh.Adapters.Sendmail,
-          Swoosh.Adapters.Mandrill,
-          Swoosh.Adapters.Mailgun,
-          Swoosh.Adapters.Mailjet,
-          Swoosh.Adapters.Postmark,
-          Swoosh.Adapters.SparkPost,
-          Swoosh.Adapters.AmazonSES,
-          Swoosh.Adapters.Dyn,
           Swoosh.Adapters.SocketLabs,
-          Swoosh.Adapters.Gmail,
-          Swoosh.Adapters.Local
+          Swoosh.Adapters.SparkPost
         ]
-      },
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Allow/disallow send emails"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :relay,
         type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["smtp.gmail.com"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :username,
-        type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["pleroma"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :password,
-        type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["password"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :ssl,
-        label: "SSL",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :tls,
-        label: "TLS",
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :auth,
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
+        description: "Hostname or IP address",
+        suggestions: ["smtp.example.com"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :port,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [1025]
+        description: "SMTP port",
+        suggestions: ["1025"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :username,
+        type: :string,
+        description: "SMTP AUTH username",
+        suggestions: ["user@example.com"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :password,
+        type: :string,
+        description: "SMTP AUTH password",
+        suggestions: ["password"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :ssl,
+        label: "Use SSL",
+        type: :boolean,
+        description: "Use Implicit SSL/TLS. e.g. port 465"
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :tls,
+        label: "STARTTLS Mode",
+        type: {:dropdown, :atom},
+        description: "Explicit TLS (STARTTLS) enforcement mode",
+        suggestions: [:if_available, :always, :never]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :auth,
+        label: "AUTH Mode",
+        type: {:dropdown, :atom},
+        description: "SMTP AUTH enforcement mode",
+        suggestions: [:if_available, :always, :never]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :retries,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [5]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :no_mx_lookups,
-        label: "No MX lookups",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
+        description: "SMTP temporary (4xx) error retries",
+        suggestions: [1]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendgrid},
         key: :api_key,
-        label: "API key",
+        label: "SendGrid API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Sendgrid` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :cmd_path,
         type: :string,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
         suggestions: ["/usr/bin/sendmail"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :cmd_args,
         type: :string,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
         suggestions: ["-N delay,failure,success"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :qmail,
-        type: :boolean,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting"
+        label: "Qmail compat mode",
+        type: :boolean
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mandrill},
         key: :api_key,
-        label: "API key",
+        label: "Mandrill API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mandrill` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailgun},
         key: :api_key,
-        label: "API key",
+        label: "Mailgun API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailgun` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailgun},
         key: :domain,
         type: :string,
-        description: "`Swoosh.Adapters.Mailgun` adapter specific setting",
-        suggestions: ["pleroma.com"]
+        suggestions: ["YOUR_DOMAIN_NAME"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailjet},
         key: :api_key,
-        label: "API key",
+        label: "MailJet Public API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailjet` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["MJ_APIKEY_PUBLIC"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailjet},
         key: :secret,
+        label: "MailJet Private API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailjet` adapter specific setting",
-        suggestions: ["my-secret-key"]
+        suggestions: ["MJ_APIKEY_PRIVATE"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Postmark},
         key: :api_key,
-        label: "API key",
+        label: "Postmark API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Postmark` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["X-Postmark-Server-Token"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SparkPost},
         key: :api_key,
-        label: "API key",
+        label: "SparkPost API key",
         type: :string,
-        description: "`Swoosh.Adapters.SparkPost` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SparkPost},
         key: :endpoint,
         type: :string,
-        description: "`Swoosh.Adapters.SparkPost` adapter specific setting",
         suggestions: ["https://api.sparkpost.com/api/v1"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.AmazonSES},
-        key: :region,
-        type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["us-east-1", "us-east-2"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.AmazonSES},
         key: :access_key,
+        label: "AWS Access Key",
         type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["aws-access-key"]
+        suggestions: ["AWS_ACCESS_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.AmazonSES},
         key: :secret,
+        label: "AWS Secret Key",
         type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["aws-secret-key"]
+        suggestions: ["AWS_SECRET_KEY"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.AmazonSES},
+        key: :region,
+        label: "AWS Region",
+        type: :string,
+        suggestions: ["us-east-1", "us-east-2"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Dyn},
         key: :api_key,
-        label: "API key",
+        label: "Dyn API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Dyn` adapter specific setting",
-        suggestions: ["my-api-key"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SocketLabs},
-        key: :server_id,
-        type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
+        suggestions: ["apikey"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SocketLabs},
         key: :api_key,
-        label: "API key",
+        label: "SocketLabs API Key",
         type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
+        suggestions: ["INJECTION_API_KEY"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SocketLabs},
+        key: :server_id,
+        label: "Server ID",
+        type: :string,
+        suggestions: ["SERVER_ID"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Gmail},
         key: :access_token,
+        label: "GMail API Access Token",
         type: :string,
-        description: "`Swoosh.Adapters.Gmail` adapter specific setting"
-      }
-    ]
-  },
-  %{
-    group: :swoosh,
-    type: :group,
-    description: "`Swoosh.Adapters.Local` adapter specific settings",
-    children: [
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :serve_mailbox,
-        type: :boolean,
-        description: "Run the preview server together as part of your app"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :preview_port,
-        type: :integer,
-        description: "The preview server port",
-        suggestions: [4001]
+        suggestions: ["GMAIL_API_ACCESS_TOKEN"]
       }
     ]
   },
@@ -1545,7 +1509,8 @@ config :pleroma, :config_description, [
           %{
             key: :max_body_length,
             type: :integer,
-            description: "Maximum file size allowed through the Pleroma MediaProxy cache."
+            description:
+              "Maximum file size (in bytes) allowed through the Pleroma MediaProxy cache."
           },
           %{
             key: :max_read_duration,
@@ -1595,7 +1560,7 @@ config :pleroma, :config_description, [
         key: :min_content_length,
         type: :integer,
         description:
-          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
+          "Min content length (in bytes) to perform preview. Media smaller in size will be served without thumbnailing."
       }
     ]
   },
@@ -1643,6 +1608,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :url_format,
+        label: "URL Format",
         type: :string,
         description:
           "Optional URL format preprocessing. Only required for Apache's htcacheclean.",
@@ -2888,7 +2854,7 @@ config :pleroma, :config_description, [
         type: :integer,
         description:
           "Activity pub routes (except question activities). Default: `nil` (no expiration).",
-        suggestions: [30_000, nil]
+        suggestions: [nil]
       },
       %{
         key: :activity_pub_question,
@@ -3326,9 +3292,9 @@ config :pleroma, :config_description, [
       },
       %{
         key: :ip_whitelist,
+        label: "IP Whitelist",
         type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
-        description:
-          "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+        description: "Restrict access of app metrics endpoint to the specified IP addresses."
       },
       %{
         key: :auth,

@@ -167,4 +167,51 @@ defmodule Mix.Tasks.Pleroma.Database do
     end)
     |> Stream.run()
   end
+
+  def run(["set_text_search_config", tsconfig]) do
+    start_pleroma()
+    %{rows: [[tsc]]} = Ecto.Adapters.SQL.query!(Pleroma.Repo, "SHOW default_text_search_config;")
+    shell_info("Current default_text_search_config: #{tsc}")
+
+    %{rows: [[db]]} = Ecto.Adapters.SQL.query!(Pleroma.Repo, "SELECT current_database();")
+    shell_info("Update default_text_search_config: #{tsconfig}")
+
+    %{messages: msg} =
+      Ecto.Adapters.SQL.query!(
+        Pleroma.Repo,
+        "ALTER DATABASE #{db} SET default_text_search_config = '#{tsconfig}';"
+      )
+
+    # non-exist config will not raise excpetion but only give >0 messages
+    if length(msg) > 0 do
+      shell_info("Error: #{inspect(msg, pretty: true)}")
+    else
+      rum_enabled = Pleroma.Config.get([:database, :rum_enabled])
+      shell_info("Recreate index, RUM: #{rum_enabled}")
+
+      # Note SQL below needs to be kept up-to-date with latest GIN or RUM index definition in future
+      if rum_enabled do
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          "CREATE OR REPLACE FUNCTION objects_fts_update() RETURNS trigger AS $$ BEGIN
+          new.fts_content := to_tsvector(new.data->>'content');
+          RETURN new;
+          END
+          $$ LANGUAGE plpgsql"
+        )
+
+        shell_info("Refresh RUM index")
+        Ecto.Adapters.SQL.query!(Pleroma.Repo, "UPDATE objects SET updated_at = NOW();")
+      else
+        Ecto.Adapters.SQL.query!(Pleroma.Repo, "DROP INDEX IF EXISTS objects_fts;")
+
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          "CREATE INDEX objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); "
+        )
+      end
+
+      shell_info('Done.')
+    end
+  end
 end

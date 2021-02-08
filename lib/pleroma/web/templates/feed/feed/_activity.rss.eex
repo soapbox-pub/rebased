@@ -9,7 +9,6 @@
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>
-  <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
 
   <%= if @data["summary"] do %>
     <description><%= escape(@data["summary"]) %></description>
@@ -20,6 +19,8 @@
   <% else %>
     <link><%= @data["external_url"] %></link>
   <% end %>
+
+  <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
 
   <%= for tag <- @data["tag"] || [] do %>
     <category term="<%= tag %>"></category>
