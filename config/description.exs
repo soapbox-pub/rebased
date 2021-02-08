@@ -2888,7 +2888,7 @@ config :pleroma, :config_description, [
         type: :integer,
         description:
           "Activity pub routes (except question activities). Default: `nil` (no expiration).",
-        suggestions: [30_000, nil]
+        suggestions: [nil]
       },
       %{
         key: :activity_pub_question,
