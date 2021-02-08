@@ -8,7 +8,6 @@ defmodule Pleroma.Emails.UserEmail do
   use Phoenix.Swoosh, view: Pleroma.Web.EmailView, layout: {Pleroma.Web.LayoutView, :email}
 
   alias Pleroma.Config
-  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
@@ -44,7 +43,6 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("Password reset")
     |> html_body(html_body)
-    |> text_body(HTML.strip_tags(html_body))
   end
 
   def user_invitation_email(
@@ -71,7 +69,6 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("Invitation to #{instance_name()}")
     |> html_body(html_body)
-    |> text_body(HTML.strip_tags(html_body))
   end
 
   def account_confirmation_email(user) do
@@ -94,7 +91,6 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("#{instance_name()} account confirmation")
     |> html_body(html_body)
-    |> text_body(HTML.strip_tags(html_body))
   end
 
   def approval_pending_email(user) do
@@ -108,7 +104,6 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("Your account is awaiting approval")
     |> html_body(html_body)
-    |> text_body(HTML.strip_tags(html_body))
   end
 
   def successful_registration_email(user) do
@@ -123,7 +118,6 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("Account registered on #{instance_name()}")
     |> html_body(html_body)
-    |> text_body(HTML.strip_tags(html_body))
   end
 
   @doc """
@@ -247,6 +241,5 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("Your account archive is ready")
     |> html_body(html_body)
-    |> text_body(HTML.strip_tags(html_body))
   end
 end
