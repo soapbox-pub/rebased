@@ -37,7 +37,8 @@ defmodule Pleroma.Web.ApiSpec do
 
         Please report such occurences on our [issue tracker](https://git.pleroma.social/pleroma/pleroma/-/issues). Feel free to submit API questions or proposals there too!
         """,
-        version: Application.spec(:pleroma, :vsn) |> to_string(),
+        # Strip environment from the version
+        version: Application.spec(:pleroma, :vsn) |> to_string() |> String.replace(~r/\+.*$/, ""),
         extensions: %{
           # Logo path should be picked so that the path exists both on Pleroma instances and on api.pleroma.social
           "x-logo": %{"url" => "/static/logo.svg", "altText" => "Pleroma logo"}
