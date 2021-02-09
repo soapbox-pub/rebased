@@ -229,6 +229,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 404)
     end
 
+    test "returns local-only objects when authenticated", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      object = Object.normalize(post, fetch: false)
+      uuid = String.split(object.data["id"], "/") |> List.last()
+
+      assert response =
+               conn
+               |> assign(:user, user)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/objects/#{uuid}")
+
+      assert json_response(response, 200) == ObjectView.render("object.json", %{object: object})
+    end
+
     test "it returns a json representation of the object with accept application/json", %{
       conn: conn
     } do
@@ -283,6 +301,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/objects/#{uuid}")
 
       assert json_response(conn, 404)
+    end
+
+    test "returns visible non-public messages when authenticated", %{conn: conn} do
+      note = insert(:direct_note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
+      user = User.get_by_ap_id(note.data["actor"])
+      marisa = insert(:user)
+
+      assert conn
+             |> assign(:user, marisa)
+             |> put_req_header("accept", "application/activity+json")
+             |> get("/objects/#{uuid}")
+             |> json_response(404)
+
+      assert response =
+               conn
+               |> assign(:user, user)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/objects/#{uuid}")
+               |> json_response(200)
+
+      assert response == ObjectView.render("object.json", %{object: note})
     end
 
     test "it returns 404 for tombstone objects", %{conn: conn} do
@@ -358,6 +398,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 404)
     end
 
+    test "returns local-only activities when authenticated", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "test", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      uuid = String.split(post.data["id"], "/") |> List.last()
+
+      assert response =
+               conn
+               |> assign(:user, user)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/activities/#{uuid}")
+
+      assert json_response(response, 200) == ObjectView.render("object.json", %{object: post})
+    end
+
     test "it returns a json representation of the activity", %{conn: conn} do
       activity = insert(:note_activity)
       uuid = String.split(activity.data["id"], "/") |> List.last()
@@ -380,6 +437,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/activities/#{uuid}")
 
       assert json_response(conn, 404)
+    end
+
+    test "returns visible non-public messages when authenticated", %{conn: conn} do
+      note = insert(:direct_note_activity)
+      uuid = String.split(note.data["id"], "/") |> List.last()
+      user = User.get_by_ap_id(note.data["actor"])
+      marisa = insert(:user)
+
+      assert conn
+             |> assign(:user, marisa)
+             |> put_req_header("accept", "application/activity+json")
+             |> get("/activities/#{uuid}")
+             |> json_response(404)
+
+      assert response =
+               conn
+               |> assign(:user, user)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/activities/#{uuid}")
+               |> json_response(200)
+
+      assert response == ObjectView.render("object.json", %{object: note})
     end
 
     test "it caches a response", %{conn: conn} do

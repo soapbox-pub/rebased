@@ -79,11 +79,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def object(conn, _) do
+  def object(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)},
-         {_, false} <- {:local?, Visibility.is_local_public?(object)} do
+         user <- Map.get(assigns, :user, nil),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
       conn
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
@@ -91,11 +91,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: object)
     else
-      {:public?, false} ->
-        {:error, :not_found}
-
-      {:local?, true} ->
-        {:error, :not_found}
+      {:visible?, false} -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
 
@@ -109,11 +106,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def activity(conn, _params) do
+  def activity(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(activity)},
-         {_, false} <- {:local?, Visibility.is_local_public?(activity)} do
+         {_, true} <- {:local?, activity.local},
+         user <- Map.get(assigns, :user, nil),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)} do
       conn
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
@@ -121,8 +119,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: activity)
     else
-      {:public?, false} -> {:error, :not_found}
-      {:local?, true} -> {:error, :not_found}
+      {:visible?, false} -> {:error, :not_found}
+      {:local?, false} -> {:error, :not_found}
       nil -> {:error, :not_found}
     end
   end

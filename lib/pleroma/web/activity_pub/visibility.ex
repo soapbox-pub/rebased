@@ -56,11 +56,10 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_list?(%{data: %{"listMessage" => _}}), do: true
   def is_list?(_), do: false
 
-  @spec visible_for_user?(Activity.t() | nil, User.t() | nil) :: boolean()
+  @spec visible_for_user?(Object.t() | Activity.t() | nil, User.t() | nil) :: boolean()
   def visible_for_user?(%Activity{actor: ap_id}, %User{ap_id: ap_id}), do: true
-
+  def visible_for_user?(%Object{data: %{"actor" => ap_id}}, %User{ap_id: ap_id}), do: true
   def visible_for_user?(nil, _), do: false
-
   def visible_for_user?(%Activity{data: %{"listMessage" => _}}, nil), do: false
 
   def visible_for_user?(
@@ -73,16 +72,18 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       |> Pleroma.List.member?(user)
   end
 
-  def visible_for_user?(%Activity{} = activity, nil) do
-    if restrict_unauthenticated_access?(activity),
+  def visible_for_user?(%{__struct__: module} = message, nil)
+      when module in [Activity, Object] do
+    if restrict_unauthenticated_access?(message),
       do: false,
-      else: is_public?(activity)
+      else: is_public?(message) and not is_local_public?(message)
   end
 
-  def visible_for_user?(%Activity{} = activity, user) do
+  def visible_for_user?(%{__struct__: module} = message, user)
+      when module in [Activity, Object] do
     x = [user.ap_id | User.following(user)]
-    y = [activity.actor] ++ activity.data["to"] ++ (activity.data["cc"] || [])
-    is_public?(activity) || Enum.any?(x, &(&1 in y))
+    y = [message.data["actor"]] ++ message.data["to"] ++ (message.data["cc"] || [])
+    is_public?(message) || Enum.any?(x, &(&1 in y))
   end
 
   def entire_thread_visible_for_user?(%Activity{} = activity, %User{} = user) do
