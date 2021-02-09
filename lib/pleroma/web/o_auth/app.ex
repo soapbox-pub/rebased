@@ -146,4 +146,14 @@ defmodule Pleroma.Web.OAuth.App do
         Map.put(acc, key, error)
     end)
   end
+
+  @spec get_app_by_id(pos_integer()) :: {:ok, map()}
+  def get_app_by_id(app_id) do
+    query =
+      __MODULE__
+      |> where([a], a.id == ^app_id)
+      |> select([a], %{name: a.client_name, website: a.website})
+
+    Repo.one!(query)
+  end
 end
