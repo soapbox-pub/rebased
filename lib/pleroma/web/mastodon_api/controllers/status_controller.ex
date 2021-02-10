@@ -132,13 +132,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   # Creates a scheduled status when `scheduled_at` param is present and it's far enough
   def create(
         %{
-          assigns: %{user: user},
+          assigns: %{user: user, token: %{app_id: app_id}},
           body_params: %{status: _, scheduled_at: scheduled_at} = params
         } = conn,
         _
       )
       when not is_nil(scheduled_at) do
-    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+    params =
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+      |> add_application(app_id)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -161,8 +163,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   # Creates a regular status
-  def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
-    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+  def create(
+        %{assigns: %{user: user, token: %{app_id: app_id}}, body_params: %{status: _} = params} =
+          conn,
+        _
+      ) do
+    params =
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+      |> add_application(app_id)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -413,5 +421,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       for: user,
       as: :activity
     )
+  end
+
+  defp add_application(params, app_id) do
+    params |> Map.put(:application, Pleroma.Web.OAuth.App.get_app_by_id(app_id))
   end
 end

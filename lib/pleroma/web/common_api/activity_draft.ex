@@ -190,6 +190,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       Utils.make_note_data(draft)
       |> Map.put("emoji", emoji)
       |> Map.put("source", draft.status)
+      |> Map.put("application", draft.params[:application])
 
     %__MODULE__{draft | object: object}
   end
