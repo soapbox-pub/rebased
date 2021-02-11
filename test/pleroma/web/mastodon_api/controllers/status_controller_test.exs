@@ -358,7 +358,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert activity.data["cc"] == []
     end
 
-    test "preserves client application metadata", %{conn: conn} do
+    test "preserves client application metadata" do
+      %{user: _user, token: token, conn: conn} = oauth_access(["write:statuses"])
+
+      %Pleroma.Web.OAuth.Token{
+        app: %Pleroma.Web.OAuth.App{
+          client_name: _app_name,
+          website: _app_website
+        }
+      } = token
+
       result =
         conn
         |> put_req_header("content-type", "application/json")
@@ -369,8 +378,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{
                "content" => "cofe is my copilot",
                "application" => %{
-                 "name" => "Some client 0",
-                 "website" => "https://example.com"
+                 "name" => app_name,
+                 "website" => app_website
                }
              } = json_response_and_validate_schema(result, 200)
     end
