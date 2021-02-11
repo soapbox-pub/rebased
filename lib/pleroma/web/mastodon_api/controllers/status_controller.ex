@@ -420,7 +420,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   defp put_application(params, %{assigns: %{token: %{app_id: app_id}}} = _conn) do
-    params |> Map.put(:application, Pleroma.Web.OAuth.App.get_app_by_id(app_id))
+    Map.put(params, :application, Pleroma.Web.OAuth.App.get_app_by_id(app_id))
   end
 
   defp put_application(params, _), do: Map.put(params, :application, %{name: "Web", website: nil})
