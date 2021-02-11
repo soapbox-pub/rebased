@@ -30,7 +30,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
           visibility: %Schema{allOf: [VisibilityScope], nullable: true},
           scheduled_at: %Schema{type: :string, format: :"date-time", nullable: true},
           poll: StatusOperation.poll_params(),
-          in_reply_to_id: %Schema{type: :string, nullable: true}
+          in_reply_to_id: %Schema{type: :string, nullable: true},
+          expires_in: %Schema{type: :integer, nullable: true}
         }
       }
     },
@@ -46,7 +47,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
         scheduled_at: nil,
         poll: nil,
         idempotency: nil,
-        in_reply_to_id: nil
+        in_reply_to_id: nil,
+        expires_in: nil
       },
       media_attachments: [Attachment.schema().example]
     }
