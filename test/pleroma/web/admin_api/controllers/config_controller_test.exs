@@ -31,7 +31,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
       assert json_response_and_validate_schema(conn, 400) ==
                %{
-                 "error" => "To use this endpoint you need to enable configuration from database."
+                 "error" => "You must enable configurable_from_database in your config file."
                }
     end
 
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       |> post("/api/pleroma/admin/config", %{"configs" => []})
 
     assert json_response_and_validate_schema(conn, 400) ==
-             %{"error" => "To use this endpoint you need to enable configuration from database."}
+             %{"error" => "You must enable configurable_from_database in your config file."}
   end
 
   describe "POST /api/pleroma/admin/config" do

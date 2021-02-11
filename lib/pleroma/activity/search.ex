@@ -64,7 +64,7 @@ defmodule Pleroma.Activity.Search do
     from([a, o] in q,
       where:
         fragment(
-          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+          "to_tsvector(?->>'content') @@ plainto_tsquery(?)",
           o.data,
           ^search_query
         )
@@ -75,7 +75,7 @@ defmodule Pleroma.Activity.Search do
     from([a, o] in q,
       where:
         fragment(
-          "to_tsvector('english', ?->>'content') @@ websearch_to_tsquery('english', ?)",
+          "to_tsvector(?->>'content') @@ websearch_to_tsquery(?)",
           o.data,
           ^search_query
         )
@@ -86,7 +86,7 @@ defmodule Pleroma.Activity.Search do
     from([a, o] in q,
       where:
         fragment(
-          "? @@ plainto_tsquery('english', ?)",
+          "? @@ plainto_tsquery(?)",
           o.fts_content,
           ^search_query
         ),
@@ -98,7 +98,7 @@ defmodule Pleroma.Activity.Search do
     from([a, o] in q,
       where:
         fragment(
-          "? @@ websearch_to_tsquery('english', ?)",
+          "? @@ websearch_to_tsquery(?)",
           o.fts_content,
           ^search_query
         ),

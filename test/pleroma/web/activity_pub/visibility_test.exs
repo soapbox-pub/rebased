@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
   use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
@@ -107,7 +108,7 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     assert Visibility.is_list?(list)
   end
 
-  test "visible_for_user?", %{
+  test "visible_for_user? Activity", %{
     public: public,
     private: private,
     direct: direct,
@@ -149,8 +150,74 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     refute Visibility.visible_for_user?(private, unrelated)
     refute Visibility.visible_for_user?(direct, unrelated)
 
+    # Public and unlisted visible for unauthenticated
+
+    assert Visibility.visible_for_user?(public, nil)
+    assert Visibility.visible_for_user?(unlisted, nil)
+    refute Visibility.visible_for_user?(private, nil)
+    refute Visibility.visible_for_user?(direct, nil)
+
     # Visible for a list member
     assert Visibility.visible_for_user?(list, unrelated)
+  end
+
+  test "visible_for_user? Object", %{
+    public: public,
+    private: private,
+    direct: direct,
+    unlisted: unlisted,
+    user: user,
+    mentioned: mentioned,
+    following: following,
+    unrelated: unrelated,
+    list: list
+  } do
+    public = Object.normalize(public)
+    private = Object.normalize(private)
+    unlisted = Object.normalize(unlisted)
+    direct = Object.normalize(direct)
+    list = Object.normalize(list)
+
+    # All visible to author
+
+    assert Visibility.visible_for_user?(public, user)
+    assert Visibility.visible_for_user?(private, user)
+    assert Visibility.visible_for_user?(unlisted, user)
+    assert Visibility.visible_for_user?(direct, user)
+    assert Visibility.visible_for_user?(list, user)
+
+    # All visible to a mentioned user
+
+    assert Visibility.visible_for_user?(public, mentioned)
+    assert Visibility.visible_for_user?(private, mentioned)
+    assert Visibility.visible_for_user?(unlisted, mentioned)
+    assert Visibility.visible_for_user?(direct, mentioned)
+    assert Visibility.visible_for_user?(list, mentioned)
+
+    # DM not visible for just follower
+
+    assert Visibility.visible_for_user?(public, following)
+    assert Visibility.visible_for_user?(private, following)
+    assert Visibility.visible_for_user?(unlisted, following)
+    refute Visibility.visible_for_user?(direct, following)
+    refute Visibility.visible_for_user?(list, following)
+
+    # Public and unlisted visible for unrelated user
+
+    assert Visibility.visible_for_user?(public, unrelated)
+    assert Visibility.visible_for_user?(unlisted, unrelated)
+    refute Visibility.visible_for_user?(private, unrelated)
+    refute Visibility.visible_for_user?(direct, unrelated)
+
+    # Public and unlisted visible for unauthenticated
+
+    assert Visibility.visible_for_user?(public, nil)
+    assert Visibility.visible_for_user?(unlisted, nil)
+    refute Visibility.visible_for_user?(private, nil)
+    refute Visibility.visible_for_user?(direct, nil)
+
+    # Visible for a list member
+    # assert Visibility.visible_for_user?(list, unrelated)
   end
 
   test "doesn't die when the user doesn't exist",

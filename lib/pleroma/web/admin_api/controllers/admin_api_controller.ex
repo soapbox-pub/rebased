@@ -85,17 +85,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
-    activities =
+    result =
       ActivityPub.fetch_statuses(nil, %{
         instance: instance,
         limit: page_size,
         offset: (page - 1) * page_size,
-        exclude_reblogs: not with_reblogs
+        exclude_reblogs: not with_reblogs,
+        total: true
       })
 
     conn
     |> put_view(AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
   end
 
   def list_user_statuses(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = params) do
@@ -105,18 +106,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       {page, page_size} = page_params(params)
 
-      activities =
+      result =
         ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
           offset: (page - 1) * page_size,
           godmode: godmode,
           exclude_reblogs: not with_reblogs,
-          pagination_type: :offset
+          pagination_type: :offset,
+          total: true
         })
 
       conn
       |> put_view(AdminAPI.StatusView)
-      |> render("index.json", %{activities: activities, as: :activity})
+      |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
     else
       _ -> {:error, :not_found}
     end
@@ -404,7 +406,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     if Config.get(:configurable_from_database) do
       :ok
     else
-      {:error, "To use this endpoint you need to enable configuration from database."}
+      {:error, "You must enable configurable_from_database in your config file."}
     end
   end
 

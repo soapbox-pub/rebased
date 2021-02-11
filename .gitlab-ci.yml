@@ -34,6 +34,14 @@ build:
   - mix deps.get
   - mix compile --force
 
+spec-build:
+  stage: test
+  artifacts:
+    paths:
+    - spec.json
+  script:
+  - mix pleroma.openapi_spec spec.json
+
 benchmark:
   stage: benchmark
   when: manual
@@ -155,6 +163,20 @@ review_app:
     - (ssh -t dokku@pleroma.online -- certs:add "$CI_ENVIRONMENT_SLUG" /home/dokku/server.crt /home/dokku/server.key) || true
     - git push -f dokku@pleroma.online:$CI_ENVIRONMENT_SLUG $CI_COMMIT_SHA:refs/heads/master
 
+spec-deploy:
+  stage: deploy
+  artifacts:
+    paths:
+    - spec.json
+  only:
+    - develop@pleroma/pleroma
+  image: alpine:latest
+  before_script:
+    - apk add curl
+  script:
+    - curl -X POST -F"token=$API_DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" -F"variables[JOB_REF]=$CI_JOB_ID" https://git.pleroma.social/api/v4/projects/1130/trigger/pipeline
+  
+ 
 stop_review_app:
   image: alpine:3.9
   stage: deploy

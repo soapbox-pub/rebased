@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji packs"],
       summary: "Add new file to the pack",
       operationId: "PleromaAPI.EmojiPackController.add_file",
       security: [%{"oAuth" => ["write"]}],
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji packs"],
       summary: "Add new file to the pack",
       operationId: "PleromaAPI.EmojiPackController.update_file",
       security: [%{"oAuth" => ["write"]}],
@@ -106,7 +106,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji packs"],
       summary: "Delete emoji file from pack",
       operationId: "PleromaAPI.EmojiPackController.delete_file",
       security: [%{"oAuth" => ["write"]}],

@@ -17,7 +17,7 @@ defmodule Pleroma.Repo.Migrations.AddFtsIndexToObjectsTwo do
 
     execute("CREATE FUNCTION objects_fts_update() RETURNS trigger AS $$
     begin
-    new.fts_content := to_tsvector('english', new.data->>'content');
+    new.fts_content := to_tsvector(new.data->>'content');
     return new;
     end
     $$ LANGUAGE plpgsql")

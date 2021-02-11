@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
 
   def open_api_operation(action) do
@@ -15,57 +16,64 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   def index_operation do
     %Operation{
-      tags: ["apps"],
-      summary: "View all filters",
+      tags: ["Filters"],
+      summary: "All filters",
       operationId: "FilterController.index",
       security: [%{"oAuth" => ["read:filters"]}],
       responses: %{
-        200 => Operation.response("Filters", "application/json", array_of_filters())
+        200 => Operation.response("Filters", "application/json", array_of_filters()),
+        403 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
 
   def create_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Filters"],
       summary: "Create a filter",
       operationId: "FilterController.create",
       requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       security: [%{"oAuth" => ["write:filters"]}],
-      responses: %{200 => Operation.response("Filter", "application/json", filter())}
+      responses: %{
+        200 => Operation.response("Filter", "application/json", filter()),
+        403 => Operation.response("Error", "application/json", ApiError)
+      }
     }
   end
 
   def show_operation do
     %Operation{
-      tags: ["apps"],
-      summary: "View all filters",
+      tags: ["Filters"],
+      summary: "Filter",
       parameters: [id_param()],
       operationId: "FilterController.show",
       security: [%{"oAuth" => ["read:filters"]}],
       responses: %{
-        200 => Operation.response("Filter", "application/json", filter())
+        200 => Operation.response("Filter", "application/json", filter()),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
 
   def update_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Filters"],
       summary: "Update a filter",
       parameters: [id_param()],
       operationId: "FilterController.update",
       requestBody: Helpers.request_body("Parameters", update_request(), required: true),
       security: [%{"oAuth" => ["write:filters"]}],
       responses: %{
-        200 => Operation.response("Filter", "application/json", filter())
+        200 => Operation.response("Filter", "application/json", filter()),
+        403 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
 
   def delete_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Filters"],
       summary: "Remove a filter",
       parameters: [id_param()],
       operationId: "FilterController.delete",
@@ -75,7 +83,8 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
           Operation.response("Filter", "application/json", %Schema{
             type: :object,
             description: "Empty object"
-          })
+          }),
+        403 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -210,15 +219,13 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
           nullable: true,
           description: "Consider word boundaries?",
           default: true
+        },
+        expires_in: %Schema{
+          nullable: true,
+          type: :integer,
+          description:
+            "Number of seconds from now the filter should expire. Otherwise, null for a filter that doesn't expire."
         }
-        # TODO: probably should implement filter expiration
-        # expires_in: %Schema{
-        #   type: :string,
-        #   format: :"date-time",
-        #   description:
-        #     "ISO 8601 Datetime for when the filter expires. Otherwise,
-        #  null for a filter that doesn't expire."
-        # }
       },
       required: [:phrase, :context],
       example: %{

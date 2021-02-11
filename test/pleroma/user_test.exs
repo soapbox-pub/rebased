@@ -551,6 +551,27 @@ defmodule Pleroma.UserTest do
       )
     end
 
+    test "it sends a registration confirmed email if no others will be sent" do
+      clear_config([:welcome, :email, :enabled], false)
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([:instance, :account_approval_required], false)
+
+      {:ok, user} =
+        User.register_changeset(%User{}, @full_user_data)
+        |> User.register()
+
+      ObanHelpers.perform_all()
+
+      instance_name = Pleroma.Config.get([:instance, :name])
+      sender = Pleroma.Config.get([:instance, :notify_email])
+
+      assert_email_sent(
+        from: {instance_name, sender},
+        to: {user.name, user.email},
+        subject: "Account registered on #{instance_name}"
+      )
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       clear_config([:instance, :account_activation_required], true)
 

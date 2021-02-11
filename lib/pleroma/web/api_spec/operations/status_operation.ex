@@ -22,8 +22,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "Get multiple statuses by IDs",
+      tags: ["Retrieve status information"],
+      summary: "Multiple statuses",
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         Operation.parameter(
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Publish new status",
       security: [%{"oAuth" => ["write:statuses"]}],
       description: "Post a new status",
@@ -68,8 +68,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "View specific status",
+      tags: ["Retrieve status information"],
+      summary: "Status",
       description: "View information about a status",
       operationId: "StatusController.show",
       security: [%{"oAuth" => ["read:statuses"]}],
@@ -91,8 +91,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "Delete status",
+      tags: ["Status actions"],
+      summary: "Delete",
       security: [%{"oAuth" => ["write:statuses"]}],
       description: "Delete one of your own statuses",
       operationId: "StatusController.delete",
@@ -107,8 +107,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def reblog_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "Boost",
+      tags: ["Status actions"],
+      summary: "Reblog",
       security: [%{"oAuth" => ["write:statuses"]}],
       description: "Share a status",
       operationId: "StatusController.reblog",
@@ -129,8 +129,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def unreblog_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "Undo boost",
+      tags: ["Status actions"],
+      summary: "Undo reblog",
       security: [%{"oAuth" => ["write:statuses"]}],
       description: "Undo a reshare of a status",
       operationId: "StatusController.unreblog",
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def favourite_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Favourite",
       security: [%{"oAuth" => ["write:favourites"]}],
       description: "Add a status to your favourites list",
@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def unfavourite_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Undo favourite",
       security: [%{"oAuth" => ["write:favourites"]}],
       description: "Remove a status from your favourites list",
@@ -174,7 +174,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def pin_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Pin to profile",
       security: [%{"oAuth" => ["write:accounts"]}],
       description: "Feature one of your own public statuses at the top of your profile",
@@ -189,8 +189,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def unpin_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "Unpin to profile",
+      tags: ["Status actions"],
+      summary: "Unpin from profile",
       security: [%{"oAuth" => ["write:accounts"]}],
       description: "Unfeature a status from the top of your profile",
       operationId: "StatusController.unpin",
@@ -204,7 +204,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def bookmark_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Bookmark",
       security: [%{"oAuth" => ["write:bookmarks"]}],
       description: "Privately bookmark a status",
@@ -218,7 +218,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def unbookmark_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Undo bookmark",
       security: [%{"oAuth" => ["write:bookmarks"]}],
       description: "Remove a status from your private bookmarks",
@@ -232,7 +232,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def mute_conversation_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Mute conversation",
       security: [%{"oAuth" => ["write:mutes"]}],
       description: "Do not receive notifications for the thread that this status is part of.",
@@ -267,7 +267,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def unmute_conversation_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Status actions"],
       summary: "Unmute conversation",
       security: [%{"oAuth" => ["write:mutes"]}],
       description:
@@ -283,7 +283,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def card_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Retrieve status information"],
       deprecated: true,
       summary: "Preview card",
       description: "Deprecated in favor of card property inlined on Status entity",
@@ -311,7 +311,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def favourited_by_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Retrieve status information"],
       summary: "Favourited by",
       description: "View who favourited a given status",
       operationId: "StatusController.favourited_by",
@@ -331,9 +331,9 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def reblogged_by_operation do
     %Operation{
-      tags: ["Statuses"],
-      summary: "Boosted by",
-      description: "View who boosted a given status",
+      tags: ["Retrieve status information"],
+      summary: "Reblogged by",
+      description: "View who reblogged a given status",
       operationId: "StatusController.reblogged_by",
       security: [%{"oAuth" => ["read:accounts"]}],
       parameters: [id_param()],
@@ -351,7 +351,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def context_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Retrieve status information"],
       summary: "Parent and child statuses",
       description: "View statuses above and below this status in the thread",
       operationId: "StatusController.context",
@@ -365,7 +365,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def favourites_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Timelines"],
       summary: "Favourited statuses",
       description:
         "Statuses the user has favourited. Please note that you have to use the link headers to paginate this. You can not build the query parameters yourself.",
@@ -380,7 +380,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def bookmarks_operation do
     %Operation{
-      tags: ["Statuses"],
+      tags: ["Timelines"],
       summary: "Bookmarked statuses",
       description: "Statuses the user has bookmarked",
       operationId: "StatusController.bookmarks",
@@ -413,34 +413,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           items: %Schema{type: :string},
           description: "Array of Attachment ids to be attached as media."
         },
-        poll: %Schema{
-          nullable: true,
-          type: :object,
-          required: [:options],
-          properties: %{
-            options: %Schema{
-              type: :array,
-              items: %Schema{type: :string},
-              description: "Array of possible answers. Must be provided with `poll[expires_in]`."
-            },
-            expires_in: %Schema{
-              type: :integer,
-              nullable: true,
-              description:
-                "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
-            },
-            multiple: %Schema{
-              allOf: [BooleanLike],
-              nullable: true,
-              description: "Allow multiple choices?"
-            },
-            hide_totals: %Schema{
-              allOf: [BooleanLike],
-              nullable: true,
-              description: "Hide vote counts until the poll ends?"
-            }
-          }
-        },
+        poll: poll_params(),
         in_reply_to_id: %Schema{
           nullable: true,
           allOf: [FlakeID],
@@ -517,6 +490,37 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         "poll" => %{
           "options" => ["Cofe", "Adventure"],
           "expires_in" => 420
+        }
+      }
+    }
+  end
+
+  def poll_params do
+    %Schema{
+      nullable: true,
+      type: :object,
+      required: [:options, :expires_in],
+      properties: %{
+        options: %Schema{
+          type: :array,
+          items: %Schema{type: :string},
+          description: "Array of possible answers. Must be provided with `poll[expires_in]`."
+        },
+        expires_in: %Schema{
+          type: :integer,
+          nullable: true,
+          description:
+            "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
+        },
+        multiple: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Allow multiple choices?"
+        },
+        hide_totals: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Hide vote counts until the poll ends?"
         }
       }
     }

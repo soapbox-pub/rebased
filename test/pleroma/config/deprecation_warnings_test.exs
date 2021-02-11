@@ -87,7 +87,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
   end
 
   test "check_activity_expiration_config/0" do
-    clear_config(Pleroma.ActivityExpiration, enabled: true)
+    clear_config([Pleroma.ActivityExpiration], enabled: true)
 
     assert capture_log(fn ->
              DeprecationWarnings.check_activity_expiration_config()
@@ -95,7 +95,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
   end
 
   test "check_uploders_s3_public_endpoint/0" do
-    clear_config(Pleroma.Uploaders.S3, public_endpoint: "https://fake.amazonaws.com/bucket/")
+    clear_config([Pleroma.Uploaders.S3], public_endpoint: "https://fake.amazonaws.com/bucket/")
 
     assert capture_log(fn ->
              DeprecationWarnings.check_uploders_s3_public_endpoint()

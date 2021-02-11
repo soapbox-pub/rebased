@@ -14,8 +14,8 @@ defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
 
   def index_operation do
     %Operation{
-      tags: ["custom_emojis"],
-      summary: "List custom custom emojis",
+      tags: ["Custom emojis"],
+      summary: "Retrieve a list of custom emojis",
       description: "Returns custom emojis that are available on the server.",
       operationId: "CustomEmojiController.index",
       responses: %{

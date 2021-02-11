@@ -405,13 +405,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     setup do
       user = insert(:user)
 
-      date1 = (DateTime.to_unix(DateTime.utc_now()) + 2000) |> DateTime.from_unix!()
-      date2 = (DateTime.to_unix(DateTime.utc_now()) + 1000) |> DateTime.from_unix!()
-      date3 = (DateTime.to_unix(DateTime.utc_now()) + 3000) |> DateTime.from_unix!()
-
-      insert(:note_activity, user: user, published: date1)
-      insert(:note_activity, user: user, published: date2)
-      insert(:note_activity, user: user, published: date3)
+      insert(:note_activity, user: user)
+      insert(:note_activity, user: user)
+      insert(:note_activity, user: user)
 
       %{user: user}
     end
@@ -419,23 +415,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "renders user's statuses", %{conn: conn, user: user} do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
 
-      assert json_response(conn, 200) |> length() == 3
+      assert %{"total" => 3, "activities" => activities} = json_response(conn, 200)
+      assert length(activities) == 3
     end
 
     test "renders user's statuses with pagination", %{conn: conn, user: user} do
-      conn1 = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=1")
+      %{"total" => 3, "activities" => [activity1]} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=1")
+        |> json_response(200)
 
-      response1 = json_response(conn1, 200)
+      %{"total" => 3, "activities" => [activity2]} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=2")
+        |> json_response(200)
 
-      assert response1 |> length() == 1
-
-      conn2 = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=2")
-
-      response2 = json_response(conn2, 200)
-
-      assert response2 |> length() == 1
-
-      refute response1 == response2
+      refute activity1 == activity2
     end
 
     test "doesn't return private statuses by default", %{conn: conn, user: user} do
@@ -443,9 +438,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
+      %{"total" => 4, "activities" => activities} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses")
+        |> json_response(200)
 
-      assert json_response(conn, 200) |> length() == 4
+      assert length(activities) == 4
     end
 
     test "returns private statuses with godmode on", %{conn: conn, user: user} do
@@ -453,9 +451,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
+      %{"total" => 5, "activities" => activities} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
+        |> json_response(200)
 
-      assert json_response(conn, 200) |> length() == 5
+      assert length(activities) == 5
     end
 
     test "excludes reblogs by default", %{conn: conn, user: user} do
@@ -463,13 +464,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       {:ok, activity} = CommonAPI.post(user, %{status: "."})
       {:ok, %Activity{}} = CommonAPI.repeat(activity.id, other_user)
 
-      conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
-      assert json_response(conn_res, 200) |> length() == 0
+      assert %{"total" => 0, "activities" => []} ==
+               conn
+               |> get("/api/pleroma/admin/users/#{other_user.nickname}/statuses")
+               |> json_response(200)
 
-      conn_res =
-        get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
-
-      assert json_response(conn_res, 200) |> length() == 1
+      assert %{"total" => 1, "activities" => [_]} =
+               conn
+               |> get(
+                 "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true"
+               )
+               |> json_response(200)
     end
   end
 
@@ -859,33 +864,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       insert_pair(:note_activity, user: user)
       activity = insert(:note_activity, user: user2)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
+      %{"total" => 2, "activities" => activities} =
+        conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
 
-      response = json_response(ret_conn, 200)
+      assert length(activities) == 2
 
-      assert length(response) == 2
+      %{"total" => 1, "activities" => [_]} =
+        conn |> get("/api/pleroma/admin/instances/test.com/statuses") |> json_response(200)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/test.com/statuses")
-
-      response = json_response(ret_conn, 200)
-
-      assert length(response) == 1
-
-      ret_conn = get(conn, "/api/pleroma/admin/instances/nonexistent.com/statuses")
-
-      response = json_response(ret_conn, 200)
-
-      assert Enum.empty?(response)
+      %{"total" => 0, "activities" => []} =
+        conn |> get("/api/pleroma/admin/instances/nonexistent.com/statuses") |> json_response(200)
 
       CommonAPI.repeat(activity.id, user)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
-      response = json_response(ret_conn, 200)
-      assert length(response) == 2
+      %{"total" => 2, "activities" => activities} =
+        conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
-      response = json_response(ret_conn, 200)
-      assert length(response) == 3
+      assert length(activities) == 2
+
+      %{"total" => 3, "activities" => activities} =
+        conn
+        |> get("/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
+        |> json_response(200)
+
+      assert length(activities) == 3
     end
   end
 
