@@ -62,27 +62,30 @@ defmodule Pleroma.Object do
     |> cast(params, [:data])
     |> validate_required([:data])
     |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
+    # Expecting `maybe_handle_hashtags_change/1` to run last:
     |> maybe_handle_hashtags_change(struct)
   end
 
-  # Note: not checking activity type; HashtagsCleanupWorker should clean up unused records later
+  # Note: not checking activity type (assuming non-legacy objects are associated with Create act.)
   defp maybe_handle_hashtags_change(changeset, struct) do
-    with data_hashtags_change = get_change(changeset, :data),
-         true <- hashtags_changed?(struct, data_hashtags_change),
+    with %Ecto.Changeset{valid?: true} <- changeset,
+         data_hashtags_change = get_change(changeset, :data),
+         {_, true} <- {:changed, hashtags_changed?(struct, data_hashtags_change)},
          {:ok, hashtag_records} <-
            data_hashtags_change
            |> object_data_hashtags()
            |> Hashtag.get_or_create_by_names() do
       put_assoc(changeset, :hashtags, hashtag_records)
     else
-      false ->
+      %{valid?: false} ->
         changeset
 
-      {:error, hashtag_changeset} ->
-        failed_hashtag = get_field(hashtag_changeset, :name)
+      {:changed, false} ->
+        changeset
 
+      {:error, _} ->
         validate_change(changeset, :data, fn _, _ ->
-          [data: "error referencing hashtag: #{failed_hashtag}"]
+          [data: "error referencing hashtags"]
         end)
     end
   end
@@ -221,9 +224,13 @@ defmodule Pleroma.Object do
   def swap_object_with_tombstone(object) do
     tombstone = make_tombstone(object)
 
-    object
-    |> Object.change(%{data: tombstone})
-    |> Repo.update()
+    with {:ok, object} <-
+           object
+           |> Object.change(%{data: tombstone})
+           |> Repo.update() do
+      Hashtag.unlink(object)
+      {:ok, object}
+    end
   end
 
   def delete(%Object{data: %{"id" => id}} = object) do
