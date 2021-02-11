@@ -28,6 +28,11 @@ defmodule Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug do
     end
   end
 
+  # App-bound token case (obtained with client_id and client_secret)
+  def call(%{assigns: %{token: %Token{user_id: nil}}} = conn, _) do
+    assign(conn, :user, nil)
+  end
+
   def call(conn, _) do
     conn
     |> assign(:user, nil)

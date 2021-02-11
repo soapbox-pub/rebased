@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.EnsureAuthenticatedPlug do
+  @moduledoc """
+  Ensures _user_ authentication (app-bound user-unbound tokens are not accepted).
+  """
+
   import Plug.Conn
   import Pleroma.Web.TranslationHelpers
 
