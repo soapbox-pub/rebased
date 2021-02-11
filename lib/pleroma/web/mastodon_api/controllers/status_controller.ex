@@ -140,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       when not is_nil(scheduled_at) do
     params =
       Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
-      |> add_application(conn)
+      |> put_application(conn)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -169,7 +169,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       ) do
     params =
       Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
-      |> add_application(conn)
+      |> put_application(conn)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -422,9 +422,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     )
   end
 
-  defp add_application(params, %{assigns: %{token: %{app_id: app_id}}} = _conn) do
+  defp put_application(params, %{assigns: %{token: %{app_id: app_id}}} = _conn) do
     params |> Map.put(:application, Pleroma.Web.OAuth.App.get_app_by_id(app_id))
   end
 
-  defp add_application(params, _), do: Map.put(params, :application, %{name: "Web", website: nil})
+  defp put_application(params, _), do: Map.put(params, :application, %{name: "Web", website: nil})
 end
