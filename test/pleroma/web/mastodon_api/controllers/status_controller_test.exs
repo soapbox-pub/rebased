@@ -357,6 +357,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert activity.data["to"] == [user2.ap_id]
       assert activity.data["cc"] == []
     end
+
+    test "preserves client application metadata", %{conn: conn} do
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe is my copilot"
+        })
+
+      assert %{
+               "content" => "cofe is my copilot",
+               "application" => %{
+                 "name" => "Some client 0",
+                 "website" => "https://example.com"
+               }
+             } = json_response_and_validate_schema(result, 200)
+    end
   end
 
   describe "posting scheduled statuses" do
