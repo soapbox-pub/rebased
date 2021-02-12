@@ -208,6 +208,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           application: %{name: "TestClient", website: "https://pleroma.social"}
         })
 
+      # Ensure injected application data made it into the activity
+      # as we don't have a Token to derive it from, otherwise it will
+      # be nil and the test will pass
+      assert %{"application" => %{name: "TestClient", website: "https://pleroma.social"}} =
+               activity.object.data
+
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert length(modified["object"]["tag"]) == 2
