@@ -47,16 +47,20 @@ defmodule Pleroma.Hashtag do
         |> Map.merge(%{inserted_at: timestamp, updated_at: timestamp})
       end)
 
-    with {:ok, %{query_op: hashtags}} <-
-           Multi.new()
-           |> Multi.insert_all(:insert_all_op, Hashtag, structs, on_conflict: :nothing)
-           |> Multi.run(:query_op, fn _repo, _changes ->
-             {:ok, Repo.all(from(ht in Hashtag, where: ht.name in ^names))}
-           end)
-           |> Repo.transaction() do
-      {:ok, hashtags}
-    else
-      {:error, _name, value, _changes_so_far} -> {:error, value}
+    try do
+      with {:ok, %{query_op: hashtags}} <-
+             Multi.new()
+             |> Multi.insert_all(:insert_all_op, Hashtag, structs, on_conflict: :nothing)
+             |> Multi.run(:query_op, fn _repo, _changes ->
+               {:ok, Repo.all(from(ht in Hashtag, where: ht.name in ^names))}
+             end)
+             |> Repo.transaction() do
+        {:ok, hashtags}
+      else
+        {:error, _name, value, _changes_so_far} -> {:error, value}
+      end
+    rescue
+      e -> {:error, e}
     end
   end
 
@@ -74,8 +78,9 @@ defmodule Pleroma.Hashtag do
              where: hto.object_id == ^object_id,
              select: hto.hashtag_id
            )
-           |> Repo.delete_all() do
-      delete_unreferenced(hashtag_ids)
+           |> Repo.delete_all(),
+         {:ok, unreferenced_count} <- delete_unreferenced(hashtag_ids) do
+      {:ok, length(hashtag_ids), unreferenced_count}
     end
   end
 

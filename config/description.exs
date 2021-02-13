@@ -475,6 +475,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :populate_hashtags_table,
+    type: :group,
+    description: "`populate_hashtags_table` background migration settings",
+    children: [
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",

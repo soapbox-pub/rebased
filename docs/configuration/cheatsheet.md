@@ -65,6 +65,12 @@ To add configuration to your config file, you can copy it from the base config. 
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
 
+## :database
+* `improved_hashtag_timeline`: If `true`, hashtags will be fetched from `hashtags` table for hashtags timeline. When `false`, object-embedded hashtags will be used (slower). Is auto-set to `true` (unless overridden) when `HashtagsTableMigrator` completes.
+
+## Background migrations
+* `populate_hashtags_table/sleep_interval_ms`: Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances).
+
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
   * `enabled`: Enables the send a direct message to a newly registered user. Defaults to `false`.

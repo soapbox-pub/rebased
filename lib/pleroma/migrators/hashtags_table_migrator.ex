@@ -214,15 +214,20 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
         maps = Enum.map(hashtag_records, &%{hashtag_id: &1.id, object_id: object.id})
         expected_rows = length(hashtag_records)
 
-        with {^expected_rows, _} <- Repo.insert_all("hashtags_objects", maps) do
-          object.id
-        else
-          e ->
-            error =
-              "ERROR when inserting #{expected_rows} hashtags_objects " <>
-                "for object #{object.id}: #{inspect(e)}"
+        base_error =
+          "ERROR when inserting #{expected_rows} hashtags_objects for obj. #{object.id}"
 
-            Logger.error(error)
+        try do
+          with {^expected_rows, _} <- Repo.insert_all("hashtags_objects", maps) do
+            object.id
+          else
+            e ->
+              Logger.error("#{base_error}: #{inspect(e)}")
+              Repo.rollback(object.id)
+          end
+        rescue
+          e ->
+            Logger.error("#{base_error}: #{inspect(e)}")
             Repo.rollback(object.id)
         end
       else

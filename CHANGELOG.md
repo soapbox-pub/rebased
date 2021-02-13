@@ -33,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Reports now ordered by newest
 
 </details>
-- Extracted object hashtags into separate table in order to improve hashtag timeline performance (via background migration in `Pleroma.Migrators.HashtagsTableMigrator`). 
+- Improved hashtag timeline performance (requires a background migration). 
 
 ### Added
 
