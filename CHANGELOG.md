@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Provide redirect of external posts from `/notice/:id` to their original URL
 - Admins no longer receive notifications for reports if they are the actor making the report.
 - Improved Mailer configuration setting descriptions for AdminFE.
+- Updated default avatar to look nicer.
 
 <details>
   <summary>API Changes</summary>
