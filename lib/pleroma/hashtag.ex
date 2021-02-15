@@ -22,7 +22,9 @@ defmodule Pleroma.Hashtag do
   end
 
   def get_by_name(name) do
-    Repo.get_by(Hashtag, name: name)
+    from(h in Hashtag)
+    |> where([h], fragment("name = ?::citext", ^String.downcase(name)))
+    |> Repo.one()
   end
 
   def get_or_create_by_name(name) when is_bitstring(name) do
@@ -37,6 +39,7 @@ defmodule Pleroma.Hashtag do
   end
 
   def get_or_create_by_names(names) when is_list(names) do
+    names = Enum.map(names, &String.downcase/1)
     timestamp = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
 
     structs =
@@ -52,7 +55,8 @@ defmodule Pleroma.Hashtag do
              Multi.new()
              |> Multi.insert_all(:insert_all_op, Hashtag, structs, on_conflict: :nothing)
              |> Multi.run(:query_op, fn _repo, _changes ->
-               {:ok, Repo.all(from(ht in Hashtag, where: ht.name in ^names))}
+               {:ok,
+                Repo.all(from(ht in Hashtag, where: ht.name in fragment("?::citext[]", ^names)))}
              end)
              |> Repo.transaction() do
         {:ok, hashtags}

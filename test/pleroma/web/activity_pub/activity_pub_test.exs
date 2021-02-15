@@ -213,24 +213,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   test "it fetches the appropriate tag-restricted posts" do
     user = insert(:user)
 
-    {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
+    {:ok, status_one} = CommonAPI.post(user, %{status: ". #TEST"})
     {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
-    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
+    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #Reject"})
 
-    {:ok, status_four} = CommonAPI.post(user, %{status: ". #any1 #any2"})
-    {:ok, status_five} = CommonAPI.post(user, %{status: ". #any2 #any1"})
+    {:ok, status_four} = CommonAPI.post(user, %{status: ". #Any1 #any2"})
+    {:ok, status_five} = CommonAPI.post(user, %{status: ". #Any2 #any1"})
 
     for hashtag_timeline_strategy <- [true, false] do
       clear_config([:database, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
       fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 
-      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
+      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["TEST", "essais"]})
 
       fetch_three =
         ActivityPub.fetch_activities([], %{
           type: "Create",
-          tag: ["test", "essais"],
+          tag: ["test", "Essais"],
           tag_reject: ["reject"]
         })
 
@@ -238,21 +238,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         ActivityPub.fetch_activities([], %{
           type: "Create",
           tag: ["test"],
-          tag_all: ["test", "reject"]
+          tag_all: ["test", "REJECT"]
         })
 
       # Testing that deduplication (if needed) is done on DB (not Ecto) level; :limit is important
       fetch_five =
         ActivityPub.fetch_activities([], %{
           type: "Create",
-          tag: ["any1", "any2"],
+          tag: ["ANY1", "any2"],
           limit: 2
         })
 
       fetch_six =
         ActivityPub.fetch_activities([], %{
           type: "Create",
-          tag: ["any1", "any2"],
+          tag: ["any1", "Any2"],
           tag_all: [],
           tag_reject: []
         })

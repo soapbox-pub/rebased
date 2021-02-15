@@ -698,6 +698,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_embedded_tag_all(query, %{tag_all: [_ | _] = tag_all}) do
+    tag_all = Enum.map(tag_all, &String.downcase/1)
+
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?& (?)", object.data, ^tag_all)
@@ -714,10 +716,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise_on_missing_preload()
   end
 
-  defp restrict_embedded_tag_any(query, %{tag: [_ | _] = tag}) do
+  defp restrict_embedded_tag_any(query, %{tag: [_ | _] = tag_any}) do
+    tag_any = Enum.map(tag_any, &String.downcase/1)
+
     from(
       [_activity, object] in query,
-      where: fragment("(?)->'tag' \\?| (?)", object.data, ^tag)
+      where: fragment("(?)->'tag' \\?| (?)", object.data, ^tag_any)
     )
   end
 
@@ -732,6 +736,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_embedded_tag_reject_any(query, %{tag_reject: [_ | _] = tag_reject}) do
+    tag_reject = Enum.map(tag_reject, &String.downcase/1)
+
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'tag' \\?| (?)", object.data, ^tag_reject)
@@ -749,6 +755,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise_on_missing_preload()
   end
 
+  defp restrict_hashtag_all(query, %{tag_all: [single_tag]}) do
+    restrict_hashtag_any(query, %{tag: single_tag})
+  end
+
   defp restrict_hashtag_all(query, %{tag_all: [_ | _] = tags}) do
     from(
       [_activity, object] in query,
@@ -756,7 +766,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         fragment(
           """
           (SELECT array_agg(hashtags.name) FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
               AND hashtags_objects.object_id = ?) @> ?
           """,
           ^tags,
@@ -767,7 +777,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_hashtag_all(query, %{tag_all: tag}) when is_binary(tag) do
-    restrict_hashtag_any(query, %{tag: tag})
+    restrict_hashtag_all(query, %{tag_all: [tag]})
   end
 
   defp restrict_hashtag_all(query, _), do: query
@@ -783,7 +793,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         fragment(
           """
           EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
               AND hashtags_objects.object_id = ? LIMIT 1)
           """,
           ^tags,
@@ -809,7 +819,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         fragment(
           """
           NOT EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
               AND hashtags_objects.object_id = ? LIMIT 1)
           """,
           ^tags_reject,
