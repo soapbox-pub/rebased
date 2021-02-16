@@ -383,18 +383,7 @@ defmodule Pleroma.Web.StreamerTest do
       user: user,
       token: oauth_token
     } do
-      user_url = user.ap_id
       user2 = insert(:user)
-
-      body =
-        File.read!("test/fixtures/users_mock/localhost.json")
-        |> String.replace("{{nickname}}", user.nickname)
-        |> Jason.encode!()
-
-      Tesla.Mock.mock_global(fn
-        %{method: :get, url: ^user_url} ->
-          %Tesla.Env{status: 200, body: body}
-      end)
 
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
       {:ok, _follower, _followed, follow_activity} = CommonAPI.follow(user2, user)
@@ -409,19 +398,8 @@ defmodule Pleroma.Web.StreamerTest do
       token: oauth_token
     } do
       user_id = user.id
-      user_url = user.ap_id
       other_user = insert(:user)
       other_user_id = other_user.id
-
-      body =
-        File.read!("test/fixtures/users_mock/localhost.json")
-        |> String.replace("{{nickname}}", user.nickname)
-        |> Jason.encode!()
-
-      Tesla.Mock.mock_global(fn
-        %{method: :get, url: ^user_url} ->
-          %Tesla.Env{status: 200, body: body}
-      end)
 
       Streamer.get_topic_and_add_socket("user", user, oauth_token)
       {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(user, other_user)
