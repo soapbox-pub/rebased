@@ -11,16 +11,16 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
   alias __MODULE__.State
   alias Pleroma.Config
-  alias Pleroma.DataMigration
   alias Pleroma.Hashtag
   alias Pleroma.Object
   alias Pleroma.Repo
 
-  defdelegate state(), to: State, as: :get
-  defdelegate put_stat(key, value), to: State, as: :put
-  defdelegate increment_stat(key, increment), to: State, as: :increment
+  defdelegate data_migration(), to: State
 
-  defdelegate data_migration(), to: DataMigration, as: :populate_hashtags_table
+  defdelegate state(), to: State
+  defdelegate get_stat(key, value), to: State, as: :get_data_key
+  defdelegate put_stat(key, value), to: State, as: :put_data_key
+  defdelegate increment_stat(key, increment), to: State, as: :increment_data_key
 
   @reg_name {:global, __MODULE__}
 
@@ -45,7 +45,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   def handle_continue(:init_state, _state) do
     {:ok, _} = State.start_link(nil)
 
-    update_status(:init)
+    update_status(:pending)
 
     data_migration = data_migration()
     manual_migrations = Config.get([:instance, :manual_data_migrations], [])
@@ -55,13 +55,13 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
         update_status(:noop)
 
       is_nil(data_migration) ->
-        update_status(:halt, "Data migration does not exist.")
+        update_status(:failed, "Data migration does not exist.")
 
       data_migration.state == :manual or data_migration.name in manual_migrations ->
-        update_status(:noop, "Data migration is in manual execution state.")
+        update_status(:manual, "Data migration is in manual execution state.")
 
       data_migration.state == :complete ->
-        handle_success(data_migration)
+        on_complete(data_migration)
 
       true ->
         send(self(), :migrate_hashtags)
@@ -72,20 +72,15 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
   @impl true
   def handle_info(:migrate_hashtags, state) do
-    State.clear()
+    State.reinit()
 
     update_status(:running)
     put_stat(:started_at, NaiveDateTime.utc_now())
 
-    data_migration = data_migration()
-    persistent_data = Map.take(data_migration.data, ["max_processed_id"])
+    %{id: data_migration_id} = data_migration()
+    max_processed_id = get_stat(:max_processed_id, 0)
 
-    {:ok, data_migration} =
-      DataMigration.update(data_migration, %{state: :running, data: persistent_data})
-
-    Logger.info("Starting transferring object embedded hashtags to `hashtags` table...")
-
-    max_processed_id = data_migration.data["max_processed_id"] || 0
+    Logger.info("Transferring embedded hashtags to `hashtags` (from oid: #{max_processed_id})...")
 
     query()
     |> where([object], object.id > ^max_processed_id)
@@ -104,7 +99,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
           Repo.query(
             "INSERT INTO data_migration_failed_ids(data_migration_id, record_id) " <>
               "VALUES ($1, $2) ON CONFLICT DO NOTHING;",
-            [data_migration.id, failed_id]
+            [data_migration_id, failed_id]
           )
       end
 
@@ -112,7 +107,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
         Repo.query(
           "DELETE FROM data_migration_failed_ids " <>
             "WHERE data_migration_id = $1 AND record_id = ANY($2)",
-          [data_migration.id, object_ids -- failed_ids]
+          [data_migration_id, object_ids -- failed_ids]
         )
 
       max_object_id = Enum.at(object_ids, -1)
@@ -120,14 +115,8 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
       put_stat(:max_processed_id, max_object_id)
       increment_stat(:processed_count, length(object_ids))
       increment_stat(:failed_count, length(failed_ids))
-
-      put_stat(
-        :records_per_second,
-        state()[:processed_count] /
-          Enum.max([NaiveDateTime.diff(NaiveDateTime.utc_now(), state()[:started_at]), 1])
-      )
-
-      persist_stats(data_migration)
+      put_stat(:records_per_second, records_per_second())
+      _ = State.persist_to_db()
 
       # A quick and dirty approach to controlling the load this background migration imposes
       sleep_interval = Config.get([:populate_hashtags_table, :sleep_interval_ms], 0)
@@ -135,20 +124,23 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     end)
     |> Stream.run()
 
-    with 0 <- failures_count(data_migration.id) do
+    with 0 <- failures_count(data_migration_id) do
       _ = delete_non_create_activities_hashtags()
-
-      {:ok, data_migration} = DataMigration.update_state(data_migration, :complete)
-
-      handle_success(data_migration)
+      set_complete()
     else
       _ ->
-        _ = DataMigration.update_state(data_migration, :failed)
-
         update_status(:failed, "Please check data_migration_failed_ids records.")
     end
 
     {:noreply, state}
+  end
+
+  defp records_per_second do
+    get_stat(:processed_count, 0) / Enum.max([running_time(), 1])
+  end
+
+  defp running_time do
+    NaiveDateTime.diff(NaiveDateTime.utc_now(), get_stat(:started_at, NaiveDateTime.utc_now()))
   end
 
   @hashtags_objects_cleanup_query """
@@ -169,6 +161,10 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
       WHERE hashtags_objects.hashtag_id IS NULL);
   """
 
+  @doc """
+  Deletes `hashtags_objects` for legacy objects not asoociated with Create activity.
+  Also deletes unreferenced `hashtags` records (might occur after deletion of `hashtags_objects`).
+  """
   def delete_non_create_activities_hashtags do
     {:ok, %{num_rows: hashtags_objects_count}} =
       Repo.query(@hashtags_objects_cleanup_query, [], timeout: :infinity)
@@ -256,14 +252,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     end
   end
 
-  defp persist_stats(data_migration) do
-    runner_state = Map.drop(state(), [:status])
-    _ = DataMigration.update(data_migration, %{data: runner_state})
-  end
-
-  defp handle_success(data_migration) do
-    update_status(:complete)
-
+  defp on_complete(data_migration) do
     cond do
       data_migration.feature_lock ->
         :noop
@@ -321,18 +310,18 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   end
 
   def force_restart do
-    {:ok, _} = DataMigration.update(data_migration(), %{state: :pending, data: %{}})
+    :ok = State.reset()
     force_continue()
   end
 
-  def force_complete do
-    {:ok, data_migration} = DataMigration.update_state(data_migration(), :complete)
-
-    handle_success(data_migration)
+  def set_complete do
+    update_status(:complete)
+    _ = State.persist_to_db()
+    on_complete(data_migration())
   end
 
   defp update_status(status, message \\ nil) do
-    put_stat(:status, status)
+    put_stat(:state, status)
     put_stat(:message, message)
   end
 end

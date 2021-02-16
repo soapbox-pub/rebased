@@ -10,6 +10,7 @@ defmodule Pleroma.DataMigration do
   alias Pleroma.Repo
 
   import Ecto.Changeset
+  import Ecto.Query
 
   schema "data_migrations" do
     field(:name, :string)
@@ -28,14 +29,12 @@ defmodule Pleroma.DataMigration do
     |> unique_constraint(:name)
   end
 
-  def update(data_migration, params \\ %{}) do
-    data_migration
-    |> changeset(params)
-    |> Repo.update()
-  end
-
-  def update_state(data_migration, new_state) do
-    update(data_migration, %{state: new_state})
+  def update_one_by_id(id, params \\ %{}) do
+    with {1, _} <-
+           from(dm in DataMigration, where: dm.id == ^id)
+           |> Repo.update_all(set: params) do
+      :ok
+    end
   end
 
   def get_by_name(name) do
