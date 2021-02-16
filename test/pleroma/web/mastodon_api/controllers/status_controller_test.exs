@@ -81,6 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "sensitive" => 0
         })
 
+      # Idempotency plug response means detection fail
       assert %{"id" => second_id} = json_response(conn_two, 200)
       assert id == second_id
 
@@ -1542,7 +1543,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       |> assign(:token, insert(:oauth_token, user: user3, scopes: ["read:statuses"]))
       |> get("api/v1/timelines/home")
 
-    [reblogged_activity] = json_response(conn3, 200)
+    [reblogged_activity] = json_response_and_validate_schema(conn3, 200)
 
     assert reblogged_activity["reblog"]["in_reply_to_id"] == replied_to.id
 
@@ -1896,7 +1897,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     local = Pleroma.Constants.as_local_public()
 
     assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
-             json_response(conn_one, 200)
+             json_response_and_validate_schema(conn_one, 200)
 
     assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
   end
