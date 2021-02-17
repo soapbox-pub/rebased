@@ -85,7 +85,7 @@ defmodule Pleroma.Web.ApiSpec do
             "name" => "Administration",
             "tags" => [
               "Chat administration",
-              "Emoji packs",
+              "Emoji pack administration",
               "Frontend managment",
               "Instance configuration",
               "Instance documents",
@@ -127,7 +127,7 @@ defmodule Pleroma.Web.ApiSpec do
               "Status actions"
             ]
           },
-          %{"name" => "Miscellaneous", "tags" => ["Reports", "Suggestions"]}
+          %{"name" => "Miscellaneous", "tags" => ["Emoji packs", "Reports", "Suggestions"]}
         ]
       }
     }
