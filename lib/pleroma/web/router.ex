@@ -411,6 +411,13 @@ defmodule Pleroma.Web.Router do
     get("/federation_status", InstancesController, :show)
   end
 
+  scope "/api/v2/pleroma", Pleroma.Web.PleromaAPI do
+    scope [] do
+      pipe_through(:authenticated_api)
+      get("/chats", ChatController, :index2)
+    end
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 

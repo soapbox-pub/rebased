@@ -35,7 +35,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"]} when action in [:messages, :index, :show]
+    %{scopes: ["read:chats"]} when action in [:messages, :index, :index2, :show]
   )
 
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
@@ -138,18 +138,30 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
+  def index(%{assigns: %{user: user}} = conn, params) do
+    chats =
+      index_query(user, params)
+      |> Repo.all()
+
+    render(conn, "index.json", chats: chats)
+  end
+
+  def index2(%{assigns: %{user: user}} = conn, params) do
+    chats =
+      index_query(user, params)
+      |> Pagination.fetch_paginated(params)
+
+    render(conn, "index.json", chats: chats)
+  end
+
+  defp index_query(%{id: user_id} = user, params) do
     exclude_users =
       User.cached_blocked_users_ap_ids(user) ++
         if params[:with_muted], do: [], else: User.cached_muted_users_ap_ids(user)
 
-    chats =
-      user_id
-      |> Chat.for_user_query()
-      |> where([c], c.recipient not in ^exclude_users)
-      |> Repo.all()
-
-    render(conn, "index.json", chats: chats)
+    user_id
+    |> Chat.for_user_query()
+    |> where([c], c.recipient not in ^exclude_users)
   end
 
   def create(%{assigns: %{user: user}} = conn, %{id: id}) do
