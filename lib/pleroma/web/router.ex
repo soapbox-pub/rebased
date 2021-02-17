@@ -620,12 +620,6 @@ defmodule Pleroma.Web.Router do
 
     get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
     delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
-
-    post(
-      "/qvitter/statuses/notifications/read",
-      TwitterAPI.Controller,
-      :mark_notifications_as_read
-    )
   end
 
   scope "/", Pleroma.Web do
