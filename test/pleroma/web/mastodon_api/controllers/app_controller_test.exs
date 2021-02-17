@@ -12,22 +12,26 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
   import Pleroma.Factory
 
   test "apps/verify_credentials", %{conn: conn} do
-    token = insert(:oauth_token)
+    user_bound_token = insert(:oauth_token)
+    app_bound_token = insert(:oauth_token, user: nil)
+    refute app_bound_token.user
 
-    conn =
-      conn
-      |> put_req_header("authorization", "Bearer #{token.token}")
-      |> get("/api/v1/apps/verify_credentials")
+    for token <- [app_bound_token, user_bound_token] do
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token.token}")
+        |> get("/api/v1/apps/verify_credentials")
 
-    app = Repo.preload(token, :app).app
+      app = Repo.preload(token, :app).app
 
-    expected = %{
-      "name" => app.client_name,
-      "website" => app.website,
-      "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
-    }
+      expected = %{
+        "name" => app.client_name,
+        "website" => app.website,
+        "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
+      }
 
-    assert expected == json_response_and_validate_schema(conn, 200)
+      assert expected == json_response_and_validate_schema(conn, 200)
+    end
   end
 
   test "creates an oauth app", %{conn: conn} do

@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug do
+  @moduledoc """
+  Ensures instance publicity or _user_ authentication
+  (app-bound user-unbound tokens are accepted only if the instance is public).
+  """
+
   import Pleroma.Web.TranslationHelpers
   import Plug.Conn
 
