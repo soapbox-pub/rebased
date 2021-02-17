@@ -19,11 +19,11 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["read:reports"], admin: true} when action in [:index, :show])
+  plug(OAuthScopesPlug, %{scopes: ["admin:read:reports"]} when action in [:index, :show])
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:reports"], admin: true}
+    %{scopes: ["admin:write:reports"]}
     when action in [:update, :notes_create, :notes_delete]
   )
 

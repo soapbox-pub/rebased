@@ -15,8 +15,8 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation
 
-  plug(OAuthScopesPlug, %{scopes: ["read"], admin: true} when action == :show)
-  plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action in [:update, :delete])
+  plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :show)
+  plug(OAuthScopesPlug, %{scopes: ["admin:write"]} when action in [:update, :delete])
 
   def show(conn, %{name: document_name}) do
     with {:ok, url} <- InstanceDocument.get(document_name),

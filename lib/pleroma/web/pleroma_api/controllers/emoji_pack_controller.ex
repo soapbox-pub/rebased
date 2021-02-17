@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
 
   plug(
     Pleroma.Web.Plugs.OAuthScopesPlug,
-    %{scopes: ["write"], admin: true}
+    %{scopes: ["admin:write"]}
     when action in [
            :import_from_filesystem,
            :remote,

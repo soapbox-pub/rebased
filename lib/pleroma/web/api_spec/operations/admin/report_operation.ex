@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       tags: ["Report managment"],
       summary: "Retrieve a list of reports",
       operationId: "AdminAPI.ReportController.index",
-      security: [%{"oAuth" => ["read:reports"]}],
+      security: [%{"oAuth" => ["admin:read:reports"]}],
       parameters: [
         Operation.parameter(
           :state,
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       summary: "Retrieve a report",
       operationId: "AdminAPI.ReportController.show",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["read:reports"]}],
+      security: [%{"oAuth" => ["admin:read:reports"]}],
       responses: %{
         200 => Operation.response("Report", "application/json", report()),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       tags: ["Report managment"],
       summary: "Change state of specified reports",
       operationId: "AdminAPI.ReportController.update",
-      security: [%{"oAuth" => ["write:reports"]}],
+      security: [%{"oAuth" => ["admin:write:reports"]}],
       parameters: admin_api_params(),
       requestBody: request_body("Parameters", update_request(), required: true),
       responses: %{
@@ -110,7 +110,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
             content: %Schema{type: :string, description: "The message"}
           }
         }),
-      security: [%{"oAuth" => ["write:reports"]}],
+      security: [%{"oAuth" => ["admin:write:reports"]}],
       responses: %{
         204 => no_content_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -128,7 +128,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
         Operation.parameter(:id, :path, :string, "Note ID")
         | admin_api_params()
       ],
-      security: [%{"oAuth" => ["write:reports"]}],
+      security: [%{"oAuth" => ["admin:write:reports"]}],
       responses: %{
         204 => no_content_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)

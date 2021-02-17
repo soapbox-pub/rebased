@@ -15,11 +15,11 @@ defmodule Pleroma.Web.AdminAPI.RelayController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:follows"], admin: true}
+    %{scopes: ["admin:write:follows"]}
     when action in [:follow, :unfollow]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read"], admin: true} when action == :index)
+  plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :index)
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 

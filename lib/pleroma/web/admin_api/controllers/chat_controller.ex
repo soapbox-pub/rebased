@@ -21,12 +21,12 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"], admin: true} when action in [:show, :messages]
+    %{scopes: ["admin:read:chats"]} when action in [:show, :messages]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:chats"], admin: true} when action in [:delete_message]
+    %{scopes: ["admin:write:chats"]} when action in [:delete_message]
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)

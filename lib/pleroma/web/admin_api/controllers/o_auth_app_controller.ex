@@ -17,7 +17,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write"], admin: true}
+    %{scopes: ["admin:write"]}
     when action in [:create, :index, :update, :delete]
   )
 

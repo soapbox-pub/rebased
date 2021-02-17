@@ -25,13 +25,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:accounts"], admin: true}
+    %{scopes: ["admin:read:accounts"]}
     when action in [:right_get, :show_user_credentials, :create_backup]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"], admin: true}
+    %{scopes: ["admin:write:accounts"]}
     when action in [
            :get_password_reset,
            :force_password_reset,
@@ -48,19 +48,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"], admin: true}
+    %{scopes: ["admin:read:statuses"]}
     when action in [:list_user_statuses, :list_instance_statuses]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"], admin: true}
+    %{scopes: ["admin:read:chats"]}
     when action in [:list_user_chats]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"], admin: true}
+    %{scopes: ["admin:read"]}
     when action in [
            :list_log,
            :stats,
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write"], admin: true}
+    %{scopes: ["admin:write"]}
     when action in [
            :restart,
            :resend_confirmation_email,
