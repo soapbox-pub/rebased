@@ -371,3 +371,26 @@ docker-release:
     - dind
   only:
     - /^release/.*$/@pleroma/pleroma
+
+docker-adhoc:
+  stage: docker
+  image: docker:latest
+  cache: {}
+  dependencies: []
+  variables: *docker-variables
+  before_script: *before-docker
+  allow_failure: true
+  script:
+  script:
+    - mkdir -p /root/.docker/cli-plugins
+    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
+    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
+    - chmod +x ~/.docker/cli-plugins/docker-buildx
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --name mbuilder --driver docker-container --use
+    - docker buildx inspect --bootstrap
+    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
+  tags:
+    - dind
+  only:
+    - /^build-docker/.*$/@pleroma/pleroma
