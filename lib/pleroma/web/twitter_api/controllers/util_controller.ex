@@ -10,7 +10,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Config
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
-  alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
@@ -30,7 +29,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
          ]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
 
   def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
     with %User{} = user <- User.get_cached_by_nickname(nick),
@@ -59,17 +57,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           avatar: nil,
           error: "Something went wrong."
         })
-    end
-  end
-
-  def notifications_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
-    with {:ok, _} <- Notification.read_one(user, notification_id) do
-      json(conn, %{status: "success"})
-    else
-      {:error, message} ->
-        conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
