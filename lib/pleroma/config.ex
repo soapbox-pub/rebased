@@ -100,15 +100,7 @@ defmodule Pleroma.Config do
 
   def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []
 
-  def enforce_oauth_admin_scope_usage?, do: !!get([:auth, :enforce_oauth_admin_scope_usage])
-
   def oauth_admin_scopes(scopes) when is_list(scopes) do
-    Enum.flat_map(
-      scopes,
-      fn scope ->
-        ["admin:#{scope}"] ++
-          if enforce_oauth_admin_scope_usage?(), do: [], else: [scope]
-      end
-    )
+    Enum.map(scopes, fn scope -> "admin:#{scope}" end)
   end
 end
