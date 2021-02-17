@@ -12,7 +12,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
 
   plug(
     Pleroma.Web.Plugs.OAuthScopesPlug,
-    %{scopes: ["write"], admin: true}
+    %{scopes: ["admin:write"]}
     when action in [
            :create,
            :update,

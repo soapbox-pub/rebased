@@ -14,11 +14,11 @@ defmodule Pleroma.Web.AdminAPI.InviteController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :index)
+  plug(OAuthScopesPlug, %{scopes: ["admin:read:invites"]} when action == :index)
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:invites"], admin: true} when action in [:create, :revoke, :email]
+    %{scopes: ["admin:write:invites"]} when action in [:create, :revoke, :email]
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
