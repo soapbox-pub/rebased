@@ -217,6 +217,32 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
   end
 
+  test "Removes a conversation", %{user: user_one, conn: conn} do
+    user_two = insert(:user)
+    token = insert(:oauth_token, user: user_one, scopes: ["read:statuses", "write:conversations"])
+
+    {:ok, _direct} = create_direct_message(user_one, [user_two])
+    {:ok, _direct} = create_direct_message(user_one, [user_two])
+
+    assert [%{"id" => conv1_id}, %{"id" => conv2_id}] =
+             conn
+             |> assign(:token, token)
+             |> get("/api/v1/conversations")
+             |> json_response_and_validate_schema(200)
+
+    assert %{} =
+             conn
+             |> assign(:token, token)
+             |> delete("/api/v1/conversations/#{conv1_id}")
+             |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^conv2_id}] =
+             conn
+             |> assign(:token, token)
+             |> get("/api/v1/conversations")
+             |> json_response_and_validate_schema(200)
+  end
+
   defp create_direct_message(sender, recips) do
     hellos =
       recips

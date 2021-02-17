@@ -220,4 +220,8 @@ defmodule Pleroma.Conversation.Participation do
       select: %{count: count(p.id)}
     )
   end
+
+  def delete(%__MODULE__{} = participation) do
+    Repo.delete(participation)
+  end
 end

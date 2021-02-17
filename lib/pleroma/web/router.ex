@@ -443,6 +443,7 @@ defmodule Pleroma.Web.Router do
 
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
+    delete("/conversations/:id", ConversationController, :delete)
 
     get("/domain_blocks", DomainBlockController, :index)
     post("/domain_blocks", DomainBlockController, :create)

@@ -36,4 +36,13 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
       render(conn, "participation.json", participation: participation, for: user)
     end
   end
+
+  @doc "DELETE /api/v1/conversations/:id"
+  def delete(%{assigns: %{user: user}} = conn, %{id: participation_id}) do
+    with %Participation{} = participation <-
+           Repo.get_by(Participation, id: participation_id, user_id: user.id),
+         {:ok, _} <- Participation.delete(participation) do
+      json(conn, %{})
+    end
+  end
 end

@@ -359,4 +359,16 @@ defmodule Pleroma.Conversation.ParticipationTest do
       assert Participation.unread_count(blocked) == 1
     end
   end
+
+  test "deletes a conversation" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{status: "Hey @#{other_user.nickname}.", visibility: "direct"})
+
+    assert [participation] = Participation.for_user(other_user)
+    assert {:ok, _} = Participation.delete(participation)
+    assert [] == Participation.for_user(other_user)
+  end
 end
