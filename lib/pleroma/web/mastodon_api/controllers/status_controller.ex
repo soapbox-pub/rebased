@@ -425,5 +425,5 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     Map.put(params, :application, %{name: client_name, website: website})
   end
 
-  defp put_application(params, _), do: Map.put(params, :application, %{name: "Web", website: nil})
+  defp put_application(params, _), do: Map.put(params, :application, nil)
 end

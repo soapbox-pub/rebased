@@ -266,10 +266,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
           url: "http://localhost:4001/tag/#{object_data["tag"]}"
         }
       ],
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: nil,
       language: nil,
       emojis: [
         %{
