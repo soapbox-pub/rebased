@@ -787,19 +787,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_hashtag_any(query, %{tag: [_ | _] = tags}) do
-    from(
-      [_activity, object] in query,
-      where:
-        fragment(
-          """
-          EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
-              AND hashtags_objects.object_id = ? LIMIT 1)
-          """,
-          ^tags,
-          object.id
+    # TODO: refactor: debug / experimental feature
+    if Config.get([:database, :improved_hashtag_timeline]) == :preselect_hashtag_ids do
+      hashtag_ids =
+        from(ht in Pleroma.Hashtag,
+          where: fragment("name = ANY(?::citext[])", ^tags),
+          select: ht.id
         )
-    )
+        |> Repo.all()
+
+      from(
+        [_activity, object] in query,
+        where:
+          fragment(
+            """
+            EXISTS (
+            SELECT 1 FROM hashtags_objects WHERE hashtag_id = ANY(?) AND object_id = ? LIMIT 1)
+            """,
+            ^hashtag_ids,
+            object.id
+          )
+      )
+    else
+      from(
+        [_activity, object] in query,
+        where:
+          fragment(
+            """
+            EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
+              ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
+                AND hashtags_objects.object_id = ? LIMIT 1)
+            """,
+            ^tags,
+            object.id
+          )
+      )
+    end
   end
 
   defp restrict_hashtag_any(query, %{tag: tag}) when is_binary(tag) do
