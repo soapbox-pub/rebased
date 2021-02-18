@@ -7,7 +7,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator.State do
 
   alias Pleroma.DataMigration
 
-  defdelegate data_migration(), to: DataMigration, as: :populate_hashtags_table
+  defdelegate data_migration(), to: Pleroma.Migrators.HashtagsTableMigrator
 
   @reg_name {:global, __MODULE__}
 
@@ -99,4 +99,6 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator.State do
   defp persist_non_data_change(_, _) do
     nil
   end
+
+  def data_migration_id, do: Map.get(state(), :data_migration_id)
 end

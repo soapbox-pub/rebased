@@ -657,6 +657,8 @@ config :pleroma, :oauth2,
 
 config :pleroma, :database, rum_enabled: false
 
+config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
+
 config :pleroma, :env, Mix.env()
 
 config :http_signatures,

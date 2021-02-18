@@ -70,6 +70,7 @@ To add configuration to your config file, you can copy it from the base config. 
 
 ## Background migrations
 * `populate_hashtags_table/sleep_interval_ms`: Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances).
+* `populate_hashtags_table/fault_rate_allowance`: Max rate of failed objects to actually processed objects in order to enable the feature (any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records).
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.

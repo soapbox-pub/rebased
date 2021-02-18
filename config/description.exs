@@ -480,6 +480,13 @@ config :pleroma, :config_description, [
     description: "`populate_hashtags_table` background migration settings",
     children: [
       %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max rate of failed objects to actually processed objects in order to enable the feature (any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records).",
+        suggestions: [0.01]
+      },
+      %{
         key: :sleep_interval_ms,
         type: :integer,
         description:
