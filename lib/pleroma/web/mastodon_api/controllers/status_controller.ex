@@ -420,9 +420,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     )
   end
 
-  defp put_application(params, %{assigns: %{token: %Token{} = token}} = _conn) do
-    %{client_name: client_name, website: website} = Repo.preload(token, :app).app
-    Map.put(params, :application, %{name: client_name, website: website})
+  defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
+    if user.disclose_client do
+      %{client_name: client_name, website: website} = Repo.preload(token, :app).app
+      Map.put(params, :application, %{name: client_name, website: website})
+    else
+      Map.put(params, :application, nil)
+    end
   end
 
   defp put_application(params, _), do: Map.put(params, :application, nil)
