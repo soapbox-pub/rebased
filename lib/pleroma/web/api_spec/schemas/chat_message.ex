@@ -52,7 +52,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
           title: %Schema{type: :string, description: "Title of linked resource"},
           description: %Schema{type: :string, description: "Description of preview"}
         }
-      }
+      },
+      unread: %Schema{type: :boolean, description: "Whether a message has been marked as read."}
     },
     example: %{
       "account_id" => "someflakeid",
@@ -69,7 +70,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
         }
       ],
       "id" => "14",
-      "attachment" => nil
+      "attachment" => nil,
+      "unread" => false
     }
   })
 end
