@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
     |> Queries.by_object_id()
     |> Queries.by_type("Follow")
     |> where([a], a.inserted_at > ^since_datetime)
-    |> where([a], fragment("? ->> 'state' = 'pending'", a.data))
+    |> where([a], fragment("? ->> 'state' != 'accept'", a.data))
     |> where([a], a.actor == ^follower_id)
     |> Repo.exists?()
   end
