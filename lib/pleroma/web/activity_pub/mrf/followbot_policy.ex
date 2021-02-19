@@ -41,7 +41,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowbotPolicy do
       |> Enum.each(fn user ->
         since_thirty_days_ago = NaiveDateTime.utc_now() |> NaiveDateTime.add(-(86_400 * 30))
 
-        with false <- User.following?(follower, user),
+        with false <- user.local,
+             false <- User.following?(follower, user),
              false <- User.locked?(user),
              false <- (user.bio || "") |> String.downcase() |> String.contains?("nobot"),
              false <-
