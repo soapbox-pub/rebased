@@ -47,7 +47,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
              false <- User.locked?(user),
              false <- (user.bio || "") |> String.downcase() |> String.contains?("nobot"),
              false <- outstanding_follow_request_since?(follower, user, since_thirty_days_ago) do
-          Logger.info("#{__MODULE__}: Follow request from #{follower.nickname} to #{user.nickname}")
+          Logger.info(
+            "#{__MODULE__}: Follow request from #{follower.nickname} to #{user.nickname}"
+          )
+
           CommonAPI.follow(follower, user)
         end
       end)
