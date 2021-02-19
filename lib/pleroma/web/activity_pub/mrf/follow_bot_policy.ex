@@ -38,6 +38,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
 
       Enum.concat([to, cc, actor])
       |> List.flatten()
+      |> Enum.uniq()
       |> User.get_all_by_ap_id()
       |> Enum.each(fn user ->
         since_thirty_days_ago = NaiveDateTime.utc_now() |> NaiveDateTime.add(-(86_400 * 30))
