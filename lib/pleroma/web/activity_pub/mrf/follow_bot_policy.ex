@@ -1,9 +1,13 @@
 defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Activity.Queries
   alias Pleroma.Config
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   require Logger
+
+  import Ecto.Query
 
   @impl true
   def filter(message) do
@@ -36,18 +40,33 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
       |> List.flatten()
       |> User.get_all_by_ap_id()
       |> Enum.each(fn user ->
-        Logger.info("Checking if #{user.nickname} can be followed")
+        since_thirty_days_ago = NaiveDateTime.utc_now() |> NaiveDateTime.add(-(86_400 * 30))
 
         with false <- User.following?(follower, user),
-             false <- user.locked,
-             false <- (user.bio || "") |> String.downcase() |> String.contains?("nobot") do
-          Logger.info("Following #{user.nickname}")
+             false <- User.locked?(user),
+             false <- (user.bio || "") |> String.downcase() |> String.contains?("nobot"),
+             false <- outstanding_follow_request_since?(follower, user, since_thirty_days_ago) do
+          Logger.info("#{__MODULE__}: Follow request from #{follower.nickname} to #{user.nickname}")
           CommonAPI.follow(follower, user)
         end
       end)
     end)
 
     {:ok, message}
+  end
+
+  defp outstanding_follow_request_since?(
+         %User{ap_id: follower_id},
+         %User{ap_id: followee_id},
+         since_datetime
+       ) do
+    followee_id
+    |> Queries.by_object_id()
+    |> Queries.by_type("Follow")
+    |> where([a], a.inserted_at > ^since_datetime)
+    |> where([a], fragment("? ->> 'state' = 'pending'", a.data))
+    |> where([a], a.actor == ^follower_id)
+    |> Repo.exists?()
   end
 
   @impl true
