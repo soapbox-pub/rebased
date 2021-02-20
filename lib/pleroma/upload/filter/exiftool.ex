@@ -21,8 +21,8 @@ defmodule Pleroma.Upload.Filter.Exiftool do
         {error, 1} -> {:error, error}
       end
     rescue
-      _e in ErlangError ->
-        {:error, "exiftool command not found"}
+      e in ErlangError ->
+        {:error, "#{__MODULE__}: #{inspect(e)}"}
     end
   end
 
