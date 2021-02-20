@@ -38,7 +38,7 @@ config :pleroma, :instance,
   external_user_synchronization: false,
   static_dir: "test/instance_static/"
 
-config :pleroma, :activitypub, sign_object_fetches: false
+config :pleroma, :activitypub, sign_object_fetches: false, follow_handshake_timeout: 0
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
