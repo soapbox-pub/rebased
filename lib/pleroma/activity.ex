@@ -345,20 +345,6 @@ defmodule Pleroma.Activity do
     |> Repo.all()
   end
 
-  def follow_requests_outstanding_since?(
-        %User{ap_id: follower_id},
-        %User{ap_id: followee_id},
-        since_datetime
-      ) do
-    followee_id
-    |> Queries.by_object_id()
-    |> Queries.by_type("Follow")
-    |> where([a], a.inserted_at > ^since_datetime)
-    |> where([a], fragment("? ->> 'state' != 'accept'", a.data))
-    |> where([a], a.actor == ^follower_id)
-    |> Repo.exists?()
-  end
-
   def restrict_deactivated_users(query) do
     deactivated_users =
       from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
