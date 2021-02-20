@@ -14,8 +14,8 @@ defmodule Pleroma.Upload.Filter.Mogrify do
       do_filter(file, Pleroma.Config.get!([__MODULE__, :args]))
       {:ok, :filtered}
     rescue
-      _e in ErlangError ->
-        {:error, "mogrify command not found"}
+      e in ErlangError ->
+        {:error, "#{__MODULE__}: #{inspect(e)}"}
     end
   end
 
