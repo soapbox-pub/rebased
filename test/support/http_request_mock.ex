@@ -275,6 +275,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://peertube.stream/accounts/createurs", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/peertube/actor-person.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3", _, _, _) do
     {:ok,
      %Tesla.Env{
