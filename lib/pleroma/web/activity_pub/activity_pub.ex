@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Conversation
   alias Pleroma.Conversation.Participation
   alias Pleroma.Filter
+  alias Pleroma.Hashtag
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -698,8 +699,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_embedded_tag_all(query, %{tag_all: [_ | _] = tag_all}) do
-    tag_all = Enum.map(tag_all, &String.downcase/1)
-
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?& (?)", object.data, ^tag_all)
@@ -717,8 +716,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_embedded_tag_any(query, %{tag: [_ | _] = tag_any}) do
-    tag_any = Enum.map(tag_any, &String.downcase/1)
-
     from(
       [_activity, object] in query,
       where: fragment("(?)->'tag' \\?| (?)", object.data, ^tag_any)
@@ -736,8 +733,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_embedded_tag_reject_any(query, %{tag_reject: [_ | _] = tag_reject}) do
-    tag_reject = Enum.map(tag_reject, &String.downcase/1)
-
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'tag' \\?| (?)", object.data, ^tag_reject)
@@ -766,7 +761,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         fragment(
           """
           (SELECT array_agg(hashtags.name) FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
               AND hashtags_objects.object_id = ?) @> ?
           """,
           ^tags,
@@ -787,42 +782,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_hashtag_any(query, %{tag: [_ | _] = tags}) do
-    # TODO: refactor: debug / experimental feature
-    if Config.get([:database, :improved_hashtag_timeline]) == :preselect_hashtag_ids do
-      hashtag_ids =
-        from(ht in Pleroma.Hashtag,
-          where: fragment("name = ANY(?::citext[])", ^tags),
-          select: ht.id
+    from(
+      [_activity, object] in query,
+      where:
+        fragment(
+          """
+          EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
+              AND hashtags_objects.object_id = ? LIMIT 1)
+          """,
+          ^tags,
+          object.id
         )
-        |> Repo.all()
-
-      from(
-        [_activity, object] in query,
-        where:
-          fragment(
-            """
-            EXISTS (
-            SELECT 1 FROM hashtags_objects WHERE hashtag_id = ANY(?) AND object_id = ? LIMIT 1)
-            """,
-            ^hashtag_ids,
-            object.id
-          )
-      )
-    else
-      from(
-        [_activity, object] in query,
-        where:
-          fragment(
-            """
-            EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-              ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
-                AND hashtags_objects.object_id = ? LIMIT 1)
-            """,
-            ^tags,
-            object.id
-          )
-      )
-    end
+    )
   end
 
   defp restrict_hashtag_any(query, %{tag: tag}) when is_binary(tag) do
@@ -842,7 +814,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         fragment(
           """
           NOT EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?::citext[])
+            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
               AND hashtags_objects.object_id = ? LIMIT 1)
           """,
           ^tags_reject,
@@ -1220,6 +1192,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_order(query, _), do: query
 
+  defp normalize_fetch_activities_query_opts(opts) do
+    Enum.reduce([:tag, :tag_all, :tag_reject], opts, fn key, opts ->
+      case opts[key] do
+        value when is_bitstring(value) ->
+          Map.put(opts, key, Hashtag.normalize_name(value))
+
+        value when is_list(value) ->
+          Map.put(opts, key, Enum.map(value, &Hashtag.normalize_name/1))
+
+        _ ->
+          opts
+      end
+    end)
+  end
+
   defp fetch_activities_query_ap_ids_ops(opts) do
     source_user = opts[:muting_user]
     ap_id_relationships = if source_user, do: [:mute, :reblog_mute], else: []
@@ -1243,6 +1230,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_activities_query(recipients, opts \\ %{}) do
+    opts = normalize_fetch_activities_query_opts(opts)
+
     {restrict_blocked_opts, restrict_muted_opts, restrict_muted_reblogs_opts} =
       fetch_activities_query_ap_ids_ops(opts)
 

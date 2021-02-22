@@ -7,7 +7,7 @@ defmodule Pleroma.Repo.Migrations.CreateHashtagsObjects do
       add(:object_id, references(:objects), null: false, primary_key: true)
     end
 
-    create_if_not_exists(unique_index(:hashtags_objects, [:hashtag_id, :object_id]))
+    # Note: PK index: "hashtags_objects_pkey" PRIMARY KEY, btree (hashtag_id, object_id)
     create_if_not_exists(index(:hashtags_objects, [:object_id]))
   end
 end

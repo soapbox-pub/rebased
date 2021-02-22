@@ -82,6 +82,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     State.reinit()
 
     update_status(:running)
+    put_stat(:iteration_processed_count, 0)
     put_stat(:started_at, NaiveDateTime.utc_now())
 
     data_migration_id = data_migration_id()
@@ -127,6 +128,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
       max_object_id = Enum.at(object_ids, -1)
 
       put_stat(:max_processed_id, max_object_id)
+      increment_stat(:iteration_processed_count, length(object_ids))
       increment_stat(:processed_count, length(object_ids))
       increment_stat(:failed_count, length(failed_ids))
       increment_stat(:affected_count, chunk_affected_count)
@@ -176,7 +178,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   end
 
   defp records_per_second do
-    get_stat(:processed_count, 0) / Enum.max([running_time(), 1])
+    get_stat(:iteration_processed_count, 0) / Enum.max([running_time(), 1])
   end
 
   defp running_time do

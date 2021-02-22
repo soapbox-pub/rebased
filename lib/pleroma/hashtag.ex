@@ -21,10 +21,14 @@ defmodule Pleroma.Hashtag do
     timestamps()
   end
 
+  def normalize_name(name) do
+    name
+    |> String.downcase()
+    |> String.trim()
+  end
+
   def get_by_name(name) do
-    from(h in Hashtag)
-    |> where([h], fragment("name = ?::citext", ^String.downcase(name)))
-    |> Repo.one()
+    Repo.get_by(Hashtag, name: normalize_name(name))
   end
 
   def get_or_create_by_name(name) when is_bitstring(name) do
@@ -39,7 +43,7 @@ defmodule Pleroma.Hashtag do
   end
 
   def get_or_create_by_names(names) when is_list(names) do
-    names = Enum.map(names, &String.downcase/1)
+    names = Enum.map(names, &normalize_name/1)
     timestamp = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
 
     structs =
@@ -53,10 +57,12 @@ defmodule Pleroma.Hashtag do
     try do
       with {:ok, %{query_op: hashtags}} <-
              Multi.new()
-             |> Multi.insert_all(:insert_all_op, Hashtag, structs, on_conflict: :nothing)
+             |> Multi.insert_all(:insert_all_op, Hashtag, structs,
+               on_conflict: :nothing,
+               conflict_target: :name
+             )
              |> Multi.run(:query_op, fn _repo, _changes ->
-               {:ok,
-                Repo.all(from(ht in Hashtag, where: ht.name in fragment("?::citext[]", ^names)))}
+               {:ok, Repo.all(from(ht in Hashtag, where: ht.name in ^names))}
              end)
              |> Repo.transaction() do
         {:ok, hashtags}
@@ -71,7 +77,7 @@ defmodule Pleroma.Hashtag do
   def changeset(%Hashtag{} = struct, params) do
     struct
     |> cast(params, [:name])
-    |> update_change(:name, &String.downcase/1)
+    |> update_change(:name, &normalize_name/1)
     |> validate_required([:name])
     |> unique_constraint(:name)
   end
