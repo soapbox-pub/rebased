@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Security
+
+- Fixed client user agent leaking through MediaProxy
+
 ### Removed
 
 - `:auth, :enforce_oauth_admin_scope_usage` configuration option.
