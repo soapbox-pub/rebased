@@ -34,10 +34,10 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
     |> with_vapid_key()
   end
 
-  def render("short.json", %{app: %App{website: webiste, client_name: name}}) do
+  def render("compact_non_secret.json", %{app: %App{website: website, client_name: name}}) do
     %{
       name: name,
-      website: webiste
+      website: website
     }
     |> with_vapid_key()
   end

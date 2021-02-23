@@ -304,139 +304,165 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
     end
   end
 
-  describe "GET /api/v1/pleroma/chats" do
-    setup do: oauth_access(["read:chats"])
+  for tested_endpoint <- ["/api/v1/pleroma/chats", "/api/v2/pleroma/chats"] do
+    describe "GET #{tested_endpoint}" do
+      setup do: oauth_access(["read:chats"])
 
-    test "it does not return chats with deleted users", %{conn: conn, user: user} do
-      recipient = insert(:user)
-      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
-
-      Pleroma.Repo.delete(recipient)
-      User.invalidate_cache(recipient)
-
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
-
-      assert length(result) == 0
-    end
-
-    test "it does not return chats with users you blocked", %{conn: conn, user: user} do
-      recipient = insert(:user)
-
-      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
-
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
-
-      assert length(result) == 1
-
-      User.block(user, recipient)
-
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
-
-      assert length(result) == 0
-    end
-
-    test "it does not return chats with users you muted", %{conn: conn, user: user} do
-      recipient = insert(:user)
-
-      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
-
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
-
-      assert length(result) == 1
-
-      User.mute(user, recipient)
-
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
-
-      assert length(result) == 0
-
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats?with_muted=true")
-        |> json_response_and_validate_schema(200)
-
-      assert length(result) == 1
-    end
-
-    test "it returns all chats", %{conn: conn, user: user} do
-      Enum.each(1..30, fn _ ->
+      test "it does not return chats with deleted users", %{conn: conn, user: user} do
         recipient = insert(:user)
         {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
-      end)
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
+        Pleroma.Repo.delete(recipient)
+        User.invalidate_cache(recipient)
 
-      assert length(result) == 30
-    end
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
 
-    test "it return a list of chats the current user is participating in, in descending order of updates",
-         %{conn: conn, user: user} do
-      har = insert(:user)
-      jafnhar = insert(:user)
-      tridi = insert(:user)
+        assert length(result) == 0
+      end
 
-      {:ok, chat_1} = Chat.get_or_create(user.id, har.ap_id)
-      {:ok, chat_1} = time_travel(chat_1, -3)
-      {:ok, chat_2} = Chat.get_or_create(user.id, jafnhar.ap_id)
-      {:ok, _chat_2} = time_travel(chat_2, -2)
-      {:ok, chat_3} = Chat.get_or_create(user.id, tridi.ap_id)
-      {:ok, chat_3} = time_travel(chat_3, -1)
+      test "it does not return chats with users you blocked", %{conn: conn, user: user} do
+        recipient = insert(:user)
 
-      # bump the second one
-      {:ok, chat_2} = Chat.bump_or_create(user.id, jafnhar.ap_id)
+        {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
 
-      ids = Enum.map(result, & &1["id"])
+        assert length(result) == 1
 
-      assert ids == [
-               chat_2.id |> to_string(),
-               chat_3.id |> to_string(),
-               chat_1.id |> to_string()
-             ]
-    end
+        User.block(user, recipient)
 
-    test "it is not affected by :restrict_unauthenticated setting (issue #1973)", %{
-      conn: conn,
-      user: user
-    } do
-      clear_config([:restrict_unauthenticated, :profiles, :local], true)
-      clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
 
-      user2 = insert(:user)
-      user3 = insert(:user, local: false)
+        assert length(result) == 0
+      end
 
-      {:ok, _chat_12} = Chat.get_or_create(user.id, user2.ap_id)
-      {:ok, _chat_13} = Chat.get_or_create(user.id, user3.ap_id)
+      test "it does not return chats with users you muted", %{conn: conn, user: user} do
+        recipient = insert(:user)
 
-      result =
-        conn
-        |> get("/api/v1/pleroma/chats")
-        |> json_response_and_validate_schema(200)
+        {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
 
-      account_ids = Enum.map(result, &get_in(&1, ["account", "id"]))
-      assert Enum.sort(account_ids) == Enum.sort([user2.id, user3.id])
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
+
+        assert length(result) == 1
+
+        User.mute(user, recipient)
+
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
+
+        assert length(result) == 0
+
+        result =
+          conn
+          |> get("#{unquote(tested_endpoint)}?with_muted=true")
+          |> json_response_and_validate_schema(200)
+
+        assert length(result) == 1
+      end
+
+      if tested_endpoint == "/api/v1/pleroma/chats" do
+        test "it returns all chats", %{conn: conn, user: user} do
+          Enum.each(1..30, fn _ ->
+            recipient = insert(:user)
+            {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+          end)
+
+          result =
+            conn
+            |> get(unquote(tested_endpoint))
+            |> json_response_and_validate_schema(200)
+
+          assert length(result) == 30
+        end
+      else
+        test "it paginates chats", %{conn: conn, user: user} do
+          Enum.each(1..30, fn _ ->
+            recipient = insert(:user)
+            {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+          end)
+
+          result =
+            conn
+            |> get(unquote(tested_endpoint))
+            |> json_response_and_validate_schema(200)
+
+          assert length(result) == 20
+          last_id = List.last(result)["id"]
+
+          result =
+            conn
+            |> get(unquote(tested_endpoint) <> "?max_id=#{last_id}")
+            |> json_response_and_validate_schema(200)
+
+          assert length(result) == 10
+        end
+      end
+
+      test "it return a list of chats the current user is participating in, in descending order of updates",
+           %{conn: conn, user: user} do
+        har = insert(:user)
+        jafnhar = insert(:user)
+        tridi = insert(:user)
+
+        {:ok, chat_1} = Chat.get_or_create(user.id, har.ap_id)
+        {:ok, chat_1} = time_travel(chat_1, -3)
+        {:ok, chat_2} = Chat.get_or_create(user.id, jafnhar.ap_id)
+        {:ok, _chat_2} = time_travel(chat_2, -2)
+        {:ok, chat_3} = Chat.get_or_create(user.id, tridi.ap_id)
+        {:ok, chat_3} = time_travel(chat_3, -1)
+
+        # bump the second one
+        {:ok, chat_2} = Chat.bump_or_create(user.id, jafnhar.ap_id)
+
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
+
+        ids = Enum.map(result, & &1["id"])
+
+        assert ids == [
+                 chat_2.id |> to_string(),
+                 chat_3.id |> to_string(),
+                 chat_1.id |> to_string()
+               ]
+      end
+
+      test "it is not affected by :restrict_unauthenticated setting (issue #1973)", %{
+        conn: conn,
+        user: user
+      } do
+        clear_config([:restrict_unauthenticated, :profiles, :local], true)
+        clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+        user2 = insert(:user)
+        user3 = insert(:user, local: false)
+
+        {:ok, _chat_12} = Chat.get_or_create(user.id, user2.ap_id)
+        {:ok, _chat_13} = Chat.get_or_create(user.id, user3.ap_id)
+
+        result =
+          conn
+          |> get(unquote(tested_endpoint))
+          |> json_response_and_validate_schema(200)
+
+        account_ids = Enum.map(result, &get_in(&1, ["account", "id"]))
+        assert Enum.sort(account_ids) == Enum.sort([user2.id, user3.id])
+      end
     end
   end
 end

@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
       tags: ["MediaProxy cache"],
       summary: "Retrieve a list of banned MediaProxy URLs",
       operationId: "AdminAPI.MediaProxyCacheController.index",
-      security: [%{"oAuth" => ["read:media_proxy_caches"]}],
+      security: [%{"oAuth" => ["admin:read:media_proxy_caches"]}],
       parameters: [
         Operation.parameter(
           :query,
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
       tags: ["MediaProxy cache"],
       summary: "Remove a banned MediaProxy URL",
       operationId: "AdminAPI.MediaProxyCacheController.delete",
-      security: [%{"oAuth" => ["write:media_proxy_caches"]}],
+      security: [%{"oAuth" => ["admin:write:media_proxy_caches"]}],
       parameters: admin_api_params(),
       requestBody:
         request_body(
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
       tags: ["MediaProxy cache"],
       summary: "Purge a URL from MediaProxy cache and optionally ban it",
       operationId: "AdminAPI.MediaProxyCacheController.purge",
-      security: [%{"oAuth" => ["write:media_proxy_caches"]}],
+      security: [%{"oAuth" => ["admin:write:media_proxy_caches"]}],
       parameters: admin_api_params(),
       requestBody:
         request_body(

@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       tags: ["Status administration"],
       operationId: "AdminAPI.StatusController.index",
       summary: "Get all statuses",
-      security: [%{"oAuth" => ["read:statuses"]}],
+      security: [%{"oAuth" => ["admin:read:statuses"]}],
       parameters: [
         Operation.parameter(
           :godmode,
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       summary: "Get status",
       operationId: "AdminAPI.StatusController.show",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["read:statuses"]}],
+      security: [%{"oAuth" => ["admin:read:statuses"]}],
       responses: %{
         200 => Operation.response("Status", "application/json", status()),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       summary: "Change the scope of a status",
       operationId: "AdminAPI.StatusController.update",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["write:statuses"]}],
+      security: [%{"oAuth" => ["admin:write:statuses"]}],
       requestBody: request_body("Parameters", update_request(), required: true),
       responses: %{
         200 => Operation.response("Status", "application/json", Status),
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       summary: "Delete status",
       operationId: "AdminAPI.StatusController.delete",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["write:statuses"]}],
+      security: [%{"oAuth" => ["admin:write:statuses"]}],
       responses: %{
         200 => empty_object_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)

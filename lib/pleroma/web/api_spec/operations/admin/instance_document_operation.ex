@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation do
       tags: ["Instance documents"],
       summary: "Retrieve an instance document",
       operationId: "AdminAPI.InstanceDocumentController.show",
-      security: [%{"oAuth" => ["read"]}],
+      security: [%{"oAuth" => ["admin:read"]}],
       parameters: [
         Operation.parameter(:name, :path, %Schema{type: :string}, "The document name",
           required: true
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation do
       tags: ["Instance documents"],
       summary: "Update an instance document",
       operationId: "AdminAPI.InstanceDocumentController.update",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       requestBody: Helpers.request_body("Parameters", update_request()),
       parameters: [
         Operation.parameter(:name, :path, %Schema{type: :string}, "The document name",
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation do
       tags: ["Instance documents"],
       summary: "Delete an instance document",
       operationId: "AdminAPI.InstanceDocumentController.delete",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       parameters: [
         Operation.parameter(:name, :path, %Schema{type: :string}, "The document name",
           required: true

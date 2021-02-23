@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       tags: ["Relays"],
       summary: "Retrieve a list of relays",
       operationId: "AdminAPI.RelayController.index",
-      security: [%{"oAuth" => ["read"]}],
+      security: [%{"oAuth" => ["admin:read"]}],
       parameters: admin_api_params(),
       responses: %{
         200 =>
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       tags: ["Relays"],
       summary: "Follow a relay",
       operationId: "AdminAPI.RelayController.follow",
-      security: [%{"oAuth" => ["write:follows"]}],
+      security: [%{"oAuth" => ["admin:write:follows"]}],
       parameters: admin_api_params(),
       requestBody: request_body("Parameters", relay_url()),
       responses: %{
@@ -54,7 +54,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RelayOperation do
       tags: ["Relays"],
       summary: "Unfollow a relay",
       operationId: "AdminAPI.RelayController.unfollow",
-      security: [%{"oAuth" => ["write:follows"]}],
+      security: [%{"oAuth" => ["admin:write:follows"]}],
       parameters: admin_api_params(),
       requestBody: request_body("Parameters", relay_unfollow()),
       responses: %{

@@ -46,16 +46,31 @@ defmodule Pleroma.Web.ApiSpec.ConversationOperation do
       tags: ["Conversations"],
       summary: "Mark conversation as read",
       operationId: "ConversationController.mark_as_read",
-      parameters: [
-        Operation.parameter(:id, :path, :string, "Conversation ID",
-          example: "123",
-          required: true
-        )
-      ],
+      parameters: [id_param()],
       security: [%{"oAuth" => ["write:conversations"]}],
       responses: %{
         200 => Operation.response("Conversation", "application/json", Conversation)
       }
     }
+  end
+
+  def delete_operation do
+    %Operation{
+      tags: ["Conversations"],
+      summary: "Remove conversation",
+      operationId: "ConversationController.delete",
+      parameters: [id_param()],
+      security: [%{"oAuth" => ["write:conversations"]}],
+      responses: %{
+        200 => empty_object_response()
+      }
+    }
+  end
+
+  def id_param do
+    Operation.parameter(:id, :path, :string, "Conversation ID",
+      example: "123",
+      required: true
+    )
   end
 end

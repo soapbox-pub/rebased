@@ -15,11 +15,11 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["read:statuses"], admin: true} when action in [:index, :show])
+  plug(OAuthScopesPlug, %{scopes: ["admin:read:statuses"]} when action in [:index, :show])
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"], admin: true} when action in [:update, :delete]
+    %{scopes: ["admin:write:statuses"]} when action in [:update, :delete]
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)

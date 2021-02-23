@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Removed
+
+- `:auth, :enforce_oauth_admin_scope_usage` configuration option.
+
 ### Changed
 
 - **Breaking**: Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
@@ -21,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Provide redirect of external posts from `/notice/:id` to their original URL
 - Admins no longer receive notifications for reports if they are the actor making the report.
 - Improved Mailer configuration setting descriptions for AdminFE.
+- Updated default avatar to look nicer.
 
 <details>
   <summary>API Changes</summary>
@@ -31,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** AdminAPI `GET /api/pleroma/admin/users/:nickname_or_id/statuses` changed response format and added the number of total users posts.
 - **Breaking:** AdminAPI `GET /api/pleroma/admin/instances/:instance/statuses` changed response format and added the number of total users posts.
 - Admin API: Reports now ordered by newest
+- Pleroma API: `GET /api/v1/pleroma/chats` is deprecated in favor of `GET /api/v2/pleroma/chats`.
 
 </details>
 - Improved hashtag timeline performance (requires a background migration). 
@@ -58,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 - Admin API: (`GET /api/pleroma/admin/users`) filter users by `unconfirmed` status and `actor_type`.
+- Pleroma API: `GET /api/v2/pleroma/chats` added. It is exactly like `GET /api/v1/pleroma/chats` except supports pagination.
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 - Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
@@ -67,6 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`).
 - Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `remote` & `local` parameters for filtration.
 - Mastodon API: `/api/v1/accounts/:id` & `/api/v1/mutes` endpoints accept `with_relationships` parameter and return filled `pleroma.relationship` field.
+- Mastodon API: Endpoint to remove a conversation (`DELETE /api/v1/conversations/:id`).
 </details>
 
 ### Fixed

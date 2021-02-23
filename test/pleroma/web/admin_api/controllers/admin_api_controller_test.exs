@@ -46,104 +46,47 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     assert json_response(conn, 200)
   end
 
-  describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
-    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
+  test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
+       %{admin: admin} do
+    user = insert(:user)
+    url = "/api/pleroma/admin/users/#{user.nickname}"
 
-    test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
-         %{admin: admin} do
-      user = insert(:user)
-      url = "/api/pleroma/admin/users/#{user.nickname}"
+    good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
+    good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+    good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
 
-      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
-      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
-      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
+    bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
+    bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
+    bad_token3 = nil
 
-      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
-      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
-      bad_token3 = nil
+    for good_token <- [good_token1, good_token2, good_token3] do
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> assign(:token, good_token)
+        |> get(url)
 
-      for good_token <- [good_token1, good_token2, good_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, 200)
-      end
-
-      for good_token <- [good_token1, good_token2, good_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, nil)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
-
-      for bad_token <- [bad_token1, bad_token2, bad_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, bad_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
+      assert json_response(conn, 200)
     end
-  end
 
-  describe "unless [:auth, :enforce_oauth_admin_scope_usage]," do
-    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
+    for good_token <- [good_token1, good_token2, good_token3] do
+      conn =
+        build_conn()
+        |> assign(:user, nil)
+        |> assign(:token, good_token)
+        |> get(url)
 
-    test "GET /api/pleroma/admin/users/:nickname requires " <>
-           "read:accounts or admin:read:accounts or broader scope",
-         %{admin: admin} do
-      user = insert(:user)
-      url = "/api/pleroma/admin/users/#{user.nickname}"
+      assert json_response(conn, :forbidden)
+    end
 
-      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
-      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
-      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
-      good_token4 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
-      good_token5 = insert(:oauth_token, user: admin, scopes: ["read"])
+    for bad_token <- [bad_token1, bad_token2, bad_token3] do
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> assign(:token, bad_token)
+        |> get(url)
 
-      good_tokens = [good_token1, good_token2, good_token3, good_token4, good_token5]
-
-      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts:partial"])
-      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
-      bad_token3 = nil
-
-      for good_token <- good_tokens do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, 200)
-      end
-
-      for good_token <- good_tokens do
-        conn =
-          build_conn()
-          |> assign(:user, nil)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
-
-      for bad_token <- [bad_token1, bad_token2, bad_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, bad_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
+      assert json_response(conn, :forbidden)
     end
   end
 

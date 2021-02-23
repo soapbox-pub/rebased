@@ -21,13 +21,13 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:accounts"], admin: true}
+    %{scopes: ["admin:read:accounts"]}
     when action in [:list, :show]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"], admin: true}
+    %{scopes: ["admin:write:accounts"]}
     when action in [
            :delete,
            :create,
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:follows"], admin: true}
+    %{scopes: ["admin:write:follows"]}
     when action in [:follow, :unfollow]
   )
 

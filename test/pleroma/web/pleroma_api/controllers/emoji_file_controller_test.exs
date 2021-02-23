@@ -13,8 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
                 Pleroma.Config.get!([:instance, :static_dir]),
                 "emoji"
               )
-  setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
-
   setup do: clear_config([:instance, :public], true)
 
   setup do

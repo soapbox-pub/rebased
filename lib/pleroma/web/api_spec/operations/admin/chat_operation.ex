@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write:chats"]
+          "oAuth" => ["admin:write:chats"]
         }
       ]
     }
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["read:chats"]
+          "oAuth" => ["admin:read:chats"]
         }
       ]
     }
@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["read"]
+          "oAuth" => ["admin:read"]
         }
       ]
     }

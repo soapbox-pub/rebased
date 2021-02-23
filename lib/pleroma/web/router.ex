@@ -37,11 +37,13 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
-  pipeline :expect_authentication do
+  # Note: expects _user_ authentication (user-unbound app-bound tokens don't qualify)
+  pipeline :expect_user_authentication do
     plug(Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug)
   end
 
-  pipeline :expect_public_instance_or_authentication do
+  # Note: expects public instance or _user_ authentication (user-unbound tokens don't qualify)
+  pipeline :expect_public_instance_or_user_authentication do
     plug(Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug)
   end
 
@@ -66,23 +68,30 @@ defmodule Pleroma.Web.Router do
     plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
-  pipeline :api do
-    plug(:expect_public_instance_or_authentication)
+  pipeline :no_auth_or_privacy_expectations_api do
     plug(:base_api)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
+  end
+
+  # Pipeline for app-related endpoints (no user auth checks — app-bound tokens must be supported)
+  pipeline :app_api do
+    plug(:no_auth_or_privacy_expectations_api)
+  end
+
+  pipeline :api do
+    plug(:expect_public_instance_or_user_authentication)
+    plug(:no_auth_or_privacy_expectations_api)
   end
 
   pipeline :authenticated_api do
-    plug(:expect_authentication)
-    plug(:base_api)
-    plug(:after_auth)
+    plug(:expect_user_authentication)
+    plug(:no_auth_or_privacy_expectations_api)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :admin_api do
-    plug(:expect_authentication)
+    plug(:expect_user_authentication)
     plug(:base_api)
     plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
@@ -411,6 +420,13 @@ defmodule Pleroma.Web.Router do
     get("/federation_status", InstancesController, :show)
   end
 
+  scope "/api/v2/pleroma", Pleroma.Web.PleromaAPI do
+    scope [] do
+      pipe_through(:authenticated_api)
+      get("/chats", ChatController, :index2)
+    end
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
@@ -432,10 +448,9 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", AccountController, :mute)
     post("/accounts/:id/unmute", AccountController, :unmute)
 
-    get("/apps/verify_credentials", AppController, :verify_credentials)
-
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
+    delete("/conversations/:id", ConversationController, :delete)
 
     get("/domain_blocks", DomainBlockController, :index)
     post("/domain_blocks", DomainBlockController, :create)
@@ -525,6 +540,13 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through(:app_api)
+
+    post("/apps", AppController, :create)
+    get("/apps/verify_credentials", AppController, :verify_credentials)
+  end
+
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
     get("/accounts/search", SearchController, :account_search)
@@ -539,8 +561,6 @@ defmodule Pleroma.Web.Router do
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
-
-    post("/apps", AppController, :create)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)
