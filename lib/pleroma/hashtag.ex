@@ -27,19 +27,15 @@ defmodule Pleroma.Hashtag do
     |> String.trim()
   end
 
-  def get_by_name(name) do
-    Repo.get_by(Hashtag, name: normalize_name(name))
-  end
+  def get_or_create_by_name(name) do
+    changeset = changeset(%Hashtag{}, %{name: name})
 
-  def get_or_create_by_name(name) when is_bitstring(name) do
-    with %Hashtag{} = hashtag <- get_by_name(name) do
-      {:ok, hashtag}
-    else
-      _ ->
-        %Hashtag{}
-        |> changeset(%{name: name})
-        |> Repo.insert()
-    end
+    Repo.insert(
+      changeset,
+      on_conflict: [set: [name: get_field(changeset, :name)]],
+      conflict_target: :name,
+      returning: true
+    )
   end
 
   def get_or_create_by_names(names) when is_list(names) do

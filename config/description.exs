@@ -461,15 +461,16 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :database,
+    key: :features,
     type: :group,
-    description: "Database-related settings",
+    description: "Customizable features",
     children: [
       %{
         key: :improved_hashtag_timeline,
-        type: :keyword,
+        type: {:dropdown, :atom},
         description:
-          "If `true`, hashtags will be fetched from `hashtags` table for hashtags timeline. When `false`, object-embedded hashtags will be used (slower). Is auto-set to `true` (unless overridden) when HashtagsTableMigrator completes."
+          "Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).",
+        suggestions: [:auto, :enabled, :disabled]
       }
     ]
   },

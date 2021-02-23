@@ -220,8 +220,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, status_four} = CommonAPI.post(user, %{status: ". #Any1 #any2"})
     {:ok, status_five} = CommonAPI.post(user, %{status: ". #Any2 #any1"})
 
-    for hashtag_timeline_strategy <- [true, false] do
-      clear_config([:database, :improved_hashtag_timeline], hashtag_timeline_strategy)
+    for hashtag_timeline_strategy <- [:eanbled, :disabled] do
+      clear_config([:features, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
       fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 

@@ -24,7 +24,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   defdelegate put_stat(key, value), to: State, as: :put_data_key
   defdelegate increment_stat(key, increment), to: State, as: :increment_data_key
 
-  @feature_config_path [:database, :improved_hashtag_timeline]
+  @feature_config_path [:features, :improved_hashtag_timeline]
   @reg_name {:global, __MODULE__}
 
   def whereis, do: GenServer.whereis(@reg_name)
@@ -296,16 +296,12 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   end
 
   defp on_complete(data_migration) do
-    cond do
-      data_migration.feature_lock ->
-        :noop
-
-      not is_nil(feature_state()) ->
-        :noop
-
-      true ->
-        Config.put(@feature_config_path, true)
-        :ok
+    if data_migration.feature_lock || feature_state() == :disabled do
+      Logger.warn("#{__MODULE__}: migration complete but feature is locked; consider enabling.")
+      :noop
+    else
+      Config.put(@feature_config_path, :enabled)
+      :ok
     end
   end
 

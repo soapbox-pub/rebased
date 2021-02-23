@@ -111,4 +111,8 @@ defmodule Pleroma.Config do
       end
     )
   end
+
+  def feature_enabled?(feature_name) do
+    get([:features, feature_name]) not in [nil, false, :disabled, :auto]
+  end
 end
