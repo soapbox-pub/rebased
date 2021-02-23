@@ -231,19 +231,18 @@ defmodule Mix.Tasks.Pleroma.Database do
           re = ~r/^#{version}_.*\.exs/
           path = Ecto.Migrator.migrations_path(repo)
 
-          with {:find, "" <> file} <- {:find, Enum.find(File.ls!(path), &String.match?(&1, re))},
-               {:compile, [{mod, _} | _]} <- {:compile, Code.compile_file(Path.join(path, file))},
-               {:rollback, :ok} <- {:rollback, Ecto.Migrator.down(repo, version, mod)} do
+          with {_, "" <> file} <- {:find, Enum.find(File.ls!(path), &String.match?(&1, re))},
+               {_, [{mod, _} | _]} <- {:compile, Code.compile_file(Path.join(path, file))},
+               {_, :ok} <- {:rollback, Ecto.Migrator.down(repo, version, mod)} do
             {:ok, "Reversed migration: #{file}"}
           else
             {:find, _} -> {:error, "No migration found with version prefix: #{version}"}
             {:compile, e} -> {:error, "Problem compiling migration module: #{inspect(e)}"}
             {:rollback, e} -> {:error, "Problem reversing migration: #{inspect(e)}"}
-            e -> {:error, "Something unexpected happened: #{inspect(e)}"}
           end
         end)
 
-      IO.inspect(result)
+      shell_info(inspect(result))
     end
   end
 end
