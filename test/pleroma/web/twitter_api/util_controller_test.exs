@@ -25,11 +25,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     test "it updates notification settings", %{user: user, conn: conn} do
       conn
-      |> put("/api/pleroma/notification_settings", %{
-        "block_from_strangers" => true,
-        "bar" => 1
-      })
-      |> json_response(:ok)
+      |> put(
+        "/api/pleroma/notification_settings?#{
+          URI.encode_query(%{
+            block_from_strangers: true
+          })
+        }"
+      )
+      |> json_response_and_validate_schema(:ok)
 
       user = refresh_record(user)
 
@@ -41,8 +44,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     test "it updates notification settings to enable hiding contents", %{user: user, conn: conn} do
       conn
-      |> put("/api/pleroma/notification_settings", %{"hide_notification_contents" => "1"})
-      |> json_response(:ok)
+      |> put(
+        "/api/pleroma/notification_settings?#{
+          URI.encode_query(%{
+            hide_notification_contents: 1
+          })
+        }"
+      )
+      |> json_response_and_validate_schema(:ok)
 
       user = refresh_record(user)
 
@@ -70,7 +79,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       response =
         conn
         |> get("/api/pleroma/frontend_configurations")
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert response == Jason.encode!(config |> Enum.into(%{})) |> Jason.decode!()
     end
@@ -81,7 +90,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       emoji =
         conn
         |> get("/api/pleroma/emoji")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert Enum.all?(emoji, fn
                {_key,
@@ -103,7 +112,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       response =
         conn
         |> get("/api/pleroma/healthcheck")
-        |> json_response(503)
+        |> json_response_and_validate_schema(503)
 
       assert response == %{}
     end
@@ -116,7 +125,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         response =
           conn
           |> get("/api/pleroma/healthcheck")
-          |> json_response(200)
+          |> json_response_and_validate_schema(200)
 
         assert %{
                  "active" => _,
@@ -136,7 +145,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         response =
           conn
           |> get("/api/pleroma/healthcheck")
-          |> json_response(503)
+          |> json_response_and_validate_schema(503)
 
         assert %{
                  "active" => _,
@@ -155,8 +164,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "with valid permissions and password, it disables the account", %{conn: conn, user: user} do
       response =
         conn
-        |> post("/api/pleroma/disable_account", %{"password" => "test"})
-        |> json_response(:ok)
+        |> post("/api/pleroma/disable_account?password=test")
+        |> json_response_and_validate_schema(:ok)
 
       assert response == %{"status" => "success"}
       ObanHelpers.perform_all()
@@ -171,8 +180,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       response =
         conn
-        |> post("/api/pleroma/disable_account", %{"password" => "test1"})
-        |> json_response(:ok)
+        |> post("/api/pleroma/disable_account?password=test1")
+        |> json_response_and_validate_schema(:ok)
 
       assert response == %{"error" => "Invalid password."}
       user = User.get_cached_by_id(user.id)
@@ -252,54 +261,61 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn =
         conn
         |> assign(:token, nil)
-        |> post("/api/pleroma/change_email")
+        |> post(
+          "/api/pleroma/change_email?#{
+            URI.encode_query(%{password: "hi", email: "test@test.com"})
+          }"
+        )
 
-      assert json_response(conn, 403) == %{"error" => "Insufficient permissions: write:accounts."}
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
     end
 
     test "with proper permissions and invalid password", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/change_email", %{
-          "password" => "hi",
-          "email" => "test@test.com"
-        })
+        post(
+          conn,
+          "/api/pleroma/change_email?#{
+            URI.encode_query(%{password: "hi", email: "test@test.com"})
+          }"
+        )
 
-      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+      assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
     end
 
     test "with proper permissions, valid password and invalid email", %{
       conn: conn
     } do
       conn =
-        post(conn, "/api/pleroma/change_email", %{
-          "password" => "test",
-          "email" => "foobar"
-        })
+        post(
+          conn,
+          "/api/pleroma/change_email?#{URI.encode_query(%{password: "test", email: "foobar"})}"
+        )
 
-      assert json_response(conn, 200) == %{"error" => "Email has invalid format."}
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "error" => "Email has invalid format."
+             }
     end
 
     test "with proper permissions, valid password and no email", %{
       conn: conn
     } do
-      conn =
-        post(conn, "/api/pleroma/change_email", %{
-          "password" => "test"
-        })
+      conn = post(conn, "/api/pleroma/change_email?#{URI.encode_query(%{password: "test"})}")
 
-      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+      assert %{"error" => "Missing field: email."} = json_response_and_validate_schema(conn, 400)
     end
 
     test "with proper permissions, valid password and blank email", %{
       conn: conn
     } do
       conn =
-        post(conn, "/api/pleroma/change_email", %{
-          "password" => "test",
-          "email" => ""
-        })
+        post(
+          conn,
+          "/api/pleroma/change_email?#{URI.encode_query(%{password: "test", email: ""})}"
+        )
 
-      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+      assert json_response_and_validate_schema(conn, 200) == %{"error" => "Email can't be blank."}
     end
 
     test "with proper permissions, valid password and non unique email", %{
@@ -308,24 +324,28 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user = insert(:user)
 
       conn =
-        post(conn, "/api/pleroma/change_email", %{
-          "password" => "test",
-          "email" => user.email
-        })
+        post(
+          conn,
+          "/api/pleroma/change_email?#{URI.encode_query(%{password: "test", email: user.email})}"
+        )
 
-      assert json_response(conn, 200) == %{"error" => "Email has already been taken."}
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "error" => "Email has already been taken."
+             }
     end
 
     test "with proper permissions, valid password and valid email", %{
       conn: conn
     } do
       conn =
-        post(conn, "/api/pleroma/change_email", %{
-          "password" => "test",
-          "email" => "cofe@foobar.com"
-        })
+        post(
+          conn,
+          "/api/pleroma/change_email?#{
+            URI.encode_query(%{password: "test", email: "cofe@foobar.com"})
+          }"
+        )
 
-      assert json_response(conn, 200) == %{"status" => "success"}
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
   end
 
@@ -336,20 +356,35 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn =
         conn
         |> assign(:token, nil)
-        |> post("/api/pleroma/change_password")
+        |> post(
+          "/api/pleroma/change_password?#{
+            URI.encode_query(%{
+              password: "hi",
+              new_password: "newpass",
+              new_password_confirmation: "newpass"
+            })
+          }"
+        )
 
-      assert json_response(conn, 403) == %{"error" => "Insufficient permissions: write:accounts."}
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
     end
 
     test "with proper permissions and invalid password", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/change_password", %{
-          "password" => "hi",
-          "new_password" => "newpass",
-          "new_password_confirmation" => "newpass"
-        })
+        post(
+          conn,
+          "/api/pleroma/change_password?#{
+            URI.encode_query(%{
+              password: "hi",
+              new_password: "newpass",
+              new_password_confirmation: "newpass"
+            })
+          }"
+        )
 
-      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+      assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
     end
 
     test "with proper permissions, valid password and new password and confirmation not matching",
@@ -357,13 +392,18 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
            conn: conn
          } do
       conn =
-        post(conn, "/api/pleroma/change_password", %{
-          "password" => "test",
-          "new_password" => "newpass",
-          "new_password_confirmation" => "notnewpass"
-        })
+        post(
+          conn,
+          "/api/pleroma/change_password?#{
+            URI.encode_query(%{
+              password: "test",
+              new_password: "newpass",
+              new_password_confirmation: "notnewpass"
+            })
+          }"
+        )
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "error" => "New password does not match confirmation."
              }
     end
@@ -372,13 +412,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn: conn
     } do
       conn =
-        post(conn, "/api/pleroma/change_password", %{
-          "password" => "test",
-          "new_password" => "",
-          "new_password_confirmation" => ""
-        })
+        post(
+          conn,
+          "/api/pleroma/change_password?#{
+            URI.encode_query(%{password: "test", new_password: "", new_password_confirmation: ""})
+          }"
+        )
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "error" => "New password can't be blank."
              }
     end
@@ -388,13 +429,18 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user: user
     } do
       conn =
-        post(conn, "/api/pleroma/change_password", %{
-          "password" => "test",
-          "new_password" => "newpass",
-          "new_password_confirmation" => "newpass"
-        })
+        post(
+          conn,
+          "/api/pleroma/change_password?#{
+            URI.encode_query(%{
+              password: "test",
+              new_password: "newpass",
+              new_password_confirmation: "newpass"
+            })
+          }"
+        )
 
-      assert json_response(conn, 200) == %{"status" => "success"}
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
       fetched_user = User.get_cached_by_id(user.id)
       assert Pleroma.Password.Pbkdf2.verify_pass("newpass", fetched_user.password_hash) == true
     end
@@ -409,7 +455,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> assign(:token, nil)
         |> post("/api/pleroma/delete_account")
 
-      assert json_response(conn, 403) ==
+      assert json_response_and_validate_schema(conn, 403) ==
                %{"error" => "Insufficient permissions: write:accounts."}
     end
 
@@ -417,14 +463,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       for params <- [%{"password" => "hi"}, %{}] do
         ret_conn = post(conn, "/api/pleroma/delete_account", params)
 
-        assert json_response(ret_conn, 200) == %{"error" => "Invalid password."}
+        assert json_response_and_validate_schema(ret_conn, 200) == %{
+                 "error" => "Invalid password."
+               }
       end
     end
 
     test "with proper permissions and valid password", %{conn: conn, user: user} do
-      conn = post(conn, "/api/pleroma/delete_account", %{"password" => "test"})
+      conn = post(conn, "/api/pleroma/delete_account?password=test")
       ObanHelpers.perform_all()
-      assert json_response(conn, 200) == %{"status" => "success"}
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
 
       user = User.get_by_id(user.id)
       refute user.is_active
