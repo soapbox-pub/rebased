@@ -1,4 +1,4 @@
-defmodule Pleroma.Web.ActivityPub.MRF.FollowbotPolicy do
+defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Config
   alias Pleroma.User
