@@ -63,7 +63,8 @@ defmodule Pleroma.Web do
 
       # Executed just before actual controller action, invokes before-action hooks (callbacks)
       defp action(conn, params) do
-        with %{halted: false} = conn <- maybe_drop_authentication_if_oauth_check_ignored(conn),
+        with %{halted: false} = conn <-
+               maybe_drop_authentication_if_oauth_check_ignored(conn),
              %{halted: false} = conn <- maybe_perform_public_or_authenticated_check(conn),
              %{halted: false} = conn <- maybe_perform_authenticated_check(conn),
              %{halted: false} = conn <- maybe_halt_on_missing_oauth_scopes_check(conn) do
@@ -231,5 +232,16 @@ defmodule Pleroma.Web do
 
   def base_url do
     Pleroma.Web.Endpoint.url()
+  end
+
+  def get_api_routes do
+    Pleroma.Web.Router.__routes__()
+    |> Stream.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
+    |> Enum.map(fn r ->
+      r.path
+      |> String.split("/", trim: true)
+      |> List.first()
+    end)
+    |> Enum.uniq()
   end
 end
