@@ -92,7 +92,7 @@ Has these additional fields under the `pleroma` object:
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
 - `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `/api/v1/accounts/verify_credentials` and `/api/v1/accounts/update_credentials`
-- `chat_token`: The token needed for Pleroma chat. Only returned in `/api/v1/accounts/verify_credentials`
+- `chat_token`: The token needed for Pleroma shoutbox. Only returned in `/api/v1/accounts/verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
