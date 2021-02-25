@@ -236,7 +236,7 @@ defmodule Pleroma.Web do
 
   def get_api_routes do
     Pleroma.Web.Router.__routes__()
-    |> Stream.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
+    |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
     |> Enum.map(fn r ->
       r.path
       |> String.split("/", trim: true)
