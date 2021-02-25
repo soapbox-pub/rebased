@@ -76,6 +76,8 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
   end
 
   test "api routes are detected correctly" do
+    # If this test fails we have probably added something
+    # new that should be in /api/ instead
     expected_routes = [
       "api",
       "main",
