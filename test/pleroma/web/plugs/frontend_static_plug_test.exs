@@ -96,6 +96,7 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "auth",
       "embed",
       "proxy",
+      "test",
       "user_exists",
       "check_password"
     ]

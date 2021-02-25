@@ -28,8 +28,6 @@ defmodule Pleroma.Web do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.PlugHelper
 
-  @mix_env Mix.env()
-
   def controller do
     quote do
       use Phoenix.Controller, namespace: Pleroma.Web
@@ -238,11 +236,7 @@ defmodule Pleroma.Web do
 
   def get_api_routes do
     Pleroma.Web.Router.__routes__()
-    |> Enum.reject(fn
-      r ->
-        r.plug == Pleroma.Web.Fallback.RedirectController or
-          String.starts_with?(r.path, "/#{@mix_env}")
-    end)
+    |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
     |> Enum.map(fn r ->
       r.path
       |> String.split("/", trim: true)
