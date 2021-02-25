@@ -18,7 +18,7 @@ defmodule Pleroma.ReverseProxyTest do
 
   setup :verify_on_exit!
 
-  defp user_agent_mock(invokes) do
+  defp request_mock(invokes) do
     ClientMock
     |> expect(:request, fn :get, url, headers, _body, _opts ->
       Registry.register(ClientMock, url, 0)
@@ -45,7 +45,7 @@ defmodule Pleroma.ReverseProxyTest do
 
   describe "reverse proxy" do
     test "do not track successful request", %{conn: conn} do
-      user_agent_mock(2)
+      request_mock(2)
       url = "/success"
 
       conn = ReverseProxy.call(conn, url)
@@ -56,7 +56,7 @@ defmodule Pleroma.ReverseProxyTest do
   end
 
   test "use Pleroma's user agent in the request; don't pass the client's", %{conn: conn} do
-    user_agent_mock(2)
+    request_mock(2)
 
     conn =
       conn
@@ -110,7 +110,7 @@ defmodule Pleroma.ReverseProxyTest do
 
   describe "max_body" do
     test "length returns error if content-length more than option", %{conn: conn} do
-      user_agent_mock(0)
+      request_mock(0)
 
       assert capture_log(fn ->
                ReverseProxy.call(conn, "/huge-file", max_body_length: 4)
