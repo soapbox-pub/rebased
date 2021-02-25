@@ -55,11 +55,9 @@ defmodule Pleroma.Web.Plugs.FrontendStatic do
   defp invalid_path?([h | t], match), do: String.contains?(h, match) or invalid_path?(t)
   defp invalid_path?([], _match), do: false
 
-  defp api_route?(list) when is_list(list) and length(list) > 0 do
-    List.first(list) in @api_routes
-  end
-
-  defp api_route?(_), do: false
+  defp api_route?([h | _]) when h in @api_routes, do: true
+  defp api_route?([_ | t]), do: api_route?(t)
+  defp api_route?([]), do: false
 
   defp call_static(conn, opts, from) do
     opts = Map.put(opts, :from, from)
