@@ -39,6 +39,12 @@ Has these additional fields under the `pleroma` object:
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 - `parent_visible`: If the parent of this post is visible to the user or not.
 
+## Scheduled statuses
+
+Has these additional fields in `params`:
+
+- `expires_in`: the number of seconds the posted activity should expire in.
+
 ## Media Attachments
 
 Has these additional fields under the `pleroma` object:

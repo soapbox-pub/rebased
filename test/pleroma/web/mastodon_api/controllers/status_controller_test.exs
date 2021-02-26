@@ -383,6 +383,31 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert [] == Repo.all(Activity)
     end
 
+    test "with expiration" do
+      %{conn: conn} = oauth_access(["write:statuses", "read:statuses"])
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+        |> Kernel.<>("Z")
+
+      assert %{"id" => status_id, "params" => %{"expires_in" => 300}} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses", %{
+                 "status" => "scheduled",
+                 "scheduled_at" => scheduled_at,
+                 "expires_in" => 300
+               })
+               |> json_response_and_validate_schema(200)
+
+      assert %{"id" => ^status_id, "params" => %{"expires_in" => 300}} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/scheduled_statuses/#{status_id}")
+               |> json_response_and_validate_schema(200)
+    end
+
     test "ignores nil values", %{conn: conn} do
       conn =
         conn
