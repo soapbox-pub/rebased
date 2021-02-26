@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicyTest do
 
       assert User.get_follow_requests(remote_user) |> length == 0
 
-      FollowbotPolicy.filter(message)
+      FollowBotPolicy.filter(message)
 
       assert User.get_follow_requests(remote_user) |> length == 1
     end
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicyTest do
 
       assert User.get_follow_requests(remote_user) |> length == 0
 
-      FollowbotPolicy.filter(message)
+      FollowBotPolicy.filter(message)
 
       assert User.get_follow_requests(remote_user) |> length == 0
     end
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicyTest do
 
       assert User.get_follow_requests(local_user) |> length == 0
 
-      FollowbotPolicy.filter(message)
+      FollowBotPolicy.filter(message)
 
       assert User.get_follow_requests(local_user) |> length == 0
     end
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicyTest do
 
       assert User.get_follow_requests(remote_user) |> length == 0
 
-      FollowbotPolicy.filter(message)
+      FollowBotPolicy.filter(message)
 
       assert User.get_follow_requests(remote_user) |> length == 0
     end
