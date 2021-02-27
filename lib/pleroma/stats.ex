@@ -23,7 +23,11 @@ defmodule Pleroma.Stats do
 
   @impl true
   def init(_args) do
-    {:ok, nil, {:continue, :calculate_stats}}
+    if Pleroma.Config.get(:env) != :test do
+      {:ok, nil, {:continue, :calculate_stats}}
+    else
+      {:ok, calculate_stat_data()}
+    end
   end
 
   @doc "Performs update stats"
