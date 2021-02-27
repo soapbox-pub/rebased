@@ -205,14 +205,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} =
         CommonAPI.post(user, %{
           status: "#2hu :firefox:",
-          application: %{name: "TestClient", website: "https://pleroma.social"}
+          application: %{type: "Application", name: "TestClient", url: "https://pleroma.social"}
         })
 
       # Ensure injected application data made it into the activity
       # as we don't have a Token to derive it from, otherwise it will
       # be nil and the test will pass
-      assert %{"application" => %{name: "TestClient", website: "https://pleroma.social"}} =
-               activity.object.data
+      assert %{
+               type: "Application",
+               name: "TestClient",
+               url: "https://pleroma.social"
+             } == activity.object.data["application"]
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
