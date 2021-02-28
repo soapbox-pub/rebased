@@ -44,7 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Reports now generate notifications for admins and mods.
-- Experimental websocket-based federation between Pleroma instances.
 - Support for local-only statuses.
 - Support pagination of blocks and mutes.
 - Account backup.
