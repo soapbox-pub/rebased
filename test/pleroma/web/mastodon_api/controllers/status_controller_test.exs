@@ -364,8 +364,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       %Pleroma.Web.OAuth.Token{
         app: %Pleroma.Web.OAuth.App{
-          client_name: _app_name,
-          website: _app_website
+          client_name: app_name,
+          website: app_website
         }
       } = token
 
@@ -379,8 +379,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{
                "content" => "cofe is my copilot",
                "application" => %{
-                 "name" => app_name,
-                 "website" => app_website
+                 "name" => ^app_name,
+                 "website" => ^app_website
                }
              } = json_response_and_validate_schema(result, 200)
     end
