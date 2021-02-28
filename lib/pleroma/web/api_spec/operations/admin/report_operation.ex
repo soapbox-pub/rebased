@@ -136,11 +136,11 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
     }
   end
 
-  defp report_state do
+  def report_state do
     %Schema{type: :string, enum: ["open", "closed", "resolved"]}
   end
 
-  defp id_param do
+  def id_param do
     Operation.parameter(:id, :path, FlakeID, "Report ID",
       example: "9umDrYheeY451cQnEe",
       required: true
