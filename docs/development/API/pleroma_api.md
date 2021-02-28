@@ -4,7 +4,9 @@ Requests that require it can be authenticated with [an OAuth token](https://tool
 
 Request parameters can be passed via [query strings](https://en.wikipedia.org/wiki/Query_string) or as [form data](https://www.w3.org/TR/html401/interact/forms.html). Files must be uploaded as `multipart/form-data`.
 
-## `/api/pleroma/emoji`
+The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/api/pleroma/*` will be deprecated in the future).
+
+## `/api/v1/pleroma/emoji`
 ### Lists the custom emoji on that server.
 * Method: `GET`
 * Authentication: not required
@@ -35,7 +37,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 ```
 * Note: Same data as Mastodon API’s `/api/v1/custom_emojis` but in a different format
 
-## `/api/pleroma/follow_import`
+## `/api/v1/pleroma/follow_import`
 ### Imports your follows, for example from a Mastodon CSV file.
 * Method: `POST`
 * Authentication: required
@@ -44,7 +46,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: HTTP 200 on success, 500 on error
 * Note: Users that can't be followed are silently skipped.
 
-## `/api/pleroma/blocks_import`
+## `/api/v1/pleroma/blocks_import`
 ### Imports your blocks.
 * Method: `POST`
 * Authentication: required
@@ -52,7 +54,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
     * `list`: STRING or FILE containing a whitespace-separated list of accounts to block
 * Response: HTTP 200 on success, 500 on error
 
-## `/api/pleroma/mutes_import`
+## `/api/v1/pleroma/mutes_import`
 ### Imports your mutes.
 * Method: `POST`
 * Authentication: required
@@ -60,7 +62,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
     * `list`: STRING or FILE containing a whitespace-separated list of accounts to mute
 * Response: HTTP 200 on success, 500 on error
 
-## `/api/pleroma/captcha`
+## `/api/v1/pleroma/captcha`
 ### Get a new captcha
 * Method: `GET`
 * Authentication: not required
@@ -68,7 +70,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: Provider specific JSON, the only guaranteed parameter is `type`
 * Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint", "seconds_valid": 300}`
 
-## `/api/pleroma/delete_account`
+## `/api/v1/pleroma/delete_account`
 ### Delete an account
 * Method `POST`
 * Authentication: required
@@ -77,7 +79,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{"status": "success"}` if the deletion was successful, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/pleroma/disable_account`
+## `/api/v1/pleroma/disable_account`
 ### Disable an account
 * Method `POST`
 * Authentication: required
@@ -86,21 +88,21 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{"status": "success"}` if the account was successfully disabled, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/pleroma/accounts/mfa`
+## `/api/v1/pleroma/accounts/mfa`
 #### Gets current MFA settings
 * method: `GET`
 * Authentication: required
 * OAuth scope: `read:security`
 * Response: JSON. Returns `{"enabled": "false", "totp": false }`
 
-## `/api/pleroma/accounts/mfa/setup/totp`
+## `/api/v1/pleroma/accounts/mfa/setup/totp`
 #### Pre-setup the MFA/TOTP method
 * method: `GET`
 * Authentication: required
 * OAuth scope: `write:security`
 * Response: JSON. Returns `{"key": [secret_key], "provisioning_uri": "[qr code uri]"  }` when successful, otherwise returns HTTP 422 `{"error": "error_msg"}`
 
-## `/api/pleroma/accounts/mfa/confirm/totp`
+## `/api/v1/pleroma/accounts/mfa/confirm/totp`
 #### Confirms & enables MFA/TOTP support for user account.
 * method: `POST`
 * Authentication: required
@@ -111,7 +113,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{}` if the enable was successful, HTTP 422 `{"error": "[error message]"}` otherwise
 
 
-## `/api/pleroma/accounts/mfa/totp`
+## `/api/v1/pleroma/accounts/mfa/totp`
 ####  Disables MFA/TOTP method for user account.
 * method: `DELETE`
 * Authentication: required
@@ -121,14 +123,14 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{}` if the disable was successful, HTTP 422 `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/pleroma/accounts/mfa/backup_codes`
+## `/api/v1/pleroma/accounts/mfa/backup_codes`
 ####  Generstes backup codes MFA for user account.
 * method: `GET`
 * Authentication: required
 * OAuth scope: `write:security`
 * Response: JSON. Returns `{"codes": codes}`when successful, otherwise HTTP 422 `{"error": "[error message]"}`
 
-## `/api/pleroma/admin/`
+## `/api/v1/pleroma/admin/`
 See [Admin-API](admin_api.md)
 
 ## `/api/v1/pleroma/notifications/read`
@@ -298,7 +300,7 @@ See [Admin-API](admin_api.md)
 * Note: Behaves exactly the same as `POST /api/v1/upload`.
   Can only accept images - any attempt to upload non-image files will be met with `HTTP 415 Unsupported Media Type`.
 
-## `/api/pleroma/notification_settings`
+## `/api/v1/pleroma/notification_settings`
 ### Updates user notification settings
 * Method `PUT`
 * Authentication: required
@@ -307,7 +309,7 @@ See [Admin-API](admin_api.md)
     * `hide_notification_contents`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
 
-## `/api/pleroma/healthcheck`
+## `/api/v1/pleroma/healthcheck`
 ### Healthcheck endpoint with additional system data.
 * Method `GET`
 * Authentication: not required
@@ -325,7 +327,7 @@ See [Admin-API](admin_api.md)
 }
 ```
 
-## `/api/pleroma/change_email`
+## `/api/v1/pleroma/change_email`
 ### Change account email
 * Method `POST`
 * Authentication: required
@@ -378,7 +380,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params: None
 * Response: JSON, returns a list of Mastodon Conversation entities that were marked as read (200 - healthy, 503 unhealthy).
 
-## `GET /api/pleroma/emoji/pack?name=:name`
+## `GET /api/v1/pleroma/emoji/pack?name=:name`
 
 ### Get pack.json for the pack
 
@@ -397,7 +399,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 }
 ```
 
-## `POST /api/pleroma/emoji/pack?name=:name`
+## `POST /api/v1/pleroma/emoji/pack?name=:name`
 
 ### Creates an empty pack
 
@@ -407,7 +409,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `name`: pack name
 * Response: JSON, "ok" and 200 status or 409 if the pack with that name already exists
 
-## `PATCH /api/pleroma/emoji/pack?name=:name`
+## `PATCH /api/v1/pleroma/emoji/pack?name=:name`
 
 ### Updates (replaces) pack metadata
 
@@ -425,7 +427,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, updated "metadata" section of the pack and 200 status or 400 if there was a
   problem with the new metadata (the error is specified in the "error" part of the response JSON)
 
-## `DELETE /api/pleroma/emoji/pack?name=:name`
+## `DELETE /api/v1/pleroma/emoji/pack?name=:name`
 
 ### Delete a custom emoji pack
 
@@ -435,7 +437,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `name`: pack name
 * Response: JSON, "ok" and 200 status or 500 if there was an error deleting the pack
 
-## `GET /api/pleroma/emoji/packs/import`
+## `GET /api/v1/pleroma/emoji/packs/import`
 
 ### Imports packs from filesystem
 
@@ -444,7 +446,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params: None
 * Response: JSON, returns a list of imported packs.
 
-## `GET /api/pleroma/emoji/packs/remote`
+## `GET /api/v1/pleroma/emoji/packs/remote`
 
 ### Make request to another instance for packs list
 
@@ -456,7 +458,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `page_size`: page size for packs (default 50)
 * Response: JSON with the pack list, hashmap with pack name and pack contents
 
-## `POST /api/pleroma/emoji/packs/download`
+## `POST /api/v1/pleroma/emoji/packs/download`
 
 ### Download pack from another instance
 
@@ -469,7 +471,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, "ok" with 200 status if the pack was downloaded, or 500 if there were
   errors downloading the pack
 
-## `POST /api/pleroma/emoji/packs/files?name=:name`
+## `POST /api/v1/pleroma/emoji/packs/files?name=:name`
 
 ### Add new file to the pack
 
@@ -482,7 +484,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `filename`: (*optional*) new emoji file name. If not specified will be taken from original filename.
 * Response: JSON, list of files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
-## `PATCH /api/pleroma/emoji/packs/files?name=:name`
+## `PATCH /api/v1/pleroma/emoji/packs/files?name=:name`
 
 ### Update emoji file from pack
 
@@ -496,7 +498,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `force`: (*optional*) with true value to overwrite existing emoji with new shortcode
 * Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
-## `DELETE /api/pleroma/emoji/packs/files?name=:name`
+## `DELETE /api/v1/pleroma/emoji/packs/files?name=:name`
 
 ### Delete emoji file from pack
 
@@ -507,7 +509,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `shortcode`: emoji file shortcode
 * Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
-## `GET /api/pleroma/emoji/packs`
+## `GET /api/v1/pleroma/emoji/packs`
 
 ### Lists local custom emoji packs
 
@@ -528,7 +530,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 }
 ```
 
-## `GET /api/pleroma/emoji/packs/archive?name=:name`
+## `GET /api/v1/pleroma/emoji/packs/archive?name=:name`
 
 ### Requests a local pack archive from the instance
 

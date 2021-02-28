@@ -140,7 +140,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
-  scope "/api/pleroma", Pleroma.Web.TwitterAPI do
+  scope "/api/v1/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
     get("/password_reset/:token", PasswordController, :reset, as: :reset_password)
@@ -150,12 +150,12 @@ defmodule Pleroma.Web.Router do
     get("/healthcheck", UtilController, :healthcheck)
   end
 
-  scope "/api/pleroma", Pleroma.Web do
+  scope "/api/v1/pleroma", Pleroma.Web do
     pipe_through(:pleroma_api)
     post("/uploader_callback/:upload_path", UploaderController, :callback)
   end
 
-  scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
 
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.Router do
     post("/backups", AdminAPIController, :create_backup)
   end
 
-  scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
+  scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
       pipe_through(:admin_api)
 
@@ -809,6 +809,7 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
+    match(:*, "/api/pleroma*path", LegacyPleromaApiRerouterPlug, [])
     get("/api*path", RedirectController, :api_not_implemented)
     get("/*path", RedirectController, :redirector_with_preload)
 
