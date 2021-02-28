@@ -147,6 +147,7 @@ defmodule Pleroma.User do
     field(:shared_inbox, :string)
     field(:accepts_chat_messages, :boolean, default: nil)
     field(:last_active_at, :naive_datetime)
+    field(:disclose_client, :boolean, default: true)
 
     embeds_one(
       :notification_settings,
@@ -513,7 +514,8 @@ defmodule Pleroma.User do
         :pleroma_settings_store,
         :is_discoverable,
         :actor_type,
-        :accepts_chat_messages
+        :accepts_chat_messages,
+        :disclose_client
       ]
     )
     |> unique_constraint(:nickname)

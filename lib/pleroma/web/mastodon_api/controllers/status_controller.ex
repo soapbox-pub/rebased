@@ -21,6 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
@@ -138,7 +139,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         _
       )
       when not is_nil(scheduled_at) do
-    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+    params =
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+      |> put_application(conn)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -162,7 +165,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
-    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+    params =
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+      |> put_application(conn)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -414,4 +419,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       as: :activity
     )
   end
+
+  defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
+    if user.disclose_client do
+      %{client_name: client_name, website: website} = Repo.preload(token, :app).app
+      Map.put(params, :application, %{type: "Application", name: client_name, url: website})
+    else
+      Map.put(params, :application, nil)
+    end
+  end
+
+  defp put_application(params, _), do: Map.put(params, :application, nil)
 end
