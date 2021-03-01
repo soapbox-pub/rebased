@@ -180,7 +180,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
       tags: reblogged[:tags] || [],
-      application: build_application(activity_object.data["application"]),
+      application: build_application(activity_object.data["generator"]),
       language: nil,
       emojis: [],
       pleroma: %{
@@ -345,7 +345,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       poll: render(PollView, "show.json", object: object, for: opts[:for]),
       mentions: mentions,
       tags: build_tags(tags),
-      application: build_application(object.data["application"]),
+      application: build_application(object.data["generator"]),
       language: nil,
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{

@@ -19,7 +19,7 @@ defmodule Pleroma.Constants do
       "context_id",
       "deleted_activity_id",
       "pleroma_internal",
-      "application"
+      "generator"
     ]
   )
 
