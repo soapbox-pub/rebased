@@ -377,6 +377,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         })
 
       assert %{
+               "content" => "cofe is my copilot"
+             } = json_response_and_validate_schema(result, 200)
+
+      activity = result.assigns.activity.id
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> get("api/v1/statuses/#{activity}")
+
+      assert %{
                "content" => "cofe is my copilot",
                "application" => %{
                  "name" => ^app_name,
