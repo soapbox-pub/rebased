@@ -384,7 +384,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> put_req_header("content-type", "application/json")
         |> get("api/v1/statuses/#{activity}")
 
       assert %{
@@ -414,7 +413,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       result =
         conn
-        |> put_req_header("content-type", "application/json")
         |> get("api/v1/statuses/#{activity}")
 
       assert %{
