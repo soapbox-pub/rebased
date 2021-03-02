@@ -17,7 +17,7 @@ Feel free to contact us to be added to this list!
 - Features: MastoAPI
 
 ### Whalebird
-- Homepage: <https://whalebird.org/>
+- Homepage: <https://whalebird.social/>
 - Source Code: <https://github.com/h3poteto/whalebird-desktop>
 - Contact: [@h3poteto@pleroma.io](https://pleroma.io/users/h3poteto)
 - Platforms: Windows, Mac, Linux

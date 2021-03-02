@@ -202,7 +202,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal fields" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu :firefox:"})
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "#2hu :firefox:",
+          generator: %{type: "Application", name: "TestClient", url: "https://pleroma.social"}
+        })
+
+      # Ensure injected application data made it into the activity
+      # as we don't have a Token to derive it from, otherwise it will
+      # be nil and the test will pass
+      assert %{
+               type: "Application",
+               name: "TestClient",
+               url: "https://pleroma.social"
+             } == activity.object.data["generator"]
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -213,6 +226,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
+      assert is_nil(modified["object"]["generator"])
     end
 
     test "it strips internal fields of article" do

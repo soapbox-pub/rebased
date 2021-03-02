@@ -49,7 +49,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
-* `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
@@ -232,7 +232,7 @@ config :pleroma, :mrf_user_allowlist, %{
 
 This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
-Frontends can access these settings at `/api/pleroma/frontend_configurations`
+Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
@@ -855,13 +855,13 @@ config :pleroma, :admin_token, "somerandomtoken"
 You can then do
 
 ```shell
-curl "http://localhost:4000/api/pleroma/admin/users/invites?admin_token=somerandomtoken"
+curl "http://localhost:4000/api/v1/pleroma/admin/users/invites?admin_token=somerandomtoken"
 ```
 
 or
 
 ```shell
-curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
+curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/v1/pleroma/admin/users/invites"
 ```
 
 Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.

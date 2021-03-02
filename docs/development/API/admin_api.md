@@ -2,7 +2,9 @@
 
 Authentication is required and the user must be an admin.
 
-## `GET /api/pleroma/admin/users`
+The `/api/v1/pleroma/admin/*` path is backwards compatible with `/api/pleroma/admin/*` (`/api/pleroma/admin/*` will be deprecated in the future).
+
+## `GET /api/v1/pleroma/admin/users`
 
 ### List users
 
@@ -23,7 +25,7 @@ Authentication is required and the user must be an admin.
   - *optional* `actor_types`: **[string]** actor type list (`Person`, `Service`, `Application`)
   - *optional* `name`: **string** user display name
   - *optional* `email`: **string** user email
-- Example: `https://mypleroma.org/api/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10&tags[]=some_tag&tags[]=another_tag&name=display_name&email=email@example.com`
+- Example: `https://mypleroma.org/api/v1/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10&tags[]=some_tag&tags[]=another_tag&name=display_name&email=email@example.com`
 - Response:
 
 ```json
@@ -52,7 +54,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## DEPRECATED `DELETE /api/pleroma/admin/users`
+## DEPRECATED `DELETE /api/v1/pleroma/admin/users`
 
 ### Remove a user
 
@@ -60,7 +62,7 @@ Authentication is required and the user must be an admin.
   - `nickname`
 - Response: User’s nickname
 
-## `DELETE /api/pleroma/admin/users`
+## `DELETE /api/v1/pleroma/admin/users`
 
 ### Remove a user
 
@@ -81,7 +83,7 @@ Authentication is required and the user must be an admin.
   ]
 - Response: User’s nickname
 
-## `POST /api/pleroma/admin/users/follow`
+## `POST /api/v1/pleroma/admin/users/follow`
 
 ### Make a user follow another user
 
@@ -91,7 +93,7 @@ Authentication is required and the user must be an admin.
 - Response:
   - "ok"
 
-## `POST /api/pleroma/admin/users/unfollow`
+## `POST /api/v1/pleroma/admin/users/unfollow`
 
 ### Make a user unfollow another user
 
@@ -101,7 +103,7 @@ Authentication is required and the user must be an admin.
 - Response:
   - "ok"
 
-## `PATCH /api/pleroma/admin/users/:nickname/toggle_activation`
+## `PATCH /api/v1/pleroma/admin/users/:nickname/toggle_activation`
 
 ### Toggle user activation
 
@@ -117,7 +119,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `PUT /api/pleroma/admin/users/tag`
+## `PUT /api/v1/pleroma/admin/users/tag`
 
 ### Tag a list of users
 
@@ -125,7 +127,7 @@ Authentication is required and the user must be an admin.
   - `nicknames` (array)
   - `tags` (array)
 
-## `DELETE /api/pleroma/admin/users/tag`
+## `DELETE /api/v1/pleroma/admin/users/tag`
 
 ### Untag a list of users
 
@@ -133,7 +135,7 @@ Authentication is required and the user must be an admin.
   - `nicknames` (array)
   - `tags` (array)
 
-## `GET /api/pleroma/admin/users/:nickname/permission_group`
+## `GET /api/v1/pleroma/admin/users/:nickname/permission_group`
 
 ### Get user user permission groups membership
 
@@ -147,7 +149,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `GET /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+## `GET /api/v1/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 Note: Available `:permission_group` is currently moderator and admin. 404 is returned when the permission group doesn’t exist.
 
@@ -163,7 +165,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## DEPRECATED `POST /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+## DEPRECATED `POST /api/v1/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 ### Add user to permission group
 
@@ -172,7 +174,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `{"error": "…"}`
   - On success: JSON of the user
 
-## `POST /api/pleroma/admin/users/permission_group/:permission_group`
+## `POST /api/v1/pleroma/admin/users/permission_group/:permission_group`
 
 ### Add users to permission group
 
@@ -182,9 +184,9 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `{"error": "…"}`
   - On success: JSON of the user
 
-## DEPRECATED `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+## DEPRECATED `DELETE /api/v1/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
-## `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+## `DELETE /api/v1/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 ### Remove user from permission group
 
@@ -194,7 +196,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On success: JSON of the user
 - Note: An admin cannot revoke their own admin status.
 
-## `DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+## `DELETE /api/v1/pleroma/admin/users/permission_group/:permission_group`
 
 ### Remove users from permission group
 
@@ -205,7 +207,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On success: JSON of the user
 - Note: An admin cannot revoke their own admin status.
 
-## `PATCH /api/pleroma/admin/users/activate`
+## `PATCH /api/v1/pleroma/admin/users/activate`
 
 ### Activate user
 
@@ -223,7 +225,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `PATCH /api/pleroma/admin/users/deactivate`
+## `PATCH /api/v1/pleroma/admin/users/deactivate`
 
 ### Deactivate user
 
@@ -241,7 +243,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `PATCH /api/pleroma/admin/users/approve`
+## `PATCH /api/v1/pleroma/admin/users/approve`
 
 ### Approve user
 
@@ -259,7 +261,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `GET /api/pleroma/admin/users/:nickname_or_id`
+## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user
 
@@ -269,7 +271,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON of the user
 
-## `GET /api/pleroma/admin/users/:nickname_or_id/statuses`
+## `GET /api/v1/pleroma/admin/users/:nickname_or_id/statuses`
 
 ### Retrive user's latest statuses
 
@@ -293,7 +295,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `GET /api/pleroma/admin/instances/:instance/statuses`
+## `GET /api/v1/pleroma/admin/instances/:instance/statuses`
 
 ### Retrive instance's latest statuses
 
@@ -317,7 +319,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `GET /api/pleroma/admin/statuses`
+## `GET /api/v1/pleroma/admin/statuses`
 
 ### Retrives all latest statuses
 
@@ -330,7 +332,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses
 
-## `GET /api/pleroma/admin/relay`
+## `GET /api/v1/pleroma/admin/relay`
 
 ### List Relays
 
@@ -346,7 +348,7 @@ Response:
 ]
 ```
 
-## `POST /api/pleroma/admin/relay`
+## `POST /api/v1/pleroma/admin/relay`
 
 ### Follow a Relay
 
@@ -362,7 +364,7 @@ Response:
 {"actor": "https://example.com/relay", "followed_back": true}
 ```
 
-## `DELETE /api/pleroma/admin/relay`
+## `DELETE /api/v1/pleroma/admin/relay`
 
 ### Unfollow a Relay
 
@@ -378,7 +380,7 @@ Response:
 {"https://example.com/relay"}
 ```
 
-## `POST /api/pleroma/admin/users/invite_token`
+## `POST /api/v1/pleroma/admin/users/invite_token`
 
 ### Create an account registration invite token
 
@@ -399,7 +401,7 @@ Response:
 }
 ```
 
-## `GET /api/pleroma/admin/users/invites`
+## `GET /api/v1/pleroma/admin/users/invites`
 
 ### Get a list of generated invites
 
@@ -424,7 +426,7 @@ Response:
 }
 ```
 
-## `POST /api/pleroma/admin/users/revoke_invite`
+## `POST /api/v1/pleroma/admin/users/revoke_invite`
 
 ### Revoke invite by token
 
@@ -445,7 +447,7 @@ Response:
 }
 ```
 
-## `POST /api/pleroma/admin/users/email_invite`
+## `POST /api/v1/pleroma/admin/users/email_invite`
 
 ### Sends registration invite via email
 
@@ -466,7 +468,7 @@ Response:
       ]
     ```
 
-## `GET /api/pleroma/admin/users/:nickname/password_reset`
+## `GET /api/v1/pleroma/admin/users/:nickname/password_reset`
 
 ### Get a password reset token for a given nickname
 
@@ -477,11 +479,11 @@ Response:
 ```json
 {
   "token": "base64 reset token",
-  "link": "https://pleroma.social/api/pleroma/password_reset/url-encoded-base64-token"
+  "link": "https://pleroma.social/api/v1/pleroma/password_reset/url-encoded-base64-token"
 }
 ```
 
-## `PATCH /api/pleroma/admin/users/force_password_reset`
+## `PATCH /api/v1/pleroma/admin/users/force_password_reset`
 
 ### Force passord reset for a user with a given nickname
 
@@ -489,7 +491,7 @@ Response:
   - `nicknames`
 - Response: none (code `204`)
 
-## PUT `/api/pleroma/admin/users/disable_mfa`
+## PUT `/api/v1/pleroma/admin/users/disable_mfa`
 
 ### Disable mfa for user's account.
 
@@ -497,7 +499,7 @@ Response:
   - `nickname`
 - Response: User’s nickname
 
-## `GET /api/pleroma/admin/users/:nickname/credentials`
+## `GET /api/v1/pleroma/admin/users/:nickname/credentials`
 
 ### Get the user's email, password, display and settings-related fields
 
@@ -545,7 +547,7 @@ Response:
 }
 ```
 
-## `PATCH /api/pleroma/admin/users/:nickname/credentials`
+## `PATCH /api/v1/pleroma/admin/users/:nickname/credentials`
 
 ### Change the user's email, password, display and settings-related fields
 
@@ -596,7 +598,7 @@ Status: 404
 {"error": "Not found"}
 ```
 
-## `GET /api/pleroma/admin/reports`
+## `GET /api/v1/pleroma/admin/reports`
 
 ### Get a list of reports
 
@@ -756,17 +758,17 @@ Status: 404
 }
 ```
 
-## `GET /api/pleroma/admin/grouped_reports`
+## `GET /api/v1/pleroma/admin/grouped_reports`
 
 ### Get a list of reports, grouped by status
 
 - Params: none
 - On success: JSON, returns a list of reports, where:
   - `date`: date of the latest report
-  - `account`: the user who has been reported (see `/api/pleroma/admin/reports` for reference)
-  - `status`: reported status (see `/api/pleroma/admin/reports` for reference)
-  - `actors`: users who had reported this status (see `/api/pleroma/admin/reports` for reference)
-  - `reports`: reports (see `/api/pleroma/admin/reports` for reference)
+  - `account`: the user who has been reported (see `/api/v1/pleroma/admin/reports` for reference)
+  - `status`: reported status (see `/api/v1/pleroma/admin/reports` for reference)
+  - `actors`: users who had reported this status (see `/api/v1/pleroma/admin/reports` for reference)
+  - `reports`: reports (see `/api/v1/pleroma/admin/reports` for reference)
 
 ```json
   "reports": [
@@ -780,7 +782,7 @@ Status: 404
   ]
 ```
 
-## `GET /api/pleroma/admin/reports/:id`
+## `GET /api/v1/pleroma/admin/reports/:id`
 
 ### Get an individual report
 
@@ -792,7 +794,7 @@ Status: 404
     - 404 Not Found `"Not found"`
   - On success: JSON, Report object (see above)
 
-## `PATCH /api/pleroma/admin/reports`
+## `PATCH /api/v1/pleroma/admin/reports`
 
 ### Change the state of one or multiple reports
 
@@ -823,7 +825,7 @@ Status: 404
 
   - On success: `204`, empty response
 
-## `POST /api/pleroma/admin/reports/:id/notes`
+## `POST /api/v1/pleroma/admin/reports/:id/notes`
 
 ### Create report note
 
@@ -835,7 +837,7 @@ Status: 404
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
   - On success: `204`, empty response
 
-## `DELETE /api/pleroma/admin/reports/:report_id/notes/:id`
+## `DELETE /api/v1/pleroma/admin/reports/:report_id/notes/:id`
 
 ### Delete report note
 
@@ -847,7 +849,7 @@ Status: 404
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
   - On success: `204`, empty response
 
-## `GET /api/pleroma/admin/statuses/:id`
+## `GET /api/v1/pleroma/admin/statuses/:id`
 
 ### Show status by id
 
@@ -858,7 +860,7 @@ Status: 404
     - 404 Not Found `"Not Found"`
   - On success: JSON, Mastodon Status entity
 
-## `PUT /api/pleroma/admin/statuses/:id`
+## `PUT /api/v1/pleroma/admin/statuses/:id`
 
 ### Change the scope of an individual reported status
 
@@ -873,7 +875,7 @@ Status: 404
     - 404 Not Found `"Not found"`
   - On success: JSON, Mastodon Status entity
 
-## `DELETE /api/pleroma/admin/statuses/:id`
+## `DELETE /api/v1/pleroma/admin/statuses/:id`
 
 ### Delete an individual reported status
 
@@ -885,7 +887,7 @@ Status: 404
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
 
-## `GET /api/pleroma/admin/restart`
+## `GET /api/v1/pleroma/admin/restart`
 
 ### Restarts pleroma application
 
@@ -900,7 +902,7 @@ Status: 404
 {}
 ```
 
-## `GET /api/pleroma/admin/need_reboot`
+## `GET /api/v1/pleroma/admin/need_reboot`
 
 ### Returns the flag whether the pleroma should be restarted
 
@@ -913,7 +915,7 @@ Status: 404
 }
 ```
 
-## `GET /api/pleroma/admin/config`
+## `GET /api/v1/pleroma/admin/config`
 
 ### Get list of merged default settings with saved in database.
 
@@ -940,7 +942,7 @@ Status: 404
 }
 ```
 
-## `POST /api/pleroma/admin/config`
+## `POST /api/v1/pleroma/admin/config`
 
 ### Update config settings
 
@@ -1089,7 +1091,7 @@ config :quack,
 }
 ```
 
-## ` GET /api/pleroma/admin/config/descriptions`
+## ` GET /api/v1/pleroma/admin/config/descriptions`
 
 ### Get JSON with config descriptions.
 Loads json generated from `config/descriptions.exs`.
@@ -1122,7 +1124,7 @@ Loads json generated from `config/descriptions.exs`.
 }]
 ```
 
-## `GET /api/pleroma/admin/moderation_log`
+## `GET /api/v1/pleroma/admin/moderation_log`
 
 ### Get moderation log
 
@@ -1152,7 +1154,7 @@ Loads json generated from `config/descriptions.exs`.
 ]
 ```
 
-## `POST /api/pleroma/admin/reload_emoji`
+## `POST /api/v1/pleroma/admin/reload_emoji`
 
 ### Reload the instance's custom emoji
 
@@ -1160,7 +1162,7 @@ Loads json generated from `config/descriptions.exs`.
 - Params: None
 - Response: JSON, "ok" and 200 status
 
-## `PATCH /api/pleroma/admin/users/confirm_email`
+## `PATCH /api/v1/pleroma/admin/users/confirm_email`
 
 ### Confirm users' emails
 
@@ -1168,7 +1170,7 @@ Loads json generated from `config/descriptions.exs`.
   - `nicknames`
 - Response: Array of user nicknames
 
-## `PATCH /api/pleroma/admin/users/resend_confirmation_email`
+## `PATCH /api/v1/pleroma/admin/users/resend_confirmation_email`
 
 ### Resend confirmation email
 
@@ -1176,13 +1178,13 @@ Loads json generated from `config/descriptions.exs`.
   - `nicknames`
 - Response: Array of user nicknames
 
-## `GET /api/pleroma/admin/stats`
+## `GET /api/v1/pleroma/admin/stats`
 
 ### Stats
 
 - Query Params:
   - *optional* `instance`: **string** instance hostname (without protocol) to get stats for
-- Example: `https://mypleroma.org/api/pleroma/admin/stats?instance=lain.com`
+- Example: `https://mypleroma.org/api/v1/pleroma/admin/stats?instance=lain.com`
 
 - Response:
 
@@ -1197,7 +1199,7 @@ Loads json generated from `config/descriptions.exs`.
 }
 ```
 
-## `GET /api/pleroma/admin/oauth_app`
+## `GET /api/v1/pleroma/admin/oauth_app`
 
 ### List OAuth app
 
@@ -1229,7 +1231,7 @@ Loads json generated from `config/descriptions.exs`.
 ```
 
 
-## `POST /api/pleroma/admin/oauth_app`
+## `POST /api/v1/pleroma/admin/oauth_app`
 
 ### Create OAuth App
 
@@ -1262,7 +1264,7 @@ Loads json generated from `config/descriptions.exs`.
 }
 ```
 
-## `PATCH /api/pleroma/admin/oauth_app/:id`
+## `PATCH /api/v1/pleroma/admin/oauth_app/:id`
 
 ### Update OAuth App
 
@@ -1287,7 +1289,7 @@ Loads json generated from `config/descriptions.exs`.
 }
 ```
 
-## `DELETE /api/pleroma/admin/oauth_app/:id`
+## `DELETE /api/v1/pleroma/admin/oauth_app/:id`
 
 ### Delete OAuth App
 
@@ -1298,7 +1300,7 @@ Loads json generated from `config/descriptions.exs`.
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
 
-## `GET /api/pleroma/admin/media_proxy_caches`
+## `GET /api/v1/pleroma/admin/media_proxy_caches`
 
 ### Get a list of all banned MediaProxy URLs in Cachex
 
@@ -1322,7 +1324,7 @@ Loads json generated from `config/descriptions.exs`.
 
 ```
 
-## `POST /api/pleroma/admin/media_proxy_caches/delete`
+## `POST /api/v1/pleroma/admin/media_proxy_caches/delete`
 
 ### Remove a banned MediaProxy URL from Cachex
 
@@ -1337,7 +1339,7 @@ Loads json generated from `config/descriptions.exs`.
 
 ```
 
-## `POST /api/pleroma/admin/media_proxy_caches/purge`
+## `POST /api/v1/pleroma/admin/media_proxy_caches/purge`
 
 ### Purge a MediaProxy URL
 
@@ -1353,7 +1355,7 @@ Loads json generated from `config/descriptions.exs`.
 
 ```
 
-## GET /api/pleroma/admin/users/:nickname/chats
+## GET /api/v1/pleroma/admin/users/:nickname/chats
 
 ### List a user's chats
 
@@ -1382,7 +1384,7 @@ Loads json generated from `config/descriptions.exs`.
 ]
 ```
 
-## GET /api/pleroma/admin/chats/:chat_id
+## GET /api/v1/pleroma/admin/chats/:chat_id
 
 ### View a single chat
 
@@ -1409,7 +1411,7 @@ Loads json generated from `config/descriptions.exs`.
 }
 ```
 
-## GET /api/pleroma/admin/chats/:chat_id/messages
+## GET /api/v1/pleroma/admin/chats/:chat_id/messages
 
 ### List the messages in a chat
 
@@ -1447,7 +1449,7 @@ Loads json generated from `config/descriptions.exs`.
 ]
 ```
 
-## DELETE /api/pleroma/admin/chats/:chat_id/messages/:message_id
+## DELETE /api/v1/pleroma/admin/chats/:chat_id/messages/:message_id
 
 ### Delete a single message
 
@@ -1474,7 +1476,7 @@ Loads json generated from `config/descriptions.exs`.
 }
 ```
 
-## `GET /api/pleroma/admin/instance_document/:document_name`
+## `GET /api/v1/pleroma/admin/instance_document/:document_name`
 
 ### Get an instance document
 
@@ -1488,7 +1490,7 @@ Returns the content of the document
 <h1>Instance panel</h1>
 ```
 
-## `PATCH /api/pleroma/admin/instance_document/:document_name`
+## `PATCH /api/v1/pleroma/admin/instance_document/:document_name`
 - Params:
   - `file` (the file to be uploaded, using multipart form data.)
 
@@ -1504,7 +1506,7 @@ Returns the content of the document
 }
 ```
 
-## `DELETE /api/pleroma/admin/instance_document/:document_name`
+## `DELETE /api/v1/pleroma/admin/instance_document/:document_name`
 
 ### Delete an instance document
 
@@ -1516,7 +1518,7 @@ Returns the content of the document
 }
 ```
 
-## `GET /api/pleroma/admin/frontends
+## `GET /api/v1/pleroma/admin/frontends
 
 ### List available frontends
 
@@ -1541,7 +1543,7 @@ Returns the content of the document
 ]
 ```
 
-## `POST /api/pleroma/admin/frontends/install`
+## `POST /api/v1/pleroma/admin/frontends/install`
 
 ### Install a frontend
 

@@ -23,9 +23,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       application: %Schema{
         description: "The application used to post this status",
         type: :object,
+        nullable: true,
         properties: %{
           name: %Schema{type: :string},
-          website: %Schema{type: :string, nullable: true, format: :uri}
+          website: %Schema{type: :string, format: :uri}
         }
       },
       bookmarked: %Schema{type: :boolean, description: "Have you bookmarked this status?"},
@@ -291,7 +292,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "url" => "http://localhost:4001/users/nick6",
         "username" => "nick6"
       },
-      "application" => %{"name" => "Web", "website" => nil},
+      "application" => nil,
       "bookmarked" => false,
       "card" => nil,
       "content" => "foobar",

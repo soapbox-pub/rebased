@@ -180,10 +180,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
       tags: reblogged[:tags] || [],
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: build_application(activity_object.data["generator"]),
       language: nil,
       emojis: [],
       pleroma: %{
@@ -350,10 +347,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       poll: render(PollView, "show.json", object: object, for: opts[:for]),
       mentions: mentions,
       tags: build_tags(tags),
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: build_application(object.data["generator"]),
       language: nil,
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
@@ -542,4 +536,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       me: !!(current_user && current_user.ap_id in users)
     }
   end
+
+  @spec build_application(map() | nil) :: map() | nil
+  defp build_application(%{type: _type, name: name, url: url}), do: %{name: name, website: url}
+  defp build_application(_), do: nil
 end

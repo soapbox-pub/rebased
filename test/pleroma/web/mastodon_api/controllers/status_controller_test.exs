@@ -357,6 +357,50 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert activity.data["to"] == [user2.ap_id]
       assert activity.data["cc"] == []
     end
+
+    test "discloses application metadata when enabled" do
+      user = insert(:user, disclose_client: true)
+      %{user: _user, token: token, conn: conn} = oauth_access(["write:statuses"], user: user)
+
+      %Pleroma.Web.OAuth.Token{
+        app: %Pleroma.Web.OAuth.App{
+          client_name: app_name,
+          website: app_website
+        }
+      } = token
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe is my copilot"
+        })
+
+      assert %{
+               "content" => "cofe is my copilot",
+               "application" => %{
+                 "name" => ^app_name,
+                 "website" => ^app_website
+               }
+             } = json_response_and_validate_schema(result, 200)
+    end
+
+    test "hides application metadata when disabled" do
+      user = insert(:user, disclose_client: false)
+      %{user: _user, token: _token, conn: conn} = oauth_access(["write:statuses"], user: user)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "club mate is my wingman"
+        })
+
+      assert %{
+               "content" => "club mate is my wingman",
+               "application" => nil
+             } = json_response_and_validate_schema(result, 200)
+    end
   end
 
   describe "posting scheduled statuses" do
@@ -381,6 +425,31 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert expected_scheduled_at == CommonAPI.Utils.to_masto_date(scheduled_at)
       assert [] == Repo.all(Activity)
+    end
+
+    test "with expiration" do
+      %{conn: conn} = oauth_access(["write:statuses", "read:statuses"])
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+        |> Kernel.<>("Z")
+
+      assert %{"id" => status_id, "params" => %{"expires_in" => 300}} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses", %{
+                 "status" => "scheduled",
+                 "scheduled_at" => scheduled_at,
+                 "expires_in" => 300
+               })
+               |> json_response_and_validate_schema(200)
+
+      assert %{"id" => ^status_id, "params" => %{"expires_in" => 300}} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/scheduled_statuses/#{status_id}")
+               |> json_response_and_validate_schema(200)
     end
 
     test "ignores nil values", %{conn: conn} do
