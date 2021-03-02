@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.TimelineController do
@@ -51,6 +51,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:reply_filtering_user, user)
       |> Map.put(:announce_filtering_user, user)
       |> Map.put(:user, user)
+      |> Map.put(:local_only, params[:local])
+      |> Map.delete(:local)
 
     activities =
       [user.ap_id | User.following(user)]
@@ -62,7 +64,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity
+      as: :activity,
+      with_muted: Map.get(params, :with_muted, false)
     )
   end
 
@@ -111,6 +114,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:muting_user, user)
         |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:instance, params[:instance])
         |> ActivityPub.fetch_public_activities()
 
       conn
@@ -118,7 +122,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> render("index.json",
         activities: activities,
         for: user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     end
   end
@@ -172,7 +177,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> render("index.json",
         activities: activities,
         for: user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     end
   end
@@ -186,6 +192,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:user, user)
         |> Map.put(:muting_user, user)
+        |> Map.put(:local_only, params[:local])
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).
@@ -201,7 +208,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       render(conn, "index.json",
         activities: activities,
         for: user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       _e -> render_error(conn, :forbidden, "Error.")

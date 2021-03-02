@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
@@ -175,7 +175,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
 
     with true <- Config.get!([:instance, :federating]),
-         true <- type != "Block" || outgoing_blocks do
+         true <- type != "Block" || outgoing_blocks,
+         false <- Visibility.is_local_public?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 

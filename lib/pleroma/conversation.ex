@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Conversation do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Conversation.Participation.RecipientShip
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   use Ecto.Schema
@@ -43,7 +44,7 @@ defmodule Pleroma.Conversation do
   def maybe_create_recipientships(participation, activity) do
     participation = Repo.preload(participation, :recipients)
 
-    if participation.recipients |> Enum.empty?() do
+    if Enum.empty?(participation.recipients) do
       recipients = User.get_all_by_ap_id(activity.recipients)
       RecipientShip.create(recipients, participation)
     end
@@ -58,20 +59,15 @@ defmodule Pleroma.Conversation do
   def create_or_bump_for(activity, opts \\ []) do
     with true <- Pleroma.Web.ActivityPub.Visibility.is_direct?(activity),
          "Create" <- activity.data["type"],
-         object <- Pleroma.Object.normalize(activity),
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          true <- object.data["type"] in ["Note", "Question"],
-         ap_id when is_binary(ap_id) and byte_size(ap_id) > 0 <- object.data["context"] do
-      {:ok, conversation} = create_for_ap_id(ap_id)
-
+         ap_id when is_binary(ap_id) and byte_size(ap_id) > 0 <- object.data["context"],
+         {:ok, conversation} <- create_for_ap_id(ap_id) do
       users = User.get_users_from_set(activity.recipients, local_only: false)
 
       participations =
         Enum.map(users, fn user ->
           invisible_conversation = Enum.any?(users, &User.blocks?(user, &1))
-
-          unless invisible_conversation do
-            User.increment_unread_conversation_count(conversation, user)
-          end
 
           opts = Keyword.put(opts, :invisible_conversation, invisible_conversation)
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
@@ -279,6 +279,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     end
 
     test "search fetches remote statuses and prefers them over other results", %{conn: conn} do
+      old_version = :persistent_term.get({Pleroma.Repo, :postgres_version})
+      :persistent_term.put({Pleroma.Repo, :postgres_version}, 10.0)
+      on_exit(fn -> :persistent_term.put({Pleroma.Repo, :postgres_version}, old_version) end)
+
       capture_log(fn ->
         {:ok, %{id: activity_id}} =
           CommonAPI.post(insert(:user), %{
@@ -305,7 +309,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         })
 
       capture_log(fn ->
-        q = Object.normalize(activity).data["id"]
+        q = Object.normalize(activity, fetch: false).data["id"]
 
         results =
           conn

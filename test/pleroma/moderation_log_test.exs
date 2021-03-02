@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ModerationLogTest do
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
 
@@ -182,11 +182,14 @@ defmodule Pleroma.ModerationLogTest do
     end
 
     test "logging report update", %{moderator: moderator} do
+      user = insert(:user)
+
       report = %Activity{
         id: "9m9I1F4p8ftrTP6QTI",
         data: %{
           "type" => "Flag",
-          "state" => "resolved"
+          "state" => "resolved",
+          "actor" => user.ap_id
         }
       }
 
@@ -194,35 +197,48 @@ defmodule Pleroma.ModerationLogTest do
         ModerationLog.insert_log(%{
           actor: moderator,
           action: "report_update",
-          subject: report
+          subject: report,
+          subject_actor: user
         })
 
       log = Repo.one(ModerationLog)
 
       assert log.data["message"] ==
-               "@#{moderator.nickname} updated report ##{report.id} with 'resolved' state"
+               "@#{moderator.nickname} updated report ##{report.id} (on user @#{user.nickname}) with 'resolved' state"
     end
 
     test "logging report response", %{moderator: moderator} do
+      user = insert(:user)
+
       report = %Activity{
         id: "9m9I1F4p8ftrTP6QTI",
         data: %{
-          "type" => "Note"
+          "type" => "Note",
+          "actor" => user.ap_id
         }
       }
 
-      {:ok, _} =
-        ModerationLog.insert_log(%{
-          actor: moderator,
-          action: "report_note",
-          subject: report,
-          text: "look at this"
-        })
+      attrs = %{
+        actor: moderator,
+        action: "report_note",
+        subject: report,
+        text: "look at this"
+      }
 
-      log = Repo.one(ModerationLog)
+      {:ok, log1} = ModerationLog.insert_log(attrs)
+      log = Repo.get(ModerationLog, log1.id)
 
       assert log.data["message"] ==
                "@#{moderator.nickname} added note 'look at this' to report ##{report.id}"
+
+      {:ok, log2} = ModerationLog.insert_log(Map.merge(attrs, %{subject_actor: user}))
+
+      log = Repo.get(ModerationLog, log2.id)
+
+      assert log.data["message"] ==
+               "@#{moderator.nickname} added note 'look at this' to report ##{report.id} on user @#{
+                 user.nickname
+               }"
     end
 
     test "logging status sensitivity update", %{moderator: moderator} do

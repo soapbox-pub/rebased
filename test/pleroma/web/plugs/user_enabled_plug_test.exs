@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.Plugs.UserEnabledPlug
   import Pleroma.Factory
@@ -20,9 +20,9 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
 
   test "with a user that's not confirmed and a config requiring confirmation, it removes that user",
        %{conn: conn} do
-    Pleroma.Config.put([:instance, :account_activation_required], true)
+    clear_config([:instance, :account_activation_required], true)
 
-    user = insert(:user, confirmation_pending: true)
+    user = insert(:user, is_confirmed: false)
 
     conn =
       conn
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
   end
 
   test "with a user that is deactivated, it removes that user", %{conn: conn} do
-    user = insert(:user, deactivated: true)
+    user = insert(:user, is_active: false)
 
     conn =
       conn

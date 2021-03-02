@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emoji.Loader do
@@ -14,6 +14,8 @@ defmodule Pleroma.Emoji.Loader do
   alias Pleroma.Emoji
 
   require Logger
+
+  @mix_env Mix.env()
 
   @type pattern :: Regex.t() | module() | String.t()
   @type patterns :: pattern() | [pattern()]
@@ -77,10 +79,19 @@ defmodule Pleroma.Emoji.Loader do
     # it should run even if there are no emoji packs
     shortcode_globs = Config.get([:emoji, :shortcode_globs], [])
 
+    # for testing emoji.txt entries we do not want exposed in normal operation
+    test_emoji =
+      if @mix_env == :test do
+        load_from_file("test/config/emoji.txt", emoji_groups)
+      else
+        []
+      end
+
     emojis_txt =
       (load_from_file("config/emoji.txt", emoji_groups) ++
          load_from_file("config/custom_emoji.txt", emoji_groups) ++
-         load_from_globs(shortcode_globs, emoji_groups))
+         load_from_globs(shortcode_globs, emoji_groups) ++
+         test_emoji)
       |> Enum.reject(fn value -> value == nil end)
 
     Enum.map(emojis ++ emojis_txt, &prepare_emoji/1)

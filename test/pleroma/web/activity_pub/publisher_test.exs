@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.PublisherTest do
@@ -281,8 +281,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user, follower_address: follower.ap_id)
       user = insert(:user)
 
-      {:ok, _follower_one} = Pleroma.User.follow(follower, actor)
-      actor = refresh_record(actor)
+      {:ok, follower, actor} = Pleroma.User.follow(follower, actor)
 
       note_activity =
         insert(:note_activity,
@@ -323,7 +322,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
 
       note_activity = insert(:note_activity, user: actor)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       activity_path = String.trim_leading(note_activity.data["id"], Pleroma.Web.Endpoint.url())
       object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())

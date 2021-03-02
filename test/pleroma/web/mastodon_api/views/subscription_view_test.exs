@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SubscriptionViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
   alias Pleroma.Web.MastodonAPI.SubscriptionView, as: View
   alias Pleroma.Web.Push

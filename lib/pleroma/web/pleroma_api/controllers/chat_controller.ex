@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
@@ -15,7 +15,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
-  alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   import Ecto.Query
@@ -36,7 +35,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"]} when action in [:messages, :index, :show]
+    %{scopes: ["read:chats"]} when action in [:messages, :index, :index2, :show]
   )
 
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
@@ -80,9 +79,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
          %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
          {:ok, activity} <-
            CommonAPI.post_chat_message(user, recipient, params[:content],
-             media_id: params[:media_id]
+             media_id: params[:media_id],
+             idempotency_key: idempotency_key(conn)
            ),
-         message <- Object.normalize(activity, false),
+         message <- Object.normalize(activity, fetch: false),
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
       conn
       |> put_view(MessageReferenceView)
@@ -120,9 +120,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       ) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id),
          {_n, _} <- MessageReference.set_all_seen_for_chat(chat, last_read_id) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
     end
   end
 
@@ -140,33 +138,49 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, _params) do
-    blocked_ap_ids = User.blocked_users_ap_ids(user)
-
+  def index(%{assigns: %{user: user}} = conn, params) do
     chats =
-      Chat.for_user_query(user_id)
-      |> where([c], c.recipient not in ^blocked_ap_ids)
+      index_query(user, params)
       |> Repo.all()
 
-    conn
-    |> put_view(ChatView)
-    |> render("index.json", chats: chats)
+    render(conn, "index.json", chats: chats)
+  end
+
+  def index2(%{assigns: %{user: user}} = conn, params) do
+    chats =
+      index_query(user, params)
+      |> Pagination.fetch_paginated(params)
+
+    render(conn, "index.json", chats: chats)
+  end
+
+  defp index_query(%{id: user_id} = user, params) do
+    exclude_users =
+      User.cached_blocked_users_ap_ids(user) ++
+        if params[:with_muted], do: [], else: User.cached_muted_users_ap_ids(user)
+
+    user_id
+    |> Chat.for_user_query()
+    |> where([c], c.recipient not in ^exclude_users)
   end
 
   def create(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %User{ap_id: recipient} <- User.get_cached_by_id(id),
          {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
     end
   end
 
   def show(%{assigns: %{user: user}} = conn, %{id: id}) do
     with {:ok, chat} <- Chat.get_by_user_and_id(user, id) do
-      conn
-      |> put_view(ChatView)
-      |> render("show.json", chat: chat)
+      render(conn, "show.json", chat: chat)
+    end
+  end
+
+  defp idempotency_key(conn) do
+    case get_req_header(conn, "idempotency-key") do
+      [key] -> key
+      _ -> nil
     end
   end
 end

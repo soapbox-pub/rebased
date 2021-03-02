@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UserEnabledPlug do
-  import Plug.Conn
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.User
 
   def init(options) do
@@ -11,9 +11,10 @@ defmodule Pleroma.Web.Plugs.UserEnabledPlug do
   end
 
   def call(%{assigns: %{user: %User{} = user}} = conn, _) do
-    case User.account_status(user) do
-      :active -> conn
-      _ -> assign(conn, :user, nil)
+    if User.account_status(user) == :active do
+      conn
+    else
+      AuthHelper.drop_auth_info(conn)
     end
   end
 

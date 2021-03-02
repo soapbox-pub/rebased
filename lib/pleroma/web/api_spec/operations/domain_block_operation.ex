@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
@@ -14,9 +14,8 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
 
   def index_operation do
     %Operation{
-      tags: ["domain_blocks"],
-      summary: "Fetch domain blocks",
-      description: "View domains the user has blocked.",
+      tags: ["Domain blocks"],
+      summary: "Retrieve a list of blocked domains",
       security: [%{"oAuth" => ["follow", "read:blocks"]}],
       operationId: "DomainBlockController.index",
       responses: %{
@@ -34,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
   # Supporting domain query parameter is deprecated in Mastodon API
   def create_operation do
     %Operation{
-      tags: ["domain_blocks"],
+      tags: ["Domain blocks"],
       summary: "Block a domain",
       description: """
       Block a domain to:
@@ -55,7 +54,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
   # Supporting domain query parameter is deprecated in Mastodon API
   def delete_operation do
     %Operation{
-      tags: ["domain_blocks"],
+      tags: ["Domain blocks"],
       summary: "Unblock a domain",
       description: "Remove a domain block, if it exists in the user's array of blocked domains.",
       operationId: "DomainBlockController.delete",

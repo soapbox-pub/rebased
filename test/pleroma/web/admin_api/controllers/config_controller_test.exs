@@ -1,14 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   import ExUnit.CaptureLog
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.ConfigDB
 
   setup do
@@ -27,12 +26,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     setup do: clear_config(:configurable_from_database, true)
 
     test "when configuration from database is off", %{conn: conn} do
-      Config.put(:configurable_from_database, false)
+      clear_config(:configurable_from_database, false)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response_and_validate_schema(conn, 400) ==
                %{
-                 "error" => "To use this endpoint you need to enable configuration from database."
+                 "error" => "You must enable configurable_from_database in your config file."
                }
     end
 
@@ -162,14 +161,16 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
   end
 
-  test "POST /api/pleroma/admin/config error", %{conn: conn} do
+  test "POST /api/pleroma/admin/config with configdb disabled", %{conn: conn} do
+    clear_config(:configurable_from_database, false)
+
     conn =
       conn
       |> put_req_header("content-type", "application/json")
       |> post("/api/pleroma/admin/config", %{"configs" => []})
 
     assert json_response_and_validate_schema(conn, 400) ==
-             %{"error" => "To use this endpoint you need to enable configuration from database."}
+             %{"error" => "You must enable configurable_from_database in your config file."}
   end
 
   describe "POST /api/pleroma/admin/config" do
@@ -408,8 +409,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "saving config which need pleroma reboot", %{conn: conn} do
-      chat = Config.get(:chat)
-      on_exit(fn -> Config.put(:chat, chat) end)
+      clear_config([:chat, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -454,8 +454,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
-      chat = Config.get(:chat)
-      on_exit(fn -> Config.put(:chat, chat) end)
+      clear_config([:chat, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -1415,11 +1414,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
   describe "GET /api/pleroma/admin/config/descriptions" do
     test "structure", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
-
-      conn =
-        assign(conn, :user, admin)
-        |> get("/api/pleroma/admin/config/descriptions")
+      conn = get(conn, "/api/pleroma/admin/config/descriptions")
 
       assert [child | _others] = json_response_and_validate_schema(conn, 200)
 
@@ -1437,11 +1432,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         {:esshd}
       ])
 
-      admin = insert(:user, is_admin: true)
-
-      conn =
-        assign(conn, :user, admin)
-        |> get("/api/pleroma/admin/config/descriptions")
+      conn = get(conn, "/api/pleroma/admin/config/descriptions")
 
       children = json_response_and_validate_schema(conn, 200)
 

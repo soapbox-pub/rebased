@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Conversation.ParticipationTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
   alias Pleroma.Conversation
   alias Pleroma.Conversation.Participation
@@ -37,9 +37,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     [%{read: true}] = Participation.for_user(user)
     [%{read: false} = participation] = Participation.for_user(other_user)
-
-    assert User.get_cached_by_id(user.id).unread_conversation_count == 0
-    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 1
+    assert Participation.unread_count(user) == 0
+    assert Participation.unread_count(other_user) == 1
 
     {:ok, _} =
       CommonAPI.post(other_user, %{
@@ -54,8 +53,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
     [%{read: false}] = Participation.for_user(user)
     [%{read: true}] = Participation.for_user(other_user)
 
-    assert User.get_cached_by_id(user.id).unread_conversation_count == 1
-    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 0
+    assert Participation.unread_count(user) == 1
+    assert Participation.unread_count(other_user) == 0
   end
 
   test "for a new conversation, it sets the recipents of the participation" do
@@ -97,11 +96,10 @@ defmodule Pleroma.Conversation.ParticipationTest do
     {:ok, %Participation{} = participation} =
       Participation.create_for_user_and_conversation(user, conversation)
 
+    {:ok, participation} = time_travel(participation, -2)
+
     assert participation.user_id == user.id
     assert participation.conversation_id == conversation.id
-
-    # Needed because updated_at is accurate down to a second
-    :timer.sleep(1000)
 
     # Creating again returns the same participation
     {:ok, %Participation{} = participation_two} =
@@ -177,8 +175,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     assert [participation_one, participation_two] = Participation.for_user(user)
 
-    object2 = Pleroma.Object.normalize(activity_two)
-    object3 = Pleroma.Object.normalize(activity_three)
+    object2 = Pleroma.Object.normalize(activity_two, fetch: false)
+    object3 = Pleroma.Object.normalize(activity_three, fetch: false)
 
     user = Repo.get(Pleroma.User, user.id)
 
@@ -264,7 +262,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
       assert [%{read: false}, %{read: false}, %{read: false}, %{read: false}] =
                Participation.for_user(blocker)
 
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 4
+      assert Participation.unread_count(blocker) == 4
 
       {:ok, _user_relationship} = User.block(blocker, blocked)
 
@@ -272,15 +270,15 @@ defmodule Pleroma.Conversation.ParticipationTest do
       assert [%{read: true}, %{read: true}, %{read: true}, %{read: false}] =
                Participation.for_user(blocker)
 
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 1
+      assert Participation.unread_count(blocker) == 1
 
       # The conversation is not marked as read for the blocked user
       assert [_, _, %{read: false}] = Participation.for_user(blocked)
-      assert User.get_cached_by_id(blocked.id).unread_conversation_count == 1
+      assert Participation.unread_count(blocker) == 1
 
       # The conversation is not marked as read for the third user
       assert [%{read: false}, _, _] = Participation.for_user(third_user)
-      assert User.get_cached_by_id(third_user.id).unread_conversation_count == 1
+      assert Participation.unread_count(third_user) == 1
     end
 
     test "the new conversation with the blocked user is not marked as unread " do
@@ -298,7 +296,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
         })
 
       assert [%{read: true}] = Participation.for_user(blocker)
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 0
+      assert Participation.unread_count(blocker) == 0
 
       # When the blocked user is a recipient
       {:ok, _direct2} =
@@ -308,10 +306,10 @@ defmodule Pleroma.Conversation.ParticipationTest do
         })
 
       assert [%{read: true}, %{read: true}] = Participation.for_user(blocker)
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 0
+      assert Participation.unread_count(blocker) == 0
 
       assert [%{read: false}, _] = Participation.for_user(blocked)
-      assert User.get_cached_by_id(blocked.id).unread_conversation_count == 1
+      assert Participation.unread_count(blocked) == 1
     end
 
     test "the conversation with the blocked user is not marked as unread on a reply" do
@@ -327,8 +325,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
       {:ok, _user_relationship} = User.block(blocker, blocked)
       assert [%{read: true}] = Participation.for_user(blocker)
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 0
 
+      assert Participation.unread_count(blocker) == 0
       assert [blocked_participation] = Participation.for_user(blocked)
 
       # When it's a reply from the blocked user
@@ -340,8 +338,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
         })
 
       assert [%{read: true}] = Participation.for_user(blocker)
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 0
 
+      assert Participation.unread_count(blocker) == 0
       assert [third_user_participation] = Participation.for_user(third_user)
 
       # When it's a reply from the third user
@@ -353,11 +351,24 @@ defmodule Pleroma.Conversation.ParticipationTest do
         })
 
       assert [%{read: true}] = Participation.for_user(blocker)
-      assert User.get_cached_by_id(blocker.id).unread_conversation_count == 0
+      assert Participation.unread_count(blocker) == 0
 
       # Marked as unread for the blocked user
       assert [%{read: false}] = Participation.for_user(blocked)
-      assert User.get_cached_by_id(blocked.id).unread_conversation_count == 1
+
+      assert Participation.unread_count(blocked) == 1
     end
+  end
+
+  test "deletes a conversation" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{status: "Hey @#{other_user.nickname}.", visibility: "direct"})
+
+    assert [participation] = Participation.for_user(other_user)
+    assert {:ok, _} = Participation.delete(participation)
+    assert [] == Participation.for_user(other_user)
   end
 end

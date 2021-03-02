@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Instances.InstanceTest do
+  alias Pleroma.Instances
   alias Pleroma.Instances.Instance
   alias Pleroma.Repo
 
@@ -147,6 +148,14 @@ defmodule Pleroma.Instances.InstanceTest do
                           URI.parse("https://no-favicon.example.org/")
                         )
              end) =~ "Instance.scrape_favicon(\"https://no-favicon.example.org/\") error: "
+    end
+
+    test "Doesn't scrapes unreachable instances" do
+      instance = insert(:instance, unreachable_since: Instances.reachability_datetime_threshold())
+      url = "https://" <> instance.host
+
+      assert capture_log(fn -> assert nil == Instance.get_or_update_favicon(URI.parse(url)) end) =~
+               "Instance.scrape_favicon(\"#{url}\") ignored unreachable host"
     end
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.AppOperation do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
   @spec create_operation() :: Operation.t()
   def create_operation do
     %Operation{
-      tags: ["apps"],
+      tags: ["Applications"],
       summary: "Create an application",
       description: "Create a new application to obtain OAuth2 credentials",
       operationId: "AppController.create",
@@ -45,8 +45,8 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
 
   def verify_credentials_operation do
     %Operation{
-      tags: ["apps"],
-      summary: "Verify your app works",
+      tags: ["Applications"],
+      summary: "Verify the application works",
       description: "Confirm that the app's OAuth2 credentials work.",
       operationId: "AppController.verify_credentials",
       security: [%{"oAuth" => ["read"]}],

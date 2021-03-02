@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun.ConnectionPoolTest do
@@ -7,7 +7,6 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
 
   import Mox
   import ExUnit.CaptureLog
-  alias Pleroma.Config
   alias Pleroma.Gun.ConnectionPool
 
   defp gun_mock(_) do
@@ -19,7 +18,6 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
     :ok
   end
 
-  setup :set_mox_from_context
   setup :gun_mock
 
   test "gives the same connection to 2 concurrent requests" do
@@ -50,7 +48,7 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
 
   test "connection limit is respected with concurrent requests" do
     clear_config([:connections_pool, :max_connections]) do
-      Config.put([:connections_pool, :max_connections], 1)
+      clear_config([:connections_pool, :max_connections], 1)
       # The supervisor needs a reboot to apply the new config setting
       Process.exit(Process.whereis(Pleroma.Gun.ConnectionPool.WorkerSupervisor), :kill)
 

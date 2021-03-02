@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceView do
@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Pleroma.Stats.get_stats(),
-      thumbnail: Keyword.get(instance, :instance_thumbnail),
+      thumbnail: Pleroma.Web.base_url() <> Keyword.get(instance, :instance_thumbnail),
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
-      background_image: Keyword.get(instance, :background_image),
+      background_image: Pleroma.Web.base_url() <> Keyword.get(instance, :background_image),
       chat_limit: Keyword.get(instance, :chat_limit),
       description_limit: Keyword.get(instance, :description_limit),
       pleroma: %{
@@ -45,6 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats])
         },
+        stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
     }

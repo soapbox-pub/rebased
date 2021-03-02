@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationView do
@@ -11,6 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.UserRelationship
+  alias Pleroma.Web.AdminAPI.Report
+  alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
@@ -118,9 +120,18 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "pleroma:chat_mention" ->
         put_chat_message(response, activity, reading_user, status_render_opts)
 
+      "pleroma:report" ->
+        put_report(response, activity)
+
       type when type in ["follow", "follow_request"] ->
         response
     end
+  end
+
+  defp put_report(response, activity) do
+    report_render = ReportView.render("show.json", Report.extract_report_info(activity))
+
+    Map.put(response, :report, report_render)
   end
 
   defp put_emoji(response, activity) do
@@ -128,7 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   end
 
   defp put_chat_message(response, activity, reading_user, opts) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
     author = User.get_cached_by_ap_id(object.data["actor"])
     chat = Pleroma.Chat.get(reading_user.id, author.ap_id)
     cm_ref = MessageReference.for_chat_and_object(chat, object)

@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.User
 
   import Pleroma.Factory
@@ -55,7 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
       conn: conn,
       path: path
     } do
-      Config.put([:instance, :public], false)
+      clear_config([:instance, :public], false)
 
       conn = get(conn, path)
 
@@ -64,7 +63,8 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
     end
 
     test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
-      token = insert(:oauth_token, scopes: ["read"])
+      {:ok, app} = Pleroma.Web.MastodonAPI.AuthController.local_mastofe_app()
+      token = insert(:oauth_token, app: app, scopes: ["read"])
 
       conn =
         conn

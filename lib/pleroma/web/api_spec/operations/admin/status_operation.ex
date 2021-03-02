@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
@@ -21,9 +21,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Admin", "Statuses"],
+      tags: ["Status administration"],
       operationId: "AdminAPI.StatusController.index",
-      security: [%{"oAuth" => ["read:statuses"]}],
+      summary: "Get all statuses",
+      security: [%{"oAuth" => ["admin:read:statuses"]}],
       parameters: [
         Operation.parameter(
           :godmode,
@@ -69,11 +70,11 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Admin", "Statuses"],
-      summary: "Show Status",
+      tags: ["Status adminitration)"],
+      summary: "Get status",
       operationId: "AdminAPI.StatusController.show",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["read:statuses"]}],
+      security: [%{"oAuth" => ["admin:read:statuses"]}],
       responses: %{
         200 => Operation.response("Status", "application/json", status()),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -83,11 +84,11 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Admin", "Statuses"],
-      summary: "Change the scope of an individual reported status",
+      tags: ["Status adminitration)"],
+      summary: "Change the scope of a status",
       operationId: "AdminAPI.StatusController.update",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["write:statuses"]}],
+      security: [%{"oAuth" => ["admin:write:statuses"]}],
       requestBody: request_body("Parameters", update_request(), required: true),
       responses: %{
         200 => Operation.response("Status", "application/json", Status),
@@ -98,11 +99,11 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Admin", "Statuses"],
-      summary: "Delete an individual reported status",
+      tags: ["Status adminitration)"],
+      summary: "Delete status",
       operationId: "AdminAPI.StatusController.delete",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["write:statuses"]}],
+      security: [%{"oAuth" => ["admin:write:statuses"]}],
       responses: %{
         200 => empty_object_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -132,7 +133,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
         avatar: %Schema{type: :string},
         nickname: %Schema{type: :string},
         display_name: %Schema{type: :string},
-        deactivated: %Schema{type: :boolean},
+        is_active: %Schema{type: :boolean},
         local: %Schema{type: :boolean},
         roles: %Schema{
           type: :object,
@@ -142,7 +143,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
           }
         },
         tags: %Schema{type: :string},
-        confirmation_pending: %Schema{type: :string}
+        is_confirmed: %Schema{type: :string}
       }
     }
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StreamerTest do
@@ -27,6 +27,14 @@ defmodule Pleroma.Web.StreamerTest do
       assert {:ok, "public:local"} = Streamer.get_topic("public:local", nil, nil)
       assert {:ok, "public:media"} = Streamer.get_topic("public:media", nil, nil)
       assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", nil, nil)
+    end
+
+    test "allows instance streams" do
+      assert {:ok, "public:remote:lain.com"} =
+               Streamer.get_topic("public:remote", nil, nil, %{"instance" => "lain.com"})
+
+      assert {:ok, "public:remote:media:lain.com"} =
+               Streamer.get_topic("public:remote:media", nil, nil, %{"instance" => "lain.com"})
     end
 
     test "allows hashtag streams" do
@@ -214,7 +222,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       data =
         File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
         |> Map.put("object", activity.data["object"])
         |> Map.put("actor", user.ap_id)
 
@@ -255,8 +263,10 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       other_user = insert(:user)
 
-      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
-      object = Object.normalize(create_activity, false)
+      {:ok, create_activity} =
+        CommonAPI.post_chat_message(other_user, user, "hey cirno", idempotency_key: "123")
+
+      object = Object.normalize(create_activity, fetch: false)
       chat = Chat.get(user.id, other_user.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
       cm_ref = %{cm_ref | chat: chat, object: object}
@@ -274,7 +284,7 @@ defmodule Pleroma.Web.StreamerTest do
       other_user = insert(:user)
 
       {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
-      object = Object.normalize(create_activity, false)
+      object = Object.normalize(create_activity, fetch: false)
       chat = Chat.get(user.id, other_user.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
       cm_ref = %{cm_ref | chat: chat, object: object}
@@ -373,18 +383,7 @@ defmodule Pleroma.Web.StreamerTest do
       user: user,
       token: oauth_token
     } do
-      user_url = user.ap_id
       user2 = insert(:user)
-
-      body =
-        File.read!("test/fixtures/users_mock/localhost.json")
-        |> String.replace("{{nickname}}", user.nickname)
-        |> Jason.encode!()
-
-      Tesla.Mock.mock_global(fn
-        %{method: :get, url: ^user_url} ->
-          %Tesla.Env{status: 200, body: body}
-      end)
 
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
       {:ok, _follower, _followed, follow_activity} = CommonAPI.follow(user2, user)
@@ -392,6 +391,56 @@ defmodule Pleroma.Web.StreamerTest do
       assert_receive {:render_with_user, _, "notification.json", notif}
       assert notif.activity.id == follow_activity.id
       refute Streamer.filtered_by_user?(user, notif)
+    end
+
+    test "it sends follow relationships updates to the 'user' stream", %{
+      user: user,
+      token: oauth_token
+    } do
+      user_id = user.id
+      other_user = insert(:user)
+      other_user_id = other_user.id
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(user, other_user)
+
+      assert_receive {:text, event}
+
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
+               Jason.decode!(event)
+
+      assert %{
+               "follower" => %{
+                 "follower_count" => 0,
+                 "following_count" => 0,
+                 "id" => ^user_id
+               },
+               "following" => %{
+                 "follower_count" => 0,
+                 "following_count" => 0,
+                 "id" => ^other_user_id
+               },
+               "state" => "follow_pending"
+             } = Jason.decode!(payload)
+
+      assert_receive {:text, event}
+
+      assert %{"event" => "pleroma:follow_relationships_update", "payload" => payload} =
+               Jason.decode!(event)
+
+      assert %{
+               "follower" => %{
+                 "follower_count" => 0,
+                 "following_count" => 1,
+                 "id" => ^user_id
+               },
+               "following" => %{
+                 "follower_count" => 1,
+                 "following_count" => 0,
+                 "id" => ^other_user_id
+               },
+               "state" => "follow_accept"
+             } = Jason.decode!(payload)
     end
   end
 
@@ -439,7 +488,7 @@ defmodule Pleroma.Web.StreamerTest do
 
   describe "thread_containment/2" do
     test "it filters to user if recipients invalid and thread containment is enabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      clear_config([:instance, :skip_thread_containment], false)
       author = insert(:user)
       %{user: user, token: oauth_token} = oauth_access(["read"])
       User.follow(user, author, :follow_accept)
@@ -460,7 +509,7 @@ defmodule Pleroma.Web.StreamerTest do
     end
 
     test "it sends message if recipients invalid and thread containment is disabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], true)
+      clear_config([:instance, :skip_thread_containment], true)
       author = insert(:user)
       %{user: user, token: oauth_token} = oauth_access(["read"])
       User.follow(user, author, :follow_accept)
@@ -482,7 +531,7 @@ defmodule Pleroma.Web.StreamerTest do
     end
 
     test "it sends message if recipients invalid and thread containment is enabled but user's thread containment is disabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      clear_config([:instance, :skip_thread_containment], false)
       author = insert(:user)
       user = insert(:user, skip_thread_containment: true)
       %{token: oauth_token} = oauth_access(["read"], user: user)
@@ -553,7 +602,7 @@ defmodule Pleroma.Web.StreamerTest do
       user_b = insert(:user)
       user_c = insert(:user)
 
-      {:ok, user_a} = User.follow(user_a, user_b)
+      {:ok, user_a, user_b} = User.follow(user_a, user_b)
 
       {:ok, list} = List.create("Test", user_a)
       {:ok, list} = List.follow(list, user_b)
@@ -589,7 +638,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends wanted private posts to list", %{user: user_a, token: user_a_token} do
       user_b = insert(:user)
 
-      {:ok, user_a} = User.follow(user_a, user_b)
+      {:ok, user_a, user_b} = User.follow(user_a, user_b)
 
       {:ok, list} = List.create("Test", user_a)
       {:ok, list} = List.follow(list, user_b)

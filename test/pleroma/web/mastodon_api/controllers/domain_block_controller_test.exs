@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
+  # TODO: Should not need Cachex
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User

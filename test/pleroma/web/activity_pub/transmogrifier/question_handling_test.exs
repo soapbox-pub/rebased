@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
@@ -18,11 +18,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   end
 
   test "Mastodon Question activity" do
-    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
+    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Jason.decode!()
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert object.data["url"] == "https://mastodon.sdf.org/@rinpatch/102070944809637304"
 
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     {:ok, reply_activity} = CommonAPI.post(user, %{status: "hewwo", in_reply_to_id: activity.id})
 
-    reply_object = Object.normalize(reply_activity, false)
+    reply_object = Object.normalize(reply_activity, fetch: false)
 
     assert reply_object.data["context"] == object.data["context"]
     assert reply_object.data["context_id"] == object.data["context_id"]
@@ -97,11 +97,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-question-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["object", "oneOf"], options)
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert Enum.sort(object.data["oneOf"]) == Enum.sort(options)
   end
@@ -142,12 +142,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-question-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["object", "oneOf"], options)
       |> Kernel.put_in(["object", "tag"], tag)
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert object.data["oneOf"] == options
 
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   end
 
   test "returns same activity if received a second time" do
-    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
+    data = File.read!("test/fixtures/mastodon-question-activity.json") |> Jason.decode!()
 
     assert {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
@@ -168,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   test "accepts a Question with no content" do
     data =
       File.read!("test/fixtures/mastodon-question-activity.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Kernel.put_in(["object", "content"], "")
 
     assert {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)

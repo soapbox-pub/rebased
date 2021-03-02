@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
@@ -104,6 +104,48 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
 
     assert [%{"name" => "🎅", "count" => 1, "accounts" => [_represented_user], "me" => true}] =
              result
+  end
+
+  test "GET /api/v1/pleroma/statuses/:id/reactions?with_muted=true", %{conn: conn} do
+    user = insert(:user)
+    user2 = insert(:user)
+    user3 = insert(:user)
+
+    token = insert(:oauth_token, user: user, scopes: ["read:statuses"])
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
+
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, user2, "🎅")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, user3, "🎅")
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> assign(:token, token)
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"name" => "🎅", "count" => 2}] = result
+
+    User.mute(user, user3)
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> assign(:token, token)
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"name" => "🎅", "count" => 1}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> assign(:token, token)
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions?with_muted=true")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"name" => "🎅", "count" => 2}] = result
   end
 
   test "GET /api/v1/pleroma/statuses/:id/reactions with :show_reactions disabled", %{conn: conn} do

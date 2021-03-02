@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ChatChannelTest do
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ChatChannelTest do
     end
 
     test "it ignores messages above a certain length", %{socket: socket} do
-      Pleroma.Config.put([:instance, :chat_limit], 2)
+      clear_config([:instance, :chat_limit], 2)
       push(socket, "new_msg", %{"text" => "123"})
       refute_broadcast("new_msg", %{text: "123"})
     end

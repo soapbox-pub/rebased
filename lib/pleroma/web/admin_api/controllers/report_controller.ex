@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ReportController do
@@ -19,11 +19,11 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["read:reports"], admin: true} when action in [:index, :show])
+  plug(OAuthScopesPlug, %{scopes: ["admin:read:reports"]} when action in [:index, :show])
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:reports"], admin: true}
+    %{scopes: ["admin:write:reports"]}
     when action in [:update, :notes_create, :notes_delete]
   )
 
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   end
 
   def show(conn, %{id: id}) do
-    with %Activity{} = report <- Activity.get_by_id(id) do
+    with %Activity{} = report <- Activity.get_report(id) do
       render(conn, "show.json", Report.extract_report_info(report))
     else
       _ -> {:error, :not_found}
@@ -50,10 +50,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
       Enum.map(reports, fn report ->
         case CommonAPI.update_report_state(report.id, report.state) do
           {:ok, activity} ->
+            report = Activity.get_by_id_with_user_actor(activity.id)
+
             ModerationLog.insert_log(%{
               action: "report_update",
               actor: admin,
-              subject: activity
+              subject: activity,
+              subject_actor: report.user_actor
             })
 
             activity
@@ -73,11 +76,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   def notes_create(%{assigns: %{user: user}, body_params: %{content: content}} = conn, %{
         id: report_id
       }) do
-    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
+    with {:ok, _} <- ReportNote.create(user.id, report_id, content),
+         report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{
         action: "report_note",
         actor: user,
-        subject: Activity.get_by_id(report_id),
+        subject: report,
+        subject_actor: report.user_actor,
         text: content
       })
 
@@ -91,11 +96,13 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
         id: note_id,
         report_id: report_id
       }) do
-    with {:ok, note} <- ReportNote.destroy(note_id) do
+    with {:ok, note} <- ReportNote.destroy(note_id),
+         report <- Activity.get_by_id_with_user_actor(report_id) do
       ModerationLog.insert_log(%{
         action: "report_note_delete",
         actor: user,
-        subject: Activity.get_by_id(report_id),
+        subject: report,
+        subject_actor: report.user_actor,
         text: note.content
       })
 

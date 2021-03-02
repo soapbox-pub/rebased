@@ -1,2 +1,3 @@
 firefox, /emoji/Firefox.gif, Gif,Fun
 blank, /emoji/blank.png, Fun
+dinosaur, /emoji/dino walking.gif, Gif

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     field(:type, :string)
     field(:mediaType, :string, default: "application/octet-stream")
     field(:name, :string)
+    field(:blurhash, :string)
 
     embeds_many :url, UrlObjectValidator, primary_key: false do
       field(:type, :string)
@@ -41,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       |> fix_url()
 
     struct
-    |> cast(data, [:type, :mediaType, :name])
+    |> cast(data, [:type, :mediaType, :name, :blurhash])
     |> cast_embed(:url, with: &url_changeset/2)
     |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
     |> validate_required([:type, :mediaType, :url])

@@ -43,7 +43,7 @@ Other than things bundled in the OTP release Pleroma depends on:
 
 ### Installing optional packages
 
-Per [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+Per [`docs/installation/optional/media_graphics_packages.md`](optional/media_graphics_packages.md):
   * ImageMagick
   * ffmpeg
   * exiftool
@@ -89,6 +89,8 @@ RUM indexes are an alternative indexing scheme that is not included in PostgreSQ
 #### (Optional) Performance configuration
 It is encouraged to check [Optimizing your PostgreSQL performance](../configuration/postgresql.md) document, for tips on PostgreSQL tuning.
 
+Restart PostgreSQL to apply configuration changes:
+
 === "Alpine"
     ```
     rc-service postgresql restart
@@ -98,17 +100,6 @@ It is encouraged to check [Optimizing your PostgreSQL performance](../configurat
     ```
     systemctl restart postgresql
     ```
-
-If you are using PostgreSQL 12 or higher, add this to your Ecto database configuration
-
-```elixir
-#
-config :pleroma, Pleroma.Repo,
-prepare: :named,
-parameters: [
-  plan_cache_mode: "force_custom_plan"
-]
-```
 
 ### Installing Pleroma
 ```sh
@@ -311,4 +302,3 @@ This will create an account withe the username of 'joeuser' with the email addre
 ## Questions
 
 Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
-

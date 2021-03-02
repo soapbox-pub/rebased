@@ -20,7 +20,7 @@ Asenna tarvittava ohjelmisto:
 
 #### Optional software
 
-[`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md):
+[`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md):
   * ImageMagick
   * ffmpeg
   * exiftool

@@ -45,10 +45,11 @@ To add configuration to your config file, you can copy it from the base config. 
     older software for theses nicknames.
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
+* `autofollowing_nicknames`: Set to nicknames of (local) users that automatically follows every newly registered user.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
-* `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
@@ -62,6 +63,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
+* `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
@@ -219,13 +221,11 @@ config :pleroma, :mrf_user_allowlist, %{
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
 
-## Frontends
-
 ### :frontend_configurations
 
 This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
-Frontends can access these settings at `/api/pleroma/frontend_configurations`
+Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
@@ -321,9 +321,10 @@ This section describe PWA manifest instance-specific values. Currently this opti
 #### Pleroma.Web.MediaProxy.Invalidation.Script
 
 This strategy allow perform external shell script to purge cache.
-Urls of attachments pass to script as arguments.
+Urls of attachments are passed to the script as arguments.
 
-* `script_path`: path to external script.
+* `script_path`: Path to the external script.
+* `url_format`: Set to `:htcacheclean` if using Apache's htcacheclean utility.
 
 Example:
 
@@ -549,7 +550,7 @@ the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). Th
 * `uploader`: Which one of the [uploaders](#uploaders) to use.
 * `filters`: List of [upload filters](#upload-filters) to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
-* `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
+* `base_url`: The base URL to access a user-uploaded file. Useful when you want to host the media files via another domain or are using a 3rd party S3 provider.
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 * `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
@@ -570,10 +571,7 @@ Don't forget to configure [Ex AWS S3](#ex-aws-s3-settings)
 
 * `bucket`: S3 bucket name.
 * `bucket_namespace`: S3 bucket namespace.
-* `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
 * `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
-For example, when using CDN to S3 virtual host format, set "".
-At this time, write CNAME to CDN in public_endpoint.
 * `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
 #### Ex AWS S3 settings
@@ -850,13 +848,13 @@ config :pleroma, :admin_token, "somerandomtoken"
 You can then do
 
 ```shell
-curl "http://localhost:4000/api/pleroma/admin/users/invites?admin_token=somerandomtoken"
+curl "http://localhost:4000/api/v1/pleroma/admin/users/invites?admin_token=somerandomtoken"
 ```
 
 or
 
 ```shell
-curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
+curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/v1/pleroma/admin/users/invites"
 ```
 
 Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
@@ -894,6 +892,22 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
 OpenLDAP server the value may be `uid: "uid"`.
+
+### :oauth2 (Pleroma as OAuth 2.0 provider settings)
+
+OAuth 2.0 provider settings:
+
+* `token_expires_in` - The lifetime in seconds of the access token.
+* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
+
+OAuth 2.0 provider and related endpoints:
+
+* `POST /api/v1/apps` creates client app basing on provided params.
+* `GET/POST /oauth/authorize` renders/submits authorization form.
+* `POST /oauth/token` creates/renews OAuth token.
+* `POST /oauth/revoke` revokes provided OAuth token.
+* `GET /api/v1/accounts/verify_credentials` (with proper `Authorization` header or `access_token` URI param) returns user info on requester (with `acct` field containing local nickname and `fqn` field containing fully-qualified nickname which could generally be used as email stub for OAuth software that demands email field in identity endpoint response, like Peertube).
 
 ### OAuth consumer mode
 
@@ -966,14 +980,6 @@ config :ueberauth, Ueberauth,
     keycloak: {Ueberauth.Strategy.Keycloak, [uid_field: :email]}
   ]
 ```
-
-### OAuth 2.0 provider - :oauth2
-
-Configure OAuth 2 provider capabilities:
-
-* `token_expires_in` - The lifetime in seconds of the access token.
-* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 
 ## Link parsing
 
@@ -1067,6 +1073,20 @@ Control favicons for instances.
 
 * `enabled`: Allow/disallow displaying and getting instances favicons
 
+## Pleroma.User.Backup
+
+!!! note
+    Requires enabled email
+
+* `:purge_after_days` an integer, remove backup achives after N days.
+* `:limit_days` an integer, limit user to export not more often than once per N days.
+* `:dir` a string with a path to backup temporary directory or `nil` to let Pleroma choose temporary directory in the following order:
+    1. the directory named by the TMPDIR environment variable
+    2. the directory named by the TEMP environment variable
+    3. the directory named by the TMP environment variable
+    4. C:\TMP on Windows or /tmp on Unix-like operating systems
+    5. as a last resort, the current working directory
+
 ## Frontend management
 
 Frontends in Pleroma are swappable - you can specify which one to use here.
@@ -1099,3 +1119,15 @@ Settings to enable and configure expiration for ephemeral activities
 
 * `:enabled` - enables ephemeral activities creation
 * `:min_lifetime` - minimum lifetime for ephemeral activities (in seconds). Default: 10 minutes.
+
+## ConcurrentLimiter
+
+Settings to restrict concurrently running jobs. Jobs which can be configured:
+
+* `Pleroma.Web.RichMedia.Helpers` - generating link previews of URLs in activities
+* `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy` - warming remote media cache via MediaProxyWarmingPolicy
+
+Each job has these settings:
+
+* `:max_running` - max concurrently runnings jobs
+* `:max_waiting` - max waiting jobs

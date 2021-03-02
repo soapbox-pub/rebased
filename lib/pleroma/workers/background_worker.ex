@@ -1,19 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackgroundWorker do
-  alias Pleroma.Activity
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
 
   use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
 
-  def perform(%Job{args: %{"op" => "deactivate_user", "user_id" => user_id, "status" => status}}) do
+  def perform(%Job{args: %{"op" => "user_activation", "user_id" => user_id, "status" => status}}) do
     user = User.get_cached_by_id(user_id)
-    User.perform(:deactivate_async, user, status)
+    User.perform(:set_activation_async, user, status)
   end
 
   def perform(%Job{args: %{"op" => "delete_user", "user_id" => user_id}}) do
@@ -30,19 +28,6 @@ defmodule Pleroma.Workers.BackgroundWorker do
       when op in ["blocks_import", "follow_import", "mutes_import"] do
     user = User.get_cached_by_id(user_id)
     {:ok, User.Import.perform(String.to_atom(op), user, identifiers)}
-  end
-
-  def perform(%Job{args: %{"op" => "media_proxy_preload", "message" => message}}) do
-    MediaProxyWarmingPolicy.perform(:preload, message)
-  end
-
-  def perform(%Job{args: %{"op" => "media_proxy_prefetch", "url" => url}}) do
-    MediaProxyWarmingPolicy.perform(:prefetch, url)
-  end
-
-  def perform(%Job{args: %{"op" => "fetch_data_for_activity", "activity_id" => activity_id}}) do
-    activity = Activity.get_by_id(activity_id)
-    Pleroma.Web.RichMedia.Helpers.perform(:fetch, activity)
   end
 
   def perform(%Job{

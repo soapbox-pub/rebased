@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.FeedView do
@@ -23,7 +23,7 @@ defmodule Pleroma.Web.Feed.FeedView do
   def pub_date(%DateTime{} = date), do: Timex.format!(date, "{RFC822}")
 
   def prepare_activity(activity, opts \\ []) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     actor =
       if opts[:actor] do
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.Feed.FeedView do
   def feed_logo do
     case Pleroma.Config.get([:feed, :logo]) do
       nil ->
-        "#{Pleroma.Web.base_url()}/static/logo.png"
+        "#{Pleroma.Web.base_url()}/static/logo.svg"
 
       logo ->
         "#{Pleroma.Web.base_url()}#{logo}"
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def activity_content(_), do: ""
 
-  def activity_context(activity), do: activity.data["context"]
+  def activity_context(activity), do: escape(activity.data["context"])
 
   def attachment_href(attachment) do
     attachment["url"]

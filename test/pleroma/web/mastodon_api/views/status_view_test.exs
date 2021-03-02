@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
@@ -61,12 +61,56 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} = CommonAPI.post(user, %{status: "yo"})
 
     activity
-    |> Object.normalize(false)
+    |> Object.normalize(fetch: false)
     |> Object.update_data(%{"reactions" => %{"☕" => [user.ap_id], "x" => 1}})
 
     activity = Activity.get_by_id(activity.id)
 
     status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: true}
+           ]
+  end
+
+  test "doesn't show reactions from muted and blocked users" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "dae cofe??"})
+
+    {:ok, _} = User.mute(user, other_user)
+    {:ok, _} = User.block(other_user, third_user)
+
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+    activity = Repo.get(Activity, activity.id)
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == []
+
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, third_user, "☕")
+
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 2, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: other_user)
 
     assert status[:pleroma][:emoji_reactions] == [
              %{name: "☕", count: 1, me: true}
@@ -116,7 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} = CommonAPI.post(user, %{status: "Hey @shp!", visibility: "direct"})
 
     Repo.delete(user)
-    Cachex.clear(:user_cache)
+    User.invalidate_cache(user)
 
     finger_url =
       "https://localhost/.well-known/webfinger?resource=acct:#{user.nickname}@localhost"
@@ -150,7 +194,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
       |> Repo.update()
 
-    Cachex.clear(:user_cache)
+    User.invalidate_cache(user)
 
     result = StatusView.render("show.json", activity: activity)
 
@@ -160,7 +204,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note with null content" do
     note = insert(:note_activity)
-    note_object = Object.normalize(note)
+    note_object = Object.normalize(note, fetch: false)
 
     data =
       note_object.data
@@ -179,7 +223,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note activity" do
     note = insert(:note_activity)
-    object_data = Object.normalize(note).data
+    object_data = Object.normalize(note, fetch: false).data
     user = User.get_cached_by_ap_id(note.data["actor"])
 
     convo_id = Utils.context_to_conversation_id(object_data["context"])
@@ -219,13 +263,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       tags: [
         %{
           name: "#{object_data["tag"]}",
-          url: "/tag/#{object_data["tag"]}"
+          url: "http://localhost:4001/tag/#{object_data["tag"]}"
         }
       ],
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: nil,
       language: nil,
       emojis: [
         %{
@@ -420,6 +461,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
           "href" => "someurl"
         }
       ],
+      "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
       "uuid" => 6
     }
 
@@ -431,7 +473,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       preview_url: "someurl",
       text_url: "someurl",
       description: nil,
-      pleroma: %{mime_type: "image/png"}
+      pleroma: %{mime_type: "image/png"},
+      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
     }
 
     api_spec = Pleroma.Web.ApiSpec.spec()
@@ -539,9 +582,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       ]
 
       assert StatusView.build_tags(object_tags) == [
-               %{name: "fediverse", url: "/tag/fediverse"},
-               %{name: "mastodon", url: "/tag/mastodon"},
-               %{name: "nextcloud", url: "/tag/nextcloud"}
+               %{name: "fediverse", url: "http://localhost:4001/tag/fediverse"},
+               %{name: "mastodon", url: "http://localhost:4001/tag/mastodon"},
+               %{name: "nextcloud", url: "http://localhost:4001/tag/nextcloud"}
              ]
     end
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
@@ -79,10 +79,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def object(conn, _) do
+  def object(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)} do
+         user <- Map.get(assigns, :user, nil),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
       conn
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
@@ -90,8 +91,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: object)
     else
-      {:public?, false} ->
-        {:error, :not_found}
+      {:visible?, false} -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
 
@@ -105,10 +106,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def activity(conn, _params) do
+  def activity(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(activity)} do
+         {_, true} <- {:local?, activity.local},
+         user <- Map.get(assigns, :user, nil),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)} do
       conn
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
@@ -116,13 +119,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: activity)
     else
-      {:public?, false} -> {:error, :not_found}
+      {:visible?, false} -> {:error, :not_found}
+      {:local?, false} -> {:error, :not_found}
       nil -> {:error, :not_found}
     end
   end
 
   defp maybe_set_tracking_data(conn, %Activity{data: %{"type" => "Create"}} = activity) do
-    object_id = Object.normalize(activity).id
+    object_id = Object.normalize(activity, fetch: false).id
     assign(conn, :tracking_fun_data, object_id)
   end
 
@@ -428,7 +432,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"]),
+    with %Object{} = object <- Object.normalize(params["object"], fetch: false),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
@@ -439,7 +443,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   defp handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"]),
+    with %Object{} = object <- Object.normalize(params["object"], fetch: false),
          {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,
@@ -525,19 +529,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     {new_user, for_user}
   end
 
-  @doc """
-  Endpoint based on <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
-
-  Parameters:
-  - (required) `file`: data of the media
-  - (optionnal) `description`: description of the media, intended for accessibility
-
-  Response:
-  - HTTP Code: 201 Created
-  - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
-
-  Note: Will not point to a URL with a `Location` header because no standalone Activity has been created.
-  """
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
            ActivityPub.upload(

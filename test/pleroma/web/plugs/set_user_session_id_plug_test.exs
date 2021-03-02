@@ -1,11 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.User
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Web.Plugs.SetUserSessionIdPlug
 
   setup %{conn: conn} do
@@ -18,28 +18,26 @@ defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
     conn =
       conn
       |> Plug.Session.call(Plug.Session.init(session_opts))
-      |> fetch_session
+      |> fetch_session()
 
     %{conn: conn}
   end
 
   test "doesn't do anything if the user isn't set", %{conn: conn} do
-    ret_conn =
-      conn
-      |> SetUserSessionIdPlug.call(%{})
+    ret_conn = SetUserSessionIdPlug.call(conn, %{})
 
     assert ret_conn == conn
   end
 
-  test "sets the user_id in the session to the user id of the user assign", %{conn: conn} do
-    Code.ensure_compiled(Pleroma.User)
+  test "sets session token basing on :token assign", %{conn: conn} do
+    %{user: user, token: oauth_token} = oauth_access(["read"])
 
-    conn =
+    ret_conn =
       conn
-      |> assign(:user, %User{id: 1})
+      |> assign(:user, user)
+      |> assign(:token, oauth_token)
       |> SetUserSessionIdPlug.call(%{})
 
-    id = get_session(conn, :user_id)
-    assert id == 1
+    assert AuthHelper.get_session_token(ret_conn) == oauth_token.token
   end
 end

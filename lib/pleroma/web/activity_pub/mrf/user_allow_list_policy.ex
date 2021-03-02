@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
@@ -41,4 +41,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
 
     {:ok, %{mrf_user_allowlist: mrf_user_allowlist}}
   end
+
+  # TODO: change way of getting settings on `lib/pleroma/web/activity_pub/mrf/user_allow_list_policy.ex:18` to use `hosts` subkey
+  # @impl true
+  # def config_description do
+  #   %{
+  #     key: :mrf_user_allowlist,
+  #     related_policy: "Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy",
+  #     description: "Accept-list of users from specified instances",
+  #     children: [
+  #       %{
+  #         key: :hosts,
+  #         type: :map,
+  #         description:
+  #           "The keys in this section are the domain names that the policy should apply to." <>
+  #             " Each key should be assigned a list of users that should be allowed " <>
+  #             "through by their ActivityPub ID",
+  #         suggestions: [%{"example.org" => ["https://example.org/users/admin"]}]
+  #       }
+  #     ]
+  #   }
+  # end
 end

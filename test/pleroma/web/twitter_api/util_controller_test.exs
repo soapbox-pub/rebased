@@ -1,12 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
 
@@ -66,7 +65,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         }
       ]
 
-      Config.put(:frontend_configurations, config)
+      clear_config(:frontend_configurations, config)
 
       response =
         conn
@@ -99,7 +98,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     setup do: clear_config([:instance, :healthcheck])
 
     test "returns 503 when healthcheck disabled", %{conn: conn} do
-      Config.put([:instance, :healthcheck], false)
+      clear_config([:instance, :healthcheck], false)
 
       response =
         conn
@@ -110,7 +109,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 200 when healthcheck enabled and all ok", %{conn: conn} do
-      Config.put([:instance, :healthcheck], true)
+      clear_config([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: true} end do
@@ -130,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 503 when healthcheck enabled and health is false", %{conn: conn} do
-      Config.put([:instance, :healthcheck], true)
+      clear_config([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: false} end do
@@ -164,7 +163,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = User.get_cached_by_id(user.id)
 
-      assert user.deactivated == true
+      refute user.is_active
     end
 
     test "with valid permissions and invalid password, it returns an error", %{conn: conn} do
@@ -178,7 +177,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == %{"error" => "Invalid password."}
       user = User.get_cached_by_id(user.id)
 
-      refute user.deactivated
+      assert user.is_active
     end
   end
 
@@ -397,7 +396,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert json_response(conn, 200) == %{"status" => "success"}
       fetched_user = User.get_cached_by_id(user.id)
-      assert Pbkdf2.verify_pass("newpass", fetched_user.password_hash) == true
+      assert Pleroma.Password.Pbkdf2.verify_pass("newpass", fetched_user.password_hash) == true
     end
   end
 
@@ -428,7 +427,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response(conn, 200) == %{"status" => "success"}
 
       user = User.get_by_id(user.id)
-      assert user.deactivated == true
+      refute user.is_active
       assert user.name == nil
       assert user.bio == ""
       assert user.password_hash == nil

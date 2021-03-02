@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidator do
@@ -8,6 +8,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   and checking if it is both well formed and also compatible with our view of
   the system.
   """
+
+  @behaviour Pleroma.Web.ActivityPub.ObjectValidator.Validating
 
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
@@ -32,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
-  @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
+  @impl true
   def validate(object, meta)
 
   def validate(%{"type" => type} = object, meta)
@@ -286,7 +288,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def fetch_actor_and_object(object) do
     fetch_actor(object)
-    Object.normalize(object["object"], true)
+    Object.normalize(object["object"], fetch: true)
     :ok
   end
 end

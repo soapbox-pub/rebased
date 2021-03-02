@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Instance do
@@ -161,12 +161,21 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
         |> Path.expand()
 
+      {strip_uploads_message, strip_uploads_default} =
+        if Pleroma.Utils.command_available?("exiftool") do
+          {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as installed. (y/n)",
+           "y"}
+        else
+          {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as not installed, please install it if you answer yes. (y/n)",
+           "n"}
+        end
+
       strip_uploads =
         get_option(
           options,
           :strip_uploads,
-          "Do you want to strip location (GPS) data from uploaded images? (y/n)",
-          "y"
+          strip_uploads_message,
+          strip_uploads_default
         ) === "y"
 
       anonymize_uploads =
@@ -233,6 +242,13 @@ defmodule Mix.Tasks.Pleroma.Instance do
           rum_enabled: rum_enabled
         )
 
+      config_dir = Path.dirname(config_path)
+      psql_dir = Path.dirname(psql_path)
+
+      [config_dir, psql_dir, static_dir, uploads_dir]
+      |> Enum.reject(&File.exists?/1)
+      |> Enum.map(&File.mkdir_p!/1)
+
       shell_info("Writing config to #{config_path}.")
 
       File.write(config_path, result_config)
@@ -253,7 +269,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
-          (Enum.map(paths, &"- #{&1}\n") |> Enum.join("")) <>
+          (Enum.map(will_overwrite, &"- #{&1}\n") |> Enum.join("")) <>
           "Rerun with `--force` to overwrite them."
       )
     end
@@ -265,10 +281,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
         template_dir <> "/robots_txt.eex",
         indexable: indexable
       )
-
-    unless File.exists?(static_dir) do
-      File.mkdir_p!(static_dir)
-    end
 
     robots_txt_path = Path.join(static_dir, "robots.txt")
 

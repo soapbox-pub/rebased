@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.FederatorTest do
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.FederatorTest do
       activity: activity,
       relay_mock: relay_mock
     } do
-      Pleroma.Config.put([:instance, :allow_relay], false)
+      clear_config([:instance, :allow_relay], false)
 
       with_mocks([relay_mock]) do
         Federator.publish(activity)
@@ -155,16 +155,16 @@ defmodule Pleroma.Web.FederatorTest do
     end
 
     test "it does not crash if MRF rejects the post" do
-      Pleroma.Config.put([:mrf_keyword, :reject], ["lain"])
+      clear_config([:mrf_keyword, :reject], ["lain"])
 
-      Pleroma.Config.put(
+      clear_config(
         [:mrf, :policies],
         Pleroma.Web.ActivityPub.MRF.KeywordPolicy
       )
 
       params =
         File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+        |> Jason.decode!()
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
       assert {:error, _} = ObanHelpers.perform(job)

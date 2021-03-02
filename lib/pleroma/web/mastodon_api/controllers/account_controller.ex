@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountController do
@@ -25,7 +25,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
-  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
@@ -103,7 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
          {:ok, user} <- TwitterAPI.register_user(params),
          {_, {:ok, token}} <-
            {:login, OAuthController.login(user, app, app.scopes)} do
-      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
+      OAuthController.after_token_exchange(conn, %{user: user, token: token})
     else
       {:login, {:account_status, :confirmation_pending}} ->
         json_response(conn, :ok, %{
@@ -185,7 +184,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
-        :discoverable,
+        :also_known_as,
         :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->
@@ -209,7 +208,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
+      |> Maps.put_if_present(:also_known_as, params[:also_known_as])
+      # Note: param name is indeed :locked (not an error)
       |> Maps.put_if_present(:is_locked, params[:locked])
+      # Note: param name is indeed :discoverable (not an error)
+      |> Maps.put_if_present(:is_discoverable, params[:discoverable])
 
     # What happens here:
     #
@@ -266,10 +269,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
   @doc "GET /api/v1/accounts/:id"
-  def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id}) do
+  def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id} = params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
          :visible <- User.visible_for(user, for_user) do
-      render(conn, "show.json", user: user, for: for_user)
+      render(conn, "show.json",
+        user: user,
+        for: for_user,
+        embed_relationships: embed_relationships?(params)
+      )
     else
       error -> user_visibility_error(conn, error)
     end
@@ -292,7 +299,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> render("index.json",
         activities: activities,
         for: reading_user,
-        as: :activity
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       error -> user_visibility_error(conn, error)
@@ -394,7 +402,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/mute"
   def mute(%{assigns: %{user: muter, account: muted}, body_params: params} = conn, _params) do
-    with {:ok, _user_relationships} <- User.mute(muter, muted, params.notifications) do
+    with {:ok, _user_relationships} <- User.mute(muter, muted, params) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -442,15 +450,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/mutes"
-  def mutes(%{assigns: %{user: user}} = conn, _) do
-    users = User.muted_users(user, _restrict_deactivated = true)
-    render(conn, "index.json", users: users, for: user, as: :user)
+  def mutes(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.muted_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+
+    conn
+    |> add_link_headers(users)
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/blocks"
-  def blocks(%{assigns: %{user: user}} = conn, _) do
-    users = User.blocked_users(user, _restrict_deactivated = true)
-    render(conn, "index.json", users: users, for: user, as: :user)
+  def blocks(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.blocked_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+
+    conn
+    |> add_link_headers(users)
+    |> render("index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/endorsements"

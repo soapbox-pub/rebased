@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy do
@@ -12,29 +12,31 @@ defmodule Pleroma.Web.MediaProxy do
   @base64_opts [padding: false]
   @cache_table :banned_urls_cache
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   def cache_table, do: @cache_table
 
   @spec in_banned_urls(String.t()) :: boolean()
-  def in_banned_urls(url), do: elem(Cachex.exists?(@cache_table, url(url)), 1)
+  def in_banned_urls(url), do: elem(@cachex.exists?(@cache_table, url(url)), 1)
 
   def remove_from_banned_urls(urls) when is_list(urls) do
-    Cachex.execute!(@cache_table, fn cache ->
-      Enum.each(Invalidation.prepare_urls(urls), &Cachex.del(cache, &1))
+    @cachex.execute!(@cache_table, fn cache ->
+      Enum.each(Invalidation.prepare_urls(urls), &@cachex.del(cache, &1))
     end)
   end
 
   def remove_from_banned_urls(url) when is_binary(url) do
-    Cachex.del(@cache_table, url(url))
+    @cachex.del(@cache_table, url(url))
   end
 
   def put_in_banned_urls(urls) when is_list(urls) do
-    Cachex.execute!(@cache_table, fn cache ->
-      Enum.each(Invalidation.prepare_urls(urls), &Cachex.put(cache, &1, true))
+    @cachex.execute!(@cache_table, fn cache ->
+      Enum.each(Invalidation.prepare_urls(urls), &@cachex.put(cache, &1, true))
     end)
   end
 
   def put_in_banned_urls(url) when is_binary(url) do
-    Cachex.put(@cache_table, url(url), true)
+    @cachex.put(@cache_table, url(url), true)
   end
 
   def url(url) when is_nil(url) or url == "", do: nil
@@ -67,7 +69,7 @@ defmodule Pleroma.Web.MediaProxy do
   #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
   def preview_enabled?, do: enabled?() and !!Config.get([:media_preview_proxy, :enabled])
 
-  def local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+  def local?(url), do: String.starts_with?(url, Web.base_url())
 
   def whitelisted?(url) do
     %{host: domain} = URI.parse(url)
@@ -75,17 +77,10 @@ defmodule Pleroma.Web.MediaProxy do
     mediaproxy_whitelist_domains =
       [:media_proxy, :whitelist]
       |> Config.get()
+      |> Kernel.++(["#{Upload.base_url()}"])
       |> Enum.map(&maybe_get_domain_from_url/1)
 
-    whitelist_domains =
-      if base_url = Config.get([Upload, :base_url]) do
-        %{host: base_domain} = URI.parse(base_url)
-        [base_domain | mediaproxy_whitelist_domains]
-      else
-        mediaproxy_whitelist_domains
-      end
-
-    domain in whitelist_domains
+    domain in mediaproxy_whitelist_domains
   end
 
   defp maybe_get_domain_from_url("http" <> _ = url) do

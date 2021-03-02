@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AccountView do
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       :skip_thread_containment,
       :pleroma_settings_store,
       :raw_fields,
-      :discoverable,
+      :is_discoverable,
       :actor_type
     ])
     |> Map.merge(%{
@@ -69,15 +69,16 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
 
     %{
       "id" => user.id,
+      "email" => user.email,
       "avatar" => avatar,
       "nickname" => user.nickname,
       "display_name" => display_name,
-      "deactivated" => user.deactivated,
+      "is_active" => user.is_active,
       "local" => user.local,
       "roles" => User.roles(user),
       "tags" => user.tags || [],
-      "confirmation_pending" => user.confirmation_pending,
-      "approval_pending" => user.approval_pending,
+      "is_confirmed" => user.is_confirmed,
+      "is_approved" => user.is_approved,
       "url" => user.uri || user.ap_id,
       "registration_reason" => user.registration_reason,
       "actor_type" => user.actor_type

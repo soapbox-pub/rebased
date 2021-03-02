@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger do
@@ -58,18 +58,27 @@ defmodule Pleroma.Web.WebFinger do
     ] ++ Publisher.gather_webfinger_links(user)
   end
 
+  defp gather_aliases(%User{} = user) do
+    [user.ap_id | user.also_known_as]
+  end
+
   def represent_user(user, "JSON") do
     {:ok, user} = User.ensure_keys_present(user)
 
     %{
       "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}",
-      "aliases" => [user.ap_id],
+      "aliases" => gather_aliases(user),
       "links" => gather_links(user)
     }
   end
 
   def represent_user(user, "XML") do
     {:ok, user} = User.ensure_keys_present(user)
+
+    aliases =
+      user
+      |> gather_aliases()
+      |> Enum.map(&{:Alias, &1})
 
     links =
       gather_links(user)
@@ -79,9 +88,8 @@ defmodule Pleroma.Web.WebFinger do
       :XRD,
       %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}"},
-        {:Alias, user.ap_id}
-      ] ++ links
+        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}"}
+      ] ++ aliases ++ links
     }
     |> XmlBuilder.to_doc()
   end
@@ -115,6 +123,9 @@ defmodule Pleroma.Web.WebFinger do
 
           {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
             Map.put(data, "ap_id", link["href"])
+
+          {nil, "http://ostatus.org/schema/1.0/subscribe"} ->
+            Map.put(data, "subscribe_address", link["template"])
 
           _ ->
             Logger.debug("Unhandled type: #{inspect(link["type"])}")

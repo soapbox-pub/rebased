@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.List do
@@ -113,11 +113,15 @@ defmodule Pleroma.List do
     end
   end
 
-  def follow(%Pleroma.List{following: following} = list, %User{} = followed) do
+  def follow(%Pleroma.List{id: id}, %User{} = followed) do
+    list = Repo.get(Pleroma.List, id)
+    %{following: following} = list
     update_follows(list, %{following: Enum.uniq([followed.follower_address | following])})
   end
 
-  def unfollow(%Pleroma.List{following: following} = list, %User{} = unfollowed) do
+  def unfollow(%Pleroma.List{id: id}, %User{} = unfollowed) do
+    list = Repo.get(Pleroma.List, id)
+    %{following: following} = list
     update_follows(list, %{following: List.delete(following, unfollowed.follower_address)})
   end
 

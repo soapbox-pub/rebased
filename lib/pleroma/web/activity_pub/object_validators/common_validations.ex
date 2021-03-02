@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     cng
     |> validate_change(field_name, fn field_name, actor ->
       case User.get_cached_by_ap_id(actor) do
-        %User{deactivated: true} ->
+        %User{is_active: false} ->
           [{field_name, "user is deactivated"}]
 
         %User{} ->

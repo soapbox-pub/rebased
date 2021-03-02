@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
     render_many(emoji_reactions, __MODULE__, "show.json", opts)
   end
 
-  def render("show.json", %{emoji_reaction: [emoji, user_ap_ids], user: user}) do
+  def render("show.json", %{emoji_reaction: {emoji, user_ap_ids}, user: user}) do
     users = fetch_users(user_ap_ids)
 
     %{
@@ -26,7 +26,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
     user_ap_ids
     |> Enum.map(&Pleroma.User.get_cached_by_ap_id/1)
     |> Enum.filter(fn
-      %{deactivated: false} -> true
+      %{is_active: true} -> true
       _ -> false
     end)
   end

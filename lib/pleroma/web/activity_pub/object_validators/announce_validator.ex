@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
@@ -67,7 +67,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
          %Object{} = object <- Object.get_cached_by_ap_id(object),
          false <- Visibility.is_public?(object) do
       same_actor = object.data["actor"] == actor.ap_id
-      is_public = Pleroma.Constants.as_public() in (get_field(cng, :to) ++ get_field(cng, :cc))
+      recipients = get_field(cng, :to) ++ get_field(cng, :cc)
+      local_public = Pleroma.Constants.as_local_public()
+
+      is_public =
+        Enum.member?(recipients, Pleroma.Constants.as_public()) or
+          Enum.member?(recipients, local_public)
 
       cond do
         same_actor && is_public ->

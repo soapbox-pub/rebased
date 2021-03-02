@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
@@ -7,22 +7,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   import ExUnit.CaptureLog
-  import Mock
   import Pleroma.Factory
   import Swoosh.TestAssertions
 
   alias Pleroma.Activity
-  alias Pleroma.Config
-  alias Pleroma.HTML
   alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web
-  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MediaProxy
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -52,398 +46,47 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     assert json_response(conn, 200)
   end
 
-  describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
-    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
+  test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
+       %{admin: admin} do
+    user = insert(:user)
+    url = "/api/pleroma/admin/users/#{user.nickname}"
 
-    test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
-         %{admin: admin} do
-      user = insert(:user)
-      url = "/api/pleroma/admin/users/#{user.nickname}"
+    good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
+    good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+    good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
 
-      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
-      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
-      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
+    bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
+    bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
+    bad_token3 = nil
 
-      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
-      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
-      bad_token3 = nil
-
-      for good_token <- [good_token1, good_token2, good_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, 200)
-      end
-
-      for good_token <- [good_token1, good_token2, good_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, nil)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
-
-      for bad_token <- [bad_token1, bad_token2, bad_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, bad_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
-    end
-  end
-
-  describe "unless [:auth, :enforce_oauth_admin_scope_usage]," do
-    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
-
-    test "GET /api/pleroma/admin/users/:nickname requires " <>
-           "read:accounts or admin:read:accounts or broader scope",
-         %{admin: admin} do
-      user = insert(:user)
-      url = "/api/pleroma/admin/users/#{user.nickname}"
-
-      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
-      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
-      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
-      good_token4 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
-      good_token5 = insert(:oauth_token, user: admin, scopes: ["read"])
-
-      good_tokens = [good_token1, good_token2, good_token3, good_token4, good_token5]
-
-      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts:partial"])
-      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
-      bad_token3 = nil
-
-      for good_token <- good_tokens do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, 200)
-      end
-
-      for good_token <- good_tokens do
-        conn =
-          build_conn()
-          |> assign(:user, nil)
-          |> assign(:token, good_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
-
-      for bad_token <- [bad_token1, bad_token2, bad_token3] do
-        conn =
-          build_conn()
-          |> assign(:user, admin)
-          |> assign(:token, bad_token)
-          |> get(url)
-
-        assert json_response(conn, :forbidden)
-      end
-    end
-  end
-
-  describe "DELETE /api/pleroma/admin/users" do
-    test "single user", %{admin: admin, conn: conn} do
-      clear_config([:instance, :federating], true)
-
-      user =
-        insert(:user,
-          avatar: %{"url" => [%{"href" => "https://someurl"}]},
-          banner: %{"url" => [%{"href" => "https://somebanner"}]},
-          bio: "Hello world!",
-          name: "A guy"
-        )
-
-      # Create some activities to check they got deleted later
-      follower = insert(:user)
-      {:ok, _} = CommonAPI.post(user, %{status: "test"})
-      {:ok, _, _, _} = CommonAPI.follow(user, follower)
-      {:ok, _, _, _} = CommonAPI.follow(follower, user)
-      user = Repo.get(User, user.id)
-      assert user.note_count == 1
-      assert user.follower_count == 1
-      assert user.following_count == 1
-      refute user.deactivated
-
-      with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end,
-        perform: fn _, _ -> nil end do
-        conn =
-          conn
-          |> put_req_header("accept", "application/json")
-          |> delete("/api/pleroma/admin/users?nickname=#{user.nickname}")
-
-        ObanHelpers.perform_all()
-
-        assert User.get_by_nickname(user.nickname).deactivated
-
-        log_entry = Repo.one(ModerationLog)
-
-        assert ModerationLog.get_log_entry_message(log_entry) ==
-                 "@#{admin.nickname} deleted users: @#{user.nickname}"
-
-        assert json_response(conn, 200) == [user.nickname]
-
-        user = Repo.get(User, user.id)
-        assert user.deactivated
-
-        assert user.avatar == %{}
-        assert user.banner == %{}
-        assert user.note_count == 0
-        assert user.follower_count == 0
-        assert user.following_count == 0
-        assert user.bio == ""
-        assert user.name == nil
-
-        assert called(Pleroma.Web.Federator.publish(:_))
-      end
-    end
-
-    test "multiple users", %{admin: admin, conn: conn} do
-      user_one = insert(:user)
-      user_two = insert(:user)
-
+    for good_token <- [good_token1, good_token2, good_token3] do
       conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> delete("/api/pleroma/admin/users", %{
-          nicknames: [user_one.nickname, user_two.nickname]
-        })
+        build_conn()
+        |> assign(:user, admin)
+        |> assign(:token, good_token)
+        |> get(url)
 
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted users: @#{user_one.nickname}, @#{user_two.nickname}"
-
-      response = json_response(conn, 200)
-      assert response -- [user_one.nickname, user_two.nickname] == []
+      assert json_response(conn, 200)
     end
-  end
 
-  describe "/api/pleroma/admin/users" do
-    test "Create", %{conn: conn} do
+    for good_token <- [good_token1, good_token2, good_token3] do
       conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> post("/api/pleroma/admin/users", %{
-          "users" => [
-            %{
-              "nickname" => "lain",
-              "email" => "lain@example.org",
-              "password" => "test"
-            },
-            %{
-              "nickname" => "lain2",
-              "email" => "lain2@example.org",
-              "password" => "test"
-            }
-          ]
-        })
+        build_conn()
+        |> assign(:user, nil)
+        |> assign(:token, good_token)
+        |> get(url)
 
-      response = json_response(conn, 200) |> Enum.map(&Map.get(&1, "type"))
-      assert response == ["success", "success"]
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ["lain", "lain2"] -- Enum.map(log_entry.data["subjects"], & &1["nickname"]) == []
+      assert json_response(conn, :forbidden)
     end
 
-    test "Cannot create user with existing email", %{conn: conn} do
-      user = insert(:user)
-
+    for bad_token <- [bad_token1, bad_token2, bad_token3] do
       conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> post("/api/pleroma/admin/users", %{
-          "users" => [
-            %{
-              "nickname" => "lain",
-              "email" => user.email,
-              "password" => "test"
-            }
-          ]
-        })
+        build_conn()
+        |> assign(:user, admin)
+        |> assign(:token, bad_token)
+        |> get(url)
 
-      assert json_response(conn, 409) == [
-               %{
-                 "code" => 409,
-                 "data" => %{
-                   "email" => user.email,
-                   "nickname" => "lain"
-                 },
-                 "error" => "email has already been taken",
-                 "type" => "error"
-               }
-             ]
-    end
-
-    test "Cannot create user with existing nickname", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> post("/api/pleroma/admin/users", %{
-          "users" => [
-            %{
-              "nickname" => user.nickname,
-              "email" => "someuser@plerama.social",
-              "password" => "test"
-            }
-          ]
-        })
-
-      assert json_response(conn, 409) == [
-               %{
-                 "code" => 409,
-                 "data" => %{
-                   "email" => "someuser@plerama.social",
-                   "nickname" => user.nickname
-                 },
-                 "error" => "nickname has already been taken",
-                 "type" => "error"
-               }
-             ]
-    end
-
-    test "Multiple user creation works in transaction", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> post("/api/pleroma/admin/users", %{
-          "users" => [
-            %{
-              "nickname" => "newuser",
-              "email" => "newuser@pleroma.social",
-              "password" => "test"
-            },
-            %{
-              "nickname" => "lain",
-              "email" => user.email,
-              "password" => "test"
-            }
-          ]
-        })
-
-      assert json_response(conn, 409) == [
-               %{
-                 "code" => 409,
-                 "data" => %{
-                   "email" => user.email,
-                   "nickname" => "lain"
-                 },
-                 "error" => "email has already been taken",
-                 "type" => "error"
-               },
-               %{
-                 "code" => 409,
-                 "data" => %{
-                   "email" => "newuser@pleroma.social",
-                   "nickname" => "newuser"
-                 },
-                 "error" => "",
-                 "type" => "error"
-               }
-             ]
-
-      assert User.get_by_nickname("newuser") === nil
-    end
-  end
-
-  describe "/api/pleroma/admin/users/:nickname" do
-    test "Show", %{conn: conn} do
-      user = insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
-
-      expected = %{
-        "deactivated" => false,
-        "id" => to_string(user.id),
-        "local" => true,
-        "nickname" => user.nickname,
-        "roles" => %{"admin" => false, "moderator" => false},
-        "tags" => [],
-        "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-        "display_name" => HTML.strip_tags(user.name || user.nickname),
-        "confirmation_pending" => false,
-        "approval_pending" => false,
-        "url" => user.ap_id,
-        "registration_reason" => nil,
-        "actor_type" => "Person"
-      }
-
-      assert expected == json_response(conn, 200)
-    end
-
-    test "when the user doesn't exist", %{conn: conn} do
-      user = build(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
-
-      assert %{"error" => "Not found"} == json_response(conn, 404)
-    end
-  end
-
-  describe "/api/pleroma/admin/users/follow" do
-    test "allows to force-follow another user", %{admin: admin, conn: conn} do
-      user = insert(:user)
-      follower = insert(:user)
-
-      conn
-      |> put_req_header("accept", "application/json")
-      |> post("/api/pleroma/admin/users/follow", %{
-        "follower" => follower.nickname,
-        "followed" => user.nickname
-      })
-
-      user = User.get_cached_by_id(user.id)
-      follower = User.get_cached_by_id(follower.id)
-
-      assert User.following?(follower, user)
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} made @#{follower.nickname} follow @#{user.nickname}"
-    end
-  end
-
-  describe "/api/pleroma/admin/users/unfollow" do
-    test "allows to force-unfollow another user", %{admin: admin, conn: conn} do
-      user = insert(:user)
-      follower = insert(:user)
-
-      User.follow(follower, user)
-
-      conn
-      |> put_req_header("accept", "application/json")
-      |> post("/api/pleroma/admin/users/unfollow", %{
-        "follower" => follower.nickname,
-        "followed" => user.nickname
-      })
-
-      user = User.get_cached_by_id(user.id)
-      follower = User.get_cached_by_id(follower.id)
-
-      refute User.following?(follower, user)
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} made @#{follower.nickname} unfollow @#{user.nickname}"
+      assert json_response(conn, :forbidden)
     end
   end
 
@@ -643,753 +286,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     assert Regex.match?(~r/(http:\/\/|https:\/\/)/, resp["link"])
   end
 
-  describe "GET /api/pleroma/admin/users" do
-    test "renders users array for the first page", %{conn: conn, admin: admin} do
-      user = insert(:user, local: false, tags: ["foo", "bar"])
-      user2 = insert(:user, approval_pending: true, registration_reason: "I'm a chill dude")
-
-      conn = get(conn, "/api/pleroma/admin/users?page=1")
-
-      users =
-        [
-          %{
-            "deactivated" => admin.deactivated,
-            "id" => admin.id,
-            "nickname" => admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "local" => true,
-            "tags" => [],
-            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(admin.name || admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
-            "deactivated" => user.deactivated,
-            "id" => user.id,
-            "nickname" => user.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => false,
-            "tags" => ["foo", "bar"],
-            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user.name || user.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => user.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
-            "deactivated" => user2.deactivated,
-            "id" => user2.id,
-            "nickname" => user2.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => true,
-            "tags" => [],
-            "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user2.name || user2.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => true,
-            "url" => user2.ap_id,
-            "registration_reason" => "I'm a chill dude",
-            "actor_type" => "Person"
-          }
-        ]
-        |> Enum.sort_by(& &1["nickname"])
-
-      assert json_response(conn, 200) == %{
-               "count" => 3,
-               "page_size" => 50,
-               "users" => users
-             }
-    end
-
-    test "pagination works correctly with service users", %{conn: conn} do
-      service1 = User.get_or_create_service_actor_by_ap_id(Web.base_url() <> "/meido", "meido")
-
-      insert_list(25, :user)
-
-      assert %{"count" => 26, "page_size" => 10, "users" => users1} =
-               conn
-               |> get("/api/pleroma/admin/users?page=1&filters=", %{page_size: "10"})
-               |> json_response(200)
-
-      assert Enum.count(users1) == 10
-      assert service1 not in users1
-
-      assert %{"count" => 26, "page_size" => 10, "users" => users2} =
-               conn
-               |> get("/api/pleroma/admin/users?page=2&filters=", %{page_size: "10"})
-               |> json_response(200)
-
-      assert Enum.count(users2) == 10
-      assert service1 not in users2
-
-      assert %{"count" => 26, "page_size" => 10, "users" => users3} =
-               conn
-               |> get("/api/pleroma/admin/users?page=3&filters=", %{page_size: "10"})
-               |> json_response(200)
-
-      assert Enum.count(users3) == 6
-      assert service1 not in users3
-    end
-
-    test "renders empty array for the second page", %{conn: conn} do
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?page=2")
-
-      assert json_response(conn, 200) == %{
-               "count" => 2,
-               "page_size" => 50,
-               "users" => []
-             }
-    end
-
-    test "regular search", %{conn: conn} do
-      user = insert(:user, nickname: "bob")
-
-      conn = get(conn, "/api/pleroma/admin/users?query=bo")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "search by domain", %{conn: conn} do
-      user = insert(:user, nickname: "nickname@domain.com")
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?query=domain.com")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "search by full nickname", %{conn: conn} do
-      user = insert(:user, nickname: "nickname@domain.com")
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?query=nickname@domain.com")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "search by display name", %{conn: conn} do
-      user = insert(:user, name: "Display name")
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?name=display")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "search by email", %{conn: conn} do
-      user = insert(:user, email: "email@example.com")
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?email=email@example.com")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "regular search with page size", %{conn: conn} do
-      user = insert(:user, nickname: "aalice")
-      user2 = insert(:user, nickname: "alice")
-
-      conn1 = get(conn, "/api/pleroma/admin/users?query=a&page_size=1&page=1")
-
-      assert json_response(conn1, 200) == %{
-               "count" => 2,
-               "page_size" => 1,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-
-      conn2 = get(conn, "/api/pleroma/admin/users?query=a&page_size=1&page=2")
-
-      assert json_response(conn2, 200) == %{
-               "count" => 2,
-               "page_size" => 1,
-               "users" => [
-                 %{
-                   "deactivated" => user2.deactivated,
-                   "id" => user2.id,
-                   "nickname" => user2.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user2.name || user2.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user2.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "only local users" do
-      admin = insert(:user, is_admin: true, nickname: "john")
-      token = insert(:oauth_admin_token, user: admin)
-      user = insert(:user, nickname: "bob")
-
-      insert(:user, nickname: "bobb", local: false)
-
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> assign(:token, token)
-        |> get("/api/pleroma/admin/users?query=bo&filters=local")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "only local users with no query", %{conn: conn, admin: old_admin} do
-      admin = insert(:user, is_admin: true, nickname: "john")
-      user = insert(:user, nickname: "bob")
-
-      insert(:user, nickname: "bobb", local: false)
-
-      conn = get(conn, "/api/pleroma/admin/users?filters=local")
-
-      users =
-        [
-          %{
-            "deactivated" => user.deactivated,
-            "id" => user.id,
-            "nickname" => user.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => true,
-            "tags" => [],
-            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user.name || user.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => user.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
-            "deactivated" => admin.deactivated,
-            "id" => admin.id,
-            "nickname" => admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "local" => true,
-            "tags" => [],
-            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(admin.name || admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
-            "deactivated" => false,
-            "id" => old_admin.id,
-            "local" => true,
-            "nickname" => old_admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "tags" => [],
-            "avatar" => User.avatar_url(old_admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(old_admin.name || old_admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => old_admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          }
-        ]
-        |> Enum.sort_by(& &1["nickname"])
-
-      assert json_response(conn, 200) == %{
-               "count" => 3,
-               "page_size" => 50,
-               "users" => users
-             }
-    end
-
-    test "only unapproved users", %{conn: conn} do
-      user =
-        insert(:user,
-          nickname: "sadboy",
-          approval_pending: true,
-          registration_reason: "Plz let me in!"
-        )
-
-      insert(:user, nickname: "happyboy", approval_pending: false)
-
-      conn = get(conn, "/api/pleroma/admin/users?filters=need_approval")
-
-      users =
-        [
-          %{
-            "deactivated" => user.deactivated,
-            "id" => user.id,
-            "nickname" => user.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => true,
-            "tags" => [],
-            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user.name || user.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => true,
-            "url" => user.ap_id,
-            "registration_reason" => "Plz let me in!",
-            "actor_type" => "Person"
-          }
-        ]
-        |> Enum.sort_by(& &1["nickname"])
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => users
-             }
-    end
-
-    test "load only admins", %{conn: conn, admin: admin} do
-      second_admin = insert(:user, is_admin: true)
-      insert(:user)
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?filters=is_admin")
-
-      users =
-        [
-          %{
-            "deactivated" => false,
-            "id" => admin.id,
-            "nickname" => admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "local" => admin.local,
-            "tags" => [],
-            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(admin.name || admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
-            "deactivated" => false,
-            "id" => second_admin.id,
-            "nickname" => second_admin.nickname,
-            "roles" => %{"admin" => true, "moderator" => false},
-            "local" => second_admin.local,
-            "tags" => [],
-            "avatar" => User.avatar_url(second_admin) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(second_admin.name || second_admin.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => second_admin.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          }
-        ]
-        |> Enum.sort_by(& &1["nickname"])
-
-      assert json_response(conn, 200) == %{
-               "count" => 2,
-               "page_size" => 50,
-               "users" => users
-             }
-    end
-
-    test "load only moderators", %{conn: conn} do
-      moderator = insert(:user, is_moderator: true)
-      insert(:user)
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?filters=is_moderator")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => false,
-                   "id" => moderator.id,
-                   "nickname" => moderator.nickname,
-                   "roles" => %{"admin" => false, "moderator" => true},
-                   "local" => moderator.local,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(moderator) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(moderator.name || moderator.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => moderator.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "load users with tags list", %{conn: conn} do
-      user1 = insert(:user, tags: ["first"])
-      user2 = insert(:user, tags: ["second"])
-      insert(:user)
-      insert(:user)
-
-      conn = get(conn, "/api/pleroma/admin/users?tags[]=first&tags[]=second")
-
-      users =
-        [
-          %{
-            "deactivated" => false,
-            "id" => user1.id,
-            "nickname" => user1.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => user1.local,
-            "tags" => ["first"],
-            "avatar" => User.avatar_url(user1) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user1.name || user1.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => user1.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          },
-          %{
-            "deactivated" => false,
-            "id" => user2.id,
-            "nickname" => user2.nickname,
-            "roles" => %{"admin" => false, "moderator" => false},
-            "local" => user2.local,
-            "tags" => ["second"],
-            "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
-            "display_name" => HTML.strip_tags(user2.name || user2.nickname),
-            "confirmation_pending" => false,
-            "approval_pending" => false,
-            "url" => user2.ap_id,
-            "registration_reason" => nil,
-            "actor_type" => "Person"
-          }
-        ]
-        |> Enum.sort_by(& &1["nickname"])
-
-      assert json_response(conn, 200) == %{
-               "count" => 2,
-               "page_size" => 50,
-               "users" => users
-             }
-    end
-
-    test "`active` filters out users pending approval", %{token: token} do
-      insert(:user, approval_pending: true)
-      %{id: user_id} = insert(:user, approval_pending: false)
-      %{id: admin_id} = token.user
-
-      conn =
-        build_conn()
-        |> assign(:user, token.user)
-        |> assign(:token, token)
-        |> get("/api/pleroma/admin/users?filters=active")
-
-      assert %{
-               "count" => 2,
-               "page_size" => 50,
-               "users" => [
-                 %{"id" => ^admin_id},
-                 %{"id" => ^user_id}
-               ]
-             } = json_response(conn, 200)
-    end
-
-    test "it works with multiple filters" do
-      admin = insert(:user, nickname: "john", is_admin: true)
-      token = insert(:oauth_admin_token, user: admin)
-      user = insert(:user, nickname: "bob", local: false, deactivated: true)
-
-      insert(:user, nickname: "ken", local: true, deactivated: true)
-      insert(:user, nickname: "bobb", local: false, deactivated: false)
-
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> assign(:token, token)
-        |> get("/api/pleroma/admin/users?filters=deactivated,external")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => user.local,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(user.name || user.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => user.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-
-    test "it omits relay user", %{admin: admin, conn: conn} do
-      assert %User{} = Relay.get_actor()
-
-      conn = get(conn, "/api/pleroma/admin/users")
-
-      assert json_response(conn, 200) == %{
-               "count" => 1,
-               "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => admin.deactivated,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => true,
-                   "tags" => [],
-                   "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
-                   "display_name" => HTML.strip_tags(admin.name || admin.nickname),
-                   "confirmation_pending" => false,
-                   "approval_pending" => false,
-                   "url" => admin.ap_id,
-                   "registration_reason" => nil,
-                   "actor_type" => "Person"
-                 }
-               ]
-             }
-    end
-  end
-
-  test "PATCH /api/pleroma/admin/users/activate", %{admin: admin, conn: conn} do
-    user_one = insert(:user, deactivated: true)
-    user_two = insert(:user, deactivated: true)
-
-    conn =
-      patch(
-        conn,
-        "/api/pleroma/admin/users/activate",
-        %{nicknames: [user_one.nickname, user_two.nickname]}
-      )
-
-    response = json_response(conn, 200)
-    assert Enum.map(response["users"], & &1["deactivated"]) == [false, false]
-
-    log_entry = Repo.one(ModerationLog)
-
-    assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} activated users: @#{user_one.nickname}, @#{user_two.nickname}"
-  end
-
-  test "PATCH /api/pleroma/admin/users/deactivate", %{admin: admin, conn: conn} do
-    user_one = insert(:user, deactivated: false)
-    user_two = insert(:user, deactivated: false)
-
-    conn =
-      patch(
-        conn,
-        "/api/pleroma/admin/users/deactivate",
-        %{nicknames: [user_one.nickname, user_two.nickname]}
-      )
-
-    response = json_response(conn, 200)
-    assert Enum.map(response["users"], & &1["deactivated"]) == [true, true]
-
-    log_entry = Repo.one(ModerationLog)
-
-    assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
-  end
-
-  test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
-    user_one = insert(:user, approval_pending: true)
-    user_two = insert(:user, approval_pending: true)
-
-    conn =
-      patch(
-        conn,
-        "/api/pleroma/admin/users/approve",
-        %{nicknames: [user_one.nickname, user_two.nickname]}
-      )
-
-    response = json_response(conn, 200)
-    assert Enum.map(response["users"], & &1["approval_pending"]) == [false, false]
-
-    log_entry = Repo.one(ModerationLog)
-
-    assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
-  end
-
-  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
-    user = insert(:user)
-
-    conn = patch(conn, "/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
-
-    assert json_response(conn, 200) ==
-             %{
-               "deactivated" => !user.deactivated,
-               "id" => user.id,
-               "nickname" => user.nickname,
-               "roles" => %{"admin" => false, "moderator" => false},
-               "local" => true,
-               "tags" => [],
-               "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-               "display_name" => HTML.strip_tags(user.name || user.nickname),
-               "confirmation_pending" => false,
-               "approval_pending" => false,
-               "url" => user.ap_id,
-               "registration_reason" => nil,
-               "actor_type" => "Person"
-             }
-
-    log_entry = Repo.one(ModerationLog)
-
-    assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} deactivated users: @#{user.nickname}"
-  end
-
   describe "PUT disable_mfa" do
     test "returns 200 and disable 2fa", %{conn: conn} do
       user =
@@ -1452,13 +348,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     setup do
       user = insert(:user)
 
-      date1 = (DateTime.to_unix(DateTime.utc_now()) + 2000) |> DateTime.from_unix!()
-      date2 = (DateTime.to_unix(DateTime.utc_now()) + 1000) |> DateTime.from_unix!()
-      date3 = (DateTime.to_unix(DateTime.utc_now()) + 3000) |> DateTime.from_unix!()
-
-      insert(:note_activity, user: user, published: date1)
-      insert(:note_activity, user: user, published: date2)
-      insert(:note_activity, user: user, published: date3)
+      insert(:note_activity, user: user)
+      insert(:note_activity, user: user)
+      insert(:note_activity, user: user)
 
       %{user: user}
     end
@@ -1466,13 +358,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "renders user's statuses", %{conn: conn, user: user} do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
 
-      assert json_response(conn, 200) |> length() == 3
+      assert %{"total" => 3, "activities" => activities} = json_response(conn, 200)
+      assert length(activities) == 3
     end
 
-    test "renders user's statuses with a limit", %{conn: conn, user: user} do
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=2")
+    test "renders user's statuses with pagination", %{conn: conn, user: user} do
+      %{"total" => 3, "activities" => [activity1]} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=1")
+        |> json_response(200)
 
-      assert json_response(conn, 200) |> length() == 2
+      %{"total" => 3, "activities" => [activity2]} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=1&page=2")
+        |> json_response(200)
+
+      refute activity1 == activity2
     end
 
     test "doesn't return private statuses by default", %{conn: conn, user: user} do
@@ -1480,9 +381,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
+      %{"total" => 4, "activities" => activities} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses")
+        |> json_response(200)
 
-      assert json_response(conn, 200) |> length() == 4
+      assert length(activities) == 4
     end
 
     test "returns private statuses with godmode on", %{conn: conn, user: user} do
@@ -1490,9 +394,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
-      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
+      %{"total" => 5, "activities" => activities} =
+        conn
+        |> get("/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
+        |> json_response(200)
 
-      assert json_response(conn, 200) |> length() == 5
+      assert length(activities) == 5
     end
 
     test "excludes reblogs by default", %{conn: conn, user: user} do
@@ -1500,13 +407,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       {:ok, activity} = CommonAPI.post(user, %{status: "."})
       {:ok, %Activity{}} = CommonAPI.repeat(activity.id, other_user)
 
-      conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
-      assert json_response(conn_res, 200) |> length() == 0
+      assert %{"total" => 0, "activities" => []} ==
+               conn
+               |> get("/api/pleroma/admin/users/#{other_user.nickname}/statuses")
+               |> json_response(200)
 
-      conn_res =
-        get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
-
-      assert json_response(conn_res, 200) |> length() == 1
+      assert %{"total" => 1, "activities" => [_]} =
+               conn
+               |> get(
+                 "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true"
+               )
+               |> json_response(200)
     end
   end
 
@@ -1891,47 +802,44 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "instances" do
     test "GET /instances/:instance/statuses", %{conn: conn} do
-      user = insert(:user, local: false, nickname: "archaeme@archae.me")
-      user2 = insert(:user, local: false, nickname: "test@test.com")
+      user = insert(:user, local: false, ap_id: "https://archae.me/users/archaeme")
+      user2 = insert(:user, local: false, ap_id: "https://test.com/users/test")
       insert_pair(:note_activity, user: user)
       activity = insert(:note_activity, user: user2)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
+      %{"total" => 2, "activities" => activities} =
+        conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
 
-      response = json_response(ret_conn, 200)
+      assert length(activities) == 2
 
-      assert length(response) == 2
+      %{"total" => 1, "activities" => [_]} =
+        conn |> get("/api/pleroma/admin/instances/test.com/statuses") |> json_response(200)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/test.com/statuses")
-
-      response = json_response(ret_conn, 200)
-
-      assert length(response) == 1
-
-      ret_conn = get(conn, "/api/pleroma/admin/instances/nonexistent.com/statuses")
-
-      response = json_response(ret_conn, 200)
-
-      assert Enum.empty?(response)
+      %{"total" => 0, "activities" => []} =
+        conn |> get("/api/pleroma/admin/instances/nonexistent.com/statuses") |> json_response(200)
 
       CommonAPI.repeat(activity.id, user)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
-      response = json_response(ret_conn, 200)
-      assert length(response) == 2
+      %{"total" => 2, "activities" => activities} =
+        conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
 
-      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
-      response = json_response(ret_conn, 200)
-      assert length(response) == 3
+      assert length(activities) == 2
+
+      %{"total" => 3, "activities" => activities} =
+        conn
+        |> get("/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
+        |> json_response(200)
+
+      assert length(activities) == 3
     end
   end
 
   describe "PATCH /confirm_email" do
     test "it confirms emails of two users", %{conn: conn, admin: admin} do
-      [first_user, second_user] = insert_pair(:user, confirmation_pending: true)
+      [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
-      assert first_user.confirmation_pending == true
-      assert second_user.confirmation_pending == true
+      refute first_user.is_confirmed
+      refute second_user.is_confirmed
 
       ret_conn =
         patch(conn, "/api/pleroma/admin/users/confirm_email", %{
@@ -1943,8 +851,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert ret_conn.status == 200
 
-      assert first_user.confirmation_pending == true
-      assert second_user.confirmation_pending == true
+      first_user = User.get_by_id(first_user.id)
+      second_user = User.get_by_id(second_user.id)
+
+      assert first_user.is_confirmed
+      assert second_user.is_confirmed
 
       log_entry = Repo.one(ModerationLog)
 
@@ -1957,7 +868,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PATCH /resend_confirmation_email" do
     test "it resend emails for two users", %{conn: conn, admin: admin} do
-      [first_user, second_user] = insert_pair(:user, confirmation_pending: true)
+      [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
       ret_conn =
         patch(conn, "/api/pleroma/admin/users/resend_confirmation_email", %{
@@ -1988,7 +899,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/admin/stats" do
     test "status visibility count", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
       user = insert(:user)
       CommonAPI.post(user, %{visibility: "public", status: "hey"})
       CommonAPI.post(user, %{visibility: "unlisted", status: "hey"})
@@ -1996,7 +906,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response =
         conn
-        |> assign(:user, admin)
         |> get("/api/pleroma/admin/stats")
         |> json_response(200)
 
@@ -2005,7 +914,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "by instance", %{conn: conn} do
-      admin = insert(:user, is_admin: true)
       user1 = insert(:user)
       instance2 = "instance2.tld"
       user2 = insert(:user, %{ap_id: "https://#{instance2}/@actor"})
@@ -2016,12 +924,78 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response =
         conn
-        |> assign(:user, admin)
         |> get("/api/pleroma/admin/stats", instance: instance2)
         |> json_response(200)
 
       assert %{"direct" => 0, "private" => 1, "public" => 0, "unlisted" => 1} =
                response["status_visibility"]
+    end
+  end
+
+  describe "/api/pleroma/backups" do
+    test "it creates a backup", %{conn: conn} do
+      admin = %{id: admin_id, nickname: admin_nickname} = insert(:user, is_admin: true)
+      token = insert(:oauth_admin_token, user: admin)
+      user = %{id: user_id, nickname: user_nickname} = insert(:user)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert [backup] = Repo.all(Pleroma.User.Backup)
+
+      ObanHelpers.perform_all()
+
+      email = Pleroma.Emails.UserEmail.backup_is_ready_email(backup, admin.id)
+
+      assert String.contains?(email.html_body, "Admin @#{admin.nickname} requested a full backup")
+      assert_email_sent(to: {user.name, user.email}, html_body: email.html_body)
+
+      log_message = "@#{admin_nickname} requested account backup for @#{user_nickname}"
+
+      assert [
+               %{
+                 data: %{
+                   "action" => "create_backup",
+                   "actor" => %{
+                     "id" => ^admin_id,
+                     "nickname" => ^admin_nickname
+                   },
+                   "message" => ^log_message,
+                   "subject" => %{
+                     "id" => ^user_id,
+                     "nickname" => ^user_nickname
+                   }
+                 }
+               }
+             ] = Pleroma.ModerationLog |> Repo.all()
+    end
+
+    test "it doesn't limit admins", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      token = insert(:oauth_admin_token, user: admin)
+      user = insert(:user)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert [_backup] = Repo.all(Pleroma.User.Backup)
+
+      assert "" ==
+               conn
+               |> assign(:user, admin)
+               |> assign(:token, token)
+               |> post("/api/pleroma/admin/backups", %{nickname: user.nickname})
+               |> json_response(200)
+
+      assert Repo.aggregate(Pleroma.User.Backup, :count) == 2
     end
   end
 end

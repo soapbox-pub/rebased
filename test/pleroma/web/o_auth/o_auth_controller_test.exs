@@ -1,11 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   use Pleroma.Web.ConnCase
+
   import Pleroma.Factory
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
   alias Pleroma.Repo
@@ -81,7 +83,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       redirect_query = URI.parse(redirected_to(conn)).query
       assert %{"state" => state_param} = URI.decode_query(redirect_query)
-      assert {:ok, state_components} = Poison.decode(state_param)
+      assert {:ok, state_components} = Jason.decode(state_param)
 
       expected_client_id = app.client_id
       expected_redirect_uri = app.redirect_uris
@@ -115,7 +117,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
             "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
             "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
+            "state" => Jason.encode!(state_params)
           }
         )
 
@@ -147,7 +149,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
             "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
             "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
+            "state" => Jason.encode!(state_params)
           }
         )
 
@@ -178,7 +180,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
             "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
             "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
+            "state" => Jason.encode!(state_params)
           }
         )
 
@@ -314,7 +316,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
+      user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       redirect_uri = OAuthController.default_redirect_uri(app)
 
@@ -345,7 +347,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
+      user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       unlisted_redirect_uri = "http://cross-site-request.com"
 
@@ -454,7 +456,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -478,7 +480,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -501,7 +503,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -527,7 +529,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -551,7 +553,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       conn =
         conn
-        |> put_session(:oauth_token, token.token)
+        |> AuthHelper.put_session_token(token.token)
         |> get(
           "/oauth/authorize",
           %{
@@ -607,6 +609,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         assert auth
         assert auth.scopes == expected_scopes
       end
+    end
+
+    test "authorize from cookie" do
+      user = insert(:user)
+      app = insert(:oauth_app)
+      oauth_token = insert(:oauth_token, user: user, app: app)
+      redirect_uri = OAuthController.default_redirect_uri(app)
+
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session()
+        |> AuthHelper.put_session_token(oauth_token.token)
+        |> post(
+          "/oauth/authorize",
+          %{
+            "authorization" => %{
+              "name" => user.nickname,
+              "client_id" => app.client_id,
+              "redirect_uri" => redirect_uri,
+              "scope" => app.scopes,
+              "state" => "statepassed"
+            }
+          }
+        )
+
+      target = redirected_to(conn)
+      assert target =~ redirect_uri
+
+      query = URI.parse(target).query |> URI.query_decoder() |> Map.new()
+
+      assert %{"state" => "statepassed", "code" => code} = query
+      auth = Repo.get_by(Authorization, token: code)
+      assert auth
+      assert auth.scopes == app.scopes
     end
 
     test "redirect to on two-factor auth page" do
@@ -753,7 +790,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do
       password = "testpassword"
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
+      user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password))
 
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -781,7 +818,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
           multi_factor_authentication_settings: %MFA.Settings{
             enabled: true,
             totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
@@ -886,12 +923,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "rejects token exchange for valid credentials belonging to unconfirmed user and confirmation is required" do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_activation_required], true)
       password = "testpassword"
 
       {:ok, user} =
-        insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
-        |> User.confirmation_changeset(need_confirmation: true)
+        insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password))
+        |> User.confirmation_changeset(set_confirmation: false)
         |> User.update_and_set_cache()
 
       refute Pleroma.User.account_status(user) == :active
@@ -918,8 +955,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
-          deactivated: true
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
+          is_active: false
         )
 
       app = insert(:oauth_app)
@@ -946,7 +983,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
           password_reset_pending: true
         )
 
@@ -970,13 +1007,13 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "rejects token exchange for user with confirmation_pending set to true" do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_activation_required], true)
       password = "testpassword"
 
       user =
         insert(:user,
-          password_hash: Pbkdf2.hash_pwd_salt(password),
-          confirmation_pending: true
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
+          is_confirmed: false
         )
 
       app = insert(:oauth_app, scopes: ["read", "write"])
@@ -1001,7 +1038,11 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "rejects token exchange for valid credentials belonging to an unapproved user" do
       password = "testpassword"
 
-      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password), approval_pending: true)
+      user =
+        insert(:user,
+          password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt(password),
+          is_approved: false
+        )
 
       refute Pleroma.User.account_status(user) == :active
 
@@ -1045,7 +1086,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     setup do: clear_config([:oauth2, :issue_new_refresh_token])
 
     test "issues a new access token with keep fresh token" do
-      Pleroma.Config.put([:oauth2, :issue_new_refresh_token], true)
+      clear_config([:oauth2, :issue_new_refresh_token], true)
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -1068,7 +1109,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                %{
                  "scope" => "write",
                  "token_type" => "Bearer",
-                 "expires_in" => 600,
                  "access_token" => _,
                  "refresh_token" => _,
                  "me" => ^ap_id
@@ -1085,7 +1125,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "issues a new access token with new fresh token" do
-      Pleroma.Config.put([:oauth2, :issue_new_refresh_token], false)
+      clear_config([:oauth2, :issue_new_refresh_token], false)
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -1108,7 +1148,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                %{
                  "scope" => "write",
                  "token_type" => "Bearer",
-                 "expires_in" => 600,
                  "access_token" => _,
                  "refresh_token" => _,
                  "me" => ^ap_id
@@ -1191,7 +1230,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                %{
                  "scope" => "write",
                  "token_type" => "Bearer",
-                 "expires_in" => 600,
                  "access_token" => _,
                  "refresh_token" => _,
                  "me" => ^ap_id
@@ -1219,8 +1257,43 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
   end
 
-  describe "POST /oauth/revoke - bad request" do
-    test "returns 500" do
+  describe "POST /oauth/revoke" do
+    test "when authenticated with request token, revokes it and clears it from session" do
+      oauth_token = insert(:oauth_token)
+
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session()
+        |> AuthHelper.put_session_token(oauth_token.token)
+        |> post("/oauth/revoke", %{"token" => oauth_token.token})
+
+      assert json_response(conn, 200)
+
+      refute AuthHelper.get_session_token(conn)
+      assert Token.get_by_token(oauth_token.token) == {:error, :not_found}
+    end
+
+    test "if request is authenticated with a different token, " <>
+           "revokes requested token but keeps session token" do
+      user = insert(:user)
+      oauth_token = insert(:oauth_token, user: user)
+      other_app_oauth_token = insert(:oauth_token, user: user)
+
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session()
+        |> AuthHelper.put_session_token(oauth_token.token)
+        |> post("/oauth/revoke", %{"token" => other_app_oauth_token.token})
+
+      assert json_response(conn, 200)
+
+      assert AuthHelper.get_session_token(conn) == oauth_token.token
+      assert Token.get_by_token(other_app_oauth_token.token) == {:error, :not_found}
+    end
+
+    test "returns 500 on bad request" do
       response =
         build_conn()
         |> post("/oauth/revoke", %{})

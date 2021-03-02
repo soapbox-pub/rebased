@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
@@ -16,10 +16,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Admin", "Invites"],
+      tags: ["Invites"],
       summary: "Get a list of generated invites",
       operationId: "AdminAPI.InviteController.index",
-      security: [%{"oAuth" => ["read:invites"]}],
+      security: [%{"oAuth" => ["admin:read:invites"]}],
       parameters: admin_api_params(),
       responses: %{
         200 =>
@@ -48,10 +48,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Admin", "Invites"],
+      tags: ["Invites"],
       summary: "Create an account registration invite token",
       operationId: "AdminAPI.InviteController.create",
-      security: [%{"oAuth" => ["write:invites"]}],
+      security: [%{"oAuth" => ["admin:write:invites"]}],
       parameters: admin_api_params(),
       requestBody:
         request_body("Parameters", %Schema{
@@ -69,10 +69,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
 
   def revoke_operation do
     %Operation{
-      tags: ["Admin", "Invites"],
+      tags: ["Invites"],
       summary: "Revoke invite by token",
       operationId: "AdminAPI.InviteController.revoke",
-      security: [%{"oAuth" => ["write:invites"]}],
+      security: [%{"oAuth" => ["admin:write:invites"]}],
       parameters: admin_api_params(),
       requestBody:
         request_body(
@@ -96,10 +96,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
 
   def email_operation do
     %Operation{
-      tags: ["Admin", "Invites"],
+      tags: ["Invites"],
       summary: "Sends registration invite via email",
       operationId: "AdminAPI.InviteController.email",
-      security: [%{"oAuth" => ["write:invites"]}],
+      security: [%{"oAuth" => ["admin:write:invites"]}],
       parameters: admin_api_params(),
       requestBody:
         request_body(

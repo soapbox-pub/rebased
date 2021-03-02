@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
@@ -9,16 +9,18 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:media_proxy_caches"], admin: true} when action in [:index]
+    %{scopes: ["admin:read:media_proxy_caches"]} when action in [:index]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:media_proxy_caches"], admin: true} when action in [:purge, :delete]
+    %{scopes: ["admin:write:media_proxy_caches"]} when action in [:purge, :delete]
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
@@ -38,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   defp fetch_entries(params) do
     MediaProxy.cache_table()
-    |> Cachex.stream!(Cachex.Query.create(true, :key))
+    |> @cachex.stream!(Cachex.Query.create(true, :key))
     |> filter_entries(params[:query])
   end
 

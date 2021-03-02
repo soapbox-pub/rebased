@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRFTest do
@@ -86,5 +86,21 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
 
       {:ok, ^expected} = MRF.describe()
     end
+  end
+
+  test "config_descriptions/0" do
+    descriptions = MRF.config_descriptions()
+
+    good_mrf = Enum.find(descriptions, fn %{key: key} -> key == :good_mrf end)
+
+    assert good_mrf == %{
+             key: :good_mrf,
+             related_policy: "Fixtures.Modules.GoodMRF",
+             label: "Good MRF",
+             description: "Some description",
+             group: :pleroma,
+             tab: :mrf,
+             type: :group
+           }
   end
 end

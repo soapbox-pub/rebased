@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
 
+  import Mock
   import Tesla.Mock
   import Pleroma.Factory
 
@@ -12,7 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                 Pleroma.Config.get!([:instance, :static_dir]),
                 "emoji"
               )
-  setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
   setup do: clear_config([:instance, :public], true)
 
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   end
 
   test "GET /api/pleroma/emoji/packs when :public: false", %{conn: conn} do
-    Config.put([:instance, :public], false)
+    clear_config([:instance, :public], false)
     conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
   end
 
@@ -346,7 +346,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     end
   end
 
-  describe "PATCH /api/pleroma/emoji/pack?name=:name" do
+  describe "PATCH/update /api/pleroma/emoji/pack?name=:name" do
     setup do
       pack_file = "#{@emoji_path}/test_pack/pack.json"
       original_content = File.read!(pack_file)
@@ -363,6 +363,20 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
          "description" => "Test description",
          "share-files" => false
        }}
+    end
+
+    test "returns error when file system not writable", %{admin_conn: conn} = ctx do
+      with_mocks([
+        {File, [:passthrough], [stat: fn _ -> {:error, :eacces} end]}
+      ]) do
+        assert conn
+               |> put_req_header("content-type", "multipart/form-data")
+               |> patch(
+                 "/api/pleroma/emoji/pack?name=test_pack",
+                 %{"metadata" => ctx[:new_data]}
+               )
+               |> json_response_and_validate_schema(500)
+      end
     end
 
     test "for a pack without a fallback source", ctx do
@@ -424,6 +438,46 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   end
 
   describe "POST/DELETE /api/pleroma/emoji/pack?name=:name" do
+    test "returns an error on creates pack when file system not writable", %{
+      admin_conn: admin_conn
+    } do
+      path_pack = Path.join(@emoji_path, "test_pack")
+
+      with_mocks([
+        {File, [:passthrough], [mkdir: fn ^path_pack -> {:error, :eacces} end]}
+      ]) do
+        assert admin_conn
+               |> post("/api/pleroma/emoji/pack?name=test_pack")
+               |> json_response_and_validate_schema(500) == %{
+                 "error" =>
+                   "Unexpected error occurred while creating pack. (POSIX error: Permission denied)"
+               }
+      end
+    end
+
+    test "returns an error on deletes pack when the file system is not writable", %{
+      admin_conn: admin_conn
+    } do
+      path_pack = Path.join(@emoji_path, "test_emoji_pack")
+
+      try do
+        {:ok, _pack} = Pleroma.Emoji.Pack.create("test_emoji_pack")
+
+        with_mocks([
+          {File, [:passthrough], [rm_rf: fn ^path_pack -> {:error, :eacces, path_pack} end]}
+        ]) do
+          assert admin_conn
+                 |> delete("/api/pleroma/emoji/pack?name=test_emoji_pack")
+                 |> json_response_and_validate_schema(500) == %{
+                   "error" =>
+                     "Couldn't delete the `test_emoji_pack` pack (POSIX error: Permission denied)"
+                 }
+        end
+      after
+        File.rm_rf(path_pack)
+      end
+    end
+
     test "creating and deleting a pack", %{admin_conn: admin_conn} do
       assert admin_conn
              |> post("/api/pleroma/emoji/pack?name=test_created")

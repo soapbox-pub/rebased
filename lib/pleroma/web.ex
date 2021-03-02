@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web do
@@ -20,6 +20,7 @@ defmodule Pleroma.Web do
   below.
   """
 
+  alias Pleroma.Helpers.AuthHelper
   alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug
@@ -62,7 +63,8 @@ defmodule Pleroma.Web do
 
       # Executed just before actual controller action, invokes before-action hooks (callbacks)
       defp action(conn, params) do
-        with %{halted: false} = conn <- maybe_drop_authentication_if_oauth_check_ignored(conn),
+        with %{halted: false} = conn <-
+               maybe_drop_authentication_if_oauth_check_ignored(conn),
              %{halted: false} = conn <- maybe_perform_public_or_authenticated_check(conn),
              %{halted: false} = conn <- maybe_perform_authenticated_check(conn),
              %{halted: false} = conn <- maybe_halt_on_missing_oauth_scopes_check(conn) do
@@ -75,7 +77,7 @@ defmodule Pleroma.Web do
       defp maybe_drop_authentication_if_oauth_check_ignored(conn) do
         if PlugHelper.plug_called?(conn, ExpectPublicOrAuthenticatedCheckPlug) and
              not PlugHelper.plug_called_or_skipped?(conn, OAuthScopesPlug) do
-          OAuthScopesPlug.drop_auth_info(conn)
+          AuthHelper.drop_auth_info(conn)
         else
           conn
         end
@@ -230,5 +232,17 @@ defmodule Pleroma.Web do
 
   def base_url do
     Pleroma.Web.Endpoint.url()
+  end
+
+  # TODO: Change to Phoenix.Router.routes/1 for Phoenix 1.6.0+
+  def get_api_routes do
+    Pleroma.Web.Router.__routes__()
+    |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
+    |> Enum.map(fn r ->
+      r.path
+      |> String.split("/", trim: true)
+      |> List.first()
+    end)
+    |> Enum.uniq()
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity do
@@ -14,6 +14,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.ReportNote
   alias Pleroma.ThreadMute
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Ecto.Changeset
   import Ecto.Query
@@ -22,6 +23,8 @@ defmodule Pleroma.Activity do
   @type actor :: String.t()
 
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
+
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   schema "activities" do
     field(:data, :map)
@@ -153,6 +156,18 @@ defmodule Pleroma.Activity do
 
   def get_bookmark(_, _), do: nil
 
+  def get_report(activity_id) do
+    opts = %{
+      type: "Flag",
+      skip_preload: true,
+      preload_report_notes: true
+    }
+
+    ActivityPub.fetch_activities_query([], opts)
+    |> where(id: ^activity_id)
+    |> Repo.one()
+  end
+
   def change(struct, params \\ %{}) do
     struct
     |> cast(params, [:data, :recipients])
@@ -174,6 +189,19 @@ defmodule Pleroma.Activity do
         Activity
         |> where([a], a.id == ^id)
         |> restrict_deactivated_users()
+        |> Repo.one()
+
+      _ ->
+        nil
+    end
+  end
+
+  def get_by_id_with_user_actor(id) do
+    case FlakeId.flake_id?(id) do
+      true ->
+        Activity
+        |> where([a], a.id == ^id)
+        |> with_preloaded_user_actor()
         |> Repo.one()
 
       _ ->
@@ -246,7 +274,7 @@ defmodule Pleroma.Activity do
   defp get_in_reply_to_activity_from_object(_), do: nil
 
   def get_in_reply_to_activity(%Activity{} = activity) do
-    get_in_reply_to_activity_from_object(Object.normalize(activity))
+    get_in_reply_to_activity_from_object(Object.normalize(activity, fetch: false))
   end
 
   def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])
@@ -272,7 +300,7 @@ defmodule Pleroma.Activity do
 
   defp purge_web_resp_cache(%Activity{} = activity) do
     %{path: path} = URI.parse(activity.data["id"])
-    Cachex.del(:web_resp_cache, path)
+    @cachex.del(:web_resp_cache, path)
     activity
   end
 

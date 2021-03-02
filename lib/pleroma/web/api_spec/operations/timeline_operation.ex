@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.TimelineOperation do
@@ -25,6 +25,8 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         local_param(),
+        remote_param(),
+        only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
         reply_visibility_param() | pagination_params()
@@ -41,8 +43,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       tags: ["Timelines"],
       summary: "Direct timeline",
       description:
-        "View statuses with a “direct” privacy, from your account or in your notifications",
-      deprecated: true,
+        "View statuses with a “direct” scope addressed to the account. Using this endpoint is discouraged, please use [conversations](#tag/Conversations) or [chats](#tag/Chats).",
       parameters: [with_muted_param() | pagination_params()],
       security: [%{"oAuth" => ["read:statuses"]}],
       operationId: "TimelineController.direct",
@@ -59,7 +60,9 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [
         local_param(),
+        instance_param(),
         only_media_param(),
+        remote_param(),
         with_muted_param(),
         exclude_visibilities_param(),
         reply_visibility_param() | pagination_params()
@@ -106,6 +109,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         ),
         local_param(),
         only_media_param(),
+        remote_param(),
         with_muted_param(),
         exclude_visibilities_param() | pagination_params()
       ],
@@ -131,6 +135,9 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
           required: true
         ),
         with_muted_param(),
+        local_param(),
+        remote_param(),
+        only_media_param(),
         exclude_visibilities_param() | pagination_params()
       ],
       operationId: "TimelineController.list",
@@ -158,8 +165,17 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
     )
   end
 
+  defp instance_param do
+    Operation.parameter(
+      :instance,
+      :query,
+      %Schema{type: :string},
+      "Show only statuses from the given domain"
+    )
+  end
+
   defp with_muted_param do
-    Operation.parameter(:with_muted, :query, BooleanLike, "Includeactivities by muted users")
+    Operation.parameter(:with_muted, :query, BooleanLike, "Include activities by muted users")
   end
 
   defp exclude_visibilities_param do
@@ -186,6 +202,15 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       :query,
       %Schema{allOf: [BooleanLike], default: false},
       "Show only statuses with media attached?"
+    )
+  end
+
+  defp remote_param do
+    Operation.parameter(
+      :remote,
+      :query,
+      %Schema{allOf: [BooleanLike], default: false},
+      "Show only remote statuses?"
     )
   end
 end

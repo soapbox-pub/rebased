@@ -56,7 +56,7 @@ sudo -iu postgres initdb -D /var/lib/postgres/data
 sudo systemctl enable --now postgresql.service
 ```
 
-### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md))
 
 ```shell
 sudo pacman -S ffmpeg imagemagick perl-image-exiftool
@@ -100,7 +100,7 @@ sudo -Hu pleroma mix deps.get
 * Check the configuration and if all looks right, rename it, so Pleroma will load it (`prod.secret.exs` for productive instance, `dev.secret.exs` for development instances):
 
 ```shell
-mv config/{generated_config.exs,prod.secret.exs}
+sudo -Hu pleroma mv config/{generated_config.exs,prod.secret.exs}
 ```
 
 * The previous command creates also the file `config/setup_db.psql`, with which you can create the database:

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
@@ -70,19 +70,33 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     |> changeset(data)
   end
 
-  defp fix_url(%{"url" => url} = data) when is_list(url) do
-    attachment =
-      Enum.find(url, fn x ->
-        mime_type = x["mimeType"] || x["mediaType"] || ""
+  defp find_attachment(url) do
+    mpeg_url =
+      Enum.find(url, fn
+        %{"mediaType" => mime_type, "tag" => tags} when is_list(tags) ->
+          mime_type == "application/x-mpegURL"
 
-        is_map(x) and String.starts_with?(mime_type, ["video/", "audio/"])
+        _ ->
+          false
       end)
 
-    link_element =
-      Enum.find(url, fn x ->
-        mime_type = x["mimeType"] || x["mediaType"] || ""
+    url
+    |> Enum.concat(mpeg_url["tag"] || [])
+    |> Enum.find(fn
+      %{"mediaType" => mime_type} -> String.starts_with?(mime_type, ["video/", "audio/"])
+      %{"mimeType" => mime_type} -> String.starts_with?(mime_type, ["video/", "audio/"])
+      _ -> false
+    end)
+  end
 
-        is_map(x) and mime_type == "text/html"
+  defp fix_url(%{"url" => url} = data) when is_list(url) do
+    attachment = find_attachment(url)
+
+    link_element =
+      Enum.find(url, fn
+        %{"mediaType" => "text/html"} -> true
+        %{"mimeType" => "text/html"} -> true
+        _ -> false
       end)
 
     data

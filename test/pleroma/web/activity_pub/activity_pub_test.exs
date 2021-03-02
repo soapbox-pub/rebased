@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -190,6 +190,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.accepts_chat_messages
     end
+
+    test "works for guppe actors" do
+      user_id = "https://gup.pe/u/bernie2020"
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^user_id} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/guppe-actor.json"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.name == "Bernie2020 group"
+      assert user.actor_type == "Group"
+    end
   end
 
   test "it fetches the appropriate tag-restricted posts" do
@@ -321,7 +339,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      object = Pleroma.Object.normalize(activity)
+      object = Pleroma.Object.normalize(activity, fetch: false)
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
@@ -344,7 +362,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert object = Object.normalize(activity)
+      assert object = Object.normalize(activity, fetch: false)
       assert is_binary(object.data["id"])
     end
   end
@@ -678,7 +696,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
-    assert object = Pleroma.Object.normalize(activity_two)
+    assert object = Pleroma.Object.normalize(activity_two, fetch: false)
 
     data = %{
       "actor" => friend.ap_id,
@@ -726,7 +744,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
     blocker = insert(:user)
 
-    {:ok, blocker} = User.follow(blocker, domain_user)
+    {:ok, blocker, domain_user} = User.follow(blocker, domain_user)
     {:ok, blocker} = User.block_domain(blocker, domain)
 
     assert User.following?(blocker, domain_user)
@@ -750,6 +768,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_activities([], %{blocking_user: blocker, skip_preload: true})
 
     refute repeat_activity in activities
+  end
+
+  test "returns your own posts regardless of mute" do
+    user = insert(:user)
+    muted = insert(:user)
+
+    {:ok, muted_post} = CommonAPI.post(muted, %{status: "Im stupid"})
+
+    {:ok, reply} =
+      CommonAPI.post(user, %{status: "I'm muting you", in_reply_to_status_id: muted_post.id})
+
+    {:ok, _} = User.mute(user, muted)
+
+    [activity] = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
+
+    assert activity.id == reply.id
   end
 
   test "doesn't return muted activities" do
@@ -837,7 +871,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     user = insert(:user)
     booster = insert(:user)
 
-    {:ok, user} = User.follow(user, booster)
+    {:ok, user, booster} = User.follow(user, booster)
 
     {:ok, announce} = CommonAPI.repeat(activity_three.id, booster)
 
@@ -1045,15 +1079,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it sets the default description depending on the configuration", %{test_file: file} do
       clear_config([Pleroma.Upload, :default_description])
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], nil)
+      clear_config([Pleroma.Upload, :default_description], nil)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == ""
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], :filename)
+      clear_config([Pleroma.Upload, :default_description], :filename)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "an_image.jpg"
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], "unnamed attachment")
+      clear_config([Pleroma.Upload, :default_description], "unnamed attachment")
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "unnamed attachment"
     end
@@ -1142,13 +1176,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user2 = insert(:user)
       user3 = insert(:user)
 
-      {:ok, user1} = User.follow(user1, user3)
+      {:ok, user1, user3} = User.follow(user1, user3)
       assert User.following?(user1, user3)
 
-      {:ok, user2} = User.follow(user2, user3)
+      {:ok, user2, user3} = User.follow(user2, user3)
       assert User.following?(user2, user3)
 
-      {:ok, user3} = User.follow(user3, user2)
+      {:ok, user3, user2} = User.follow(user3, user2)
       assert User.following?(user3, user2)
 
       {:ok, public_activity} = CommonAPI.post(user3, %{status: "hi 1"})
@@ -1915,13 +1949,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   defp public_messages(_) do
     [u1, u2, u3, u4] = insert_list(4, :user)
-    {:ok, u1} = User.follow(u1, u2)
-    {:ok, u2} = User.follow(u2, u1)
-    {:ok, u1} = User.follow(u1, u4)
-    {:ok, u4} = User.follow(u4, u1)
+    {:ok, u1, u2} = User.follow(u1, u2)
+    {:ok, u2, u1} = User.follow(u2, u1)
+    {:ok, u1, u4} = User.follow(u1, u4)
+    {:ok, u4, u1} = User.follow(u4, u1)
 
-    {:ok, u2} = User.follow(u2, u3)
-    {:ok, u3} = User.follow(u3, u2)
+    {:ok, u2, u3} = User.follow(u2, u3)
+    {:ok, u3, u2} = User.follow(u3, u2)
 
     {:ok, a1} = CommonAPI.post(u1, %{status: "Status"})
 
@@ -2014,15 +2048,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   defp private_messages(_) do
     [u1, u2, u3, u4] = insert_list(4, :user)
-    {:ok, u1} = User.follow(u1, u2)
-    {:ok, u2} = User.follow(u2, u1)
-    {:ok, u1} = User.follow(u1, u3)
-    {:ok, u3} = User.follow(u3, u1)
-    {:ok, u1} = User.follow(u1, u4)
-    {:ok, u4} = User.follow(u4, u1)
+    {:ok, u1, u2} = User.follow(u1, u2)
+    {:ok, u2, u1} = User.follow(u2, u1)
+    {:ok, u1, u3} = User.follow(u1, u3)
+    {:ok, u3, u1} = User.follow(u3, u1)
+    {:ok, u1, u4} = User.follow(u1, u4)
+    {:ok, u4, u1} = User.follow(u4, u1)
 
-    {:ok, u2} = User.follow(u2, u3)
-    {:ok, u3} = User.follow(u3, u2)
+    {:ok, u2, u3} = User.follow(u2, u3)
+    {:ok, u3, u2} = User.follow(u3, u2)
 
     {:ok, a1} = CommonAPI.post(u1, %{status: "Status", visibility: "private"})
 

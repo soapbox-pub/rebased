@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ConnCase do
@@ -18,6 +18,8 @@ defmodule Pleroma.Web.ConnCase do
   """
 
   use ExUnit.CaseTemplate
+
+  alias Pleroma.DataCase
 
   using do
     quote do
@@ -116,21 +118,11 @@ defmodule Pleroma.Web.ConnCase do
   end
 
   setup tags do
-    Cachex.clear(:user_cache)
-    Cachex.clear(:object_cache)
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
+    DataCase.setup_multi_process_mode(tags)
+    DataCase.setup_streamer(tags)
+    DataCase.stub_pipeline()
 
-    unless tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
-    end
-
-    if tags[:needs_streamer] do
-      start_supervised(%{
-        id: Pleroma.Web.Streamer.registry(),
-        start:
-          {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
-      })
-    end
+    Mox.verify_on_exit!()
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end

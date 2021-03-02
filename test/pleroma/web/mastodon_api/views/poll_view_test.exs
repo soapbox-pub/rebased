@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.PollViewTest do
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     expected = %{
       emojis: [],
@@ -42,9 +42,8 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         %{title: "yes", votes_count: 0},
         %{title: "why are you even asking?", votes_count: 0}
       ],
-      voted: false,
       votes_count: 0,
-      voters_count: nil
+      voters_count: 0
     }
 
     result = PollView.render("show.json", %{object: object})
@@ -72,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     voter = insert(:user)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     {:ok, _votes, object} = CommonAPI.vote(voter, object, [0, 1])
 
@@ -98,7 +97,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert %{emojis: [%{shortcode: "blank"}]} = PollView.render("show.json", %{object: object})
   end
@@ -117,19 +116,21 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     {:ok, _, object} = CommonAPI.vote(other_user, object, [1, 2])
 
     result = PollView.render("show.json", %{object: object, for: other_user})
 
     assert result[:voted] == true
+    assert 1 in result[:own_votes]
+    assert 2 in result[:own_votes]
     assert Enum.at(result[:options], 1)[:votes_count] == 1
     assert Enum.at(result[:options], 2)[:votes_count] == 1
   end
 
   test "does not crash on polls with no end date" do
-    object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i")
+    object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i", fetch: true)
     result = PollView.render("show.json", %{object: object})
 
     assert result[:expires_at] == nil
@@ -153,7 +154,7 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert %{
              options: [

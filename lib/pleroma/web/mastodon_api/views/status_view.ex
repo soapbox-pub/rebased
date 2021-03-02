@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusView do
@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.PollView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.PleromaAPI.EmojiReactionController
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
@@ -40,7 +41,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     activities
     |> Enum.map(fn
       %{data: %{"type" => "Create"}} = activity ->
-        object = Object.normalize(activity)
+        object = Object.normalize(activity, fetch: false)
         object && object.data["inReplyTo"] != "" && object.data["inReplyTo"]
 
       _ ->
@@ -50,7 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Activity.create_by_object_ap_id_with_object()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
       if object, do: Map.put(acc, object.data["id"], activity), else: acc
     end)
   end
@@ -64,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_context_id(_), do: nil
 
   defp reblogged?(activity, user) do
-    object = Object.normalize(activity) || %{}
+    object = Object.normalize(activity, fetch: false) || %{}
     present?(user && user.ap_id in (object.data["announcements"] || []))
   end
 
@@ -83,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     parent_activities =
       activities
       |> Enum.filter(&(&1.data["type"] == "Announce" && &1.data["object"]))
-      |> Enum.map(&Object.normalize(&1).data["id"])
+      |> Enum.map(&Object.normalize(&1, fetch: false).data["id"])
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
       |> Activity.with_preloaded_bookmark(reading_user)
@@ -123,7 +124,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       ) do
     user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
-    activity_object = Object.normalize(activity)
+    activity_object = Object.normalize(activity, fetch: false)
 
     reblogged_parent_activity =
       if opts[:parent_activities] do
@@ -179,10 +180,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
       tags: reblogged[:tags] || [],
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: build_application(activity_object.data["generator"]),
       language: nil,
       emojis: [],
       pleroma: %{
@@ -192,7 +190,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     user = CommonAPI.get_user(activity.data["actor"])
     user_follower_address = user.follower_address
@@ -294,21 +292,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     emoji_reactions =
-      with %{data: %{"reactions" => emoji_reactions}} <- object do
-        Enum.map(emoji_reactions, fn
-          [emoji, users] when is_list(users) ->
-            build_emoji_map(emoji, users, opts[:for])
-
-          {emoji, users} when is_list(users) ->
-            build_emoji_map(emoji, users, opts[:for])
-
-          _ ->
-            nil
-        end)
-        |> Enum.reject(&is_nil/1)
-      else
-        _ -> []
-      end
+      object.data
+      |> Map.get("reactions", [])
+      |> EmojiReactionController.filter_allowed_users(
+        opts[:for],
+        Map.get(opts, :with_muted, false)
+      )
+      |> Stream.map(fn {emoji, users} ->
+        build_emoji_map(emoji, users, opts[:for])
+      end)
+      |> Enum.to_list()
 
     # Status muted state (would do 1 request per status unless user mutes are preloaded)
     muted =
@@ -352,10 +345,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       poll: render(PollView, "show.json", object: object, for: opts[:for]),
       mentions: mentions,
       tags: build_tags(tags),
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: build_application(object.data["generator"]),
       language: nil,
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
@@ -435,7 +425,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       text_url: href,
       type: type,
       description: attachment["name"],
-      pleroma: %{mime_type: media_type}
+      pleroma: %{mime_type: media_type},
+      blurhash: attachment["blurhash"]
     }
   end
 
@@ -454,7 +445,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     with nil <- replied_to_activities[object.data["inReplyTo"]] do
       # If user didn't participate in the thread
@@ -463,7 +454,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(%{data: %{"object" => _object}} = activity, _) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
@@ -494,7 +485,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   def build_tags(object_tags) when is_list(object_tags) do
     object_tags
     |> Enum.filter(&is_binary/1)
-    |> Enum.map(&%{name: &1, url: "/tag/#{URI.encode(&1)}"})
+    |> Enum.map(&%{name: &1, url: "#{Pleroma.Web.base_url()}/tag/#{URI.encode(&1)}"})
   end
 
   def build_tags(_), do: []
@@ -543,4 +534,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       me: !!(current_user && current_user.ap_id in users)
     }
   end
+
+  @spec build_application(map() | nil) :: map() | nil
+  defp build_application(%{type: _type, name: name, url: url}), do: %{name: name, website: url}
+  defp build_application(_), do: nil
 end

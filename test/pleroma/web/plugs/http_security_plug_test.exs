@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Plug.Conn
 
   describe "http security enabled" do
@@ -72,6 +71,21 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
       [csp] = Conn.get_resp_header(conn, "content-security-policy")
       assert csp =~ "media-src 'self' https:;"
       assert csp =~ "img-src 'self' data: blob: https:;"
+    end
+
+    test "it sets the Service-Worker-Allowed header", %{conn: conn} do
+      clear_config([:http_security, :enabled], true)
+      clear_config([:frontends, :primary], %{"name" => "fedi-fe", "ref" => "develop"})
+
+      clear_config([:frontends, :available], %{
+        "fedi-fe" => %{
+          "name" => "fedi-fe",
+          "custom-http-headers" => [{"service-worker-allowed", "/"}]
+        }
+      })
+
+      conn = get(conn, "/api/v1/instance")
+      assert Conn.get_resp_header(conn, "service-worker-allowed") == ["/"]
     end
   end
 

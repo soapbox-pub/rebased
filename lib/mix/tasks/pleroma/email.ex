@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Email do
@@ -33,12 +33,12 @@ defmodule Mix.Tasks.Pleroma.Email do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
-      confirmation_pending: true,
+      is_active: true,
+      is_confirmed: false,
       invisible: false
     })
     |> Pleroma.Repo.chunk_stream(500)
-    |> Stream.each(&Pleroma.User.try_send_confirmation_email(&1))
+    |> Stream.each(&Pleroma.User.maybe_send_confirmation_email(&1))
     |> Stream.run()
   end
 end

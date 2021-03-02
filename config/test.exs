@@ -19,11 +19,6 @@ config :logger, :console,
   level: :warn,
   format: "\n[$level] $message\n"
 
-config :pleroma, :fed_sockets,
-  enabled: false,
-  connection_duration: 5,
-  rejection_duration: 5
-
 config :pleroma, :auth, oauth_consumer_strategies: []
 
 config :pleroma, Pleroma.Upload,
@@ -43,7 +38,7 @@ config :pleroma, :instance,
   external_user_synchronization: false,
   static_dir: "test/instance_static/"
 
-config :pleroma, :activitypub, sign_object_fetches: false
+config :pleroma, :activitypub, sign_object_fetches: false, follow_handshake_timeout: 0
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
@@ -52,10 +47,13 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 50
+
+config :pleroma, :dangerzone, override_repo_pool_size: true
 
 # Reduce hash rounds for testing
-config :pbkdf2_elixir, rounds: 1
+config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
 
@@ -117,14 +115,23 @@ config :pleroma, Pleroma.Web.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
-config :pleroma, Pleroma.Uploaders.S3,
-  bucket: nil,
-  streaming_enabled: true,
-  public_endpoint: nil
-
 config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
+
+config :pleroma, :pipeline,
+  object_validator: Pleroma.Web.ActivityPub.ObjectValidatorMock,
+  mrf: Pleroma.Web.ActivityPub.MRFMock,
+  activity_pub: Pleroma.Web.ActivityPub.ActivityPubMock,
+  side_effects: Pleroma.Web.ActivityPub.SideEffectsMock,
+  federator: Pleroma.Web.FederatorMock,
+  config: Pleroma.ConfigMock
+
+config :pleroma, :cachex, provider: Pleroma.CachexMock
+
+config :pleroma, :side_effects,
+  ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
+  logger: Pleroma.LoggerMock
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

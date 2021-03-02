@@ -1,12 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy.InvalidationTest do
-  use ExUnit.Case
-  use Pleroma.Tests.Helpers
+  use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.Web.MediaProxy.Invalidation
 
   import ExUnit.CaptureLog
@@ -15,17 +13,13 @@ defmodule Pleroma.Web.MediaProxy.InvalidationTest do
 
   setup do: clear_config([:media_proxy])
 
-  setup do
-    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
-  end
-
   describe "Invalidation.Http" do
     test "perform request to clear cache" do
-      Config.put([:media_proxy, :enabled], false)
-      Config.put([:media_proxy, :invalidation, :enabled], true)
-      Config.put([:media_proxy, :invalidation, :provider], Invalidation.Http)
+      clear_config([:media_proxy, :enabled], false)
+      clear_config([:media_proxy, :invalidation, :enabled], true)
+      clear_config([:media_proxy, :invalidation, :provider], Invalidation.Http)
 
-      Config.put([Invalidation.Http], method: :purge, headers: [{"x-refresh", 1}])
+      clear_config([Invalidation.Http], method: :purge, headers: [{"x-refresh", 1}])
       image_url = "http://example.com/media/example.jpg"
       Pleroma.Web.MediaProxy.put_in_banned_urls(image_url)
 
@@ -48,10 +42,10 @@ defmodule Pleroma.Web.MediaProxy.InvalidationTest do
 
   describe "Invalidation.Script" do
     test "run script to clear cache" do
-      Config.put([:media_proxy, :enabled], false)
-      Config.put([:media_proxy, :invalidation, :enabled], true)
-      Config.put([:media_proxy, :invalidation, :provider], Invalidation.Script)
-      Config.put([Invalidation.Script], script_path: "purge-nginx")
+      clear_config([:media_proxy, :enabled], false)
+      clear_config([:media_proxy, :invalidation, :enabled], true)
+      clear_config([:media_proxy, :invalidation, :provider], Invalidation.Script)
+      clear_config([Invalidation.Script], script_path: "purge-nginx")
 
       image_url = "http://example.com/media/example.jpg"
       Pleroma.Web.MediaProxy.put_in_banned_urls(image_url)

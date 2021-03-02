@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ActivityTest do
@@ -25,7 +25,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns activities by it's objects AP ids" do
     activity = insert(:note_activity)
-    object_data = Object.normalize(activity).data
+    object_data = Object.normalize(activity, fetch: false).data
 
     [found_activity] = Activity.get_all_create_by_object_ap_id(object_data["id"])
 
@@ -34,7 +34,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns the activity that created an object" do
     activity = insert(:note_activity)
-    object_data = Object.normalize(activity).data
+    object_data = Object.normalize(activity, fetch: false).data
 
     found_activity = Activity.get_create_by_object_ap_id(object_data["id"])
 
@@ -168,7 +168,7 @@ defmodule Pleroma.ActivityTest do
 
     test "find only local statuses for unauthenticated users  when `limit_to_local_content` is `:all`",
          %{local_activity: local_activity} do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
       assert [^local_activity] = Activity.search(nil, "find me")
     end
 
@@ -177,7 +177,7 @@ defmodule Pleroma.ActivityTest do
            local_activity: local_activity,
            remote_activity: remote_activity
          } do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       activities = Enum.sort_by(Activity.search(nil, "find me"), & &1.id)
 
@@ -195,6 +195,13 @@ defmodule Pleroma.ActivityTest do
       |> Enum.sort(&(&1.id < &2.id))
 
     assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
+  end
+
+  test "get_by_id_with_user_actor/1" do
+    user = insert(:user)
+    activity = insert(:note_activity, note: insert(:note, user: user))
+
+    assert Activity.get_by_id_with_user_actor(activity.id).user_actor == user
   end
 
   test "get_by_id_with_object/1" do

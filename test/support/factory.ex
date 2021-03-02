@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
@@ -29,9 +29,9 @@ defmodule Pleroma.Factory do
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
       nickname: sequence(:nickname, &"nick#{&1}"),
-      password_hash: Pbkdf2.hash_pwd_salt("test"),
+      password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
-      discoverable: true,
+      is_discoverable: true,
       last_digest_emailed_at: NaiveDateTime.utc_now(),
       last_refreshed_at: NaiveDateTime.utc_now(),
       notification_settings: %Pleroma.User.NotificationSetting{},
@@ -101,6 +101,37 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Object{
       data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def attachment_note_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    {length, attrs} = Map.pop(attrs, :length, 1)
+
+    data = %{
+      "attachment" =>
+        Stream.repeatedly(fn -> attachment_data(user.ap_id, attrs[:href]) end)
+        |> Enum.take(length)
+    }
+
+    build(:note, Map.put(attrs, :data, data))
+  end
+
+  defp attachment_data(ap_id, href) do
+    href = href || sequence(:href, &"#{Pleroma.Web.Endpoint.url()}/media/#{&1}.jpg")
+
+    %{
+      "url" => [
+        %{
+          "href" => href,
+          "type" => "Link",
+          "mediaType" => "image/jpeg"
+        }
+      ],
+      "name" => "some name",
+      "type" => "Document",
+      "actor" => ap_id,
+      "mediaType" => "image/jpeg"
     }
   end
 
@@ -259,7 +290,7 @@ defmodule Pleroma.Factory do
 
   def like_activity_factory(attrs \\ %{}) do
     note_activity = attrs[:note_activity] || insert(:note_activity)
-    object = Object.normalize(note_activity)
+    object = Object.normalize(note_activity, fetch: false)
     user = insert(:user)
 
     data =
@@ -455,7 +486,8 @@ defmodule Pleroma.Factory do
     %Pleroma.Filter{
       user: build(:user),
       filter_id: sequence(:filter_id, & &1),
-      phrase: "cofe"
+      phrase: "cofe",
+      context: ["home"]
     }
   end
 end

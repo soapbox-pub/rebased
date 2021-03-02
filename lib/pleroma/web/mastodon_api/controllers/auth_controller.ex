@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AuthController do
@@ -7,10 +7,13 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
+  alias Pleroma.Helpers.AuthHelper
+  alias Pleroma.Helpers.UriHelper
   alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
@@ -20,24 +23,35 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   @local_mastodon_name "Mastodon-Local"
 
   @doc "GET /web/login"
-  def login(%{assigns: %{user: %User{}}} = conn, _params) do
-    redirect(conn, to: local_mastodon_root_path(conn))
-  end
-
-  # Local Mastodon FE login init action
-  def login(conn, %{"code" => auth_token}) do
-    with {:ok, app} <- get_or_make_app(),
+  # Local Mastodon FE login callback action
+  def login(conn, %{"code" => auth_token} = params) do
+    with {:ok, app} <- local_mastofe_app(),
          {:ok, auth} <- Authorization.get_by_token(app, auth_token),
-         {:ok, token} <- Token.exchange_token(app, auth) do
+         {:ok, oauth_token} <- Token.exchange_token(app, auth) do
+      redirect_to =
+        conn
+        |> local_mastodon_post_login_path()
+        |> UriHelper.modify_uri_params(%{"access_token" => oauth_token.token})
+
       conn
-      |> put_session(:oauth_token, token.token)
-      |> redirect(to: local_mastodon_root_path(conn))
+      |> AuthHelper.put_session_token(oauth_token.token)
+      |> redirect(to: redirect_to)
+    else
+      _ -> redirect_to_oauth_form(conn, params)
     end
   end
 
-  # Local Mastodon FE callback action
-  def login(conn, _) do
-    with {:ok, app} <- get_or_make_app() do
+  def login(conn, params) do
+    with %{assigns: %{user: %User{}, token: %Token{app_id: app_id}}} <- conn,
+         {:ok, %{id: ^app_id}} <- local_mastofe_app() do
+      redirect(conn, to: local_mastodon_post_login_path(conn))
+    else
+      _ -> redirect_to_oauth_form(conn, params)
+    end
+  end
+
+  defp redirect_to_oauth_form(conn, _params) do
+    with {:ok, app} <- local_mastofe_app() do
       path =
         o_auth_path(conn, :authorize,
           response_type: "code",
@@ -52,9 +66,16 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
   @doc "DELETE /auth/sign_out"
   def logout(conn, _) do
-    conn
-    |> clear_session
-    |> redirect(to: "/")
+    conn =
+      with %{assigns: %{token: %Token{} = oauth_token}} <- conn,
+           session_token = AuthHelper.get_session_token(conn),
+           {:ok, %Token{token: ^session_token}} <- RevokeToken.revoke(oauth_token) do
+        AuthHelper.delete_session_token(conn)
+      else
+        _ -> conn
+      end
+
+    redirect(conn, to: "/")
   end
 
   @doc "POST /auth/password"
@@ -66,7 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
     json_response(conn, :no_content, "")
   end
 
-  defp local_mastodon_root_path(conn) do
+  defp local_mastodon_post_login_path(conn) do
     case get_session(conn, :return_to) do
       nil ->
         masto_fe_path(conn, :index, ["getting-started"])
@@ -77,9 +98,11 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
     end
   end
 
-  @spec get_or_make_app() :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
-  defp get_or_make_app do
-    %{client_name: @local_mastodon_name, redirect_uris: "."}
-    |> App.get_or_make(["read", "write", "follow", "push", "admin"])
+  @spec local_mastofe_app() :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
+  def local_mastofe_app do
+    App.get_or_make(
+      %{client_name: @local_mastodon_name, redirect_uris: "."},
+      ["read", "write", "follow", "push", "admin"]
+    )
   end
 end

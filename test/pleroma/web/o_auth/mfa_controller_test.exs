@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.MFAControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
   import Pleroma.Factory
 
   alias Pleroma.MFA
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       insert(:user,
         multi_factor_authentication_settings: %MFA.Settings{
           enabled: true,
-          backup_codes: [Pbkdf2.hash_pwd_salt("test-code")],
+          backup_codes: [Pleroma.Password.Pbkdf2.hash_pwd_salt("test-code")],
           totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
         }
       )
@@ -171,7 +171,6 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert match?(
                %{
                  "access_token" => _,
-                 "expires_in" => 600,
                  "me" => ^ap_id,
                  "refresh_token" => _,
                  "scope" => "write",
@@ -247,7 +246,7 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
 
       hashed_codes =
         backup_codes
-        |> Enum.map(&Pbkdf2.hash_pwd_salt(&1))
+        |> Enum.map(&Pleroma.Password.Pbkdf2.hash_pwd_salt(&1))
 
       user =
         insert(:user,
@@ -280,7 +279,6 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       assert match?(
                %{
                  "access_token" => _,
-                 "expires_in" => 600,
                  "me" => ^ap_id,
                  "refresh_token" => _,
                  "scope" => "write",

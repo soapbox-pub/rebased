@@ -1,16 +1,20 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config do
+  @behaviour Pleroma.Config.Getting
   defmodule Error do
     defexception [:message]
   end
 
+  @impl true
   def get(key), do: get(key, nil)
 
+  @impl true
   def get([key], default), do: get(key, default)
 
+  @impl true
   def get([_ | _] = path, default) do
     case fetch(path) do
       {:ok, value} -> value
@@ -18,6 +22,7 @@ defmodule Pleroma.Config do
     end
   end
 
+  @impl true
   def get(key, default) do
     Application.get_env(:pleroma, key, default)
   end
@@ -94,16 +99,4 @@ defmodule Pleroma.Config do
   def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
 
   def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []
-
-  def enforce_oauth_admin_scope_usage?, do: !!get([:auth, :enforce_oauth_admin_scope_usage])
-
-  def oauth_admin_scopes(scopes) when is_list(scopes) do
-    Enum.flat_map(
-      scopes,
-      fn scope ->
-        ["admin:#{scope}"] ++
-          if enforce_oauth_admin_scope_usage?(), do: [], else: [scope]
-      end
-    )
-  end
 end

@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.SearchTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Web.AdminAPI.Search
 
@@ -47,9 +47,9 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns active/deactivated users" do
-      insert(:user, deactivated: true)
-      insert(:user, deactivated: true)
-      insert(:user, deactivated: false)
+      insert(:user, is_active: false)
+      insert(:user, is_active: false)
+      insert(:user, is_active: true)
 
       {:ok, _results, active_count} =
         Search.user(%{
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     test "it returns specific user" do
       insert(:user)
       insert(:user)
-      user = insert(:user, nickname: "bob", local: true, deactivated: false)
+      user = insert(:user, nickname: "bob", local: true, is_active: true)
 
       {:ok, _results, total_count} = Search.user(%{query: ""})
 
@@ -143,6 +143,20 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert user2 in users
     end
 
+    test "it returns users by actor_types" do
+      user_service = insert(:user, actor_type: "Service")
+      user_application = insert(:user, actor_type: "Application")
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, [^user_service], 1} = Search.user(%{actor_types: ["Service"]})
+      {:ok, [^user_application], 1} = Search.user(%{actor_types: ["Application"]})
+      {:ok, [^user1, ^user2], 2} = Search.user(%{actor_types: ["Person"]})
+
+      {:ok, [^user_service, ^user1, ^user2], 3} =
+        Search.user(%{actor_types: ["Person", "Service"]})
+    end
+
     test "it returns user by display name" do
       user = insert(:user, name: "Display name")
       insert(:user)
@@ -168,7 +182,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns unapproved user" do
-      unapproved = insert(:user, approval_pending: true)
+      unapproved = insert(:user, is_approved: false)
       insert(:user)
       insert(:user)
 
@@ -178,9 +192,21 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
       assert count == 1
     end
 
+    test "it returns unconfirmed user" do
+      unconfirmed = insert(:user, is_confirmed: false)
+      insert(:user)
+      insert(:user)
+
+      {:ok, _results, total} = Search.user()
+      {:ok, [^unconfirmed], count} = Search.user(%{unconfirmed: true})
+      assert total == 3
+      assert count == 1
+    end
+
+    # Note: as in Mastodon, `is_discoverable` doesn't anyhow relate to user searchability
     test "it returns non-discoverable users" do
       insert(:user)
-      insert(:user, discoverable: false)
+      insert(:user, is_discoverable: false)
 
       {:ok, _results, total} = Search.user()
 
