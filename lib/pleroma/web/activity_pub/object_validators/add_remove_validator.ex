@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.PinValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
   use Ecto.Schema
 
   import Ecto.Changeset
@@ -37,6 +37,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.PinValidator do
     |> validate_required([:id, :target, :object, :actor, :type, :to, :cc])
     |> validate_inclusion(:type, ~w(Add Remove))
     |> validate_actor_presence()
+    |> validate_collection_belongs_to_actor()
     |> validate_object_presence()
+  end
+
+  defp validate_collection_belongs_to_actor(changeset) do
+    validate_change(changeset, :target, fn :target, target ->
+      if String.starts_with?(target, changeset.changes[:actor]) do
+        []
+      else
+        [target: "collection doesn't belong to actor"]
+      end
+    end)
   end
 end

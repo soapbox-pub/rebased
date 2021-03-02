@@ -924,7 +924,8 @@ defmodule HttpRequestMock do
        body:
          File.read!("test/fixtures/users_mock/masto_featured.json")
          |> String.replace("{{domain}}", "mastodon.social")
-         |> String.replace("{{nickname}}", "lambadalambda")
+         |> String.replace("{{nickname}}", "lambadalambda"),
+       headers: activitypub_object_headers()
      }}
   end
 

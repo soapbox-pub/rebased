@@ -168,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "id" => "http://localhost:400/objects/d61d6733-e256-4fe1-ab13-1e369789423d",
         "actor" => actor,
         "object" => object_url,
-        "target" => "http://example.com/users/lain/collections/featured",
+        "target" => "https://example.com/users/lain/collections/featured",
         "type" => "Remove",
         "to" => [Pleroma.Constants.as_public()],
         "cc" => ["https://example.com/users/lain/followers"]

@@ -1209,15 +1209,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: clear_config([:instance, :max_pinned_statuses], 1)
 
     test "pin status", %{conn: conn, user: user, activity: activity} do
-      id_str = to_string(activity.id)
+      id = activity.id
 
-      assert %{"id" => ^id_str, "pinned" => true} =
+      assert %{"id" => ^id, "pinned" => true} =
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/v1/statuses/#{activity.id}/pin")
                |> json_response_and_validate_schema(200)
 
-      assert [%{"id" => ^id_str, "pinned" => true}] =
+      assert [%{"id" => ^id, "pinned" => true}] =
                conn
                |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
                |> json_response_and_validate_schema(200)
