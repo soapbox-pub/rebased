@@ -407,6 +407,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "status" => "club mate is my wingman"
         })
 
+      assert %{"content" => "club mate is my wingman"} =
+               json_response_and_validate_schema(result, 200)
+
+      activity = result.assigns.activity.id
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> get("api/v1/statuses/#{activity}")
+
       assert %{
                "content" => "club mate is my wingman",
                "application" => nil
