@@ -536,6 +536,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   @spec build_application(map() | nil) :: map() | nil
-  defp build_application(%{type: _type, name: name, url: url}), do: %{name: name, website: url}
+  defp build_application(%{"type" => _type, "name" => name, "url" => url}),
+    do: %{name: name, website: url}
+
   defp build_application(_), do: nil
 end
