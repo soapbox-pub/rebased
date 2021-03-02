@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
-  alias Pleroma.Web.OAuth.Token
+  # alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
@@ -420,14 +420,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     )
   end
 
-  defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
-    if user.disclose_client do
-      %{client_name: client_name, website: website} = Repo.preload(token, :app).app
-      Map.put(params, :generator, %{type: "Application", name: client_name, url: website})
-    else
-      Map.put(params, :generator, nil)
-    end
-  end
+  # Deactivated for 2.3.0
+  # defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
+  #  if user.disclose_client do
+  #    %{client_name: client_name, website: website} = Repo.preload(token, :app).app
+  #    Map.put(params, :generator, %{type: "Application", name: client_name, url: website})
+  #  else
+  #    Map.put(params, :generator, nil)
+  #  end
+  # end
 
   defp put_application(params, _), do: Map.put(params, :generator, nil)
 end

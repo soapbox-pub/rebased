@@ -358,6 +358,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert activity.data["cc"] == []
     end
 
+    @tag :skip
     test "discloses application metadata when enabled" do
       user = insert(:user, disclose_client: true)
       %{user: _user, token: token, conn: conn} = oauth_access(["write:statuses"], user: user)
