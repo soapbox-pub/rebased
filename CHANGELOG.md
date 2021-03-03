@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+- The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
+
+## Unreleased (Patch)
+
+## [2.3.0] - 2020-03-01
+
+### Security
+
+- Fixed client user agent leaking through MediaProxy
+
 ### Removed
 
 - `:auth, :enforce_oauth_admin_scope_usage` configuration option.
@@ -59,7 +69,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ability to define custom HTTP headers per each frontend
 - MRF (`NoEmptyPolicy`): New MRF Policy which will deny empty statuses or statuses of only mentions from being created by local users
 - New users will receive a simple email confirming their registration if no other emails will be dispatched. (e.g., Welcome, Confirmation, or Approval Required)
-- The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
 
 <details>
   <summary>API Changes</summary>
@@ -98,9 +107,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Mastodon API: Fixed creation of scheduled posts with polls.
   - Mastodon API: Support for expires_in/expires_at in the Filters.
 </details>
-
-## Unreleased (Patch)
-
 
 ## [2.2.2] - 2020-01-18
 
