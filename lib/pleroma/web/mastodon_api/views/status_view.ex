@@ -152,7 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
-    {pinned?, pinned_at} = pin_data(activity_object, user)
+    {pinned?, pinned_at} = pin_data(object, user)
 
     %{
       id: to_string(activity.id),

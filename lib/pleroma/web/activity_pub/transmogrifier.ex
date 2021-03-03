@@ -558,6 +558,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(%{"type" => type} = data, _options) when type in ~w(Add Remove) do
     with {:ok, %User{} = user} <- ObjectValidator.fetch_actor(data),
+         # maybe locally user doesn't have featured_address
+         {:ok, user} <- maybe_refetch_user(user),
          %Object{} <- Object.normalize(data["object"], fetch: true) do
       # Mastodon sends pin/unpin objects without id, to, cc fields
       data =
@@ -668,6 +670,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(_, _), do: :error
+
+  defp maybe_refetch_user(%User{featured_address: address} = user) when is_binary(address) do
+    {:ok, user}
+  end
+
+  defp maybe_refetch_user(%User{ap_id: ap_id}), do: upgrade_user_from_ap_id(ap_id)
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do

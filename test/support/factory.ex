@@ -41,7 +41,7 @@ defmodule Pleroma.Factory do
 
     urls =
       if attrs[:local] == false do
-        base_domain = Enum.random(["domain1.com", "domain2.com", "domain3.com"])
+        base_domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
 
         ap_id = "https://#{base_domain}/users/#{user.nickname}"
 
@@ -59,6 +59,8 @@ defmodule Pleroma.Factory do
           featured_address: User.ap_featured_collection(user)
         }
       end
+
+    attrs = Map.delete(attrs, :domain)
 
     user
     |> Map.put(:raw_bio, user.bio)
