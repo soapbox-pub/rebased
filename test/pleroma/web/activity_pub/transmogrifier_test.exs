@@ -147,6 +147,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
             body: object,
             headers: [{"content-type", "application/activity+json"}]
           }
+
+        %{method: :get, url: "https://example.com/users/lain/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/users_mock/masto_featured.json"
+              |> File.read!()
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{nickname}}", "lain"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
       end)
 
       message = %{

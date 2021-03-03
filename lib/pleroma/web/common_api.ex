@@ -412,14 +412,18 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
-  def pin(id, %User{ap_id: actor} = user) do
+  def pin(id, %User{} = user) do
     with %Activity{} = activity <- create_activity_by_id(id),
-         true <- activity_belongs_to_actor(activity, actor),
+         true <- activity_belongs_to_actor(activity, user.ap_id),
          true <- object_type_is_allowed_for_pin(activity.object),
          true <- activity_is_public(activity),
          {:ok, pin_data, _} <- Builder.pin(user, activity.object),
          {:ok, _pin, _} <-
-           Pipeline.common_pipeline(pin_data, local: true, activity_id: id) do
+           Pipeline.common_pipeline(pin_data,
+             local: true,
+             activity_id: id,
+             featured_address: user.featured_address
+           ) do
       {:ok, activity}
     else
       {:error, {:execute_side_effects, error}} -> error
@@ -456,7 +460,8 @@ defmodule Pleroma.Web.CommonAPI do
            Pipeline.common_pipeline(unpin_data,
              local: true,
              activity_id: activity.id,
-             expires_at: activity.data["expires_at"]
+             expires_at: activity.data["expires_at"],
+             featured_address: user.featured_address
            ) do
       {:ok, activity}
     end

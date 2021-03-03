@@ -22,28 +22,28 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
     field(:cc, ObjectValidators.Recipients, default: [])
   end
 
-  def cast_and_validate(data) do
+  def cast_and_validate(data, meta) do
     data
     |> cast_data()
-    |> validate_data()
+    |> validate_data(meta)
   end
 
   defp cast_data(data) do
     cast(%__MODULE__{}, data, __schema__(:fields))
   end
 
-  defp validate_data(changeset) do
+  defp validate_data(changeset, meta) do
     changeset
     |> validate_required([:id, :target, :object, :actor, :type, :to, :cc])
     |> validate_inclusion(:type, ~w(Add Remove))
     |> validate_actor_presence()
-    |> validate_collection_belongs_to_actor()
+    |> validate_collection_belongs_to_actor(meta)
     |> validate_object_presence()
   end
 
-  defp validate_collection_belongs_to_actor(changeset) do
+  defp validate_collection_belongs_to_actor(changeset, meta) do
     validate_change(changeset, :target, fn :target, target ->
-      if String.starts_with?(target, changeset.changes[:actor]) do
+      if target == meta[:featured_address] do
         []
       else
         [target: "collection doesn't belong to actor"]

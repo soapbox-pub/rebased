@@ -34,6 +34,7 @@
     "owner": "https://example.com/users/{{nickname}}",
     "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5DLtwGXNZElJyxFGfcVc\nXANhaMadj/iYYQwZjOJTV9QsbtiNBeIK54PJrYuU0/0YIdrvS1iqheX5IwXRhcwa\nhm3ZyLz7XeN9st7FBni4BmZMBtMpxAuYuu5p/jbWy13qAiYOhPreCx0wrWgm/lBD\n9mkgaxIxPooBE0S4ZWEJIDIV1Vft3AWcRUyWW1vIBK0uZzs6GYshbQZB952S0yo4\nFzI1hABGHncH8UvuFauh4EZ8tY7/X5I0pGRnDOcRN1dAht5w5yTA+6r5kebiFQjP\nIzN/eCO/a9Flrj9YGW7HDNtjSOH0A31PLRGlJtJO3yK57dnf5ppyCZGfL4emShQo\ncQIDAQAB\n-----END PUBLIC KEY-----\n\n"
   },
+  "featured": "https://example.com/users/{{nickname}}/collections/featured",
   "summary": "your friendly neighborhood pleroma developer<br>I like cute things and distributed systems, and really hate delete and redrafts",
   "tag": [],
   "type": "Person",

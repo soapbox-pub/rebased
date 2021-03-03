@@ -557,7 +557,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => type} = data, _options) when type in ~w(Add Remove) do
-    with {:ok, user} <- ObjectValidator.fetch_actor(data),
+    with {:ok, %User{} = user} <- ObjectValidator.fetch_actor(data),
          %Object{} <- Object.normalize(data["object"], fetch: true) do
       # Mastodon sends pin/unpin objects without id, to, cc fields
       data =
@@ -566,7 +566,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put_new("to", [Pleroma.Constants.as_public()])
         |> Map.put_new("cc", [user.follower_address])
 
-      case Pipeline.common_pipeline(data, local: false) do
+      case Pipeline.common_pipeline(data,
+             local: false,
+             featured_address: user.featured_address
+           ) do
         {:ok, activity, _meta} -> {:ok, activity}
         error -> error
       end
