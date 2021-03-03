@@ -746,6 +746,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_embedded_tag_reject_any(query, _), do: query
 
+  defp object_ids_query_for_tags(tags) do
+    from(hto in "hashtags_objects")
+    |> join(:inner, [hto], ht in Pleroma.Hashtag, on: hto.hashtag_id == ht.id)
+    |> where([hto, ht], ht.name in ^tags)
+    |> select([hto], hto.object_id)
+  end
+
   defp restrict_hashtag_all(_query, %{tag_all: _tag, skip_preload: true}) do
     raise_on_missing_preload()
   end
@@ -784,16 +791,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_hashtag_any(query, %{tag: [_ | _] = tags}) do
     from(
       [_activity, object] in query,
-      where:
-        fragment(
-          """
-          EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
-              AND hashtags_objects.object_id = ? LIMIT 1)
-          """,
-          ^tags,
-          object.id
-        )
+      where: object.id in subquery(object_ids_query_for_tags(tags))
     )
   end
 
@@ -810,16 +808,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_hashtag_reject_any(query, %{tag_reject: [_ | _] = tags_reject}) do
     from(
       [_activity, object] in query,
-      where:
-        fragment(
-          """
-          NOT EXISTS (SELECT 1 FROM hashtags JOIN hashtags_objects
-            ON hashtags_objects.hashtag_id = hashtags.id WHERE hashtags.name = ANY(?)
-              AND hashtags_objects.object_id = ? LIMIT 1)
-          """,
-          ^tags_reject,
-          object.id
-        )
+      where: object.id not in subquery(object_ids_query_for_tags(tags_reject))
     )
   end
 

@@ -8,6 +8,8 @@ defmodule Pleroma.Repo do
     adapter: Ecto.Adapters.Postgres,
     migration_timestamps: [type: :naive_datetime_usec]
 
+  use Ecto.Explain
+
   import Ecto.Query
   require Logger
 

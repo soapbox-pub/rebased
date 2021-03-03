@@ -121,6 +121,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_enum, "~> 1.4"},
+      {:ecto_explain, "~> 0.1.2"},
       {:ecto_sql, "~> 3.4.4"},
       {:postgrex, ">= 0.15.5"},
       {:oban, "~> 2.3.4"},
