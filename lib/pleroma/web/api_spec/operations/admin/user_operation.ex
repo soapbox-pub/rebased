@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "List users",
       operationId: "AdminAPI.UserController.index",
       security: [%{"oAuth" => ["admin:read:accounts"]}],
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Create a single or multiple users",
       operationId: "AdminAPI.UserController.create",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
@@ -134,7 +134,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Show user",
       operationId: "AdminAPI.UserController.show",
       security: [%{"oAuth" => ["admin:read:accounts"]}],
@@ -157,7 +157,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def follow_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Follow",
       operationId: "AdminAPI.UserController.follow",
       security: [%{"oAuth" => ["admin:write:follows"]}],
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def unfollow_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Unfollow",
       operationId: "AdminAPI.UserController.unfollow",
       security: [%{"oAuth" => ["admin:write:follows"]}],
@@ -207,7 +207,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def approve_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Approve multiple users",
       operationId: "AdminAPI.UserController.approve",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
@@ -239,7 +239,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def toggle_activation_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Toggle user activation",
       operationId: "AdminAPI.UserController.toggle_activation",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
@@ -256,7 +256,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def activate_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Activate multiple users",
       operationId: "AdminAPI.UserController.activate",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
@@ -288,7 +288,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def deactivate_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Deactivates multiple users",
       operationId: "AdminAPI.UserController.deactivate",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
@@ -320,7 +320,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Users"],
+      tags: ["User administration"],
       summary: "Removes a single or multiple users",
       operationId: "AdminAPI.UserController.delete",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
