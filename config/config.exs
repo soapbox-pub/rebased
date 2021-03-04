@@ -851,6 +851,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
 
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

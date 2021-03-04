@@ -424,14 +424,6 @@ defmodule HttpRequestMock do
     {:error, :nxdomain}
   end
 
-  def get("http://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 404,
-       body: ""
-     }}
-  end
-
   def get("https://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -756,7 +748,7 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 406, body: ""}}
   end
 
-  def get("http://squeet.me/.well-known/host-meta", _, _, _) do
+  def get("https://squeet.me/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/squeet.me_host_meta")}}
   end
@@ -797,7 +789,7 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: "", headers: [{"content-type", "application/jrd+json"}]}}
   end
 
-  def get("http://framatube.org/.well-known/host-meta", _, _, _) do
+  def get("https://framatube.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -806,7 +798,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "http://framatube.org/main/xrd?uri=acct:framasoft@framatube.org",
+        "https://framatube.org/main/xrd?uri=acct:framasoft@framatube.org",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -841,7 +833,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://status.alpicola.com/.well-known/host-meta", _, _, _) do
+  def get("https://status.alpicola.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -849,7 +841,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://macgirvin.com/.well-known/host-meta", _, _, _) do
+  def get("https://macgirvin.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -857,7 +849,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://gerzilla.de/.well-known/host-meta", _, _, _) do
+  def get("https://gerzilla.de/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,

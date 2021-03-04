@@ -1403,7 +1403,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp normalize_image(urls) when is_list(urls), do: urls |> List.first() |> normalize_image()
   defp normalize_image(_), do: nil
 
-  defp object_to_user_data(data) do
+  defp object_to_user_data(data, additional) do
     fields =
       data
       |> Map.get("attachment", [])
@@ -1435,18 +1435,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public_key =
       if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
         data["publicKey"]["publicKeyPem"]
-      else
-        nil
       end
 
     shared_inbox =
       if is_map(data["endpoints"]) && is_binary(data["endpoints"]["sharedInbox"]) do
         data["endpoints"]["sharedInbox"]
-      else
-        nil
       end
 
-    user_data = %{
+    # if WebFinger request was already done, we probably have acct, otherwise
+    # we request WebFinger here
+    nickname = additional[:nickname_from_acct] || generate_nickname(data)
+
+    %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
@@ -1468,20 +1468,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       inbox: data["inbox"],
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
-      pinned_objects: pinned_objects
+      pinned_objects: pinned_objects,
+      nickname: nickname
     }
+  end
 
-    # nickname can be nil because of virtual actors
-    if data["preferredUsername"] do
-      Map.put(
-        user_data,
-        :nickname,
-        "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}"
-      )
+  defp generate_nickname(%{"preferredUsername" => username} = data) when is_binary(username) do
+    generated = "#{username}@#{URI.parse(data["id"]).host}"
+
+    if Config.get([WebFinger, :update_nickname_on_user_fetch]) do
+      case WebFinger.finger(generated) do
+        {:ok, %{"subject" => "acct:" <> acct}} -> acct
+        _ -> generated
+      end
     else
-      Map.put(user_data, :nickname, nil)
+      generated
     end
   end
+
+  # nickname can be nil because of virtual actors
+  defp generate_nickname(_), do: nil
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
@@ -1554,17 +1560,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp collection_private(_data), do: {:ok, true}
 
-  def user_data_from_user_object(data) do
+  def user_data_from_user_object(data, additional \\ []) do
     with {:ok, data} <- MRF.filter(data) do
-      {:ok, object_to_user_data(data)}
+      {:ok, object_to_user_data(data, additional)}
     else
       e -> {:error, e}
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id) do
+  def fetch_and_prepare_user_from_ap_id(ap_id, additional \\ []) do
     with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
-         {:ok, data} <- user_data_from_user_object(data) do
+         {:ok, data} <- user_data_from_user_object(data, additional) do
       {:ok, maybe_update_follow_information(data)}
     else
       # If this has been deleted, only log a debug and not an error
@@ -1641,13 +1647,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def make_user_from_ap_id(ap_id) do
+  def make_user_from_ap_id(ap_id, additional \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
 
     if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
         {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
 
         if user do
@@ -1667,8 +1673,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_nickname(nickname) do
-    with {:ok, %{"ap_id" => ap_id}} when not is_nil(ap_id) <- WebFinger.finger(nickname) do
-      make_user_from_ap_id(ap_id)
+    with {:ok, %{"ap_id" => ap_id, "subject" => "acct:" <> acct}} when not is_nil(ap_id) <-
+           WebFinger.finger(nickname) do
+      make_user_from_ap_id(ap_id, nickname_from_acct: acct)
     else
       _e -> {:error, "No AP id in WebFinger"}
     end

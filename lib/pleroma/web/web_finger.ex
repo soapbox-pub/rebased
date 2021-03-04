@@ -32,7 +32,13 @@ defmodule Pleroma.Web.WebFinger do
 
   def webfinger(resource, fmt) when fmt in ["XML", "JSON"] do
     host = Pleroma.Web.Endpoint.host()
-    regex = ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@#{host}/
+
+    regex =
+      if webfinger_domain = Pleroma.Config.get([__MODULE__, :domain]) do
+        ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@(#{host}|#{webfinger_domain})/
+      else
+        ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@#{host}/
+      end
 
     with %{"username" => username} <- Regex.named_captures(regex, resource),
          %User{} = user <- User.get_cached_by_nickname(username) do
@@ -65,8 +71,10 @@ defmodule Pleroma.Web.WebFinger do
   def represent_user(user, "JSON") do
     {:ok, user} = User.ensure_keys_present(user)
 
+    domain = Pleroma.Config.get([__MODULE__, :domain]) || Pleroma.Web.Endpoint.host()
+
     %{
-      "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}",
+      "subject" => "acct:#{user.nickname}@#{domain}",
       "aliases" => gather_aliases(user),
       "links" => gather_links(user)
     }
@@ -150,17 +158,15 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def find_lrdd_template(domain) do
-    with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           HTTP.get("http://#{domain}/.well-known/host-meta") do
+    # WebFinger is restricted to HTTPS - https://tools.ietf.org/html/rfc7033#section-9.1
+    meta_url = "https://#{domain}/.well-known/host-meta"
+
+    with {:ok, %{status: status, body: body}} when status in 200..299 <- HTTP.get(meta_url) do
       get_template_from_xml(body)
     else
-      _ ->
-        with {:ok, %{body: body, status: status}} when status in 200..299 <-
-               HTTP.get("https://#{domain}/.well-known/host-meta") do
-          get_template_from_xml(body)
-        else
-          e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
-        end
+      error ->
+        Logger.warn("Can't find LRDD template in #{inspect(meta_url)}: #{inspect(error)}")
+        {:error, :lrdd_not_found}
     end
   end
 
@@ -174,7 +180,7 @@ defmodule Pleroma.Web.WebFinger do
     end
   end
 
-  defp get_address_from_domain(_, _), do: nil
+  defp get_address_from_domain(_, _), do: {:error, :webfinger_no_domain}
 
   @spec finger(String.t()) :: {:ok, map()} | {:error, any()}
   def finger(account) do
@@ -191,13 +197,11 @@ defmodule Pleroma.Web.WebFinger do
     encoded_account = URI.encode("acct:#{account}")
 
     with address when is_binary(address) <- get_address_from_domain(domain, encoded_account),
-         response <-
+         {:ok, %{status: status, body: body, headers: headers}} when status in 200..299 <-
            HTTP.get(
              address,
              [{"accept", "application/xrd+xml,application/jrd+json"}]
-           ),
-         {:ok, %{status: status, body: body, headers: headers}} when status in 200..299 <-
-           response do
+           ) do
       case List.keyfind(headers, "content-type", 0) do
         {_, content_type} ->
           case Plug.Conn.Utils.media_type(content_type) do
@@ -215,10 +219,9 @@ defmodule Pleroma.Web.WebFinger do
           {:error, {:content_type, nil}}
       end
     else
-      e ->
-        Logger.debug(fn -> "Couldn't finger #{account}" end)
-        Logger.debug(fn -> inspect(e) end)
-        {:error, e}
+      error ->
+        Logger.debug("Couldn't finger #{account}: #{inspect(error)}")
+        error
     end
   end
 end

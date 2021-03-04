@@ -50,6 +50,35 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
            ]
   end
 
+  test "reach user on tld, while pleroma is runned on subdomain" do
+    Pleroma.Web.Endpoint.config_change(
+      [{Pleroma.Web.Endpoint, url: [host: "sub.example.com"]}],
+      []
+    )
+
+    clear_config([Pleroma.Web.Endpoint, :url, :host], "sub.example.com")
+
+    clear_config([Pleroma.Web.WebFinger, :domain], "example.com")
+
+    user = insert(:user, ap_id: "https://sub.example.com/users/bobby", nickname: "bobby")
+
+    response =
+      build_conn()
+      |> put_req_header("accept", "application/jrd+json")
+      |> get("/.well-known/webfinger?resource=acct:#{user.nickname}@example.com")
+      |> json_response(200)
+
+    assert response["subject"] == "acct:#{user.nickname}@example.com"
+    assert response["aliases"] == ["https://sub.example.com/users/#{user.nickname}"]
+
+    on_exit(fn ->
+      Pleroma.Web.Endpoint.config_change(
+        [{Pleroma.Web.Endpoint, url: [host: "localhost"]}],
+        []
+      )
+    end)
+  end
+
   test "it returns 404 when user isn't found (JSON)" do
     result =
       build_conn()

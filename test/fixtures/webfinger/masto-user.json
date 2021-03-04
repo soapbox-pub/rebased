@@ -1,0 +1,92 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "toot": "http://joinmastodon.org/ns#",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "IdentityProof": "toot:IdentityProof",
+      "discoverable": "toot:discoverable",
+      "Device": "toot:Device",
+      "Ed25519Signature": "toot:Ed25519Signature",
+      "Ed25519Key": "toot:Ed25519Key",
+      "Curve25519Key": "toot:Curve25519Key",
+      "EncryptedMessage": "toot:EncryptedMessage",
+      "publicKeyBase64": "toot:publicKeyBase64",
+      "deviceId": "toot:deviceId",
+      "claim": {
+        "@type": "@id",
+        "@id": "toot:claim"
+      },
+      "fingerprintKey": {
+        "@type": "@id",
+        "@id": "toot:fingerprintKey"
+      },
+      "identityKey": {
+        "@type": "@id",
+        "@id": "toot:identityKey"
+      },
+      "devices": {
+        "@type": "@id",
+        "@id": "toot:devices"
+      },
+      "messageFranking": "toot:messageFranking",
+      "messageType": "toot:messageType",
+      "cipherText": "toot:cipherText",
+      "suspended": "toot:suspended",
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      }
+    }
+  ],
+  "id": "https://{{domain}}/users/{{nickname}}",
+  "type": "Person",
+  "following": "https://{{domain}}/users/{{nickname}}/following",
+  "followers": "https://{{domain}}/users/{{nickname}}/followers",
+  "inbox": "https://{{domain}}/users/{{nickname}}/inbox",
+  "outbox": "https://{{domain}}/users/{{nickname}}/outbox",
+  "featured": "https://{{domain}}/users/{{nickname}}/collections/featured",
+  "featuredTags": "https://{{domain}}/users/{{nickname}}/collections/tags",
+  "preferredUsername": "{{nickname}}",
+  "name": "Name Name",
+  "summary": "<p>Summary</p>",
+  "url": "https://{{domain}}/@{{nickname}}",
+  "manuallyApprovesFollowers": false,
+  "discoverable": false,
+  "devices": "https://{{domain}}/users/{{nickname}}/collections/devices",
+  "publicKey": {
+    "id": "https://{{domain}}/users/{{nickname}}#main-key",
+    "owner": "https://{{domain}}/users/{{nickname}}",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvwDujxmxoYHs64MyVB3L\nG5ZyBxV3ufaMRBFu42bkcTpISq1WwZ+3Zb6CI8zOO+nM+Q2llrVRYjZa4ZFnOLvM\nTq/Kf+Zf5wy2aCRer88gX+MsJOAtItSi412y0a/rKOuFaDYLOLeTkRvmGLgZWbsr\nZJOp+YWb3zQ5qsIOInkc5BwI172tMsGeFtsnbNApPV4lrmtTGaJ8RiM8MR7XANBO\nfOHggSt1+eAIKGIsCmINEMzs1mG9D75xKtC/sM8GfbvBclQcBstGkHAEj1VHPW0c\nh6Bok5/QQppicyb8UA1PAA9bznSFtKlYE4xCH8rlCDSDTBRtdnBWHKcj619Ujz4Q\nawIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "tag": [],
+  "attachment": [],
+  "endpoints": {
+    "sharedInbox": "https://{{domain}}/inbox"
+  },
+  "icon": {
+    "type": "Image",
+    "mediaType": "image/jpeg",
+    "url": "https://s3.wasabisys.com/merp/accounts/avatars/000/000/001/original/6fdd3eee632af247.jpg"
+  }
+}
