@@ -120,7 +120,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "it gets the xrd endpoint for statusnet" do
       {:ok, template} = WebFinger.find_lrdd_template("status.alpicola.com")
 
-      assert template == "http://status.alpicola.com/main/xrd?uri={uri}"
+      assert template == "https://status.alpicola.com/main/xrd?uri={uri}"
     end
 
     test "it works with idna domains as nickname" do
