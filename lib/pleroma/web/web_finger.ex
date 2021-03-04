@@ -71,10 +71,8 @@ defmodule Pleroma.Web.WebFinger do
   def represent_user(user, "JSON") do
     {:ok, user} = User.ensure_keys_present(user)
 
-    domain = Pleroma.Config.get([__MODULE__, :domain]) || Pleroma.Web.Endpoint.host()
-
     %{
-      "subject" => "acct:#{user.nickname}@#{domain}",
+      "subject" => "acct:#{user.nickname}@#{domain()}",
       "aliases" => gather_aliases(user),
       "links" => gather_links(user)
     }
@@ -96,10 +94,14 @@ defmodule Pleroma.Web.WebFinger do
       :XRD,
       %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}"}
+        {:Subject, "acct:#{user.nickname}@#{domain()}"}
       ] ++ aliases ++ links
     }
     |> XmlBuilder.to_doc()
+  end
+
+  defp domain do
+    Pleroma.Config.get([__MODULE__, :domain]) || Pleroma.Web.Endpoint.host()
   end
 
   defp webfinger_from_xml(body) do
