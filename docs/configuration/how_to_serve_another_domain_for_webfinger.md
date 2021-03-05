@@ -5,6 +5,8 @@ However, in this case, you are almost certainly serving some web content on `htt
 
 Pleroma supports that, but it might be tricky to set up, and any error might prevent you from federating with other instances.
 
+*If you are already running Pleroma on `example.org`, it is no longer possible to move it to `pleroma.example.org`.*
+
 ## Account identifiers
 
 It is important to understand that for federation purposes, a user in Pleroma has two unique identifiers associated:
