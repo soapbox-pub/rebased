@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           Operation.response(
             "Status. When `scheduled_at` is present, ScheduledStatus is returned instead",
             "application/json",
-            %Schema{oneOf: [Status, ScheduledStatus]}
+            %Schema{anyOf: [Status, ScheduledStatus]}
           ),
         422 => Operation.response("Bad Request / MRF Rejection", "application/json", ApiError)
       }
