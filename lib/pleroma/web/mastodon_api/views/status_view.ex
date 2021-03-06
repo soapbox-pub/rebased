@@ -380,9 +380,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     page_url = page_url_data |> to_string
 
     image_url =
-      if is_binary(rich_media["image"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["image"]))
-        |> to_string
+      cond do
+        !is_binary(rich_media["image"]) ->
+          nil
+
+        String.starts_with?(rich_media["image"], "http") ->
+          rich_media["image"]
+
+        true ->
+          URI.merge(page_url_data, URI.parse(rich_media["image"])) |> to_string
       end
 
     %{
