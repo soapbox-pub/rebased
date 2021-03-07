@@ -466,6 +466,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.one()
   end
 
+  defp fetch_paginated_optimized(query, opts, pagination) do
+    # Note: tag-filtering funcs may apply "ORDER BY objects.id DESC",
+    #   and extra sorting on "activities.id DESC NULLS LAST" would worse the query plan
+    opts = Map.put(opts, :skip_extra_order, true)
+
+    Pagination.fetch_paginated(query, opts, pagination)
+  end
+
+  def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
+    list_memberships = Pleroma.List.memberships(opts[:user])
+
+    fetch_activities_query(recipients ++ list_memberships, opts)
+    |> fetch_paginated_optimized(opts, pagination)
+    |> Enum.reverse()
+    |> maybe_update_cc(list_memberships, opts[:user])
+  end
+
   @spec fetch_public_or_unlisted_activities(map(), Pagination.type()) :: [Activity.t()]
   def fetch_public_or_unlisted_activities(opts \\ %{}, pagination \\ :keyset) do
     opts = Map.delete(opts, :user)
@@ -473,7 +490,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     [Constants.as_public()]
     |> fetch_activities_query(opts)
     |> restrict_unlisted(opts)
-    |> Pagination.fetch_paginated(opts, pagination)
+    |> fetch_paginated_optimized(opts, pagination)
   end
 
   @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
@@ -751,6 +768,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> join(:inner, [hto], ht in Pleroma.Hashtag, on: hto.hashtag_id == ht.id)
     |> where([hto, ht], ht.name in ^tags)
     |> select([hto], hto.object_id)
+    |> distinct([hto], true)
   end
 
   defp restrict_hashtag_all(_query, %{tag_all: _tag, skip_preload: true}) do
@@ -789,9 +807,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_hashtag_any(query, %{tag: [_ | _] = tags}) do
+    hashtag_ids =
+      from(ht in Hashtag, where: ht.name in ^tags, select: ht.id)
+      |> Repo.all()
+
+    # Note: NO extra ordering should be done on "activities.id desc nulls last" for optimal plan
     from(
       [_activity, object] in query,
-      where: object.id in subquery(object_ids_query_for_tags(tags))
+      join: hto in "hashtags_objects",
+      on: hto.object_id == object.id,
+      where: hto.hashtag_id in ^hashtag_ids,
+      distinct: [desc: object.id],
+      order_by: [desc: object.id]
     )
   end
 
@@ -1188,7 +1215,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Map.put(opts, key, Hashtag.normalize_name(value))
 
         value when is_list(value) ->
-          Map.put(opts, key, Enum.map(value, &Hashtag.normalize_name/1))
+          normalized_value =
+            value
+            |> Enum.map(&Hashtag.normalize_name/1)
+            |> Enum.uniq()
+
+          Map.put(opts, key, normalized_value)
 
         _ ->
           opts
@@ -1273,15 +1305,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_embedded_tag_all(opts)
       |> restrict_embedded_tag_reject_any(opts)
     end
-  end
-
-  def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
-    list_memberships = Pleroma.List.memberships(opts[:user])
-
-    fetch_activities_query(recipients ++ list_memberships, opts)
-    |> Pagination.fetch_paginated(opts, pagination)
-    |> Enum.reverse()
-    |> maybe_update_cc(list_memberships, opts[:user])
   end
 
   @doc """
