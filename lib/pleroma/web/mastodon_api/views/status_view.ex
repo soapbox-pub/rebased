@@ -124,16 +124,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       ) do
     user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
-    activity_object = Object.normalize(activity, fetch: false)
+    object = Object.normalize(activity, fetch: false)
 
     reblogged_parent_activity =
       if opts[:parent_activities] do
         Activity.Queries.find_by_object_ap_id(
           opts[:parent_activities],
-          activity_object.data["id"]
+          object.data["id"]
         )
       else
-        Activity.create_by_object_ap_id(activity_object.data["id"])
+        Activity.create_by_object_ap_id(object.data["id"])
         |> Activity.with_preloaded_bookmark(opts[:for])
         |> Activity.with_set_thread_muted_field(opts[:for])
         |> Repo.one()
@@ -142,7 +142,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reblog_rendering_opts = Map.put(opts, :activity, reblogged_parent_activity)
     reblogged = render("show.json", reblog_rendering_opts)
 
-    favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
+    favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
     bookmarked = Activity.get_bookmark(reblogged_parent_activity, opts[:for]) != nil
 
@@ -154,8 +154,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     %{
       id: to_string(activity.id),
-      uri: activity_object.data["id"],
-      url: activity_object.data["id"],
+      uri: object.data["id"],
+      url: object.data["id"],
       account:
         AccountView.render("show.json", %{
           user: user,
@@ -180,7 +180,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
       tags: reblogged[:tags] || [],
-      application: build_application(activity_object.data["generator"]),
+      application: build_application(object.data["generator"]),
       language: nil,
       emojis: [],
       pleroma: %{
@@ -538,6 +538,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   @spec build_application(map() | nil) :: map() | nil
-  defp build_application(%{type: _type, name: name, url: url}), do: %{name: name, website: url}
+  defp build_application(%{"type" => _type, "name" => name, "url" => url}),
+    do: %{name: name, website: url}
+
   defp build_application(_), do: nil
 end
