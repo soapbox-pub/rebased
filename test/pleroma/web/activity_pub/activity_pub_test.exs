@@ -252,7 +252,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       object_id = Ecto.UUID.generate()
 
       featured_data =
-        "test/fixtures/collections/featured.json"
+        "test/fixtures/mastodon/collections/featured.json"
         |> File.read!()
         |> String.replace("{{domain}}", "example.com")
         |> String.replace("{{nickname}}", "lain")
