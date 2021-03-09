@@ -391,4 +391,13 @@ defmodule Pleroma.Activity do
   end
 
   def get_by_object_ap_id_with_object(_), do: nil
+
+  @spec add_by_params_query(String.t(), String.t(), String.t()) :: Ecto.Query.t()
+  def add_by_params_query(object_id, actor, target) do
+    object_id
+    |> Queries.by_object_id()
+    |> Queries.by_type("Add")
+    |> Queries.by_actor(actor)
+    |> where([a], fragment("?->>'target' = ?", a.data, ^target))
+  end
 end

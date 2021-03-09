@@ -340,11 +340,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   # Tasks this handles:
   # - removes pin from user
+  # - removes corresponding Add activity
   # - if activity had expiration, recreates activity expiration job
   @impl true
   def handle(%{data: %{"type" => "Remove"} = data} = object, meta) do
     with %User{} = user <- User.get_cached_by_ap_id(data["actor"]),
          {:ok, _user} <- User.remove_pinned_object_id(user, data["object"]) do
+      data["object"]
+      |> Activity.add_by_params_query(user.ap_id, user.featured_address)
+      |> Repo.delete_all()
+
       # if pinned activity was scheduled for deletion, we reschedule it for deletion
       if meta[:expires_at] do
         # MRF.ActivityExpirationPolicy used UTC timestamps for expires_at in original implementation
