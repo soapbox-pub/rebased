@@ -40,6 +40,7 @@ spec-build:
     paths:
     - spec.json
   script:
+  - mix deps.get
   - mix pleroma.openapi_spec spec.json
 
 benchmark:
