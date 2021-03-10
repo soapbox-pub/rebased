@@ -2255,13 +2255,6 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def roles(%{is_moderator: is_moderator, is_admin: is_admin}) do
-    %{
-      admin: is_admin,
-      moderator: is_moderator
-    }
-  end
-
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
     limit = Config.get([:instance, limit_name], 0)
