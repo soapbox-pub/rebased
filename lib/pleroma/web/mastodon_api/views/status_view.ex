@@ -379,17 +379,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     page_url = page_url_data |> to_string
 
-    image_url =
-      cond do
-        !is_binary(rich_media["image"]) ->
-          nil
-
-        String.starts_with?(rich_media["image"], "http") ->
-          rich_media["image"]
-
-        true ->
-          URI.merge(page_url_data, URI.parse(rich_media["image"])) |> to_string
+    image_url_data =
+      if is_binary(rich_media["image"]) do
+        URI.parse(rich_media["image"])
+      else
+        nil
       end
+
+    image_url = get_image_url(image_url_data, page_url_data)
 
     %{
       type: "link",
@@ -546,4 +543,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     do: %{name: name, website: url}
 
   defp build_application(_), do: nil
+
+  # Workaround for Elixir issue #10771
+  # Avoid applying URI.merge unless necessary
+  # TODO: revert to always attempting URI.merge(image_url_data, page_url_data)
+  # when Elixir 1.12 is the minimum supported version
+  @spec get_image_url(struct() | nil, struct()) :: String.t() | nil
+  defp get_image_url(
+         %URI{scheme: image_scheme, host: image_host} = image_url_data,
+         %URI{} = _page_url_data
+       )
+       when not is_nil(image_scheme) and not is_nil(image_host) do
+    image_url_data |> to_string
+  end
+
+  defp get_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
+    URI.merge(page_url_data, image_url_data) |> to_string
+  end
+
+  defp get_image_url(_, _), do: nil
 end
