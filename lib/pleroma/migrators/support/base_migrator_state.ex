@@ -98,7 +98,8 @@ defmodule Pleroma.Migrators.Support.BaseMigratorState do
       defp persist_non_data_change(:state, value) do
         with true <- get_data_key(:state) != value,
              true <- value in Pleroma.DataMigration.State.__valid_values__(),
-             %{data_migration_id: data_migration_id} when not is_nil(data_migration_id) <- state() do
+             %{data_migration_id: data_migration_id} when not is_nil(data_migration_id) <-
+               state() do
           DataMigration.update_one_by_id(data_migration_id, state: value)
         else
           false -> :ok
