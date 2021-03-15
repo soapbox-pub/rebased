@@ -213,32 +213,64 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   test "it fetches the appropriate tag-restricted posts" do
     user = insert(:user)
 
-    {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
+    {:ok, status_one} = CommonAPI.post(user, %{status: ". #TEST"})
     {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
-    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
+    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #Reject"})
 
-    fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
+    {:ok, status_four} = CommonAPI.post(user, %{status: ". #Any1 #any2"})
+    {:ok, status_five} = CommonAPI.post(user, %{status: ". #Any2 #any1"})
 
-    fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
+    for hashtag_timeline_strategy <- [:enabled, :disabled] do
+      clear_config([:features, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
-    fetch_three =
-      ActivityPub.fetch_activities([], %{
-        type: "Create",
-        tag: ["test", "essais"],
-        tag_reject: ["reject"]
-      })
+      fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 
-    fetch_four =
-      ActivityPub.fetch_activities([], %{
-        type: "Create",
-        tag: ["test"],
-        tag_all: ["test", "reject"]
-      })
+      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["TEST", "essais"]})
 
-    assert fetch_one == [status_one, status_three]
-    assert fetch_two == [status_one, status_two, status_three]
-    assert fetch_three == [status_one, status_two]
-    assert fetch_four == [status_three]
+      fetch_three =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["test", "Essais"],
+          tag_reject: ["reject"]
+        })
+
+      fetch_four =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["test"],
+          tag_all: ["test", "REJECT"]
+        })
+
+      # Testing that deduplication (if needed) is done on DB (not Ecto) level; :limit is important
+      fetch_five =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["ANY1", "any2"],
+          limit: 2
+        })
+
+      fetch_six =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["any1", "Any2"],
+          tag_all: [],
+          tag_reject: []
+        })
+
+      # Regression test: passing empty lists as filter options shouldn't affect the results
+      assert fetch_five == fetch_six
+
+      [fetch_one, fetch_two, fetch_three, fetch_four, fetch_five] =
+        Enum.map([fetch_one, fetch_two, fetch_three, fetch_four, fetch_five], fn statuses ->
+          Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)
+        end)
+
+      assert fetch_one == [status_one, status_three]
+      assert fetch_two == [status_one, status_two, status_three]
+      assert fetch_three == [status_one, status_two]
+      assert fetch_four == [status_three]
+      assert fetch_five == [status_four, status_five]
+    end
   end
 
   describe "insertion" do

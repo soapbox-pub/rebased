@@ -50,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Reroute `/api/pleroma/*` to `/api/v1/pleroma/*`
 
 </details>
+- Improved hashtag timeline performance (requires a background migration). 
 
 ### Added
 

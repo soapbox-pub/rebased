@@ -32,18 +32,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def fix_object(object, options \\ []) do
     object
-    |> strip_internal_fields
-    |> fix_actor
-    |> fix_url
-    |> fix_attachments
-    |> fix_context
+    |> strip_internal_fields()
+    |> fix_actor()
+    |> fix_url()
+    |> fix_attachments()
+    |> fix_context()
     |> fix_in_reply_to(options)
-    |> fix_emoji
-    |> fix_tag
-    |> set_sensitive
-    |> fix_content_map
-    |> fix_addressing
-    |> fix_summary
+    |> fix_emoji()
+    |> fix_tag()
+    |> set_sensitive()
+    |> fix_content_map()
+    |> fix_addressing()
+    |> fix_summary()
     |> fix_type(options)
   end
 
@@ -315,10 +315,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags =
       tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
-      |> Enum.map(fn %{"name" => name} ->
-        name
-        |> String.slice(1..-1)
-        |> String.downcase()
+      |> Enum.map(fn
+        %{"name" => "#" <> hashtag} -> String.downcase(hashtag)
+        %{"name" => hashtag} -> String.downcase(hashtag)
       end)
 
     Map.put(object, "tag", tag ++ tags)
