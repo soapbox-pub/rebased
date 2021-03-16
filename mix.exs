@@ -196,9 +196,7 @@ defmodule Pleroma.Mixfile do
       {:majic,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
        ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
-      {:open_api_spex,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
-       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},
+      {:open_api_spex, "~> 3.10"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
