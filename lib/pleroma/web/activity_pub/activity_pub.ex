@@ -1383,21 +1383,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp get_actor_url(_url), do: nil
 
+  defp normalize_image(%{"url" => url}) do
+    %{
+      "type" => "Image",
+      "url" => [%{"href" => url}]
+    }
+  end
+
+  defp normalize_image(urls) when is_list(urls), do: urls |> List.first() |> normalize_image()
+  defp normalize_image(_), do: nil
+
   defp object_to_user_data(data) do
-    avatar =
-      data["icon"]["url"] &&
-        %{
-          "type" => "Image",
-          "url" => [%{"href" => data["icon"]["url"]}]
-        }
-
-    banner =
-      data["image"]["url"] &&
-        %{
-          "type" => "Image",
-          "url" => [%{"href" => data["image"]["url"]}]
-        }
-
     fields =
       data
       |> Map.get("attachment", [])
@@ -1441,13 +1437,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
-      banner: banner,
+      banner: normalize_image(data["image"]),
       fields: fields,
       emoji: emojis,
       is_locked: is_locked,
       is_discoverable: is_discoverable,
       invisible: invisible,
-      avatar: avatar,
+      avatar: normalize_image(data["icon"]),
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
