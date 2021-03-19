@@ -238,7 +238,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   def validate(%{"type" => type} = object, meta) when type in ~w(Add Remove) do
     with {:ok, object} <-
            object
-           |> AddRemoveValidator.cast_and_validate(meta)
+           |> AddRemoveValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object)
       {:ok, object, meta}

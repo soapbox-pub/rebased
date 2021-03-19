@@ -421,8 +421,7 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, _pin, _} <-
            Pipeline.common_pipeline(pin_data,
              local: true,
-             activity_id: id,
-             featured_address: user.featured_address
+             activity_id: id
            ) do
       {:ok, activity}
     else
