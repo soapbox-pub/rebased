@@ -40,7 +40,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_in_reply_to(options)
     |> fix_emoji()
     |> fix_tag()
-    |> set_sensitive()
     |> fix_content_map()
     |> fix_addressing()
     |> fix_summary()
@@ -741,7 +740,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # Prepares the object of an outgoing create activity.
   def prepare_object(object) do
     object
-    |> set_sensitive
     |> add_hashtags
     |> add_mention_tags
     |> add_emoji_tags
@@ -930,15 +928,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_conversation(object) do
     Map.put(object, "conversation", object["context"])
-  end
-
-  def set_sensitive(%{"sensitive" => _} = object) do
-    object
-  end
-
-  def set_sensitive(object) do
-    tags = object["tag"] || []
-    Map.put(object, "sensitive", "nsfw" in tags)
   end
 
   def set_type(%{"type" => "Answer"} = object) do
