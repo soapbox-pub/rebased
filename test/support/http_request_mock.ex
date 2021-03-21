@@ -122,7 +122,7 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/mike@osada.macgirvin.com.json"),
-       headers: activitypub_object_headers()
+       headers: [{"content-type", "application/jrd+json"}]
      }}
   end
 
@@ -187,7 +187,8 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/lain_squeet.me_webfinger.xml")
+       body: File.read!("test/fixtures/tesla_mock/lain_squeet.me_webfinger.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
      }}
   end
 
@@ -526,22 +527,6 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://zetsubou.xn--q9jyb4c/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/xn--q9jyb4c_host_meta")
-     }}
-  end
-
-  def get("https://zetsubou.xn--q9jyb4c/.well-known/host-meta", _, _, _) do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: File.read!("test/fixtures/tesla_mock/xn--q9jyb4c_host_meta")
-     }}
-  end
-
   def get("http://pleroma.soykaf.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -786,7 +771,8 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/shp@social.heldscal.la.xml")
+       body: File.read!("test/fixtures/tesla_mock/shp@social.heldscal.la.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
      }}
   end
 
@@ -796,7 +782,7 @@ defmodule HttpRequestMock do
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
       ) do
-    {:ok, %Tesla.Env{status: 200, body: ""}}
+    {:ok, %Tesla.Env{status: 200, body: "", headers: [{"content-type", "application/jrd+json"}]}}
   end
 
   def get("http://framatube.org/.well-known/host-meta", _, _, _) do
@@ -816,7 +802,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       headers: [{"content-type", "application/json"}],
+       headers: [{"content-type", "application/jrd+json"}],
        body: File.read!("test/fixtures/tesla_mock/framasoft@framatube.org.json")
      }}
   end
@@ -876,7 +862,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       headers: [{"content-type", "application/json"}],
+       headers: [{"content-type", "application/jrd+json"}],
        body: File.read!("test/fixtures/tesla_mock/kaniini@gerzilla.de.json")
      }}
   end
@@ -1074,7 +1060,8 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/lain.xml")
+       body: File.read!("test/fixtures/lain.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
      }}
   end
 
@@ -1087,7 +1074,16 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/lain.xml")
+       body: File.read!("test/fixtures/lain.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
+     }}
+  end
+
+  def get("http://zetsubou.xn--q9jyb4c/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/host-meta-zetsubou.xn--q9jyb4c.xml")
      }}
   end
 
@@ -1153,7 +1149,8 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/kpherox@mstdn.jp.xml")
+       body: File.read!("test/fixtures/tesla_mock/kpherox@mstdn.jp.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
      }}
   end
 
