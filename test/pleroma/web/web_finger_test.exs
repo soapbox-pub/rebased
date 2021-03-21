@@ -47,7 +47,7 @@ defmodule Pleroma.Web.WebFingerTest do
 
     test "returns error when there is no content-type header" do
       Tesla.Mock.mock(fn
-        %{url: "http://social.heldscal.la/.well-known/host-meta"} ->
+        %{url: "https://social.heldscal.la/.well-known/host-meta"} ->
           {:ok,
            %Tesla.Env{
              status: 200,
@@ -147,7 +147,7 @@ defmodule Pleroma.Web.WebFingerTest do
              headers: [{"content-type", "application/jrd+json"}]
            }}
 
-        %{url: "http://mastodon.social/.well-known/host-meta"} ->
+        %{url: "https://mastodon.social/.well-known/host-meta"} ->
           {:ok,
            %Tesla.Env{
              status: 200,
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.WebFingerTest do
              headers: [{"content-type", "application/xrd+xml"}]
            }}
 
-        %{url: "http://pawoo.net/.well-known/host-meta"} ->
+        %{url: "https://pawoo.net/.well-known/host-meta"} ->
           {:ok,
            %Tesla.Env{
              status: 200,

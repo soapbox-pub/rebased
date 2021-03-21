@@ -808,7 +808,8 @@ defmodule Pleroma.UserTest do
               |> File.read!()
               |> String.replace("{{nickname}}", "a")
               |> String.replace("{{domain}}", "example.com")
-              |> String.replace("{{subdomain}}", "sub.example.com")
+              |> String.replace("{{subdomain}}", "sub.example.com"),
+            headers: [{"content-type", "application/jrd+json"}]
           }
 
         %{url: "https://sub.example.com/users/a"} ->
@@ -819,6 +820,16 @@ defmodule Pleroma.UserTest do
               |> File.read!()
               |> String.replace("{{nickname}}", "a")
               |> String.replace("{{domain}}", "sub.example.com"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "sub.example.com")
+              |> String.replace("{{nickname}}", "a"),
             headers: [{"content-type", "application/activity+json"}]
           }
       end)
@@ -855,7 +866,8 @@ defmodule Pleroma.UserTest do
               |> File.read!()
               |> String.replace("{{nickname}}", "a")
               |> String.replace("{{domain}}", "example.com")
-              |> String.replace("{{subdomain}}", "sub.example.com")
+              |> String.replace("{{subdomain}}", "sub.example.com"),
+            headers: [{"content-type", "application/jrd+json"}]
           }
 
         %{url: "https://sub.example.com/users/a"} ->
