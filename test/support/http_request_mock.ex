@@ -1278,6 +1278,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://patch.cx/objects/a399c28e-c821-4820-bc3e-4afeb044c16f", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/emoji-in-summary.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{
