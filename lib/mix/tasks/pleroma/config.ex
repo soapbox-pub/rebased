@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       {opts, _} =
         OptionParser.parse!(options,
-          strict: [env: :string, delete: :boolean],
+          strict: [env: :string, delete: :boolean, path: :string],
           aliases: [d: :delete]
         )
 
@@ -259,18 +259,43 @@ defmodule Mix.Tasks.Pleroma.Config do
   defp migrate_from_db(opts) do
     env = opts[:env] || Pleroma.Config.get(:env)
 
+    filename = "#{env}.exported_from_db.secret.exs"
+
     config_path =
-      if Pleroma.Config.get(:release) do
-        :config_path
-        |> Pleroma.Config.get()
-        |> Path.dirname()
-      else
-        "config"
+      cond do
+        opts[:path] ->
+          opts[:path]
+
+        Pleroma.Config.get(:release) ->
+          :config_path
+          |> Pleroma.Config.get()
+          |> Path.dirname()
+
+        true ->
+          "config"
       end
-      |> Path.join("#{env}.exported_from_db.secret.exs")
+      |> Path.join(filename)
 
-    file = File.open!(config_path, [:write, :utf8])
+    with {:ok, file} <- File.open(config_path, [:write, :utf8]) do
+      write_config(file, config_path, opts)
+      shell_info("Database configuration settings have been exported to #{config_path}")
+    else
+      _ ->
+        shell_error("Impossible to save settings to this directory #{Path.dirname(config_path)}")
+        tmp_config_path = Path.join(System.tmp_dir!(), filename)
+        file = File.open!(tmp_config_path)
 
+        shell_info(
+          "Saving database configuration settings to #{tmp_config_path}. Copy it to the #{
+            Path.dirname(config_path)
+          } manually."
+        )
+
+        write_config(file, tmp_config_path, opts)
+    end
+  end
+
+  defp write_config(file, path, opts) do
     IO.write(file, config_header())
 
     ConfigDB
@@ -278,11 +303,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     |> Enum.each(&write_and_delete(&1, file, opts[:delete]))
 
     :ok = File.close(file)
-    System.cmd("mix", ["format", config_path])
-
-    shell_info(
-      "Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs"
-    )
+    System.cmd("mix", ["format", path])
   end
 
   if Code.ensure_loaded?(Config.Reader) do
