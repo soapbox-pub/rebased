@@ -25,6 +25,11 @@ defmodule Pleroma.Web.CommonAPITest do
 
   require Pleroma.Constants
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
@@ -515,6 +520,27 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert %{"blank" => url} = Object.normalize(activity).data["emoji"]
       assert url == "#{Pleroma.Web.base_url()}/emoji/blank.png"
+    end
+
+    test "it copies emoji from the subject of the parent post" do
+      %Object{} =
+        object =
+        Object.normalize("https://patch.cx/objects/a399c28e-c821-4820-bc3e-4afeb044c16f",
+          fetch: true
+        )
+
+      activity = Activity.get_create_by_object_ap_id(object.data["id"])
+      user = insert(:user)
+
+      {:ok, reply_activity} =
+        CommonAPI.post(user, %{
+          in_reply_to_id: activity.id,
+          status: ":joker_disapprove:",
+          spoiler_text: ":joker_smile:"
+        })
+
+      assert Object.normalize(reply_activity).data["emoji"][":joker_smile:"]
+      refute Object.normalize(reply_activity).data["emoji"][":joker_disapprove:"]
     end
 
     test "deactivated users can't post" do
