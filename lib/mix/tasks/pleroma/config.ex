@@ -282,7 +282,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     else
       _ ->
         shell_error("Impossible to save settings to this directory #{Path.dirname(config_path)}")
-        tmp_config_path = Path.join("/tmp", filename)
+        tmp_config_path = Path.join(System.tmp_dir!(), filename)
         file = File.open!(tmp_config_path)
 
         shell_info(
