@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
   require Pleroma.Constants
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.User
 
   @primary_key false
 
@@ -25,14 +26,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
   end
 
   def cast_and_validate(data) do
+    {:ok, actor} = User.get_or_fetch_by_ap_id(data["actor"])
+
+    {:ok, actor} = maybe_refetch_user(actor)
+
     data
-    |> maybe_fix_data_for_mastodon()
+    |> maybe_fix_data_for_mastodon(actor)
     |> cast_data()
-    |> validate_data()
+    |> validate_data(actor)
   end
 
-  defp maybe_fix_data_for_mastodon(data) do
-    {:ok, actor} = Pleroma.User.get_or_fetch_by_ap_id(data["actor"])
+  defp maybe_fix_data_for_mastodon(data, actor) do
     # Mastodon sends pin/unpin objects without id, to, cc fields
     data
     |> Map.put_new("id", Pleroma.Web.ActivityPub.Utils.generate_activity_id())
@@ -44,18 +48,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
     cast(%__MODULE__{}, data, __schema__(:fields))
   end
 
-  defp validate_data(changeset) do
+  defp validate_data(changeset, actor) do
     changeset
     |> validate_required([:id, :target, :object, :actor, :type, :to, :cc])
     |> validate_inclusion(:type, ~w(Add Remove))
     |> validate_actor_presence()
-    |> validate_collection_belongs_to_actor()
+    |> validate_collection_belongs_to_actor(actor)
     |> validate_object_presence()
   end
 
-  defp validate_collection_belongs_to_actor(changeset) do
-    {:ok, actor} = Pleroma.User.get_or_fetch_by_ap_id(changeset.changes[:actor])
-
+  defp validate_collection_belongs_to_actor(changeset, actor) do
     validate_change(changeset, :target, fn :target, target ->
       if target == actor.featured_address do
         []
@@ -63,5 +65,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
         [target: "collection doesn't belong to actor"]
       end
     end)
+  end
+
+  defp maybe_refetch_user(%User{featured_address: address} = user) when is_binary(address) do
+    {:ok, user}
+  end
+
+  defp maybe_refetch_user(%User{ap_id: ap_id}) do
+    Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(ap_id)
   end
 end

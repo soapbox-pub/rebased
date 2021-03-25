@@ -534,7 +534,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => type} = data, _options)
-      when type in ~w{Like EmojiReact Announce} do
+      when type in ~w{Like EmojiReact Announce Add Remove} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -552,16 +552,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <-
            Pipeline.common_pipeline(data, local: false) do
-      {:ok, activity}
-    end
-  end
-
-  def handle_incoming(%{"type" => type} = data, _options) when type in ~w(Add Remove) do
-    with :ok <- ObjectValidator.fetch_actor_and_object(data),
-         {:ok, actor} <- Pleroma.User.get_or_fetch_by_ap_id(data["actor"]),
-         # maybe locally user doesn't have featured_address
-         {:ok, _} <- maybe_refetch_user(actor),
-         {:ok, activity, _meta} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end
   end
@@ -658,12 +648,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(_, _), do: :error
-
-  defp maybe_refetch_user(%User{featured_address: address} = user) when is_binary(address) do
-    {:ok, user}
-  end
-
-  defp maybe_refetch_user(%User{ap_id: ap_id}), do: upgrade_user_from_ap_id(ap_id)
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do
