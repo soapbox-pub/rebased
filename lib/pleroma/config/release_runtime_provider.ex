@@ -39,7 +39,7 @@ defmodule Pleroma.Config.ReleaseRuntimeProvider do
 
     with_exported =
       if File.exists?(exported_config_path) do
-        exported_config = Config.Reader.read!(with_runtime_config)
+        exported_config = Config.Reader.read!(exported_config_path)
         Config.Reader.merge(with_runtime_config, exported_config)
       else
         with_runtime_config
