@@ -38,7 +38,7 @@ defmodule Pleroma.Mixfile do
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
           steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1],
-          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, nil}]
+          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, release_config_paths()}]
         ]
       ]
     ]
@@ -65,6 +65,17 @@ defmodule Pleroma.Mixfile do
     )
 
     release
+  end
+
+  defp release_config_paths do
+    config_path = System.get_env("PLEROMA_CONFIG_PATH") || "/etc/pleroma/config.exs"
+
+    exported_config_path =
+      config_path
+      |> Path.dirname()
+      |> Path.join("#{Mix.env()}.exported_from_db.secret.exs")
+
+    [config_path: config_path, exported_config_path: exported_config_path]
   end
 
   # Configuration for the OTP application.
