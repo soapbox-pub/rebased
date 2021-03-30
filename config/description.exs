@@ -2944,6 +2944,23 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :mrf_follow_bot,
+    tab: :mrf,
+    related_policy: "Pleroma.Web.ActivityPub.MRF.FollowBotPolicy",
+    label: "MRF FollowBot Policy",
+    type: :group,
+    description: "Automatically follows newly discovered accounts.",
+    children: [
+      %{
+        key: :follower_nickname,
+        type: :string,
+        description: "The name of the bot account to use for following newly discovered users.",
+        suggestions: ["followbot"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :modules,
     type: :group,
     description: "Custom Runtime Modules",
