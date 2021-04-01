@@ -44,7 +44,6 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
 
   def do_common_pipeline(message, meta) do
     with {_, {:ok, message, meta}} <- {:validate, @object_validator.validate(message, meta)},
-         {_, {:ok, message, meta}} <- {:fixup, validation_fixups(message, meta)},
          {_, {:ok, message, meta}} <- {:mrf, @mrf.pipeline_filter(message, meta)},
          {_, {:ok, message, meta}} <- {:persist, @activity_pub.persist(message, meta)},
          {_, {:ok, message, meta}} <- {:side_effects, @side_effects.handle(message, meta)},
@@ -54,19 +53,6 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
       {:mrf, {:reject, message, _}} -> {:reject, message}
       e -> {:error, e}
     end
-  end
-
-  defp validation_fixups(message, meta) do
-    # Insert copy of hashtags as strings for the non-hashtag table indexing
-    message =
-      if message["tag"] do
-        tag = Object.hashtags(%Object{data: message}) ++ (message["tag"] || [])
-        Map.put(message, "tag", tag)
-      else
-        message
-      end
-
-    {:ok, message, meta}
   end
 
   defp maybe_federate(%Object{}, _), do: {:ok, :not_federated}
