@@ -482,7 +482,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         access_token: %Schema{type: :string},
         refresh_token: %Schema{type: :string},
         scope: %Schema{type: :string},
-        created_at: %Schema{type: :string, format: :"date-time"},
+        created_at: %Schema{type: :integer, format: :"date-time"},
         me: %Schema{type: :string},
         expires_in: %Schema{type: :integer},
         #
