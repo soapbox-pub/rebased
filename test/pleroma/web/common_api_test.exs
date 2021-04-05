@@ -539,8 +539,8 @@ defmodule Pleroma.Web.CommonAPITest do
           spoiler_text: ":joker_smile:"
         })
 
-      assert Object.normalize(reply_activity).data["emoji"][":joker_smile:"]
-      refute Object.normalize(reply_activity).data["emoji"][":joker_disapprove:"]
+      assert Object.normalize(reply_activity).data["emoji"]["joker_smile"]
+      refute Object.normalize(reply_activity).data["emoji"]["joker_disapprove"]
     end
 
     test "deactivated users can't post" do
