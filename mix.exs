@@ -1,5 +1,6 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
+  @build_name "soapbox"
 
   def project do
     [
@@ -238,9 +239,7 @@ defmodule Pleroma.Mixfile do
   # * the application version
   # * a pre-release if ahead of the tag: the describe string (-count-commithash)
   # * branch name
-  # * build metadata:
-  #   * a build name if `PLEROMA_BUILD_NAME` or `:pleroma, :build_name` is defined
-  #   * the mix environment if different than prod
+  # * build metadata
   defp version(version) do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
@@ -291,23 +290,6 @@ defmodule Pleroma.Mixfile do
         _ -> ""
       end
 
-    build_name =
-      cond do
-        name = Application.get_env(:pleroma, :build_name) -> name
-        name = System.get_env("PLEROMA_BUILD_NAME") -> name
-        true -> nil
-      end
-
-    env_name = if Mix.env() != :prod, do: to_string(Mix.env())
-    env_override = System.get_env("PLEROMA_BUILD_ENV")
-
-    env_name =
-      case env_override do
-        nil -> env_name
-        env_override when env_override in ["", "prod"] -> nil
-        env_override -> env_override
-      end
-
     # Pre-release version, denoted by appending a hyphen
     # and a series of dot separated identifiers
     pre_release =
@@ -320,14 +302,7 @@ defmodule Pleroma.Mixfile do
           end).()
 
     # Build metadata, denoted with a plus sign
-    build_metadata =
-      [build_name, env_name]
-      |> Enum.filter(fn string -> string && string != "" end)
-      |> Enum.join(".")
-      |> (fn
-            "" -> nil
-            string -> "+" <> String.replace(string, identifier_filter, "-")
-          end).()
+    build_metadata = if @build_name, do: "+#{@build_name}", else: ""
 
     [version, pre_release, build_metadata]
     |> Enum.filter(fn string -> string && string != "" end)
