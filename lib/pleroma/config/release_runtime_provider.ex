@@ -11,10 +11,11 @@ defmodule Pleroma.Config.ReleaseRuntimeProvider do
   def load(config, opts) do
     with_defaults = Config.Reader.merge(config, Pleroma.Config.Holder.release_defaults())
 
-    config_path = opts[:config_path]
+    config_path =
+      opts[:config_path] || System.get_env("PLEROMA_CONFIG_PATH") || "/etc/pleroma/config.exs"
 
     with_runtime_config =
-      if config_path && File.exists?(config_path) do
+      if File.exists?(config_path) do
         runtime_config = Config.Reader.read!(config_path)
 
         with_defaults
@@ -32,10 +33,14 @@ defmodule Pleroma.Config.ReleaseRuntimeProvider do
         with_defaults
       end
 
-    exported_config_path = opts[:exported_config_path]
+    exported_config_path =
+      opts[:exported_config_path] ||
+        config_path
+        |> Path.dirname()
+        |> Path.join("#{Pleroma.Config.get(:env)}.exported_from_db.secret.exs")
 
     with_exported =
-      if exported_config_path && File.exists?(exported_config_path) do
+      if File.exists?(exported_config_path) do
         exported_config = Config.Reader.read!(exported_config_path)
         Config.Reader.merge(with_runtime_config, exported_config)
       else

@@ -8,7 +8,6 @@ defmodule Pleroma.Config.ReleaseRuntimeProviderTest do
       ExUnit.CaptureIO.capture_io(fn ->
         merged = ReleaseRuntimeProvider.load([], [])
         assert merged == Pleroma.Config.Holder.release_defaults()
-        IO.inspect(merged)
       end) =~
         "!!! Config path is not declared! Please ensure it exists and that PLEROMA_CONFIG_PATH is unset or points to an existing file"
     end
