@@ -327,7 +327,7 @@ defmodule Pleroma.ConfigDB do
 
   @spec string_to_elixir_types(String.t()) ::
           atom() | Regex.t() | module() | String.t() | no_return()
-  def string_to_elixir_types("~r" <> _pattern = regex) do
+  def string_to_elixir_types("~r" <> _pattern = regex) when is_binary(regex) do
     pattern =
       ~r/^~r(?'delimiter'[\/|"'([{<]{1})(?'pattern'.+)[\/|"')\]}>]{1}(?'modifier'[uismxfU]*)/u
 
@@ -341,15 +341,17 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  def string_to_elixir_types(":" <> atom), do: String.to_atom(atom)
+  def string_to_elixir_types(":" <> atom) when is_binary(atom), do: String.to_atom(atom)
 
-  def string_to_elixir_types(value) do
+  def string_to_elixir_types(value) when is_binary(value) do
     if module_name?(value) do
       String.to_existing_atom("Elixir." <> value)
     else
       value
     end
   end
+
+  def string_to_elixir_types(value) when is_atom(value), do: value
 
   defp parse_host("localhost"), do: :localhost
 
