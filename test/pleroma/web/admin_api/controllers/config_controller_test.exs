@@ -1445,8 +1445,8 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => false
              }
 
-      assert res =
-               conn
+      _res =
+        assert conn
                |> get("/api/v1/instance")
                |> json_response_and_validate_schema(200)
 
