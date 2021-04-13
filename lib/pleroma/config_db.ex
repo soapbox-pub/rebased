@@ -141,7 +141,9 @@ defmodule Pleroma.ConfigDB do
   @spec update_or_create(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
   def update_or_create(params) do
     params = Map.put(params, :value, to_elixir_types(params[:value]))
-    search_opts = Map.take(params, [:group, :key])
+
+    search_opts =
+      Map.take(params, [:group, :key]) |> Map.update!(:key, &string_to_elixir_types(&1))
 
     with %ConfigDB{} = config <- ConfigDB.get_by_params(search_opts),
          {_, true, config} <- {:partial_update, can_be_partially_updated?(config), config},
@@ -387,6 +389,6 @@ defmodule Pleroma.ConfigDB do
   @spec module_name?(String.t()) :: boolean()
   def module_name?(string) do
     Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack|Ueberauth|Swoosh)\./, string) or
-      string in ["Oban", "Ueberauth", "ExSyslogger"]
+      string in ["Oban", "Ueberauth", "ExSyslogger", "ConcurrentLimiter"]
   end
 end
