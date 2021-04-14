@@ -1481,11 +1481,10 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         ]
       }
 
-      _res =
-        assert conn
-               |> put_req_header("content-type", "application/json")
-               |> post("/api/pleroma/admin/config", %{"configs" => [params]})
-               |> json_response_and_validate_schema(200)
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+             |> json_response_and_validate_schema(200)
     end
   end
 
