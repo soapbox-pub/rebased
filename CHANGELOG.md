@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Try to save exported ConfigDB settings (migrate_from_db) in the system temp directory if default location is not writable.
 - Uploading custom instance thumbnail via AdminAPI/AdminFE generated invalid URL to the image
 - Applying ConcurrentLimiter settings via AdminAPI
+- User login failures if their `notification_settings` were in a NULL state.
 
 ## [2.3.0] - 2020-03-01
 
