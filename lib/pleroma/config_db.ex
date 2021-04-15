@@ -387,6 +387,6 @@ defmodule Pleroma.ConfigDB do
   @spec module_name?(String.t()) :: boolean()
   def module_name?(string) do
     Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack|Ueberauth|Swoosh)\./, string) or
-      string in ["Oban", "Ueberauth", "ExSyslogger"]
+      string in ["Oban", "Ueberauth", "ExSyslogger", "ConcurrentLimiter"]
   end
 end
