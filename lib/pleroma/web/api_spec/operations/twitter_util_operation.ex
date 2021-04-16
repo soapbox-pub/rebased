@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def change_password_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Account credentials"],
       summary: "Change account password",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.change_password",
