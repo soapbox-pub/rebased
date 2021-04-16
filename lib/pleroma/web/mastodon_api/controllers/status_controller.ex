@@ -260,6 +260,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def pin(%{assigns: %{user: user}} = conn, %{id: ap_id_or_id}) do
     with {:ok, activity} <- CommonAPI.pin(ap_id_or_id, user) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
+    else
+      {:error, :pinned_statuses_limit_reached} ->
+        {:error, "You have already pinned the maximum number of statuses"}
+
+      {:error, :ownership_error} ->
+        {:error, :unprocessable_entity, "Someone else's status cannot be pinned"}
+
+      {:error, :visibility_error} ->
+        {:error, :unprocessable_entity, "Non-public status cannot be pinned"}
+
+      error ->
+        error
     end
   end
 

@@ -1209,18 +1209,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: clear_config([:instance, :max_pinned_statuses], 1)
 
     test "pin status", %{conn: conn, user: user, activity: activity} do
-      id_str = to_string(activity.id)
+      id = activity.id
 
-      assert %{"id" => ^id_str, "pinned" => true} =
+      assert %{"id" => ^id, "pinned" => true} =
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/v1/statuses/#{activity.id}/pin")
                |> json_response_and_validate_schema(200)
 
-      assert [%{"id" => ^id_str, "pinned" => true}] =
+      assert [%{"id" => ^id, "pinned" => true}] =
                conn
                |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
                |> json_response_and_validate_schema(200)
+    end
+
+    test "non authenticated user", %{activity: activity} do
+      assert build_conn()
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/statuses/#{activity.id}/pin")
+             |> json_response(403) == %{"error" => "Invalid credentials."}
     end
 
     test "/pin: returns 400 error when activity is not public", %{conn: conn, user: user} do
@@ -1231,7 +1238,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/statuses/#{dm.id}/pin")
 
-      assert json_response_and_validate_schema(conn, 400) == %{"error" => "Could not pin"}
+      assert json_response_and_validate_schema(conn, 422) == %{
+               "error" => "Non-public status cannot be pinned"
+             }
+    end
+
+    test "pin by another user", %{activity: activity} do
+      %{conn: conn} = oauth_access(["write:accounts"])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/statuses/#{activity.id}/pin")
+             |> json_response(422) == %{"error" => "Someone else's status cannot be pinned"}
     end
 
     test "unpin status", %{conn: conn, user: user, activity: activity} do
@@ -1252,13 +1270,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                |> json_response_and_validate_schema(200)
     end
 
-    test "/unpin: returns 400 error when activity is not exist", %{conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses/1/unpin")
-
-      assert json_response_and_validate_schema(conn, 400) == %{"error" => "Could not unpin"}
+    test "/unpin: returns 404 error when activity doesn't exist", %{conn: conn} do
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/statuses/1/unpin")
+             |> json_response_and_validate_schema(404) == %{"error" => "Record not found"}
     end
 
     test "max pinned statuses", %{conn: conn, user: user, activity: activity_one} do

@@ -704,6 +704,7 @@ defmodule Pleroma.Web.Router do
     # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
+    get("/users/:nickname/collections/featured", ActivityPubController, :pinned)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
