@@ -35,8 +35,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{
           "pleroma_settings_store" => %{
-            masto_fe: %{
-              theme: "bla"
+            soapbox_fe: %{
+              themeMode: "bla"
             }
           }
         })
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data["pleroma"]["settings_store"] ==
                %{
                  "pleroma_fe" => %{"theme" => "bla"},
-                 "masto_fe" => %{"theme" => "bla"}
+                 "soapbox_fe" => %{"themeMode" => "bla"}
                }
 
       user = Repo.get(User, user_data["id"])
@@ -60,8 +60,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
           |> assign(:user, user)
           |> patch("/api/v1/accounts/update_credentials", %{
             "pleroma_settings_store" => %{
-              masto_fe: %{
-                theme: "blub"
+              soapbox_fe: %{
+                themeMode: "blub"
               }
             }
           })
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         assert user_data["pleroma"]["settings_store"] ==
                  %{
                    "pleroma_fe" => %{"theme" => "bla"},
-                   "masto_fe" => %{"theme" => "blub"}
+                   "soapbox_fe" => %{"themeMode" => "blub"}
                  }
 
         assert_called(Pleroma.Web.Federator.publish(:_))
