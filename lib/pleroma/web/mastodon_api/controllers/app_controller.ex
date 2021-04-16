@@ -26,7 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   )
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  
+
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AppOperation
 
   @doc "POST /api/v1/apps"
