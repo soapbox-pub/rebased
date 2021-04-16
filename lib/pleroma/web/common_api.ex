@@ -228,17 +228,7 @@ defmodule Pleroma.Web.CommonAPI do
       {:find_object, _} ->
         {:error, :not_found}
 
-      {:common_pipeline,
-       {
-         :error,
-         {
-           :validate_object,
-           {
-             :error,
-             changeset
-           }
-         }
-       }} = e ->
+      {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
         if {:object, {"already liked by this actor", []}} in changeset.errors do
           {:ok, :already_liked}
         else

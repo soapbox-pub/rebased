@@ -115,8 +115,33 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def validate(%{"type" => type} = object, meta)
+      when type in ~w[Event Question Audio Video Article] do
+    validator =
+      case type do
+        "Event" -> EventValidator
+        "Question" -> QuestionValidator
+        "Audio" -> AudioVideoValidator
+        "Video" -> AudioVideoValidator
+        "Article" -> ArticleNoteValidator
+      end
+
+    with {:ok, object} <-
+           object
+           |> validator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+
+      # Insert copy of hashtags as strings for the non-hashtag table indexing
+      tag = (object["tag"] || []) ++ Object.hashtags(%Object{data: object})
+      object = Map.put(object, "tag", tag)
+
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => type} = object, meta)
       when type in ~w[Accept Reject Follow Update Like EmojiReact Announce
-      Event ChatMessage Question Audio Video Article Answer] do
+      ChatMessage Answer] do
     validator =
       case type do
         "Accept" -> AcceptRejectValidator
@@ -126,12 +151,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         "Like" -> LikeValidator
         "EmojiReact" -> EmojiReactValidator
         "Announce" -> AnnounceValidator
-        "Event" -> EventValidator
         "ChatMessage" -> ChatMessageValidator
-        "Question" -> QuestionValidator
-        "Audio" -> AudioVideoValidator
-        "Video" -> AudioVideoValidator
-        "Article" -> ArticleNoteValidator
         "Answer" -> AnswerValidator
       end
 
@@ -180,7 +200,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
-  # is_struct/1 isn't present in Elixir 1.8.x
+  # is_struct/1 appears in Elixir 1.11
   def stringify_keys(%{__struct__: _} = object) do
     object
     |> Map.from_struct()

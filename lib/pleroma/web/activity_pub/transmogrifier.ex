@@ -564,7 +564,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
-      {:error, {:validate_object, _}} = e ->
+      {:error, {:validate, _}} = e ->
         # Check if we have a create activity for this
         with {:ok, object_id} <- ObjectValidators.ObjectID.cast(data["object"]),
              %Activity{data: %{"actor" => actor}} <-
