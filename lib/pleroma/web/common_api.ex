@@ -415,7 +415,7 @@ defmodule Pleroma.Web.CommonAPI do
            ) do
       {:ok, activity}
     else
-      {:error, {:execute_side_effects, error}} -> error
+      {:error, {:side_effects, error}} -> error
       error -> error
     end
   end
