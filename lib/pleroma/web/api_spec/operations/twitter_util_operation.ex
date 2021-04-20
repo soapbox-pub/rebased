@@ -195,7 +195,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
   def healthcheck_operation do
     %Operation{
       tags: ["Accounts"],
-      summary: "Disable Account",
+      summary: "Quick status check on the instance",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.healthcheck",
       parameters: [],
