@@ -63,4 +63,13 @@ defmodule Pleroma.Utils do
   end
 
   def posix_error_message(_), do: ""
+
+  def query_timeout do
+    {parent, _, _, _} = Process.info(self(), :current_stacktrace) |> elem(1) |> Enum.fetch!(2)
+
+    cond do
+      parent |> to_string |> String.starts_with?("Elixir.Mix.Task") -> [timeout: :infinity]
+      true -> [timeout: 15_000]
+    end
+  end
 end
