@@ -163,7 +163,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def delete_account_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Account credentials"],
       summary: "Delete Account",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.delete_account",
