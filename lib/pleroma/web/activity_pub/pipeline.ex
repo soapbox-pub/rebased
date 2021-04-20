@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.ObjectValidator
@@ -24,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   @spec common_pipeline(map(), keyword()) ::
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
   def common_pipeline(object, meta) do
-    case Repo.transaction(fn -> do_common_pipeline(object, meta) end, timeout: :infinity) do
+    case Repo.transaction(fn -> do_common_pipeline(object, meta) end, Utils.query_timeout()) do
       {:ok, {:ok, activity, meta}} ->
         @side_effects.handle_after_transaction(meta)
         {:ok, activity, meta}
