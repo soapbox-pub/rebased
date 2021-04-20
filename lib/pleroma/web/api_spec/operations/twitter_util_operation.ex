@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def change_email_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Account credentials"],
       summary: "Change account email",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.change_email",
