@@ -143,7 +143,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def disable_account_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Account credentials"],
       summary: "Disable Account",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.disable_account",
