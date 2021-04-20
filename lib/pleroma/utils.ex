@@ -69,6 +69,7 @@ defmodule Pleroma.Utils do
 
     cond do
       parent |> to_string |> String.starts_with?("Elixir.Mix.Task") -> [timeout: :infinity]
+      parent == :erl_eval -> [timeout: :infinity]
       true -> [timeout: 15_000]
     end
   end
