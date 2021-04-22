@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Uploading custom instance thumbnail via AdminAPI/AdminFE generated invalid URL to the image
 - Applying ConcurrentLimiter settings via AdminAPI
 - User login failures if their `notification_settings` were in a NULL state.
+- Mix task `pleroma.user delete_activities` query transaction timeout is now :infinity
 
 ## [2.3.0] - 2020-03-01
 
