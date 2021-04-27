@@ -8,7 +8,9 @@ variables: &global_variables
   MIX_ENV: test
 
 cache: &global_cache_policy
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - mix.lock
   paths:
     - deps
     - _build
