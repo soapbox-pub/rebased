@@ -49,7 +49,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
-* `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
@@ -64,6 +64,13 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+
+## :database
+* `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
+
+## Background migrations
+* `populate_hashtags_table/sleep_interval_ms`: Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances).
+* `populate_hashtags_table/fault_rate_allowance`: Max rate of failed objects to actually processed objects in order to enable the feature (any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records).
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
@@ -117,6 +124,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
     * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
+    * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -203,6 +211,21 @@ config :pleroma, :mrf_user_allowlist, %{
 
 * `days`: Default global expiration time for all local Create activities (in days)
 
+#### :mrf_hashtag
+
+* `sensitive`: List of hashtags to mark activities as sensitive (default: `nsfw`)
+* `federated_timeline_removal`: List of hashtags to remove activities from the federated timeline (aka TWNK)
+* `reject`: List of hashtags to reject activities from
+
+Notes:
+- The hashtags in the configuration do not have a leading `#`.
+- This MRF Policy is always enabled, if you want to disable it you have to set empty lists
+
+#### :mrf_follow_bot
+
+* `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
+
+
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
@@ -226,7 +249,7 @@ config :pleroma, :mrf_user_allowlist, %{
 
 This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
-Frontends can access these settings at `/api/pleroma/frontend_configurations`
+Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
@@ -322,9 +345,10 @@ This section describe PWA manifest instance-specific values. Currently this opti
 #### Pleroma.Web.MediaProxy.Invalidation.Script
 
 This strategy allow perform external shell script to purge cache.
-Urls of attachments pass to script as arguments.
+Urls of attachments are passed to the script as arguments.
 
-* `script_path`: path to external script.
+* `script_path`: Path to the external script.
+* `url_format`: Set to `:htcacheclean` if using Apache's htcacheclean utility.
 
 Example:
 
@@ -550,7 +574,7 @@ the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). Th
 * `uploader`: Which one of the [uploaders](#uploaders) to use.
 * `filters`: List of [upload filters](#upload-filters) to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
-* `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
+* `base_url`: The base URL to access a user-uploaded file. Useful when you want to host the media files via another domain or are using a 3rd party S3 provider.
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 * `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
@@ -571,10 +595,7 @@ Don't forget to configure [Ex AWS S3](#ex-aws-s3-settings)
 
 * `bucket`: S3 bucket name.
 * `bucket_namespace`: S3 bucket namespace.
-* `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
 * `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
-For example, when using CDN to S3 virtual host format, set "".
-At this time, write CNAME to CDN in public_endpoint.
 * `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
 #### Ex AWS S3 settings
@@ -851,13 +872,13 @@ config :pleroma, :admin_token, "somerandomtoken"
 You can then do
 
 ```shell
-curl "http://localhost:4000/api/pleroma/admin/users/invites?admin_token=somerandomtoken"
+curl "http://localhost:4000/api/v1/pleroma/admin/users/invites?admin_token=somerandomtoken"
 ```
 
 or
 
 ```shell
-curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
+curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/v1/pleroma/admin/users/invites"
 ```
 
 Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
@@ -895,6 +916,22 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
 OpenLDAP server the value may be `uid: "uid"`.
+
+### :oauth2 (Pleroma as OAuth 2.0 provider settings)
+
+OAuth 2.0 provider settings:
+
+* `token_expires_in` - The lifetime in seconds of the access token.
+* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
+
+OAuth 2.0 provider and related endpoints:
+
+* `POST /api/v1/apps` creates client app basing on provided params.
+* `GET/POST /oauth/authorize` renders/submits authorization form.
+* `POST /oauth/token` creates/renews OAuth token.
+* `POST /oauth/revoke` revokes provided OAuth token.
+* `GET /api/v1/accounts/verify_credentials` (with proper `Authorization` header or `access_token` URI param) returns user info on requester (with `acct` field containing local nickname and `fqn` field containing fully-qualified nickname which could generally be used as email stub for OAuth software that demands email field in identity endpoint response, like Peertube).
 
 ### OAuth consumer mode
 
@@ -967,14 +1004,6 @@ config :ueberauth, Ueberauth,
     keycloak: {Ueberauth.Strategy.Keycloak, [uid_field: :email]}
   ]
 ```
-
-### OAuth 2.0 provider - :oauth2
-
-Configure OAuth 2 provider capabilities:
-
-* `token_expires_in` - The lifetime in seconds of the access token.
-* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 
 ## Link parsing
 
@@ -1114,3 +1143,15 @@ Settings to enable and configure expiration for ephemeral activities
 
 * `:enabled` - enables ephemeral activities creation
 * `:min_lifetime` - minimum lifetime for ephemeral activities (in seconds). Default: 10 minutes.
+
+## ConcurrentLimiter
+
+Settings to restrict concurrently running jobs. Jobs which can be configured:
+
+* `Pleroma.Web.RichMedia.Helpers` - generating link previews of URLs in activities
+* `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy` - warming remote media cache via MediaProxyWarmingPolicy
+
+Each job has these settings:
+
+* `:max_running` - max concurrently runnings jobs
+* `:max_waiting` - max waiting jobs

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
@@ -58,7 +58,8 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
         sensitive: true,
         spoiler_text: "spoiler",
         text: "hi",
-        visibility: "unlisted"
+        visibility: "unlisted",
+        expires_in: nil
       },
       scheduled_at: Utils.to_masto_date(scheduled_activity.scheduled_at)
     }

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.TagControllerTest do
@@ -8,7 +8,6 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   import Pleroma.Factory
   import SweetXml
 
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Feed.FeedView
@@ -16,7 +15,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   setup do: clear_config([:feed])
 
   test "gets a feed (ATOM)", %{conn: conn} do
-    Config.put(
+    clear_config(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -24,7 +23,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     user = insert(:user)
     {:ok, activity1} = CommonAPI.post(user, %{status: "yeah #PleromaArt"})
 
-    object = Object.normalize(activity1)
+    object = Object.normalize(activity1, fetch: false)
 
     object_data =
       Map.put(object.data, "attachment", [
@@ -83,7 +82,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
-    Config.put(
+    clear_config(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -91,7 +90,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     user = insert(:user)
     {:ok, activity1} = CommonAPI.post(user, %{status: "yeah #PleromaArt"})
 
-    object = Object.normalize(activity1)
+    object = Object.normalize(activity1, fetch: false)
 
     object_data =
       Map.put(object.data, "attachment", [
@@ -147,8 +146,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4"
            ]
 
-    obj1 = Object.normalize(activity1)
-    obj2 = Object.normalize(activity2)
+    obj1 = Object.normalize(activity1, fetch: false)
+    obj2 = Object.normalize(activity2, fetch: false)
 
     assert xpath(xml, ~x"//channel/item/description/text()"sl) == [
              HtmlEntities.decode(FeedView.activity_content(obj2.data)),

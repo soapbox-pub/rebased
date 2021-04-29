@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.UserEmail do
@@ -81,9 +81,9 @@ defmodule Pleroma.Emails.UserEmail do
       )
 
     html_body = """
-    <h3>Welcome to #{instance_name()}!</h3>
+    <h3>Thank you for registering on #{instance_name()}</h3>
     <p>Email confirmation is required to activate the account.</p>
-    <p>Click the following link to proceed: <a href="#{confirmation_url}">activate your account</a>.</p>
+    <p>Please click the following link to <a href="#{confirmation_url}">activate your account</a>.</p>
     """
 
     new()
@@ -106,6 +106,20 @@ defmodule Pleroma.Emails.UserEmail do
     |> html_body(html_body)
   end
 
+  def successful_registration_email(user) do
+    html_body = """
+    <h3>Hello @#{user.nickname},</h3>
+    <p>Your account at #{instance_name()} has been registered successfully.</p>
+    <p>No further action is required to activate your account.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Account registered on #{instance_name()}")
+    |> html_body(html_body)
+  end
+
   @doc """
   Email used in digest email notifications
   Includes Mentions and New Followers data
@@ -119,7 +133,7 @@ defmodule Pleroma.Emails.UserEmail do
       notifications
       |> Enum.filter(&(&1.activity.data["type"] == "Create"))
       |> Enum.map(fn notification ->
-        object = Pleroma.Object.normalize(notification.activity)
+        object = Pleroma.Object.normalize(notification.activity, fetch: false)
 
         if not is_nil(object) do
           object = update_in(object.data["content"], &format_links/1)
@@ -142,7 +156,7 @@ defmodule Pleroma.Emails.UserEmail do
         if not is_nil(from) do
           %{
             data: notification,
-            object: Pleroma.Object.normalize(notification.activity),
+            object: Pleroma.Object.normalize(notification.activity, fetch: false),
             from: User.get_by_ap_id(notification.activity.actor)
           }
         end

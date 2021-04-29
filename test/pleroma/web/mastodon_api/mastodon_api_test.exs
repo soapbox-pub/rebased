@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
   describe "follow/3" do
     test "returns error when followed user is deactivated" do
       follower = insert(:user)
-      user = insert(:user, local: true, deactivated: true)
+      user = insert(:user, local: true, is_active: false)
       assert {:error, _error} = MastodonAPI.follow(follower, user)
     end
 

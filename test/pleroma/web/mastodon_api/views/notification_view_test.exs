@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     {:ok, [notification]} = Notification.create_notifications(activity)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
     chat = Chat.get(recipient.id, user.ap_id)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
@@ -144,23 +144,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     refute Repo.one(Notification)
   end
 
-  @tag capture_log: true
   test "Move notification" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
     follower = insert(:user)
-
-    old_user_url = old_user.ap_id
-
-    body =
-      File.read!("test/fixtures/users_mock/localhost.json")
-      |> String.replace("{{nickname}}", old_user.nickname)
-      |> Jason.encode!()
-
-    Tesla.Mock.mock(fn
-      %{method: :get, url: ^old_user_url} ->
-        %Tesla.Env{status: 200, body: body}
-    end)
 
     User.follow(follower, old_user)
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
@@ -23,8 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     field(:cc, ObjectValidators.Recipients, default: [])
     field(:bto, ObjectValidators.Recipients, default: [])
     field(:bcc, ObjectValidators.Recipients, default: [])
-    # TODO: Write type
-    field(:tag, {:array, :map}, default: [])
+    embeds_many(:tag, TagValidator)
     field(:type, :string)
 
     field(:name, :string)
@@ -70,19 +70,33 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     |> changeset(data)
   end
 
-  defp fix_url(%{"url" => url} = data) when is_list(url) do
-    attachment =
-      Enum.find(url, fn x ->
-        mime_type = x["mimeType"] || x["mediaType"] || ""
+  defp find_attachment(url) do
+    mpeg_url =
+      Enum.find(url, fn
+        %{"mediaType" => mime_type, "tag" => tags} when is_list(tags) ->
+          mime_type == "application/x-mpegURL"
 
-        is_map(x) and String.starts_with?(mime_type, ["video/", "audio/"])
+        _ ->
+          false
       end)
 
-    link_element =
-      Enum.find(url, fn x ->
-        mime_type = x["mimeType"] || x["mediaType"] || ""
+    url
+    |> Enum.concat(mpeg_url["tag"] || [])
+    |> Enum.find(fn
+      %{"mediaType" => mime_type} -> String.starts_with?(mime_type, ["video/", "audio/"])
+      %{"mimeType" => mime_type} -> String.starts_with?(mime_type, ["video/", "audio/"])
+      _ -> false
+    end)
+  end
 
-        is_map(x) and mime_type == "text/html"
+  defp fix_url(%{"url" => url} = data) when is_list(url) do
+    attachment = find_attachment(url)
+
+    link_element =
+      Enum.find(url, fn
+        %{"mediaType" => "text/html"} -> true
+        %{"mimeType" => "text/html"} -> true
+        _ -> false
       end)
 
     data
@@ -118,11 +132,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:attachment])
+    |> cast(data, __schema__(:fields) -- [:attachment, :tag])
     |> cast_embed(:attachment)
+    |> cast_embed(:tag)
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Audio", "Video"])
     |> validate_required([:id, :actor, :attributedTo, :type, :context, :attachment])

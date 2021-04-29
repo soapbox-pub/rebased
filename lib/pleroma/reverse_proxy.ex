@@ -1,10 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
   @range_headers ~w(range if-range)
-  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
+  @keep_req_headers ~w(accept accept-encoding cache-control if-modified-since) ++
                       ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
@@ -57,9 +57,6 @@ defmodule Pleroma.ReverseProxy do
     * `false` will add `content-disposition: attachment` to any request,
     * a list of whitelisted content types
 
-    * `keep_user_agent` will forward the client's user-agent to the upstream. This may be useful if the upstream is
-    doing content transformation (encoding, …) depending on the request.
-
   * `req_headers`, `resp_headers` additional headers.
 
   * `http`: options for [hackney](https://github.com/benoitc/hackney) or [gun](https://github.com/ninenines/gun).
@@ -84,8 +81,7 @@ defmodule Pleroma.ReverseProxy do
   import Plug.Conn
 
   @type option() ::
-          {:keep_user_agent, boolean}
-          | {:max_read_duration, :timer.time() | :infinity}
+          {:max_read_duration, :timer.time() | :infinity}
           | {:max_body_length, non_neg_integer() | :infinity}
           | {:failed_request_ttl, :timer.time() | :infinity}
           | {:http, []}
@@ -291,17 +287,13 @@ defmodule Pleroma.ReverseProxy do
     end
   end
 
-  defp build_req_user_agent_header(headers, opts) do
-    if Keyword.get(opts, :keep_user_agent, false) do
-      List.keystore(
-        headers,
-        "user-agent",
-        0,
-        {"user-agent", Pleroma.Application.user_agent()}
-      )
-    else
-      headers
-    end
+  defp build_req_user_agent_header(headers, _opts) do
+    List.keystore(
+      headers,
+      "user-agent",
+      0,
+      {"user-agent", Pleroma.Application.user_agent()}
+    )
   end
 
   defp build_resp_headers(headers, opts) do

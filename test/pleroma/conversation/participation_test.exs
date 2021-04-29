@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Conversation.ParticipationTest do
@@ -175,8 +175,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     assert [participation_one, participation_two] = Participation.for_user(user)
 
-    object2 = Pleroma.Object.normalize(activity_two)
-    object3 = Pleroma.Object.normalize(activity_three)
+    object2 = Pleroma.Object.normalize(activity_two, fetch: false)
+    object3 = Pleroma.Object.normalize(activity_three, fetch: false)
 
     user = Repo.get(Pleroma.User, user.id)
 
@@ -358,5 +358,17 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
       assert Participation.unread_count(blocked) == 1
     end
+  end
+
+  test "deletes a conversation" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{status: "Hey @#{other_user.nickname}.", visibility: "direct"})
+
+    assert [participation] = Participation.for_user(other_user)
+    assert {:ok, _} = Participation.delete(participation)
+    assert [] == Participation.for_user(other_user)
   end
 end

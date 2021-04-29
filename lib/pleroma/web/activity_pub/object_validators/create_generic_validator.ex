@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 # Code based on CreateChatMessageValidator
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     |> CommonFixes.fix_actor()
   end
 
-  def validate_data(cng, meta \\ []) do
+  defp validate_data(cng, meta) do
     cng
     |> validate_required([:actor, :type, :object])
     |> validate_inclusion(:type, ["Create"])

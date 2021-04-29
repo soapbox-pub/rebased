@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Endpoint do
@@ -23,6 +23,18 @@ defmodule Pleroma.Web.Endpoint do
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
   # Cache-control headers are duplicated in case we turn off etags in the future
+  plug(
+    Pleroma.Web.Plugs.InstanceStatic,
+    at: "/",
+    from: :pleroma,
+    only: ["emoji", "images"],
+    gzip: true,
+    cache_control_for_etags: "public, max-age=1209600",
+    headers: %{
+      "cache-control" => "public, max-age=1209600"
+    }
+  )
+
   plug(Pleroma.Web.Plugs.InstanceStatic,
     at: "/",
     gzip: true,

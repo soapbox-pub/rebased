@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Tests.Helpers do
@@ -7,6 +7,8 @@ defmodule Pleroma.Tests.Helpers do
   Helpers for use in tests.
   """
   alias Pleroma.Config
+
+  require Logger
 
   defmacro clear_config(config_path) do
     quote do
@@ -18,6 +20,7 @@ defmodule Pleroma.Tests.Helpers do
   defmacro clear_config(config_path, do: yield) do
     quote do
       initial_setting = Config.fetch(unquote(config_path))
+
       unquote(yield)
 
       on_exit(fn ->
@@ -35,6 +38,15 @@ defmodule Pleroma.Tests.Helpers do
   end
 
   defmacro clear_config(config_path, temp_setting) do
+    # NOTE: `clear_config([section, key], value)` != `clear_config([section], key: value)` (!)
+    # Displaying a warning to prevent unintentional clearing of all but one keys in section
+    if Keyword.keyword?(temp_setting) and length(temp_setting) == 1 do
+      Logger.warn(
+        "Please change to `clear_config([section]); clear_config([section, key], value)`: " <>
+          "#{inspect(config_path)}, #{inspect(temp_setting)}"
+      )
+    end
+
     quote do
       clear_config(unquote(config_path)) do
         Config.put(unquote(config_path), unquote(temp_setting))

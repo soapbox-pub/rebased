@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Pleroma do
@@ -13,7 +13,8 @@ defmodule Mix.Pleroma do
     :flake_id,
     :swoosh,
     :timex,
-    :fast_html
+    :fast_html,
+    :oban
   ]
   @cachex_children ["object", "user", "scrubber", "web_resp"]
   @doc "Common functions to be reused in mix tasks"

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
@@ -15,12 +15,12 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:media_proxy_caches"], admin: true} when action in [:index]
+    %{scopes: ["admin:read:media_proxy_caches"]} when action in [:index]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:media_proxy_caches"], admin: true} when action in [:purge, :delete]
+    %{scopes: ["admin:write:media_proxy_caches"]} when action in [:purge, :delete]
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)

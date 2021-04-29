@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
 
   OpenApiSpex.schema(%{
     title: "AccountRelationship",
-    description: "Response schema for relationship",
+    description: "Relationship between current account and requested account",
     type: :object,
     properties: %{
       blocked_by: %Schema{type: :boolean},

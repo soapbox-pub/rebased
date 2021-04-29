@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug do
@@ -26,6 +26,11 @@ defmodule Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug do
       _ ->
         assign(conn, :token, nil)
     end
+  end
+
+  # App-bound token case (obtained with client_id and client_secret)
+  def call(%{assigns: %{token: %Token{user_id: nil}}} = conn, _) do
+    assign(conn, :user, nil)
   end
 
   def call(conn, _) do

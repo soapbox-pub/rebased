@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
@@ -28,20 +28,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
          "mrf_tag:media-force-nsfw",
          %{
            "type" => "Create",
-           "object" => %{"attachment" => child_attachment} = object
+           "object" => %{"attachment" => child_attachment}
          } = message
        )
        when length(child_attachment) > 0 do
-    tags = (object["tag"] || []) ++ ["nsfw"]
-
-    object =
-      object
-      |> Map.put("tag", tags)
-      |> Map.put("sensitive", true)
-
-    message = Map.put(message, "object", object)
-
-    {:ok, message}
+    {:ok, Kernel.put_in(message, ["object", "sensitive"], true)}
   end
 
   defp process_tag(

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
       if Pleroma.Config.get(:env) == :test do
         fetch(prefetch_url)
       else
-        ConcurrentLimiter.limit(MediaProxy, fn ->
+        ConcurrentLimiter.limit(__MODULE__, fn ->
           Task.start(fn -> fetch(prefetch_url) end)
         end)
       end

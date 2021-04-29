@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.SideEffects.DeleteTest do
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects.DeleteTest do
       {:ok, _delete, _} = SideEffects.handle(delete)
       ObanHelpers.perform_all()
 
-      assert User.get_cached_by_ap_id(user.ap_id).deactivated
+      refute User.get_cached_by_ap_id(user.ap_id).is_active
     end
   end
 
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects.DeleteTest do
       {:ok, op} = CommonAPI.post(other_user, %{status: "big oof"})
       {:ok, post} = CommonAPI.post(user, %{status: "hey", in_reply_to_id: op})
       {:ok, favorite} = CommonAPI.favorite(user, post.id)
-      object = Object.normalize(post)
+      object = Object.normalize(post, fetch: false)
       {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
       {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)
 
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects.DeleteTest do
       user = User.get_by_id(user.id)
       assert user.note_count == 0
 
-      object = Object.normalize(op.data["object"], false)
+      object = Object.normalize(op.data["object"], fetch: false)
 
       assert object.data["repliesCount"] == 0
     end
@@ -124,7 +124,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects.DeleteTest do
       user = User.get_by_id(user.id)
       assert user.note_count == 0
 
-      object = Object.normalize(op.data["object"], false)
+      object = Object.normalize(op.data["object"], fetch: false)
 
       assert object.data["repliesCount"] == 0
     end

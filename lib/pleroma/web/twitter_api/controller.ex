@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.Controller do
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
     with %User{} = user <- User.get_cached_by_id(uid),
-         true <- user.local and user.confirmation_pending and user.confirmation_token == token,
+         true <- user.local and !user.is_confirmed and user.confirmation_token == token,
          {:ok, _} <- User.confirm(user) do
       redirect(conn, to: "/")
     end

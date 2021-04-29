@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       note_obj = %{
         "type" => "Note",
@@ -153,15 +153,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       end
     end
 
-    test "it adds the sensitive property" do
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "#nsfw hey"})
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["sensitive"]
-    end
-
     test "it adds the json-ld context and the conversation property" do
       user = insert(:user)
 
@@ -202,7 +193,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal fields" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu :firefox:"})
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "#2hu :firefox:",
+          generator: %{type: "Application", name: "TestClient", url: "https://pleroma.social"}
+        })
+
+      # Ensure injected application data made it into the activity
+      # as we don't have a Token to derive it from, otherwise it will
+      # be nil and the test will pass
+      assert %{
+               type: "Application",
+               name: "TestClient",
+               url: "https://pleroma.social"
+             } == activity.object.data["generator"]
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -213,6 +217,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
+      assert is_nil(modified["object"]["generator"])
     end
 
     test "it strips internal fields of article" do

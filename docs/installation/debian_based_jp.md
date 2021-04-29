@@ -54,7 +54,7 @@ sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
 ```
 
-### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md)
+### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md)
 
 ```shell
 sudo apt install imagemagick ffmpeg libimage-exiftool-perl
@@ -98,7 +98,7 @@ sudo -Hu pleroma mix pleroma.instance gen
 
 * コンフィギュレーションを確認して、もし問題なければ、ファイル名を変更してください。
 ```
-mv config/{generated_config.exs,prod.secret.exs}
+sudo -Hu pleroma mv config/{generated_config.exs,prod.secret.exs}
 ```
 
 * 先程のコマンドで、すでに `config/setup_db.psql` というファイルが作られています。このファイルをもとに、データベースを作成します。

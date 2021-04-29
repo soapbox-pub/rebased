@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Emoji Reactions"],
+      tags: ["Emoji reactions"],
       summary:
         "Get an object of emoji to account mappings with accounts that reacted to the post",
       parameters: [
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Emoji Reactions"],
+      tags: ["Emoji reactions"],
       summary: "React to a post with a unicode emoji",
       parameters: [
         Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Emoji Reactions"],
+      tags: ["Emoji reactions"],
       summary: "Remove a reaction to a post with a unicode emoji",
       parameters: [
         Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
   end
 
   defp array_of_reactions_response do
-    Operation.response("Array of Emoji Reactions", "application/json", %Schema{
+    Operation.response("Array of Emoji reactions", "application/json", %Schema{
       type: :array,
       items: emoji_reaction(),
       example: [emoji_reaction().example]

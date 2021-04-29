@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.Mogrify do
@@ -14,8 +14,8 @@ defmodule Pleroma.Upload.Filter.Mogrify do
       do_filter(file, Pleroma.Config.get!([__MODULE__, :args]))
       {:ok, :filtered}
     rescue
-      _e in ErlangError ->
-        {:error, "mogrify command not found"}
+      e in ErlangError ->
+        {:error, "#{__MODULE__}: #{inspect(e)}"}
     end
   end
 

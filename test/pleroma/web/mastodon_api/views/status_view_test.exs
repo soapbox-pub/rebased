@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} = CommonAPI.post(user, %{status: "yo"})
 
     activity
-    |> Object.normalize(false)
+    |> Object.normalize(fetch: false)
     |> Object.update_data(%{"reactions" => %{"☕" => [user.ap_id], "x" => 1}})
 
     activity = Activity.get_by_id(activity.id)
@@ -204,7 +204,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note with null content" do
     note = insert(:note_activity)
-    note_object = Object.normalize(note)
+    note_object = Object.normalize(note, fetch: false)
 
     data =
       note_object.data
@@ -223,7 +223,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note activity" do
     note = insert(:note_activity)
-    object_data = Object.normalize(note).data
+    object_data = Object.normalize(note, fetch: false).data
     user = User.get_cached_by_ap_id(note.data["actor"])
 
     convo_id = Utils.context_to_conversation_id(object_data["context"])
@@ -262,14 +262,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       mentions: [],
       tags: [
         %{
-          name: "#{object_data["tag"]}",
-          url: "/tag/#{object_data["tag"]}"
+          name: "#{hd(object_data["tag"])}",
+          url: "http://localhost:4001/tag/#{hd(object_data["tag"])}"
         }
       ],
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: nil,
       language: nil,
       emojis: [
         %{
@@ -289,7 +286,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         direct_conversation_id: nil,
         thread_muted: false,
         emoji_reactions: [],
-        parent_visible: false
+        parent_visible: false,
+        pinned_at: nil
       }
     }
 
@@ -585,9 +583,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       ]
 
       assert StatusView.build_tags(object_tags) == [
-               %{name: "fediverse", url: "/tag/fediverse"},
-               %{name: "mastodon", url: "/tag/mastodon"},
-               %{name: "nextcloud", url: "/tag/nextcloud"}
+               %{name: "fediverse", url: "http://localhost:4001/tag/fediverse"},
+               %{name: "mastodon", url: "http://localhost:4001/tag/mastodon"},
+               %{name: "nextcloud", url: "http://localhost:4001/tag/nextcloud"}
              ]
     end
   end

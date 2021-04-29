@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
     end
 
     test "with `admin_token` query parameter", %{conn: conn} do
-      Pleroma.Config.put(:admin_token, "password123")
+      clear_config(:admin_token, "password123")
 
       conn =
         %{conn | params: %{"admin_token" => "wrong_password"}}
@@ -54,7 +54,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
     end
 
     test "with `x-admin-token` HTTP header", %{conn: conn} do
-      Pleroma.Config.put(:admin_token, "☕️")
+      clear_config(:admin_token, "☕️")
 
       conn =
         conn

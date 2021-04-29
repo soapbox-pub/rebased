@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Stats do
@@ -23,7 +23,11 @@ defmodule Pleroma.Stats do
 
   @impl true
   def init(_args) do
-    {:ok, nil, {:continue, :calculate_stats}}
+    if Pleroma.Config.get(:env) != :test do
+      {:ok, nil, {:continue, :calculate_stats}}
+    else
+      {:ok, calculate_stat_data()}
+    end
   end
 
   @doc "Performs update stats"
@@ -75,7 +79,7 @@ defmodule Pleroma.Stats do
 
     users_query =
       from(u in User,
-        where: u.deactivated != true,
+        where: u.is_active == true,
         where: u.local == true,
         where: not is_nil(u.nickname),
         where: not u.invisible

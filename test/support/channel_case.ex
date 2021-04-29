@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ChannelCase do
@@ -30,19 +30,5 @@ defmodule Pleroma.Web.ChannelCase do
     end
   end
 
-  setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
-
-    if tags[:async] do
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
-      Mox.set_mox_private()
-    else
-      Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
-      Mox.set_mox_global()
-      Pleroma.DataCase.clear_cachex()
-    end
-
-    :ok
-  end
+  setup tags, do: Pleroma.DataCase.setup_multi_process_mode(tags)
 end

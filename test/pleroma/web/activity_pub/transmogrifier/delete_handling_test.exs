@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     assert actor == deleting_user.ap_id
 
     # Objects are replaced by a tombstone object.
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity.data["object"], fetch: false)
     assert object.data["type"] == "Tombstone"
   end
 
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     activity = insert(:note_activity)
 
     {:ok, object} =
-      Object.normalize(activity.data["object"])
+      Object.normalize(activity.data["object"], fetch: false)
       |> Repo.delete()
 
     # TODO: mock cachex
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     {:ok, _} = Transmogrifier.handle_incoming(data)
     ObanHelpers.perform_all()
 
-    assert User.get_cached_by_ap_id(ap_id).deactivated
+    refute User.get_cached_by_ap_id(ap_id).is_active
   end
 
   test "it fails for incoming user deletes with spoofed origin" do

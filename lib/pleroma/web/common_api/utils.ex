@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
@@ -217,7 +217,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     draft.status
     |> format_input(content_type, options)
     |> maybe_add_attachments(draft.attachments, attachment_links)
-    |> maybe_add_nsfw_tag(draft.params)
   end
 
   defp get_content_type(content_type) do
@@ -227,13 +226,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "text/plain"
     end
   end
-
-  defp maybe_add_nsfw_tag({text, mentions, tags}, %{"sensitive" => sensitive})
-       when sensitive in [true, "True", "true", "1"] do
-    {text, mentions, [{"#nsfw", "nsfw"} | tags]}
-  end
-
-  defp maybe_add_nsfw_tag(data, _), do: data
 
   def make_context(_, %Participation{} = participation) do
     Repo.preload(participation, :conversation).conversation.ap_id
@@ -319,7 +311,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   defp add_in_reply_to(object, nil), do: object
 
   defp add_in_reply_to(object, in_reply_to) do
-    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
       Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
     else
       _ -> object
@@ -399,7 +391,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %Activity{data: %{"to" => _to, "type" => type} = data} = activity
       )
       when type == "Create" do
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     object_data =
       cond do

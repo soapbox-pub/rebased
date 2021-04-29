@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
@@ -32,11 +32,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
 
   describe "requires a signature when `authorized_fetch_mode` is enabled" do
     setup do
-      Pleroma.Config.put([:activitypub, :authorized_fetch_mode], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:activitypub, :authorized_fetch_mode], false)
-      end)
+      clear_config([:activitypub, :authorized_fetch_mode], true)
 
       params = %{"actor" => "http://mastodon.example.org/users/admin"}
       conn = build_conn(:get, "/doesntmattter", params) |> put_format("activity+json")

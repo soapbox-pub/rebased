@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
@@ -64,20 +64,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          %{host: actor_host} = _actor_info,
          %{
            "type" => "Create",
-           "object" => child_object
+           "object" => %{} = _child_object
          } = object
-       )
-       when is_map(child_object) do
+       ) do
     media_nsfw =
       Config.get([:mrf_simple, :media_nsfw])
       |> MRF.subdomains_regex()
 
     object =
       if MRF.subdomain_match?(media_nsfw, actor_host) do
-        tags = (child_object["tag"] || []) ++ ["nsfw"]
-        child_object = Map.put(child_object, "tag", tags)
-        child_object = Map.put(child_object, "sensitive", true)
-        Map.put(object, "object", child_object)
+        Kernel.put_in(object, ["object", "sensitive"], true)
       else
         object
       end

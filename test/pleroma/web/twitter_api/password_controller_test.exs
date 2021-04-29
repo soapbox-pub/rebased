@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
       assert response =~ "<h2>Password changed!</h2>"
 
       user = refresh_record(user)
-      assert Pbkdf2.verify_pass("test", user.password_hash)
+      assert Pleroma.Password.Pbkdf2.verify_pass("test", user.password_hash)
       assert Enum.empty?(Token.get_user_tokens(user))
     end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.FollowRequestOperation do
@@ -15,8 +15,8 @@ defmodule Pleroma.Web.ApiSpec.FollowRequestOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Follow Requests"],
-      summary: "Pending Follows",
+      tags: ["Follow requests"],
+      summary: "Retrieve follow requests",
       security: [%{"oAuth" => ["read:follows", "follow"]}],
       operationId: "FollowRequestController.index",
       responses: %{
@@ -32,8 +32,8 @@ defmodule Pleroma.Web.ApiSpec.FollowRequestOperation do
 
   def authorize_operation do
     %Operation{
-      tags: ["Follow Requests"],
-      summary: "Accept Follow",
+      tags: ["Follow requests"],
+      summary: "Accept follow request",
       operationId: "FollowRequestController.authorize",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -45,8 +45,8 @@ defmodule Pleroma.Web.ApiSpec.FollowRequestOperation do
 
   def reject_operation do
     %Operation{
-      tags: ["Follow Requests"],
-      summary: "Reject Follow",
+      tags: ["Follow requests"],
+      summary: "Reject follow request",
       operationId: "FollowRequestController.reject",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],

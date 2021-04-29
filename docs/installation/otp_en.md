@@ -89,6 +89,8 @@ RUM indexes are an alternative indexing scheme that is not included in PostgreSQ
 #### (Optional) Performance configuration
 It is encouraged to check [Optimizing your PostgreSQL performance](../configuration/postgresql.md) document, for tips on PostgreSQL tuning.
 
+Restart PostgreSQL to apply configuration changes:
+
 === "Alpine"
     ```
     rc-service postgresql restart
@@ -98,17 +100,6 @@ It is encouraged to check [Optimizing your PostgreSQL performance](../configurat
     ```
     systemctl restart postgresql
     ```
-
-If you are using PostgreSQL 12 or higher, add this to your Ecto database configuration
-
-```elixir
-#
-config :pleroma, Pleroma.Repo,
-prepare: :named,
-parameters: [
-  plan_cache_mode: "force_custom_plan"
-]
-```
 
 ### Installing Pleroma
 ```sh
@@ -159,7 +150,7 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 # su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
 
 # Start the instance to verify that everything is working as expected
-su pleroma -s $SHELL -lc "export $(cat /opt/pleroma/config/pleroma.env); ./bin/pleroma daemon"
+su pleroma -s $SHELL -lc "./bin/pleroma daemon"
 
 # Wait for about 20 seconds and query the instance endpoint, if it shows your uri, name and email correctly, you are configured correctly
 sleep 20 && curl http://localhost:4000/api/v1/instance
@@ -299,7 +290,7 @@ nginx -t
 
 ## Create your first user and set as admin
 ```sh
-cd /opt/pleroma/bin
+cd /opt/pleroma
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl user new joeuser joeuser@sld.tld --admin"
 ```
 This will create an account withe the username of 'joeuser' with the email address of joeuser@sld.tld, and set that user's account as an admin. This will result in a link that you can paste into the browser, which logs you in and enables you to set the password.

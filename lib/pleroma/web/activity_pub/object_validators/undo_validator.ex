@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
     |> cast(data, __schema__(:fields))
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Undo"])
     |> validate_required([:id, :type, :object, :actor, :to, :cc])

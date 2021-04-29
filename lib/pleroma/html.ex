@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTML do
@@ -59,7 +59,7 @@ defmodule Pleroma.HTML do
     key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
 
     @cachex.fetch!(:scrubber_cache, key, fn _key ->
-      object = Pleroma.Object.normalize(activity)
+      object = Pleroma.Object.normalize(activity, fetch: false)
       ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false, callback)
     end)
   end

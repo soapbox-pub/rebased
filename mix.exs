@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.2.50"),
+      version: version("2.3.50"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -38,7 +38,7 @@ defmodule Pleroma.Mixfile do
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
           steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1],
-          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, nil}]
+          config_providers: [{Pleroma.Config.ReleaseRuntimeProvider, []}]
         ]
       ]
     ]
@@ -121,11 +121,11 @@ defmodule Pleroma.Mixfile do
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_enum, "~> 1.4"},
+      {:ecto_explain, "~> 0.1.2"},
       {:ecto_sql, "~> 3.4.4"},
       {:postgrex, ">= 0.15.5"},
-      {:oban, "~> 2.1.0"},
+      {:oban, "~> 2.3.4"},
       {:gettext, "~> 0.18"},
-      {:pbkdf2_elixir, "~> 1.2"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
@@ -158,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.4.1"},
+      {:linkify, "~> 0.5.0"},
       {:http_signatures, "~> 0.1.0"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
@@ -195,10 +195,8 @@ defmodule Pleroma.Mixfile do
       {:restarter, path: "./restarter"},
       {:majic,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
-       ref: "4c692e544b28d1f5e543fb8a44be090f8cd96f80"},
-      {:open_api_spex,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
-       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},
+       ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
+      {:open_api_spex, "~> 3.10"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
@@ -230,7 +228,9 @@ defmodule Pleroma.Mixfile do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"],
       docs: ["pleroma.docs", "docs"],
-      analyze: ["credo --strict --only=warnings,todo,fixme,consistency,readability"]
+      analyze: ["credo --strict --only=warnings,todo,fixme,consistency,readability"],
+      copyright: &add_copyright/1,
+      "copyright.bump": &bump_copyright/1
     ]
   end
 
@@ -332,5 +332,31 @@ defmodule Pleroma.Mixfile do
     [version, pre_release, build_metadata]
     |> Enum.filter(fn string -> string && string != "" end)
     |> Enum.join()
+  end
+
+  defp add_copyright(_) do
+    year = NaiveDateTime.utc_now().year
+    template = ~s[\
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-#{year} Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+] |> String.replace("\n", "\\n")
+
+    find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\) -exec "
+    grep = "grep -L '# Copyright © [0-9\-]* Pleroma' {} \\;"
+    xargs = "xargs -n1 sed -i'' '1s;^;#{template};'"
+
+    :os.cmd(String.to_charlist("#{find}#{grep} | #{xargs}"))
+  end
+
+  defp bump_copyright(_) do
+    year = NaiveDateTime.utc_now().year
+    find = "find lib test priv -type f \\( -name '*.ex' -or -name '*.exs' \\)"
+
+    xargs =
+      "xargs sed -i'' 's;# Copyright © [0-9\-]* Pleroma.*$;# Copyright © 2017-#{year} Pleroma Authors <https://pleroma.social/>;'"
+
+    :os.cmd(String.to_charlist("#{find} | #{xargs}"))
   end
 end

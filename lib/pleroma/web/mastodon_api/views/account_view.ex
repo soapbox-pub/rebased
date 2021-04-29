@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
@@ -262,11 +262,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       },
 
-      # Pleroma extension
+      # Pleroma extensions
+      # Note: it's insecure to output :email but fully-qualified nickname may serve as safe stub
+      fqn: User.full_nickname(user),
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: user.also_known_as,
-        confirmation_pending: user.confirmation_pending,
+        is_confirmed: user.is_confirmed,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,
         hide_follows_count: user.hide_follows_count,
@@ -376,7 +378,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_allow_following_move(data, _, _), do: data
 
   defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
-    Kernel.put_in(data, [:pleroma, :deactivated], user.deactivated)
+    Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active)
   end
 
   defp maybe_put_activation_status(data, _, _), do: data

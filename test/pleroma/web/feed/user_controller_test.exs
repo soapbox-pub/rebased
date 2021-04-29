@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.UserControllerTest do
@@ -8,7 +8,6 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   import Pleroma.Factory
   import SweetXml
 
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -20,7 +19,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
     setup do: clear_config([:feed])
 
     setup do
-      Config.put(
+      clear_config(
         [:feed, :post_title],
         %{max_length: 15, omission: "..."}
       )
@@ -58,7 +57,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         )
 
       note_activity2 = insert(:note_activity, note: note2)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       [user: user, object: object, max_id: note_activity2.id]
     end
@@ -236,7 +235,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
     setup do: clear_config([:instance, :public])
 
     test "returns 404 for user feed", %{conn: conn} do
-      Config.put([:instance, :public], false)
+      clear_config([:instance, :public], false)
       user = insert(:user)
 
       {:ok, _} = CommonAPI.post(user, %{status: "test"})

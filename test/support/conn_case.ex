@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ConnCase do
@@ -18,6 +18,8 @@ defmodule Pleroma.Web.ConnCase do
   """
 
   use ExUnit.CaseTemplate
+
+  alias Pleroma.DataCase
 
   using do
     quote do
@@ -65,13 +67,11 @@ defmodule Pleroma.Web.ConnCase do
       end
 
       defp json_response_and_validate_schema(
-             %{
-               private: %{
-                 open_api_spex: %{operation_id: op_id, operation_lookup: lookup, spec: spec}
-               }
-             } = conn,
+             %{private: %{operation_id: op_id}} = conn,
              status
            ) do
+        {spec, lookup} = OpenApiSpex.Plug.PutApiSpec.get_spec_and_operation_lookup(conn)
+
         content_type =
           conn
           |> Plug.Conn.get_resp_header("content-type")
@@ -116,27 +116,9 @@ defmodule Pleroma.Web.ConnCase do
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
-
-    if tags[:async] do
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.NullCache)
-      Mox.set_mox_private()
-    else
-      Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
-      Mox.set_mox_global()
-      Pleroma.DataCase.clear_cachex()
-    end
-
-    if tags[:needs_streamer] do
-      start_supervised(%{
-        id: Pleroma.Web.Streamer.registry(),
-        start:
-          {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
-      })
-    end
-
-    Pleroma.DataCase.stub_pipeline()
+    DataCase.setup_multi_process_mode(tags)
+    DataCase.setup_streamer(tags)
+    DataCase.stub_pipeline()
 
     Mox.verify_on_exit!()
 

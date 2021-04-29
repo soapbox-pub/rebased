@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxyTest do
@@ -18,24 +18,23 @@ defmodule Pleroma.ReverseProxyTest do
 
   setup :verify_on_exit!
 
-  defp user_agent_mock(user_agent, invokes) do
-    json = Jason.encode!(%{"user-agent": user_agent})
-
+  defp request_mock(invokes) do
     ClientMock
-    |> expect(:request, fn :get, url, _, _, _ ->
+    |> expect(:request, fn :get, url, headers, _body, _opts ->
       Registry.register(ClientMock, url, 0)
+      body = headers |> Enum.into(%{}) |> Jason.encode!()
 
       {:ok, 200,
        [
          {"content-type", "application/json"},
-         {"content-length", byte_size(json) |> to_string()}
-       ], %{url: url}}
+         {"content-length", byte_size(body) |> to_string()}
+       ], %{url: url, body: body}}
     end)
-    |> expect(:stream_body, invokes, fn %{url: url} = client ->
+    |> expect(:stream_body, invokes, fn %{url: url, body: body} = client ->
       case Registry.lookup(ClientMock, url) do
         [{_, 0}] ->
           Registry.update_value(ClientMock, url, &(&1 + 1))
-          {:ok, json, client}
+          {:ok, body, client}
 
         [{_, 1}] ->
           Registry.unregister(ClientMock, url)
@@ -46,7 +45,7 @@ defmodule Pleroma.ReverseProxyTest do
 
   describe "reverse proxy" do
     test "do not track successful request", %{conn: conn} do
-      user_agent_mock("hackney/1.15.1", 2)
+      request_mock(2)
       url = "/success"
 
       conn = ReverseProxy.call(conn, url)
@@ -56,18 +55,15 @@ defmodule Pleroma.ReverseProxyTest do
     end
   end
 
-  describe "user-agent" do
-    test "don't keep", %{conn: conn} do
-      user_agent_mock("hackney/1.15.1", 2)
-      conn = ReverseProxy.call(conn, "/user-agent")
-      assert json_response(conn, 200) == %{"user-agent" => "hackney/1.15.1"}
-    end
+  test "use Pleroma's user agent in the request; don't pass the client's", %{conn: conn} do
+    request_mock(2)
 
-    test "keep", %{conn: conn} do
-      user_agent_mock(Pleroma.Application.user_agent(), 2)
-      conn = ReverseProxy.call(conn, "/user-agent-keep", keep_user_agent: true)
-      assert json_response(conn, 200) == %{"user-agent" => Pleroma.Application.user_agent()}
-    end
+    conn =
+      conn
+      |> Plug.Conn.put_req_header("user-agent", "fake/1.0")
+      |> ReverseProxy.call("/user-agent")
+
+    assert json_response(conn, 200) == %{"user-agent" => Pleroma.Application.user_agent()}
   end
 
   test "closed connection", %{conn: conn} do
@@ -114,7 +110,7 @@ defmodule Pleroma.ReverseProxyTest do
 
   describe "max_body" do
     test "length returns error if content-length more than option", %{conn: conn} do
-      user_agent_mock("hackney/1.15.1", 0)
+      request_mock(0)
 
       assert capture_log(fn ->
                ReverseProxy.call(conn, "/huge-file", max_body_length: 4)

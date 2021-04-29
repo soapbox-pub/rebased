@@ -38,7 +38,7 @@ config :pleroma, :instance,
   external_user_synchronization: false,
   static_dir: "test/instance_static/"
 
-config :pleroma, :activitypub, sign_object_fetches: false
+config :pleroma, :activitypub, sign_object_fetches: false, follow_handshake_timeout: 0
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
@@ -53,7 +53,7 @@ config :pleroma, Pleroma.Repo,
 config :pleroma, :dangerzone, override_repo_pool_size: true
 
 # Reduce hash rounds for testing
-config :pbkdf2_elixir, rounds: 1
+config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
 
@@ -114,11 +114,6 @@ config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 config :pleroma, Pleroma.Web.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
-
-config :pleroma, Pleroma.Uploaders.S3,
-  bucket: nil,
-  streaming_enabled: true,
-  public_endpoint: nil
 
 config :tzdata, :autoupdate, :disabled
 

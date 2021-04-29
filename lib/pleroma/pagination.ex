@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Pagination do
@@ -93,6 +93,7 @@ defmodule Pleroma.Pagination do
       max_id: :string,
       offset: :integer,
       limit: :integer,
+      skip_extra_order: :boolean,
       skip_order: :boolean
     }
 
@@ -113,6 +114,8 @@ defmodule Pleroma.Pagination do
   end
 
   defp restrict(query, :order, %{skip_order: true}, _), do: query
+
+  defp restrict(%{order_bys: [_ | _]} = query, :order, %{skip_extra_order: true}, _), do: query
 
   defp restrict(query, :order, %{min_id: _}, table_binding) do
     order_by(

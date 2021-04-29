@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.OAuthScopesPlugTest do
@@ -167,44 +167,6 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlugTest do
       assert f.(["admin:read"], ["write", "read"]) == []
 
       assert f.(["admin:read"], ["write", "admin"]) == ["admin:read"]
-    end
-  end
-
-  describe "transform_scopes/2" do
-    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage])
-
-    setup do
-      {:ok, %{f: &OAuthScopesPlug.transform_scopes/2}}
-    end
-
-    test "with :admin option, prefixes all requested scopes with `admin:` " <>
-           "and [optionally] keeps only prefixed scopes, " <>
-           "depending on `[:auth, :enforce_oauth_admin_scope_usage]` setting",
-         %{f: f} do
-      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
-
-      assert f.(["read"], %{admin: true}) == ["admin:read", "read"]
-
-      assert f.(["read", "write"], %{admin: true}) == [
-               "admin:read",
-               "read",
-               "admin:write",
-               "write"
-             ]
-
-      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
-
-      assert f.(["read:accounts"], %{admin: true}) == ["admin:read:accounts"]
-
-      assert f.(["read", "write:reports"], %{admin: true}) == [
-               "admin:read",
-               "admin:write:reports"
-             ]
-    end
-
-    test "with no supported options, returns unmodified scopes", %{f: f} do
-      assert f.(["read"], %{}) == ["read"]
-      assert f.(["read", "write"], %{}) == ["read", "write"]
     end
   end
 end

@@ -9,7 +9,6 @@
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>
-  <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
 
   <%= if @data["summary"] do %>
     <description><%= escape(@data["summary"]) %></description>
@@ -21,7 +20,9 @@
     <link><%= @data["external_url"] %></link>
   <% end %>
 
-  <%= for tag <- @data["tag"] || [] do %>
+  <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
+
+  <%= for tag <- Pleroma.Object.hashtags(@object) do %>
     <category term="<%= tag %>"></category>
   <% end %>
 

@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -74,12 +73,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
         background_image: "https://example.com/images/asuka_hospital.png",
         favicon: nil,
-        confirmation_pending: false,
+        is_confirmed: true,
         tags: [],
         is_admin: false,
         is_moderator: false,
@@ -173,12 +173,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: [],
         background_image: nil,
         favicon: nil,
-        confirmation_pending: false,
+        is_confirmed: true,
         tags: [],
         is_admin: false,
         is_moderator: false,
@@ -211,7 +212,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   test "Represent a deactivated user for an admin" do
     admin = insert(:user, is_admin: true)
-    deactivated_user = insert(:user, deactivated: true)
+    deactivated_user = insert(:user, is_active: false)
     represented = AccountView.render("show.json", %{user: deactivated_user, for: admin})
     assert represented[:pleroma][:deactivated] == true
   end
@@ -556,7 +557,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       )
 
     with media_preview_enabled <- [false, true] do
-      Config.put([:media_preview_proxy, :enabled], media_preview_enabled)
+      clear_config([:media_preview_proxy, :enabled], media_preview_enabled)
 
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       |> Enum.all?(fn

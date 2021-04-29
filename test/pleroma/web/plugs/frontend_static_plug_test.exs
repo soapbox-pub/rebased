@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
@@ -73,5 +73,36 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       call: fn _conn, _url, _opts -> %Plug.Conn{status: :success} end do
       assert %Plug.Conn{status: :success} = get(conn, url)
     end
+  end
+
+  test "api routes are detected correctly" do
+    # If this test fails we have probably added something
+    # new that should be in /api/ instead
+    expected_routes = [
+      "api",
+      "main",
+      "ostatus_subscribe",
+      "oauth",
+      "objects",
+      "activities",
+      "notice",
+      "users",
+      "tags",
+      "mailer",
+      "inbox",
+      "relay",
+      "internal",
+      ".well-known",
+      "nodeinfo",
+      "web",
+      "auth",
+      "embed",
+      "proxy",
+      "test",
+      "user_exists",
+      "check_password"
+    ]
+
+    assert expected_routes == Pleroma.Web.get_api_routes()
   end
 end

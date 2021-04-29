@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.DataCase do
@@ -17,6 +17,8 @@ defmodule Pleroma.DataCase do
   """
 
   use ExUnit.CaseTemplate
+
+  import Pleroma.Tests.Helpers, only: [clear_config: 2]
 
   using do
     quote do
@@ -62,7 +64,7 @@ defmodule Pleroma.DataCase do
     end)
   end
 
-  setup tags do
+  def setup_multi_process_mode(tags) do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
     if tags[:async] do
@@ -70,11 +72,16 @@ defmodule Pleroma.DataCase do
       Mox.set_mox_private()
     else
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
-      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
+
       Mox.set_mox_global()
+      Mox.stub_with(Pleroma.CachexMock, Pleroma.CachexProxy)
       clear_cachex()
     end
 
+    :ok
+  end
+
+  def setup_streamer(tags) do
     if tags[:needs_streamer] do
       start_supervised(%{
         id: Pleroma.Web.Streamer.registry(),
@@ -83,6 +90,12 @@ defmodule Pleroma.DataCase do
       })
     end
 
+    :ok
+  end
+
+  setup tags do
+    setup_multi_process_mode(tags)
+    setup_streamer(tags)
     stub_pipeline()
 
     Mox.verify_on_exit!()
@@ -105,17 +118,10 @@ defmodule Pleroma.DataCase do
   end
 
   def ensure_local_uploader(context) do
-    test_uploader = Map.get(context, :uploader, Pleroma.Uploaders.Local)
-    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
-    filters = Pleroma.Config.get([Pleroma.Upload, :filters])
+    test_uploader = Map.get(context, :uploader) || Pleroma.Uploaders.Local
 
-    Pleroma.Config.put([Pleroma.Upload, :uploader], test_uploader)
-    Pleroma.Config.put([Pleroma.Upload, :filters], [])
-
-    on_exit(fn ->
-      Pleroma.Config.put([Pleroma.Upload, :uploader], uploader)
-      Pleroma.Config.put([Pleroma.Upload, :filters], filters)
-    end)
+    clear_config([Pleroma.Upload, :uploader], test_uploader)
+    clear_config([Pleroma.Upload, :filters], [])
 
     :ok
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UploadTest do
@@ -133,7 +133,7 @@ defmodule Pleroma.UploadTest do
 
       assert %{"url" => [%{"href" => url}]} = data
 
-      assert String.starts_with?(url, Pleroma.Web.base_url() <> "/media/")
+      assert String.starts_with?(url, Pleroma.Upload.base_url())
     end
 
     test "copies the file to the configured folder with deduping" do
@@ -148,8 +148,8 @@ defmodule Pleroma.UploadTest do
       {:ok, data} = Upload.store(file, filters: [Pleroma.Upload.Filter.Dedupe])
 
       assert List.first(data["url"])["href"] ==
-               Pleroma.Web.base_url() <>
-                 "/media/e30397b58d226d6583ab5b8b3c5defb0c682bda5c31ef07a9f57c1c4986e3781.jpg"
+               Pleroma.Upload.base_url() <>
+                 "e30397b58d226d6583ab5b8b3c5defb0c682bda5c31ef07a9f57c1c4986e3781.jpg"
     end
 
     test "copies the file to the configured folder without deduping" do

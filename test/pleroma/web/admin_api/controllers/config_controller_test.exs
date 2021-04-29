@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
   import ExUnit.CaptureLog
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.ConfigDB
 
   setup do
@@ -27,12 +26,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     setup do: clear_config(:configurable_from_database, true)
 
     test "when configuration from database is off", %{conn: conn} do
-      Config.put(:configurable_from_database, false)
+      clear_config(:configurable_from_database, false)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response_and_validate_schema(conn, 400) ==
                %{
-                 "error" => "To use this endpoint you need to enable configuration from database."
+                 "error" => "You must enable configurable_from_database in your config file."
                }
     end
 
@@ -171,7 +170,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       |> post("/api/pleroma/admin/config", %{"configs" => []})
 
     assert json_response_and_validate_schema(conn, 400) ==
-             %{"error" => "To use this endpoint you need to enable configuration from database."}
+             %{"error" => "You must enable configurable_from_database in your config file."}
   end
 
   describe "POST /api/pleroma/admin/config" do
@@ -410,8 +409,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "saving config which need pleroma reboot", %{conn: conn} do
-      chat = Config.get(:chat)
-      on_exit(fn -> Config.put(:chat, chat) end)
+      clear_config([:chat, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -456,8 +454,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
-      chat = Config.get(:chat)
-      on_exit(fn -> Config.put(:chat, chat) end)
+      clear_config([:chat, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -1412,6 +1409,82 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                ],
                "need_reboot" => false
              }
+    end
+
+    test "custom instance thumbnail", %{conn: conn} do
+      clear_config([:instance])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => ":instance",
+        "value" => [
+          %{
+            "tuple" => [
+              ":instance_thumbnail",
+              "https://example.com/media/new_thumbnail.jpg"
+            ]
+          }
+        ]
+      }
+
+      res =
+        assert conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+               |> json_response_and_validate_schema(200)
+
+      assert res == %{
+               "configs" => [
+                 %{
+                   "db" => [":instance_thumbnail"],
+                   "group" => ":pleroma",
+                   "key" => ":instance",
+                   "value" => params["value"]
+                 }
+               ],
+               "need_reboot" => false
+             }
+
+      _res =
+        assert conn
+               |> get("/api/v1/instance")
+               |> json_response_and_validate_schema(200)
+
+      assert res = %{"thumbnail" => "https://example.com/media/new_thumbnail.jpg"}
+    end
+
+    test "Concurrent Limiter", %{conn: conn} do
+      clear_config([ConcurrentLimiter])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => "ConcurrentLimiter",
+        "value" => [
+          %{
+            "tuple" => [
+              "Pleroma.Web.RichMedia.Helpers",
+              [
+                %{"tuple" => [":max_running", 6]},
+                %{"tuple" => [":max_waiting", 6]}
+              ]
+            ]
+          },
+          %{
+            "tuple" => [
+              "Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy",
+              [
+                %{"tuple" => [":max_running", 7]},
+                %{"tuple" => [":max_waiting", 7]}
+              ]
+            ]
+          }
+        ]
+      }
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+             |> json_response_and_validate_schema(200)
     end
   end
 

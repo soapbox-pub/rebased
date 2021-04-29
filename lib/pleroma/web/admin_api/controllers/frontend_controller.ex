@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.FrontendController do
@@ -9,8 +9,8 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :install)
-  plug(OAuthScopesPlug, %{scopes: ["read"], admin: true} when action == :index)
+  plug(OAuthScopesPlug, %{scopes: ["admin:write"]} when action == :install)
+  plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :index)
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.FrontendOperation

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Ecto.RollbackTest do
@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.RollbackTest do
     Logger.configure(level: :warn)
 
     assert capture_log(fn ->
-             Mix.Tasks.Pleroma.Ecto.Rollback.run()
+             Mix.Tasks.Pleroma.Ecto.Rollback.run(["--env", "test"])
            end) =~ "[info] Rollback succesfully"
 
     Logger.configure(level: level)

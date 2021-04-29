@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF do
@@ -92,7 +92,9 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   end
 
   def get_policies do
-    Pleroma.Config.get([:mrf, :policies], []) |> get_policies()
+    Pleroma.Config.get([:mrf, :policies], [])
+    |> get_policies()
+    |> Enum.concat([Pleroma.Web.ActivityPub.MRF.HashtagPolicy])
   end
 
   defp get_policies(policy) when is_atom(policy), do: [policy]

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
@@ -13,8 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
                 Pleroma.Config.get!([:instance, :static_dir]),
                 "emoji"
               )
-  setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
-
   setup do: clear_config([:instance, :public], true)
 
   setup do

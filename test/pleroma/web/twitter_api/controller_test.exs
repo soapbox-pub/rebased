@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
@@ -64,10 +64,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     setup do
       {:ok, user} =
         insert(:user)
-        |> User.confirmation_changeset(need_confirmation: true)
+        |> User.confirmation_changeset(set_confirmation: false)
         |> Repo.update()
 
-      assert user.confirmation_pending
+      refute user.is_confirmed
 
       [user: user]
     end
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = User.get_cached_by_id(user.id)
 
-      refute user.confirmation_pending
+      assert user.is_confirmed
       refute user.confirmation_token
     end
 

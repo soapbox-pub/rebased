@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Builder do
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec delete(User.t(), String.t()) :: {:ok, map(), keyword()}
   def delete(actor, object_id) do
-    object = Object.normalize(object_id, false)
+    object = Object.normalize(object_id, fetch: false)
 
     user = !object && User.get_cached_by_ap_id(object_id)
 
@@ -272,5 +272,37 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "cc" => cc,
        "context" => object.data["context"]
      }, []}
+  end
+
+  @spec pin(User.t(), Object.t()) :: {:ok, map(), keyword()}
+  def pin(%User{} = user, object) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => pinned_url(user.nickname),
+       "object" => object.data["id"],
+       "actor" => user.ap_id,
+       "type" => "Add",
+       "to" => [Pleroma.Constants.as_public()],
+       "cc" => [user.follower_address]
+     }, []}
+  end
+
+  @spec unpin(User.t(), Object.t()) :: {:ok, map, keyword()}
+  def unpin(%User{} = user, object) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => pinned_url(user.nickname),
+       "object" => object.data["id"],
+       "actor" => user.ap_id,
+       "type" => "Remove",
+       "to" => [Pleroma.Constants.as_public()],
+       "cc" => [user.follower_address]
+     }, []}
+  end
+
+  defp pinned_url(nickname) when is_binary(nickname) do
+    Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname)
   end
 end

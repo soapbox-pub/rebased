@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Query do
@@ -137,8 +137,9 @@ defmodule Pleroma.User.Query do
   defp compose_query({:external, _}, query), do: location_query(query, false)
 
   defp compose_query({:active, _}, query) do
-    User.restrict_deactivated(query)
-    |> where([u], u.approval_pending == false)
+    where(query, [u], u.is_active == true)
+    |> where([u], u.is_approved == true)
+    |> where([u], u.is_confirmed == true)
   end
 
   defp compose_query({:legacy_active, _}, query) do
@@ -147,23 +148,23 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, false}, query) do
-    User.restrict_deactivated(query)
+    where(query, [u], u.is_active == true)
   end
 
   defp compose_query({:deactivated, true}, query) do
-    where(query, [u], u.deactivated == ^true)
+    where(query, [u], u.is_active == false)
   end
 
   defp compose_query({:confirmation_pending, bool}, query) do
-    where(query, [u], u.confirmation_pending == ^bool)
+    where(query, [u], u.is_confirmed != ^bool)
   end
 
   defp compose_query({:need_approval, _}, query) do
-    where(query, [u], u.approval_pending)
+    where(query, [u], u.is_approved == false)
   end
 
   defp compose_query({:unconfirmed, _}, query) do
-    where(query, [u], u.confirmation_pending)
+    where(query, [u], u.is_confirmed == false)
   end
 
   defp compose_query({:followers, %User{id: id}}, query) do

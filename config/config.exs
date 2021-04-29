@@ -63,23 +63,24 @@ config :pleroma, Pleroma.Upload,
   filters: [Pleroma.Upload.Filter.Dedupe],
   link_name: false,
   proxy_remote: false,
-  proxy_opts: [
-    redirect_on_failure: false,
-    max_body_length: 25 * 1_048_576,
-    http: [
-      follow_redirect: true,
-      pool: :upload
-    ]
-  ],
   filename_display_max_length: 30,
-  default_description: nil
+  default_description: nil,
+  base_url: nil
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  streaming_enabled: true,
-  public_endpoint: "https://s3.amazonaws.com"
+  bucket_namespace: nil,
+  truncated_namespace: nil,
+  streaming_enabled: true
+
+config :ex_aws, :s3,
+  # host: "s3.wasabisys.com", # required if not Amazon AWS
+  access_key_id: nil,
+  secret_access_key: nil,
+  # region: "us-east-1", # may be required for Amazon AWS
+  scheme: "https://"
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
@@ -391,6 +392,11 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
+config :pleroma, :mrf_hashtag,
+  sensitive: ["nsfw"],
+  reject: [],
+  federated_timeline_removal: []
+
 config :pleroma, :mrf_subchain, match_actor: %{}
 
 config :pleroma, :mrf_activity_expiration, days: 365
@@ -403,6 +409,8 @@ config :pleroma, :mrf_vocabulary,
 config :pleroma, :mrf_object_age,
   threshold: 604_800,
   actions: [:delist, :strip_followers]
+
+config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -438,7 +446,9 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
   headers: [],
   options: []
 
-config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: nil,
+  url_format: nil
 
 # Note: media preview proxy depends on media proxy to be enabled
 config :pleroma, :media_preview_proxy,
@@ -541,6 +551,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     token_expiration: 5,
+    filter_expiration: 1,
     backup: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
@@ -551,7 +562,7 @@ config :pleroma, Oban,
     scheduled_activities: 10,
     background: 5,
     remote_fetcher: 2,
-    attachments_cleanup: 5,
+    attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5
   ],
@@ -608,10 +619,7 @@ config :ueberauth,
        base_path: "/oauth",
        providers: ueberauth_providers
 
-config :pleroma,
-       :auth,
-       enforce_oauth_admin_scope_usage: true,
-       oauth_consumer_strategies: oauth_consumer_strategies
+config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
@@ -653,6 +661,10 @@ config :pleroma, :oauth2,
   clean_expired_tokens: false
 
 config :pleroma, :database, rum_enabled: false
+
+config :pleroma, :features, improved_hashtag_timeline: :auto
+
+config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
 
 config :pleroma, :env, Mix.env()
 
@@ -723,7 +735,10 @@ config :pleroma, :frontends,
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
         "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
-      "ref" => "master"
+      "ref" => "master",
+      "custom-http-headers" => [
+        {"service-worker-allowed", "/"}
+      ]
     },
     "admin-fe" => %{
       "name" => "admin-fe",
@@ -831,6 +846,11 @@ config :pleroma, Pleroma.User.Backup,
   purge_after_days: 30,
   limit_days: 7,
   dir: nil
+
+config :pleroma, ConcurrentLimiter, [
+  {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
+]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

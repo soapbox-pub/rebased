@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Status do
@@ -23,9 +23,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       application: %Schema{
         description: "The application used to post this status",
         type: :object,
+        nullable: true,
         properties: %{
           name: %Schema{type: :string},
-          website: %Schema{type: :string, nullable: true, format: :uri}
+          website: %Schema{type: :string, format: :uri}
         }
       },
       bookmarked: %Schema{type: :boolean, description: "Have you bookmarked this status?"},
@@ -193,6 +194,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           parent_visible: %Schema{
             type: :boolean,
             description: "`true` if the parent post is visible to the user"
+          },
+          pinned_at: %Schema{
+            type: :string,
+            format: "date-time",
+            nullable: true,
+            description:
+              "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
           }
         }
       },
@@ -256,7 +264,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "note" => "Tester Number 6",
         "pleroma" => %{
           "background_image" => nil,
-          "confirmation_pending" => false,
+          "is_confirmed" => true,
           "hide_favorites" => true,
           "hide_followers" => false,
           "hide_followers_count" => false,
@@ -291,7 +299,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "url" => "http://localhost:4001/users/nick6",
         "username" => "nick6"
       },
-      "application" => %{"name" => "Web", "website" => nil},
+      "application" => nil,
       "bookmarked" => false,
       "card" => nil,
       "content" => "foobar",

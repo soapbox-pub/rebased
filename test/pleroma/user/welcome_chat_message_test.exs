@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.WelcomeChatMessageTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User.WelcomeChatMessage
 
   import Pleroma.Factory
@@ -17,10 +16,10 @@ defmodule Pleroma.User.WelcomeChatMessageTest do
       welcome_user = insert(:user, name: "mewmew")
       user = insert(:user)
 
-      Config.put([:welcome, :chat_message, :enabled], true)
-      Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
+      clear_config([:welcome, :chat_message, :enabled], true)
+      clear_config([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
 
-      Config.put(
+      clear_config(
         [:welcome, :chat_message, :message],
         "Hello, welcome to Blob/Cat!"
       )
@@ -28,8 +27,10 @@ defmodule Pleroma.User.WelcomeChatMessageTest do
       {:ok, %Pleroma.Activity{} = activity} = WelcomeChatMessage.post_message(user)
 
       assert user.ap_id in activity.recipients
-      assert Pleroma.Object.normalize(activity).data["type"] == "ChatMessage"
-      assert Pleroma.Object.normalize(activity).data["content"] == "Hello, welcome to Blob/Cat!"
+      assert Pleroma.Object.normalize(activity, fetch: false).data["type"] == "ChatMessage"
+
+      assert Pleroma.Object.normalize(activity, fetch: false).data["content"] ==
+               "Hello, welcome to Blob/Cat!"
     end
   end
 end

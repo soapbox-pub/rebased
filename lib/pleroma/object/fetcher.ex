@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.Fetcher do
@@ -83,13 +83,13 @@ defmodule Pleroma.Object.Fetcher do
     with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
          {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
          {_, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
-         {_, nil} <- {:normalize, Object.normalize(data, false)},
+         {_, nil} <- {:normalize, Object.normalize(data, fetch: false)},
          params <- prepare_activity_params(data),
          {_, :ok} <- {:containment, Containment.contain_origin(id, params)},
          {_, {:ok, activity}} <-
            {:transmogrifier, Transmogrifier.handle_incoming(params, options)},
          {_, _data, %Object{} = object} <-
-           {:object, data, Object.normalize(activity, false)} do
+           {:object, data, Object.normalize(activity, fetch: false)} do
       {:ok, object}
     else
       {:allowed_depth, false} ->

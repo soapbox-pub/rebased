@@ -133,21 +133,19 @@
     mix pleroma.user sign_out <nickname>
     ```
 
-
-## Deactivate or activate a user
+## Activate a user
 
 === "OTP"
 
     ```sh
-     ./bin/pleroma_ctl user toggle_activated <nickname>
+     ./bin/pleroma_ctl user activate NICKNAME
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.user toggle_activated <nickname>
+    mix pleroma.user activate NICKNAME
     ```
-
 
 ## Deactivate a user and unsubscribes local users from the user
 

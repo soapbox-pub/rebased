@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Repo do
@@ -7,6 +7,8 @@ defmodule Pleroma.Repo do
     otp_app: :pleroma,
     adapter: Ecto.Adapters.Postgres,
     migration_timestamps: [type: :naive_datetime_usec]
+
+  use Ecto.Explain
 
   import Ecto.Query
   require Logger
@@ -63,8 +65,8 @@ defmodule Pleroma.Repo do
   iex> Pleroma.Repo.chunk_stream(Pleroma.Activity.Queries.by_actor(ap_id), 500, :batches)
   """
   @spec chunk_stream(Ecto.Query.t(), integer(), atom()) :: Enumerable.t()
-  def chunk_stream(query, chunk_size, returns_as \\ :one) do
-    # We don't actually need start and end funcitons of resource streaming,
+  def chunk_stream(query, chunk_size, returns_as \\ :one, query_options \\ []) do
+    # We don't actually need start and end functions of resource streaming,
     # but it seems to be the only way to not fetch records one-by-one and
     # have individual records be the elements of the stream, instead of
     # lists of records
@@ -76,7 +78,7 @@ defmodule Pleroma.Repo do
           |> order_by(asc: :id)
           |> where([r], r.id > ^last_id)
           |> limit(^chunk_size)
-          |> all()
+          |> all(query_options)
           |> case do
             [] ->
               {:halt, last_id}
