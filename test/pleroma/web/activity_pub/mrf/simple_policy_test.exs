@@ -272,6 +272,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert {:reject, _} = SimplePolicy.filter(announce)
     end
+
+    test "reject by URI object" do
+      clear_config([:mrf_simple, :reject], ["blocked.tld"])
+
+      announce = %{
+        "type" => "Announce",
+        "actor" => "https://okay.tld/users/alice",
+        "object" => "https://blocked.tld/activities/1"
+      }
+
+      assert {:reject, _} = SimplePolicy.filter(announce)
+    end
   end
 
   describe "when :followers_only" do

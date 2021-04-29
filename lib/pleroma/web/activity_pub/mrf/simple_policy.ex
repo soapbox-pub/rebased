@@ -181,7 +181,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_banner_removal(_actor_info, object), do: {:ok, object}
 
-  defp check_object(%{"object" => object} = activity) when is_map(object) do
+  defp check_object(%{"object" => object} = activity) do
     with {:ok, _object} <- filter(object) do
       {:ok, activity}
     end
@@ -232,6 +232,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_reject(actor_info, object),
          {:ok, object} <- check_avatar_removal(actor_info, object),
          {:ok, object} <- check_banner_removal(actor_info, object) do
+      {:ok, object}
+    else
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
+    end
+  end
+
+  def filter(object) when is_binary(object) do
+    uri = URI.parse(object)
+
+    with {:ok, object} <- check_accept(uri, object),
+         {:ok, object} <- check_reject(uri, object) do
       {:ok, object}
     else
       {:reject, nil} -> {:reject, "[SimplePolicy]"}
