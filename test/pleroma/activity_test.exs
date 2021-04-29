@@ -254,4 +254,26 @@ defmodule Pleroma.ActivityTest do
 
     assert %{id: ^id} = Activity.get_by_object_ap_id_with_object(obj_id)
   end
+
+  test "add_by_params_query/3" do
+    user = insert(:user)
+
+    note = insert(:note_activity, user: user)
+
+    insert(:add_activity, user: user, note: note)
+    insert(:add_activity, user: user, note: note)
+    insert(:add_activity, user: user)
+
+    assert Repo.aggregate(Activity, :count, :id) == 4
+
+    add_query =
+      Activity.add_by_params_query(note.data["object"], user.ap_id, user.featured_address)
+
+    assert Repo.aggregate(add_query, :count, :id) == 2
+
+    Repo.delete_all(add_query)
+    assert Repo.aggregate(add_query, :count, :id) == 0
+
+    assert Repo.aggregate(Activity, :count, :id) == 2
+  end
 end

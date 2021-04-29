@@ -534,7 +534,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => type} = data, _options)
-      when type in ~w{Like EmojiReact Announce} do
+      when type in ~w{Like EmojiReact Announce Add Remove} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -564,7 +564,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
-      {:error, {:validate_object, _}} = e ->
+      {:error, {:validate, _}} = e ->
         # Check if we have a create activity for this
         with {:ok, object_id} <- ObjectValidators.ObjectID.cast(data["object"]),
              %Activity{data: %{"actor" => actor}} <-
@@ -1000,6 +1000,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          {:ok, user} <- update_user(user, data) do
+      {:ok, _pid} = Task.start(fn -> ActivityPub.pinned_fetch_task(user) end)
       TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}
     else

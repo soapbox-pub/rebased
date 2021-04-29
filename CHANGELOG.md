@@ -6,13 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
 - The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
+- HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
+
+### Added
+
+- MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
 
 ## Unreleased (Patch)
 
 ### Fixed
 
 - Try to save exported ConfigDB settings (migrate_from_db) in the system temp directory if default location is not writable.
+- Uploading custom instance thumbnail via AdminAPI/AdminFE generated invalid URL to the image
+- Applying ConcurrentLimiter settings via AdminAPI
+- User login failures if their `notification_settings` were in a NULL state.
+- Mix task `pleroma.user delete_activities` query transaction timeout is now :infinity
 
 ## [2.3.0] - 2020-03-01
 
