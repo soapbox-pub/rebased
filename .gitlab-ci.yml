@@ -1,4 +1,4 @@
-image: elixir:1.9.4
+image: tribeshost/pleroma-ci:latest
 
 variables: &global_variables
   POSTGRES_DB: pleroma_test
@@ -22,13 +22,6 @@ stages:
   - deploy
   - release
   - docker
-
-before_script:
-  - apt-get update && apt-get install -y cmake
-  - mix local.hex --force
-  - mix local.rebar --force
-  - apt-get -qq update
-  - apt-get install -y libmagic-dev
 
 build:
   stage: build
@@ -71,7 +64,6 @@ unit-testing:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
-    - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
@@ -105,7 +97,6 @@ unit-testing:
 #     <<: *global_variables
 #     RUM_ENABLED: "true"
 #   script:
-#     - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
 #     - mix deps.get
 #     - mix ecto.create
 #     - mix ecto.migrate
