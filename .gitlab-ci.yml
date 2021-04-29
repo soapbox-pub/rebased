@@ -24,12 +24,16 @@ stages:
   - docker
 
 before_script:
+  - rm -rf _build/*/lib/pleroma
   - apt-get update && apt-get install -y cmake
   - mix local.hex --force
   - mix local.rebar --force
   - mix deps.get
   - apt-get -qq update
   - apt-get install -y libmagic-dev
+
+after_script:
+  - rm -rf _build/*/lib/pleroma
 
 build:
   stage: build
