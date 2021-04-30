@@ -18,4 +18,5 @@ Based on Pleroma 2.3.0-stable.
 - Twitter-like block behavior is now the default.
 
 ### Fixed
+- Domain blocks: reposts from a blocked domain are now correctly blocked.
 - Fixed some (not all) Markdown issues, such as broken trailing slash in links.
