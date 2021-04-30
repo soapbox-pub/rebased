@@ -16,3 +16,6 @@ Based on Pleroma 2.3.0-stable.
 
 ### Changed
 - Twitter-like block behavior is now the default.
+
+### Fixed
+- Fixed some (not all) Markdown issues, such as broken trailing slash in links.
