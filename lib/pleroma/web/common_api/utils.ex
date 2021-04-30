@@ -296,7 +296,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.mentions_escape(options)
     |> Formatter.markdown_to_html()
     |> Formatter.linkify(options)
-    |> Formatter.minify("text/html")
     |> Formatter.html_escape("text/html")
   end
 
