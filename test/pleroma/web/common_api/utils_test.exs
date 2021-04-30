@@ -209,10 +209,10 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
 
     test "remote mentions" do
-      mario = insert(:user, %{nickname: "mario@mushroom.kingdom", local: false})
-      luigi = insert(:user, %{nickname: "luigi@mushroom.kingdom", local: false})
+      mario = insert(:user, %{nickname: "mario@mushroom.world", local: false})
+      luigi = insert(:user, %{nickname: "luigi@mushroom.world", local: false})
 
-      code = "@mario@mushroom.kingdom @luigi@mushroom.kingdom yo what's up?"
+      code = "@mario@mushroom.world @luigi@mushroom.world yo what's up?"
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
