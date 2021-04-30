@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.OStatusController do
@@ -73,15 +73,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       cond do
         format in ["json", "activity+json"] ->
-          if activity.local do
-            %{data: %{"id" => redirect_url}} = Object.normalize(activity)
-            redirect(conn, external: redirect_url)
-          else
-            {:error, :not_found}
-          end
+          %{data: %{"id" => redirect_url}} = Object.normalize(activity, fetch: false)
+          redirect(conn, external: redirect_url)
 
         activity.data["type"] == "Create" ->
-          %Object{} = object = Object.normalize(activity)
+          %Object{} = object = Object.normalize(activity, fetch: false)
 
           RedirectController.redirector_with_meta(
             conn,
@@ -112,7 +108,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.is_public?(activity),
          {_, true} <- {:visible?, Visibility.visible_for_user?(activity, _reading_user = nil)},
-         %Object{} = object <- Object.normalize(activity),
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
          true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
       conn

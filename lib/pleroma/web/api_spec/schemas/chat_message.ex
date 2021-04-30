@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
@@ -52,7 +52,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
           title: %Schema{type: :string, description: "Title of linked resource"},
           description: %Schema{type: :string, description: "Description of preview"}
         }
-      }
+      },
+      unread: %Schema{type: :boolean, description: "Whether a message has been marked as read."}
     },
     example: %{
       "account_id" => "someflakeid",
@@ -69,7 +70,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
         }
       ],
       "id" => "14",
-      "attachment" => nil
+      "attachment" => nil,
+      "unread" => false
     }
   })
 end

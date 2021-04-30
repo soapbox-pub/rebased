@@ -60,6 +60,12 @@ frontend_options = [
     label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
+  },
+  %{
+    key: "custom-http-headers",
+    label: "Custom HTTP headers",
+    type: {:list, :string},
+    description: "The custom HTTP headers for the frontend"
   }
 ]
 
@@ -93,7 +99,8 @@ config :pleroma, :config_description, [
         key: :base_url,
         label: "Base URL",
         type: :string,
-        description: "Base URL for the uploads, needed if you use CDN",
+        description:
+          "Base URL for the uploads. Required if you use a CDN or host attachments under a different domain.",
         suggestions: [
           "https://cdn-host.com"
         ]
@@ -101,74 +108,10 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_remote,
         type: :boolean,
-        description:
-          "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected"
-      },
-      %{
-        key: :proxy_opts,
-        label: "Proxy Options",
-        type: :keyword,
-        description: "Options for Pleroma.ReverseProxy",
-        suggestions: [
-          redirect_on_failure: false,
-          max_body_length: 25 * 1_048_576,
-          http: [
-            follow_redirect: true,
-            pool: :media
-          ]
-        ],
-        children: [
-          %{
-            key: :redirect_on_failure,
-            type: :boolean,
-            description:
-              "Redirects the client to the real remote URL if there's any HTTP errors. " <>
-                "Any error during body processing will not be redirected as the response is chunked."
-          },
-          %{
-            key: :max_body_length,
-            type: :integer,
-            description:
-              "Limits the content length to be approximately the " <>
-                "specified length. It is validated with the `content-length` header and also verified when proxying."
-          },
-          %{
-            key: :http,
-            label: "HTTP",
-            type: :keyword,
-            description: "HTTP options",
-            children: [
-              %{
-                key: :adapter,
-                type: :keyword,
-                description: "Adapter specific options",
-                children: [
-                  %{
-                    key: :ssl_options,
-                    type: :keyword,
-                    label: "SSL Options",
-                    description: "SSL options for HTTP adapter",
-                    children: [
-                      %{
-                        key: :versions,
-                        type: {:list, :atom},
-                        description: "List of TLS versions to use",
-                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              %{
-                key: :proxy_url,
-                label: "Proxy URL",
-                type: [:string, :tuple],
-                description: "Proxy URL",
-                suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
-              }
-            ]
-          }
-        ]
+        description: """
+        Proxy requests to the remote uploader.\n
+        Useful if media upload endpoint is not internet accessible.
+        """
       },
       %{
         key: :filename_display_max_length,
@@ -214,17 +157,11 @@ config :pleroma, :config_description, [
         suggestions: ["pleroma"]
       },
       %{
-        key: :public_endpoint,
-        type: :string,
-        description: "S3 endpoint",
-        suggestions: ["https://s3.amazonaws.com"]
-      },
-      %{
         key: :truncated_namespace,
         type: :string,
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
-            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
+            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in Upload base_url."
       },
       %{
         key: :streaming_enabled,
@@ -279,252 +216,215 @@ config :pleroma, :config_description, [
     description: "Mailer-related settings",
     children: [
       %{
+        key: :enabled,
+        label: "Mailer Enabled",
+        type: :boolean
+      },
+      %{
         key: :adapter,
         type: :module,
         description:
-          "One of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters)," <>
-            " or Swoosh.Adapters.Local for in-memory mailbox",
+          "One of the mail adapters listed in [Swoosh documentation](https://hexdocs.pm/swoosh/Swoosh.html#module-adapters)",
         suggestions: [
+          Swoosh.Adapters.AmazonSES,
+          Swoosh.Adapters.Dyn,
+          Swoosh.Adapters.Gmail,
+          Swoosh.Adapters.Mailgun,
+          Swoosh.Adapters.Mailjet,
+          Swoosh.Adapters.Mandrill,
+          Swoosh.Adapters.Postmark,
           Swoosh.Adapters.SMTP,
           Swoosh.Adapters.Sendgrid,
           Swoosh.Adapters.Sendmail,
-          Swoosh.Adapters.Mandrill,
-          Swoosh.Adapters.Mailgun,
-          Swoosh.Adapters.Mailjet,
-          Swoosh.Adapters.Postmark,
-          Swoosh.Adapters.SparkPost,
-          Swoosh.Adapters.AmazonSES,
-          Swoosh.Adapters.Dyn,
           Swoosh.Adapters.SocketLabs,
-          Swoosh.Adapters.Gmail,
-          Swoosh.Adapters.Local
+          Swoosh.Adapters.SparkPost
         ]
-      },
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Allow/disallow send emails"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :relay,
         type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["smtp.gmail.com"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :username,
-        type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["pleroma"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :password,
-        type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["password"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :ssl,
-        label: "SSL",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :tls,
-        label: "TLS",
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :auth,
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
+        description: "Hostname or IP address",
+        suggestions: ["smtp.example.com"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :port,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [1025]
+        description: "SMTP port",
+        suggestions: ["1025"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :username,
+        type: :string,
+        description: "SMTP AUTH username",
+        suggestions: ["user@example.com"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :password,
+        type: :string,
+        description: "SMTP AUTH password",
+        suggestions: ["password"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :ssl,
+        label: "Use SSL",
+        type: :boolean,
+        description: "Use Implicit SSL/TLS. e.g. port 465"
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :tls,
+        label: "STARTTLS Mode",
+        type: {:dropdown, :atom},
+        description: "Explicit TLS (STARTTLS) enforcement mode",
+        suggestions: [:if_available, :always, :never]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :auth,
+        label: "AUTH Mode",
+        type: {:dropdown, :atom},
+        description: "SMTP AUTH enforcement mode",
+        suggestions: [:if_available, :always, :never]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :retries,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [5]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :no_mx_lookups,
-        label: "No MX lookups",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
+        description: "SMTP temporary (4xx) error retries",
+        suggestions: [1]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendgrid},
         key: :api_key,
-        label: "API key",
+        label: "SendGrid API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Sendgrid` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :cmd_path,
         type: :string,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
         suggestions: ["/usr/bin/sendmail"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :cmd_args,
         type: :string,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
         suggestions: ["-N delay,failure,success"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :qmail,
-        type: :boolean,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting"
+        label: "Qmail compat mode",
+        type: :boolean
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mandrill},
         key: :api_key,
-        label: "API key",
+        label: "Mandrill API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mandrill` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailgun},
         key: :api_key,
-        label: "API key",
+        label: "Mailgun API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailgun` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailgun},
         key: :domain,
         type: :string,
-        description: "`Swoosh.Adapters.Mailgun` adapter specific setting",
-        suggestions: ["pleroma.com"]
+        suggestions: ["YOUR_DOMAIN_NAME"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailjet},
         key: :api_key,
-        label: "API key",
+        label: "MailJet Public API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailjet` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["MJ_APIKEY_PUBLIC"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailjet},
         key: :secret,
+        label: "MailJet Private API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailjet` adapter specific setting",
-        suggestions: ["my-secret-key"]
+        suggestions: ["MJ_APIKEY_PRIVATE"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Postmark},
         key: :api_key,
-        label: "API key",
+        label: "Postmark API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Postmark` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["X-Postmark-Server-Token"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SparkPost},
         key: :api_key,
-        label: "API key",
+        label: "SparkPost API key",
         type: :string,
-        description: "`Swoosh.Adapters.SparkPost` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SparkPost},
         key: :endpoint,
         type: :string,
-        description: "`Swoosh.Adapters.SparkPost` adapter specific setting",
         suggestions: ["https://api.sparkpost.com/api/v1"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.AmazonSES},
-        key: :region,
-        type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["us-east-1", "us-east-2"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.AmazonSES},
         key: :access_key,
+        label: "AWS Access Key",
         type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["aws-access-key"]
+        suggestions: ["AWS_ACCESS_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.AmazonSES},
         key: :secret,
+        label: "AWS Secret Key",
         type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["aws-secret-key"]
+        suggestions: ["AWS_SECRET_KEY"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.AmazonSES},
+        key: :region,
+        label: "AWS Region",
+        type: :string,
+        suggestions: ["us-east-1", "us-east-2"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Dyn},
         key: :api_key,
-        label: "API key",
+        label: "Dyn API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Dyn` adapter specific setting",
-        suggestions: ["my-api-key"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SocketLabs},
-        key: :server_id,
-        type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
+        suggestions: ["apikey"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SocketLabs},
         key: :api_key,
-        label: "API key",
+        label: "SocketLabs API Key",
         type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
+        suggestions: ["INJECTION_API_KEY"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SocketLabs},
+        key: :server_id,
+        label: "Server ID",
+        type: :string,
+        suggestions: ["SERVER_ID"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Gmail},
         key: :access_token,
+        label: "GMail API Access Token",
         type: :string,
-        description: "`Swoosh.Adapters.Gmail` adapter specific setting"
-      }
-    ]
-  },
-  %{
-    group: :swoosh,
-    type: :group,
-    description: "`Swoosh.Adapters.Local` adapter specific settings",
-    children: [
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :serve_mailbox,
-        type: :boolean,
-        description: "Run the preview server together as part of your app"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :preview_port,
-        type: :integer,
-        description: "The preview server port",
-        suggestions: [4001]
+        suggestions: ["GMAIL_API_ACCESS_TOKEN"]
       }
     ]
   },
@@ -556,6 +456,42 @@ config :pleroma, :config_description, [
           "ssb",
           "xmpp"
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :features,
+    type: :group,
+    description: "Customizable features",
+    children: [
+      %{
+        key: :improved_hashtag_timeline,
+        type: {:dropdown, :atom},
+        description:
+          "Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).",
+        suggestions: [:auto, :enabled, :disabled]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :populate_hashtags_table,
+    type: :group,
+    description: "`populate_hashtags_table` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
       }
     ]
   },
@@ -1254,7 +1190,7 @@ config :pleroma, :config_description, [
             hideSitename: false,
             hideUserStats: false,
             loginMethod: "password",
-            logo: "/static/logo.png",
+            logo: "/static/logo.svg",
             logoMargin: ".1em",
             logoMask: true,
             minimalScopesMode: false,
@@ -1340,7 +1276,7 @@ config :pleroma, :config_description, [
             key: :logo,
             type: {:string, :image},
             description: "URL of the logo, defaults to Pleroma's logo",
-            suggestions: ["/static/logo.png"]
+            suggestions: ["/static/logo.svg"]
           },
           %{
             key: :logoMargin,
@@ -1550,7 +1486,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables proxying of remote media to the instance's proxy"
+        description: "Enables proxying of remote media via the instance's proxy"
       },
       %{
         key: :base_url,
@@ -1587,80 +1523,42 @@ config :pleroma, :config_description, [
       },
       %{
         key: :proxy_opts,
-        label: "Proxy Options",
+        label: "Advanced MediaProxy Options",
         type: :keyword,
-        description: "Options for Pleroma.ReverseProxy",
+        description: "Internal Pleroma.ReverseProxy settings",
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
-          max_read_duration: 30_000,
-          http: [
-            follow_redirect: true,
-            pool: :media
-          ]
+          max_read_duration: 30_000
         ],
         children: [
           %{
             key: :redirect_on_failure,
             type: :boolean,
-            description:
-              "Redirects the client to the real remote URL if there's any HTTP errors. " <>
-                "Any error during body processing will not be redirected as the response is chunked."
+            description: """
+            Redirects the client to the origin server upon encountering HTTP errors.\n
+            Note that files larger than Max Body Length will trigger an error. (e.g., Peertube videos)\n\n
+            **WARNING:** This setting will allow larger files to be accessed, but exposes the\n
+            IP addresses of your users to the other servers, bypassing the MediaProxy.
+            """
           },
           %{
             key: :max_body_length,
             type: :integer,
             description:
-              "Limits the content length to be approximately the " <>
-                "specified length. It is validated with the `content-length` header and also verified when proxying."
+              "Maximum file size (in bytes) allowed through the Pleroma MediaProxy cache."
           },
           %{
             key: :max_read_duration,
             type: :integer,
-            description: "Timeout (in milliseconds) of GET request to remote URI."
-          },
-          %{
-            key: :http,
-            label: "HTTP",
-            type: :keyword,
-            description: "HTTP options",
-            children: [
-              %{
-                key: :adapter,
-                type: :keyword,
-                description: "Adapter specific options",
-                children: [
-                  %{
-                    key: :ssl_options,
-                    type: :keyword,
-                    label: "SSL Options",
-                    description: "SSL options for HTTP adapter",
-                    children: [
-                      %{
-                        key: :versions,
-                        type: {:list, :atom},
-                        description: "List of TLS version to use",
-                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              %{
-                key: :proxy_url,
-                label: "Proxy URL",
-                type: [:string, :tuple],
-                description: "Proxy URL",
-                suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
-              }
-            ]
+            description: "Timeout (in milliseconds) of GET request to the remote URI."
           }
         ]
       },
       %{
         key: :whitelist,
         type: {:list, :string},
-        description: "List of hosts with scheme to bypass the mediaproxy",
+        description: "List of hosts with scheme to bypass the MediaProxy",
         suggestions: ["http://example.com"]
       }
     ]
@@ -1698,7 +1596,7 @@ config :pleroma, :config_description, [
         key: :min_content_length,
         type: :integer,
         description:
-          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
+          "Min content length (in bytes) to perform preview. Media smaller in size will be served without thumbnailing."
       }
     ]
   },
@@ -1736,13 +1634,21 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Pleroma.Web.MediaProxy.Invalidation.Script,
     type: :group,
-    description: "Script invalidate settings",
+    description: "Invalidation script settings",
     children: [
       %{
         key: :script_path,
         type: :string,
-        description: "Path to shell script. Which will run purge cache.",
+        description: "Path to executable script which will purge cached items.",
         suggestions: ["./installation/nginx-cache-purge.sh.example"]
+      },
+      %{
+        key: :url_format,
+        label: "URL Format",
+        type: :string,
+        description:
+          "Optional URL format preprocessing. Only required for Apache's htcacheclean.",
+        suggestions: [":htcacheclean"]
       }
     ]
   },
@@ -1953,14 +1859,8 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Oban,
     type: :group,
-    description: """
-    [Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.
-
-    Note: if you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1),
-      it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`,
-      otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings
-      (see https://github.com/sorentwo/oban/issues/52).
-    """,
+    description:
+      "[Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.",
     children: [
       %{
         key: :log,
@@ -2990,7 +2890,7 @@ config :pleroma, :config_description, [
         type: :integer,
         description:
           "Activity pub routes (except question activities). Default: `nil` (no expiration).",
-        suggestions: [30_000, nil]
+        suggestions: [nil]
       },
       %{
         key: :activity_pub_question,
@@ -3039,6 +2939,23 @@ config :pleroma, :config_description, [
             suggestions: ["..."]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf_follow_bot,
+    tab: :mrf,
+    related_policy: "Pleroma.Web.ActivityPub.MRF.FollowBotPolicy",
+    label: "MRF FollowBot Policy",
+    type: :group,
+    description: "Automatically follows newly discovered accounts.",
+    children: [
+      %{
+        key: :follower_nickname,
+        type: :string,
+        description: "The name of the bot account to use for following newly discovered users.",
+        suggestions: ["followbot"]
       }
     ]
   },
@@ -3326,6 +3243,12 @@ config :pleroma, :config_description, [
         type: :string,
         description: "S3 host",
         suggestions: ["s3.eu-central-1.amazonaws.com"]
+      },
+      %{
+        key: :region,
+        type: :string,
+        description: "S3 region (for AWS)",
+        suggestions: ["us-east-1"]
       }
     ]
   },
@@ -3422,9 +3345,9 @@ config :pleroma, :config_description, [
       },
       %{
         key: :ip_whitelist,
+        label: "IP Whitelist",
         type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
-        description:
-          "[Pleroma extension] If non-empty, restricts access to app metrics endpoint to specified IP addresses."
+        description: "Restrict access of app metrics endpoint to the specified IP addresses."
       },
       %{
         key: :auth,
@@ -3443,6 +3366,54 @@ config :pleroma, :config_description, [
         type: :atom,
         description: "App metrics endpoint output format.",
         suggestions: [:text, :protobuf]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: ConcurrentLimiter,
+    type: :group,
+    description: "Limits configuration for background tasks.",
+    children: [
+      %{
+        key: Pleroma.Web.RichMedia.Helpers,
+        type: :keyword,
+        description: "Concurrent limits configuration for getting RichMedia for activities.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
+      },
+      %{
+        key: Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
+        type: :keyword,
+        description: "Concurrent limits configuration for MediaProxyWarmingPolicy.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
       }
     ]
   }

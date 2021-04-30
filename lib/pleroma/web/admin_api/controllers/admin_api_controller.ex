@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
@@ -25,13 +25,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:accounts"], admin: true}
+    %{scopes: ["admin:read:accounts"]}
     when action in [:right_get, :show_user_credentials, :create_backup]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"], admin: true}
+    %{scopes: ["admin:write:accounts"]}
     when action in [
            :get_password_reset,
            :force_password_reset,
@@ -48,19 +48,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"], admin: true}
+    %{scopes: ["admin:read:statuses"]}
     when action in [:list_user_statuses, :list_instance_statuses]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"], admin: true}
+    %{scopes: ["admin:read:chats"]}
     when action in [:list_user_chats]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"], admin: true}
+    %{scopes: ["admin:read"]}
     when action in [
            :list_log,
            :stats,
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write"], admin: true}
+    %{scopes: ["admin:write"]}
     when action in [
            :restart,
            :resend_confirmation_email,
@@ -85,17 +85,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
-    activities =
+    result =
       ActivityPub.fetch_statuses(nil, %{
         instance: instance,
         limit: page_size,
         offset: (page - 1) * page_size,
-        exclude_reblogs: not with_reblogs
+        exclude_reblogs: not with_reblogs,
+        total: true
       })
 
     conn
     |> put_view(AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
   end
 
   def list_user_statuses(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = params) do
@@ -103,18 +104,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
-      {_, page_size} = page_params(params)
+      {page, page_size} = page_params(params)
 
-      activities =
+      result =
         ActivityPub.fetch_user_activities(user, nil, %{
           limit: page_size,
+          offset: (page - 1) * page_size,
           godmode: godmode,
-          exclude_reblogs: not with_reblogs
+          exclude_reblogs: not with_reblogs,
+          pagination_type: :offset,
+          total: true
         })
 
       conn
       |> put_view(AdminAPI.StatusView)
-      |> render("index.json", %{activities: activities, as: :activity})
+      |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
     else
       _ -> {:error, :not_found}
     end
@@ -402,7 +406,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     if Config.get(:configurable_from_database) do
       :ok
     else
-      {:error, "To use this endpoint you need to enable configuration from database."}
+      {:error, "You must enable configurable_from_database in your config file."}
     end
   end
 
@@ -415,7 +419,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
-    User.toggle_confirmation(users)
+    User.confirm(users)
 
     ModerationLog.insert_log(%{actor: admin, subject: users, action: "confirm_email"})
 

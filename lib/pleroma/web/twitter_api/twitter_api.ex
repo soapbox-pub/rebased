@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
@@ -45,7 +45,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     case User.register(changeset) do
       {:ok, user} ->
-        maybe_notify_admins(user)
         {:ok, user}
 
       {:error, changeset} ->
@@ -58,21 +57,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  defp maybe_notify_admins(%User{} = account) do
-    if Pleroma.Config.get([:instance, :account_approval_required]) do
-      User.all_superusers()
-      |> Enum.filter(fn user -> not is_nil(user.email) end)
-      |> Enum.each(fn superuser ->
-        superuser
-        |> Pleroma.Emails.AdminEmail.new_unapproved_registration(account)
-        |> Pleroma.Emails.Mailer.deliver_async()
-      end)
-    end
-  end
-
   def password_reset(nickname_or_email) do
     with true <- is_binary(nickname_or_email),
-         %User{local: true, email: email, deactivated: false} = user when is_binary(email) <-
+         %User{local: true, email: email, is_active: true} = user when is_binary(email) <-
            User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user

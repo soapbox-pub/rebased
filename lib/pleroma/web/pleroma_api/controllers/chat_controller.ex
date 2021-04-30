@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
@@ -35,10 +35,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:chats"]} when action in [:messages, :index, :show]
+    %{scopes: ["read:chats"]} when action in [:messages, :index, :index2, :show]
   )
 
-  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
              media_id: params[:media_id],
              idempotency_key: idempotency_key(conn)
            ),
-         message <- Object.normalize(activity, false),
+         message <- Object.normalize(activity, fetch: false),
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
       conn
       |> put_view(MessageReferenceView)
@@ -138,18 +138,30 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
+  def index(%{assigns: %{user: user}} = conn, params) do
+    chats =
+      index_query(user, params)
+      |> Repo.all()
+
+    render(conn, "index.json", chats: chats)
+  end
+
+  def index2(%{assigns: %{user: user}} = conn, params) do
+    chats =
+      index_query(user, params)
+      |> Pagination.fetch_paginated(params)
+
+    render(conn, "index.json", chats: chats)
+  end
+
+  defp index_query(%{id: user_id} = user, params) do
     exclude_users =
       User.cached_blocked_users_ap_ids(user) ++
         if params[:with_muted], do: [], else: User.cached_muted_users_ap_ids(user)
 
-    chats =
-      user_id
-      |> Chat.for_user_query()
-      |> where([c], c.recipient not in ^exclude_users)
-      |> Repo.all()
-
-    render(conn, "index.json", chats: chats)
+    user_id
+    |> Chat.for_user_query()
+    |> where([c], c.recipient not in ^exclude_users)
   end
 
   def create(%{assigns: %{user: user}} = conn, %{id: id}) do

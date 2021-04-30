@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceView do
@@ -23,7 +23,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Pleroma.Stats.get_stats(),
-      thumbnail: Pleroma.Web.base_url() <> Keyword.get(instance, :instance_thumbnail),
+      thumbnail:
+        URI.merge(Pleroma.Web.base_url(), Keyword.get(instance, :instance_thumbnail)) |> to_string,
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
@@ -45,6 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats])
         },
+        stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
     }

@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.User
@@ -215,6 +215,32 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     res_conn = get(conn, "/api/v1/statuses/#{direct.id}/context")
 
     assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
+  end
+
+  test "Removes a conversation", %{user: user_one, conn: conn} do
+    user_two = insert(:user)
+    token = insert(:oauth_token, user: user_one, scopes: ["read:statuses", "write:conversations"])
+
+    {:ok, _direct} = create_direct_message(user_one, [user_two])
+    {:ok, _direct} = create_direct_message(user_one, [user_two])
+
+    assert [%{"id" => conv1_id}, %{"id" => conv2_id}] =
+             conn
+             |> assign(:token, token)
+             |> get("/api/v1/conversations")
+             |> json_response_and_validate_schema(200)
+
+    assert %{} =
+             conn
+             |> assign(:token, token)
+             |> delete("/api/v1/conversations/#{conv1_id}")
+             |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^conv2_id}] =
+             conn
+             |> assign(:token, token)
+             |> get("/api/v1/conversations")
+             |> json_response_and_validate_schema(200)
   end
 
   defp create_direct_message(sender, recips) do

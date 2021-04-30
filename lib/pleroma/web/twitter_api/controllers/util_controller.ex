@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilController do
@@ -150,7 +150,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def disable_account(%{assigns: %{user: user}} = conn, params) do
     case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
       {:ok, user} ->
-        User.deactivate_async(user)
+        User.set_activation_async(user, false)
         json(conn, %{status: "success"})
 
       {:error, msg} ->

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
 
   test "renders a note activity" do
     note = insert(:note_activity)
-    object = Object.normalize(note)
+    object = Object.normalize(note, fetch: false)
 
     result = ObjectView.render("object.json", %{object: note})
 
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
 
   test "renders a like activity" do
     note = insert(:note_activity)
-    object = Object.normalize(note)
+    object = Object.normalize(note, fetch: false)
     user = insert(:user)
 
     {:ok, like_activity} = CommonAPI.favorite(user, note.id)
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
 
   test "renders an announce activity" do
     note = insert(:note_activity)
-    object = Object.normalize(note)
+    object = Object.normalize(note, fetch: false)
     user = insert(:user)
 
     {:ok, announce_activity} = CommonAPI.repeat(note.id, user)

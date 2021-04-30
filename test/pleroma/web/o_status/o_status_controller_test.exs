@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     test "redirects to /notice/id for html format", %{conn: conn} do
       note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
       [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
       url = "/objects/#{uuid}"
 
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     test "404s on private objects", %{conn: conn} do
       note_activity = insert(:direct_note_activity)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
       [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
 
       conn
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       conn: conn
     } do
       note_activity = insert(:note_activity)
-      expected_redirect_url = Object.normalize(note_activity).data["id"]
+      expected_redirect_url = Object.normalize(note_activity, fetch: false).data["id"]
 
       redirect_url =
         conn
@@ -144,13 +144,19 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       assert redirect_url == expected_redirect_url
     end
 
-    test "returns a 404 on remote notice when json requested", %{conn: conn} do
+    test "redirects to a proper object URL when json requested and the object is remote", %{
+      conn: conn
+    } do
       note_activity = insert(:note_activity, local: false)
+      expected_redirect_url = Object.normalize(note_activity, fetch: false).data["id"]
 
-      conn
-      |> put_req_header("accept", "application/activity+json")
-      |> get("/notice/#{note_activity.id}")
-      |> response(404)
+      redirect_url =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/notice/#{note_activity.id}")
+        |> redirected_to()
+
+      assert redirect_url == expected_redirect_url
     end
 
     test "500s when actor not found", %{conn: conn} do
@@ -230,7 +236,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   describe "GET /notice/:id/embed_player" do
     setup do
       note_activity = insert(:note_activity)
-      object = Pleroma.Object.normalize(note_activity)
+      object = Pleroma.Object.normalize(note_activity, fetch: false)
 
       object_data =
         Map.put(object.data, "attachment", [
@@ -287,7 +293,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     test "404s when attachment is empty", %{conn: conn} do
       note_activity = insert(:note_activity)
-      object = Pleroma.Object.normalize(note_activity)
+      object = Pleroma.Object.normalize(note_activity, fetch: false)
       object_data = Map.put(object.data, "attachment", [])
 
       object
@@ -301,7 +307,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     test "404s when attachment isn't audio or video", %{conn: conn} do
       note_activity = insert(:note_activity)
-      object = Pleroma.Object.normalize(note_activity)
+      object = Pleroma.Object.normalize(note_activity, fetch: false)
 
       object_data =
         Map.put(object.data, "attachment", [

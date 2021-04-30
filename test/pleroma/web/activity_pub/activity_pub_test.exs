@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -190,37 +190,191 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.accepts_chat_messages
     end
+
+    test "works for guppe actors" do
+      user_id = "https://gup.pe/u/bernie2020"
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^user_id} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/guppe-actor.json"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.name == "Bernie2020 group"
+      assert user.actor_type == "Group"
+    end
+
+    test "works for bridgy actors" do
+      user_id = "https://fed.brid.gy/jk.nipponalba.scot"
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^user_id} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/bridgy/actor.json"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.actor_type == "Person"
+
+      assert user.avatar == %{
+               "type" => "Image",
+               "url" => [%{"href" => "https://jk.nipponalba.scot/images/profile.jpg"}]
+             }
+
+      assert user.banner == %{
+               "type" => "Image",
+               "url" => [%{"href" => "https://jk.nipponalba.scot/images/profile.jpg"}]
+             }
+    end
+
+    test "fetches user featured collection" do
+      ap_id = "https://example.com/users/lain"
+
+      featured_url = "https://example.com/users/lain/collections/featured"
+
+      user_data =
+        "test/fixtures/users_mock/user.json"
+        |> File.read!()
+        |> String.replace("{{nickname}}", "lain")
+        |> Jason.decode!()
+        |> Map.put("featured", featured_url)
+        |> Jason.encode!()
+
+      object_id = Ecto.UUID.generate()
+
+      featured_data =
+        "test/fixtures/mastodon/collections/featured.json"
+        |> File.read!()
+        |> String.replace("{{domain}}", "example.com")
+        |> String.replace("{{nickname}}", "lain")
+        |> String.replace("{{object_id}}", object_id)
+
+      object_url = "https://example.com/objects/#{object_id}"
+
+      object_data =
+        "test/fixtures/statuses/note.json"
+        |> File.read!()
+        |> String.replace("{{object_id}}", object_id)
+        |> String.replace("{{nickname}}", "lain")
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^ap_id
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: user_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{
+          method: :get,
+          url: ^featured_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: featured_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      Tesla.Mock.mock_global(fn
+        %{
+          method: :get,
+          url: ^object_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: object_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(ap_id)
+      Process.sleep(50)
+
+      assert user.featured_address == featured_url
+      assert Map.has_key?(user.pinned_objects, object_url)
+
+      in_db = Pleroma.User.get_by_ap_id(ap_id)
+      assert in_db.featured_address == featured_url
+      assert Map.has_key?(user.pinned_objects, object_url)
+
+      assert %{data: %{"id" => ^object_url}} = Object.get_by_ap_id(object_url)
+    end
   end
 
   test "it fetches the appropriate tag-restricted posts" do
     user = insert(:user)
 
-    {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
+    {:ok, status_one} = CommonAPI.post(user, %{status: ". #TEST"})
     {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
-    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
+    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #Reject"})
 
-    fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
+    {:ok, status_four} = CommonAPI.post(user, %{status: ". #Any1 #any2"})
+    {:ok, status_five} = CommonAPI.post(user, %{status: ". #Any2 #any1"})
 
-    fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
+    for hashtag_timeline_strategy <- [:enabled, :disabled] do
+      clear_config([:features, :improved_hashtag_timeline], hashtag_timeline_strategy)
 
-    fetch_three =
-      ActivityPub.fetch_activities([], %{
-        type: "Create",
-        tag: ["test", "essais"],
-        tag_reject: ["reject"]
-      })
+      fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 
-    fetch_four =
-      ActivityPub.fetch_activities([], %{
-        type: "Create",
-        tag: ["test"],
-        tag_all: ["test", "reject"]
-      })
+      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["TEST", "essais"]})
 
-    assert fetch_one == [status_one, status_three]
-    assert fetch_two == [status_one, status_two, status_three]
-    assert fetch_three == [status_one, status_two]
-    assert fetch_four == [status_three]
+      fetch_three =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["test", "Essais"],
+          tag_reject: ["reject"]
+        })
+
+      fetch_four =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["test"],
+          tag_all: ["test", "REJECT"]
+        })
+
+      # Testing that deduplication (if needed) is done on DB (not Ecto) level; :limit is important
+      fetch_five =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["ANY1", "any2"],
+          limit: 2
+        })
+
+      fetch_six =
+        ActivityPub.fetch_activities([], %{
+          type: "Create",
+          tag: ["any1", "Any2"],
+          tag_all: [],
+          tag_reject: []
+        })
+
+      # Regression test: passing empty lists as filter options shouldn't affect the results
+      assert fetch_five == fetch_six
+
+      [fetch_one, fetch_two, fetch_three, fetch_four, fetch_five] =
+        Enum.map([fetch_one, fetch_two, fetch_three, fetch_four, fetch_five], fn statuses ->
+          Enum.map(statuses, fn s -> Repo.preload(s, object: :hashtags) end)
+        end)
+
+      assert fetch_one == [status_one, status_three]
+      assert fetch_two == [status_one, status_two, status_three]
+      assert fetch_three == [status_one, status_two]
+      assert fetch_four == [status_three]
+      assert fetch_five == [status_four, status_five]
+    end
   end
 
   describe "insertion" do
@@ -321,7 +475,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      object = Pleroma.Object.normalize(activity)
+      object = Pleroma.Object.normalize(activity, fetch: false)
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
@@ -344,7 +498,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert object = Object.normalize(activity)
+      assert object = Object.normalize(activity, fetch: false)
       assert is_binary(object.data["id"])
     end
   end
@@ -678,7 +832,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
-    assert object = Pleroma.Object.normalize(activity_two)
+    assert object = Pleroma.Object.normalize(activity_two, fetch: false)
 
     data = %{
       "actor" => friend.ap_id,
@@ -1061,15 +1215,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it sets the default description depending on the configuration", %{test_file: file} do
       clear_config([Pleroma.Upload, :default_description])
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], nil)
+      clear_config([Pleroma.Upload, :default_description], nil)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == ""
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], :filename)
+      clear_config([Pleroma.Upload, :default_description], :filename)
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "an_image.jpg"
 
-      Pleroma.Config.put([Pleroma.Upload, :default_description], "unnamed attachment")
+      clear_config([Pleroma.Upload, :default_description], "unnamed attachment")
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "unnamed attachment"
     end

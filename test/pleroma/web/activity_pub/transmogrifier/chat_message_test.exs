@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
@@ -134,7 +134,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
           ap_id: data["actor"],
           local: false,
           last_refreshed_at: DateTime.utc_now(),
-          deactivated: true
+          is_active: false
         )
 
       _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)

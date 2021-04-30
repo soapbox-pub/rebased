@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.OAuthView do
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.OAuth.OAuthView do
 
   def render("token.json", %{token: token} = opts) do
     response = %{
+      id: token.id,
       token_type: "Bearer",
       access_token: token.token,
       refresh_token: token.refresh_token,

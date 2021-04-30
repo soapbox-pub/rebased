@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
+  # TODO: Should not need Cachex
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
@@ -46,6 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["metadata"]["federation"]
     assert result["pleroma"]["metadata"]["fields_limits"]
     assert result["pleroma"]["vapid_public_key"]
+    assert result["pleroma"]["stats"]["mau"] == 0
 
     assert email == from_config_email
     assert thumbnail == from_config_thumbnail
@@ -56,7 +58,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     user = insert(:user, %{local: true})
 
     user2 = insert(:user, %{local: true})
-    {:ok, _user2} = User.deactivate(user2, !user2.deactivated)
+    {:ok, _user2} = User.set_activation(user2, false)
 
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})

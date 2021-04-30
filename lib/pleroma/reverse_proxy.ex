@@ -1,10 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
   @range_headers ~w(range if-range)
-  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
+  @keep_req_headers ~w(accept accept-encoding cache-control if-modified-since) ++
                       ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
@@ -16,6 +16,8 @@ defmodule Pleroma.ReverseProxy do
   @max_body_length :infinity
   @failed_request_ttl :timer.seconds(60)
   @methods ~w(GET HEAD)
+
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   def max_read_duration_default, do: @max_read_duration
   def default_cache_control_header, do: @default_cache_control_header
@@ -55,9 +57,6 @@ defmodule Pleroma.ReverseProxy do
     * `false` will add `content-disposition: attachment` to any request,
     * a list of whitelisted content types
 
-    * `keep_user_agent` will forward the client's user-agent to the upstream. This may be useful if the upstream is
-    doing content transformation (encoding, …) depending on the request.
-
   * `req_headers`, `resp_headers` additional headers.
 
   * `http`: options for [hackney](https://github.com/benoitc/hackney) or [gun](https://github.com/ninenines/gun).
@@ -82,8 +81,7 @@ defmodule Pleroma.ReverseProxy do
   import Plug.Conn
 
   @type option() ::
-          {:keep_user_agent, boolean}
-          | {:max_read_duration, :timer.time() | :infinity}
+          {:max_read_duration, :timer.time() | :infinity}
           | {:max_body_length, non_neg_integer() | :infinity}
           | {:failed_request_ttl, :timer.time() | :infinity}
           | {:http, []}
@@ -107,7 +105,7 @@ defmodule Pleroma.ReverseProxy do
         opts
       end
 
-    with {:ok, nil} <- Cachex.get(:failed_proxy_url_cache, url),
+    with {:ok, nil} <- @cachex.get(:failed_proxy_url_cache, url),
          {:ok, code, headers, client} <- request(method, url, req_headers, client_opts),
          :ok <-
            header_length_constraint(
@@ -289,17 +287,13 @@ defmodule Pleroma.ReverseProxy do
     end
   end
 
-  defp build_req_user_agent_header(headers, opts) do
-    if Keyword.get(opts, :keep_user_agent, false) do
-      List.keystore(
-        headers,
-        "user-agent",
-        0,
-        {"user-agent", Pleroma.Application.user_agent()}
-      )
-    else
-      headers
-    end
+  defp build_req_user_agent_header(headers, _opts) do
+    List.keystore(
+      headers,
+      "user-agent",
+      0,
+      {"user-agent", Pleroma.Application.user_agent()}
+    )
   end
 
   defp build_resp_headers(headers, opts) do
@@ -427,6 +421,6 @@ defmodule Pleroma.ReverseProxy do
         nil
       end
 
-    Cachex.put(:failed_proxy_url_cache, url, true, ttl: ttl)
+    @cachex.put(:failed_proxy_url_cache, url, true, ttl: ttl)
   end
 end

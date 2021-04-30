@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.ArticleHandlingTest do
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ArticleHandlingTest do
 
     {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
-    object = Object.normalize(data["object"])
+    object = Object.normalize(data["object"], fetch: false)
 
     assert object.data["name"] == "The end is near: Mastodon plans to drop OStatus support"
 
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ArticleHandlingTest do
     data = File.read!("test/fixtures/prismo-url-map.json") |> Jason.decode!()
 
     {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-    object = Object.normalize(data["object"])
+    object = Object.normalize(data["object"], fetch: false)
 
     assert object.data["url"] == "https://prismo.news/posts/83"
   end

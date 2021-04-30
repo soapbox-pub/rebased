@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationView do
@@ -139,7 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   end
 
   defp put_chat_message(response, activity, reading_user, opts) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
     author = User.get_cached_by_ap_id(object.data["actor"])
     chat = Pleroma.Chat.get(reading_user.id, author.ap_id)
     cm_ref = MessageReference.for_chat_and_object(chat, object)

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.TimelineController do
@@ -51,6 +51,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:reply_filtering_user, user)
       |> Map.put(:announce_filtering_user, user)
       |> Map.put(:user, user)
+      |> Map.put(:local_only, params[:local])
+      |> Map.delete(:local)
 
     activities =
       [user.ap_id | User.following(user)]
@@ -131,34 +133,25 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   end
 
   defp hashtag_fetching(params, user, local_only) do
-    tags =
+    # Note: not sanitizing tag options at this stage (may be mix-cased, have duplicates etc.)
+    tags_any =
       [params[:tag], params[:any]]
       |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(&String.downcase/1)
+      |> Enum.filter(& &1)
 
-    tag_all =
-      params
-      |> Map.get(:all, [])
-      |> Enum.map(&String.downcase/1)
+    tag_all = Map.get(params, :all, [])
+    tag_reject = Map.get(params, :none, [])
 
-    tag_reject =
-      params
-      |> Map.get(:none, [])
-      |> Enum.map(&String.downcase/1)
-
-    _activities =
-      params
-      |> Map.put(:type, "Create")
-      |> Map.put(:local_only, local_only)
-      |> Map.put(:blocking_user, user)
-      |> Map.put(:muting_user, user)
-      |> Map.put(:user, user)
-      |> Map.put(:tag, tags)
-      |> Map.put(:tag_all, tag_all)
-      |> Map.put(:tag_reject, tag_reject)
-      |> ActivityPub.fetch_public_activities()
+    params
+    |> Map.put(:type, "Create")
+    |> Map.put(:local_only, local_only)
+    |> Map.put(:blocking_user, user)
+    |> Map.put(:muting_user, user)
+    |> Map.put(:user, user)
+    |> Map.put(:tag, tags_any)
+    |> Map.put(:tag_all, tag_all)
+    |> Map.put(:tag_reject, tag_reject)
+    |> ActivityPub.fetch_public_activities()
   end
 
   # GET /api/v1/timelines/tag/:tag
@@ -190,6 +183,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:blocking_user, user)
         |> Map.put(:user, user)
         |> Map.put(:muting_user, user)
+        |> Map.put(:local_only, params[:local])
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).

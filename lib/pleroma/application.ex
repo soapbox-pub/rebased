@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Application do
@@ -14,7 +14,7 @@ defmodule Pleroma.Application do
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
-  @env Mix.env()
+  @mix_env Mix.env()
 
   def name, do: @name
   def version, do: @version
@@ -92,20 +92,18 @@ defmodule Pleroma.Application do
         Pleroma.Web.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
-        http_children(adapter, @env) ++
+        http_children(adapter, @mix_env) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
           {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
-          {Oban, Config.get(Oban)}
+          {Oban, Config.get(Oban)},
+          Pleroma.Web.Endpoint
         ] ++
-        task_children(@env) ++
-        dont_run_in_test(@env) ++
+        task_children(@mix_env) ++
+        dont_run_in_test(@mix_env) ++
         chat_child(chat_enabled?()) ++
-        [
-          Pleroma.Web.Endpoint,
-          Pleroma.Gopher.Server
-        ]
+        [Pleroma.Gopher.Server]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
@@ -145,7 +143,7 @@ defmodule Pleroma.Application do
           raise "Invalid custom modules"
 
         {:ok, modules, _warnings} ->
-          if @env != :test do
+          if @mix_env != :test do
             Enum.each(modules, fn mod ->
               Logger.info("Custom module loaded: #{inspect(mod)}")
             end)
@@ -230,6 +228,12 @@ defmodule Pleroma.Application do
          keys: :duplicate,
          partitions: System.schedulers_online()
        ]}
+    ] ++ background_migrators()
+  end
+
+  defp background_migrators do
+    [
+      Pleroma.Migrators.HashtagsTableMigrator
     ]
   end
 
@@ -297,7 +301,16 @@ defmodule Pleroma.Application do
 
   @spec limiters_setup() :: :ok
   def limiters_setup do
-    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.MediaProxy]
-    |> Enum.each(&ConcurrentLimiter.new(&1, 1, 0))
+    config = Config.get(ConcurrentLimiter, [])
+
+    [Pleroma.Web.RichMedia.Helpers, Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy]
+    |> Enum.each(fn module ->
+      mod_config = Keyword.get(config, module, [])
+
+      max_running = Keyword.get(mod_config, :max_running, 5)
+      max_waiting = Keyword.get(mod_config, :max_waiting, 5)
+
+      ConcurrentLimiter.new(module, max_running, max_waiting)
+    end)
   end
 end

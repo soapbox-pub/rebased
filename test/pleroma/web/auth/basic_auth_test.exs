@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.BasicAuthTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   import Pleroma.Factory
 
@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Auth.BasicAuthTest do
     conn: conn
   } do
     user = insert(:user)
-    assert Pbkdf2.verify_pass("test", user.password_hash)
+    assert Pleroma.Password.Pbkdf2.verify_pass("test", user.password_hash)
 
     basic_auth_contents =
       (URI.encode_www_form(user.nickname) <> ":" <> URI.encode_www_form("test"))

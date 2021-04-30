@@ -1,14 +1,15 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.AdminAPI.ModerationLogViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Web.AdminAPI.ModerationLogView
 
   describe "renders `report_note_delete` log messages" do
     setup do
       log1 = %Pleroma.ModerationLog{
+        id: 1,
         data: %{
           "action" => "report_note_delete",
           "actor" => %{"id" => "A1I7G8", "nickname" => "admin", "type" => "user"},
@@ -21,6 +22,7 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogViewTest do
       }
 
       log2 = %Pleroma.ModerationLog{
+        id: 2,
         data: %{
           "action" => "report_note_delete",
           "actor" => %{"id" => "A1I7G8", "nickname" => "admin", "type" => "user"},
@@ -42,6 +44,7 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogViewTest do
              ) == %{
                items: [
                  %{
+                   id: 1,
                    data: %{
                      "action" => "report_note_delete",
                      "actor" => %{"id" => "A1I7G8", "nickname" => "admin", "type" => "user"},
@@ -59,6 +62,7 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogViewTest do
                    time: 1_605_622_400
                  },
                  %{
+                   id: 2,
                    data: %{
                      "action" => "report_note_delete",
                      "actor" => %{"id" => "A1I7G8", "nickname" => "admin", "type" => "user"},
@@ -82,6 +86,7 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogViewTest do
 
     test "renders `report_note_delete` log message", %{log1: log} do
       assert ModerationLogView.render("show.json", %{log_entry: log}) == %{
+               id: 1,
                data: %{
                  "action" => "report_note_delete",
                  "actor" => %{"id" => "A1I7G8", "nickname" => "admin", "type" => "user"},

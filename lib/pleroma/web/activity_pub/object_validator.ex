@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidator do
@@ -9,12 +9,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   the system.
   """
 
+  @behaviour Pleroma.Web.ActivityPub.ObjectValidator.Validating
+
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator
@@ -32,39 +35,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
-  @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
+  @impl true
   def validate(object, meta)
-
-  def validate(%{"type" => type} = object, meta)
-      when type in ~w[Accept Reject] do
-    with {:ok, object} <-
-           object
-           |> AcceptRejectValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "Event"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> EventValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "Follow"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> FollowValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
 
   def validate(%{"type" => "Block"} = block_activity, meta) do
     with {:ok, block_activity} <-
@@ -82,16 +54,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         end
 
       {:ok, block_activity, meta}
-    end
-  end
-
-  def validate(%{"type" => "Update"} = update_activity, meta) do
-    with {:ok, update_activity} <-
-           update_activity
-           |> UpdateValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      update_activity = stringify_keys(update_activity)
-      {:ok, update_activity, meta}
     end
   end
 
@@ -117,76 +79,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
          {:ok, object} <- Ecto.Changeset.apply_action(cng, :insert) do
       object = stringify_keys(object)
       meta = Keyword.put(meta, :do_not_federate, do_not_federate)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "Like"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> LikeValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "ChatMessage"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> ChatMessageValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "Question"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> QuestionValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => type} = object, meta) when type in ~w[Audio Video] do
-    with {:ok, object} <-
-           object
-           |> AudioVideoValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "Article"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> ArticleNoteValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "Answer"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> AnswerValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
-    end
-  end
-
-  def validate(%{"type" => "EmojiReact"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> EmojiReactValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
@@ -222,10 +114,60 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
-  def validate(%{"type" => "Announce"} = object, meta) do
+  def validate(%{"type" => type} = object, meta)
+      when type in ~w[Event Question Audio Video Article] do
+    validator =
+      case type do
+        "Event" -> EventValidator
+        "Question" -> QuestionValidator
+        "Audio" -> AudioVideoValidator
+        "Video" -> AudioVideoValidator
+        "Article" -> ArticleNoteValidator
+      end
+
     with {:ok, object} <-
            object
-           |> AnnounceValidator.cast_and_validate()
+           |> validator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+
+      # Insert copy of hashtags as strings for the non-hashtag table indexing
+      tag = (object["tag"] || []) ++ Object.hashtags(%Object{data: object})
+      object = Map.put(object, "tag", tag)
+
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => type} = object, meta)
+      when type in ~w[Accept Reject Follow Update Like EmojiReact Announce
+      ChatMessage Answer] do
+    validator =
+      case type do
+        "Accept" -> AcceptRejectValidator
+        "Reject" -> AcceptRejectValidator
+        "Follow" -> FollowValidator
+        "Update" -> UpdateValidator
+        "Like" -> LikeValidator
+        "EmojiReact" -> EmojiReactValidator
+        "Announce" -> AnnounceValidator
+        "ChatMessage" -> ChatMessageValidator
+        "Answer" -> AnswerValidator
+      end
+
+    with {:ok, object} <-
+           object
+           |> validator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => type} = object, meta) when type in ~w(Add Remove) do
+    with {:ok, object} <-
+           object
+           |> AddRemoveValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object)
       {:ok, object, meta}
@@ -258,7 +200,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
-  # is_struct/1 isn't present in Elixir 1.8.x
+  # is_struct/1 appears in Elixir 1.11
   def stringify_keys(%{__struct__: _} = object) do
     object
     |> Map.from_struct()
@@ -286,7 +228,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def fetch_actor_and_object(object) do
     fetch_actor(object)
-    Object.normalize(object["object"], true)
+    Object.normalize(object["object"], fetch: true)
     :ok
   end
 end

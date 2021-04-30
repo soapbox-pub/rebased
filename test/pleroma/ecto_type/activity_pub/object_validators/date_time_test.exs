@@ -1,10 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.DateTimeTest do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   test "it validates an xsd:Datetime" do
     valid_strings = [

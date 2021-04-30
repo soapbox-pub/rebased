@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.RelayController do
@@ -15,11 +15,11 @@ defmodule Pleroma.Web.AdminAPI.RelayController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:follows"], admin: true}
+    %{scopes: ["admin:write:follows"]}
     when action in [:follow, :unfollow]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read"], admin: true} when action == :index)
+  plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :index)
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 

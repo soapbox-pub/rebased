@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Ir.Topics do
@@ -8,7 +8,7 @@ defmodule Pleroma.Activity.Ir.Topics do
 
   def get_activity_topics(activity) do
     activity
-    |> Object.normalize()
+    |> Object.normalize(fetch: false)
     |> generate_topics(activity)
     |> List.flatten()
   end
@@ -48,13 +48,11 @@ defmodule Pleroma.Activity.Ir.Topics do
     tags
   end
 
-  defp hashtags_to_topics(%{data: %{"tag" => tags}}) do
-    tags
-    |> Enum.filter(&is_bitstring(&1))
-    |> Enum.map(fn tag -> "hashtag:" <> tag end)
+  defp hashtags_to_topics(object) do
+    object
+    |> Object.hashtags()
+    |> Enum.map(fn hashtag -> "hashtag:" <> hashtag end)
   end
-
-  defp hashtags_to_topics(_), do: []
 
   defp remote_topics(%{local: true}), do: []
 

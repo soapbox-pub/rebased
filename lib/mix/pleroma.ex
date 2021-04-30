@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Pleroma do
@@ -12,7 +12,9 @@ defmodule Mix.Pleroma do
     :cachex,
     :flake_id,
     :swoosh,
-    :timex
+    :timex,
+    :fast_html,
+    :oban
   ]
   @cachex_children ["object", "user", "scrubber", "web_resp"]
   @doc "Common functions to be reused in mix tasks"
@@ -37,12 +39,23 @@ defmodule Mix.Pleroma do
 
     Enum.each(apps, &Application.ensure_all_started/1)
 
+    oban_config = [
+      crontab: [],
+      repo: Pleroma.Repo,
+      log: false,
+      queues: [],
+      plugins: []
+    ]
+
     children =
       [
         Pleroma.Repo,
+        Pleroma.Emoji,
         {Pleroma.Config.TransferTask, false},
         Pleroma.Web.Endpoint,
-        {Oban, Pleroma.Config.get(Oban)}
+        {Oban, oban_config},
+        {Majic.Pool,
+         [name: Pleroma.MajicPool, pool_size: Pleroma.Config.get([:majic_pool, :size], 2)]}
       ] ++
         http_children(adapter)
 

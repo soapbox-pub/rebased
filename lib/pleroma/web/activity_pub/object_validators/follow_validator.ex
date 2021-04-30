@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator do
@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator do
     |> cast(data, __schema__(:fields))
   end
 
-  def validate_data(cng) do
+  defp validate_data(cng) do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Follow"])

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.ConversationOperation do
@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.ConversationOperation do
   def index_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Show conversation",
+      summary: "List of conversations",
       security: [%{"oAuth" => ["read:statuses"]}],
       operationId: "ConversationController.index",
       parameters: [
@@ -44,18 +44,33 @@ defmodule Pleroma.Web.ApiSpec.ConversationOperation do
   def mark_as_read_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Mark as read",
+      summary: "Mark conversation as read",
       operationId: "ConversationController.mark_as_read",
-      parameters: [
-        Operation.parameter(:id, :path, :string, "Conversation ID",
-          example: "123",
-          required: true
-        )
-      ],
+      parameters: [id_param()],
       security: [%{"oAuth" => ["write:conversations"]}],
       responses: %{
         200 => Operation.response("Conversation", "application/json", Conversation)
       }
     }
+  end
+
+  def delete_operation do
+    %Operation{
+      tags: ["Conversations"],
+      summary: "Remove conversation",
+      operationId: "ConversationController.delete",
+      parameters: [id_param()],
+      security: [%{"oAuth" => ["write:conversations"]}],
+      responses: %{
+        200 => empty_object_response()
+      }
+    }
+  end
+
+  def id_param do
+    Operation.parameter(:id, :path, :string, "Conversation ID",
+      example: "123",
+      required: true
+    )
   end
 end

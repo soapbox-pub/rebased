@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   import Pleroma.Factory
 
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       {:ok, message} =
         CommonAPI.post_chat_message(user, recipient, "Hello darkness my old friend")
 
-      object = Object.normalize(message, false)
+      object = Object.normalize(message, fetch: false)
 
       chat = Chat.get(user.id, recipient.ap_id)
       recipient_chat = Chat.get(recipient.id, user.ap_id)
@@ -143,7 +143,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       recipient = insert(:user)
 
       {:ok, message} = CommonAPI.post_chat_message(user, recipient, "Yo")
-      object = Object.normalize(message, false)
+      object = Object.normalize(message, fetch: false)
       chat = Chat.get(user.id, recipient.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
 
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       recipient = insert(:user)
 
       {:ok, message} = CommonAPI.post_chat_message(user, recipient, "Yo")
-      object = Object.normalize(message, false)
+      object = Object.normalize(message, fetch: false)
       chat = Chat.get(user.id, recipient.ap_id)
       cm_ref = MessageReference.for_chat_and_object(chat, object)
 

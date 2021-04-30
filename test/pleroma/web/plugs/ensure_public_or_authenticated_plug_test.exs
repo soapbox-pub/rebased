@@ -1,18 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlugTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
 
   setup do: clear_config([:instance, :public])
 
   test "it halts if not public and no user is assigned", %{conn: conn} do
-    Config.put([:instance, :public], false)
+    clear_config([:instance, :public], false)
 
     conn =
       conn
@@ -23,7 +22,7 @@ defmodule Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlugTest do
   end
 
   test "it continues if public", %{conn: conn} do
-    Config.put([:instance, :public], true)
+    clear_config([:instance, :public], true)
 
     ret_conn =
       conn
@@ -33,7 +32,7 @@ defmodule Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlugTest do
   end
 
   test "it continues if a user is assigned, even if not public", %{conn: conn} do
-    Config.put([:instance, :public], false)
+    clear_config([:instance, :public], false)
 
     conn =
       conn

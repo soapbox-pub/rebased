@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.IdempotencyPlug do
@@ -7,6 +7,8 @@ defmodule Pleroma.Web.Plugs.IdempotencyPlug do
   import Plug.Conn
 
   @behaviour Plug
+
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   @impl true
   def init(opts), do: opts
@@ -25,7 +27,7 @@ defmodule Pleroma.Web.Plugs.IdempotencyPlug do
   def call(conn, _), do: conn
 
   def process_request(conn, key) do
-    case Cachex.get(:idempotency_cache, key) do
+    case @cachex.get(:idempotency_cache, key) do
       {:ok, nil} ->
         cache_resposnse(conn, key)
 
@@ -43,7 +45,7 @@ defmodule Pleroma.Web.Plugs.IdempotencyPlug do
       content_type = get_content_type(conn)
 
       record = {request_id, content_type, conn.status, conn.resp_body}
-      {:ok, _} = Cachex.put(:idempotency_cache, key, record)
+      {:ok, _} = @cachex.put(:idempotency_cache, key, record)
 
       conn
       |> put_resp_header("idempotency-key", key)

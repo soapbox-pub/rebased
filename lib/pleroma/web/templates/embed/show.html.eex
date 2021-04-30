@@ -6,7 +6,7 @@
       </div>
       <span class="display-name" style="padding-left: 0.5em;">
         <bdi><%= raw (@author.name |> Formatter.emojify(@author.emoji)) %></bdi>
-        <span class="nickname"><%= full_nickname(@author) %></span>
+        <span class="nickname">@<%= full_nickname(@author) %></span>
       </span>
     </a>
   </div>

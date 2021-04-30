@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.Containment do
@@ -69,6 +69,14 @@ defmodule Pleroma.Object.Containment do
     other_uri = URI.parse(other_id)
 
     compare_uris(id_uri, other_uri)
+  end
+
+  # Mastodon pin activities don't have an id, so we check the object field, which will be pinned.
+  def contain_origin_from_id(id, %{"object" => object}) when is_binary(object) do
+    id_uri = URI.parse(id)
+    object_uri = URI.parse(object)
+
+    compare_uris(id_uri, object_uri)
   end
 
   def contain_origin_from_id(_id, _data), do: :error

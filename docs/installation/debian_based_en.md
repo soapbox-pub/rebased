@@ -54,7 +54,7 @@ sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
 ```
 
-### Optional packages: [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md)
+### Optional packages: [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md)
 
 ```shell
 sudo apt install imagemagick ffmpeg libimage-exiftool-perl
@@ -98,7 +98,7 @@ sudo -Hu pleroma mix deps.get
 * Check the configuration and if all looks right, rename it, so Pleroma will load it (`prod.secret.exs` for productive instance, `dev.secret.exs` for development instances):
 
 ```shell
-mv config/{generated_config.exs,prod.secret.exs}
+sudo -Hu pleroma mv config/{generated_config.exs,prod.secret.exs}
 ```
 
 

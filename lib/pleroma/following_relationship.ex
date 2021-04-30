@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.FollowingRelationship do
@@ -152,7 +152,7 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], f in assoc(r, :follower))
     |> where([r], r.state == ^:follow_pending)
     |> where([r], r.following_id == ^id)
-    |> where([r, f], f.deactivated != true)
+    |> where([r, f], f.is_active == true)
     |> select([r, f], f)
     |> Repo.all()
   end

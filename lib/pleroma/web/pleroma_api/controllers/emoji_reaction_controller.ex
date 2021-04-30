@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
     with true <- Pleroma.Config.get([:instance, :show_reactions]),
          %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => reactions}} when is_list(reactions) <-
-           Object.normalize(activity) do
+           Object.normalize(activity, fetch: false) do
       reactions =
         reactions
         |> filter(params)

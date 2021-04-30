@@ -1,15 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Ir.TopicsTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Object
 
   require Pleroma.Constants
+
+  import Mock
 
   describe "poll answer" do
     test "produce no topics" do
@@ -77,14 +79,13 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
       refute Enum.member?(topics, "public:local:media")
     end
 
-    test "converts tags to hash tags", %{activity: %{object: %{data: data} = object} = activity} do
-      tagged_data = Map.put(data, "tag", ["foo", "bar"])
-      activity = %{activity | object: %{object | data: tagged_data}}
+    test "converts tags to hash tags", %{activity: activity} do
+      with_mock(Object, [:passthrough], hashtags: fn _ -> ["foo", "bar"] end) do
+        topics = Topics.get_activity_topics(activity)
 
-      topics = Topics.get_activity_topics(activity)
-
-      assert Enum.member?(topics, "hashtag:foo")
-      assert Enum.member?(topics, "hashtag:bar")
+        assert Enum.member?(topics, "hashtag:foo")
+        assert Enum.member?(topics, "hashtag:bar")
+      end
     end
 
     test "only converts strings to hash tags", %{

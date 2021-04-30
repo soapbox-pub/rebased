@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
              %{"name" => "foo1", "value" => "updated"}
            ]
 
-    Pleroma.Config.put([:instance, :max_remote_account_fields], 2)
+    clear_config([:instance, :max_remote_account_fields], 2)
 
     update_data =
       update_data

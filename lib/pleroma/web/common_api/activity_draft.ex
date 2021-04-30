@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
 
@@ -179,17 +180,44 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp sensitive(draft) do
-    sensitive = draft.params[:sensitive] || Enum.member?(draft.tags, {"#nsfw", "nsfw"})
+    sensitive = draft.params[:sensitive]
     %__MODULE__{draft | sensitive: sensitive}
   end
 
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
+    # Sometimes people create posts with subject containing emoji,
+    # since subjects are usually copied this will result in a broken
+    # subject when someone replies from an instance that does not have
+    # the emoji or has it under different shortcode. This is an attempt
+    # to mitigate this by copying emoji from inReplyTo if they are present
+    # in the subject.
+    summary_emoji =
+      with %Activity{} <- draft.in_reply_to,
+           %Object{data: %{"tag" => [_ | _] = tag}} <- Object.normalize(draft.in_reply_to) do
+        Enum.reduce(tag, %{}, fn
+          %{"type" => "Emoji", "name" => name, "icon" => %{"url" => url}}, acc ->
+            if String.contains?(draft.summary, name) do
+              Map.put(acc, name, url)
+            else
+              acc
+            end
+
+          _, acc ->
+            acc
+        end)
+      else
+        _ -> %{}
+      end
+
+    emoji = Map.merge(emoji, summary_emoji)
+
     object =
       Utils.make_note_data(draft)
       |> Map.put("emoji", emoji)
       |> Map.put("source", draft.status)
+      |> Map.put("generator", draft.params[:generator])
 
     %__MODULE__{draft | object: object}
   end

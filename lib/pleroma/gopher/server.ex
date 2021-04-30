@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gopher.Server do
@@ -76,7 +76,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
     |> Enum.map(fn activity ->
       user = User.get_cached_by_ap_id(activity.data["actor"])
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
       like_count = object.data["like_count"] || 0
       announcement_count = object.data["announcement_count"] || 0
 

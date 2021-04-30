@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.SearchTest do
@@ -7,7 +7,7 @@ defmodule Pleroma.Activity.SearchTest do
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   test "it finds something" do
     user = insert(:user)

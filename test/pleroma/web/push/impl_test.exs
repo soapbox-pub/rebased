@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push.ImplTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
 
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.Push.ImplTest do
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(
              %{
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     user = insert(:user, nickname: "Bob")
     other_user = insert(:user)
     {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
-    object = Object.normalize(activity, false)
+    object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "follow"}, user, object) ==
              "@Bob has followed you"
@@ -156,7 +156,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       })
 
     {:ok, announce_activity} = CommonAPI.repeat(activity.id, user)
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==
              "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
@@ -175,7 +175,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       })
 
     {:ok, activity} = CommonAPI.favorite(user, activity.id)
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "favourite"}, user, object) ==
              "@Bob has favorited your post"
@@ -193,7 +193,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       })
 
     {:ok, activity} = CommonAPI.react_with_emoji(activity.id, user, "👍")
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     assert Impl.format_body(%{activity: activity, type: "pleroma:emoji_reaction"}, user, object) ==
              "@Bob reacted with 👍"
@@ -221,7 +221,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       recipient = insert(:user)
 
       {:ok, chat} = CommonAPI.post_chat_message(user, recipient, "hey")
-      object = Object.normalize(chat, false)
+      object = Object.normalize(chat, fetch: false)
       [notification] = Notification.for_user(recipient)
 
       res = Impl.build_content(notification, user, object)
@@ -245,7 +245,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
 
       {:ok, chat} = CommonAPI.post_chat_message(user, recipient, nil, media_id: upload.id)
-      object = Object.normalize(chat, false)
+      object = Object.normalize(chat, fetch: false)
       [notification] = Notification.for_user(recipient)
 
       res = Impl.build_content(notification, user, object)
@@ -271,7 +271,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       notif = insert(:notification, user: user2, activity: activity)
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert Impl.build_content(notif, actor, object) == %{
                body: "New Direct Message"
@@ -286,7 +286,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       notif = insert(:notification, user: user2, activity: activity, type: "mention")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert Impl.build_content(notif, actor, object) == %{
                body: "New Mention"
@@ -297,7 +297,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert Impl.build_content(notif, actor, object) == %{
                body: "New Favorite"
@@ -320,7 +320,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       notif = insert(:notification, user: user2, activity: activity)
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert Impl.build_content(notif, actor, object) == %{
                body:
@@ -338,7 +338,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       notif = insert(:notification, user: user2, activity: activity, type: "mention")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert Impl.build_content(notif, actor, object) == %{
                body:
@@ -351,7 +351,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert Impl.build_content(notif, actor, object) == %{
                body: "@Bob has favorited your post",

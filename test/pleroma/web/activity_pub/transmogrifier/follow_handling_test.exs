@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
     end
 
     test "it rejects incoming follow requests from blocked users when deny_follow_blocked is enabled" do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+      clear_config([:user, :deny_follow_blocked], true)
 
       user = insert(:user)
       {:ok, target} = User.get_or_fetch("http://mastodon.example.org/users/admin")
