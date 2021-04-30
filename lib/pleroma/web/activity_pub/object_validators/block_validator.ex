@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator do
     |> cast(data, __schema__(:fields))
   end
 
-  def validate_data(cng) do
+  defp validate_data(cng) do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Block"])

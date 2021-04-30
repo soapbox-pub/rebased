@@ -133,34 +133,25 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   end
 
   defp hashtag_fetching(params, user, local_only) do
-    tags =
+    # Note: not sanitizing tag options at this stage (may be mix-cased, have duplicates etc.)
+    tags_any =
       [params[:tag], params[:any]]
       |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(&String.downcase/1)
+      |> Enum.filter(& &1)
 
-    tag_all =
-      params
-      |> Map.get(:all, [])
-      |> Enum.map(&String.downcase/1)
+    tag_all = Map.get(params, :all, [])
+    tag_reject = Map.get(params, :none, [])
 
-    tag_reject =
-      params
-      |> Map.get(:none, [])
-      |> Enum.map(&String.downcase/1)
-
-    _activities =
-      params
-      |> Map.put(:type, "Create")
-      |> Map.put(:local_only, local_only)
-      |> Map.put(:blocking_user, user)
-      |> Map.put(:muting_user, user)
-      |> Map.put(:user, user)
-      |> Map.put(:tag, tags)
-      |> Map.put(:tag_all, tag_all)
-      |> Map.put(:tag_reject, tag_reject)
-      |> ActivityPub.fetch_public_activities()
+    params
+    |> Map.put(:type, "Create")
+    |> Map.put(:local_only, local_only)
+    |> Map.put(:blocking_user, user)
+    |> Map.put(:muting_user, user)
+    |> Map.put(:user, user)
+    |> Map.put(:tag, tags_any)
+    |> Map.put(:tag_all, tag_all)
+    |> Map.put(:tag_reject, tag_reject)
+    |> ActivityPub.fetch_public_activities()
   end
 
   # GET /api/v1/timelines/tag/:tag

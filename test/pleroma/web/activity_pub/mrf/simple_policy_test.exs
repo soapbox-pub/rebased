@@ -75,10 +75,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       local_message = build_local_message()
 
       assert SimplePolicy.filter(media_message) ==
-               {:ok,
-                media_message
-                |> put_in(["object", "tag"], ["foo", "nsfw"])
-                |> put_in(["object", "sensitive"], true)}
+               {:ok, put_in(media_message, ["object", "sensitive"], true)}
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
@@ -89,10 +86,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       local_message = build_local_message()
 
       assert SimplePolicy.filter(media_message) ==
-               {:ok,
-                media_message
-                |> put_in(["object", "tag"], ["foo", "nsfw"])
-                |> put_in(["object", "sensitive"], true)}
+               {:ok, put_in(media_message, ["object", "sensitive"], true)}
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
