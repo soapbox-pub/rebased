@@ -2,6 +2,8 @@
 
 ![Soapbox](https://soapbox.pub/blog/soapbox-fe-v1.2-release/soapbox-fe-1.2-screenshot.png)
 
+> :warning: Not yet ready for production use.
+
 **Soapbox** is a federated social media server with a focus on user experience.
 It is based on [Pleroma](https://pleroma.social/).
 
