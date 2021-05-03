@@ -1666,6 +1666,11 @@ config :pleroma, :config_description, [
         description: "Whether to federate blocks to other instances"
       },
       %{
+        key: :blockers_visible,
+        type: :boolean,
+        description: "Whether a user can see someone who has blocked them"
+      },
+      %{
         key: :sign_object_fetches,
         type: :boolean,
         description: "Sign object fetches with HTTP signatures"
