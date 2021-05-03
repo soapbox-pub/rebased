@@ -15,7 +15,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks)
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action == :mutes)
 
-  plug(OpenApiSpex.Plug.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   defdelegate open_api_operation(action), to: ApiSpec.UserImportOperation
 
   def follow(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do
