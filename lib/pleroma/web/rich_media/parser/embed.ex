@@ -6,5 +6,5 @@ defmodule Pleroma.Web.RichMedia.Parser.Embed do
   @moduledoc """
   Represents embedded content, including scraped markup and OEmbed.
   """
-  defstruct url: nil, meta: nil, oembed: nil
+  defstruct url: nil, title: nil, meta: nil, oembed: nil
 end
