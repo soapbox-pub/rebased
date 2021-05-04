@@ -15,22 +15,29 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       File.read!("test/fixtures/nypd-facial-recognition-children-teenagers3.html")
       |> Floki.parse_document!()
 
-    assert TwitterCard.parse(html, %{}) ==
-             %{
-               "app:id:googleplay" => "com.nytimes.android",
-               "app:name:googleplay" => "NYTimes",
-               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
-               "site" => nil,
-               "description" =>
-                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-               "image" =>
-                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
-               "type" => "article",
-               "url" =>
-                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
-               "title" =>
-                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database."
-             }
+    expected = %{
+      title:
+        "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times",
+      twitter: %{
+        "twitter:app:id:googleplay" => "com.nytimes.android",
+        "twitter:app:name:googleplay" => "NYTimes",
+        "twitter:app:url:googleplay" => "nytimes://reader/id/100000006583622",
+        "twitter:site" => nil
+      },
+      opengraph: %{
+        "og:description" =>
+          "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+        "og:image" =>
+          "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
+        "og:title" =>
+          "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+        "og:type" => "article",
+        "og:url" =>
+          "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
+      }
+    }
+
+    assert TwitterCard.parse(html, %{}) == expected
   end
 
   test "parses twitter card with only property attributes" do
@@ -38,20 +45,35 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       File.read!("test/fixtures/nypd-facial-recognition-children-teenagers2.html")
       |> Floki.parse_document!()
 
-    assert TwitterCard.parse(html, %{}) ==
-             %{
-               "card" => "summary_large_image",
-               "description" =>
-                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-               "image" =>
-                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
-               "image:alt" => "",
-               "title" =>
-                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-               "url" =>
-                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
-               "type" => "article"
-             }
+    expected = %{
+      title:
+        "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times",
+      twitter: %{
+        "twitter:card" => "summary_large_image",
+        "twitter:description" =>
+          "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+        "twitter:image" =>
+          "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
+        "twitter:image:alt" => "",
+        "twitter:title" =>
+          "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+        "twitter:url" =>
+          "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
+      },
+      opengraph: %{
+        "og:description" =>
+          "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+        "og:image" =>
+          "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
+        "og:title" =>
+          "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+        "og:url" =>
+          "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
+        "og:type" => "article"
+      }
+    }
+
+    assert TwitterCard.parse(html, %{}) == expected
   end
 
   test "parses twitter card with name & property attributes" do
@@ -59,24 +81,39 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
       File.read!("test/fixtures/nypd-facial-recognition-children-teenagers.html")
       |> Floki.parse_document!()
 
-    assert TwitterCard.parse(html, %{}) ==
-             %{
-               "app:id:googleplay" => "com.nytimes.android",
-               "app:name:googleplay" => "NYTimes",
-               "app:url:googleplay" => "nytimes://reader/id/100000006583622",
-               "card" => "summary_large_image",
-               "description" =>
-                 "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-               "image" =>
-                 "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
-               "image:alt" => "",
-               "site" => nil,
-               "title" =>
-                 "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-               "url" =>
-                 "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
-               "type" => "article"
-             }
+    expected = %{
+      title:
+        "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times",
+      twitter: %{
+        "twitter:app:id:googleplay" => "com.nytimes.android",
+        "twitter:app:name:googleplay" => "NYTimes",
+        "twitter:app:url:googleplay" => "nytimes://reader/id/100000006583622",
+        "twitter:card" => "summary_large_image",
+        "twitter:description" =>
+          "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+        "twitter:image" =>
+          "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
+        "twitter:image:alt" => "",
+        "twitter:site" => nil,
+        "twitter:title" =>
+          "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+        "twitter:url" =>
+          "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
+      },
+      opengraph: %{
+        "og:description" =>
+          "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
+        "og:image" =>
+          "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-facebookJumbo.jpg",
+        "og:title" =>
+          "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
+        "og:url" =>
+          "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html",
+        "og:type" => "article"
+      }
+    }
+
+    assert TwitterCard.parse(html, %{}) == expected
   end
 
   test "respect only first title tag on the page" do

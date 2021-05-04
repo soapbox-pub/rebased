@@ -3,44 +3,39 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
-  def parse(data, html, prefix, key_name, value_name \\ "content") do
+  def parse(html, prefix, key_name, value_name \\ "content") do
     html
     |> get_elements(key_name, prefix)
-    |> Enum.reduce(data, fn el, acc ->
-      attributes = normalize_attributes(el, prefix, key_name, value_name)
-
+    |> Enum.reduce(%{}, fn el, acc ->
+      attributes = normalize_attributes(el, key_name, value_name)
       Map.merge(acc, attributes)
     end)
-    |> maybe_put_title(html)
+  end
+
+  defp get_elements(html, key_names, prefix) when is_list(key_names) do
+    Enum.reduce(key_names, [], fn key_name, acc ->
+      acc ++ Floki.find(html, "meta[#{key_name}^='#{prefix}:']")
+    end)
   end
 
   defp get_elements(html, key_name, prefix) do
-    html |> Floki.find("meta[#{key_name}^='#{prefix}:']")
+    get_elements(html, [key_name], prefix)
   end
 
-  defp normalize_attributes(html_node, prefix, key_name, value_name) do
+  defp normalize_attributes(html_node, key_names, value_name) when is_list(key_names) do
     {_tag, attributes, _children} = html_node
+    data = Map.new(attributes)
 
-    data =
-      Map.new(attributes, fn {name, value} ->
-        {name, String.trim_leading(value, "#{prefix}:")}
-      end)
-
-    %{data[key_name] => data[value_name]}
+    Enum.reduce(key_names, %{}, fn key_name, acc ->
+      if data[key_name], do: Map.put(acc, data[key_name], data[value_name]), else: acc
+    end)
   end
 
-  defp maybe_put_title(%{"title" => _} = meta, _), do: meta
-
-  defp maybe_put_title(meta, html) when meta != %{} do
-    case get_page_title(html) do
-      "" -> meta
-      title -> Map.put_new(meta, "title", title)
-    end
+  defp normalize_attributes(html_node, key_name, value_name) do
+    normalize_attributes(html_node, [key_name], value_name)
   end
 
-  defp maybe_put_title(meta, _), do: meta
-
-  defp get_page_title(html) do
+  def get_page_title(html) do
     Floki.find(html, "html head title") |> List.first() |> Floki.text()
   end
 end

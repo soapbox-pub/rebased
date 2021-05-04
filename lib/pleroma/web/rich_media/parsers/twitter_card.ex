@@ -8,9 +8,8 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCard do
   @spec parse(list(), map()) :: map()
   def parse(html, data) do
     data
-    |> MetaTagsParser.parse(html, "og", "property")
-    |> MetaTagsParser.parse(html, "twitter", "name")
-    |> MetaTagsParser.parse(html, "twitter", "property")
-    |> Map.put("type", "link")
+    |> Map.put(:title, MetaTagsParser.get_page_title(html))
+    |> Map.put(:opengraph, MetaTagsParser.parse(html, "og", "property"))
+    |> Map.put(:twitter, MetaTagsParser.parse(html, "twitter", ["name", "property"]))
   end
 end
