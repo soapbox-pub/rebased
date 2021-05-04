@@ -6,7 +6,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
   alias Pleroma.Web.RichMedia.Parser.Card
   alias Pleroma.Web.RichMedia.Parser.Embed
 
-  @types ["link", "photo", "video", "rich"]
+  @types ["link", "photo", "video"]
 
   # https://docs.joinmastodon.org/entities/card/
   defstruct url: nil,
