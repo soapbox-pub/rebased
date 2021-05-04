@@ -8,7 +8,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
-  alias Pleroma.Web.RichMedia.Parser.Card
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   @options [
     pool: :media,
@@ -58,26 +58,15 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     |> hd
   end
 
-  defp strip_card(%Card{} = card) do
-    card
-    |> Map.from_struct()
-    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
-  end
-
-  defp strip_card(%{} = card) do
-    Map.new(card, fn {k, v} -> {Atom.to_string(k), v} end)
-  end
-
   def fetch_data_for_object(object) do
     with true <- Config.get([:rich_media, :enabled]),
          {:ok, page_url} <-
            HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
-         {:ok, rich_media} <- Parser.parse(page_url),
-         rich_media <- strip_card(rich_media) do
-      %{page_url: page_url, rich_media: rich_media}
+         {:ok, %Embed{} = embed} <- Parser.parse(page_url) do
+      embed
     else
-      _ -> %{}
+      _ -> nil
     end
   end
 
@@ -86,7 +75,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
          %Object{} = object <- Object.normalize(activity, fetch: false) do
       fetch_data_for_object(object)
     else
-      _ -> %{}
+      _ -> nil
     end
   end
 

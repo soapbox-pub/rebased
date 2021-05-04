@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.RichMedia.Parser do
   require Logger
   alias Pleroma.Web.RichMedia.Parser.Card
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
@@ -133,7 +134,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   def parse_url(url) do
     case maybe_fetch_oembed(url) do
-      {:ok, %Card{} = card} -> {:ok, card}
+      {:ok, %Embed{} = embed} -> {:ok, embed}
       _ -> fetch_document(url)
     end
   end
@@ -143,8 +144,9 @@ defmodule Pleroma.Web.RichMedia.Parser do
          {:ok, %Tesla.Env{body: json}} <-
            Pleroma.Web.RichMedia.Helpers.oembed_get(oembed_url),
          {:ok, data} <- Jason.decode(json),
-         %Card{} = card <- Card.from_oembed(data, url) do
-      {:ok, card}
+         embed <- %Embed{url: url, oembed: data},
+         {:ok, %Card{}} <- Card.validate(embed) do
+      {:ok, embed}
     else
       {:error, error} -> {:error, error}
       error -> {:error, error}
@@ -153,36 +155,19 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   defp fetch_document(url) do
     with {:ok, %Tesla.Env{body: html}} <- Pleroma.Web.RichMedia.Helpers.rich_media_get(url),
-         {:ok, html} <- Floki.parse_document(html) do
-      html
-      |> maybe_parse()
-      |> Map.put("url", url)
-      |> clean_parsed_data()
-      |> Card.from_discovery(url)
-      |> check_card()
+         {:ok, html} <- Floki.parse_document(html),
+         %Embed{} = embed <- parse_embed(html, url),
+         {:ok, %Card{}} <- Card.validate(embed) do
+      {:ok, embed}
+    else
+      {:error, error} -> {:error, error}
+      error -> {:error, error}
     end
   end
 
-  defp maybe_parse(html) do
-    Enum.reduce(parsers(), %{}, fn parser, acc ->
+  defp parse_embed(html, url) do
+    Enum.reduce(parsers(), %Embed{url: url}, fn parser, acc ->
       parser.parse(html, acc)
     end)
-  end
-
-  defp check_card(%Card{title: title} = card)
-       when is_binary(title) and title != "" do
-    {:ok, card}
-  end
-
-  defp check_card(card) do
-    {:error, {:invalid_metadata, card}}
-  end
-
-  defp clean_parsed_data(data) do
-    data
-    |> Enum.reject(fn {key, val} ->
-      not match?({:ok, _}, Jason.encode(%{key => val}))
-    end)
-    |> Map.new()
   end
 end

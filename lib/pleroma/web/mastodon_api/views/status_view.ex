@@ -20,6 +20,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.EmojiReactionController
+  alias Pleroma.Web.RichMedia.Parser.Card
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
@@ -367,10 +369,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     nil
   end
 
-  def render("card.json", %{rich_media: rich_media, page_url: _page_url}) do
-    rich_media
+  def render("card.json", %Embed{url: _, meta: _} = embed) do
+    embed
+    |> Card.parse()
+    |> Card.to_map()
   end
 
+  def render("card.json", %Card{} = card), do: Card.to_map(card)
   def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do

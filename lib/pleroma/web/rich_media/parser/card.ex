@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser.Card do
+  alias Pleroma.Web.RichMedia.Parser.Card
+  alias Pleroma.Web.RichMedia.Parser.Embed
+
   @types ["link", "photo", "video", "rich"]
 
   # https://docs.joinmastodon.org/entities/card/
@@ -21,12 +24,13 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
             embed_url: "",
             blurhash: nil
 
-  def from_oembed(%{"type" => type, "title" => title} = oembed, url) when type in @types do
-    %__MODULE__{
+  def parse(%{url: url, oembed: %{"type" => type, "title" => title} = oembed} = embed)
+      when type in @types do
+    %Card{
       url: url,
       title: title,
-      description: "",
-      type: type,
+      description: get_description(embed),
+      type: oembed["type"],
       author_name: oembed["author_name"],
       author_url: oembed["author_url"],
       provider_name: oembed["provider_name"],
@@ -39,39 +43,74 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
     }
   end
 
-  def from_oembed(_oembed, _url), do: nil
+  def parse(%{url: url} = embed) do
+    title = get_title(embed)
 
-  def from_discovery(%{"type" => "link"} = rich_media, page_url) do
-    page_url_data = URI.parse(page_url)
-
-    page_url_data =
-      if is_binary(rich_media["url"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["url"]))
-      else
-        page_url_data
-      end
-
-    page_url = page_url_data |> to_string
-
-    image_url =
-      if is_binary(rich_media["image"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["image"]))
-        |> to_string
-      end
-
-    %__MODULE__{
-      type: "link",
-      provider_name: page_url_data.host,
-      provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
-      url: page_url,
-      image: image_url |> proxy(),
-      title: rich_media["title"] || "",
-      description: rich_media["description"] || ""
-    }
+    if is_binary(title) do
+      %Card{
+        url: url,
+        title: title,
+        description: get_description(embed),
+        type: "link",
+        image: get_image(embed) |> proxy()
+      }
+    else
+      nil
+    end
   end
 
-  def from_discovery(rich_media, url), do: from_oembed(rich_media, url)
+  def parse(_), do: nil
+
+  defp get_title(embed) do
+    case embed do
+      %{meta: %{"twitter:title" => title}} when is_binary(title) and title != "" -> title
+      %{meta: %{"og:title" => title}} when is_binary(title) and title != "" -> title
+      %{title: title} when is_binary(title) and title != "" -> title
+      _ -> ""
+    end
+  end
+
+  defp get_description(%{meta: meta}) do
+    case meta do
+      %{"twitter:description" => desc} when is_binary(desc) and desc != "" -> desc
+      %{"og:description" => desc} when is_binary(desc) and desc != "" -> desc
+      %{"description" => desc} when is_binary(desc) and desc != "" -> desc
+      _ -> ""
+    end
+  end
+
+  defp get_image(%{meta: meta}) do
+    case meta do
+      %{"twitter:image" => image} when is_binary(image) and image != "" -> image
+      %{"og:image" => image} when is_binary(image) and image != "" -> image
+      _ -> ""
+    end
+  end
+
+  def to_map(%Card{} = card) do
+    card
+    |> Map.from_struct()
+    |> stringify_keys()
+  end
+
+  def to_map(%{} = card), do: stringify_keys(card)
+
+  defp stringify_keys(%{} = map), do: Map.new(map, fn {k, v} -> {Atom.to_string(k), v} end)
 
   defp proxy(url) when is_binary(url), do: Pleroma.Web.MediaProxy.url(url)
   defp proxy(_), do: nil
+
+  def validate(%Card{type: type, title: title} = card)
+      when type in @types and is_binary(title) and title != "" do
+    {:ok, card}
+  end
+
+  def validate(%Embed{} = embed) do
+    case Card.parse(embed) do
+      %Card{} = card -> validate(card)
+      card -> {:error, {:invalid_metadata, card}}
+    end
+  end
+
+  def validate(card), do: {:error, {:invalid_metadata, card}}
 end
