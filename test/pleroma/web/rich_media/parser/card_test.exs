@@ -10,10 +10,13 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
 
   describe "parse/1" do
     test "converts an %Embed{} into a %Card{}" do
+      url =
+        "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
+
       embed =
         File.read!("test/fixtures/nypd-facial-recognition-children-teenagers.html")
         |> Floki.parse_document!()
-        |> TwitterCard.parse(%Embed{})
+        |> TwitterCard.parse(%Embed{url: url})
 
       expected = %Card{
         description:
@@ -21,7 +24,10 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
         image:
           "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
         title: "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-        type: "link"
+        type: "link",
+        provider_name: "www.nytimes.com",
+        provider_url: "https://www.nytimes.com",
+        url: url
       }
 
       assert Card.parse(embed) == {:ok, expected}

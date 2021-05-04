@@ -24,8 +24,10 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
             embed_url: "",
             blurhash: nil
 
-  def parse(%{url: url, oembed: %{"type" => type, "title" => title} = oembed} = embed)
-      when type in @types do
+  def parse(%Embed{url: url, oembed: %{"type" => type, "title" => title} = oembed} = embed)
+      when type in @types and is_binary(url) do
+    uri = URI.parse(url)
+
     %Card{
       url: url,
       title: title,
@@ -33,8 +35,8 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       type: oembed["type"],
       author_name: oembed["author_name"],
       author_url: oembed["author_url"],
-      provider_name: oembed["provider_name"] || URI.parse(url).host,
-      provider_url: oembed["provider_url"],
+      provider_name: oembed["provider_name"] || uri.host,
+      provider_url: oembed["provider_url"] || "#{uri.scheme}://#{uri.host}",
       html: oembed["html"],
       width: oembed["width"],
       height: oembed["height"],
@@ -44,13 +46,16 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
     |> validate()
   end
 
-  def parse(%{url: url} = embed) do
+  def parse(%Embed{url: url} = embed) when is_binary(url) do
+    uri = URI.parse(url)
+
     %Card{
       url: url,
       title: get_title(embed),
       description: get_description(embed),
       type: "link",
-      provider_name: URI.parse(url).host,
+      provider_name: uri.host,
+      provider_url: "#{uri.scheme}://#{uri.host}",
       image: get_image(embed) |> proxy()
     }
     |> validate()
