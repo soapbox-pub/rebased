@@ -16,6 +16,7 @@ defmodule Pleroma.Web.RichMedia.Parser.MetaTags do
         _ -> acc
       end
     end)
+    |> clean_data()
   end
 
   defp parse_node({_tag, attrs, _children}) when is_list(attrs) do
@@ -27,4 +28,12 @@ defmodule Pleroma.Web.RichMedia.Parser.MetaTags do
   end
 
   defp parse_node(_), do: {:error, :invalid_meta_tag}
+
+  defp clean_data(data) do
+    data
+    |> Enum.reject(fn {key, val} ->
+      not match?({:ok, _}, Jason.encode(%{key => val}))
+    end)
+    |> Map.new()
+  end
 end

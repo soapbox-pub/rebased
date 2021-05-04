@@ -103,7 +103,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
 
   def validate(%Embed{} = embed) do
     case Card.parse(embed) do
-      %Card{} = card -> validate(card)
+      {:ok, %Card{} = card} -> validate(card)
       card -> {:error, {:invalid_metadata, card}}
     end
   end

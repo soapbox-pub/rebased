@@ -14,7 +14,8 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCard do
 
   def get_page_title(html) do
     with [node | _] <- Floki.find(html, "html head title"),
-         title when is_binary(title) and title != "" <- Floki.text(node) do
+         title when is_binary(title) and title != "" <- Floki.text(node),
+         true <- String.valid?(title) do
       title
     else
       _ -> nil
