@@ -3,13 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parsers.TwitterCard do
-  alias Pleroma.Web.RichMedia.Parsers.MetaTagsParser
+  alias Pleroma.Web.RichMedia.Parser.MetaTags
 
-  @spec parse(list(), map()) :: map()
+  @spec parse(Floki.html_tree(), map()) :: map()
   def parse(html, data) do
     data
-    |> Map.put(:title, MetaTagsParser.get_page_title(html))
-    |> Map.put(:opengraph, MetaTagsParser.parse(html, "og", "property"))
-    |> Map.put(:twitter, MetaTagsParser.parse(html, "twitter", ["name", "property"]))
+    |> Map.put(:title, get_page_title(html))
+    |> Map.put(:meta, MetaTags.parse(html))
+  end
+
+  def get_page_title(html) do
+    with [node | _] <- Floki.find(html, "html head title"),
+         title when is_binary(title) and title != "" <- Floki.text(node) do
+      title
+    else
+      _ -> nil
+    end
   end
 end

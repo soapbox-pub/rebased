@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser.MetaTags do
-  @moduledoc """
+  @doc """
   Parses a `Floki.html_tree/0` and returns a map of raw `<meta>` tag values.
   """
   @spec parse(html_tree :: Floki.html_tree()) :: map()
