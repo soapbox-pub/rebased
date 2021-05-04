@@ -41,7 +41,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
 
   def from_oembed(_oembed, _url), do: nil
 
-  def from_meta_tags(rich_media, page_url) do
+  def from_discovery(%{"type" => "link"} = rich_media, page_url) do
     page_url_data = URI.parse(page_url)
 
     page_url_data =
@@ -69,6 +69,8 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       description: rich_media["description"] || ""
     }
   end
+
+  def from_discovery(rich_media, url), do: from_oembed(rich_media, url)
 
   defp proxy(url) when is_binary(url), do: Pleroma.Web.MediaProxy.url(url)
   defp proxy(_), do: nil

@@ -11,5 +11,6 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCard do
     |> MetaTagsParser.parse(html, "og", "property")
     |> MetaTagsParser.parse(html, "twitter", "name")
     |> MetaTagsParser.parse(html, "twitter", "property")
+    |> Map.put("type", "link")
   end
 end

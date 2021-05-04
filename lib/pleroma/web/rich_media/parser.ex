@@ -158,7 +158,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
       |> maybe_parse()
       |> Map.put("url", url)
       |> clean_parsed_data()
-      |> Card.from_meta_tags(url)
+      |> Card.from_discovery(url)
       |> check_card()
     end
   end
