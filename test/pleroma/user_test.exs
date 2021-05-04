@@ -572,6 +572,24 @@ defmodule Pleroma.UserTest do
       )
     end
 
+    test "it fails gracefully with invalid email config" do
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      # Disable the mailer but enable all the things that want to send emails
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_approval_required], true)
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([:welcome, :email, :sender], "lain@lain.com")
+
+      # The user is still created
+      assert {:ok, %User{nickname: "nick"}} = User.register(cng)
+
+      # No emails are sent
+      ObanHelpers.perform_all()
+      refute_email_sent()
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       clear_config([:instance, :account_activation_required], true)
 
