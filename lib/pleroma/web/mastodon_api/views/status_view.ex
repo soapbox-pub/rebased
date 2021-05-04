@@ -271,7 +271,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     summary = object.data["summary"] || ""
 
-    card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
+    card =
+      render("card.json", %{
+        embed: Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      })
 
     url =
       if user.local do
@@ -369,7 +372,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     nil
   end
 
-  def render("card.json", %Embed{url: _, meta: _} = embed) do
+  def render("card.json", %{embed: %Embed{} = embed}) do
     with {:ok, %Card{} = card} <- Card.parse(embed) do
       Card.to_map(card)
     else
@@ -377,7 +380,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render("card.json", %Card{} = card), do: Card.to_map(card)
+  def render("card.json", %{embed: %Card{} = card}), do: Card.to_map(card)
   def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do

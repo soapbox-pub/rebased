@@ -33,7 +33,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       type: oembed["type"],
       author_name: oembed["author_name"],
       author_url: oembed["author_url"],
-      provider_name: oembed["provider_name"],
+      provider_name: oembed["provider_name"] || URI.parse(url).host,
       provider_url: oembed["provider_url"],
       html: oembed["html"],
       width: oembed["width"],
@@ -50,6 +50,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       title: get_title(embed),
       description: get_description(embed),
       type: "link",
+      provider_name: URI.parse(url).host,
       image: get_image(embed) |> proxy()
     }
     |> validate()
