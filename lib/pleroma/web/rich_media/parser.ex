@@ -140,7 +140,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp maybe_fetch_oembed(url) do
-    with {:ok, oembed_url} <- OEmbedProviders.oembed_url(url),
+    with true <- Pleroma.Config.get([:rich_media, :oembed_providers_enabled]),
+         {:ok, oembed_url} <- OEmbedProviders.oembed_url(url),
          {:ok, %Tesla.Env{body: json}} <-
            Pleroma.Web.RichMedia.Helpers.oembed_get(oembed_url),
          {:ok, data} <- Jason.decode(json),

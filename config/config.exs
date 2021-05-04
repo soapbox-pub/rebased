@@ -412,6 +412,7 @@ config :pleroma, :rich_media,
     Pleroma.Web.RichMedia.Parsers.OEmbed,
     Pleroma.Web.RichMedia.Parsers.TwitterCard
   ],
+  oembed_providers_enabled: true,
   failure_backoff: 60_000,
   ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
 
