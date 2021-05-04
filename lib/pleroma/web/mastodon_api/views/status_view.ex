@@ -370,9 +370,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("card.json", %Embed{url: _, meta: _} = embed) do
-    embed
-    |> Card.parse()
-    |> Card.to_map()
+    with {:ok, %Card{} = card} <- Card.parse(embed) do
+      Card.to_map(card)
+    else
+      _ -> nil
+    end
   end
 
   def render("card.json", %Card{} = card), do: Card.to_map(card)

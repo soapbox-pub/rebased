@@ -41,32 +41,28 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       image: oembed["thumbnail_url"] |> proxy(),
       embed_url: oembed["url"] |> proxy()
     }
+    |> validate()
   end
 
   def parse(%{url: url} = embed) do
-    title = get_title(embed)
-
-    if is_binary(title) do
-      %Card{
-        url: url,
-        title: title,
-        description: get_description(embed),
-        type: "link",
-        image: get_image(embed) |> proxy()
-      }
-    else
-      nil
-    end
+    %Card{
+      url: url,
+      title: get_title(embed),
+      description: get_description(embed),
+      type: "link",
+      image: get_image(embed) |> proxy()
+    }
+    |> validate()
   end
 
-  def parse(_), do: nil
+  def parse(card), do: {:error, {:invalid_metadata, card}}
 
   defp get_title(embed) do
     case embed do
       %{meta: %{"twitter:title" => title}} when is_binary(title) and title != "" -> title
       %{meta: %{"og:title" => title}} when is_binary(title) and title != "" -> title
       %{title: title} when is_binary(title) and title != "" -> title
-      _ -> ""
+      _ -> nil
     end
   end
 
