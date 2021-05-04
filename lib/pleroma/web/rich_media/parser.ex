@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.RichMedia.Parser do
   require Logger
+  alias Pleroma.Web.RichMedia.Parser.Card
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
@@ -131,13 +132,34 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   def parse_url(url) do
+    case maybe_fetch_oembed(url) do
+      {:ok, %Card{} = card} -> {:ok, card}
+      _ -> fetch_document(url)
+    end
+  end
+
+  defp maybe_fetch_oembed(url) do
+    with {:ok, oembed_url} <- OEmbedProviders.oembed_url(url),
+         {:ok, %Tesla.Env{body: json}} <-
+           Pleroma.Web.RichMedia.Helpers.oembed_get(oembed_url),
+         {:ok, data} <- Jason.decode(json),
+         %Card{} = card <- Card.from_oembed(data, url) do
+      {:ok, card}
+    else
+      {:error, error} -> {:error, error}
+      error -> {:error, error}
+    end
+  end
+
+  defp fetch_document(url) do
     with {:ok, %Tesla.Env{body: html}} <- Pleroma.Web.RichMedia.Helpers.rich_media_get(url),
          {:ok, html} <- Floki.parse_document(html) do
       html
       |> maybe_parse()
       |> Map.put("url", url)
       |> clean_parsed_data()
-      |> check_parsed_data()
+      |> Card.from_meta_tags(url)
+      |> check_card()
     end
   end
 
@@ -150,13 +172,13 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end)
   end
 
-  defp check_parsed_data(%{"title" => title} = data)
+  defp check_card(%Card{title: title} = card)
        when is_binary(title) and title != "" do
-    {:ok, data}
+    {:ok, card}
   end
 
-  defp check_parsed_data(data) do
-    {:error, {:invalid_metadata, data}}
+  defp check_card(card) do
+    {:error, {:invalid_metadata, card}}
   end
 
   defp clean_parsed_data(data) do

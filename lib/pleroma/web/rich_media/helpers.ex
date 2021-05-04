@@ -8,12 +8,15 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
+  alias Pleroma.Web.RichMedia.Parser.Card
 
   @options [
     pool: :media,
     max_body: 2_000_000,
     recv_timeout: 2_000
   ]
+
+  @headers [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
@@ -55,12 +58,23 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     |> hd
   end
 
+  defp strip_card(%Card{} = card) do
+    card
+    |> Map.from_struct()
+    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
+  end
+
+  defp strip_card(%{} = card) do
+    Map.new(card, fn {k, v} -> {Atom.to_string(k), v} end)
+  end
+
   def fetch_data_for_object(object) do
     with true <- Config.get([:rich_media, :enabled]),
          {:ok, page_url} <-
            HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
-         {:ok, rich_media} <- Parser.parse(page_url) do
+         {:ok, rich_media} <- Parser.parse(page_url),
+         rich_media <- strip_card(rich_media) do
       %{page_url: page_url, rich_media: rich_media}
     else
       _ -> %{}
@@ -78,8 +92,12 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   def fetch_data_for_activity(_), do: %{}
 
+  def oembed_get(url) do
+    Pleroma.HTTP.get(url, @headers, @options)
+  end
+
   def rich_media_get(url) do
-    headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
+    headers = @headers
 
     head_check =
       case Pleroma.HTTP.head(url, headers, @options) do

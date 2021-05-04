@@ -409,8 +409,8 @@ config :pleroma, :rich_media,
   ignore_hosts: [],
   ignore_tld: ["local", "localdomain", "lan"],
   parsers: [
-    Pleroma.Web.RichMedia.Parsers.TwitterCard,
-    Pleroma.Web.RichMedia.Parsers.OEmbed
+    Pleroma.Web.RichMedia.Parsers.OEmbed,
+    Pleroma.Web.RichMedia.Parsers.TwitterCard
   ],
   failure_backoff: 60_000,
   ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
