@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Based on Pleroma 2.3.0-stable.
 
 ### Added
+- Rich media embeds for sites like YouTube, etc.
 - Twitter-like block behavior, configured under "ActivityPub > Blockers visible" in AdminFE.
 - The Soapbox version in `/api/v1/instance`
 
