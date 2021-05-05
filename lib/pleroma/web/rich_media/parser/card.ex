@@ -6,7 +6,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
   alias Pleroma.Web.RichMedia.Parser.Card
   alias Pleroma.Web.RichMedia.Parser.Embed
 
-  @types ["link", "photo", "video"]
+  @types ["link", "photo", "video", "rich"]
 
   # https://docs.joinmastodon.org/entities/card/
   defstruct url: nil,
@@ -28,12 +28,6 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       when type in @types and is_binary(url) do
     uri = URI.parse(url)
 
-    html =
-      case FastSanitize.Sanitizer.scrub(oembed["html"], Pleroma.HTML.Scrubber.OEmbed) do
-        {:ok, html} -> html
-        _ -> ""
-      end
-
     %Card{
       url: url,
       title: title,
@@ -43,7 +37,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       author_url: oembed["author_url"],
       provider_name: oembed["provider_name"] || uri.host,
       provider_url: oembed["provider_url"] || "#{uri.scheme}://#{uri.host}",
-      html: html,
+      html: sanitize_html(oembed["html"]),
       width: oembed["width"],
       height: oembed["height"],
       image: oembed["thumbnail_url"] |> proxy(),
@@ -95,6 +89,15 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
     end
   end
 
+  defp sanitize_html(html) do
+    with {:ok, html} <- FastSanitize.Sanitizer.scrub(html, Pleroma.HTML.Scrubber.OEmbed),
+         {:ok, [{"iframe", _, _}]} <- Floki.parse_fragment(html) do
+      html
+    else
+      _ -> ""
+    end
+  end
+
   def to_map(%Card{} = card) do
     card
     |> Map.from_struct()
@@ -107,6 +110,11 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
 
   defp proxy(url) when is_binary(url), do: Pleroma.Web.MediaProxy.url(url)
   defp proxy(_), do: nil
+
+  def validate(%Card{type: type, html: html} = card)
+      when type in ["video", "rich"] and (is_binary(html) == false or html == "") do
+    {:error, {:invalid_metadata, card}}
+  end
 
   def validate(%Card{type: type, title: title} = card)
       when type in @types and is_binary(title) and title != "" do
