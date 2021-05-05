@@ -11,15 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Based on Pleroma 2.3.0-stable.
 
 ### Added
-- Rich media embeds for sites like YouTube, etc.
-- Twitter-like block behavior, configured under "ActivityPub > Blockers visible" in AdminFE.
-- The Soapbox version in `/api/v1/instance`
+- Rich media embeds for sites like YouTube, etc. ([!13](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/13))
+- Twitter-like block behavior, configured under "ActivityPub > Blockers visible" in AdminFE. ([!9](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/9))
+- The Soapbox version in `/api/v1/instance` ([!6](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/6))
 
 ### Changed
-- Twitter-like block behavior is now the default.
+- Twitter-like block behavior is now the default. ([!9](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/9))
 
 ### Fixed
-- Domain blocks: reposts from a blocked domain are now correctly blocked.
-- Fixed some (not all) Markdown issues, such as broken trailing slash in links.
-- Don't crash so hard when email settings are invalid.
-- Return OpenGraph metadata on Soapbox FE routes.
+- Domain blocks: reposts from a blocked domain are now correctly blocked. ([!11](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/11))
+- Fixed some (not all) Markdown issues, such as broken trailing slash in links. ([!10](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/10))
+- Don't crash so hard when email settings are invalid. ([!12](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/12))
+- Return OpenGraph metadata on Soapbox FE routes. ([!14](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/14))
