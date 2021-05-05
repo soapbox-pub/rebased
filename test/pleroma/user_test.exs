@@ -572,6 +572,24 @@ defmodule Pleroma.UserTest do
       )
     end
 
+    test "it fails gracefully with invalid email config" do
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      # Disable the mailer but enable all the things that want to send emails
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_approval_required], true)
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([:welcome, :email, :sender], "lain@lain.com")
+
+      # The user is still created
+      assert {:ok, %User{nickname: "nick"}} = User.register(cng)
+
+      # No emails are sent
+      ObanHelpers.perform_all()
+      refute_email_sent()
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       clear_config([:instance, :account_activation_required], true)
 
@@ -2337,5 +2355,50 @@ defmodule Pleroma.UserTest do
     assert User.active_user_count() == 2
     assert User.active_user_count(6) == 3
     assert User.active_user_count(1) == 1
+  end
+
+  describe "pins" do
+    setup do
+      user = insert(:user)
+
+      [user: user, object_id: object_id_from_created_activity(user)]
+    end
+
+    test "unique pins", %{user: user, object_id: object_id} do
+      assert {:ok, %{pinned_objects: %{^object_id => pinned_at1} = pins} = updated_user} =
+               User.add_pinned_object_id(user, object_id)
+
+      assert Enum.count(pins) == 1
+
+      assert {:ok, %{pinned_objects: %{^object_id => pinned_at2} = pins}} =
+               User.add_pinned_object_id(updated_user, object_id)
+
+      assert pinned_at1 == pinned_at2
+
+      assert Enum.count(pins) == 1
+    end
+
+    test "respects max_pinned_statuses limit", %{user: user, object_id: object_id} do
+      clear_config([:instance, :max_pinned_statuses], 1)
+      {:ok, updated} = User.add_pinned_object_id(user, object_id)
+
+      object_id2 = object_id_from_created_activity(user)
+
+      {:error, %{errors: errors}} = User.add_pinned_object_id(updated, object_id2)
+      assert Keyword.has_key?(errors, :pinned_objects)
+    end
+
+    test "remove_pinned_object_id/2", %{user: user, object_id: object_id} do
+      assert {:ok, updated} = User.add_pinned_object_id(user, object_id)
+
+      {:ok, after_remove} = User.remove_pinned_object_id(updated, object_id)
+      assert after_remove.pinned_objects == %{}
+    end
+  end
+
+  defp object_id_from_created_activity(user) do
+    %{id: id} = insert(:note_activity, user: user)
+    %{object: %{data: %{"id" => object_id}}} = Activity.get_by_id_with_object(id)
+    object_id
   end
 end

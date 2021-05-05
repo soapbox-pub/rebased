@@ -11,6 +11,8 @@ defmodule Pleroma.Utils do
     eperm epipe erange erofs espipe esrch estale etxtbsy exdev
   )a
 
+  @repo_timeout Pleroma.Config.get([Pleroma.Repo, :timeout], 15_000)
+
   def compile_dir(dir) when is_binary(dir) do
     dir
     |> File.ls!()
@@ -63,4 +65,21 @@ defmodule Pleroma.Utils do
   end
 
   def posix_error_message(_), do: ""
+
+  @doc """
+  Returns [timeout: integer] suitable for passing as an option to Repo functions.
+
+  This function detects if the execution was triggered from IEx shell, Mix task, or
+  ./bin/pleroma_ctl and sets the timeout to :infinity, else returns the default timeout value.
+  """
+  @spec query_timeout() :: [timeout: integer]
+  def query_timeout do
+    {parent, _, _, _} = Process.info(self(), :current_stacktrace) |> elem(1) |> Enum.fetch!(2)
+
+    cond do
+      parent |> to_string |> String.starts_with?("Elixir.Mix.Task") -> [timeout: :infinity]
+      parent == :erl_eval -> [timeout: :infinity]
+      true -> [timeout: @repo_timeout]
+    end
+  end
 end
