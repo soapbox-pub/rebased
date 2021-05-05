@@ -40,7 +40,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       html: sanitize_html(oembed["html"]),
       width: oembed["width"],
       height: oembed["height"],
-      image: oembed["thumbnail_url"] |> proxy(),
+      image: get_image(oembed) |> proxy(),
       embed_url: oembed["url"] |> proxy()
     }
     |> validate()
@@ -88,6 +88,10 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       _ -> ""
     end
   end
+
+  defp get_image(%{"thumbnail_url" => image}) when is_binary(image) and image != "", do: image
+  defp get_image(%{"type" => "photo", "url" => image}), do: image
+  defp get_image(_), do: ""
 
   defp sanitize_html(html) do
     with {:ok, html} <- FastSanitize.Sanitizer.scrub(html, Pleroma.HTML.Scrubber.OEmbed),
