@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
   use Ecto.Schema
 
-  alias Pleroma.EarmarkRenderer
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
@@ -110,7 +109,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
        when is_binary(content) do
     content =
       content
-      |> Earmark.as_html!(%Earmark.Options{renderer: EarmarkRenderer})
+      |> Pleroma.Formatter.markdown_to_html()
       |> Pleroma.HTML.filter_tags()
 
     Map.put(data, "content", content)
