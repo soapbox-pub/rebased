@@ -16,6 +16,7 @@ Based on Pleroma 2.3.0-stable.
 - The Soapbox version in `/api/v1/instance` ([!6](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/6))
 
 ### Changed
+- Soapbox FE is set as the default frontend. ([!16](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/16))
 - Twitter-like block behavior is now the default. ([!9](https://gitlab.com/soapbox-pub/soapbox/-/merge_requests/9))
 
 ### Fixed
