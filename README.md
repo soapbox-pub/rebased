@@ -2,8 +2,6 @@
 
 ![Soapbox](https://soapbox.pub/blog/soapbox-fe-v1.2-release/soapbox-fe-1.2-screenshot.png)
 
-> :warning: Not yet ready for production use.
-
 **Soapbox** is a federated social media server with a focus on user experience.
 It is based on [Pleroma](https://pleroma.social/).
 
@@ -17,7 +15,7 @@ It is designed to spread your message far and wide, while being resilient to dep
 
 ## Installation
 
-See [the installation guide](https://gitlab.com/soapbox-pub/soapbox/-/blob/develop/docs/installation/ubuntu_en.md).
+See [the installation guide](https://soapbox.pub/install/).
 
 ## License
 
