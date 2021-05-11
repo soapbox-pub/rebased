@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-03-15 15:10+0000\n"
-"PO-Revision-Date: 2021-03-25 13:08+0000\n"
+"PO-Revision-Date: 2021-05-12 01:41+0000\n"
 "Last-Translator: Snow <build-a-website@protonmail.com>\n"
 "Language-Team: Chinese (Traditional) <https://translate.pleroma.social/"
 "projects/pleroma/pleroma/zh_Hant/>\n"
@@ -29,7 +29,7 @@ msgstr "不能為空"
 
 ## From Ecto.Changeset.unique_constraint/3
 msgid "has already been taken"
-msgstr ""
+msgstr "已被占用"
 
 ## From Ecto.Changeset.put_change/3
 msgid "is invalid"
@@ -45,7 +45,7 @@ msgstr ""
 
 ## From Ecto.Changeset.validate_exclusion/3
 msgid "is reserved"
-msgstr ""
+msgstr "是被保留的"
 
 ## From Ecto.Changeset.validate_confirmation/3
 msgid "does not match confirmation"
@@ -85,10 +85,10 @@ msgstr[0] ""
 
 ## From Ecto.Changeset.validate_number/3
 msgid "must be less than %{number}"
-msgstr ""
+msgstr "必須小於{number}％"
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "must be greater than {number}%"
 
 msgid "must be less than or equal to %{number}"
 msgstr ""
@@ -200,7 +200,7 @@ msgstr ""
 #: lib/pleroma/web/twitter_api/twitter_api.ex:106
 #, elixir-format
 msgid "Invalid CAPTCHA"
-msgstr ""
+msgstr "無效的驗證碼"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:116
 #: lib/pleroma/web/oauth/oauth_controller.ex:568
