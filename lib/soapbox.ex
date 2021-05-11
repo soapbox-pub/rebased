@@ -1,5 +1,5 @@
 defmodule Soapbox do
-  @version "0.0.99"
+  @version "1.0.0"
 
   def version, do: @version
 end
