@@ -245,6 +245,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
               "type" => Map.get(url || %{}, "type", "Link")
             }
             |> Maps.put_if_present("mediaType", media_type)
+            |> Maps.put_if_present("width", (url || %{})["width"])
+            |> Maps.put_if_present("height", (url || %{})["height"])
 
           %{
             "url" => [attachment_url],
