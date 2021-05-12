@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.HTML
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -406,6 +407,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
     href = attachment_url["href"] |> MediaProxy.url()
     href_preview = attachment_url["href"] |> MediaProxy.preview_url()
+    meta = render("attachment_meta.json", %{attachment: attachment})
 
     type =
       cond do
@@ -426,9 +428,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       type: type,
       description: attachment["name"],
       pleroma: %{mime_type: media_type},
-      meta: render("attachment_meta.json", %{attachment: attachment}),
       blurhash: attachment["blurhash"]
     }
+    |> Maps.put_if_present(:meta, meta)
   end
 
   def render("attachment_meta.json", %{
@@ -444,7 +446,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("attachment_meta.json", _), do: %{}
+  def render("attachment_meta.json", _), do: nil
 
   def render("context.json", %{activity: activity, activities: activities, user: user}) do
     %{ancestors: ancestors, descendants: descendants} =
