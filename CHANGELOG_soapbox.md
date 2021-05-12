@@ -6,6 +6,13 @@ For changes to Pleroma, see `CHANGELOG.md`
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## unreleased
+
+Based on Pleroma 2.3.0-stable.
+
+### Added
+- Retain uploaded image aspect ratios.
+
 ## [1.0.0] - 2021-05-11
 
 Based on Pleroma 2.3.0-stable.
