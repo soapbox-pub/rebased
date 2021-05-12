@@ -426,9 +426,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       type: type,
       description: attachment["name"],
       pleroma: %{mime_type: media_type},
+      meta: render("attachment_meta.json", %{attachment: attachment}),
       blurhash: attachment["blurhash"]
     }
   end
+
+  def render("attachment_meta.json", %{
+        attachment: %{"url" => [%{"width" => width, "height" => height} | _]}
+      })
+      when is_integer(width) and is_integer(height) do
+    %{
+      original: %{
+        width: width,
+        height: height,
+        aspect: width / height
+      }
+    }
+  end
+
+  def render("attachment_meta.json", _), do: %{}
 
   def render("context.json", %{activity: activity, activities: activities, user: user}) do
     %{ancestors: ancestors, descendants: descendants} =

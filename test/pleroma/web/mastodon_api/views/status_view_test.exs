@@ -458,7 +458,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       "url" => [
         %{
           "mediaType" => "image/png",
-          "href" => "someurl"
+          "href" => "someurl",
+          "width" => 200,
+          "height" => 100
         }
       ],
       "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
@@ -474,6 +476,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       text_url: "someurl",
       description: nil,
       pleroma: %{mime_type: "image/png"},
+      meta: %{original: %{width: 200, height: 100, aspect: 2}},
       blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
     }
 
