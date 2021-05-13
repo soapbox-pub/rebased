@@ -115,6 +115,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
   def fix_uri("http://" <> _ = uri, _base_uri), do: uri
   def fix_uri("https://" <> _ = uri, _base_uri), do: uri
   def fix_uri("/" <> _ = uri, base_uri), do: URI.merge(base_uri, uri) |> URI.to_string()
+  def fix_uri("", _base_uri), do: nil
 
   def fix_uri(uri, base_uri) when is_binary(uri),
     do: URI.merge(base_uri, "/#{uri}") |> URI.to_string()
@@ -126,7 +127,9 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
 
   def validate(%Card{type: type, html: html} = card)
       when type in ["video", "rich"] and (is_binary(html) == false or html == "") do
-    {:error, {:invalid_metadata, card}}
+    card
+    |> Map.put(:type, "link")
+    |> validate()
   end
 
   def validate(%Card{type: type, title: title} = card)

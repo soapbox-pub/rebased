@@ -45,6 +45,36 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
       {:ok, card} = Card.parse(embed)
       assert card.image == "https://spam.com/uploads/weegee.jpeg"
     end
+
+    test "falls back to Link with invalid Rich/Video" do
+      url = "https://ishothim.com/our-work/mexican-drug-cartels/"
+      oembed = File.read!("test/fixtures/rich_media/wordpress_embed.json") |> Jason.decode!()
+
+      embed =
+        File.read!("test/fixtures/rich_media/wordpress.html")
+        |> Floki.parse_document!()
+        |> TwitterCard.parse(%Embed{url: url, oembed: oembed})
+
+      expected = %Card{
+        author_name: "Michael Jeter",
+        author_url: "https://ishothim.com/author/mike/",
+        blurhash: nil,
+        description:
+          "I Shot Him collaborated with the folks at Visual.ly on this informative animation about the violence from drug cartels happening right across our border. We researched, wrote, illustrated, and animated this piece to inform people about the connections of our drug and gun laws to the death of innocence in Mexico.",
+        embed_url: nil,
+        height: 338,
+        html: "",
+        image: "https://ishothim.com/wp-content/uploads/2013/01/Cartel_feature.jpg",
+        provider_name: "I Shot Him",
+        provider_url: "https://ishothim.com",
+        title: "Mexican Drug Cartels",
+        type: "link",
+        url: "https://ishothim.com/our-work/mexican-drug-cartels/",
+        width: 600
+      }
+
+      assert Card.parse(embed) == {:ok, expected}
+    end
   end
 
   describe "validate/1" do
@@ -56,18 +86,6 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
       }
 
       assert {:ok, ^card} = Card.validate(card)
-    end
-
-    test "errors for video embeds without html" do
-      embed = %Embed{
-        url: "https://spam.com/xyz",
-        oembed: %{
-          "type" => "video",
-          "title" => "Yeeting soda cans"
-        }
-      }
-
-      assert {:error, {:invalid_metadata, _}} = Card.validate(embed)
     end
   end
 
@@ -89,6 +107,10 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
       uri = "images/pic.jpeg"
       expected = "https://benis.xyz/images/pic.jpeg"
       assert Card.fix_uri(uri, base_uri) == expected
+    end
+
+    test "empty URI", %{base_uri: base_uri} do
+      assert Card.fix_uri("", base_uri) == nil
     end
 
     test "nil URI", %{base_uri: base_uri} do
