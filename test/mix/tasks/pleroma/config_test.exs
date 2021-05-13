@@ -200,6 +200,44 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
   end
 
+  describe "migrate_from_db/1" do
+    setup do: clear_config(:configurable_from_database, true)
+
+    setup do
+      insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
+      insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
+      insert_config_record(:quack, :level, :info)
+
+      path = "test/instance_static"
+      file_path = Path.join(path, "temp.exported_from_db.secret.exs")
+
+      on_exit(fn -> File.rm!(file_path) end)
+
+      [file_path: file_path]
+    end
+
+    test "with path parameter", %{file_path: file_path} do
+      MixTask.run(["migrate_from_db", "--env", "temp", "--path", Path.dirname(file_path)])
+
+      file = File.read!(file_path)
+      assert file =~ "config :pleroma, :setting_first,"
+      assert file =~ "config :pleroma, :setting_second,"
+      assert file =~ "config :quack, :level, :info"
+    end
+
+    test "release", %{file_path: file_path} do
+      clear_config(:release, true)
+      clear_config(:config_path, file_path)
+
+      MixTask.run(["migrate_from_db", "--env", "temp"])
+
+      file = File.read!(file_path)
+      assert file =~ "config :pleroma, :setting_first,"
+      assert file =~ "config :pleroma, :setting_second,"
+      assert file =~ "config :quack, :level, :info"
+    end
+  end
+
   describe "operations on database config" do
     setup do: clear_config(:configurable_from_database, true)
 

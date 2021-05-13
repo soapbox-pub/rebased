@@ -67,13 +67,11 @@ defmodule Pleroma.Web.ConnCase do
       end
 
       defp json_response_and_validate_schema(
-             %{
-               private: %{
-                 open_api_spex: %{operation_id: op_id, operation_lookup: lookup, spec: spec}
-               }
-             } = conn,
+             %{private: %{operation_id: op_id}} = conn,
              status
            ) do
+        {spec, lookup} = OpenApiSpex.Plug.PutApiSpec.get_spec_and_operation_lookup(conn)
+
         content_type =
           conn
           |> Plug.Conn.get_resp_header("content-type")

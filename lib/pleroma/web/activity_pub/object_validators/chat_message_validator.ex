@@ -67,7 +67,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     |> cast_embed(:attachment)
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["ChatMessage"])
     |> validate_required([:id, :actor, :to, :type, :published])

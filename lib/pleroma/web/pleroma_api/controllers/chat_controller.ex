@@ -38,7 +38,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     %{scopes: ["read:chats"]} when action in [:messages, :index, :index2, :show]
   )
 
-  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 

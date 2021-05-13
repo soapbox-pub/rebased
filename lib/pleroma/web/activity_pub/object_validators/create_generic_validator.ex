@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     |> CommonFixes.fix_actor()
   end
 
-  def validate_data(cng, meta \\ []) do
+  defp validate_data(cng, meta) do
     cng
     |> validate_required([:actor, :type, :object])
     |> validate_inclusion(:type, ["Create"])
