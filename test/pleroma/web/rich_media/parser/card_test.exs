@@ -32,6 +32,49 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
 
       assert Card.parse(embed) == {:ok, expected}
     end
+
+    test "converts URL paths into absolute URLs" do
+      embed = %Embed{
+        url: "https://spam.com/luigi",
+        title: "Watch Luigi not doing anything",
+        meta: %{
+          "og:image" => "/uploads/weegee.jpeg"
+        }
+      }
+
+      {:ok, card} = Card.parse(embed)
+      assert card.image == "https://spam.com/uploads/weegee.jpeg"
+    end
+
+    test "falls back to Link with invalid Rich/Video" do
+      url = "https://ishothim.com/our-work/mexican-drug-cartels/"
+      oembed = File.read!("test/fixtures/rich_media/wordpress_embed.json") |> Jason.decode!()
+
+      embed =
+        File.read!("test/fixtures/rich_media/wordpress.html")
+        |> Floki.parse_document!()
+        |> TwitterCard.parse(%Embed{url: url, oembed: oembed})
+
+      expected = %Card{
+        author_name: "Michael Jeter",
+        author_url: "https://ishothim.com/author/mike/",
+        blurhash: nil,
+        description:
+          "I Shot Him collaborated with the folks at Visual.ly on this informative animation about the violence from drug cartels happening right across our border. We researched, wrote, illustrated, and animated this piece to inform people about the connections of our drug and gun laws to the death of innocence in Mexico.",
+        embed_url: nil,
+        height: 338,
+        html: "",
+        image: "https://ishothim.com/wp-content/uploads/2013/01/Cartel_feature.jpg",
+        provider_name: "I Shot Him",
+        provider_url: "https://ishothim.com",
+        title: "Mexican Drug Cartels",
+        type: "link",
+        url: "https://ishothim.com/our-work/mexican-drug-cartels/",
+        width: 600
+      }
+
+      assert Card.parse(embed) == {:ok, expected}
+    end
   end
 
   describe "validate/1" do
@@ -43,6 +86,44 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
       }
 
       assert {:ok, ^card} = Card.validate(card)
+    end
+  end
+
+  describe "fix_uri/2" do
+    setup do: %{base_uri: "https://benis.xyz/hello/fam"}
+
+    test "two full URLs", %{base_uri: base_uri} do
+      uri = "https://benis.xyz/images/pic.jpeg"
+      assert Card.fix_uri(uri, base_uri) == uri
+    end
+
+    test "URI with leading slash", %{base_uri: base_uri} do
+      uri = "/images/pic.jpeg"
+      expected = "https://benis.xyz/images/pic.jpeg"
+      assert Card.fix_uri(uri, base_uri) == expected
+    end
+
+    test "URI without leading slash", %{base_uri: base_uri} do
+      uri = "images/pic.jpeg"
+      expected = "https://benis.xyz/images/pic.jpeg"
+      assert Card.fix_uri(uri, base_uri) == expected
+    end
+
+    test "empty URI", %{base_uri: base_uri} do
+      assert Card.fix_uri("", base_uri) == nil
+    end
+
+    test "nil URI", %{base_uri: base_uri} do
+      assert Card.fix_uri(nil, base_uri) == nil
+    end
+
+    # https://github.com/elixir-lang/elixir/issues/10771
+    test "Elixir #10771", _ do
+      uri =
+        "https://images.macrumors.com/t/4riJyi1XC906qyJ41nAfOgpvo1I=/1600x/https://images.macrumors.com/article-new/2020/09/spatialaudiofeature.jpg"
+
+      base_uri = "https://www.macrumors.com/guide/apps-support-apples-spatial-audio-feature/"
+      assert Card.fix_uri(uri, base_uri) == uri
     end
   end
 end

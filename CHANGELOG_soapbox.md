@@ -13,6 +13,9 @@ Based on Pleroma 2.3.0-stable.
 ### Added
 - Retain uploaded image aspect ratios.
 
+### Fixed
+- Rich media not working for certain links.
+
 ## [1.0.0] - 2021-05-11
 
 Based on Pleroma 2.3.0-stable.

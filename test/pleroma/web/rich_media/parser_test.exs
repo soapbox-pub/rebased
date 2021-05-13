@@ -83,8 +83,15 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     :ok
   end
 
-  test "returns error when no metadata present" do
-    assert {:error, _} = Parser.parse("http://example.com/empty")
+  test "returns empty embed when no metadata present" do
+    expected = %Embed{
+      meta: %{},
+      oembed: nil,
+      title: nil,
+      url: "http://example.com/empty"
+    }
+
+    assert Parser.parse("http://example.com/empty") == {:ok, expected}
   end
 
   test "parses ogp" do
@@ -166,8 +173,33 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert Parser.parse(url) == {:ok, expected}
   end
 
-  test "rejects invalid OGP data" do
-    assert {:error, _} = Parser.parse("http://example.com/malformed")
+  test "cleans corrupted meta data" do
+    expected = %Embed{
+      meta: %{
+        "Keywords" => "Konsument i zakupy",
+        "ROBOTS" => "NOARCHIVE",
+        "fb:app_id" => "515714931781741",
+        "fb:pages" => "288018984602680",
+        "google-site-verification" => "3P4BE3hLw82QWqtseIE60qQcOtrpMxMnCNkcv62pjTA",
+        "news_keywords" => "Konsument i zakupy",
+        "og:image" =>
+          "https://bi.im-g.pl/im/f7/49/17/z24418295FBW,Prace-nad-projektem-chusty-antysmogowej-rozpoczely.jpg",
+        "og:locale" => "pl_PL",
+        "og:site_name" => "wyborcza.biz",
+        "og:type" => "article",
+        "og:url" =>
+          "http://wyborcza.biz/biznes/7,147743,24417936,pomysl-na-biznes-chusta-ktora-chroni-przed-smogiem.html",
+        "twitter:card" => "summary_large_image",
+        "twitter:image" =>
+          "https://bi.im-g.pl/im/f7/49/17/z24418295FBW,Prace-nad-projektem-chusty-antysmogowej-rozpoczely.jpg",
+        "viewport" => "width=device-width, user-scalable=yes"
+      },
+      oembed: nil,
+      title: nil,
+      url: "http://example.com/malformed"
+    }
+
+    assert Parser.parse("http://example.com/malformed") == {:ok, expected}
   end
 
   test "returns error if getting page was not successful" do
