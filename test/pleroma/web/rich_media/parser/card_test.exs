@@ -32,6 +32,19 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
 
       assert Card.parse(embed) == {:ok, expected}
     end
+
+    test "converts URL paths into absolute URLs" do
+      embed = %Embed{
+        url: "https://spam.com/luigi",
+        title: "Watch Luigi not doing anything",
+        meta: %{
+          "og:image" => "/uploads/weegee.jpeg"
+        }
+      }
+
+      {:ok, card} = Card.parse(embed)
+      assert card.image == "https://spam.com/uploads/weegee.jpeg"
+    end
   end
 
   describe "validate/1" do
@@ -43,6 +56,52 @@ defmodule Pleroma.Web.RichMedia.Parser.CardTest do
       }
 
       assert {:ok, ^card} = Card.validate(card)
+    end
+
+    test "errors for video embeds without html" do
+      embed = %Embed{
+        url: "https://spam.com/xyz",
+        oembed: %{
+          "type" => "video",
+          "title" => "Yeeting soda cans"
+        }
+      }
+
+      assert {:error, {:invalid_metadata, _}} = Card.validate(embed)
+    end
+  end
+
+  describe "fix_uri/2" do
+    setup do: %{base_uri: "https://benis.xyz/hello/fam"}
+
+    test "two full URLs", %{base_uri: base_uri} do
+      uri = "https://benis.xyz/images/pic.jpeg"
+      assert Card.fix_uri(uri, base_uri) == uri
+    end
+
+    test "URI with leading slash", %{base_uri: base_uri} do
+      uri = "/images/pic.jpeg"
+      expected = "https://benis.xyz/images/pic.jpeg"
+      assert Card.fix_uri(uri, base_uri) == expected
+    end
+
+    test "URI without leading slash", %{base_uri: base_uri} do
+      uri = "images/pic.jpeg"
+      expected = "https://benis.xyz/images/pic.jpeg"
+      assert Card.fix_uri(uri, base_uri) == expected
+    end
+
+    test "nil URI", %{base_uri: base_uri} do
+      assert Card.fix_uri(nil, base_uri) == nil
+    end
+
+    # https://github.com/elixir-lang/elixir/issues/10771
+    test "Elixir #10771", _ do
+      uri =
+        "https://images.macrumors.com/t/4riJyi1XC906qyJ41nAfOgpvo1I=/1600x/https://images.macrumors.com/article-new/2020/09/spatialaudiofeature.jpg"
+
+      base_uri = "https://www.macrumors.com/guide/apps-support-apples-spatial-audio-feature/"
+      assert Card.fix_uri(uri, base_uri) == uri
     end
   end
 end

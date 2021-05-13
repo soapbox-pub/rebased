@@ -40,8 +40,8 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       html: sanitize_html(oembed["html"]),
       width: oembed["width"],
       height: oembed["height"],
-      image: get_image(oembed) |> proxy(),
-      embed_url: oembed["url"] |> proxy()
+      image: get_image(oembed) |> fix_uri(url) |> proxy(),
+      embed_url: oembed["url"] |> fix_uri(url) |> proxy()
     }
     |> validate()
   end
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
       type: "link",
       provider_name: uri.host,
       provider_url: "#{uri.scheme}://#{uri.host}",
-      image: get_image(embed) |> proxy()
+      image: get_image(embed) |> fix_uri(url) |> proxy()
     }
     |> validate()
   end
@@ -111,6 +111,15 @@ defmodule Pleroma.Web.RichMedia.Parser.Card do
   def to_map(%{} = card), do: stringify_keys(card)
 
   defp stringify_keys(%{} = map), do: Map.new(map, fn {k, v} -> {Atom.to_string(k), v} end)
+
+  def fix_uri("http://" <> _ = uri, _base_uri), do: uri
+  def fix_uri("https://" <> _ = uri, _base_uri), do: uri
+  def fix_uri("/" <> _ = uri, base_uri), do: URI.merge(base_uri, uri) |> URI.to_string()
+
+  def fix_uri(uri, base_uri) when is_binary(uri),
+    do: URI.merge(base_uri, "/#{uri}") |> URI.to_string()
+
+  def fix_uri(_uri, _base_uri), do: nil
 
   defp proxy(url) when is_binary(url), do: Pleroma.Web.MediaProxy.url(url)
   defp proxy(_), do: nil
