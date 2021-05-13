@@ -21,6 +21,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       field(:type, :string)
       field(:href, ObjectValidators.Uri)
       field(:mediaType, :string, default: "application/octet-stream")
+      field(:width, :integer)
+      field(:height, :integer)
     end
   end
 
@@ -52,7 +54,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     data = fix_media_type(data)
 
     struct
-    |> cast(data, [:type, :href, :mediaType])
+    |> cast(data, [:type, :href, :mediaType, :width, :height])
     |> validate_inclusion(:type, ["Link"])
     |> validate_required([:type, :href, :mediaType])
   end
