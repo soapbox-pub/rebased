@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.RichMedia.Parser do
   require Logger
+  alias Pleroma.Web.RichMedia.Parser.Card
   alias Pleroma.Web.RichMedia.Parser.Embed
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
@@ -144,7 +145,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
          {:ok, %Tesla.Env{body: json}} <-
            Pleroma.Web.RichMedia.Helpers.oembed_get(oembed_url),
          {:ok, data} <- Jason.decode(json),
-         embed <- %Embed{url: url, oembed: data} do
+         embed <- %Embed{url: url, oembed: data},
+         {:ok, %Card{}} <- Card.validate(embed) do
       {:ok, embed}
     else
       {:error, error} -> {:error, error}
