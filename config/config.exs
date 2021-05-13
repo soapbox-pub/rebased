@@ -353,6 +353,7 @@ config :pleroma, :manifest,
 config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
+  blockers_visible: true,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
@@ -840,6 +841,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
+
+import_config "soapbox.exs"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
