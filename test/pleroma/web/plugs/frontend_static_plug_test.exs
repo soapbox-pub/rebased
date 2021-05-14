@@ -86,6 +86,8 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "objects",
       "activities",
       "notice",
+      "@:nickname",
+      ":nickname",
       "users",
       "tags",
       "mailer",

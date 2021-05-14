@@ -21,6 +21,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.EmojiReactionController
+  alias Pleroma.Web.RichMedia.Parser.Card
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
@@ -270,7 +272,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     summary = object.data["summary"] || ""
 
-    card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
+    card =
+      render("card.json", %{
+        embed: Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      })
 
     url =
       if user.local do
@@ -368,38 +373,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     nil
   end
 
-  def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
-    page_url_data = URI.parse(page_url)
-
-    page_url_data =
-      if is_binary(rich_media["url"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["url"]))
-      else
-        page_url_data
-      end
-
-    page_url = page_url_data |> to_string
-
-    image_url =
-      if is_binary(rich_media["image"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["image"]))
-        |> to_string
-      end
-
-    %{
-      type: "link",
-      provider_name: page_url_data.host,
-      provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
-      url: page_url,
-      image: image_url |> MediaProxy.url(),
-      title: rich_media["title"] || "",
-      description: rich_media["description"] || "",
-      pleroma: %{
-        opengraph: rich_media
-      }
-    }
+  def render("card.json", %{embed: %Embed{} = embed}) do
+    with {:ok, %Card{} = card} <- Card.parse(embed) do
+      Card.to_map(card)
+    else
+      _ -> nil
+    end
   end
 
+  def render("card.json", %{embed: %Card{} = card}), do: Card.to_map(card)
   def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do
