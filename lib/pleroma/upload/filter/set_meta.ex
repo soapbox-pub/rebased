@@ -23,6 +23,7 @@ defmodule Pleroma.Upload.Filter.SetMeta do
         upload
         |> Map.put(:width, image.width)
         |> Map.put(:height, image.height)
+        |> Map.put(:blurhash, get_blurhash(file))
 
       {:ok, :filtered, upload}
     rescue
@@ -33,4 +34,12 @@ defmodule Pleroma.Upload.Filter.SetMeta do
   end
 
   def filter(_), do: {:ok, :noop}
+
+  defp get_blurhash(file) do
+    with {:ok, blurhash} <- :eblurhash.magick(file) do
+      blurhash
+    else
+      _ -> nil
+    end
+  end
 end
