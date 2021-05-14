@@ -12,6 +12,7 @@ Based on Pleroma 2.3.0-stable.
 
 ### Added
 - Retain uploaded image aspect ratios.
+- Blurhash support.
 
 ### Fixed
 - Rich media not working for certain links.

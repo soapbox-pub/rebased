@@ -973,6 +973,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         }
         |> Maps.put_if_present("width", url["width"])
         |> Maps.put_if_present("height", url["height"])
+        |> Maps.put_if_present("blurhash", data["blurhash"])
       end)
 
     Map.put(object, "attachment", attachments)

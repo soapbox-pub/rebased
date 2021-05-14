@@ -25,6 +25,7 @@ defmodule Pleroma.Upload do
   path as the temporary file is also tracked by `Plug.Upload{}` and automatically deleted once the request is over.
   * `:width` - width of the media in pixels
   * `:height` - height of the media in pixels
+  * `:blurhash` - string hash of the image encoded with the blurhash algorithm (https://blurha.sh/)
 
   Related behaviors:
 
@@ -58,9 +59,10 @@ defmodule Pleroma.Upload do
           content_type: String.t(),
           width: integer(),
           height: integer(),
+          blurhash: String.t(),
           path: String.t()
         }
-  defstruct [:id, :name, :tempfile, :content_type, :width, :height, :path]
+  defstruct [:id, :name, :tempfile, :content_type, :width, :height, :blurhash, :path]
 
   defp get_description(opts, upload) do
     case {opts[:description], Pleroma.Config.get([Pleroma.Upload, :default_description])} do
@@ -98,7 +100,8 @@ defmodule Pleroma.Upload do
            |> Maps.put_if_present("height", upload.height)
          ],
          "name" => description
-       }}
+       }
+       |> Maps.put_if_present("blurhash", upload.blurhash)}
     else
       {:description_limit, _} ->
         {:error, :description_too_long}
