@@ -143,7 +143,7 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
-      {:earmark, "1.4.3"},
+      {:earmark, "1.4.15"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/crypt.git",
@@ -198,6 +198,10 @@ defmodule Pleroma.Mixfile do
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
        ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},
+      {:eblurhash,
+       git: "https://github.com/zotonic/eblurhash.git",
+       ref: "04a0b76eadf4de1be17726f39b6313b88708fd12"},
+      {:oembed_providers, "~> 0.1.0"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
