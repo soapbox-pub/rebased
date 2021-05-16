@@ -22,7 +22,7 @@
 
   <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
 
-  <%= for tag <- @data["tag"] || [] do %>
+  <%= for tag <- Pleroma.Object.hashtags(@object) do %>
     <category term="<%= tag %>"></category>
   <% end %>
 
