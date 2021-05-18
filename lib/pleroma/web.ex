@@ -35,8 +35,9 @@ defmodule Pleroma.Web do
       import Plug.Conn
 
       import Pleroma.Web.Gettext
-      import Pleroma.Web.Router.Helpers
       import Pleroma.Web.TranslationHelpers
+
+      alias Pleroma.Web.Router.Helpers, as: Routes
 
       plug(:set_put_layout)
 
@@ -131,7 +132,8 @@ defmodule Pleroma.Web do
 
       import Pleroma.Web.ErrorHelpers
       import Pleroma.Web.Gettext
-      import Pleroma.Web.Router.Helpers
+
+      alias Pleroma.Web.Router.Helpers, as: Routes
 
       require Logger
 
