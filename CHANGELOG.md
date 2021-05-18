@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
 - Return OAuth token `id` (primary key) in POST `/oauth/token`.
-- `SetMeta` upload filter for extracting attachment dimensions.
+- `AnalyzeMetadata` upload filter for extracting attachment dimensions.
 - Attachment dimensions are federated when available.
 
 ### Fixed

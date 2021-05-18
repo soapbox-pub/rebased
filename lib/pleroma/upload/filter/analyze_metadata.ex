@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Upload.Filter.SetMeta do
+defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
   @moduledoc """
   Extracts metadata about the upload, such as width/height
   """
