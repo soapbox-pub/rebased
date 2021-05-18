@@ -196,6 +196,9 @@ defmodule Pleroma.Mixfile do
       {:majic,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
        ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
+      {:eblurhash,
+       git: "https://github.com/zotonic/eblurhash.git",
+       ref: "04a0b76eadf4de1be17726f39b6313b88708fd12"},
       {:open_api_spex, "~> 3.10"},
 
       ## dev & test
