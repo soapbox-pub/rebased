@@ -166,7 +166,9 @@ defmodule Pleroma.ApplicationRequirements do
     filter_commands_statuses = [
       check_filter(Pleroma.Upload.Filters.Exiftool, "exiftool"),
       check_filter(Pleroma.Upload.Filters.Mogrify, "mogrify"),
-      check_filter(Pleroma.Upload.Filters.Mogrifun, "mogrify")
+      check_filter(Pleroma.Upload.Filters.Mogrifun, "mogrify"),
+      check_filter(Pleroma.Upload.Filters.AnalyzeMetadata, "mogrify"),
+      check_filter(Pleroma.Upload.Filters.AnalyzeMetadata, "convert")
     ]
 
     preview_proxy_commands_status =
