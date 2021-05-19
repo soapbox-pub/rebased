@@ -89,7 +89,7 @@ sudo -Hu pleroma mix deps.get
 
 * コンフィギュレーションを生成します。
 ```
-sudo -Hu pleroma mix pleroma.instance gen
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen
 ```
     * rebar3をインストールしてもよいか聞かれたら、yesを入力してください。
     * このときにpleromaの一部がコンパイルされるため、この処理には時間がかかります。
@@ -103,7 +103,7 @@ sudo -Hu pleroma mv config/{generated_config.exs,prod.secret.exs}
 
 * 先程のコマンドで、すでに `config/setup_db.psql` というファイルが作られています。このファイルをもとに、データベースを作成します。
 ```
-sudo -Hu pleroma mix pleroma.instance gen
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen
 ```
 
 * そして、データベースのマイグレーションを実行します。

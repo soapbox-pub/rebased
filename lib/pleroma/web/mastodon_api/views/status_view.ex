@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.HTML
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -124,16 +125,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       ) do
     user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
-    activity_object = Object.normalize(activity, fetch: false)
+    object = Object.normalize(activity, fetch: false)
 
     reblogged_parent_activity =
       if opts[:parent_activities] do
         Activity.Queries.find_by_object_ap_id(
           opts[:parent_activities],
-          activity_object.data["id"]
+          object.data["id"]
         )
       else
-        Activity.create_by_object_ap_id(activity_object.data["id"])
+        Activity.create_by_object_ap_id(object.data["id"])
         |> Activity.with_preloaded_bookmark(opts[:for])
         |> Activity.with_set_thread_muted_field(opts[:for])
         |> Repo.one()
@@ -142,7 +143,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reblog_rendering_opts = Map.put(opts, :activity, reblogged_parent_activity)
     reblogged = render("show.json", reblog_rendering_opts)
 
-    favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
+    favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
     bookmarked = Activity.get_bookmark(reblogged_parent_activity, opts[:for]) != nil
 
@@ -152,10 +153,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
+    {pinned?, pinned_at} = pin_data(object, user)
+
     %{
       id: to_string(activity.id),
-      uri: activity_object.data["id"],
-      url: activity_object.data["id"],
+      uri: object.data["id"],
+      url: object.data["id"],
       account:
         AccountView.render("show.json", %{
           user: user,
@@ -173,18 +176,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: false,
-      pinned: pinned?(activity, user),
+      pinned: pinned?,
       sensitive: false,
       spoiler_text: "",
       visibility: get_visibility(activity),
       media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
       tags: reblogged[:tags] || [],
-      application: build_application(activity_object.data["generator"]),
+      application: build_application(object.data["generator"]),
       language: nil,
       emojis: [],
       pleroma: %{
-        local: activity.local
+        local: activity.local,
+        pinned_at: pinned_at
       }
     }
   end
@@ -198,8 +202,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     like_count = object.data["like_count"] || 0
     announcement_count = object.data["announcement_count"] || 0
 
-    tags = object.data["tag"] || []
-    sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
+    hashtags = Object.hashtags(object)
+    sensitive = object.data["sensitive"] || Enum.member?(hashtags, "nsfw")
+
+    tags = Object.tags(object)
 
     tag_mentions =
       tags
@@ -314,6 +320,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           fn for_user, user -> User.mutes?(for_user, user) end
         )
 
+    {pinned?, pinned_at} = pin_data(object, user)
+
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
@@ -337,7 +345,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: muted,
-      pinned: pinned?(activity, user),
+      pinned: pinned?,
       sensitive: sensitive,
       spoiler_text: summary,
       visibility: get_visibility(object),
@@ -358,7 +366,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
-        parent_visible: visible_for_user?(reply_to, opts[:for])
+        parent_visible: visible_for_user?(reply_to, opts[:for]),
+        pinned_at: pinned_at
       }
     }
   end
@@ -379,11 +388,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     page_url = page_url_data |> to_string
 
-    image_url =
+    image_url_data =
       if is_binary(rich_media["image"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["image"]))
-        |> to_string
+        URI.parse(rich_media["image"])
+      else
+        nil
       end
+
+    image_url = build_image_url(image_url_data, page_url_data)
 
     %{
       type: "link",
@@ -406,6 +418,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
     href = attachment_url["href"] |> MediaProxy.url()
     href_preview = attachment_url["href"] |> MediaProxy.preview_url()
+    meta = render("attachment_meta.json", %{attachment: attachment})
 
     type =
       cond do
@@ -428,7 +441,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pleroma: %{mime_type: media_type},
       blurhash: attachment["blurhash"]
     }
+    |> Maps.put_if_present(:meta, meta)
   end
+
+  def render("attachment_meta.json", %{
+        attachment: %{"url" => [%{"width" => width, "height" => height} | _]}
+      })
+      when is_integer(width) and is_integer(height) do
+    %{
+      original: %{
+        width: width,
+        height: height,
+        aspect: width / height
+      }
+    }
+  end
+
+  def render("attachment_meta.json", _), do: nil
 
   def render("context.json", %{activity: activity, activities: activities, user: user}) do
     %{ancestors: ancestors, descendants: descendants} =
@@ -524,8 +553,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp present?(false), do: false
   defp present?(_), do: true
 
-  defp pinned?(%Activity{id: id}, %User{pinned_activities: pinned_activities}),
-    do: id in pinned_activities
+  defp pin_data(%Object{data: %{"id" => object_id}}, %User{pinned_objects: pinned_objects}) do
+    if pinned_at = pinned_objects[object_id] do
+      {true, Utils.to_masto_date(pinned_at)}
+    else
+      {false, nil}
+    end
+  end
 
   defp build_emoji_map(emoji, users, current_user) do
     %{
@@ -536,6 +570,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   @spec build_application(map() | nil) :: map() | nil
-  defp build_application(%{type: _type, name: name, url: url}), do: %{name: name, website: url}
+  defp build_application(%{"type" => _type, "name" => name, "url" => url}),
+    do: %{name: name, website: url}
+
   defp build_application(_), do: nil
+
+  # Workaround for Elixir issue #10771
+  # Avoid applying URI.merge unless necessary
+  # TODO: revert to always attempting URI.merge(image_url_data, page_url_data)
+  # when Elixir 1.12 is the minimum supported version
+  @spec build_image_url(struct() | nil, struct()) :: String.t() | nil
+  defp build_image_url(
+         %URI{scheme: image_scheme, host: image_host} = image_url_data,
+         %URI{} = _page_url_data
+       )
+       when not is_nil(image_scheme) and not is_nil(image_host) do
+    image_url_data |> to_string
+  end
+
+  defp build_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
+    URI.merge(page_url_data, image_url_data) |> to_string
+  end
+
+  defp build_image_url(_, _), do: nil
 end

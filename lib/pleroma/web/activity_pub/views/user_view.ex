@@ -6,8 +6,10 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
 
   alias Pleroma.Keys
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
@@ -97,6 +99,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "followers" => "#{user.ap_id}/followers",
       "inbox" => "#{user.ap_id}/inbox",
       "outbox" => "#{user.ap_id}/outbox",
+      "featured" => "#{user.ap_id}/collections/featured",
       "preferredUsername" => user.nickname,
       "name" => user.name,
       "summary" => user.bio,
@@ -243,6 +246,24 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     }
     |> Map.merge(Utils.make_json_ld_header())
     |> Map.merge(pagination)
+  end
+
+  def render("featured.json", %{
+        user: %{featured_address: featured_address, pinned_objects: pinned_objects}
+      }) do
+    objects =
+      pinned_objects
+      |> Enum.sort_by(fn {_, pinned_at} -> pinned_at end, &>=/2)
+      |> Enum.map(fn {id, _} ->
+        ObjectView.render("object.json", %{object: Object.get_cached_by_ap_id(id)})
+      end)
+
+    %{
+      "id" => featured_address,
+      "type" => "OrderedCollection",
+      "orderedItems" => objects
+    }
+    |> Map.merge(Utils.make_json_ld_header())
   end
 
   defp maybe_put_total_items(map, false, _total), do: map

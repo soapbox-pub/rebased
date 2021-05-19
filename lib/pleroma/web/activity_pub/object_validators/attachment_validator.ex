@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.Web.ActivityPub.ObjectValidators.UrlObjectValidator
 
   import Ecto.Changeset
 
@@ -21,6 +20,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       field(:type, :string)
       field(:href, ObjectValidators.Uri)
       field(:mediaType, :string, default: "application/octet-stream")
+      field(:width, :integer)
+      field(:height, :integer)
     end
   end
 
@@ -52,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     data = fix_media_type(data)
 
     struct
-    |> cast(data, [:type, :href, :mediaType])
+    |> cast(data, [:type, :href, :mediaType, :width, :height])
     |> validate_inclusion(:type, ["Link"])
     |> validate_required([:type, :href, :mediaType])
   end
@@ -90,7 +91,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     end
   end
 
-  def validate_data(cng) do
+  defp validate_data(cng) do
     cng
     |> validate_inclusion(:type, ~w[Document Audio Image Video])
     |> validate_required([:mediaType, :url, :type])

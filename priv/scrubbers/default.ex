@@ -39,6 +39,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes(:code, [])
   Meta.allow_tag_with_these_attributes(:del, [])
   Meta.allow_tag_with_these_attributes(:em, [])
+  Meta.allow_tag_with_these_attributes(:hr, [])
   Meta.allow_tag_with_these_attributes(:i, [])
   Meta.allow_tag_with_these_attributes(:li, [])
   Meta.allow_tag_with_these_attributes(:ol, [])
@@ -57,6 +58,8 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   Meta.allow_tag_with_this_attribute_values(:span, "class", ["h-card"])
   Meta.allow_tag_with_these_attributes(:span, [])
+
+  Meta.allow_tag_with_this_attribute_values(:code, "class", ["inline"])
 
   @allow_inline_images Pleroma.Config.get([:markup, :allow_inline_images])
 

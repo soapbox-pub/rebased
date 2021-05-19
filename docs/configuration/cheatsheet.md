@@ -65,6 +65,13 @@ To add configuration to your config file, you can copy it from the base config. 
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
 
+## :database
+* `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
+
+## Background migrations
+* `populate_hashtags_table/sleep_interval_ms`: Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances).
+* `populate_hashtags_table/fault_rate_allowance`: Max rate of failed objects to actually processed objects in order to enable the feature (any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records).
+
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
   * `enabled`: Enables the send a direct message to a newly registered user. Defaults to `false`.
@@ -117,6 +124,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
     * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
+    * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -202,6 +210,21 @@ config :pleroma, :mrf_user_allowlist, %{
 #### :mrf_activity_expiration
 
 * `days`: Default global expiration time for all local Create activities (in days)
+
+#### :mrf_hashtag
+
+* `sensitive`: List of hashtags to mark activities as sensitive (default: `nsfw`)
+* `federated_timeline_removal`: List of hashtags to remove activities from the federated timeline (aka TWNK)
+* `reject`: List of hashtags to reject activities from
+
+Notes:
+- The hashtags in the configuration do not have a leading `#`.
+- This MRF Policy is always enabled, if you want to disable it you have to set empty lists
+
+#### :mrf_follow_bot
+
+* `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
+
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed

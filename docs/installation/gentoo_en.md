@@ -54,7 +54,7 @@ Gentoo quite pointedly does not come with a cron daemon installed, and as such i
  # emerge --ask dev-db/postgresql dev-lang/elixir dev-vcs/git www-servers/nginx app-crypt/certbot app-crypt/certbot-nginx dev-util/cmake sys-apps/file
 ```
 
-If you would not like to install the optional packages, remove them from this line. 
+If you would not like to install the optional packages, remove them from this line.
 
 If you're running this from a low-powered virtual machine, it should work though it will take some time. There were no issues on a VPS with a single core and 1GB of RAM; if you are using an even more limited device and run into issues, you can try creating a swapfile or use a more powerful machine running Gentoo to [cross build](https://wiki.gentoo.org/wiki/Cross_build_environment). If you have a wait ahead of you, now would be a good time to take a break, strech a bit, refresh your beverage of choice and/or get a snack, and reply to Arch users' posts with "I use Gentoo btw" as we do.
 
@@ -79,12 +79,12 @@ The output from emerging postgresql should give you a command for initializing t
 ```
 
 * Start postgres and enable the system service
- 
+
 ```shell
  # /etc/init.d/postgresql-11 start
  # rc-update add postgresql-11 default
  ```
- 
+
 ### A note on licenses, the AGPL, and deployment procedures
 
 If you do not plan to make any modifications to your Pleroma instance, cloning directly from the main repo will get you what you need. However, if you plan on doing any contributions to upstream development, making changes or modifications to your instance, making custom themes, or want to play around--and let's be honest here, if you're using Gentoo that is most likely you--you will save yourself a lot of headache later if you take the time right now to fork the Pleroma repo and use that in the following section.
@@ -135,7 +135,7 @@ pleroma$ mix deps.get
 * Generate the configuration:
 
 ```shell
-pleroma$ mix pleroma.instance gen
+pleroma$ MIX_ENV=prod mix pleroma.instance gen
 ```
 
   * Answer with `yes` if it asks you to install `rebar3`.
@@ -241,7 +241,7 @@ First, ensure that the command you will be installing into your crontab works.
  # /usr/bin/certbot renew --nginx
 ```
 
-Assuming not much time has passed since you got certbot working a few steps ago, you should get a message for all domains you installed certificates for saying `Cert not yet due for renewal`. 
+Assuming not much time has passed since you got certbot working a few steps ago, you should get a message for all domains you installed certificates for saying `Cert not yet due for renewal`.
 
 Now, run crontab as a superuser with `crontab -e` or `sudo crontab -e` as appropriate, and add the following line to your cron:
 
