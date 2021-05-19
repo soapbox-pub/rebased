@@ -1,6 +1,6 @@
 # Installing on NetBSD
 
-## Required software 
+## Required software
 
 pkgin should have been installed by the NetBSD installer if you selected
 the right options. If it isn't installed, install it using pkg_add.
@@ -71,7 +71,7 @@ Configure Pleroma. Note that you need a domain name at this point:
 ```
 $ cd /home/pleroma/pleroma
 $ mix deps.get
-$ mix pleroma.instance gen # You will be asked a few questions here.
+$ MIX_ENV=prod mix pleroma.instance gen # You will be asked a few questions here.
 ```
 
 Since Postgres is configured, we can now initialize the database. There should
