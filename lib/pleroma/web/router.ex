@@ -821,4 +821,16 @@ defmodule Pleroma.Web.Router do
 
     options("/*path", RedirectController, :empty)
   end
+
+  # TODO: Change to Phoenix.Router.routes/1 for Phoenix 1.6.0+
+  def get_api_routes do
+    __MODULE__.__routes__()
+    |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
+    |> Enum.map(fn r ->
+      r.path
+      |> String.split("/", trim: true)
+      |> List.first()
+    end)
+    |> Enum.uniq()
+  end
 end
