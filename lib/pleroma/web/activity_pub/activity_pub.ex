@@ -21,13 +21,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
 
   import Ecto.Query
-  import Pleroma.Web.ActivityPub.Utils
-  import Pleroma.Web.ActivityPub.Visibility
 
   require Logger
   require Pleroma.Constants
@@ -69,18 +69,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_remote_limit(_), do: true
 
   def increase_note_count_if_public(actor, object) do
-    if is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
+    if Visibility.is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
   end
 
   def decrease_note_count_if_public(actor, object) do
-    if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
+    if Visibility.is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
   end
 
   defp increase_replies_count_if_reply(%{
          "object" => %{"inReplyTo" => reply_ap_id} = object,
          "type" => "Create"
        }) do
-    if is_public?(object) do
+    if Visibility.is_public?(object) do
       Object.increase_replies_count(reply_ap_id)
     end
   end
@@ -115,14 +115,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   @spec insert(map(), boolean(), boolean(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
-         map <- lazy_put_activity_defaults(map, fake),
+         map <- Utils.lazy_put_activity_defaults(map, fake),
          {_, true} <- {:actor_check, bypass_actor_check || check_actor_is_active(map["actor"])},
          {_, true} <- {:remote_limit_pass, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
          {:containment, :ok} <- {:containment, Containment.contain_child(map)},
-         {:ok, map, object} <- insert_full_object(map),
+         {:ok, map, object} <- Utils.insert_full_object(map),
          {:ok, activity} <- insert_activity_with_expiration(map, local, recipients) do
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
@@ -273,7 +273,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     quick_insert? = Config.get([:env]) == :benchmark
 
     create_data =
-      make_create_data(
+      Utils.make_create_data(
         %{to: to, actor: actor, published: published, context: context, object: object},
         additional
       )
@@ -284,7 +284,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
+         :ok <- Utils.maybe_federate(activity) do
       {:ok, activity}
     else
       {:quick_insert, true, activity} ->
@@ -306,14 +306,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     published = params[:published]
 
     listen_data =
-      make_listen_data(
+      Utils.make_listen_data(
         %{to: to, actor: actor, published: published, context: context, object: object},
         additional
       )
 
     with {:ok, activity} <- insert(listen_data, local),
          _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
+         :ok <- Utils.maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -328,12 +328,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp do_unfollow(follower, followed, activity_id, local) do
-    with %Activity{} = follow_activity <- fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
-         unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
+    with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "cancelled"),
+         unfollow_data <-
+           Utils.make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
          _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
+         :ok <- Utils.maybe_federate(activity) do
       {:ok, activity}
     else
       nil -> nil
@@ -370,12 +371,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         Map.merge(additional, %{"to" => [], "cc" => []})
       end
 
-    with flag_data <- make_flag_data(params, additional),
+    with flag_data <- Utils.make_flag_data(params, additional),
          {:ok, activity} <- insert(flag_data, local),
-         {:ok, stripped_activity} <- strip_report_status_data(activity),
+         {:ok, stripped_activity} <- Utils.strip_report_status_data(activity),
          _ <- notify_and_stream(activity),
          :ok <-
-           maybe_federate(stripped_activity) do
+           Utils.maybe_federate(stripped_activity) do
       User.all_superusers()
       |> Enum.filter(fn user -> user.ap_id != actor end)
       |> Enum.filter(fn user -> not is_nil(user.email) end)
@@ -403,7 +404,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with true <- origin.ap_id in target.also_known_as,
          {:ok, activity} <- insert(params, local),
          _ <- notify_and_stream(activity) do
-      maybe_federate(activity)
+      Utils.maybe_federate(activity)
 
       BackgroundWorker.enqueue("move_following", %{
         "origin_id" => origin.id,
@@ -1495,7 +1496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   # filter out broken threads
   defp contain_broken_threads(%Activity{} = activity, %User{} = user) do
-    entire_thread_visible_for_user?(activity, user)
+    Visibility.entire_thread_visible_for_user?(activity, user)
   end
 
   # do post-processing on a specific activity
