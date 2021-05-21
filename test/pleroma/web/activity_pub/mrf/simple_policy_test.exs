@@ -504,7 +504,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
   defp build_local_message do
     %{
-      "actor" => "#{Pleroma.Web.base_url()}/users/alice",
+      "actor" => "#{Pleroma.Web.Endpoint.url()}/users/alice",
       "to" => [],
       "cc" => []
     }

@@ -13,7 +13,7 @@ defmodule Pleroma.Web.WebFinger do
   require Logger
 
   def host_meta do
-    base_url = Web.base_url()
+    base_url = Web.Endpoint.url()
 
     {
       :XRD,

@@ -359,7 +359,7 @@ defmodule Pleroma.User do
 
       _ ->
         unless options[:no_default] do
-          Config.get([:assets, :default_user_avatar], "#{Web.base_url()}/images/avi.png")
+          Config.get([:assets, :default_user_avatar], "#{Web.Endpoint.url()}/images/avi.png")
         end
     end
   end
@@ -367,12 +367,12 @@ defmodule Pleroma.User do
   def banner_url(user, options \\ []) do
     case user.banner do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
+      _ -> !options[:no_default] && "#{Web.Endpoint.url()}/images/banner.png"
     end
   end
 
   # Should probably be renamed or removed
-  def ap_id(%User{nickname: nickname}), do: "#{Web.base_url()}/users/#{nickname}"
+  def ap_id(%User{nickname: nickname}), do: "#{Web.Endpoint.url()}/users/#{nickname}"
 
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"

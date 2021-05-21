@@ -151,7 +151,7 @@ defmodule Pleroma.UserTest do
   test "ap_id returns the activity pub id for the user" do
     user = UserBuilder.build()
 
-    expected_ap_id = "#{Pleroma.Web.base_url()}/users/#{user.nickname}"
+    expected_ap_id = "#{Pleroma.Web.Endpoint.url()}/users/#{user.nickname}"
 
     assert expected_ap_id == User.ap_id(user)
   end

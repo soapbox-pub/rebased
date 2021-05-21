@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
   def filter(object), do: {:ok, object}
 
   defp is_local?(actor) do
-    if actor |> String.starts_with?("#{Web.base_url()}") do
+    if actor |> String.starts_with?("#{Web.Endpoint.url()}") do
       true
     else
       false

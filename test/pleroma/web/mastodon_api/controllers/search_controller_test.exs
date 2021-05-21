@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert account["id"] == to_string(user_three.id)
 
       assert results["hashtags"] == [
-               %{"name" => "private", "url" => "#{Web.base_url()}/tag/private"}
+               %{"name" => "private", "url" => "#{Web.Endpoint.url()}/tag/private"}
              ]
 
       [status] = results["statuses"]
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "天子", "url" => "#{Web.base_url()}/tag/天子"}
+               %{"name" => "天子", "url" => "#{Web.Endpoint.url()}/tag/天子"}
              ]
 
       [status] = results["statuses"]
@@ -87,8 +87,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "explicit", "url" => "#{Web.base_url()}/tag/explicit"},
-               %{"name" => "hashtags", "url" => "#{Web.base_url()}/tag/hashtags"}
+               %{"name" => "explicit", "url" => "#{Web.Endpoint.url()}/tag/explicit"},
+               %{"name" => "hashtags", "url" => "#{Web.Endpoint.url()}/tag/hashtags"}
              ]
 
       results =
@@ -97,9 +97,9 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "john", "url" => "#{Web.base_url()}/tag/john"},
-               %{"name" => "doe", "url" => "#{Web.base_url()}/tag/doe"},
-               %{"name" => "JohnDoe", "url" => "#{Web.base_url()}/tag/JohnDoe"}
+               %{"name" => "john", "url" => "#{Web.Endpoint.url()}/tag/john"},
+               %{"name" => "doe", "url" => "#{Web.Endpoint.url()}/tag/doe"},
+               %{"name" => "JohnDoe", "url" => "#{Web.Endpoint.url()}/tag/JohnDoe"}
              ]
 
       results =
@@ -108,9 +108,9 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "accident", "url" => "#{Web.base_url()}/tag/accident"},
-               %{"name" => "prone", "url" => "#{Web.base_url()}/tag/prone"},
-               %{"name" => "AccidentProne", "url" => "#{Web.base_url()}/tag/AccidentProne"}
+               %{"name" => "accident", "url" => "#{Web.Endpoint.url()}/tag/accident"},
+               %{"name" => "prone", "url" => "#{Web.Endpoint.url()}/tag/prone"},
+               %{"name" => "AccidentProne", "url" => "#{Web.Endpoint.url()}/tag/AccidentProne"}
              ]
 
       results =
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "shpuld", "url" => "#{Web.base_url()}/tag/shpuld"}
+               %{"name" => "shpuld", "url" => "#{Web.Endpoint.url()}/tag/shpuld"}
              ]
 
       results =
@@ -136,18 +136,18 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "nascar", "url" => "#{Web.base_url()}/tag/nascar"},
-               %{"name" => "ban", "url" => "#{Web.base_url()}/tag/ban"},
-               %{"name" => "display", "url" => "#{Web.base_url()}/tag/display"},
-               %{"name" => "confederate", "url" => "#{Web.base_url()}/tag/confederate"},
-               %{"name" => "flag", "url" => "#{Web.base_url()}/tag/flag"},
-               %{"name" => "all", "url" => "#{Web.base_url()}/tag/all"},
-               %{"name" => "events", "url" => "#{Web.base_url()}/tag/events"},
-               %{"name" => "properties", "url" => "#{Web.base_url()}/tag/properties"},
+               %{"name" => "nascar", "url" => "#{Web.Endpoint.url()}/tag/nascar"},
+               %{"name" => "ban", "url" => "#{Web.Endpoint.url()}/tag/ban"},
+               %{"name" => "display", "url" => "#{Web.Endpoint.url()}/tag/display"},
+               %{"name" => "confederate", "url" => "#{Web.Endpoint.url()}/tag/confederate"},
+               %{"name" => "flag", "url" => "#{Web.Endpoint.url()}/tag/flag"},
+               %{"name" => "all", "url" => "#{Web.Endpoint.url()}/tag/all"},
+               %{"name" => "events", "url" => "#{Web.Endpoint.url()}/tag/events"},
+               %{"name" => "properties", "url" => "#{Web.Endpoint.url()}/tag/properties"},
                %{
                  "name" => "NascarBanDisplayConfederateFlagAllEventsProperties",
                  "url" =>
-                   "#{Web.base_url()}/tag/NascarBanDisplayConfederateFlagAllEventsProperties"
+                   "#{Web.Endpoint.url()}/tag/NascarBanDisplayConfederateFlagAllEventsProperties"
                }
              ]
     end
@@ -163,8 +163,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert results["hashtags"] == [
-               %{"name" => "text", "url" => "#{Web.base_url()}/tag/text"},
-               %{"name" => "with", "url" => "#{Web.base_url()}/tag/with"}
+               %{"name" => "text", "url" => "#{Web.Endpoint.url()}/tag/text"},
+               %{"name" => "with", "url" => "#{Web.Endpoint.url()}/tag/with"}
              ]
     end
 

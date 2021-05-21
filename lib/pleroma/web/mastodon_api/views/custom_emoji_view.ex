@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.CustomEmojiView do
   end
 
   def render("show.json", %{custom_emoji: {shortcode, %Emoji{file: relative_url, tags: tags}}}) do
-    url = Web.base_url() |> URI.merge(relative_url) |> to_string()
+    url = Web.Endpoint.url() |> URI.merge(relative_url) |> to_string()
 
     %{
       "shortcode" => shortcode,

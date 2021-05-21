@@ -73,7 +73,7 @@ defmodule Pleroma.Emails.AdminEmail do
     #{comment_html}
     #{statuses_html}
     <p>
-    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
+    <a href="#{Pleroma.Web.Endpoint.url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
     """
 
     new()
@@ -87,7 +87,7 @@ defmodule Pleroma.Emails.AdminEmail do
     html_body = """
     <p>New account for review: <a href="#{account.ap_id}">@#{account.nickname}</a></p>
     <blockquote>#{HTML.strip_tags(account.registration_reason)}</blockquote>
-    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/users/#{account.id}/">Visit AdminFE</a>
+    <a href="#{Pleroma.Web.Endpoint.url()}/pleroma/admin/#/users/#{account.id}/">Visit AdminFE</a>
     """
 
     new()

@@ -108,7 +108,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   end
 
   defp resource_search(:v2, "hashtags", query, options) do
-    tags_path = Web.base_url() <> "/tag/"
+    tags_path = Web.Endpoint.url() <> "/tag/"
 
     query
     |> prepare_tags(options)
