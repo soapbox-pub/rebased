@@ -27,7 +27,6 @@ defmodule Pleroma.User.Query do
       - e.g. Pleroma.User.Query.build(%{ap_id: ["http://ap_id1", "http://ap_id2"]})
   """
   import Ecto.Query
-  import Pleroma.Web.AdminAPI.Search, only: [not_empty_string: 1]
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
@@ -64,6 +63,12 @@ defmodule Pleroma.User.Query do
   @ilike_criteria [:nickname, :name, :query]
   @equal_criteria [:email]
   @contains_criteria [:ap_id, :nickname]
+
+  defmacro not_empty_string(string) do
+    quote do
+      is_binary(unquote(string)) and unquote(string) != ""
+    end
+  end
 
   @spec build(Query.t(), criteria()) :: Query.t()
   def build(query \\ base_query(), criteria) do
