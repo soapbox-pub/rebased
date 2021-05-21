@@ -6,6 +6,13 @@ For changes to Pleroma, see `CHANGELOG.md`
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.1] - 2021-05-21
+
+Based on Pleroma 2.3.0-stable.
+
+### Fixed
+- Broken frontend due to not all files being in the repo.
+
 ## [1.1.0] - 2021-05-18
 
 Based on Pleroma 2.3.0-stable.
