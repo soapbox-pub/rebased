@@ -25,7 +25,7 @@ defmodule Pleroma.Instances.Instance do
     timestamps()
   end
 
-  defdelegate host(url_or_host), to: Instances
+  def host(url_or_host), do: Instances.host(url_or_host)
 
   def changeset(struct, params \\ %{}) do
     struct
