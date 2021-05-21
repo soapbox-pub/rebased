@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Config.Loader do
   @reject_keys [
-    Pleroma.Repo,
-    Pleroma.Web.Endpoint,
+    Module.concat(["Pleroma.Repo"]),
+    Module.concat(["Pleroma.Web.Endpoint"]),
     :env,
     :configurable_from_database,
     :database,
