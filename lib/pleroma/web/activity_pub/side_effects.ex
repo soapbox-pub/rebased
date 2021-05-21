@@ -28,10 +28,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
-  @ap_streamer Pleroma.Config.get([:side_effects, :ap_streamer], ActivityPub)
+  @ap_streamer Pleroma.Config.get([:side_effects, :ap_streamer])
   @logger Pleroma.Config.get([:side_effects, :logger], Logger)
 
   @behaviour Pleroma.Web.ActivityPub.SideEffects.Handling
+
+  defp ap_streamer(), do: @ap_streamer || ActivityPub
 
   @impl true
   def handle(object, meta \\ [])
@@ -289,8 +291,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
             MessageReference.delete_for_object(deleted_object)
 
-            @ap_streamer.stream_out(object)
-            @ap_streamer.stream_out_participations(deleted_object, user)
+            ap_streamer().stream_out(object)
+            ap_streamer().stream_out_participations(deleted_object, user)
             :ok
           else
             {:actor, _} ->
