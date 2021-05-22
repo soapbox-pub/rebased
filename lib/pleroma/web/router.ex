@@ -764,11 +764,11 @@ defmodule Pleroma.Web.Router do
     get("/embed/:id", EmbedController, :show)
   end
 
-  scope "/proxy/", Pleroma.Web.MediaProxy do
-    get("/preview/:sig/:url", MediaProxyController, :preview)
-    get("/preview/:sig/:url/:filename", MediaProxyController, :preview)
-    get("/:sig/:url", MediaProxyController, :remote)
-    get("/:sig/:url/:filename", MediaProxyController, :remote)
+  scope "/proxy/", Pleroma.Web do
+    get("/preview/:sig/:url", MediaProxy.MediaProxyController, :preview)
+    get("/preview/:sig/:url/:filename", MediaProxy.MediaProxyController, :preview)
+    get("/:sig/:url", MediaProxy.MediaProxyController, :remote)
+    get("/:sig/:url/:filename", MediaProxy.MediaProxyController, :remote)
   end
 
   if Pleroma.Config.get(:env) == :dev do
