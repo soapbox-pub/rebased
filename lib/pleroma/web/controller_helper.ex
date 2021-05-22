@@ -6,17 +6,7 @@ defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
   alias Pleroma.Pagination
-
-  # As in Mastodon API, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
-  @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
-
-  def explicitly_falsy_param?(value), do: value in @falsy_param_values
-
-  # Note: `nil` and `""` are considered falsy values in Pleroma
-  def falsy_param?(value),
-    do: explicitly_falsy_param?(value) or value in [nil, ""]
-
-  def truthy_param?(value), do: not falsy_param?(value)
+  alias Pleroma.Web.Params
 
   def json_response(conn, status, _) when status in [204, :no_content] do
     conn
@@ -123,6 +113,6 @@ defmodule Pleroma.Web.ControllerHelper do
     # To do once OpenAPI transition mess is over: just `truthy_param?(params[:with_relationships])`
     params
     |> Map.get(:with_relationships, params["with_relationships"])
-    |> truthy_param?()
+    |> Params.truthy_param?()
   end
 end

@@ -13,7 +13,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.Auth.WrapperAuthenticator, as: Authenticator
-  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.MFAController
@@ -23,6 +22,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
+  alias Pleroma.Web.Params
   alias Pleroma.Web.Plugs.RateLimiter
 
   require Logger
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def authorize(%Plug.Conn{assigns: %{token: %Token{}}} = conn, %{"force_login" => _} = params) do
-    if ControllerHelper.truthy_param?(params["force_login"]) do
+    if Params.truthy_param?(params["force_login"]) do
       do_authorize(conn, params)
     else
       handle_existing_authorization(conn, params)

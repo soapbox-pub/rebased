@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.CommonAPI.Utils do
   import Pleroma.Web.Gettext
-  import Pleroma.Web.ControllerHelper, only: [truthy_param?: 1]
 
   alias Calendar.Strftime
   alias Pleroma.Activity
@@ -18,6 +17,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.Params
   alias Pleroma.Web.Plugs.AuthenticationPlug
 
   require Logger
@@ -160,7 +160,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         |> DateTime.add(expires_in)
         |> DateTime.to_iso8601()
 
-      key = if truthy_param?(data.poll[:multiple]), do: "anyOf", else: "oneOf"
+      key = if Params.truthy_param?(data.poll[:multiple]), do: "anyOf", else: "oneOf"
       poll = %{"type" => "Question", key => option_notes, "closed" => end_time}
 
       {:ok, {poll, emoji}}
@@ -203,7 +203,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     attachment_links =
       draft.params
       |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
-      |> truthy_param?()
+      |> Params.truthy_param?()
 
     content_type = get_content_type(draft.params[:content_type])
 
