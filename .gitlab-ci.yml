@@ -154,6 +154,14 @@ analysis:
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
+cycles:
+  stage: test
+  image: elixir:1.11
+  script:
+    - mix deps.get
+    - mix compile
+    - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
+
 docs-deploy:
   stage: deploy
   cache: *testing_cache_policy
