@@ -140,6 +140,10 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
+  pipeline :static_fe do
+    plug(Pleroma.Web.Plugs.StaticFEPlug)
+  end
+
   scope "/api/v1/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
@@ -631,7 +635,7 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
     # Note: http signature is only considered for json requests (no auth for non-json requests)
-    pipe_through([:accepts_html_json, :http_signature, Pleroma.Web.Plugs.StaticFEPlug])
+    pipe_through([:accepts_html_json, :http_signature, :static_fe])
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
@@ -645,7 +649,7 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
     # Note: http signature is only considered for json requests (no auth for non-json requests)
-    pipe_through([:accepts_html_xml_json, :http_signature, Pleroma.Web.Plugs.StaticFEPlug])
+    pipe_through([:accepts_html_xml_json, :http_signature, :static_fe])
 
     # Note: returns user _profile_ for json requests, redirects to user _feed_ for non-json ones
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
@@ -653,7 +657,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
-    pipe_through([:accepts_html_xml, Pleroma.Web.Plugs.StaticFEPlug])
+    pipe_through([:accepts_html_xml, :static_fe])
 
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
   end
