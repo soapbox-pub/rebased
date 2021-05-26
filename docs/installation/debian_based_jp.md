@@ -191,5 +191,5 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 
 インストールについて質問がある、もしくは、うまくいかないときは、以下のところで質問できます。
 
-* [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org)
-* **Freenode** の **#pleroma** IRCチャンネル
+* [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat)
+* **libera.chat** の **#pleroma** IRCチャンネル
