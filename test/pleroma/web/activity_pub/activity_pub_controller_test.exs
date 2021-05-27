@@ -1966,7 +1966,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     %{nickname: nickname, featured_address: featured_address, pinned_objects: pinned_objects} =
       refresh_record(user)
 
-    %{"id" => ^featured_address, "orderedItems" => items} =
+    %{"id" => ^featured_address, "orderedItems" => items, "totalItems" => 2} =
       conn
       |> get("/users/#{nickname}/collections/featured")
       |> json_response(200)
