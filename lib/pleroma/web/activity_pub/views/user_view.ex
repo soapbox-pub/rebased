@@ -261,7 +261,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     %{
       "id" => featured_address,
       "type" => "OrderedCollection",
-      "orderedItems" => objects
+      "orderedItems" => objects,
+      "totalItems" => length(objects)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end

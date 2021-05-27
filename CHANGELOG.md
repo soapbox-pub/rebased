@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Return OAuth token `id` (primary key) in POST `/oauth/token`.
 - `AnalyzeMetadata` upload filter for extracting attachment dimensions and generating blurhashes.
 - Attachment dimensions and blurhashes are federated when available.
+- Pinned posts federation
 
 ### Fixed
 - Don't crash so hard when email settings are invalid.
