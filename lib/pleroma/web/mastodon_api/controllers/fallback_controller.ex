@@ -30,6 +30,12 @@ defmodule Pleroma.Web.MastodonAPI.FallbackController do
     |> json(%{error: error_message})
   end
 
+  def call(conn, {:error, status, message}) do
+    conn
+    |> put_status(status)
+    |> json(%{error: message})
+  end
+
   def call(conn, _) do
     conn
     |> put_status(:internal_server_error)

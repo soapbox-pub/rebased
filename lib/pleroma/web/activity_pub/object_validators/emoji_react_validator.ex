@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
     end
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["EmojiReact"])
     |> validate_required([:id, :type, :object, :actor, :context, :to, :cc, :content])

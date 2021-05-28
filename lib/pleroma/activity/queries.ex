@@ -14,6 +14,11 @@ defmodule Pleroma.Activity.Queries do
   alias Pleroma.Activity
   alias Pleroma.User
 
+  @spec by_id(query(), String.t()) :: query()
+  def by_id(query \\ Activity, id) do
+    from(a in query, where: a.id == ^id)
+  end
+
   @spec by_ap_id(query, String.t()) :: query
   def by_ap_id(query \\ Activity, ap_id) do
     from(

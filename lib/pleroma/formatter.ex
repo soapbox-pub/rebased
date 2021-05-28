@@ -121,6 +121,10 @@ defmodule Pleroma.Formatter do
     end
   end
 
+  def markdown_to_html(text) do
+    Earmark.as_html!(text, %Earmark.Options{compact_output: true})
+  end
+
   def html_escape({text, mentions, hashtags}, type) do
     {html_escape(text, type), mentions, hashtags}
   end

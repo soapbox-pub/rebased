@@ -23,6 +23,9 @@ defmodule Pleroma.Upload do
     is once created permanent and changing it (especially in uploaders) is probably a bad idea!
   * `:tempfile` - path to the temporary file. Prefer in-place changes on the file rather than changing the
   path as the temporary file is also tracked by `Plug.Upload{}` and automatically deleted once the request is over.
+  * `:width` - width of the media in pixels
+  * `:height` - height of the media in pixels
+  * `:blurhash` - string hash of the image encoded with the blurhash algorithm (https://blurha.sh/)
 
   Related behaviors:
 
@@ -32,6 +35,7 @@ defmodule Pleroma.Upload do
   """
   alias Ecto.UUID
   alias Pleroma.Config
+  alias Pleroma.Maps
   require Logger
 
   @type source ::
@@ -53,9 +57,12 @@ defmodule Pleroma.Upload do
           name: String.t(),
           tempfile: String.t(),
           content_type: String.t(),
+          width: integer(),
+          height: integer(),
+          blurhash: String.t(),
           path: String.t()
         }
-  defstruct [:id, :name, :tempfile, :content_type, :path]
+  defstruct [:id, :name, :tempfile, :content_type, :width, :height, :blurhash, :path]
 
   defp get_description(opts, upload) do
     case {opts[:description], Pleroma.Config.get([Pleroma.Upload, :default_description])} do
@@ -89,9 +96,12 @@ defmodule Pleroma.Upload do
              "mediaType" => upload.content_type,
              "href" => url_from_spec(upload, opts.base_url, url_spec)
            }
+           |> Maps.put_if_present("width", upload.width)
+           |> Maps.put_if_present("height", upload.height)
          ],
          "name" => description
-       }}
+       }
+       |> Maps.put_if_present("blurhash", upload.blurhash)}
     else
       {:description_limit, _} ->
         {:error, :description_too_long}
