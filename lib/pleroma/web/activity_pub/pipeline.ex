@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.ObjectValidator
@@ -24,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   @spec common_pipeline(map(), keyword()) ::
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
   def common_pipeline(object, meta) do
-    case Repo.transaction(fn -> do_common_pipeline(object, meta) end) do
+    case Repo.transaction(fn -> do_common_pipeline(object, meta) end, Utils.query_timeout()) do
       {:ok, {:ok, activity, meta}} ->
         @side_effects.handle_after_transaction(meta)
         {:ok, activity, meta}
@@ -40,19 +41,17 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
     end
   end
 
-  def do_common_pipeline(object, meta) do
-    with {_, {:ok, validated_object, meta}} <-
-           {:validate_object, @object_validator.validate(object, meta)},
-         {_, {:ok, mrfd_object, meta}} <-
-           {:mrf_object, @mrf.pipeline_filter(validated_object, meta)},
-         {_, {:ok, activity, meta}} <-
-           {:persist_object, @activity_pub.persist(mrfd_object, meta)},
-         {_, {:ok, activity, meta}} <-
-           {:execute_side_effects, @side_effects.handle(activity, meta)},
-         {_, {:ok, _}} <- {:federation, maybe_federate(activity, meta)} do
-      {:ok, activity, meta}
+  def do_common_pipeline(%{__struct__: _}, _meta), do: {:error, :is_struct}
+
+  def do_common_pipeline(message, meta) do
+    with {_, {:ok, message, meta}} <- {:validate, @object_validator.validate(message, meta)},
+         {_, {:ok, message, meta}} <- {:mrf, @mrf.pipeline_filter(message, meta)},
+         {_, {:ok, message, meta}} <- {:persist, @activity_pub.persist(message, meta)},
+         {_, {:ok, message, meta}} <- {:side_effects, @side_effects.handle(message, meta)},
+         {_, {:ok, _}} <- {:federation, maybe_federate(message, meta)} do
+      {:ok, message, meta}
     else
-      {:mrf_object, {:reject, message, _}} -> {:reject, message}
+      {:mrf, {:reject, message, _}} -> {:reject, message}
       e -> {:error, e}
     end
   end

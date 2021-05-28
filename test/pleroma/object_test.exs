@@ -5,10 +5,13 @@
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
+
   import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
+
   alias Pleroma.Activity
+  alias Pleroma.Hashtag
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -415,6 +418,30 @@ defmodule Pleroma.ObjectTest do
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 3
 
       assert updated_object.data["like_count"] == 1
+    end
+  end
+
+  describe ":hashtags association" do
+    test "Hashtag records are created with Object record and updated on its change" do
+      user = insert(:user)
+
+      {:ok, %{object: object}} =
+        CommonAPI.post(user, %{status: "some text #hashtag1 #hashtag2 ..."})
+
+      assert [%Hashtag{name: "hashtag1"}, %Hashtag{name: "hashtag2"}] =
+               Enum.sort_by(object.hashtags, & &1.name)
+
+      {:ok, object} = Object.update_data(object, %{"tag" => []})
+
+      assert [] = object.hashtags
+
+      object = Object.get_by_id(object.id) |> Repo.preload(:hashtags)
+      assert [] = object.hashtags
+
+      {:ok, object} = Object.update_data(object, %{"tag" => ["abc", "def"]})
+
+      assert [%Hashtag{name: "abc"}, %Hashtag{name: "def"}] =
+               Enum.sort_by(object.hashtags, & &1.name)
     end
   end
 end

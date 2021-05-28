@@ -4,6 +4,9 @@
 
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
+
+  require Pleroma.Constants
+
   alias Pleroma.Object
   alias Pleroma.User
 
@@ -41,22 +44,26 @@ defmodule Pleroma.Factory do
 
     urls =
       if attrs[:local] == false do
-        base_domain = Enum.random(["domain1.com", "domain2.com", "domain3.com"])
+        base_domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
 
         ap_id = "https://#{base_domain}/users/#{user.nickname}"
 
         %{
           ap_id: ap_id,
           follower_address: ap_id <> "/followers",
-          following_address: ap_id <> "/following"
+          following_address: ap_id <> "/following",
+          featured_address: ap_id <> "/collections/featured"
         }
       else
         %{
           ap_id: User.ap_id(user),
           follower_address: User.ap_followers(user),
-          following_address: User.ap_following(user)
+          following_address: User.ap_following(user),
+          featured_address: User.ap_featured_collection(user)
         }
       end
+
+    attrs = Map.delete(attrs, :domain)
 
     user
     |> Map.put(:raw_bio, user.bio)
@@ -219,6 +226,45 @@ defmodule Pleroma.Factory do
       actor: data["actor"],
       recipients: data["to"]
     }
+  end
+
+  def add_activity_factory(attrs \\ %{}) do
+    featured_collection_activity(attrs, "Add")
+  end
+
+  def remove_activity_factor(attrs \\ %{}) do
+    featured_collection_activity(attrs, "Remove")
+  end
+
+  defp featured_collection_activity(attrs, type) do
+    user = attrs[:user] || insert(:user)
+    note = attrs[:note] || insert(:note, user: user)
+
+    data_attrs =
+      attrs
+      |> Map.get(:data_attrs, %{})
+      |> Map.put(:type, type)
+
+    attrs = Map.drop(attrs, [:user, :note, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "target" => user.featured_address,
+        "object" => note.data["object"],
+        "actor" => note.data["actor"],
+        "type" => "Add",
+        "to" => [Pleroma.Constants.as_public()],
+        "cc" => [user.follower_address]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
   end
 
   def note_activity_factory(attrs \\ %{}) do
