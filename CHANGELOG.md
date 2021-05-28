@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Applying ConcurrentLimiter settings via AdminAPI
 - User login failures if their `notification_settings` were in a NULL state.
 - Mix task `pleroma.user delete_activities` query transaction timeout is now :infinity
+- MRF (`SimplePolicy`): Embedded objects are now checked. If any embedded object would be rejected, its parent is rejected. This fixes Announces leaking posts from blocked domains.
 - Fixed some Markdown issues, including trailing slash in links.
 
 ## [2.3.0] - 2020-03-01
