@@ -92,9 +92,10 @@ defmodule Pleroma.Web.ApiSpec do
               "Invites",
               "MediaProxy cache",
               "OAuth application managment",
-              "Report managment",
               "Relays",
-              "Status administration"
+              "Report managment",
+              "Status administration",
+              "User administration"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},

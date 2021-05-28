@@ -41,7 +41,7 @@
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
-use Mix.Config
+import Config
 
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
@@ -391,6 +391,11 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
+config :pleroma, :mrf_hashtag,
+  sensitive: ["nsfw"],
+  reject: [],
+  federated_timeline_removal: []
+
 config :pleroma, :mrf_subchain, match_actor: %{}
 
 config :pleroma, :mrf_activity_expiration, days: 365
@@ -403,6 +408,8 @@ config :pleroma, :mrf_vocabulary,
 config :pleroma, :mrf_object_age,
   threshold: 604_800,
   actions: [:delist, :strip_followers]
+
+config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -653,6 +660,10 @@ config :pleroma, :oauth2,
   clean_expired_tokens: false
 
 config :pleroma, :database, rum_enabled: false
+
+config :pleroma, :features, improved_hashtag_timeline: :auto
+
+config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
 
 config :pleroma, :env, Mix.env()
 

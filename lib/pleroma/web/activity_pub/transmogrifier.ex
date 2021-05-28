@@ -32,18 +32,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def fix_object(object, options \\ []) do
     object
-    |> strip_internal_fields
-    |> fix_actor
-    |> fix_url
-    |> fix_attachments
-    |> fix_context
+    |> strip_internal_fields()
+    |> fix_actor()
+    |> fix_url()
+    |> fix_attachments()
+    |> fix_context()
     |> fix_in_reply_to(options)
-    |> fix_emoji
-    |> fix_tag
-    |> set_sensitive
-    |> fix_content_map
-    |> fix_addressing
-    |> fix_summary
+    |> fix_emoji()
+    |> fix_tag()
+    |> fix_content_map()
+    |> fix_addressing()
+    |> fix_summary()
     |> fix_type(options)
   end
 
@@ -245,6 +244,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
               "type" => Map.get(url || %{}, "type", "Link")
             }
             |> Maps.put_if_present("mediaType", media_type)
+            |> Maps.put_if_present("width", (url || %{})["width"] || data["width"])
+            |> Maps.put_if_present("height", (url || %{})["height"] || data["height"])
 
           %{
             "url" => [attachment_url],
@@ -315,10 +316,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags =
       tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
-      |> Enum.map(fn %{"name" => name} ->
-        name
-        |> String.slice(1..-1)
-        |> String.downcase()
+      |> Enum.map(fn
+        %{"name" => "#" <> hashtag} -> String.downcase(hashtag)
+        %{"name" => hashtag} -> String.downcase(hashtag)
       end)
 
     Map.put(object, "tag", tag ++ tags)
@@ -536,7 +536,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => type} = data, _options)
-      when type in ~w{Like EmojiReact Announce} do
+      when type in ~w{Like EmojiReact Announce Add Remove} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -566,7 +566,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
-      {:error, {:validate_object, _}} = e ->
+      {:error, {:validate, _}} = e ->
         # Check if we have a create activity for this
         with {:ok, object_id} <- ObjectValidators.ObjectID.cast(data["object"]),
              %Activity{data: %{"actor" => actor}} <-
@@ -742,7 +742,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # Prepares the object of an outgoing create activity.
   def prepare_object(object) do
     object
-    |> set_sensitive
     |> add_hashtags
     |> add_mention_tags
     |> add_emoji_tags
@@ -933,15 +932,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "conversation", object["context"])
   end
 
-  def set_sensitive(%{"sensitive" => _} = object) do
-    object
-  end
-
-  def set_sensitive(object) do
-    tags = object["tag"] || []
-    Map.put(object, "sensitive", "nsfw" in tags)
-  end
-
   def set_type(%{"type" => "Answer"} = object) do
     Map.put(object, "type", "Note")
   end
@@ -961,7 +951,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object
       |> Map.get("attachment", [])
       |> Enum.map(fn data ->
-        [%{"mediaType" => media_type, "href" => href} | _] = data["url"]
+        [%{"mediaType" => media_type, "href" => href} = url | _] = data["url"]
 
         %{
           "url" => href,
@@ -969,6 +959,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "name" => data["name"],
           "type" => "Document"
         }
+        |> Maps.put_if_present("width", url["width"])
+        |> Maps.put_if_present("height", url["height"])
+        |> Maps.put_if_present("blurhash", data["blurhash"])
       end)
 
     Map.put(object, "attachment", attachments)
@@ -1012,6 +1005,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          {:ok, user} <- update_user(user, data) do
+      {:ok, _pid} = Task.start(fn -> ActivityPub.pinned_fetch_task(user) end)
       TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}
     else

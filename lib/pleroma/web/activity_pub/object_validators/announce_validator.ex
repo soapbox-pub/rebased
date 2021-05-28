@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     cng
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Announce"])
     |> validate_required([:id, :type, :object, :actor, :to, :cc])
