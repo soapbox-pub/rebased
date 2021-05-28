@@ -54,6 +54,10 @@ config :pleroma, Pleroma.Repo,
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
+# Reduce recompilation time
+# https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
+config :phoenix, :plug_init_mode, :runtime
+
 if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
 else
