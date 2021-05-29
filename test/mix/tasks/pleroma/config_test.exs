@@ -188,15 +188,46 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       assert File.exists?(temp_file)
       {:ok, file} = File.read(temp_file)
 
-      header =
-        if Code.ensure_loaded?(Config.Reader) do
-          "import Config"
-        else
-          "use Mix.Config"
-        end
-
       assert file ==
-               "#{header}\n\nconfig :pleroma, :instance,\n  name: \"Pleroma\",\n  email: \"example@example.com\",\n  notify_email: \"noreply@example.com\",\n  description: \"A Pleroma instance, an alternative fediverse server\",\n  limit: 5000,\n  chat_limit: 5000,\n  remote_limit: 100_000,\n  upload_limit: 16_000_000,\n  avatar_upload_limit: 2_000_000,\n  background_upload_limit: 4_000_000,\n  banner_upload_limit: 4_000_000,\n  poll_limits: %{\n    max_expiration: 31_536_000,\n    max_option_chars: 200,\n    max_options: 20,\n    min_expiration: 0\n  },\n  registrations_open: true,\n  federating: true,\n  federation_incoming_replies_max_depth: 100,\n  federation_reachability_timeout_days: 7,\n  federation_publisher_modules: [Pleroma.Web.ActivityPub.Publisher],\n  allow_relay: true,\n  public: true,\n  quarantined_instances: [],\n  managed_config: true,\n  static_dir: \"instance/static/\",\n  allowed_post_formats: [\"text/plain\", \"text/html\", \"text/markdown\", \"text/bbcode\"],\n  autofollowed_nicknames: [],\n  max_pinned_statuses: 1,\n  attachment_links: false,\n  max_report_comment_size: 1000,\n  safe_dm_mentions: false,\n  healthcheck: false,\n  remote_post_retention_days: 90,\n  skip_thread_containment: true,\n  limit_to_local_content: :unauthenticated,\n  user_bio_length: 5000,\n  user_name_length: 100,\n  max_account_fields: 10,\n  max_remote_account_fields: 20,\n  account_field_name_length: 512,\n  account_field_value_length: 2048,\n  external_user_synchronization: true,\n  extended_nickname_format: true,\n  multi_factor_authentication: [\n    totp: [digits: 6, period: 30],\n    backup_codes: [number: 2, length: 6]\n  ]\n"
+               "import Config\n\nconfig :pleroma, :instance,\n  name: \"Pleroma\",\n  email: \"example@example.com\",\n  notify_email: \"noreply@example.com\",\n  description: \"A Pleroma instance, an alternative fediverse server\",\n  limit: 5000,\n  chat_limit: 5000,\n  remote_limit: 100_000,\n  upload_limit: 16_000_000,\n  avatar_upload_limit: 2_000_000,\n  background_upload_limit: 4_000_000,\n  banner_upload_limit: 4_000_000,\n  poll_limits: %{\n    max_expiration: 31_536_000,\n    max_option_chars: 200,\n    max_options: 20,\n    min_expiration: 0\n  },\n  registrations_open: true,\n  federating: true,\n  federation_incoming_replies_max_depth: 100,\n  federation_reachability_timeout_days: 7,\n  federation_publisher_modules: [Pleroma.Web.ActivityPub.Publisher],\n  allow_relay: true,\n  public: true,\n  quarantined_instances: [],\n  managed_config: true,\n  static_dir: \"instance/static/\",\n  allowed_post_formats: [\"text/plain\", \"text/html\", \"text/markdown\", \"text/bbcode\"],\n  autofollowed_nicknames: [],\n  max_pinned_statuses: 1,\n  attachment_links: false,\n  max_report_comment_size: 1000,\n  safe_dm_mentions: false,\n  healthcheck: false,\n  remote_post_retention_days: 90,\n  skip_thread_containment: true,\n  limit_to_local_content: :unauthenticated,\n  user_bio_length: 5000,\n  user_name_length: 100,\n  max_account_fields: 10,\n  max_remote_account_fields: 20,\n  account_field_name_length: 512,\n  account_field_value_length: 2048,\n  external_user_synchronization: true,\n  extended_nickname_format: true,\n  multi_factor_authentication: [\n    totp: [digits: 6, period: 30],\n    backup_codes: [number: 2, length: 6]\n  ]\n"
+    end
+  end
+
+  describe "migrate_from_db/1" do
+    setup do: clear_config(:configurable_from_database, true)
+
+    setup do
+      insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
+      insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
+      insert_config_record(:quack, :level, :info)
+
+      path = "test/instance_static"
+      file_path = Path.join(path, "temp.exported_from_db.secret.exs")
+
+      on_exit(fn -> File.rm!(file_path) end)
+
+      [file_path: file_path]
+    end
+
+    test "with path parameter", %{file_path: file_path} do
+      MixTask.run(["migrate_from_db", "--env", "temp", "--path", Path.dirname(file_path)])
+
+      file = File.read!(file_path)
+      assert file =~ "config :pleroma, :setting_first,"
+      assert file =~ "config :pleroma, :setting_second,"
+      assert file =~ "config :quack, :level, :info"
+    end
+
+    test "release", %{file_path: file_path} do
+      clear_config(:release, true)
+      clear_config(:config_path, file_path)
+
+      MixTask.run(["migrate_from_db", "--env", "temp"])
+
+      file = File.read!(file_path)
+      assert file =~ "config :pleroma, :setting_first,"
+      assert file =~ "config :pleroma, :setting_second,"
+      assert file =~ "config :quack, :level, :info"
     end
   end
 

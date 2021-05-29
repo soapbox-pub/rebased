@@ -5,11 +5,11 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
   use Ecto.Schema
 
-  alias Pleroma.EarmarkRenderer
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
@@ -23,8 +23,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     field(:cc, ObjectValidators.Recipients, default: [])
     field(:bto, ObjectValidators.Recipients, default: [])
     field(:bcc, ObjectValidators.Recipients, default: [])
-    # TODO: Write type
-    field(:tag, {:array, :map}, default: [])
+    embeds_many(:tag, TagValidator)
     field(:type, :string)
 
     field(:name, :string)
@@ -110,7 +109,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
        when is_binary(content) do
     content =
       content
-      |> Earmark.as_html!(%Earmark.Options{renderer: EarmarkRenderer})
+      |> Pleroma.Formatter.markdown_to_html()
       |> Pleroma.HTML.filter_tags()
 
     Map.put(data, "content", content)
@@ -132,11 +131,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:attachment])
+    |> cast(data, __schema__(:fields) -- [:attachment, :tag])
     |> cast_embed(:attachment)
+    |> cast_embed(:tag)
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Audio", "Video"])
     |> validate_required([:id, :actor, :attributedTo, :type, :context, :attachment])

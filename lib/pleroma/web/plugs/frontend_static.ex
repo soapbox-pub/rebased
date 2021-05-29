@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Plugs.FrontendStatic do
   """
   @behaviour Plug
 
-  @api_routes Pleroma.Web.get_api_routes()
+  @api_routes Pleroma.Web.Router.get_api_routes()
 
   def file_path(path, frontend_type \\ :primary) do
     if configuration = Pleroma.Config.get([:frontends, frontend_type]) do

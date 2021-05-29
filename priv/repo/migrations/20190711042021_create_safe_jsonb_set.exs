@@ -9,7 +9,7 @@ defmodule Pleroma.Repo.Migrations.CreateSafeJsonbSet do
     begin
       result := jsonb_set(target, path, coalesce(new_value, 'null'::jsonb), create_missing);
       if result is NULL then
-        raise 'jsonb_set tried to wipe the object, please report this incindent to Pleroma bug tracker. https://git.pleroma.social/pleroma/pleroma/issues/new';
+        raise 'jsonb_set tried to wipe the object, please report this incident to Pleroma bug tracker. https://git.pleroma.social/pleroma/pleroma/issues/new';
         return target;
       else
         return result;
