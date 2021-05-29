@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 websocket_config = [
   path: "/websocket",
@@ -456,6 +456,42 @@ config :pleroma, :config_description, [
           "ssb",
           "xmpp"
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :features,
+    type: :group,
+    description: "Customizable features",
+    children: [
+      %{
+        key: :improved_hashtag_timeline,
+        type: {:dropdown, :atom},
+        description:
+          "Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).",
+        suggestions: [:auto, :enabled, :disabled]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :populate_hashtags_table,
+    type: :group,
+    description: "`populate_hashtags_table` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
       }
     ]
   },
@@ -2903,6 +2939,23 @@ config :pleroma, :config_description, [
             suggestions: ["..."]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf_follow_bot,
+    tab: :mrf,
+    related_policy: "Pleroma.Web.ActivityPub.MRF.FollowBotPolicy",
+    label: "MRF FollowBot Policy",
+    type: :group,
+    description: "Automatically follows newly discovered accounts.",
+    children: [
+      %{
+        key: :follower_nickname,
+        type: :string,
+        description: "The name of the bot account to use for following newly discovered users.",
+        suggestions: ["followbot"]
       }
     ]
   },

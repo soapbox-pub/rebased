@@ -34,15 +34,16 @@ defmodule Pleroma.ApplicationRequirements do
   defp check_welcome_message_config!(:ok) do
     if Pleroma.Config.get([:welcome, :email, :enabled], false) and
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.error("""
-      To send welcome email do you need to enable mail.
-      \nconfig :pleroma, Pleroma.Emails.Mailer, enabled: true
-      """)
+      Logger.warn("""
+      To send welcome emails, you need to enable the mailer.
+      Welcome emails will NOT be sent with the current config.
 
-      {:error, "The mail disabled."}
-    else
-      :ok
+      Enable the mailer:
+        config :pleroma, Pleroma.Emails.Mailer, enabled: true
+      """)
     end
+
+    :ok
   end
 
   defp check_welcome_message_config!(result), do: result
@@ -51,18 +52,21 @@ defmodule Pleroma.ApplicationRequirements do
   #
   def check_confirmation_accounts!(:ok) do
     if Pleroma.Config.get([:instance, :account_activation_required]) &&
-         not Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
-      Logger.error(
-        "Account activation enabled, but no Mailer settings enabled.\n" <>
-          "Please set config :pleroma, :instance, account_activation_required: false\n" <>
-          "Otherwise setup and enable Mailer."
-      )
+         not Pleroma.Emails.Mailer.enabled?() do
+      Logger.warn("""
+      Account activation is required, but the mailer is disabled.
+      Users will NOT be able to confirm their accounts with this config.
+      Either disable account activation or enable the mailer.
 
-      {:error,
-       "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails."}
-    else
-      :ok
+      Disable account activation:
+        config :pleroma, :instance, account_activation_required: false
+
+      Enable the mailer:
+        config :pleroma, Pleroma.Emails.Mailer, enabled: true
+      """)
     end
+
+    :ok
   end
 
   def check_confirmation_accounts!(result), do: result
@@ -160,9 +164,11 @@ defmodule Pleroma.ApplicationRequirements do
 
   defp check_system_commands!(:ok) do
     filter_commands_statuses = [
-      check_filter(Pleroma.Upload.Filters.Exiftool, "exiftool"),
-      check_filter(Pleroma.Upload.Filters.Mogrify, "mogrify"),
-      check_filter(Pleroma.Upload.Filters.Mogrifun, "mogrify")
+      check_filter(Pleroma.Upload.Filter.Exiftool, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Mogrify, "mogrify"),
+      check_filter(Pleroma.Upload.Filter.Mogrifun, "mogrify"),
+      check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "mogrify"),
+      check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "convert")
     ]
 
     preview_proxy_commands_status =
