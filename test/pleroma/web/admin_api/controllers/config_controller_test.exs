@@ -1410,6 +1410,82 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => false
              }
     end
+
+    test "custom instance thumbnail", %{conn: conn} do
+      clear_config([:instance])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => ":instance",
+        "value" => [
+          %{
+            "tuple" => [
+              ":instance_thumbnail",
+              "https://example.com/media/new_thumbnail.jpg"
+            ]
+          }
+        ]
+      }
+
+      res =
+        assert conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+               |> json_response_and_validate_schema(200)
+
+      assert res == %{
+               "configs" => [
+                 %{
+                   "db" => [":instance_thumbnail"],
+                   "group" => ":pleroma",
+                   "key" => ":instance",
+                   "value" => params["value"]
+                 }
+               ],
+               "need_reboot" => false
+             }
+
+      _res =
+        assert conn
+               |> get("/api/v1/instance")
+               |> json_response_and_validate_schema(200)
+
+      assert res = %{"thumbnail" => "https://example.com/media/new_thumbnail.jpg"}
+    end
+
+    test "Concurrent Limiter", %{conn: conn} do
+      clear_config([ConcurrentLimiter])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => "ConcurrentLimiter",
+        "value" => [
+          %{
+            "tuple" => [
+              "Pleroma.Web.RichMedia.Helpers",
+              [
+                %{"tuple" => [":max_running", 6]},
+                %{"tuple" => [":max_waiting", 6]}
+              ]
+            ]
+          },
+          %{
+            "tuple" => [
+              "Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy",
+              [
+                %{"tuple" => [":max_running", 7]},
+                %{"tuple" => [":max_waiting", 7]}
+              ]
+            ]
+          }
+        ]
+      }
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+             |> json_response_and_validate_schema(200)
+    end
   end
 
   describe "GET /api/pleroma/admin/config/descriptions" do

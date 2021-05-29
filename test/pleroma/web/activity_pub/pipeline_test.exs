@@ -25,9 +25,6 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
       MRFMock
       |> expect(:pipeline_filter, fn o, m -> {:ok, o, m} end)
 
-      ActivityPubMock
-      |> expect(:persist, fn o, m -> {:ok, o, m} end)
-
       SideEffectsMock
       |> expect(:handle, fn o, m -> {:ok, o, m} end)
       |> expect(:handle_after_transaction, fn m -> m end)
@@ -42,6 +39,9 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
 
       activity_with_object = %{activity | data: Map.put(activity.data, "object", object)}
 
+      ActivityPubMock
+      |> expect(:persist, fn _, m -> {:ok, activity, m} end)
+
       FederatorMock
       |> expect(:publish, fn ^activity_with_object -> :ok end)
 
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
 
       assert {:ok, ^activity, ^meta} =
                Pleroma.Web.ActivityPub.Pipeline.common_pipeline(
-                 activity,
+                 activity.data,
                  meta
                )
     end
@@ -59,6 +59,9 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
       activity = insert(:note_activity)
       meta = [local: true]
 
+      ActivityPubMock
+      |> expect(:persist, fn _, m -> {:ok, activity, m} end)
+
       FederatorMock
       |> expect(:publish, fn ^activity -> :ok end)
 
@@ -66,29 +69,35 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
       |> expect(:get, fn [:instance, :federating] -> true end)
 
       assert {:ok, ^activity, ^meta} =
-               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity.data, meta)
     end
 
     test "it goes through validation, filtering, persisting, side effects without federation for remote activities" do
       activity = insert(:note_activity)
       meta = [local: false]
 
+      ActivityPubMock
+      |> expect(:persist, fn _, m -> {:ok, activity, m} end)
+
       ConfigMock
       |> expect(:get, fn [:instance, :federating] -> true end)
 
       assert {:ok, ^activity, ^meta} =
-               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity.data, meta)
     end
 
     test "it goes through validation, filtering, persisting, side effects without federation for local activities if federation is deactivated" do
       activity = insert(:note_activity)
       meta = [local: true]
 
+      ActivityPubMock
+      |> expect(:persist, fn _, m -> {:ok, activity, m} end)
+
       ConfigMock
       |> expect(:get, fn [:instance, :federating] -> false end)
 
       assert {:ok, ^activity, ^meta} =
-               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+               Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity.data, meta)
     end
   end
 end

@@ -2,7 +2,7 @@
   <h2>Error: <%= @error %></h2>
 <% else %>
   <h2>Remotely follow <%= @nickname %></h2>
-  <%= form_for @conn, util_path(@conn, :remote_subscribe), [as: "user"], fn f -> %>
+  <%= form_for @conn, Routes.util_path(@conn, :remote_subscribe), [as: "user"], fn f -> %>
   <%= hidden_input f, :nickname, value: @nickname %>
   <%= text_input f, :profile, placeholder: "Your account ID, e.g. lain@quitter.se" %>
   <%= submit "Follow" %>

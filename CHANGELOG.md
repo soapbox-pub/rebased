@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Changed
+
+- The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
+- HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
+- Email address is now returned if requesting user is the owner of the user account so it can be exposed in client and FE user settings UIs.
+
+### Added
+
+- MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
+- Return OAuth token `id` (primary key) in POST `/oauth/token`.
+- `AnalyzeMetadata` upload filter for extracting attachment dimensions and generating blurhashes.
+- Attachment dimensions and blurhashes are federated when available.
+- Pinned posts federation
+
+### Fixed
+- Don't crash so hard when email settings are invalid.
+- Checking activated Upload Filters for required commands.
+
+## Unreleased (Patch)
+
+### Fixed
+
+- Try to save exported ConfigDB settings (migrate_from_db) in the system temp directory if default location is not writable.
+- Uploading custom instance thumbnail via AdminAPI/AdminFE generated invalid URL to the image
+- Applying ConcurrentLimiter settings via AdminAPI
+- User login failures if their `notification_settings` were in a NULL state.
+- Mix task `pleroma.user delete_activities` query transaction timeout is now :infinity
+- MRF (`SimplePolicy`): Embedded objects are now checked. If any embedded object would be rejected, its parent is rejected. This fixes Announces leaking posts from blocked domains.
+- Fixed some Markdown issues, including trailing slash in links.
+
 ## [2.3.0] - 2020-03-01
 
 ### Security
@@ -18,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Breaking**: Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
 - **Breaking**: Changed `mix pleroma.user toggle_activated` to `mix pleroma.user activate/deactivate`
+- **Breaking:** NSFW hashtag is no longer added on sensitive posts
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
 - Improved registration workflow for email confirmation and account approval modes.
@@ -44,6 +77,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Reroute `/api/pleroma/*` to `/api/v1/pleroma/*`
 
 </details>
+- Improved hashtag timeline performance (requires a background migration).
 
 ### Added
 
@@ -67,6 +101,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 - Admin API: (`GET /api/pleroma/admin/users`) filter users by `unconfirmed` status and `actor_type`.
+- Admin API: OpenAPI spec for the user-related operations
 - Pleroma API: `GET /api/v2/pleroma/chats` added. It is exactly like `GET /api/v1/pleroma/chats` except supports pagination.
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 - Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
@@ -498,7 +533,6 @@ switched to a new configuration mechanism, however it was not officially removed
 - Static-FE: Fix remote posts not being sanitized
 
 ### Fixed
-=======
 - Rate limiter crashes when there is no explicitly specified ip in the config
 - 500 errors when no `Accept` header is present if Static-FE is enabled
 - Instance panel not being updated immediately due to wrong `Cache-Control` headers

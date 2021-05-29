@@ -239,7 +239,7 @@ Enter a shell as \_pleroma (as root `su _pleroma -`) and enter pleroma's install
 Then follow the main installation guide:
 
   * run `mix deps.get`
-  * run `mix pleroma.instance gen` and enter your instance's information when asked
+  * run `MIX_ENV=prod mix pleroma.instance gen` and enter your instance's information when asked
   * copy config/generated\_config.exs to config/prod.secret.exs. The default values should be sufficient but you should edit it and check that everything seems OK.
   * exit your current shell back to a root one and run `psql -U postgres -f /home/_pleroma/pleroma/config/setup_db.psql` to setup the database.
   * return to a \_pleroma shell into pleroma's installation directory (`su _pleroma -;cd ~/pleroma`) and run `MIX_ENV=prod mix ecto.migrate`

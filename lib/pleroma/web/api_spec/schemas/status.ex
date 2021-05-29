@@ -194,6 +194,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           parent_visible: %Schema{
             type: :boolean,
             description: "`true` if the parent post is visible to the user"
+          },
+          pinned_at: %Schema{
+            type: :string,
+            format: "date-time",
+            nullable: true,
+            description:
+              "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
           }
         }
       },
