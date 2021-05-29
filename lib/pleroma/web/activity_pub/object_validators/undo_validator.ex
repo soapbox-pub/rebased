@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
     |> cast(data, __schema__(:fields))
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Undo"])
     |> validate_required([:id, :type, :object, :actor, :to, :cc])

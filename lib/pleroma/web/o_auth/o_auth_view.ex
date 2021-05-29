@@ -10,6 +10,7 @@ defmodule Pleroma.Web.OAuth.OAuthView do
 
   def render("token.json", %{token: token} = opts) do
     response = %{
+      id: token.id,
       token_type: "Bearer",
       access_token: token.token,
       refresh_token: token.refresh_token,

@@ -636,6 +636,186 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/inbox", non_create_data)
       |> json_response(400)
     end
+
+    test "accepts Add/Remove activities", %{conn: conn} do
+      object_id = "c61d6733-e256-4fe1-ab13-1e369789423f"
+
+      status =
+        File.read!("test/fixtures/statuses/note.json")
+        |> String.replace("{{nickname}}", "lain")
+        |> String.replace("{{object_id}}", object_id)
+
+      object_url = "https://example.com/objects/#{object_id}"
+
+      user =
+        File.read!("test/fixtures/users_mock/user.json")
+        |> String.replace("{{nickname}}", "lain")
+
+      actor = "https://example.com/users/lain"
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^object_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: status,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{
+          method: :get,
+          url: ^actor
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: user,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{method: :get, url: "https://example.com/users/lain/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/users_mock/masto_featured.json"
+              |> File.read!()
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{nickname}}", "lain"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      data = %{
+        "id" => "https://example.com/objects/d61d6733-e256-4fe1-ab13-1e369789423f",
+        "actor" => actor,
+        "object" => object_url,
+        "target" => "https://example.com/users/lain/collections/featured",
+        "type" => "Add",
+        "to" => [Pleroma.Constants.as_public()]
+      }
+
+      assert "ok" ==
+               conn
+               |> assign(:valid_signature, true)
+               |> put_req_header("content-type", "application/activity+json")
+               |> post("/inbox", data)
+               |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+      user = User.get_cached_by_ap_id(data["actor"])
+      assert user.pinned_objects[data["object"]]
+
+      data = %{
+        "id" => "https://example.com/objects/d61d6733-e256-4fe1-ab13-1e369789423d",
+        "actor" => actor,
+        "object" => object_url,
+        "target" => "https://example.com/users/lain/collections/featured",
+        "type" => "Remove",
+        "to" => [Pleroma.Constants.as_public()]
+      }
+
+      assert "ok" ==
+               conn
+               |> assign(:valid_signature, true)
+               |> put_req_header("content-type", "application/activity+json")
+               |> post("/inbox", data)
+               |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      user = refresh_record(user)
+      refute user.pinned_objects[data["object"]]
+    end
+
+    test "mastodon pin/unpin", %{conn: conn} do
+      status_id = "105786274556060421"
+
+      status =
+        File.read!("test/fixtures/statuses/masto-note.json")
+        |> String.replace("{{nickname}}", "lain")
+        |> String.replace("{{status_id}}", status_id)
+
+      status_url = "https://example.com/users/lain/statuses/#{status_id}"
+
+      user =
+        File.read!("test/fixtures/users_mock/user.json")
+        |> String.replace("{{nickname}}", "lain")
+
+      actor = "https://example.com/users/lain"
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^status_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: status,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{
+          method: :get,
+          url: ^actor
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: user,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{method: :get, url: "https://example.com/users/lain/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/users_mock/masto_featured.json"
+              |> File.read!()
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{nickname}}", "lain"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => actor,
+        "object" => status_url,
+        "target" => "https://example.com/users/lain/collections/featured",
+        "type" => "Add"
+      }
+
+      assert "ok" ==
+               conn
+               |> assign(:valid_signature, true)
+               |> put_req_header("content-type", "application/activity+json")
+               |> post("/inbox", data)
+               |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_object_ap_id_with_object(data["object"])
+      user = User.get_cached_by_ap_id(data["actor"])
+      assert user.pinned_objects[data["object"]]
+
+      data = %{
+        "actor" => actor,
+        "object" => status_url,
+        "target" => "https://example.com/users/lain/collections/featured",
+        "type" => "Remove"
+      }
+
+      assert "ok" ==
+               conn
+               |> assign(:valid_signature, true)
+               |> put_req_header("content-type", "application/activity+json")
+               |> post("/inbox", data)
+               |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_object_ap_id_with_object(data["object"])
+      user = refresh_record(user)
+      refute user.pinned_objects[data["object"]]
+    end
   end
 
   describe "/users/:nickname/inbox" do
@@ -1771,5 +1951,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
       |> json_response(403)
     end
+  end
+
+  test "pinned collection", %{conn: conn} do
+    clear_config([:instance, :max_pinned_statuses], 2)
+    user = insert(:user)
+    objects = insert_list(2, :note, user: user)
+
+    Enum.reduce(objects, user, fn %{data: %{"id" => object_id}}, user ->
+      {:ok, updated} = User.add_pinned_object_id(user, object_id)
+      updated
+    end)
+
+    %{nickname: nickname, featured_address: featured_address, pinned_objects: pinned_objects} =
+      refresh_record(user)
+
+    %{"id" => ^featured_address, "orderedItems" => items, "totalItems" => 2} =
+      conn
+      |> get("/users/#{nickname}/collections/featured")
+      |> json_response(200)
+
+    object_ids = Enum.map(items, & &1["id"])
+
+    assert Enum.all?(pinned_objects, fn {obj_id, _} ->
+             obj_id in object_ids
+           end)
   end
 end
