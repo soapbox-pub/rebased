@@ -99,4 +99,8 @@ defmodule Pleroma.Config do
   def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
 
   def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []
+
+  def feature_enabled?(feature_name) do
+    get([:features, feature_name]) not in [nil, false, :disabled, :auto]
+  end
 end
