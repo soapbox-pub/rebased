@@ -54,8 +54,8 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     Config.get([:pools, pool, :recv_timeout], default)
   end
 
-  @prefix Pleroma.Gun.ConnectionPool
   def limiter_setup do
+    prefix = Pleroma.Gun.ConnectionPool
     wait = Config.get([:connections_pool, :connection_acquisition_wait])
     retries = Config.get([:connections_pool, :connection_acquisition_retries])
 
@@ -66,7 +66,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
       max_waiting = Keyword.get(opts, :max_waiting, 10)
 
       result =
-        ConcurrentLimiter.new(:"#{@prefix}.#{name}", max_running, max_waiting,
+        ConcurrentLimiter.new(:"#{prefix}.#{name}", max_running, max_waiting,
           wait: wait,
           max_retries: retries
         )

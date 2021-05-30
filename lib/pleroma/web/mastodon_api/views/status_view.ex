@@ -254,7 +254,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     content_html =
       content
-      |> HTML.get_cached_scrubbed_html_for_activity(
+      |> Activity.HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
         "mastoapi:content"
@@ -262,7 +262,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     content_plaintext =
       content
-      |> HTML.get_cached_stripped_html_for_activity(
+      |> Activity.HTML.get_cached_stripped_html_for_activity(
         activity,
         "mastoapi:content"
       )
