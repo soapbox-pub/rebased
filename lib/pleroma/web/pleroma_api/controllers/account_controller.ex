@@ -47,7 +47,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
-  plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
 

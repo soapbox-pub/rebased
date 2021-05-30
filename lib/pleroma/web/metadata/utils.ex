@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Utils do
+  alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.HTML
@@ -13,7 +14,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
-    |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
+    |> Activity.HTML.get_cached_stripped_html_for_activity(object, "metadata")
     |> Emoji.Formatter.demojify()
     |> HtmlEntities.decode()
     |> Formatter.truncate()
