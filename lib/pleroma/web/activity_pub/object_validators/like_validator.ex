@@ -76,7 +76,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
     end
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Like"])
     |> validate_required([:id, :type, :object, :actor, :context, :to, :cc])

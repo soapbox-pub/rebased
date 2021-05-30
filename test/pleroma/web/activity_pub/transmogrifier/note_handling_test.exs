@@ -39,7 +39,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"], fetch: false)
 
-      assert "test" in object.data["tag"]
+      assert "test" in Object.tags(object)
+      assert Object.hashtags(object) == ["test"]
     end
 
     test "it cleans up incoming notices which are not really DMs" do
@@ -220,7 +221,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
       object = Object.normalize(data["object"], fetch: false)
 
-      assert Enum.at(object.data["tag"], 2) == "moo"
+      assert Enum.at(Object.tags(object), 2) == "moo"
+      assert Object.hashtags(object) == ["moo"]
     end
 
     test "it works for incoming notices with contentMap" do

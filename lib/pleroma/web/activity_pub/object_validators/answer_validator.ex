@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
     |> cast(data, __schema__(:fields))
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Answer"])
     |> validate_required([:id, :inReplyTo, :name, :attributedTo, :actor])

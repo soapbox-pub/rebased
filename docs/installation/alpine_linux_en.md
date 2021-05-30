@@ -117,7 +117,7 @@ cd /opt/pleroma
 sudo -Hu pleroma mix deps.get
 ```
 
-* Generate the configuration: `sudo -Hu pleroma mix pleroma.instance gen`
+* Generate the configuration: `sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen`
   * Answer with `yes` if it asks you to install `rebar3`.
   * This may take some time, because parts of pleroma get compiled first.
   * After that it will ask you a few questions about your instance and generates a configuration file in `config/generated_config.exs`.

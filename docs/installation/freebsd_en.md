@@ -1,8 +1,8 @@
-# Installing on FreeBSD 
+# Installing on FreeBSD
 
 This document was written for FreeBSD 12.1, but should be work on future releases.
 
-## Required software 
+## Required software
 
 This assumes the target system has `pkg(8)`.
 
@@ -54,7 +54,7 @@ Configure Pleroma. Note that you need a domain name at this point:
 ```
 $ cd /home/pleroma/pleroma
 $ mix deps.get # Enter "y" when asked to install Hex
-$ mix pleroma.instance gen # You will be asked a few questions here.
+$ MIX_ENV=prod mix pleroma.instance gen # You will be asked a few questions here.
 $ cp config/generated_config.exs config/prod.secret.exs
 ```
 
