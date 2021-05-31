@@ -543,4 +543,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> json(object.data)
     end
   end
+
+  def pinned(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("featured.json", %{user: user}))
+    end
+  end
 end

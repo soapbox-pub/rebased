@@ -103,9 +103,7 @@ defmodule Pleroma.Application do
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++
         chat_child(chat_enabled?()) ++
-        [
-          Pleroma.Gopher.Server
-        ]
+        [Pleroma.Gopher.Server]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
@@ -230,6 +228,12 @@ defmodule Pleroma.Application do
          keys: :duplicate,
          partitions: System.schedulers_online()
        ]}
+    ] ++ background_migrators()
+  end
+
+  defp background_migrators do
+    [
+      Pleroma.Migrators.HashtagsTableMigrator
     ]
   end
 

@@ -75,10 +75,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       local_message = build_local_message()
 
       assert SimplePolicy.filter(media_message) ==
-               {:ok,
-                media_message
-                |> put_in(["object", "tag"], ["foo", "nsfw"])
-                |> put_in(["object", "sensitive"], true)}
+               {:ok, put_in(media_message, ["object", "sensitive"], true)}
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
@@ -89,10 +86,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       local_message = build_local_message()
 
       assert SimplePolicy.filter(media_message) ==
-               {:ok,
-                media_message
-                |> put_in(["object", "tag"], ["foo", "nsfw"])
-                |> put_in(["object", "sensitive"], true)}
+               {:ok, put_in(media_message, ["object", "sensitive"], true)}
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
@@ -259,6 +253,30 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_user = build_remote_user()
 
       assert {:reject, _} = SimplePolicy.filter(remote_user)
+    end
+
+    test "reject Announce when object would be rejected" do
+      clear_config([:mrf_simple, :reject], ["blocked.tld"])
+
+      announce = %{
+        "type" => "Announce",
+        "actor" => "https://okay.tld/users/alice",
+        "object" => %{"type" => "Note", "actor" => "https://blocked.tld/users/bob"}
+      }
+
+      assert {:reject, _} = SimplePolicy.filter(announce)
+    end
+
+    test "reject by URI object" do
+      clear_config([:mrf_simple, :reject], ["blocked.tld"])
+
+      announce = %{
+        "type" => "Announce",
+        "actor" => "https://okay.tld/users/alice",
+        "object" => "https://blocked.tld/activities/1"
+      }
+
+      assert {:reject, _} = SimplePolicy.filter(announce)
     end
   end
 

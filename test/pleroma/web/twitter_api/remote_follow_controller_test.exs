@@ -27,6 +27,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
             body: File.read!("test/fixtures/tesla_mock/status.emelie.json")
           }
 
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
+          }
+
         %{method: :get, url: "https://mastodon.social/users/emelie"} ->
           %Tesla.Env{
             status: 200,
@@ -52,6 +62,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
             headers: [{"content-type", "application/activity+json"}],
             body: File.read!("test/fixtures/tesla_mock/emelie.json")
           }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
+          }
       end)
 
       response =
@@ -69,6 +89,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
             status: 200,
             headers: [{"content-type", "application/activity+json"}],
             body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
           }
       end)
 

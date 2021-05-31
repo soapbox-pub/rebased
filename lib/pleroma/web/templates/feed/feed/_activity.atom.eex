@@ -22,7 +22,7 @@
     <link type="text/html" href='<%= @data["external_url"] %>' rel="alternate"/>
   <% end %>
 
-  <%= for tag <- @data["tag"] || [] do %>
+  <%= for tag <- Pleroma.Object.hashtags(@object) do %>
     <category term="<%= tag %>"></category>
   <% end %>
 
