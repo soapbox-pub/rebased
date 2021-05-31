@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   def fix_media_type(data) do
     data = Map.put_new(data, "mediaType", data["mimeType"])
 
-    if MIME.valid?(data["mediaType"]) do
+    if is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] do
       data
     else
       Map.put(data, "mediaType", "application/octet-stream")
