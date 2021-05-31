@@ -38,6 +38,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 
+  def as_local_public, do: Web.base_url() <> "/#Public"
+
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
   def get_ap_id(%{"id" => id} = _), do: id
