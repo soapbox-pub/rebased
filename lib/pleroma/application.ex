@@ -25,7 +25,7 @@ defmodule Pleroma.Application do
     if Process.whereis(Pleroma.Web.Endpoint) do
       case Config.get([:http, :user_agent], :default) do
         :default ->
-          info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
+          info = "#{Pleroma.Web.Endpoint.url()} <#{Config.get([:instance, :email], "")}>"
           named_version() <> "; " <> info
 
         custom ->

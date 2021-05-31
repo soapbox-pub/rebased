@@ -231,8 +231,4 @@ defmodule Pleroma.Web do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
-
-  def base_url do
-    Pleroma.Web.Endpoint.url()
-  end
 end
