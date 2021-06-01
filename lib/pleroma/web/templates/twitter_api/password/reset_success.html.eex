@@ -1,2 +1,2 @@
 <h2>Password changed!</h2>
-<h3><a href="<%= Pleroma.Web.base_url() %>">Homepage</a></h3>
+<h3><a href="<%= Pleroma.Web.Endpoint.url() %>">Homepage</a></h3>

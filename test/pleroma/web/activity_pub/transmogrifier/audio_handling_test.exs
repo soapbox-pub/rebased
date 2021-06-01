@@ -24,6 +24,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
       "actor" => "http://mastodon.example.org/users/admin",
       "object" => %{
         "type" => "Audio",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
         "id" => "http://mastodon.example.org/users/admin/listens/1234",
         "attributedTo" => "http://mastodon.example.org/users/admin",
         "title" => "lain radio episode 1",
@@ -61,7 +63,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
 
     assert object.data["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
 
-    assert object.data["cc"] == []
+    assert object.data["cc"] == [
+             "https://channels.tests.funkwhale.audio/federation/actors/compositions/followers"
+           ]
 
     assert object.data["url"] == "https://channels.tests.funkwhale.audio/library/tracks/74"
 
@@ -76,7 +80,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
                    "href" =>
                      "https://channels.tests.funkwhale.audio/api/v1/listen/3901e5d8-0445-49d5-9711-e096cf32e515/?upload=42342395-0208-4fee-a38d-259a6dae0871&download=false",
                    "mediaType" => "audio/ogg",
-                   "type" => "Link"
+                   "type" => "Link",
+                   "width" => nil,
+                   "height" => nil
                  }
                ]
              }

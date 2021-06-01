@@ -123,7 +123,8 @@ defmodule Pleroma.ActivityTest do
           "type" => "Note",
           "content" => "find me!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
@@ -132,6 +133,7 @@ defmodule Pleroma.ActivityTest do
       {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "更新情報"})
       {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
       {:ok, remote_activity} = ObanHelpers.perform(job)
+      remote_activity = Activity.get_by_id_with_object(remote_activity.id)
 
       %{
         japanese_activity: japanese_activity,
@@ -253,5 +255,27 @@ defmodule Pleroma.ActivityTest do
            |> Repo.aggregate(:count, :id) == 2
 
     assert %{id: ^id} = Activity.get_by_object_ap_id_with_object(obj_id)
+  end
+
+  test "add_by_params_query/3" do
+    user = insert(:user)
+
+    note = insert(:note_activity, user: user)
+
+    insert(:add_activity, user: user, note: note)
+    insert(:add_activity, user: user, note: note)
+    insert(:add_activity, user: user)
+
+    assert Repo.aggregate(Activity, :count, :id) == 4
+
+    add_query =
+      Activity.add_by_params_query(note.data["object"], user.ap_id, user.featured_address)
+
+    assert Repo.aggregate(add_query, :count, :id) == 2
+
+    Repo.delete_all(add_query)
+    assert Repo.aggregate(add_query, :count, :id) == 0
+
+    assert Repo.aggregate(Activity, :count, :id) == 2
   end
 end
