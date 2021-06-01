@@ -25,7 +25,7 @@ defmodule Pleroma.Application do
     if Process.whereis(Pleroma.Web.Endpoint) do
       case Config.get([:http, :user_agent], :default) do
         :default ->
-          info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
+          info = "#{Pleroma.Web.Endpoint.url()} <#{Config.get([:instance, :email], "")}>"
           named_version() <> "; " <> info
 
         custom ->
@@ -103,9 +103,7 @@ defmodule Pleroma.Application do
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++
         chat_child(chat_enabled?()) ++
-        [
-          Pleroma.Gopher.Server
-        ]
+        [Pleroma.Gopher.Server]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
@@ -230,6 +228,12 @@ defmodule Pleroma.Application do
          keys: :duplicate,
          partitions: System.schedulers_online()
        ]}
+    ] ++ background_migrators()
+  end
+
+  defp background_migrators do
+    [
+      Pleroma.Migrators.HashtagsTableMigrator
     ]
   end
 
