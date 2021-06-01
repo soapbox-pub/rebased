@@ -235,7 +235,7 @@ defmodule Pleroma.Upload do
 
     case uploader do
       Pleroma.Uploaders.Local ->
-        upload_base_url || Pleroma.Web.base_url() <> "/media/"
+        upload_base_url || Pleroma.Web.Endpoint.url() <> "/media/"
 
       Pleroma.Uploaders.S3 ->
         bucket = Config.get([Pleroma.Uploaders.S3, :bucket])
@@ -261,7 +261,7 @@ defmodule Pleroma.Upload do
         end
 
       _ ->
-        public_endpoint || upload_base_url || Pleroma.Web.base_url() <> "/media/"
+        public_endpoint || upload_base_url || Pleroma.Web.Endpoint.url() <> "/media/"
     end
   end
 end

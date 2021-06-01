@@ -27,13 +27,13 @@ defmodule Pleroma.User do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
   alias Pleroma.Workers.BackgroundWorker
@@ -360,7 +360,7 @@ defmodule Pleroma.User do
 
       _ ->
         unless options[:no_default] do
-          Config.get([:assets, :default_user_avatar], "#{Web.base_url()}/images/avi.png")
+          Config.get([:assets, :default_user_avatar], "#{Endpoint.url()}/images/avi.png")
         end
     end
   end
@@ -368,13 +368,13 @@ defmodule Pleroma.User do
   def banner_url(user, options \\ []) do
     case user.banner do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
+      _ -> !options[:no_default] && "#{Endpoint.url()}/images/banner.png"
     end
   end
 
   # Should probably be renamed or removed
   @spec ap_id(User.t()) :: String.t()
-  def ap_id(%User{nickname: nickname}), do: "#{Web.base_url()}/users/#{nickname}"
+  def ap_id(%User{nickname: nickname}), do: "#{Endpoint.url()}/users/#{nickname}"
 
   @spec ap_followers(User.t()) :: String.t()
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa

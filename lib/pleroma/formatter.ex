@@ -62,7 +62,7 @@ defmodule Pleroma.Formatter do
 
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
     tag = String.downcase(tag)
-    url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
+    url = "#{Pleroma.Web.Endpoint.url()}/tag/#{tag}"
 
     link =
       Phoenix.HTML.Tag.content_tag(:a, tag_text,
