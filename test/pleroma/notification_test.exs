@@ -624,6 +624,8 @@ defmodule Pleroma.NotificationTest do
         "actor" => user.ap_id,
         "object" => %{
           "type" => "Note",
+          "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "content" => "message with a Mention tag, but no explicit tagging",
           "tag" => [
             %{
@@ -655,6 +657,9 @@ defmodule Pleroma.NotificationTest do
         "actor" => user.ap_id,
         "object" => %{
           "type" => "Note",
+          "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [other_user.ap_id],
           "content" => "hi everyone",
           "attributedTo" => user.ap_id
         }
@@ -951,6 +956,7 @@ defmodule Pleroma.NotificationTest do
         "cc" => [],
         "object" => %{
           "type" => "Note",
+          "id" => remote_user.ap_id <> "/objects/test",
           "content" => "Hello!",
           "tag" => [
             %{

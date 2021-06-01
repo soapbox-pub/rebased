@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
       except_message = %{
         "actor" => actor.ap_id,
         "type" => "Create",
-        "object" => %{"tag" => ["test", "nsfw"], "attachment" => ["file1"], "sensitive" => true}
+        "object" => %{"tag" => ["test"], "attachment" => ["file1"], "sensitive" => true}
       }
 
       assert TagPolicy.filter(message) == {:ok, except_message}

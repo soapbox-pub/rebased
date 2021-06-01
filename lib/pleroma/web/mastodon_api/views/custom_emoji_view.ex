@@ -6,14 +6,14 @@ defmodule Pleroma.Web.MastodonAPI.CustomEmojiView do
   use Pleroma.Web, :view
 
   alias Pleroma.Emoji
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
 
   def render("index.json", %{custom_emojis: custom_emojis}) do
     render_many(custom_emojis, __MODULE__, "show.json")
   end
 
   def render("show.json", %{custom_emoji: {shortcode, %Emoji{file: relative_url, tags: tags}}}) do
-    url = Web.base_url() |> URI.merge(relative_url) |> to_string()
+    url = Endpoint.url() |> URI.merge(relative_url) |> to_string()
 
     %{
       "shortcode" => shortcode,

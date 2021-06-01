@@ -38,6 +38,7 @@ Has these additional fields under the `pleroma` object:
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 - `parent_visible`: If the parent of this post is visible to the user or not.
+- `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
 
 ## Scheduled statuses
 
@@ -255,9 +256,29 @@ This information is returned in the `/api/v1/accounts/verify_credentials` endpoi
 
 *Pleroma supports refreshing tokens.*
 
-`POST /oauth/token`
+### POST `/oauth/token`
 
-Post here request with `grant_type=refresh_token` to obtain new access token. Returns an access token.
+You can obtain access tokens for a user in a few additional ways.
+
+#### Refreshing a token
+
+To obtain a new access token from a refresh token, pass `grant_type=refresh_token` with the following extra parameters:
+
+- `refresh_token`: The refresh token.
+
+#### Getting a token with a password
+
+To obtain a token from a user's password, pass `grant_type=password` with the following extra parameters:
+
+- `username`: Username to authenticate.
+- `password`: The user's password.
+
+#### Response body
+
+Additional fields are returned in the response:
+
+- `id`: The primary key of this token in Pleroma's database.
+- `me` (user tokens only): The ActivityPub ID of the user who owns the token.
 
 ## Account Registration
 
