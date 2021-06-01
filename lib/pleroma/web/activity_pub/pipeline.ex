@@ -7,7 +7,10 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.Web.ActivityPub
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
 
