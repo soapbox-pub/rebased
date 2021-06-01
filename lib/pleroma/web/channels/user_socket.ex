@@ -8,7 +8,7 @@ defmodule Pleroma.Web.UserSocket do
 
   ## Channels
   # channel "room:*", Pleroma.Web.RoomChannel
-  channel("shout:*", Pleroma.Web.ShoutChannel)
+  channel("chat:*", Pleroma.Web.ShoutChannel)
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
