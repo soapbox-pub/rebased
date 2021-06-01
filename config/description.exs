@@ -1174,7 +1174,6 @@ config :pleroma, :config_description, [
             alwaysShowSubjectInput: true,
             background: "/static/aurora_borealis.jpg",
             collapseMessageWithSubject: false,
-            disableShout: false,
             greentext: false,
             hideFilteredStatuses: false,
             hideMutedPosts: false,
@@ -1220,12 +1219,6 @@ config :pleroma, :config_description, [
             type: :boolean,
             description:
               "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :disableShout,
-            label: "PleromaFE Shout",
-            type: :boolean,
-            description: "Disables PleromaFE Shout component"
           },
           %{
             key: :greentext,
