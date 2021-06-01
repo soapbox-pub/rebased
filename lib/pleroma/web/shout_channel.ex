@@ -9,6 +9,9 @@ defmodule Pleroma.Web.ShoutChannel do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.ShoutChannel.ShoutChannelState
 
+  # Backwards compatibility
+  def join("chat:public", message, socket), do: join("shout:public", message, socket)
+
   def join("shout:public", _message, socket) do
     send(self(), :after_join)
     {:ok, socket}
