@@ -14,7 +14,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   alias Pleroma.Web.Router.Helpers
 
   plug(:put_layout, :static_fe)
-  plug(:put_view, Pleroma.Web.StaticFE.StaticFEView)
   plug(:assign_id)
 
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]

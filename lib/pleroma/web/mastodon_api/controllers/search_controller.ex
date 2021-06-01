@@ -8,8 +8,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ControllerHelper
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.Plugs.OAuthScopesPlug
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   end
 
   defp resource_search(:v2, "hashtags", query, options) do
-    tags_path = Web.base_url() <> "/tag/"
+    tags_path = Endpoint.url() <> "/tag/"
 
     query
     |> prepare_tags(options)

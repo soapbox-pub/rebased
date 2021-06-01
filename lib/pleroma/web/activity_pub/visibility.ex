@@ -20,14 +20,14 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
 
   def is_public?(data) do
     Utils.label_in_message?(Pleroma.Constants.as_public(), data) or
-      Utils.label_in_message?(Pleroma.Constants.as_local_public(), data)
+      Utils.label_in_message?(Utils.as_local_public(), data)
   end
 
   def is_local_public?(%Object{data: data}), do: is_local_public?(data)
   def is_local_public?(%Activity{data: data}), do: is_local_public?(data)
 
   def is_local_public?(data) do
-    Utils.label_in_message?(Pleroma.Constants.as_local_public(), data) and
+    Utils.label_in_message?(Utils.as_local_public(), data) and
       not Utils.label_in_message?(Pleroma.Constants.as_public(), data)
   end
 
@@ -127,7 +127,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       Pleroma.Constants.as_public() in cc ->
         "unlisted"
 
-      Pleroma.Constants.as_local_public() in to ->
+      Utils.as_local_public() in to ->
         "local"
 
       # this should use the sql for the object's activity
