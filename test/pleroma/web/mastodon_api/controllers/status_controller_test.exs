@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -1909,7 +1910,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "visibility" => "local"
       })
 
-    local = Pleroma.Constants.as_local_public()
+    local = Utils.as_local_public()
 
     assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
              json_response(conn_one, 200)
