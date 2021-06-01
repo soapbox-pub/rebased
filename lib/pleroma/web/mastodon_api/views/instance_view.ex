@@ -69,6 +69,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:gopher, :enabled]) do
         "gopher"
       end,
+      # backwards compat
+      if Config.get([:shout, :enabled]) do
+        "chat"
+      end,
       if Config.get([:shout, :enabled]) do
         "shout"
       end,
