@@ -37,7 +37,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federating`: Enable federation with other instances.
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
-* `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
+* `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
 * `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).

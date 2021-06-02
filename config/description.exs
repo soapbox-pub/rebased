@@ -682,7 +682,8 @@ config :pleroma, :config_description, [
       %{
         key: :allow_relay,
         type: :boolean,
-        description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
+        description:
+          "Permits remote instances to subscribe to all public posts of your instance. (Important!) This may increase the visibility of your instance."
       },
       %{
         key: :public,
