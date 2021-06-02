@@ -47,6 +47,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+      },
+      soapbox: %{
+        version: Soapbox.version()
       }
     }
   end

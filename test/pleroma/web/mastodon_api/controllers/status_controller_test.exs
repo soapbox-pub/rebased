@@ -1332,16 +1332,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "url" => "https://example.com/ogp",
         "description" =>
           "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-        "pleroma" => %{
-          "opengraph" => %{
-            "image" => "http://ia.media-imdb.com/images/rock.jpg",
-            "title" => "The Rock",
-            "type" => "video.movie",
-            "url" => "https://example.com/ogp",
-            "description" =>
-              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
-          }
-        }
+        "author_name" => "",
+        "author_url" => "",
+        "blurhash" => nil,
+        "embed_url" => "",
+        "height" => 0,
+        "html" => "",
+        "width" => 0
       }
 
       response =
@@ -1381,13 +1378,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                "provider_name" => "example.com",
                "provider_url" => "https://example.com",
                "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
+               "author_name" => "",
+               "author_url" => "",
+               "blurhash" => nil,
+               "embed_url" => "",
+               "height" => 0,
+               "html" => "",
+               "width" => 0
              }
     end
   end
