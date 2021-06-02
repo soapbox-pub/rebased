@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     instance = Config.get(:instance)
 
     %{
-      uri: Pleroma.Web.base_url(),
+      uri: Pleroma.Web.Endpoint.url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Pleroma.Stats.get_stats(),
-      thumbnail: Pleroma.Web.base_url() <> Keyword.get(instance, :instance_thumbnail),
+      thumbnail: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :instance_thumbnail),
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
-      background_image: Pleroma.Web.base_url() <> Keyword.get(instance, :background_image),
+      background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       chat_limit: Keyword.get(instance, :chat_limit),
       description_limit: Keyword.get(instance, :description_limit),
       pleroma: %{

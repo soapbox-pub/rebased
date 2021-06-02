@@ -182,7 +182,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> response(200)
 
       assert resp =~
-               "<meta content=\"#{Pleroma.Web.base_url()}/notice/#{note_activity.id}\" property=\"og:url\">"
+               "<meta content=\"#{Pleroma.Web.Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
 
       user = insert(:user)
 
@@ -356,7 +356,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> response(200)
 
       expected =
-        "<meta content=\"#{Pleroma.Web.base_url()}/notice/#{note_activity.id}\" property=\"og:url\">"
+        "<meta content=\"#{Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
 
       assert resp =~ expected
     end
@@ -372,7 +372,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> response(200)
 
       expected =
-        "<meta content=\"#{Pleroma.Web.base_url()}/notice/#{note_activity.id}\" property=\"og:url\">"
+        "<meta content=\"#{Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
 
       assert resp =~ expected
     end
@@ -388,7 +388,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> response(200)
 
       expected =
-        "<meta content=\"#{Pleroma.Web.base_url()}/notice/#{note_activity.id}\" property=\"og:url\">"
+        "<meta content=\"#{Endpoint.url()}/notice/#{note_activity.id}\" property=\"og:url\">"
 
       assert resp =~ expected
     end

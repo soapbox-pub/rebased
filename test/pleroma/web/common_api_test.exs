@@ -514,7 +514,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(user, %{status: "hey :blank:"})
 
       assert %{"blank" => url} = Object.normalize(activity).data["emoji"]
-      assert url == "#{Pleroma.Web.base_url()}/emoji/blank.png"
+      assert url == "#{Pleroma.Web.Endpoint.url()}/emoji/blank.png"
     end
 
     test "deactivated users can't post" do
