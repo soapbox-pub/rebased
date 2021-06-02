@@ -69,7 +69,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     to =
       case visibility do
         "public" -> [Pleroma.Constants.as_public() | draft.mentions]
-        "local" -> [Pleroma.Constants.as_local_public() | draft.mentions]
+        "local" -> [Utils.as_local_public() | draft.mentions]
       end
 
     cc = [draft.user.follower_address]
