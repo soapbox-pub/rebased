@@ -47,6 +47,10 @@ build:
 
 spec-build:
   stage: test
+  only:
+    changes:
+      - "lib/pleroma/web/api_spec/**/*.ex"
+      - "lib/pleroma/web/api_spec.ex"
   artifacts:
     paths:
     - spec.json
