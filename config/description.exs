@@ -545,14 +545,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :chat_limit,
-        type: :integer,
-        description: "Character limit of the instance chat messages",
-        suggestions: [
-          5_000
-        ]
-      },
-      %{
         key: :remote_limit,
         type: :integer,
         description: "Hard character limit beyond which remote posts will be dropped",
@@ -1183,7 +1175,6 @@ config :pleroma, :config_description, [
             alwaysShowSubjectInput: true,
             background: "/static/aurora_borealis.jpg",
             collapseMessageWithSubject: false,
-            disableChat: false,
             greentext: false,
             hideFilteredStatuses: false,
             hideMutedPosts: false,
@@ -1229,12 +1220,6 @@ config :pleroma, :config_description, [
             type: :boolean,
             description:
               "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :disableChat,
-            label: "PleromaFE Chat",
-            type: :boolean,
-            description: "Disables PleromaFE Chat component"
           },
           %{
             key: :greentext,
@@ -2653,13 +2638,22 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :chat,
+    key: :shout,
     type: :group,
-    description: "Pleroma chat settings",
+    description: "Pleroma shout settings",
     children: [
       %{
         key: :enabled,
-        type: :boolean
+        type: :boolean,
+        description: "Enables the backend Shoutbox chat feature."
+      },
+      %{
+        key: :limit,
+        type: :integer,
+        description: "Shout message character limit.",
+        suggestions: [
+          5_000
+        ]
       }
     ]
   },

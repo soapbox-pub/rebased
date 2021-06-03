@@ -8,9 +8,10 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
-## :chat
+## :shout
 
-* `enabled` - Enables the backend chat. Defaults to `true`.
+* `enabled` - Enables the backend Shoutbox chat feature. Defaults to `true`.
+* `limit` - Shout character limit. Defaults to `5_000`
 
 ## :instance
 * `name`: The instance’s name.
@@ -19,7 +20,6 @@ To add configuration to your config file, you can copy it from the base config. 
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
 * `description_limit`: The character limit for image descriptions.
-* `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
 * `avatar_upload_limit`: File size limit of user’s profile avatars.
