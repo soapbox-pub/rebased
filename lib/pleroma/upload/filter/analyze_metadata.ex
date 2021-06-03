@@ -33,6 +33,23 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
     end
   end
 
+  def filter(%Pleroma.Upload{tempfile: file, content_type: "video" <> _} = upload) do
+    try do
+      result = media_dimensions(file)
+
+      upload =
+        upload
+        |> Map.put(:width, result.width)
+        |> Map.put(:height, result.height)
+
+      {:ok, :filtered, upload}
+    rescue
+      e in ErlangError ->
+        Logger.warn("#{__MODULE__}: #{inspect(e)}")
+        {:ok, :noop}
+    end
+  end
+
   def filter(_), do: {:ok, :noop}
 
   defp get_blurhash(file) do
@@ -40,6 +57,27 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
       blurhash
     else
       _ -> nil
+    end
+  end
+
+  defp media_dimensions(file) do
+    with executable when is_binary(executable) <- System.find_executable("ffprobe"),
+         args = [
+           "-v",
+           "error",
+           "-show_entries",
+           "stream=width,height",
+           "-of",
+           "csv=p=0:s=x",
+           file
+         ],
+         {result, 0} <- System.cmd(executable, args),
+         [width, height] <-
+           String.split(String.trim(result), "x") |> Enum.map(&String.to_integer(&1)) do
+      %{width: width, height: height}
+    else
+      nil -> {:error, {:ffprobe, :command_not_found}}
+      {:error, _} = error -> error
     end
   end
 end
