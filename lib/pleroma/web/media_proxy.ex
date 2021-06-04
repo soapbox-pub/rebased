@@ -127,7 +127,7 @@ defmodule Pleroma.Web.MediaProxy do
   end
 
   defp signed_url(url) do
-    :crypto.hmac(:sha, Config.get([Endpoint, :secret_key_base]), url)
+    :crypto.mac(:hmac, :sha, Config.get([Endpoint, :secret_key_base]), url)
   end
 
   def filename(url_or_path) do

@@ -203,10 +203,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && MIME.valid?(url["mediaType"]) -> url["mediaType"]
-            MIME.valid?(data["mediaType"]) -> data["mediaType"]
-            MIME.valid?(data["mimeType"]) -> data["mimeType"]
-            true -> nil
+            is_map(url) && MIME.extensions(url["mediaType"]) != [] ->
+              url["mediaType"]
+
+            is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] ->
+              data["mediaType"]
+
+            is_bitstring(data["mimeType"]) && MIME.extensions(data["mimeType"]) != [] ->
+              data["mimeType"]
+
+            true ->
+              nil
           end
 
         href =
