@@ -105,6 +105,7 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       responses: %{
         200 => Operation.response("Media", "application/json", Attachment),
         401 => Operation.response("Media", "application/json", ApiError),
+        403 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError)
       }
     }

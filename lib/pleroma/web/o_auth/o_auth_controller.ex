@@ -427,7 +427,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       |> Map.put("state", state)
 
     # Handing the request to Ueberauth
-    redirect(conn, to: o_auth_path(conn, :request, provider, params))
+    redirect(conn, to: Routes.o_auth_path(conn, :request, provider, params))
   end
 
   def request(%Plug.Conn{} = conn, params) do
@@ -600,6 +600,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+<<<<<<< HEAD
+=======
+  # Special case: Local MastodonFE
+  defp redirect_uri(%Plug.Conn{} = conn, "."), do: Routes.auth_url(conn, :login)
+
+>>>>>>> 0c56f9de0d607b88fd107e0bd13ef286f0629346
   defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 
   defp get_session_registration_id(%Plug.Conn{} = conn), do: get_session(conn, :registration_id)

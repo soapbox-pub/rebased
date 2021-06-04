@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  @object_types ~w[ChatMessage Question Answer Audio Video Event Article]
+  @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note]
   @impl true
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
@@ -630,7 +630,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put(:type, ["Create", "Announce"])
       |> Map.put(:user, reading_user)
       |> Map.put(:actor_id, user.ap_id)
-      |> Map.put(:pinned_activity_ids, user.pinned_activities)
+      |> Map.put(:pinned_object_ids, Map.keys(user.pinned_objects))
 
     params =
       if User.blocks?(reading_user, user) do
@@ -1075,8 +1075,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_unlisted(query, _), do: query
 
-  defp restrict_pinned(query, %{pinned: true, pinned_activity_ids: ids}) do
-    from(activity in query, where: activity.id in ^ids)
+  defp restrict_pinned(query, %{pinned: true, pinned_object_ids: ids}) do
+    from(
+      [activity, object: o] in query,
+      where:
+        fragment(
+          "(?)->>'type' = 'Create' and coalesce((?)->'object'->>'id', (?)->>'object') = any (?)",
+          activity.data,
+          activity.data,
+          activity.data,
+          ^ids
+        )
+    )
   end
 
   defp restrict_pinned(query, _), do: query
@@ -1419,6 +1429,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
+    featured_address = data["featured"]
+    {:ok, pinned_objects} = fetch_and_prepare_featured_from_ap_id(featured_address)
+
     public_key =
       if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
         data["publicKey"]["publicKeyPem"]
@@ -1447,13 +1460,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
+      featured_address: featured_address,
       bio: data["summary"] || "",
       actor_type: actor_type,
       also_known_as: Map.get(data, "alsoKnownAs", []),
       public_key: public_key,
       inbox: data["inbox"],
       shared_inbox: shared_inbox,
-      accepts_chat_messages: accepts_chat_messages
+      accepts_chat_messages: accepts_chat_messages,
+      pinned_objects: pinned_objects
     }
 
     # nickname can be nil because of virtual actors
@@ -1591,6 +1606,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def pin_data_from_featured_collection(%{
+        "type" => type,
+        "orderedItems" => objects
+      })
+      when type in ["OrderedCollection", "Collection"] do
+    Map.new(objects, fn %{"id" => object_ap_id} -> {object_ap_id, NaiveDateTime.utc_now()} end)
+  end
+
+  def fetch_and_prepare_featured_from_ap_id(nil) do
+    {:ok, %{}}
+  end
+
+  def fetch_and_prepare_featured_from_ap_id(ap_id) do
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id) do
+      {:ok, pin_data_from_featured_collection(data)}
+    else
+      e ->
+        Logger.error("Could not decode featured collection at fetch #{ap_id}, #{inspect(e)}")
+        {:ok, %{}}
+    end
+  end
+
+  def pinned_fetch_task(nil), do: nil
+
+  def pinned_fetch_task(%{pinned_objects: pins}) do
+    if Enum.all?(pins, fn {ap_id, _} ->
+         Object.get_cached_by_ap_id(ap_id) ||
+           match?({:ok, _object}, Fetcher.fetch_object_from_id(ap_id))
+       end) do
+      :ok
+    else
+      :error
+    end
+  end
+
   def make_user_from_ap_id(ap_id) do
     user = User.get_cached_by_ap_id(ap_id)
 
@@ -1598,6 +1648,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
+        {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
+
         if user do
           user
           |> User.remote_user_changeset(data)

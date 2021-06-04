@@ -203,6 +203,19 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Object.increase_replies_count(in_reply_to)
       end
 
+      reply_depth = (meta[:depth] || 0) + 1
+
+      # FIXME: Force inReplyTo to replies
+      if Pleroma.Web.Federator.allowed_thread_distance?(reply_depth) and
+           object.data["replies"] != nil do
+        for reply_id <- object.data["replies"] do
+          Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
+            "id" => reply_id,
+            "depth" => reply_depth
+          })
+        end
+      end
+
       ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
@@ -276,10 +289,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result =
       case deleted_object do
         %Object{} ->
-          with {:ok, deleted_object, activity} <- Object.delete(deleted_object),
+          with {:ok, deleted_object, _activity} <- Object.delete(deleted_object),
                {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
                %User{} = user <- User.get_cached_by_ap_id(actor) do
-            User.remove_pinnned_activity(user, activity)
+            User.remove_pinned_object_id(user, deleted_object.data["id"])
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
 
@@ -309,6 +322,63 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, object, meta}
     else
       {:error, result}
+    end
+  end
+
+  # Tasks this handles:
+  # - adds pin to user
+  # - removes expiration job for pinned activity, if was set for expiration
+  @impl true
+  def handle(%{data: %{"type" => "Add"} = data} = object, meta) do
+    with %User{} = user <- User.get_cached_by_ap_id(data["actor"]),
+         {:ok, _user} <- User.add_pinned_object_id(user, data["object"]) do
+      # if pinned activity was scheduled for deletion, we remove job
+      if expiration = Pleroma.Workers.PurgeExpiredActivity.get_expiration(meta[:activity_id]) do
+        Oban.cancel_job(expiration.id)
+      end
+
+      {:ok, object, meta}
+    else
+      nil ->
+        {:error, :user_not_found}
+
+      {:error, changeset} ->
+        if changeset.errors[:pinned_objects] do
+          {:error, :pinned_statuses_limit_reached}
+        else
+          changeset.errors
+        end
+    end
+  end
+
+  # Tasks this handles:
+  # - removes pin from user
+  # - removes corresponding Add activity
+  # - if activity had expiration, recreates activity expiration job
+  @impl true
+  def handle(%{data: %{"type" => "Remove"} = data} = object, meta) do
+    with %User{} = user <- User.get_cached_by_ap_id(data["actor"]),
+         {:ok, _user} <- User.remove_pinned_object_id(user, data["object"]) do
+      data["object"]
+      |> Activity.add_by_params_query(user.ap_id, user.featured_address)
+      |> Repo.delete_all()
+
+      # if pinned activity was scheduled for deletion, we reschedule it for deletion
+      if meta[:expires_at] do
+        # MRF.ActivityExpirationPolicy used UTC timestamps for expires_at in original implementation
+        {:ok, expires_at} =
+          Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime.cast(meta[:expires_at])
+
+        Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+          activity_id: meta[:activity_id],
+          expires_at: expires_at
+        })
+      end
+
+      {:ok, object, meta}
+    else
+      nil -> {:error, :user_not_found}
+      error -> error
     end
   end
 
@@ -366,7 +436,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_object_creation(%{"type" => objtype} = object, meta)
-      when objtype in ~w[Audio Video Question Event Article] do
+      when objtype in ~w[Audio Video Question Event Article Note] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end
