@@ -16,17 +16,10 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   def build_tags(%{activity_id: id, object: object, user: user}) do
     attachments = build_attachments(id, object)
     scrubbed_content = Utils.scrub_html_and_truncate(object)
-    # Zero width space
-    content =
-      if scrubbed_content != "" and scrubbed_content != "\u200B" do
-        "“" <> scrubbed_content <> "”"
-      else
-        ""
-      end
 
     [
       title_tag(user),
-      {:meta, [property: "twitter:description", content: content], []}
+      {:meta, [property: "twitter:description", content: scrubbed_content], []}
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
@@ -91,7 +84,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 {:meta, [property: "twitter:card", content: "player"], []},
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
                 {:meta, [property: "twitter:player:width", content: "480"], []},
-                {:meta, [property: "twitter:player:height", content: "480"], []}
+                {:meta, [property: "twitter:player:height", content: "480"], []},
+                {:meta, [property: "twitter:player:stream", content: url["href"]], []},
+                {:meta, [property: "twitter:player:stream:content_type", content: url["mediaType"]], []}
                 | acc
               ]
 
