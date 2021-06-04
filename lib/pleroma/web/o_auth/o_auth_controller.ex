@@ -599,7 +599,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       {:ok, token}
     end
   end
-  
+
   defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 
   defp get_session_registration_id(%Plug.Conn{} = conn), do: get_session(conn, :registration_id)
