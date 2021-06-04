@@ -140,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       conn
       |> get("/api/v1/media/#{object.id}")
-      |> json_response(403)
+      |> json_response_and_validate_schema(403)
     end
   end
 end

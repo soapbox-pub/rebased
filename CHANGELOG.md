@@ -25,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Don't crash so hard when email settings are invalid.
 - Checking activated Upload Filters for required commands.
 
+### Removed
+- **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)
+
 ## Unreleased (Patch)
 
 ### Fixed
