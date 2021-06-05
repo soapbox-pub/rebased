@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MediaProxy do
   alias Pleroma.Config
   alias Pleroma.Helpers.UriHelper
   alias Pleroma.Upload
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy.Invalidation
 
   @base64_opts [padding: false]
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.MediaProxy do
   #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
   def preview_enabled?, do: enabled?() and !!Config.get([:media_preview_proxy, :enabled])
 
-  def local?(url), do: String.starts_with?(url, Web.base_url())
+  def local?(url), do: String.starts_with?(url, Endpoint.url())
 
   def whitelisted?(url) do
     %{host: domain} = URI.parse(url)
@@ -121,8 +121,13 @@ defmodule Pleroma.Web.MediaProxy do
     end
   end
 
+  def decode_url(encoded) do
+    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
+    decode_url(sig, base64)
+  end
+
   defp signed_url(url) do
-    :crypto.hmac(:sha, Config.get([Web.Endpoint, :secret_key_base]), url)
+    :crypto.mac(:hmac, :sha, Config.get([Endpoint, :secret_key_base]), url)
   end
 
   def filename(url_or_path) do
@@ -130,7 +135,7 @@ defmodule Pleroma.Web.MediaProxy do
   end
 
   def base_url do
-    Config.get([:media_proxy, :base_url], Web.base_url())
+    Config.get([:media_proxy, :base_url], Endpoint.url())
   end
 
   defp proxy_url(path, sig_base64, url_base64, filename) do

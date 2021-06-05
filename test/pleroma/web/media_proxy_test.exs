@@ -11,8 +11,7 @@ defmodule Pleroma.Web.MediaProxyTest do
   alias Pleroma.Web.MediaProxy
 
   defp decode_result(encoded) do
-    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
-    {:ok, decoded} = MediaProxy.decode_url(sig, base64)
+    {:ok, decoded} = MediaProxy.decode_url(encoded)
     decoded
   end
 
@@ -42,7 +41,7 @@ defmodule Pleroma.Web.MediaProxyTest do
 
       assert String.starts_with?(
                encoded,
-               Config.get([:media_proxy, :base_url], Pleroma.Web.base_url())
+               Config.get([:media_proxy, :base_url], Pleroma.Web.Endpoint.url())
              )
 
       assert String.ends_with?(encoded, "/logo.png")
