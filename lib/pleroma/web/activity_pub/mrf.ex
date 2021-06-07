@@ -51,17 +51,6 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @required_description_keys [:key, :related_policy]
 
-  @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
-  @callback describe() :: {:ok | :error, Map.t()}
-  @callback config_description() :: %{
-              optional(:children) => [map()],
-              key: atom(),
-              related_policy: String.t(),
-              label: String.t(),
-              description: String.t()
-            }
-  @optional_callbacks config_description: 0
-
   def filter(policies, %{} = message) do
     policies
     |> Enum.reduce({:ok, message}, fn
@@ -142,7 +131,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def describe, do: get_policies() |> describe()
 
   def config_descriptions do
-    Pleroma.Web.ActivityPub.MRF
+    Pleroma.Web.ActivityPub.MRF.Policy
     |> Pleroma.Docs.Generator.list_behaviour_implementations()
     |> config_descriptions()
   end

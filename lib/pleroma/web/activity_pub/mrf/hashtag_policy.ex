@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HashtagPolicy do
   Note: This MRF Policy is always enabled, if you want to disable it you have to set empty lists.
   """
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   defp check_reject(message, hashtags) do
     if Enum.any?(Config.get([:mrf_hashtag, :reject]), fn match -> match in hashtags end) do
