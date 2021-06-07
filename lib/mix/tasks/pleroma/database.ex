@@ -96,6 +96,15 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
     |> Repo.delete_all(timeout: :infinity)
 
+    prune_hashtags_query = """
+    DELETE FROM hashtags AS ht
+    WHERE NOT EXISTS (
+      SELECT 1 FROM hashtags_objects hto
+      WHERE ht.id = hto.hashtag_id)
+    """
+
+    Repo.query(prune_hashtags_query)
+
     if Keyword.get(options, :vacuum) do
       Maintenance.vacuum("full")
     end
