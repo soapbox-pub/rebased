@@ -539,7 +539,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Jason.decode!()
         |> Map.put("actor", user.ap_id)
-        |> put_in(["object", "attridbutedTo"], user.ap_id)
+        |> put_in(["object", "attributedTo"], user.ap_id)
 
       conn =
         conn
@@ -829,7 +829,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it inserts an incoming activity into the database", %{conn: conn, data: data} do
       user = insert(:user)
-      data = Map.put(data, "bcc", [user.ap_id])
+
+      data =
+        data
+        |> Map.put("bcc", [user.ap_id])
+        |> Kernel.put_in(["object", "bcc"], [user.ap_id])
 
       conn =
         conn
@@ -846,8 +850,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       data =
-        Map.put(data, "to", user.ap_id)
-        |> Map.delete("cc")
+        data
+        |> Map.put("to", user.ap_id)
+        |> Map.put("cc", [])
+        |> Kernel.put_in(["object", "to"], user.ap_id)
+        |> Kernel.put_in(["object", "cc"], [])
 
       conn =
         conn
@@ -864,8 +871,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       data =
-        Map.put(data, "cc", user.ap_id)
-        |> Map.delete("to")
+        data
+        |> Map.put("to", [])
+        |> Map.put("cc", user.ap_id)
+        |> Kernel.put_in(["object", "to"], [])
+        |> Kernel.put_in(["object", "cc"], user.ap_id)
 
       conn =
         conn
@@ -883,9 +893,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       data =
-        Map.put(data, "bcc", user.ap_id)
-        |> Map.delete("to")
-        |> Map.delete("cc")
+        data
+        |> Map.put("to", [])
+        |> Map.put("cc", [])
+        |> Map.put("bcc", user.ap_id)
+        |> Kernel.put_in(["object", "to"], [])
+        |> Kernel.put_in(["object", "cc"], [])
+        |> Kernel.put_in(["object", "bcc"], user.ap_id)
 
       conn =
         conn
@@ -1000,29 +1014,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Instances.reachable?(sender_host)
     end
 
+    @tag capture_log: true
     test "it removes all follower collections but actor's", %{conn: conn} do
       [actor, recipient] = insert_pair(:user)
 
-      data =
-        File.read!("test/fixtures/activitypub-client-post-activity.json")
-        |> Jason.decode!()
+      to = [
+        recipient.ap_id,
+        recipient.follower_address,
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
 
-      object = Map.put(data["object"], "attributedTo", actor.ap_id)
+      cc = [recipient.follower_address, actor.follower_address]
 
-      data =
-        data
-        |> Map.put("id", Utils.generate_object_id())
-        |> Map.put("actor", actor.ap_id)
-        |> Map.put("object", object)
-        |> Map.put("cc", [
-          recipient.follower_address,
-          actor.follower_address
-        ])
-        |> Map.put("to", [
-          recipient.ap_id,
-          recipient.follower_address,
-          "https://www.w3.org/ns/activitystreams#Public"
-        ])
+      data = %{
+        "@context" => ["https://www.w3.org/ns/activitystreams"],
+        "type" => "Create",
+        "id" => Utils.generate_activity_id(),
+        "to" => to,
+        "cc" => cc,
+        "actor" => actor.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "to" => to,
+          "cc" => cc,
+          "content" => "It's a note",
+          "attributedTo" => actor.ap_id,
+          "id" => Utils.generate_object_id()
+        }
+      }
 
       conn
       |> assign(:valid_signature, true)
@@ -1032,7 +1051,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
 
-      activity = Activity.get_by_ap_id(data["id"])
+      assert activity = Activity.get_by_ap_id(data["id"])
 
       assert activity.id
       assert actor.follower_address in activity.recipients
@@ -1164,7 +1183,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         "actor" => remote_actor,
         "content" => "test report",
         "id" => "https://#{remote_domain}/e3b12fd1-948c-446e-b93b-a5e67edbe1d8",
-        "nickname" => reported_user.nickname,
         "object" => [
           reported_user.ap_id,
           note.data["object"]
@@ -1966,7 +1984,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     %{nickname: nickname, featured_address: featured_address, pinned_objects: pinned_objects} =
       refresh_record(user)
 
-    %{"id" => ^featured_address, "orderedItems" => items} =
+    %{"id" => ^featured_address, "orderedItems" => items, "totalItems" => 2} =
       conn
       |> get("/users/#{nickname}/collections/featured")
       |> json_response(200)

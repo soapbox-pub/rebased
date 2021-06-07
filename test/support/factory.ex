@@ -191,8 +191,8 @@ defmodule Pleroma.Factory do
   end
 
   def article_factory do
-    note_factory()
-    |> Map.put("type", "Article")
+    %Pleroma.Object{data: data} = note_factory()
+    %Pleroma.Object{data: Map.merge(data, %{"type" => "Article"})}
   end
 
   def tombstone_factory do

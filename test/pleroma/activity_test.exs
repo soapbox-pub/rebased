@@ -123,7 +123,8 @@ defmodule Pleroma.ActivityTest do
           "type" => "Note",
           "content" => "find me!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
@@ -132,6 +133,7 @@ defmodule Pleroma.ActivityTest do
       {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "更新情報"})
       {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
       {:ok, remote_activity} = ObanHelpers.perform(job)
+      remote_activity = Activity.get_by_id_with_object(remote_activity.id)
 
       %{
         japanese_activity: japanese_activity,

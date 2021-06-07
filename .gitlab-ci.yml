@@ -37,11 +37,20 @@ after_script:
 
 build:
   stage: build
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   script:
   - mix compile --force
 
 spec-build:
   stage: test
+  only:
+    changes:
+      - "lib/pleroma/web/api_spec/**/*.ex"
+      - "lib/pleroma/web/api_spec.ex"
   artifacts:
     paths:
     - spec.json
@@ -64,6 +73,11 @@ benchmark:
 
 unit-testing:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   retry: 2
   cache: &testing_cache_policy
     <<: *global_cache_policy
@@ -97,6 +111,11 @@ unit-testing:
 
 unit-testing-rum:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   retry: 2
   cache: *testing_cache_policy
   services:
@@ -115,12 +134,22 @@ unit-testing-rum:
 
 lint:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: *testing_cache_policy
   script:
     - mix format --check-formatted
 
 analysis:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: *testing_cache_policy
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability

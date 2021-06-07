@@ -7,58 +7,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Token
 
   import Pleroma.Factory
-
-  describe "POST /api/qvitter/statuses/notifications/read" do
-    test "without valid credentials", %{conn: conn} do
-      conn = post(conn, "/api/qvitter/statuses/notifications/read", %{"latest_id" => 1_234_567})
-      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
-    end
-
-    test "with credentials, without any params" do
-      %{conn: conn} = oauth_access(["write:notifications"])
-
-      conn = post(conn, "/api/qvitter/statuses/notifications/read")
-
-      assert json_response(conn, 400) == %{
-               "error" => "You need to specify latest_id",
-               "request" => "/api/qvitter/statuses/notifications/read"
-             }
-    end
-
-    test "with credentials, with params" do
-      %{user: current_user, conn: conn} =
-        oauth_access(["read:notifications", "write:notifications"])
-
-      other_user = insert(:user)
-
-      {:ok, _activity} =
-        CommonAPI.post(other_user, %{
-          status: "Hey @#{current_user.nickname}"
-        })
-
-      response_conn =
-        conn
-        |> get("/api/v1/notifications")
-
-      [notification] = json_response(response_conn, 200)
-
-      assert notification["pleroma"]["is_seen"] == false
-
-      response_conn =
-        conn
-        |> post("/api/qvitter/statuses/notifications/read", %{"latest_id" => notification["id"]})
-
-      [notification] = response = json_response(response_conn, 200)
-
-      assert length(response) == 1
-
-      assert notification["pleroma"]["is_seen"] == true
-    end
-  end
 
   describe "GET /api/account/confirm_email/:id/:token" do
     setup do
