@@ -12,7 +12,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.Auth.Authenticator
+  alias Pleroma.Web.Auth.WrapperAuthenticator, as: Authenticator
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization

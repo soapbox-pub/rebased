@@ -5,38 +5,38 @@
 defmodule Pleroma.Web.Auth.AuthenticatorTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Web.Auth.Authenticator
+  alias Pleroma.Web.Auth.Helpers
   import Pleroma.Factory
 
   describe "fetch_user/1" do
     test "returns user by name" do
       user = insert(:user)
-      assert Authenticator.fetch_user(user.nickname) == user
+      assert Helpers.fetch_user(user.nickname) == user
     end
 
     test "returns user by email" do
       user = insert(:user)
-      assert Authenticator.fetch_user(user.email) == user
+      assert Helpers.fetch_user(user.email) == user
     end
 
     test "returns nil" do
-      assert Authenticator.fetch_user("email") == nil
+      assert Helpers.fetch_user("email") == nil
     end
   end
 
   describe "fetch_credentials/1" do
     test "returns name and password from authorization params" do
       params = %{"authorization" => %{"name" => "test", "password" => "test-pass"}}
-      assert Authenticator.fetch_credentials(params) == {:ok, {"test", "test-pass"}}
+      assert Helpers.fetch_credentials(params) == {:ok, {"test", "test-pass"}}
     end
 
     test "returns name and password with grant_type 'password'" do
       params = %{"grant_type" => "password", "username" => "test", "password" => "test-pass"}
-      assert Authenticator.fetch_credentials(params) == {:ok, {"test", "test-pass"}}
+      assert Helpers.fetch_credentials(params) == {:ok, {"test", "test-pass"}}
     end
 
     test "returns error" do
-      assert Authenticator.fetch_credentials(%{}) == {:error, :invalid_credentials}
+      assert Helpers.fetch_credentials(%{}) == {:error, :invalid_credentials}
     end
   end
 end
