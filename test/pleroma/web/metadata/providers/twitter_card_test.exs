@@ -145,7 +145,11 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
               ], []},
              {:meta, [property: "twitter:player:width", content: "480"], []},
              {:meta, [property: "twitter:player:height", content: "480"], []},
-             {:meta, [property: "twitter:player:stream", content: "https://pleroma.gov/about/juche.webm"], []},
+             {:meta,
+              [
+                property: "twitter:player:stream",
+                content: "https://pleroma.gov/about/juche.webm"
+              ], []},
              {:meta, [property: "twitter:player:stream:content_type", content: "video/webm"], []}
            ] == result
   end
