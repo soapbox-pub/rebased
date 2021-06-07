@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Don't crash so hard when email settings are invalid.
-- Mix task: pleroma.database prune_objects
+- Mix task `pleroma.database prune_objects`
 
 ## Unreleased (Patch)
 
