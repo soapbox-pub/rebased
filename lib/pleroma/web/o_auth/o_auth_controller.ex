@@ -22,7 +22,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
-  alias Pleroma.Web.Params
+  alias Pleroma.Web.Utils.Params
   alias Pleroma.Web.Plugs.RateLimiter
 
   require Logger

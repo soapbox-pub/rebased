@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.Params do
+defmodule Pleroma.Web.Utils.Params do
   # As in Mastodon API, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
   @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
 

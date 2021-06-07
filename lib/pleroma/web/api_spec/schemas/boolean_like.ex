@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.BooleanLike do
 
   def cast(%Cast{value: value} = context) do
     context
-    |> Map.put(:value, Pleroma.Web.Params.truthy_param?(value))
+    |> Map.put(:value, Pleroma.Web.Utils.Params.truthy_param?(value))
     |> Cast.ok()
   end
 end

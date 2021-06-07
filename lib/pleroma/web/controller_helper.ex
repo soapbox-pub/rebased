@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
   alias Pleroma.Pagination
-  alias Pleroma.Web.Params
+  alias Pleroma.Web.Utils.Params
 
   def json_response(conn, status, _) when status in [204, :no_content] do
     conn
