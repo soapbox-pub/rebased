@@ -1427,30 +1427,27 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         ]
       }
 
-      res =
-        assert conn
-               |> put_req_header("content-type", "application/json")
-               |> post("/api/pleroma/admin/config", %{"configs" => [params]})
-               |> json_response_and_validate_schema(200)
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+             |> json_response_and_validate_schema(200) ==
+               %{
+                 "configs" => [
+                   %{
+                     "db" => [":instance_thumbnail"],
+                     "group" => ":pleroma",
+                     "key" => ":instance",
+                     "value" => params["value"]
+                   }
+                 ],
+                 "need_reboot" => false
+               }
 
-      assert res == %{
-               "configs" => [
-                 %{
-                   "db" => [":instance_thumbnail"],
-                   "group" => ":pleroma",
-                   "key" => ":instance",
-                   "value" => params["value"]
-                 }
-               ],
-               "need_reboot" => false
-             }
-
-      _res =
-        assert conn
-               |> get("/api/v1/instance")
-               |> json_response_and_validate_schema(200)
-
-      assert res = %{"thumbnail" => "https://example.com/media/new_thumbnail.jpg"}
+      assert conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+             |> Map.take(["thumbnail"]) ==
+               %{"thumbnail" => "https://example.com/media/new_thumbnail.jpg"}
     end
 
     test "Concurrent Limiter", %{conn: conn} do
