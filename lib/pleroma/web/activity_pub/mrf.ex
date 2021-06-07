@@ -131,7 +131,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def describe, do: get_policies() |> describe()
 
   def config_descriptions do
-    Pleroma.Web.ActivityPub.MRF
+    Pleroma.Web.ActivityPub.MRF.Policy
     |> Pleroma.Docs.Generator.list_behaviour_implementations()
     |> config_descriptions()
   end
