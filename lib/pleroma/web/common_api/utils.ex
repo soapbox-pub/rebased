@@ -17,8 +17,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Web.Utils.Params
   alias Pleroma.Web.Plugs.AuthenticationPlug
+  alias Pleroma.Web.Utils.Params
 
   require Logger
   require Pleroma.Constants
