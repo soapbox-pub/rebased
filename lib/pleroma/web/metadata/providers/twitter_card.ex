@@ -55,9 +55,6 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
-          height = url["height"] || 480
-          width = url["width"] || 480
-
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
               [
@@ -75,13 +72,16 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                  [
                    property: "twitter:player",
                    content: Utils.attachment_url(url["href"])
-                 ], []},
-                {:meta, [property: "twitter:player:width", content: "#{width}"], []},
-                {:meta, [property: "twitter:player:height", content: "#{height}"], []}
+                 ], []}
                 | acc
               ]
+              |> maybe_add_dimensions(url)
 
             "video" ->
+              # fallback to old placeholder values
+              height = url["height"] || 480
+              width = url["width"] || 480
+
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
@@ -106,5 +106,21 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
 
   defp player_url(id) do
     Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice_player, id)
+  end
+
+  # Videos have problems without dimensions, but we used to not provide WxH for images.
+  # A default (read: incorrect) fallback for images is likely to cause rendering bugs.
+  defp maybe_add_dimensions(metadata, url) do
+    cond do
+      !is_nil(url["height"]) && !is_nil(url["width"]) ->
+        metadata ++
+          [
+            {:meta, [property: "twitter:player:width", content: "#{url["width"]}"], []},
+            {:meta, [property: "twitter:player:height", content: "#{url["height"]}"], []}
+          ]
+
+      true ->
+        metadata
+    end
   end
 end
