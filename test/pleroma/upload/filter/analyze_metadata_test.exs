@@ -14,9 +14,10 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadataTest do
       tempfile: Path.absname("test/fixtures/image.jpg")
     }
 
-    assert {:ok, :filtered,
-            %{width: 1024, height: 768, blurhash: "V5DI,j_NIS%eI.RDI[RS%1WDr=IVD-RoV{?Ge-tiSKkR"}} =
-             AnalyzeMetadata.filter(upload)
+    {:ok, :filtered, meta} = AnalyzeMetadata.filter(upload)
+
+    assert %{width: 1024, height: 768} = meta
+    assert meta.blurhash
   end
 
   test "adds the dimensions for videos" do
