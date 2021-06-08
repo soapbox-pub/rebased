@@ -111,7 +111,14 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
           "content" => "pleroma in a nutshell",
           "attachment" => [
             %{
-              "url" => [%{"mediaType" => "image/png", "href" => "https://pleroma.gov/tenshi.png"}]
+              "url" => [
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://pleroma.gov/tenshi.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
+              ]
             },
             %{
               "url" => [
@@ -142,6 +149,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
              {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
              {:meta, [property: "twitter:card", content: "summary_large_image"], []},
              {:meta, [property: "twitter:player", content: "https://pleroma.gov/tenshi.png"], []},
+             {:meta, [property: "twitter:player:width", content: "1280"], []},
+             {:meta, [property: "twitter:player:height", content: "1024"], []},
              {:meta, [property: "twitter:card", content: "player"], []},
              {:meta,
               [

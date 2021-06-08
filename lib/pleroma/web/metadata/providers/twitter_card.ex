@@ -55,7 +55,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
-          # TODO: Add additional properties to objects when we have the data available.
+          height = url["height"] || 480
+          width = url["width"] || 480
+
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
               [
@@ -73,16 +75,13 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                  [
                    property: "twitter:player",
                    content: Utils.attachment_url(url["href"])
-                 ], []}
+                 ], []},
+                {:meta, [property: "twitter:player:width", content: "#{width}"], []},
+                {:meta, [property: "twitter:player:height", content: "#{height}"], []}
                 | acc
               ]
 
-            # TODO: Need the true width and height values here or Twitter renders an iFrame with
-            # a bad aspect ratio
             "video" ->
-              height = url["height"] || 480
-              width = url["width"] || 480
-
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
