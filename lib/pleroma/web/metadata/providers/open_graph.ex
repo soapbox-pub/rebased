@@ -69,8 +69,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
-          # TODO: Add additional properties to objects when we have the data available.
-          # Also, Whatsapp only wants JPEG or PNGs. It seems that if we add a second og:image
+          # TODO: Whatsapp only wants JPEG or PNGs. It seems that if we add a second og:image
           # object when a Video or GIF is attached it will display that in Whatsapp Rich Preview.
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
@@ -85,12 +84,14 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
                 {:meta, [property: "og:image:alt", content: attachment["name"]], []}
                 | acc
               ]
+              |> maybe_add_dimensions(url)
 
             "video" ->
               [
                 {:meta, [property: "og:video", content: Utils.attachment_url(url["href"])], []}
                 | acc
               ]
+              |> maybe_add_dimensions(url)
 
             _ ->
               acc
@@ -102,4 +103,21 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   end
 
   defp build_attachments(_), do: []
+
+  # We can use url["mediaType"] to dynamically fill the metadata
+  defp maybe_add_dimensions(metadata, url) do
+    type = url["mediaType"] |> String.split("/") |> List.first()
+
+    cond do
+      !is_nil(url["height"]) && !is_nil(url["width"]) ->
+        metadata ++
+          [
+            {:meta, [property: "og:#{type}:width", content: "#{url["width"]}"], []},
+            {:meta, [property: "og:#{type}:height", content: "#{url["height"]}"], []}
+          ]
+
+      true ->
+        metadata
+    end
+  end
 end

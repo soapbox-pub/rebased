@@ -22,7 +22,12 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
           "attachment" => [
             %{
               "url" => [
-                %{"mediaType" => "image/png", "href" => "https://pleroma.gov/tenshi.png"}
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://pleroma.gov/tenshi.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
               ]
             },
             %{
@@ -35,7 +40,12 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
             },
             %{
               "url" => [
-                %{"mediaType" => "video/webm", "href" => "https://pleroma.gov/about/juche.webm"}
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
               ]
             },
             %{
@@ -55,11 +65,15 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
     assert Enum.all?(
              [
                {:meta, [property: "og:image", content: "https://pleroma.gov/tenshi.png"], []},
+               {:meta, [property: "og:image:width", content: "1280"], []},
+               {:meta, [property: "og:image:height", content: "1024"], []},
                {:meta,
                 [property: "og:audio", content: "http://www.gnu.org/music/free-software-song.au"],
                 []},
                {:meta, [property: "og:video", content: "https://pleroma.gov/about/juche.webm"],
-                []}
+                []},
+               {:meta, [property: "og:video:width", content: "800"], []},
+               {:meta, [property: "og:video:height", content: "600"], []}
              ],
              fn element -> element in result end
            )
