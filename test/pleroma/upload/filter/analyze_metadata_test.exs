@@ -6,7 +6,7 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadataTest do
   use Pleroma.DataCase, async: true
   alias Pleroma.Upload.Filter.AnalyzeMetadata
 
-  test "adds the image dimensions" do
+  test "adds the dimensions and blurhash for images" do
     upload = %Pleroma.Upload{
       name: "an… image.jpg",
       content_type: "image/jpeg",
@@ -14,10 +14,12 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadataTest do
       tempfile: Path.absname("test/fixtures/image.jpg")
     }
 
-    assert {:ok, :filtered, %{width: 1024, height: 768}} = AnalyzeMetadata.filter(upload)
+    assert {:ok, :filtered,
+            %{width: 1024, height: 768, blurhash: "V5DI,j_NIS%eI.RDI[RS%1WDr=IVD-RoV{?Ge-tiSKkR"}} =
+             AnalyzeMetadata.filter(upload)
   end
 
-  test "adds the video dimensions" do
+  test "adds the dimensions for videos" do
     upload = %Pleroma.Upload{
       name: "coolvideo.mp4",
       content_type: "video/mp4",
