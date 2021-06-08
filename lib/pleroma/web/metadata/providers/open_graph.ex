@@ -32,7 +32,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          property: "og:description",
          content: scrubbed_content
        ], []},
-      {:meta, [property: "og:type", content: "website"], []}
+      {:meta, [property: "og:type", content: "article"], []}
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          ], []},
         {:meta, [property: "og:url", content: user.uri || user.ap_id], []},
         {:meta, [property: "og:description", content: truncated_bio], []},
-        {:meta, [property: "og:type", content: "website"], []},
+        {:meta, [property: "og:type", content: "article"], []},
         {:meta, [property: "og:image", content: Utils.attachment_url(User.avatar_url(user))], []},
         {:meta, [property: "og:image:width", content: 150], []},
         {:meta, [property: "og:image:height", content: 150], []}
