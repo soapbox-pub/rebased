@@ -19,31 +19,18 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
       }) do
     attachments = build_attachments(object)
     scrubbed_content = Utils.scrub_html_and_truncate(object)
-    # Zero width space
-    content =
-      if scrubbed_content != "" and scrubbed_content != "\u200B" do
-        ": “" <> scrubbed_content <> "”"
-      else
-        ""
-      end
 
-    # Most previews only show og:title which is inconvenient. Instagram
-    # hacks this by putting the description in the title and making the
-    # description longer prefixed by how many likes and shares the post
-    # has. Here we use the descriptive nickname in the title, and expand
-    # the full account & nickname in the description. We also use the cute^Wevil
-    # smart quotes around the status text like Instagram, too.
     [
       {:meta,
        [
          property: "og:title",
-         content: "#{user.name}" <> content
+         content: Utils.user_name_string(user)
        ], []},
       {:meta, [property: "og:url", content: url], []},
       {:meta,
        [
          property: "og:description",
-         content: "#{Utils.user_name_string(user)}" <> content
+         content: scrubbed_content
        ], []},
       {:meta, [property: "og:type", content: "website"], []}
     ] ++
@@ -95,8 +82,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
             "image" ->
               [
                 {:meta, [property: "og:image", content: Utils.attachment_url(url["href"])], []},
-                {:meta, [property: "og:image:width", content: 150], []},
-                {:meta, [property: "og:image:height", content: 150], []}
+                {:meta, [property: "og:image:alt", content: attachment["name"]], []}
                 | acc
               ]
 
