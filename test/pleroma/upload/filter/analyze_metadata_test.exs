@@ -16,4 +16,15 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadataTest do
 
     assert {:ok, :filtered, %{width: 1024, height: 768}} = AnalyzeMetadata.filter(upload)
   end
+
+  test "adds the video dimensions" do
+    upload = %Pleroma.Upload{
+      name: "coolvideo.mp4",
+      content_type: "video/mp4",
+      path: Path.absname("test/fixtures/video.mp4"),
+      tempfile: Path.absname("test/fixtures/video.mp4")
+    }
+
+    assert {:ok, :filtered, %{width: 480, height: 480}} = AnalyzeMetadata.filter(upload)
+  end
 end
