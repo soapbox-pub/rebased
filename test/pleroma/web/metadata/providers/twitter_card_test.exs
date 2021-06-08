@@ -123,7 +123,12 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
             },
             %{
               "url" => [
-                %{"mediaType" => "video/webm", "href" => "https://pleroma.gov/about/juche.webm"}
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
               ]
             }
           ]
@@ -143,8 +148,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
                 property: "twitter:player",
                 content: Router.Helpers.o_status_url(Endpoint, :notice_player, activity.id)
               ], []},
-             {:meta, [property: "twitter:player:width", content: "480"], []},
-             {:meta, [property: "twitter:player:height", content: "480"], []},
+             {:meta, [property: "twitter:player:width", content: "800"], []},
+             {:meta, [property: "twitter:player:height", content: "600"], []},
              {:meta,
               [
                 property: "twitter:player:stream",

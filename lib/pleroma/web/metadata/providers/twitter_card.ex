@@ -80,11 +80,14 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
             # TODO: Need the true width and height values here or Twitter renders an iFrame with
             # a bad aspect ratio
             "video" ->
+              height = url["height"] || 480
+              width = url["width"] || 480
+
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
-                {:meta, [property: "twitter:player:width", content: "480"], []},
-                {:meta, [property: "twitter:player:height", content: "480"], []},
+                {:meta, [property: "twitter:player:width", content: "#{width}"], []},
+                {:meta, [property: "twitter:player:height", content: "#{height}"], []},
                 {:meta, [property: "twitter:player:stream", content: url["href"]], []},
                 {:meta,
                  [property: "twitter:player:stream:content_type", content: url["mediaType"]], []}
