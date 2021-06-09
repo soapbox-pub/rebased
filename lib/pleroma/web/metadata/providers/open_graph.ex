@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   alias Pleroma.User
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata
   alias Pleroma.Web.Metadata.Providers.Provider
   alias Pleroma.Web.Metadata.Utils
@@ -36,8 +37,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
-          {:meta, [property: "og:image", content: Utils.attachment_url(User.avatar_url(user))],
-           []},
+          {:meta, [property: "og:image", content: MediaProxy.preview_url(User.avatar_url(user))], []},
           {:meta, [property: "og:image:width", content: 150], []},
           {:meta, [property: "og:image:height", content: 150], []}
         ]
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
         {:meta, [property: "og:url", content: user.uri || user.ap_id], []},
         {:meta, [property: "og:description", content: truncated_bio], []},
         {:meta, [property: "og:type", content: "article"], []},
-        {:meta, [property: "og:image", content: Utils.attachment_url(User.avatar_url(user))], []},
+        {:meta, [property: "og:image", content: MediaProxy.preview_url(User.avatar_url(user))], []},
         {:meta, [property: "og:image:width", content: 150], []},
         {:meta, [property: "og:image:height", content: 150], []}
       ]
@@ -74,13 +74,17 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
               [
-                {:meta, [property: "og:audio", content: Utils.attachment_url(url["href"])], []}
+                {:meta, [property: "og:audio", content: MediaProxy.url(url["href"])], []}
                 | acc
               ]
 
+            # Not using preview_url for this. It saves bandwidth, but the image dimensions will be wrong.
+            # We generate it on the fly and have no way to capture or analyze the image to get the dimensions.
+            # This can be an issue for apps/FEs rendering images in timelines too, but you can get clever with
+            # the aspect ratio metadata as a workaround.
             "image" ->
               [
-                {:meta, [property: "og:image", content: Utils.attachment_url(url["href"])], []},
+                {:meta, [property: "og:image", content: MediaProxy.url(url["href"])], []},
                 {:meta, [property: "og:image:alt", content: attachment["name"]], []}
                 | acc
               ]
@@ -88,7 +92,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
             "video" ->
               [
-                {:meta, [property: "og:video", content: Utils.attachment_url(url["href"])], []}
+                {:meta, [property: "og:video", content: MediaProxy.url(url["href"])], []}
                 | acc
               ]
               |> maybe_add_dimensions(url)

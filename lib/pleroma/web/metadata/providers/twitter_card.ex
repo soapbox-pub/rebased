@@ -5,6 +5,7 @@
 
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   alias Pleroma.User
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata
   alias Pleroma.Web.Metadata.Providers.Provider
   alias Pleroma.Web.Metadata.Utils
@@ -48,7 +49,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   end
 
   def image_tag(user) do
-    {:meta, [property: "twitter:image", content: Utils.attachment_url(User.avatar_url(user))], []}
+    {:meta, [property: "twitter:image", content: MediaProxy.preview_url(User.avatar_url(user))],
+     []}
   end
 
   defp build_attachments(id, %{data: %{"attachment" => attachments}}) do
@@ -65,13 +67,17 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 | acc
               ]
 
+            # Not using preview_url for this. It saves bandwidth, but the image dimensions will be wrong.
+            # We generate it on the fly and have no way to capture or analyze the image to get the dimensions.
+            # This can be an issue for apps/FEs rendering images in timelines too, but you can get clever with
+            # the aspect ratio metadata as a workaround.
             "image" ->
               [
                 {:meta, [property: "twitter:card", content: "summary_large_image"], []},
                 {:meta,
                  [
                    property: "twitter:player",
-                   content: Utils.attachment_url(url["href"])
+                   content: MediaProxy.url(url["href"])
                  ], []}
                 | acc
               ]
@@ -87,7 +93,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
                 {:meta, [property: "twitter:player:width", content: "#{width}"], []},
                 {:meta, [property: "twitter:player:height", content: "#{height}"], []},
-                {:meta, [property: "twitter:player:stream", content: url["href"]], []},
+                {:meta, [property: "twitter:player:stream", content: MediaProxy.url(url["href"])], []},
                 {:meta,
                  [property: "twitter:player:stream:content_type", content: url["mediaType"]], []}
                 | acc
