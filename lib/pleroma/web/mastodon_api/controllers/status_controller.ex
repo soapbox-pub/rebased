@@ -27,10 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(
-    :skip_plug,
-    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show]
-  )
+  plug(:skip_public_check when action in [:index, :show])
 
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
 

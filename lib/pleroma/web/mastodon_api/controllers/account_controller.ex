@@ -24,7 +24,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.TwitterAPI.TwitterAPI
@@ -32,9 +31,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_plug, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :create)
+  plug(:skip_auth when action == :create)
 
-  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:show, :statuses])
+  plug(:skip_public_check when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
