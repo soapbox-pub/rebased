@@ -93,7 +93,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
                 {:meta, [property: "twitter:player:width", content: "#{width}"], []},
                 {:meta, [property: "twitter:player:height", content: "#{height}"], []},
-                {:meta, [property: "twitter:player:stream", content: MediaProxy.url(url["href"])], []},
+                {:meta, [property: "twitter:player:stream", content: MediaProxy.url(url["href"])],
+                 []},
                 {:meta,
                  [property: "twitter:player:stream:content_type", content: url["mediaType"]], []}
                 | acc

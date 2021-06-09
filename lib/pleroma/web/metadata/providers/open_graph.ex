@@ -37,7 +37,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
-          {:meta, [property: "og:image", content: MediaProxy.preview_url(User.avatar_url(user))], []},
+          {:meta, [property: "og:image", content: MediaProxy.preview_url(User.avatar_url(user))],
+           []},
           {:meta, [property: "og:image:width", content: 150], []},
           {:meta, [property: "og:image:height", content: 150], []}
         ]
@@ -58,7 +59,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
         {:meta, [property: "og:url", content: user.uri || user.ap_id], []},
         {:meta, [property: "og:description", content: truncated_bio], []},
         {:meta, [property: "og:type", content: "article"], []},
-        {:meta, [property: "og:image", content: MediaProxy.preview_url(User.avatar_url(user))], []},
+        {:meta, [property: "og:image", content: MediaProxy.preview_url(User.avatar_url(user))],
+         []},
         {:meta, [property: "og:image:width", content: 150], []},
         {:meta, [property: "og:image:height", content: 150], []}
       ]
@@ -130,11 +132,11 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     cond do
       Pleroma.Config.get([:media_preview_proxy, :enabled], false) ->
         metadata ++
-        [
-          {:meta, [property: "og:image:width", content: "#{url["width"]}"], []},
-          {:meta, [property: "og:image:height", content: "#{url["height"]}"], []},
-          {:meta, [property: "og:image", content: MediaProxy.preview_url(url["href"])], []}
-        ]
+          [
+            {:meta, [property: "og:image:width", content: "#{url["width"]}"], []},
+            {:meta, [property: "og:image:height", content: "#{url["height"]}"], []},
+            {:meta, [property: "og:image", content: MediaProxy.preview_url(url["href"])], []}
+          ]
 
       true ->
         metadata
