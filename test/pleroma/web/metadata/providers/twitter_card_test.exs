@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata.Providers.TwitterCard
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Router
@@ -17,7 +18,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
   test "it renders twitter card for user info" do
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
-    avatar_url = Utils.attachment_url(User.avatar_url(user))
+    avatar_url = MediaProxy.preview_url(User.avatar_url(user))
     res = TwitterCard.build_tags(%{user: user})
 
     assert res == [
