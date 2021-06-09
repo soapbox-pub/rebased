@@ -33,6 +33,18 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidationTest do
       assert {:ok, _object, _meta} = ObjectValidator.validate(valid_announce, [])
     end
 
+    test "keeps announced object context", %{valid_announce: valid_announce} do
+      assert %Object{data: %{"context" => object_context}} =
+               Object.get_cached_by_ap_id(valid_announce["object"])
+
+      {:ok, %{"context" => context}, _} =
+        valid_announce
+        |> Map.put("context", "https://example.org/invalid_context_id")
+        |> ObjectValidator.validate([])
+
+      assert context == object_context
+    end
+
     test "returns an error if the object can't be found", %{valid_announce: valid_announce} do
       without_object =
         valid_announce
@@ -49,16 +61,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidationTest do
       {:error, cng} = ObjectValidator.validate(nonexisting_object, [])
 
       assert {:object, {"can't find object", []}} in cng.errors
-    end
-
-    test "returns an error if we don't have the actor", %{valid_announce: valid_announce} do
-      nonexisting_actor =
-        valid_announce
-        |> Map.put("actor", "https://gensokyo.2hu/users/raymoo")
-
-      {:error, cng} = ObjectValidator.validate(nonexisting_actor, [])
-
-      assert {:actor, {"can't find user", []}} in cng.errors
     end
 
     test "returns an error if the actor already announced the object", %{

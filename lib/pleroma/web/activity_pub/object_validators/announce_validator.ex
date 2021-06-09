@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -23,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     field(:type, :string)
     field(:object, ObjectValidators.ObjectID)
     field(:actor, ObjectValidators.ObjectID)
-    field(:context, :string, autogenerate: {Utils, :generate_context_id, []})
+    field(:context, :string)
     field(:to, ObjectValidators.Recipients, default: [])
     field(:cc, ObjectValidators.Recipients, default: [])
     field(:published, ObjectValidators.DateTime)
@@ -36,6 +37,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   end
 
   def cast_data(data) do
+    data =
+      data
+      |> fix()
+
     %__MODULE__{}
     |> changeset(data)
   end
@@ -43,11 +48,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   def changeset(struct, data) do
     struct
     |> cast(data, __schema__(:fields))
-    |> fix_after_cast()
   end
 
-  def fix_after_cast(cng) do
-    cng
+  defp fix(data) do
+    data =
+      data
+      |> CommonFixes.fix_actor()
+      |> CommonFixes.fix_activity_addressing()
+
+    with %Object{} = object <- Object.normalize(data["object"]) do
+      data
+      |> CommonFixes.fix_activity_context(object)
+      |> CommonFixes.fix_object_action_recipients(object)
+    else
+      _ -> data
+    end
   end
 
   defp validate_data(data_cng) do
@@ -60,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     |> validate_announcable()
   end
 
-  def validate_announcable(cng) do
+  defp validate_announcable(cng) do
     with actor when is_binary(actor) <- get_field(cng, :actor),
          object when is_binary(object) <- get_field(cng, :object),
          %User{} = actor <- User.get_cached_by_ap_id(actor),
@@ -91,7 +106,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     end
   end
 
-  def validate_existing_announce(cng) do
+  defp validate_existing_announce(cng) do
     actor = get_field(cng, :actor)
     object = get_field(cng, :object)
 

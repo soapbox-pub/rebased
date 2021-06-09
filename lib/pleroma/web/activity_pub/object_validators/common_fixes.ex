@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -36,7 +37,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
     |> Transmogrifier.fix_implicit_addressing(follower_collection)
   end
 
-  def fix_activity_addressing(activity, _meta) do
+  def fix_activity_addressing(activity) do
     %User{follower_address: follower_collection} = User.get_cached_by_ap_id(activity["actor"])
 
     activity
@@ -56,5 +57,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
     data
     |> Map.put("actor", actor)
     |> Map.put("attributedTo", actor)
+  end
+
+  def fix_activity_context(data, %Object{data: %{"context" => object_context}}) do
+    data
+    |> Map.put("context", object_context)
+  end
+
+  def fix_object_action_recipients(%{"actor" => actor} = data, %Object{data: %{"actor" => actor}}) do
+    to = ((data["to"] || []) -- [actor]) |> Enum.uniq()
+
+    Map.put(data, "to", to)
+  end
+
+  def fix_object_action_recipients(data, %Object{data: %{"actor" => actor}}) do
+    to = ((data["to"] || []) ++ [actor]) |> Enum.uniq()
+
+    Map.put(data, "to", to)
   end
 end
