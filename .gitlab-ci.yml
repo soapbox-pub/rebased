@@ -158,6 +158,7 @@ analysis:
 cycles:
   stage: test
   image: elixir:1.11
+  cache: {}
   script:
     - mix deps.get
     - mix compile
