@@ -15,11 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(
-    :skip_plug,
-    [Pleroma.Web.Plugs.OAuthScopesPlug, Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug]
-    when action in [:empty_array, :empty_object]
-  )
+  plug(:skip_auth when action in [:empty_array, :empty_object])
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 

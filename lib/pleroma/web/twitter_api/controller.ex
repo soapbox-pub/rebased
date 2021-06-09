@@ -7,17 +7,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.TwitterAPI.TokenView
 
   require Logger
 
-  plug(
-    :skip_plug,
-    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :confirm_email
-  )
-
+  plug(:skip_auth when action == :confirm_email)
   plug(:skip_plug, OAuthScopesPlug when action in [:oauth_tokens, :revoke_token])
 
   action_fallback(:errors)
