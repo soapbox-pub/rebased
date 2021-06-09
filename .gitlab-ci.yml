@@ -24,6 +24,7 @@ stages:
   - docker
 
 before_script:
+  - echo $MIX_ENV
   - rm -rf _build/*/lib/pleroma
   - apt-get update && apt-get install -y cmake
   - mix local.hex --force
