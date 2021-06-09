@@ -96,6 +96,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
                 | acc
               ]
               |> maybe_add_dimensions(url)
+              |> maybe_add_video_thumbnail(url)
 
             _ ->
               acc
@@ -119,6 +120,20 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
             {:meta, [property: "og:#{type}:width", content: "#{url["width"]}"], []},
             {:meta, [property: "og:#{type}:height", content: "#{url["height"]}"], []}
           ]
+
+      true ->
+        metadata
+    end
+  end
+
+  defp maybe_add_video_thumbnail(url, metadata) do
+    cond do
+      Pleroma.Config.get([:media_preview_proxy, :enabled], false) ->
+        [
+          {:meta, [property: "og:image:width", content: "#{url["width"]}"], []},
+          {:meta, [property: "og:image:height", content: "#{url["height"]}"], []},
+          {:meta, [property: "og:image", content: MediaProxy.preview_url(url["href"])], []}
+        ]
 
       true ->
         metadata
