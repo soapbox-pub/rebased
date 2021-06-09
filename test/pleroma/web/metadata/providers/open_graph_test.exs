@@ -107,4 +107,84 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
 
     refute {:meta, [property: "og:image", content: "https://misskey.microsoft/corndog.png"], []} in result
   end
+
+  test "video attachments have image thumbnail with WxH metadata with Preview Proxy enabled" do
+    clear_config([:media_proxy, :enabled], true)
+    clear_config([:media_preview_proxy, :enabled], true)
+    user = insert(:user)
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "id" => "https://pleroma.gov/objects/whatever",
+          "content" => "test video post",
+          "sensitive" => false,
+          "attachment" => [
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
+
+    assert {:meta, [property: "og:image:width", content: "800"], []} in result
+    assert {:meta, [property: "og:image:height", content: "600"], []} in result
+
+    assert {:meta,
+            [
+              property: "og:image",
+              content:
+                "http://localhost:4001/proxy/preview/LzAnlke-l5oZbNzWsrHfprX1rGw/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
+            ], []} in result
+  end
+
+  test "video attachments have no image thumbnail with Preview Proxy disabled" do
+    clear_config([:media_proxy, :enabled], true)
+    clear_config([:media_preview_proxy, :enabled], false)
+    user = insert(:user)
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "id" => "https://pleroma.gov/objects/whatever",
+          "content" => "test video post",
+          "sensitive" => false,
+          "attachment" => [
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
+
+    refute {:meta, [property: "og:image:width", content: "800"], []} in result
+    refute {:meta, [property: "og:image:height", content: "600"], []} in result
+
+    refute {:meta,
+            [
+              property: "og:image",
+              content:
+                "http://localhost:4001/proxy/preview/LzAnlke-l5oZbNzWsrHfprX1rGw/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
+            ], []} in result
+  end
 end
