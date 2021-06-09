@@ -67,10 +67,11 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 | acc
               ]
 
-            # Not using preview_url for this. It saves bandwidth, but the image dimensions will be wrong.
-            # We generate it on the fly and have no way to capture or analyze the image to get the dimensions.
-            # This can be an issue for apps/FEs rendering images in timelines too, but you can get clever with
-            # the aspect ratio metadata as a workaround.
+            # Not using preview_url for this. It saves bandwidth, but the image dimensions will
+            # be wrong. We generate it on the fly and have no way to capture or analyze the
+            # analyze the image to get the dimensions. This can be an issue for apps/FEs
+            # rendering images in timelines too, but you can get clever with the aspect ratio
+            # metadata as a workaround.
             "image" ->
               [
                 {:meta, [property: "twitter:card", content: "summary_large_image"], []},
