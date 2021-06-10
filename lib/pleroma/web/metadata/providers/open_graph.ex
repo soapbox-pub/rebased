@@ -129,6 +129,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end
   end
 
+  # Media Preview Proxy makes thumbnails of videos without resizing, so we can trust the
+  # width and height of the source video.
   defp maybe_add_video_thumbnail(metadata, url) do
     cond do
       Pleroma.Config.get([:media_preview_proxy, :enabled], false) ->
