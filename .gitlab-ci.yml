@@ -158,6 +158,11 @@ analysis:
 cycles:
   stage: test
   image: elixir:1.11
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: {}
   script:
     - mix deps.get
