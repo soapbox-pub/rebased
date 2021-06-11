@@ -1,7 +1,7 @@
 # Installing on Debian Based Distributions
 ## Installation
 
-This guide will assume you are on Debian Stretch. This guide should also work with Ubuntu 16.04 and 18.04. It also assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.digitalocean.com/community/tutorials/how-to-add-delete-and-grant-sudo-privileges-to-users-on-a-debian-vps). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.
+This guide will assume you are on Debian 11 (“bullseye”) or later. This guide should also work with Ubuntu 18.04 (“Bionic Beaver”) and later. It also assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.digitalocean.com/community/tutorials/how-to-add-delete-and-grant-sudo-privileges-to-users-on-a-debian-vps). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.
 
 {! backend/installation/generic_dependencies.include !}
 
@@ -22,19 +22,13 @@ sudo apt install git build-essential postgresql postgresql-contrib cmake libmagi
 
 ### Install Elixir and Erlang
 
-* Download and add the Erlang repository:
-
-```shell
-wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb
-sudo dpkg -i /tmp/erlang-solutions_2.0_all.deb
-```
-
-* Install Elixir and Erlang:
+* Install Elixir and Erlang (you might need to use backports or [asdf](https://github.com/asdf-vm/asdf) on old systems):
 
 ```shell
 sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
 ```
+
 
 ### Optional packages: [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md)
 
