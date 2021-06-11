@@ -4,18 +4,10 @@ This guide describes the installation and configuration of pleroma (and the requ
 
 For any additional information regarding commands and configuration files mentioned here, check the man pages [online](https://man.openbsd.org/) or directly on your server with the man command.
 
+{! backend/installation/generic_dependencies.include !}
+
+### Preparing the system
 #### Required software
-
-The following packages need to be installed:
-
-  * elixir
-  * gmake
-  * git
-  * postgresql-server
-  * postgresql-contrib
-  * cmake
-  * ffmpeg
-  * ImageMagick
 
 To install them, run the following command (with doas or as root):
 

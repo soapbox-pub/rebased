@@ -2,7 +2,9 @@
 
 This document was written for FreeBSD 12.1, but should be work on future releases.
 
-## Required software
+{! backend/installation/generic_dependencies.include !}
+
+## Installing software used in this guide
 
 This assumes the target system has `pkg(8)`.
 

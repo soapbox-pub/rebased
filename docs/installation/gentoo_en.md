@@ -3,9 +3,7 @@
 
 This guide will assume that you have administrative rights, either as root or a user with [sudo permissions](https://wiki.gentoo.org/wiki/Sudo). Lines that begin with `#` indicate that they should be run as the superuser. Lines using `$` should be run as the indicated user, e.g. `pleroma$` should be run as the `pleroma` user.
 
-### Configuring your hostname (optional)
-
-If you would like your prompt to permanently include your host/domain, change `/etc/conf.d/hostname` to your hostname. You can reboot or use the `hostname` command to make immediate changes.
+{! backend/installation/generic_dependencies.include !}
 
 ### Your make.conf, package.use, and USE flags
 
