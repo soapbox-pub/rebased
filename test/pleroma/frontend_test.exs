@@ -133,4 +133,30 @@ defmodule Pleroma.FrontendTest do
 
     assert Frontend.get_named_frontend("pleroma") == frontend
   end
+
+  describe "enable/2" do
+    setup do
+      clear_config(:configurable_from_database, true)
+    end
+
+    test "enables a primary frontend" do
+      frontend = %Frontend{name: "soapbox", ref: "v1.2.3"}
+      map = Frontend.to_map(frontend)
+
+      clear_config([:frontends, :available], %{"soapbox" => map})
+      Frontend.enable(frontend, :primary)
+
+      assert Pleroma.Config.get([:frontends, :primary]) == map
+    end
+
+    test "enables an admin frontend" do
+      frontend = %Frontend{name: "admin-fe", ref: "develop"}
+      map = Frontend.to_map(frontend)
+
+      clear_config([:frontends, :available], %{"admin-fe" => map})
+      Frontend.enable(frontend, :admin)
+
+      assert Pleroma.Config.get([:frontends, :admin]) == map
+    end
+  end
 end

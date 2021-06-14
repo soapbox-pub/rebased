@@ -82,4 +82,29 @@ defmodule Mix.Tasks.Pleroma.FrontendTest do
 
     assert File.exists?(Path.join([@dir, "frontends", "unknown", "baka", "test.txt"]))
   end
+
+  describe "enable" do
+    setup do
+      clear_config(:configurable_from_database, true)
+    end
+
+    test "enabling a primary frontend" do
+      capture_io(fn -> Frontend.run(["enable", "soapbox-fe"]) end)
+
+      primary = Pleroma.Config.get([:frontends, :primary])
+      assert primary["name"] == "soapbox-fe"
+    end
+
+    test "enabling an admin frontend" do
+      capture_io(fn -> Frontend.run(["enable", "soapbox-fe", "--admin"]) end)
+
+      primary = Pleroma.Config.get([:frontends, :admin])
+      assert primary["name"] == "soapbox-fe"
+    end
+
+    test "raise if configurable_from_database is disabled" do
+      clear_config(:configurable_from_database, false)
+      assert_raise(RuntimeError, fn -> Frontend.run(["enable", "soapbox-fe"]) end)
+    end
+  end
 end

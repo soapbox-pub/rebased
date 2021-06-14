@@ -4,11 +4,13 @@
 
 defmodule Pleroma.Frontend do
   alias Pleroma.Config
+  alias Pleroma.ConfigDB
   alias Pleroma.Frontend
 
   require Logger
 
   @unknown_name "unknown"
+  @frontend_types [:admin, :primary]
 
   defstruct [:name, :ref, :git, :build_url, :build_dir, :file, :"custom-http-headers"]
 
@@ -40,6 +42,7 @@ defmodule Pleroma.Frontend do
          :ok <- install_frontend(frontend, tmp_dir, dest) do
       File.rm_rf!(tmp_dir)
       Logger.info("Frontend #{label} installed to #{dest}")
+      frontend
     else
       {:download_or_unzip, _} ->
         Logger.info("Could not download or unzip the frontend")
@@ -48,6 +51,41 @@ defmodule Pleroma.Frontend do
       _e ->
         Logger.info("Could not install the frontend")
         {:error, "Could not install the frontend"}
+    end
+  end
+
+  def enable(%Frontend{} = frontend, frontend_type) when frontend_type in @frontend_types do
+    with {:config_db, true} <- {:config_db, Config.get(:configurable_from_database)} do
+      frontend
+      |> maybe_put_name()
+      |> hydrate()
+      |> validate!()
+      |> do_enable(frontend_type)
+    else
+      {:config_db, _} ->
+        map = to_map(frontend)
+
+        raise """
+        Can't enable frontend; database configuration is disabled.
+        Enable the frontend by manually adding this line to your config:
+
+          config :pleroma, :frontends, #{to_string(frontend_type)}: #{inspect(map)}
+
+        Alternatively, enable database configuration:
+
+          config :pleroma, configurable_from_database: true
+        """
+    end
+  end
+
+  def do_enable(%Frontend{name: name} = frontend, frontend_type) do
+    value = Keyword.put([], frontend_type, to_map(frontend))
+    params = %{group: :pleroma, key: :frontends, value: value}
+
+    with {:ok, _} <- ConfigDB.update_or_create(params),
+         :ok <- Config.TransferTask.load_and_update_env([], false) do
+      Logger.info("Frontend #{name} successfully enabled")
+      frontend
     end
   end
 
