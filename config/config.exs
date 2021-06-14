@@ -740,7 +740,7 @@ config :pleroma, :frontends,
       "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
       "build_url" =>
         "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
-      "ref" => "v1.0.0",
+      "ref" => "develop",
       "build_dir" => "static"
     }
   }
