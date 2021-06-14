@@ -4,39 +4,40 @@
 
 defmodule Pleroma.Frontend do
   alias Pleroma.Config
+  alias Pleroma.Frontend
 
   require Logger
 
-  def install(name, opts \\ []) do
-    frontend_info = %{
-      "ref" => opts[:ref],
-      "build_url" => opts[:build_url],
-      "build_dir" => opts[:build_dir]
-    }
+  @unknown_name "unknown"
 
-    frontend_info =
-      [:frontends, :available, name]
-      |> Config.get(%{})
-      |> Map.merge(frontend_info, fn _key, config, cmd ->
-        # This only overrides things that are actually set
-        cmd || config
-      end)
+  defstruct [:name, :ref, :git, :build_url, :build_dir, :file, :"custom-http-headers"]
 
-    ref = frontend_info["ref"]
+  def install(%Frontend{} = frontend) do
+    frontend
+    |> maybe_put_name()
+    |> hydrate()
+    |> validate!()
+    |> do_install()
+  end
 
-    unless ref do
-      raise "No ref given or configured"
-    end
+  defp maybe_put_name(%{name: nil} = fe), do: Map.put(fe, :name, @unknown_name)
+  defp maybe_put_name(fe), do: fe
 
+  # Merges a named frontend with the provided one
+  defp hydrate(%Frontend{name: name} = frontend) do
+    get_named_frontend(name)
+    |> merge(frontend)
+  end
+
+  defp do_install(%Frontend{ref: ref, name: name} = frontend) do
     dest = Path.join([dir(), name, ref])
 
     label = "#{name} (#{ref})"
     tmp_dir = Path.join(dir(), "tmp")
 
-    with {_, :ok} <-
-           {:download_or_unzip, download_or_unzip(frontend_info, tmp_dir, opts[:file])},
+    with {_, :ok} <- {:download_or_unzip, download_or_unzip(frontend, tmp_dir)},
          Logger.info("Installing #{label} to #{dest}"),
-         :ok <- install_frontend(frontend_info, tmp_dir, dest) do
+         :ok <- install_frontend(frontend, tmp_dir, dest) do
       File.rm_rf!(tmp_dir)
       Logger.info("Frontend #{label} installed to #{dest}")
     else
@@ -50,21 +51,17 @@ defmodule Pleroma.Frontend do
     end
   end
 
-  def dir(opts \\ []) do
-    if is_nil(opts[:static_dir]) do
-      Pleroma.Config.get!([:instance, :static_dir])
-    else
-      opts[:static_dir]
-    end
+  def dir do
+    Config.get!([:instance, :static_dir])
     |> Path.join("frontends")
   end
 
-  defp download_or_unzip(frontend_info, temp_dir, nil),
-    do: download_build(frontend_info, temp_dir)
+  defp download_or_unzip(%Frontend{file: nil} = frontend, dest),
+    do: download_build(frontend, dest)
 
-  defp download_or_unzip(_frontend_info, temp_dir, file) do
+  defp download_or_unzip(%Frontend{file: file}, dest) do
     with {:ok, zip} <- File.read(Path.expand(file)) do
-      unzip(zip, temp_dir)
+      unzip(zip, dest)
     end
   end
 
@@ -87,9 +84,13 @@ defmodule Pleroma.Frontend do
     end
   end
 
-  defp download_build(frontend_info, dest) do
-    Logger.info("Downloading pre-built bundle for #{frontend_info["name"]}")
-    url = String.replace(frontend_info["build_url"], "${ref}", frontend_info["ref"])
+  def parse_build_url(%Frontend{ref: ref, build_url: build_url}) do
+    String.replace(build_url, "${ref}", ref)
+  end
+
+  defp download_build(%Frontend{name: name} = frontend, dest) do
+    Logger.info("Downloading pre-built bundle for #{name}")
+    url = parse_build_url(frontend)
 
     with {:ok, %{status: 200, body: zip_body}} <-
            Pleroma.HTTP.get(url, [], pool: :media, recv_timeout: 120_000) do
@@ -100,11 +101,46 @@ defmodule Pleroma.Frontend do
     end
   end
 
-  defp install_frontend(frontend_info, source, dest) do
-    from = frontend_info["build_dir"] || "dist"
+  defp install_frontend(%Frontend{} = frontend, source, dest) do
+    from = frontend.build_dir || "dist"
     File.rm_rf!(dest)
     File.mkdir_p!(dest)
     File.cp_r!(Path.join([source, from]), dest)
     :ok
+  end
+
+  # Converts a named frontend into a %Frontend{} struct
+  def get_named_frontend(name) do
+    [:frontends, :available, name]
+    |> Config.get(%{})
+    |> from_map()
+  end
+
+  def merge(%Frontend{} = fe1, %Frontend{} = fe2) do
+    Map.merge(fe1, fe2, fn _key, v1, v2 ->
+      # This only overrides things that are actually set
+      v1 || v2
+    end)
+  end
+
+  def validate!(%Frontend{ref: ref} = fe) when is_binary(ref), do: fe
+  def validate!(_), do: raise("No ref given or configured")
+
+  def from_map(frontend) when is_map(frontend) do
+    struct(Frontend, atomize_keys(frontend))
+  end
+
+  def to_map(%Frontend{} = frontend) do
+    frontend
+    |> Map.from_struct()
+    |> stringify_keys()
+  end
+
+  defp atomize_keys(map) do
+    Map.new(map, fn {k, v} -> {String.to_existing_atom(k), v} end)
+  end
+
+  defp stringify_keys(map) do
+    Map.new(map, fn {k, v} -> {to_string(k), v} end)
   end
 end

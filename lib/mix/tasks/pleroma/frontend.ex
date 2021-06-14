@@ -7,6 +7,8 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
   import Mix.Pleroma
 
+  alias Pleroma.Frontend
+
   @shortdoc "Manages bundled Pleroma frontends"
 
   @moduledoc File.read!("docs/administration/CLI_tasks/frontend.md")
@@ -16,7 +18,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
     "none"
   end
 
-  def run(["install", frontend | args]) do
+  def run(["install", name | args]) do
     start_pleroma()
 
     {options, [], []} =
@@ -24,13 +26,19 @@ defmodule Mix.Tasks.Pleroma.Frontend do
         args,
         strict: [
           ref: :string,
-          static_dir: :string,
           build_url: :string,
           build_dir: :string,
           file: :string
         ]
       )
 
-    Pleroma.Frontend.install(frontend, options)
+    options
+    |> Keyword.put(:name, name)
+    |> opts_to_frontend()
+    |> Frontend.install()
+  end
+
+  defp opts_to_frontend(opts) do
+    struct(Frontend, opts)
   end
 end

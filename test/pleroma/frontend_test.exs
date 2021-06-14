@@ -18,31 +18,32 @@ defmodule Pleroma.FrontendTest do
   end
 
   test "it downloads and unzips a known frontend" do
-    clear_config([:frontends, :available], %{
-      "pleroma" => %{
-        "ref" => "fantasy",
-        "name" => "pleroma",
-        "build_url" => "http://gensokyo.2hu/builds/${ref}"
-      }
-    })
+    frontend = %Frontend{
+      ref: "fantasy",
+      name: "pleroma",
+      build_url: "http://gensokyo.2hu/builds/${ref}"
+    }
+
+    clear_config([:frontends, :available], %{"pleroma" => Frontend.to_map(frontend)})
 
     Tesla.Mock.mock(fn %{url: "http://gensokyo.2hu/builds/fantasy"} ->
       %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend_dist.zip")}
     end)
 
-    Frontend.install("pleroma")
+    Frontend.install(frontend)
 
     assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
   end
 
   test "it also works given a file" do
-    clear_config([:frontends, :available], %{
-      "pleroma" => %{
-        "ref" => "fantasy",
-        "name" => "pleroma",
-        "build_dir" => ""
-      }
-    })
+    frontend = %Frontend{
+      ref: "fantasy",
+      name: "pleroma",
+      build_dir: "",
+      file: "test/fixtures/tesla_mock/frontend.zip"
+    }
+
+    clear_config([:frontends, :available], %{"pleroma" => Frontend.to_map(frontend)})
 
     folder = Path.join([@dir, "frontends", "pleroma", "fantasy"])
     previously_existing = Path.join([folder, "temp"])
@@ -50,23 +51,86 @@ defmodule Pleroma.FrontendTest do
     File.write!(previously_existing, "yey")
     assert File.exists?(previously_existing)
 
-    Frontend.install("pleroma", file: "test/fixtures/tesla_mock/frontend.zip")
+    Frontend.install(frontend)
 
     assert File.exists?(Path.join([folder, "test.txt"]))
     refute File.exists?(previously_existing)
   end
 
   test "it downloads and unzips unknown frontends" do
+    frontend = %Frontend{
+      ref: "baka",
+      build_url: "http://gensokyo.2hu/madeup.zip",
+      build_dir: ""
+    }
+
     Tesla.Mock.mock(fn %{url: "http://gensokyo.2hu/madeup.zip"} ->
       %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend.zip")}
     end)
 
-    Frontend.install("unknown",
-      ref: "baka",
-      build_url: "http://gensokyo.2hu/madeup.zip",
-      build_dir: ""
-    )
+    Frontend.install(frontend)
 
     assert File.exists?(Path.join([@dir, "frontends", "unknown", "baka", "test.txt"]))
+  end
+
+  test "merge/2 only overrides nil values" do
+    fe1 = %Frontend{name: "pleroma"}
+    fe2 = %Frontend{name: "soapbox", ref: "fantasy"}
+    expected = %Frontend{name: "pleroma", ref: "fantasy"}
+    assert Frontend.merge(fe1, fe2) == expected
+  end
+
+  test "validate!/1 raises if :ref isn't set" do
+    fe = %Frontend{name: "pleroma"}
+    assert_raise(RuntimeError, fn -> Frontend.validate!(fe) end)
+  end
+
+  test "validate!/1 returns the frontend" do
+    fe = %Frontend{name: "pleroma", ref: "fantasy"}
+    assert Frontend.validate!(fe) == fe
+  end
+
+  test "from_map/1 parses a map into a %Frontend{} struct" do
+    map = %{"name" => "pleroma", "ref" => "fantasy"}
+    expected = %Frontend{name: "pleroma", ref: "fantasy"}
+    assert Frontend.from_map(map) == expected
+  end
+
+  test "to_map/1 returns the frontend as a map with string keys" do
+    frontend = %Frontend{name: "pleroma", ref: "fantasy"}
+
+    expected = %{
+      "name" => "pleroma",
+      "ref" => "fantasy",
+      "build_dir" => nil,
+      "build_url" => nil,
+      "custom-http-headers" => nil,
+      "file" => nil,
+      "git" => nil
+    }
+
+    assert Frontend.to_map(frontend) == expected
+  end
+
+  test "parse_build_url/1 replaces ${ref}" do
+    frontend = %Frontend{
+      name: "pleroma",
+      ref: "fantasy",
+      build_url: "http://gensokyo.2hu/builds/${ref}"
+    }
+
+    expected = "http://gensokyo.2hu/builds/fantasy"
+    assert Frontend.parse_build_url(frontend) == expected
+  end
+
+  test "dir/0 returns the frontend dir" do
+    assert Frontend.dir() == "test/frontend_static_test/frontends"
+  end
+
+  test "get_named_frontend/1 returns a frontend from the config" do
+    frontend = %Frontend{name: "pleroma", ref: "fantasy"}
+    clear_config([:frontends, :available], %{"pleroma" => Frontend.to_map(frontend)})
+
+    assert Frontend.get_named_frontend("pleroma") == frontend
   end
 end

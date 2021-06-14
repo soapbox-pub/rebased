@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Config
+  alias Pleroma.Frontend
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
@@ -29,12 +30,18 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   end
 
   def install(%{body_params: params} = conn, _params) do
-    with :ok <- Pleroma.Frontend.install(params.name, Map.delete(params, :name)) do
+    frontend = params_to_frontend(params)
+
+    with :ok <- Frontend.install(frontend) do
       index(conn, %{})
     end
   end
 
   defp installed do
-    File.ls!(Pleroma.Frontend.dir())
+    File.ls!(Frontend.dir())
+  end
+
+  defp params_to_frontend(params) when is_map(params) do
+    struct(Frontend, params)
   end
 end
