@@ -28,7 +28,9 @@ defmodule Mix.Tasks.Pleroma.Frontend do
           ref: :string,
           build_url: :string,
           build_dir: :string,
-          file: :string
+          file: :string,
+          admin: :boolean,
+          primary: :boolean
         ]
       )
 
@@ -40,6 +42,10 @@ defmodule Mix.Tasks.Pleroma.Frontend do
            |> opts_to_frontend()
            |> Frontend.install() do
       shell_info("Frontend #{fe.name} installed")
+
+      if get_frontend_type(options) do
+        run(["enable", name] ++ args)
+      end
     else
       error ->
         shell_error("Failed to install frontend")
@@ -63,7 +69,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
         ]
       )
 
-    frontend_type = get_frontend_type(options)
+    frontend_type = get_frontend_type(options) || :primary
 
     shell_info("Enabling frontend #{name}...")
 
@@ -92,8 +98,11 @@ defmodule Mix.Tasks.Pleroma.Frontend do
       %{admin: true} ->
         :admin
 
-      _ ->
+      %{primary: true} ->
         :primary
+
+      _ ->
+        nil
     end
   end
 end

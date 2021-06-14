@@ -39,6 +39,28 @@ defmodule Mix.Tasks.Pleroma.FrontendTest do
     assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
   end
 
+  test "it enables a frontend with the --primary flag" do
+    frontend = %Pleroma.Frontend{
+      ref: "fantasy",
+      name: "pleroma",
+      build_url: "http://gensokyo.2hu/builds/${ref}"
+    }
+
+    map = Pleroma.Frontend.to_map(frontend)
+    clear_config(:configurable_from_database, true)
+    clear_config([:frontends, :available], %{"pleroma" => map})
+
+    Tesla.Mock.mock(fn %{url: "http://gensokyo.2hu/builds/fantasy"} ->
+      %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend_dist.zip")}
+    end)
+
+    capture_io(fn ->
+      Frontend.run(["install", "pleroma", "--primary"])
+    end)
+
+    assert Pleroma.Config.get([:frontends, :primary]) == map
+  end
+
   test "it also works given a file" do
     clear_config([:frontends, :available], %{
       "pleroma" => %{
@@ -104,7 +126,10 @@ defmodule Mix.Tasks.Pleroma.FrontendTest do
 
     test "raise if configurable_from_database is disabled" do
       clear_config(:configurable_from_database, false)
-      assert_raise(RuntimeError, fn -> Frontend.run(["enable", "soapbox-fe"]) end)
+
+      assert_raise(RuntimeError, fn ->
+        capture_io(fn -> Frontend.run(["enable", "soapbox-fe"]) end)
+      end)
     end
   end
 end
