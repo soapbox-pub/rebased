@@ -11,7 +11,7 @@ defmodule Pleroma.User.EmailList do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  @header_row ["Email Address", "Nickname"]
+  @header_row ["Email Address", "Nickname", "Subscribe?"]
 
   defp query(:subscribers) do
     User.Query.build(%{
@@ -43,8 +43,12 @@ defmodule Pleroma.User.EmailList do
     |> build_csv()
   end
 
-  defp build_row(%User{email: email, nickname: nickname}) do
-    [email, nickname]
+  defp build_row(%User{} = user) do
+    [
+      user.email,
+      user.nickname,
+      user.accepts_email_list
+    ]
   end
 
   defp build_csv(lines) do
