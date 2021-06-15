@@ -259,6 +259,7 @@ defmodule Pleroma.Web.Router do
     post("/backups", AdminAPIController, :create_backup)
 
     get("/email_list/subscribers.csv", EmailListController, :subscribers)
+    get("/email_list/unsubscribers.csv", EmailListController, :unsubscribers)
   end
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do

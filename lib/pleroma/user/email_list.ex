@@ -13,23 +13,30 @@ defmodule Pleroma.User.EmailList do
 
   @header_row ["Email Address"]
 
-  defp subscribers_query do
+  defp query(:subscribers) do
     User.Query.build(%{
       local: true,
-      is_active: true,
-      is_approved: true,
-      is_confirmed: true,
+      active: true,
       accepts_email_list: true
     })
     |> where([u], not is_nil(u.email))
   end
 
-  def generate_csv do
-    subscribers_query()
+  defp query(:unsubscribers) do
+    User.Query.build(%{
+      local: true,
+      accepts_email_list: false
+    })
+    |> where([u], not is_nil(u.email))
+  end
+
+  def generate_csv(audience) when is_atom(audience) do
+    audience
+    |> query()
     |> generate_csv()
   end
 
-  def generate_csv(query) do
+  def generate_csv(%Ecto.Query{} = query) do
     query
     |> Repo.all()
     |> Enum.map(&build_row/1)
