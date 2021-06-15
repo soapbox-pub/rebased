@@ -11,6 +11,8 @@ defmodule Pleroma.User.MailingList do
   alias Pleroma.Repo
   alias Pleroma.User
 
+  @header_row ["Email Address"]
+
   defp subscribers_query do
     User.Query.build(%{
       local: true,
@@ -34,10 +36,11 @@ defmodule Pleroma.User.MailingList do
     |> build_csv()
   end
 
-  defp build_row(%User{email: email}), do: email
+  defp build_row(%User{email: email}), do: [email]
 
   defp build_csv(lines) do
-    ["Email Address" | lines]
-    |> Enum.join("\n")
+    [@header_row | lines]
+    |> CSV.encode()
+    |> Enum.join()
   end
 end
