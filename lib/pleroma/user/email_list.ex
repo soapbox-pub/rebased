@@ -19,7 +19,7 @@ defmodule Pleroma.User.EmailList do
       is_active: true,
       is_approved: true,
       is_confirmed: true,
-      accepts_newsletter: true
+      accepts_email_list: true
     })
     |> where([u], not is_nil(u.email))
   end

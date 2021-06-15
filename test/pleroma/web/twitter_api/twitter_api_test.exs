@@ -146,18 +146,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert user2.bio == expected_text
   end
 
-  test "it registers a new user with accepts_newsletter." do
+  test "it registers a new user with accepts_email_list." do
     data = %{
       :username => "lain",
       :email => "lain@wired.jp",
       :fullname => "lain iwakura",
       :password => "bear",
       :confirm => "bear",
-      :accepts_newsletter => true
+      :accepts_email_list => true
     }
 
     {:ok, user} = TwitterAPI.register_user(data)
-    assert user.accepts_newsletter
+    assert user.accepts_email_list
   end
 
   describe "register with one time token" do

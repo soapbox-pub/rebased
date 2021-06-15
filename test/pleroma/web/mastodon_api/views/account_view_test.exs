@@ -470,7 +470,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
   end
 
-  test "shows accepts_newsletter only to the account owner" do
+  test "shows accepts_email_list only to the account owner" do
     user = insert(:user)
     other_user = insert(:user)
 
@@ -479,12 +479,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert AccountView.render(
              "show.json",
              %{user: user, for: other_user}
-           )[:pleroma][:accepts_newsletter] == nil
+           )[:pleroma][:accepts_email_list] == nil
 
     assert AccountView.render(
              "show.json",
              %{user: user, for: user}
-           )[:pleroma][:accepts_newsletter] == user.accepts_newsletter
+           )[:pleroma][:accepts_email_list] == user.accepts_email_list
   end
 
   describe "follow requests counter" do

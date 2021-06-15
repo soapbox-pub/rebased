@@ -114,10 +114,10 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
     end
 
     test "updates the user's newsletter preference", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{accepts_newsletter: "true"})
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{accepts_email_list: "true"})
 
       assert json_response_and_validate_schema(conn, 200)
-      assert %User{accepts_newsletter: true} = User.get_by_id(user.id)
+      assert %User{accepts_email_list: true} = User.get_by_id(user.id)
     end
 
     test "updates the user's allow_following_move", %{user: user, conn: conn} do

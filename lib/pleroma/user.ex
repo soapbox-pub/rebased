@@ -148,7 +148,7 @@ defmodule Pleroma.User do
     field(:accepts_chat_messages, :boolean, default: nil)
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
-    field(:accepts_newsletter, :boolean, default: false)
+    field(:accepts_email_list, :boolean, default: false)
 
     embeds_one(
       :notification_settings,
@@ -517,7 +517,7 @@ defmodule Pleroma.User do
         :actor_type,
         :accepts_chat_messages,
         :disclose_client,
-        :accepts_newsletter
+        :accepts_email_list
       ]
     )
     |> unique_constraint(:nickname)
@@ -681,7 +681,7 @@ defmodule Pleroma.User do
       :nickname,
       :email,
       :accepts_chat_messages,
-      :accepts_newsletter
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
@@ -726,7 +726,7 @@ defmodule Pleroma.User do
       :emoji,
       :accepts_chat_messages,
       :registration_reason,
-      :accepts_newsletter
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -1714,7 +1714,7 @@ defmodule Pleroma.User do
       raw_fields: [],
       is_discoverable: false,
       also_known_as: [],
-      accepts_newsletter: false
+      accepts_email_list: false
     })
   end
 

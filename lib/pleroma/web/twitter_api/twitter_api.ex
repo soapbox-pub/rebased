@@ -14,7 +14,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def register_user(params, opts \\ []) do
     params =
       params
-      |> Map.take([:email, :token, :password, :accepts_newsletter])
+      |> Map.take([:email, :token, :password, :accepts_email_list])
       |> Map.put(:bio, params |> Map.get(:bio, "") |> User.parse_bio())
       |> Map.put(:nickname, params[:username])
       |> Map.put(:name, Map.get(params, :fullname, params[:username]))
