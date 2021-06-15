@@ -462,7 +462,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         accepts_email_list: %Schema{
           allOf: [BooleanLike],
           description:
-            "Whether the user opts-in to receiving news and marketing updates from site admins. These should be presented to the user in order to allow them to consent before setting this parameter to TRUE."
+            "Whether the user opts-in to receiving news and marketing updates from site admins."
         }
       },
       example: %{
