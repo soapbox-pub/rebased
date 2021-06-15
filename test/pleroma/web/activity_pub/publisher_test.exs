@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
         },
         %{
           "rel" => "http://ostatus.org/schema/1.0/subscribe",
-          "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
+          "template" => "#{Pleroma.Web.Endpoint.url()}/ostatus_subscribe?acct={uri}"
         }
       ]
 

@@ -562,12 +562,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       |> Enum.all?(fn
         {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
-          String.starts_with?(url, Pleroma.Web.base_url())
+          String.starts_with?(url, Pleroma.Web.Endpoint.url())
 
         {:emojis, emojis} ->
           Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
-            String.starts_with?(url, Pleroma.Web.base_url()) &&
-              String.starts_with?(static_url, Pleroma.Web.base_url())
+            String.starts_with?(url, Pleroma.Web.Endpoint.url()) &&
+              String.starts_with?(static_url, Pleroma.Web.Endpoint.url())
           end)
 
         _ ->
