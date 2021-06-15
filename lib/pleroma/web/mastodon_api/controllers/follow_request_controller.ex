@@ -9,7 +9,6 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
-  plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:assign_follower when action != :index)
 
