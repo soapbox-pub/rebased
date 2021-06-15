@@ -16,10 +16,10 @@ defmodule Pleroma.User.EmailListTest do
     insert(:user, accepts_email_list: false)
 
     expected = """
-    Email Address\r
-    #{user1.email}\r
-    #{user2.email}\r
-    #{user3.email}\r
+    Email Address,Nickname\r
+    #{user1.email},#{user1.nickname}\r
+    #{user2.email},#{user2.nickname}\r
+    #{user3.email},#{user3.nickname}\r
     """
 
     assert EmailList.generate_csv(:subscribers) == expected
@@ -32,9 +32,9 @@ defmodule Pleroma.User.EmailListTest do
     insert(:user, accepts_email_list: true)
 
     expected = """
-    Email Address\r
-    #{user1.email}\r
-    #{user2.email}\r
+    Email Address,Nickname\r
+    #{user1.email},#{user1.nickname}\r
+    #{user2.email},#{user2.nickname}\r
     """
 
     assert EmailList.generate_csv(:unsubscribers) == expected
