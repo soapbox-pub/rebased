@@ -132,6 +132,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 2.14"},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
+      {:csv, "~> 2.4"},
       {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.4.0", override: true},
       {:castore, "~> 0.1"},

@@ -80,7 +80,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
-      "pleroma_chat_messages"
+      "pleroma_chat_messages",
+      "email_list"
     ]
     |> Enum.filter(& &1)
   end
