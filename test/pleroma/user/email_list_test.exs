@@ -15,10 +15,10 @@ defmodule Pleroma.User.EmailListTest do
     user3 = insert(:user)
 
     expected = """
-    Email Address
-    #{user1.email}
-    #{user2.email}
-    #{user3.email}\
+    Email Address\r
+    #{user1.email}\r
+    #{user2.email}\r
+    #{user3.email}\r
     """
 
     assert EmailList.generate_csv() == expected
