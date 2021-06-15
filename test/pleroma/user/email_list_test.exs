@@ -2,8 +2,8 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.User.MailingListTest do
-  alias Pleroma.User.MailingList
+defmodule Pleroma.User.EmailListTest do
+  alias Pleroma.User.EmailList
 
   use Pleroma.DataCase
 
@@ -21,6 +21,6 @@ defmodule Pleroma.User.MailingListTest do
     #{user3.email}\
     """
 
-    assert MailingList.generate_csv() == expected
+    assert EmailList.generate_csv() == expected
   end
 end

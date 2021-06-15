@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.User.MailingList do
+defmodule Pleroma.User.EmailList do
   @moduledoc """
   Functions for generating email lists from local users.
   """

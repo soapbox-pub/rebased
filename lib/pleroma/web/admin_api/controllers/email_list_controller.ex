@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.AdminAPI.EmailListController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.User.MailingList
+  alias Pleroma.User.EmailList
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.AdminAPI.EmailListController do
   )
 
   def subscribers(conn, _params) do
-    csv = MailingList.generate_csv()
+    csv = EmailList.generate_csv()
 
     conn
     |> put_resp_content_type("text/csv")
