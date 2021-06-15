@@ -50,11 +50,15 @@ defmodule Pleroma.User.EmailList do
     |> build_csv()
   end
 
+  defp subscribe?(%User{} = user) do
+    user.accepts_email_list && user.is_active && user.is_approved && user.is_confirmed
+  end
+
   defp build_row(%User{} = user) do
     [
       user.email,
       user.nickname,
-      user.accepts_email_list
+      subscribe?(user)
     ]
   end
 
