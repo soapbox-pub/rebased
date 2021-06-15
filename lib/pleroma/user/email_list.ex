@@ -30,6 +30,13 @@ defmodule Pleroma.User.EmailList do
     |> where([u], not is_nil(u.email))
   end
 
+  defp query(:combined) do
+    User.Query.build(%{
+      local: true
+    })
+    |> where([u], not is_nil(u.email))
+  end
+
   def generate_csv(audience) when is_atom(audience) do
     audience
     |> query()

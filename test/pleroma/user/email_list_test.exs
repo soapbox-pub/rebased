@@ -39,4 +39,21 @@ defmodule Pleroma.User.EmailListTest do
 
     assert EmailList.generate_csv(:unsubscribers) == expected
   end
+
+  test "generate_csv/1 with :combined" do
+    user1 = insert(:user, accepts_email_list: true)
+    user2 = insert(:user, accepts_email_list: false)
+    user3 = insert(:user, accepts_email_list: false)
+    user4 = insert(:user, accepts_email_list: true)
+
+    expected = """
+    Email Address,Nickname,Subscribe?\r
+    #{user1.email},#{user1.nickname},true\r
+    #{user2.email},#{user2.nickname},false\r
+    #{user3.email},#{user3.nickname},false\r
+    #{user4.email},#{user4.nickname},true\r
+    """
+
+    assert EmailList.generate_csv(:combined) == expected
+  end
 end

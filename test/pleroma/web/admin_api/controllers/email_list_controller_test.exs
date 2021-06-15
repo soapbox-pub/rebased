@@ -76,4 +76,27 @@ defmodule Pleroma.Web.AdminAPI.EmailListControllerTest do
       |> response(403)
     end
   end
+
+  describe "GET /api/v1/pleroma/admin/email_list/combined.csv" do
+    setup do: admin_setup()
+
+    test "returns a CSV", %{conn: conn} do
+      result =
+        conn
+        |> get("/api/v1/pleroma/admin/email_list/combined.csv")
+        |> response(200)
+
+      assert result
+    end
+  end
+
+  describe "GET /api/v1/pleroma/admin/email_list/combined.csv unauthorized" do
+    setup do: user_setup()
+
+    test "returns 403", %{conn: conn} do
+      conn
+      |> get("/api/v1/pleroma/admin/email_list/combined.csv")
+      |> response(403)
+    end
+  end
 end

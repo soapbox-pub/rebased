@@ -13,16 +13,19 @@ defmodule Pleroma.Web.AdminAPI.EmailListController do
   plug(OAuthScopesPlug, %{scopes: ["admin:read:accounts"]})
 
   def subscribers(conn, _params) do
-    csv = EmailList.generate_csv(:subscribers)
-
-    conn
-    |> put_resp_content_type("text/csv")
-    |> resp(200, csv)
-    |> send_resp()
+    render_csv(conn, :subscribers)
   end
 
   def unsubscribers(conn, _params) do
-    csv = EmailList.generate_csv(:unsubscribers)
+    render_csv(conn, :unsubscribers)
+  end
+
+  def combined(conn, _params) do
+    render_csv(conn, :combined)
+  end
+
+  defp render_csv(conn, audience) when is_atom(audience) do
+    csv = EmailList.generate_csv(audience)
 
     conn
     |> put_resp_content_type("text/csv")
