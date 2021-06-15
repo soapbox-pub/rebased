@@ -94,10 +94,11 @@ defmodule Pleroma.Frontend do
     |> Path.join("frontends")
   end
 
-  defp download_or_unzip(%Frontend{file: nil} = frontend, dest),
-    do: download_build(frontend, dest)
+  defp download_or_unzip(%Frontend{build_url: build_url} = frontend, dest)
+       when is_binary(build_url),
+       do: download_build(frontend, dest)
 
-  defp download_or_unzip(%Frontend{file: file}, dest) do
+  defp download_or_unzip(%Frontend{file: file}, dest) when is_binary(file) do
     with {:ok, zip} <- File.read(Path.expand(file)) do
       unzip(zip, dest)
     end

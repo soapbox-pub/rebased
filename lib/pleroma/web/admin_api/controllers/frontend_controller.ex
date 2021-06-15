@@ -30,9 +30,8 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   end
 
   def install(%{body_params: params} = conn, _params) do
-    frontend = params_to_frontend(params)
-
-    with :ok <- Frontend.install(frontend) do
+    with %Frontend{} = frontend <- params_to_frontend(params),
+         %Frontend{} <- Frontend.install(frontend) do
       index(conn, %{})
     end
   end
