@@ -10,6 +10,7 @@
 /test/fixtures/test_tmp.txt
 /test/fixtures/image_tmp.jpg
 /test/tmp/
+/test/frontend_static_test/
 /doc
 /instance
 /priv/ssh_keys
