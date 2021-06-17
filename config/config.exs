@@ -405,6 +405,13 @@ config :pleroma, :mrf_object_age,
   threshold: 604_800,
   actions: [:delist, :strip_followers]
 
+config :pleroma, :mrf_nsfw_api,
+  url: "http://127.0.0.1:5000/",
+  threshold: 0.7,
+  mark_sensitive: true,
+  unlist: false,
+  reject: false
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
