@@ -92,6 +92,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     check_url_nsfw(url)
   end
 
+  def check_url_nsfw(url) do
+    threshold = Config.get([@policy, :threshold])
+    {:sfw, %{url: url, score: nil, threshold: threshold}}
+  end
+
   def check_attachment_nsfw(%{"url" => urls} = attachment) when is_list(urls) do
     if Enum.all?(urls, &match?({:sfw, _}, check_url_nsfw(&1))) do
       {:sfw, attachment}
@@ -106,6 +111,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
       {:nsfw, _} -> {:nsfw, attachment}
     end
   end
+
+  def check_attachment_nsfw(attachment), do: {:sfw, attachment}
 
   def check_object_nsfw(%{"attachment" => attachments} = object) when is_list(attachments) do
     if Enum.all?(attachments, &match?({:sfw, _}, check_attachment_nsfw(&1))) do
