@@ -49,14 +49,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
   @policy :mrf_nsfw_api
 
-  defp build_request_url(url) do
+  def build_request_url(url) do
     Config.get([@policy, :url])
     |> URI.parse()
+    |> fix_path()
     |> Map.put(:query, "url=#{url}")
     |> URI.to_string()
   end
 
-  defp parse_url(url) do
+  def parse_url(url) do
     request = build_request_url(url)
 
     with {:ok, %Tesla.Env{body: body}} <- HTTP.get(request) do
@@ -72,23 +73,26 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     end
   end
 
-  defp check_url_nsfw(url) when is_binary(url) do
+  def check_url_nsfw(url) when is_binary(url) do
     threshold = Config.get([@policy, :threshold])
 
     case parse_url(url) do
       {:ok, %{"score" => score}} when score >= threshold ->
         {:nsfw, %{url: url, score: score, threshold: threshold}}
 
+      {:ok, %{"score" => score}} ->
+        {:sfw, %{url: url, score: score, threshold: threshold}}
+
       _ ->
-        {:sfw, url}
+        {:sfw, %{url: url, score: nil, threshold: threshold}}
     end
   end
 
-  defp check_url_nsfw(%{"href" => url}) when is_binary(url) do
+  def check_url_nsfw(%{"href" => url}) when is_binary(url) do
     check_url_nsfw(url)
   end
 
-  defp check_attachment_nsfw(%{"url" => urls} = attachment) when is_list(urls) do
+  def check_attachment_nsfw(%{"url" => urls} = attachment) when is_list(urls) do
     if Enum.all?(urls, &match?({:sfw, _}, check_url_nsfw(&1))) do
       {:sfw, attachment}
     else
@@ -96,7 +100,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     end
   end
 
-  defp check_object_nsfw(%{"attachment" => attachments} = object) when is_list(attachments) do
+  def check_attachment_nsfw(%{"url" => url} = attachment) when is_binary(url) do
+    case check_url_nsfw(url) do
+      {:sfw, _} -> {:sfw, attachment}
+      {:nsfw, _} -> {:nsfw, attachment}
+    end
+  end
+
+  def check_object_nsfw(%{"attachment" => attachments} = object) when is_list(attachments) do
     if Enum.all?(attachments, &match?({:sfw, _}, check_attachment_nsfw(&1))) do
       {:sfw, object}
     else
@@ -104,14 +115,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     end
   end
 
-  defp check_object_nsfw(%{"object" => %{} = child_object} = object) do
+  def check_object_nsfw(%{"object" => %{} = child_object} = object) do
     case check_object_nsfw(child_object) do
       {:sfw, _} -> {:sfw, object}
       {:nsfw, _} -> {:nsfw, object}
     end
   end
 
-  defp check_object_nsfw(object), do: {:sfw, object}
+  def check_object_nsfw(object), do: {:sfw, object}
 
   @impl true
   def filter(object) do
@@ -150,7 +161,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
     end
   end
 
-  defp unlist(%{"to" => to, "cc" => cc, "actor" => actor} = object) do
+  def unlist(%{"to" => to, "cc" => cc, "actor" => actor} = object) do
     with %User{} = user <- User.get_cached_by_ap_id(actor) do
       to =
         [user.follower_address | to]
@@ -166,21 +177,29 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
       |> Map.put("to", to)
       |> Map.put("cc", cc)
     else
-      _ -> raise "[NsfwApiPolicy]: Could not fetch user #{actor}"
+      _ -> raise "[NsfwApiPolicy]: Could not find user #{actor}"
     end
   end
 
-  defp mark_sensitive(%{"object" => child_object} = object) when is_map(child_object) do
+  def mark_sensitive(%{"object" => child_object} = object) when is_map(child_object) do
     Map.put(object, "object", mark_sensitive(child_object))
   end
 
-  defp mark_sensitive(object) when is_map(object) do
+  def mark_sensitive(object) when is_map(object) do
     tags = (object["tag"] || []) ++ ["nsfw"]
 
     object
     |> Map.put("tag", tags)
     |> Map.put("sensitive", true)
   end
+
+  # Hackney needs a trailing slash
+  defp fix_path(%URI{path: path} = uri) when is_binary(path) do
+    path = String.trim_trailing(path, "/") <> "/"
+    Map.put(uri, :path, path)
+  end
+
+  defp fix_path(%URI{path: nil} = uri), do: Map.put(uri, :path, "/")
 
   @impl true
   def describe, do: {:ok, %{}}
