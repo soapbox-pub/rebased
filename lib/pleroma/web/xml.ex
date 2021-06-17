@@ -31,7 +31,7 @@ defmodule Pleroma.Web.XML do
         |> :binary.bin_to_list()
         |> :xmerl_scan.string(quiet: true)
 
-      doc
+      {:ok, doc}
     rescue
       _e ->
         Logger.debug("Couldn't parse XML: #{inspect(text)}")

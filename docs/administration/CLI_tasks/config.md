@@ -32,16 +32,20 @@
     config :pleroma, configurable_from_database: false
     ```
 
-To delete transferred settings from database optional flag `-d` can be used. `<env>` is `prod` by default.
+Options:
+
+- `<path>` - where to save migrated config. E.g. `--path=/tmp`. If file saved into non standart folder, you must manually copy file into directory where Pleroma can read it. For OTP install path will be `PLEROMA_CONFIG_PATH` or `/etc/pleroma`. For installation from source - `config` directory in the pleroma folder.
+- `<env>` - environment, for which is migrated config. By default is `prod`.
+- To delete transferred settings from database optional flag `-d` can be used
 
 === "OTP"
     ```sh
-     ./bin/pleroma_ctl config migrate_from_db [--env=<env>] [-d]
+     ./bin/pleroma_ctl config migrate_from_db [--env=<env>] [-d] [--path=<path>]
     ```
 
 === "From Source"
     ```sh
-    mix pleroma.config migrate_from_db [--env=<env>] [-d]
+    mix pleroma.config migrate_from_db [--env=<env>] [-d] [--path=<path>]
     ```
 
 ## Dump all of the config settings defined in the database

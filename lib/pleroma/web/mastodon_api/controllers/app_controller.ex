@@ -14,16 +14,10 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  plug(
-    :skip_plug,
-    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug]
-    when action in [:create, :verify_credentials]
-  )
+  plug(:skip_auth when action in [:create, :verify_credentials])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 

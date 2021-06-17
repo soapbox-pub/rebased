@@ -805,10 +805,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "client_secret" => app.client_secret
         })
 
-      assert %{"access_token" => token} = json_response(conn, 200)
+      assert %{"id" => id, "access_token" => access_token} = json_response(conn, 200)
 
-      token = Repo.get_by(Token, token: token)
+      token = Repo.get_by(Token, token: access_token)
       assert token
+      assert token.id == id
+      assert token.token == access_token
       assert token.scopes == app.scopes
     end
 

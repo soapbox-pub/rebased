@@ -35,8 +35,9 @@ defmodule Pleroma.Web do
       import Plug.Conn
 
       import Pleroma.Web.Gettext
-      import Pleroma.Web.Router.Helpers
       import Pleroma.Web.TranslationHelpers
+
+      alias Pleroma.Web.Router.Helpers, as: Routes
 
       plug(:set_put_layout)
 
@@ -59,6 +60,14 @@ defmodule Pleroma.Web do
             end
           end
         )
+      end
+
+      defp skip_auth(conn, _) do
+        skip_plug(conn, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug])
+      end
+
+      defp skip_public_check(conn, _) do
+        skip_plug(conn, EnsurePublicOrAuthenticatedPlug)
       end
 
       # Executed just before actual controller action, invokes before-action hooks (callbacks)
@@ -131,7 +140,8 @@ defmodule Pleroma.Web do
 
       import Pleroma.Web.ErrorHelpers
       import Pleroma.Web.Gettext
-      import Pleroma.Web.Router.Helpers
+
+      alias Pleroma.Web.Router.Helpers, as: Routes
 
       require Logger
 
@@ -228,21 +238,5 @@ defmodule Pleroma.Web do
   """
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
-  end
-
-  def base_url do
-    Pleroma.Web.Endpoint.url()
-  end
-
-  # TODO: Change to Phoenix.Router.routes/1 for Phoenix 1.6.0+
-  def get_api_routes do
-    Pleroma.Web.Router.__routes__()
-    |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
-    |> Enum.map(fn r ->
-      r.path
-      |> String.split("/", trim: true)
-      |> List.first()
-    end)
-    |> Enum.uniq()
   end
 end
