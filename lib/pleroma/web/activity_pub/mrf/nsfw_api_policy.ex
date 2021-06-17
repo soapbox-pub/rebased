@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
 
       config :pleroma, Pleroma.Web.ActivityPub.MRF.NsfwMRF,
         url: "http://127.0.0.1:5000/",
-        threshold: 0.8,
+        threshold: 0.7,
         mark_sensitive: true,
         unlist: false,
         reject: false
@@ -202,5 +202,57 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
   defp fix_path(%URI{path: nil} = uri), do: Map.put(uri, :path, "/")
 
   @impl true
-  def describe, do: {:ok, %{}}
+  def describe do
+    options = %{
+      threshold: Config.get([@policy, :threshold]),
+      mark_sensitive: Config.get([@policy, :mark_sensitive]),
+      unlist: Config.get([@policy, :unlist]),
+      reject: Config.get([@policy, :reject])
+    }
+
+    {:ok, %{@policy => options}}
+  end
+
+  @impl true
+  def config_description do
+    %{
+      key: @policy,
+      related_policy: to_string(__MODULE__),
+      label: "NSFW API Policy",
+      description:
+        "Hide, delete, or mark sensitive NSFW content with artificial intelligence. Requires running an external API server.",
+      children: [
+        %{
+          key: :url,
+          type: :string,
+          description: "Base URL of the API server.",
+          suggestions: ["http://127.0.0.1:5000/"]
+        },
+        %{
+          key: :threshold,
+          type: :float,
+          description: "Lowest score to take action on. Between 0 and 1.",
+          suggestions: [0.7]
+        },
+        %{
+          key: :mark_sensitive,
+          type: :boolean,
+          description: "Mark sensitive all detected NSFW content?",
+          suggestions: [true]
+        },
+        %{
+          key: :unlist,
+          type: :boolean,
+          description: "Unlist sensitive all detected NSFW content?",
+          suggestions: [false]
+        },
+        %{
+          key: :reject,
+          type: :boolean,
+          description: "Reject sensitive all detected NSFW content (takes precedence)?",
+          suggestions: [false]
+        }
+      ]
+    }
+  end
 end
