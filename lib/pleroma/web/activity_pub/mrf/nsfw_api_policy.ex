@@ -165,6 +165,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
       object
       |> Map.put("to", to)
       |> Map.put("cc", cc)
+    else
+      _ -> raise "[NsfwApiPolicy]: Could not fetch user #{actor}"
     end
   end
 
