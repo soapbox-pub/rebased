@@ -30,7 +30,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     clear_config([:rich_media, :enabled], true)
 
-    assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+    assert Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) == nil
   end
 
   test "refuses to crawl malformed URLs" do
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     clear_config([:rich_media, :enabled], true)
 
-    assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+    assert Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) == nil
   end
 
   test "crawls valid, complete URLs" do
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     clear_config([:rich_media, :enabled], true)
 
-    assert %{page_url: "https://example.com/ogp", rich_media: _} =
+    assert %{url: "https://example.com/ogp", meta: %{} = _} =
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
   end
 
@@ -75,10 +75,10 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     clear_config([:rich_media, :enabled], true)
 
-    assert %{} = Helpers.fetch_data_for_activity(activity)
-    assert %{} = Helpers.fetch_data_for_activity(activity2)
-    assert %{} = Helpers.fetch_data_for_activity(activity3)
-    assert %{} = Helpers.fetch_data_for_activity(activity4)
-    assert %{} = Helpers.fetch_data_for_activity(activity5)
+    assert Helpers.fetch_data_for_activity(activity) == nil
+    assert Helpers.fetch_data_for_activity(activity2) == nil
+    assert Helpers.fetch_data_for_activity(activity3) == nil
+    assert Helpers.fetch_data_for_activity(activity4) == nil
+    assert Helpers.fetch_data_for_activity(activity5) == nil
   end
 end

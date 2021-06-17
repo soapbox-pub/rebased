@@ -245,6 +245,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
               "type" => Map.get(url || %{}, "type", "Link")
             }
             |> Maps.put_if_present("mediaType", media_type)
+            |> Maps.put_if_present("width", (url || %{})["width"] || data["width"])
+            |> Maps.put_if_present("height", (url || %{})["height"] || data["height"])
 
           %{
             "url" => [attachment_url],
@@ -961,7 +963,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object
       |> Map.get("attachment", [])
       |> Enum.map(fn data ->
-        [%{"mediaType" => media_type, "href" => href} | _] = data["url"]
+        [%{"mediaType" => media_type, "href" => href} = url | _] = data["url"]
 
         %{
           "url" => href,
@@ -969,6 +971,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "name" => data["name"],
           "type" => "Document"
         }
+        |> Maps.put_if_present("width", url["width"])
+        |> Maps.put_if_present("height", url["height"])
+        |> Maps.put_if_present("blurhash", data["blurhash"])
       end)
 
     Map.put(object, "attachment", attachments)
