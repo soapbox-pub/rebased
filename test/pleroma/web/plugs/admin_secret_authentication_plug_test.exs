@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
     end
 
     test "with `admin_token` query parameter", %{conn: conn} do
-      Pleroma.Config.put(:admin_token, "password123")
+      clear_config(:admin_token, "password123")
 
       conn =
         %{conn | params: %{"admin_token" => "wrong_password"}}
@@ -54,7 +54,7 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
     end
 
     test "with `x-admin-token` HTTP header", %{conn: conn} do
-      Pleroma.Config.put(:admin_token, "☕️")
+      clear_config(:admin_token, "☕️")
 
       conn =
         conn

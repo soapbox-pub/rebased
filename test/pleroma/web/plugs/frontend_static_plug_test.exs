@@ -74,4 +74,35 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       assert %Plug.Conn{status: :success} = get(conn, url)
     end
   end
+
+  test "api routes are detected correctly" do
+    # If this test fails we have probably added something
+    # new that should be in /api/ instead
+    expected_routes = [
+      "api",
+      "main",
+      "ostatus_subscribe",
+      "oauth",
+      "objects",
+      "activities",
+      "notice",
+      "users",
+      "tags",
+      "mailer",
+      "inbox",
+      "relay",
+      "internal",
+      ".well-known",
+      "nodeinfo",
+      "web",
+      "auth",
+      "embed",
+      "proxy",
+      "test",
+      "user_exists",
+      "check_password"
+    ]
+
+    assert expected_routes == Pleroma.Web.Router.get_api_routes()
+  end
 end

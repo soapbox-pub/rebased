@@ -41,7 +41,7 @@
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
-use Mix.Config
+import Config
 
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
@@ -190,7 +190,6 @@ config :pleroma, :instance,
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
   description_limit: 5_000,
-  chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
   avatar_upload_limit: 2_000_000,
@@ -391,6 +390,11 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
+config :pleroma, :mrf_hashtag,
+  sensitive: ["nsfw"],
+  reject: [],
+  federated_timeline_removal: []
+
 config :pleroma, :mrf_subchain, match_actor: %{}
 
 config :pleroma, :mrf_activity_expiration, days: 365
@@ -403,6 +407,8 @@ config :pleroma, :mrf_vocabulary,
 config :pleroma, :mrf_object_age,
   threshold: 604_800,
   actions: [:delist, :strip_followers]
+
+config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -438,7 +444,9 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
   headers: [],
   options: []
 
-config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: nil,
+  url_format: nil
 
 # Note: media preview proxy depends on media proxy to be enabled
 config :pleroma, :media_preview_proxy,
@@ -448,7 +456,9 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :pleroma, :chat, enabled: true
+config :pleroma, :shout,
+  enabled: true,
+  limit: 5_000
 
 config :phoenix, :format_encoders, json: Jason
 
@@ -541,6 +551,7 @@ config :pleroma, Oban,
   queues: [
     activity_expiration: 10,
     token_expiration: 5,
+    filter_expiration: 1,
     backup: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
@@ -608,10 +619,7 @@ config :ueberauth,
        base_path: "/oauth",
        providers: ueberauth_providers
 
-config :pleroma,
-       :auth,
-       enforce_oauth_admin_scope_usage: true,
-       oauth_consumer_strategies: oauth_consumer_strategies
+config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
@@ -653,6 +661,10 @@ config :pleroma, :oauth2,
   clean_expired_tokens: false
 
 config :pleroma, :database, rum_enabled: false
+
+config :pleroma, :features, improved_hashtag_timeline: :auto
+
+config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
 
 config :pleroma, :env, Mix.env()
 
@@ -723,7 +735,10 @@ config :pleroma, :frontends,
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
         "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
-      "ref" => "master"
+      "ref" => "master",
+      "custom-http-headers" => [
+        {"service-worker-allowed", "/"}
+      ]
     },
     "admin-fe" => %{
       "name" => "admin-fe",

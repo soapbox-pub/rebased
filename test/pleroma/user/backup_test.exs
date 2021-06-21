@@ -23,7 +23,7 @@ defmodule Pleroma.User.BackupTest do
   end
 
   test "it requries enabled email" do
-    Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+    clear_config([Pleroma.Emails.Mailer, :enabled], false)
     user = insert(:user)
     assert {:error, "Backups require enabled email"} == Backup.create(user)
   end
@@ -53,7 +53,7 @@ defmodule Pleroma.User.BackupTest do
   end
 
   test "it process a backup record" do
-    Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
     %{id: user_id} = user = insert(:user)
 
     assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
@@ -76,8 +76,8 @@ defmodule Pleroma.User.BackupTest do
   end
 
   test "it removes outdated backups after creating a fresh one" do
-    Pleroma.Config.put([Backup, :limit_days], -1)
-    Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    clear_config([Backup, :limit_days], -1)
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
     user = insert(:user)
 
     assert {:ok, job1} = Backup.create(user)

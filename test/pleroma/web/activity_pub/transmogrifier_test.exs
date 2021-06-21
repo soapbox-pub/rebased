@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
@@ -153,23 +154,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       end
     end
 
-    test "it adds the sensitive property" do
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "#nsfw hey"})
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["sensitive"]
-    end
-
     test "it adds the json-ld context and the conversation property" do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert modified["@context"] ==
-               Pleroma.Web.ActivityPub.Utils.make_json_ld_header()["@context"]
+      assert modified["@context"] == Utils.make_json_ld_header()["@context"]
 
       assert modified["object"]["conversation"] == modified["context"]
     end
@@ -202,7 +193,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal fields" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu :firefox:"})
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "#2hu :firefox:",
+          generator: %{type: "Application", name: "TestClient", url: "https://pleroma.social"}
+        })
+
+      # Ensure injected application data made it into the activity
+      # as we don't have a Token to derive it from, otherwise it will
+      # be nil and the test will pass
+      assert %{
+               type: "Application",
+               name: "TestClient",
+               url: "https://pleroma.social"
+             } == activity.object.data["generator"]
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -213,6 +217,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
+      assert is_nil(modified["object"]["generator"])
     end
 
     test "it strips internal fields of article" do
@@ -441,7 +446,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           end)
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
       assert Enum.all?(explicitly_mentioned_actors, &(&1 in fixed_object["to"]))
       refute "https://social.beepboop.ga/users/dirb" in fixed_object["to"]
       assert "https://social.beepboop.ga/users/dirb" in fixed_object["cc"]
@@ -454,7 +459,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "cc" => []
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
       assert user.follower_address in fixed_object["to"]
       refute user.follower_address in fixed_object["cc"]
     end
@@ -468,7 +473,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "cc" => [user.follower_address, recipient.follower_address]
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
 
       assert user.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["cc"]

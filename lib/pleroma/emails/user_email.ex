@@ -5,14 +5,21 @@
 defmodule Pleroma.Emails.UserEmail do
   @moduledoc "User emails"
 
-  use Phoenix.Swoosh, view: Pleroma.Web.EmailView, layout: {Pleroma.Web.LayoutView, :email}
-
   alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
+  import Swoosh.Email
+  import Phoenix.Swoosh, except: [render_body: 3]
   import Pleroma.Config.Helpers, only: [instance_name: 0, sender: 0]
+
+  def render_body(email, template, assigns \\ %{}) do
+    email
+    |> put_new_layout({Pleroma.Web.LayoutView, :email})
+    |> put_new_view(Pleroma.Web.EmailView)
+    |> Phoenix.Swoosh.render_body(template, assigns)
+  end
 
   defp recipient(email, nil), do: email
   defp recipient(email, name), do: {name, email}
@@ -81,9 +88,9 @@ defmodule Pleroma.Emails.UserEmail do
       )
 
     html_body = """
-    <h3>Welcome to #{instance_name()}!</h3>
+    <h3>Thank you for registering on #{instance_name()}</h3>
     <p>Email confirmation is required to activate the account.</p>
-    <p>Click the following link to proceed: <a href="#{confirmation_url}">activate your account</a>.</p>
+    <p>Please click the following link to <a href="#{confirmation_url}">activate your account</a>.</p>
     """
 
     new()
@@ -103,6 +110,20 @@ defmodule Pleroma.Emails.UserEmail do
     |> to(recipient(user))
     |> from(sender())
     |> subject("Your account is awaiting approval")
+    |> html_body(html_body)
+  end
+
+  def successful_registration_email(user) do
+    html_body = """
+    <h3>Hello @#{user.nickname},</h3>
+    <p>Your account at #{instance_name()} has been registered successfully.</p>
+    <p>No further action is required to activate your account.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Account registered on #{instance_name()}")
     |> html_body(html_body)
   end
 

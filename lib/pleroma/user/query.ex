@@ -27,7 +27,7 @@ defmodule Pleroma.User.Query do
       - e.g. Pleroma.User.Query.build(%{ap_id: ["http://ap_id1", "http://ap_id2"]})
   """
   import Ecto.Query
-  import Pleroma.Web.AdminAPI.Search, only: [not_empty_string: 1]
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
@@ -137,7 +137,7 @@ defmodule Pleroma.User.Query do
   defp compose_query({:external, _}, query), do: location_query(query, false)
 
   defp compose_query({:active, _}, query) do
-    User.restrict_deactivated(query)
+    where(query, [u], u.is_active == true)
     |> where([u], u.is_approved == true)
     |> where([u], u.is_confirmed == true)
   end
@@ -148,11 +148,11 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, false}, query) do
-    User.restrict_deactivated(query)
+    where(query, [u], u.is_active == true)
   end
 
   defp compose_query({:deactivated, true}, query) do
-    where(query, [u], u.deactivated == ^true)
+    where(query, [u], u.is_active == false)
   end
 
   defp compose_query({:confirmation_pending, bool}, query) do

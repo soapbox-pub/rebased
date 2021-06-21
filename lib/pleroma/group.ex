@@ -9,7 +9,7 @@ defmodule Pleroma.Group do
 
   alias Pleroma.User
   alias Pleroma.Repo
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
   alias Pleroma.UserRelationship
 
   @moduledoc """
@@ -48,7 +48,7 @@ defmodule Pleroma.Group do
   end
 
   defp generate_ap_id(id) do
-    "#{Web.base_url()}/groups/#{id}"
+    "#{Endpoint.url()}/groups/#{id}"
   end
 
   defp generate_user() do

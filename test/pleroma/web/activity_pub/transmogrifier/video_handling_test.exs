@@ -60,7 +60,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                    "href" =>
                      "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
                    "mediaType" => "video/mp4",
-                   "type" => "Link"
+                   "type" => "Link",
+                   "width" => nil,
+                   "height" => nil
                  }
                ]
              }
@@ -83,7 +85,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                    "href" =>
                      "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
                    "mediaType" => "video/mp4",
-                   "type" => "Link"
+                   "type" => "Link",
+                   "width" => nil,
+                   "height" => nil
                  }
                ]
              }
@@ -91,5 +95,37 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
 
     assert object.data["url"] ==
              "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
+  end
+
+  test "it works for peertube videos with only their mpegURL map" do
+    data =
+      File.read!("test/fixtures/peertube/video-object-mpegURL-only.json")
+      |> Jason.decode!()
+
+    {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+    assert object = Object.normalize(activity, fetch: false)
+
+    assert object.data["attachment"] == [
+             %{
+               "type" => "Link",
+               "mediaType" => "video/mp4",
+               "name" => nil,
+               "blurhash" => nil,
+               "url" => [
+                 %{
+                   "href" =>
+                     "https://peertube.stream/static/streaming-playlists/hls/abece3c3-b9c6-47f4-8040-f3eed8c602e6/abece3c3-b9c6-47f4-8040-f3eed8c602e6-1080-fragmented.mp4",
+                   "mediaType" => "video/mp4",
+                   "type" => "Link",
+                   "width" => nil,
+                   "height" => nil
+                 }
+               ]
+             }
+           ]
+
+    assert object.data["url"] ==
+             "https://peertube.stream/videos/watch/abece3c3-b9c6-47f4-8040-f3eed8c602e6"
   end
 end

@@ -6,7 +6,6 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
   import Plug.Conn
   import Pleroma.Web.Gettext
 
-  alias Pleroma.Config
   alias Pleroma.Helpers.AuthHelper
 
   use Pleroma.Web, :plug
@@ -18,7 +17,6 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
     op = options[:op] || :|
     token = assigns[:token]
 
-    scopes = transform_scopes(scopes, options)
     matched_scopes = (token && filter_descendants(scopes, token.scopes)) || []
 
     cond do
@@ -56,14 +54,5 @@ defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
         )
       end
     )
-  end
-
-  @doc "Transforms scopes by applying supported options (e.g. :admin)"
-  def transform_scopes(scopes, options) do
-    if options[:admin] do
-      Config.oauth_admin_scopes(scopes)
-    else
-      scopes
-    end
   end
 end

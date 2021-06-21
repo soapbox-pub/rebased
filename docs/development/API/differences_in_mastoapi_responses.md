@@ -16,6 +16,12 @@ Adding the parameter `reply_visibility` to the public and home timelines queries
 
 Adding the parameter `instance=lain.com` to the public timeline will show only statuses originating from `lain.com` (or any remote instance).
 
+Home, public, hashtag & list timelines accept these parameters:
+
+- `only_media`: show only statuses with media attached
+- `local`: show only local statuses
+- `remote`: show only remote statuses
+
 ## Statuses
 
 - `visibility`: has additional possible values `list` and `local` (for local-only statuses)
@@ -32,6 +38,13 @@ Has these additional fields under the `pleroma` object:
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 - `parent_visible`: If the parent of this post is visible to the user or not.
+- `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
+
+## Scheduled statuses
+
+Has these additional fields in `params`:
+
+- `expires_in`: the number of seconds the posted activity should expire in.
 
 ## Media Attachments
 
@@ -54,6 +67,23 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 - `/api/v1/accounts/:id`
 - `/api/v1/accounts/:id/statuses`
 
+`/api/v1/accounts/:id/statuses` endpoint accepts these parameters:
+
+- `pinned`: include only pinned statuses
+- `tagged`: with tag
+- `only_media`: include only statuses with media attached
+- `with_muted`: include statuses/reactions from muted accounts
+- `exclude_reblogs`: exclude reblogs
+- `exclude_replies`: exclude replies
+- `exclude_visibilities`: exclude visibilities
+
+Endpoints which accept `with_relationships` parameter:
+
+- `/api/v1/accounts/:id`
+- `/api/v1/accounts/:id/followers`
+- `/api/v1/accounts/:id/following`
+- `/api/v1/mutes`
+
 Has these additional fields under the `pleroma` object:
 
 - `ap_id`: nullable URL string, ActivityPub id of the user
@@ -69,12 +99,12 @@ Has these additional fields under the `pleroma` object:
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
 - `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `/api/v1/accounts/verify_credentials` and `/api/v1/accounts/update_credentials`
-- `chat_token`: The token needed for Pleroma chat. Only returned in `/api/v1/accounts/verify_credentials`
+- `chat_token`: The token needed for Pleroma shoutbox. Only returned in `/api/v1/accounts/verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
-- `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
+- `notification_settings`: object, can be absent. See `/api/v1/pleroma/notification_settings` for the parameters/keys returned.
 - `accepts_chat_messages`: boolean, but can be null if we don't have that information about a user
 - `favicon`: nullable URL string, Favicon image of the user's instance
 
@@ -226,9 +256,29 @@ This information is returned in the `/api/v1/accounts/verify_credentials` endpoi
 
 *Pleroma supports refreshing tokens.*
 
-`POST /oauth/token`
+### POST `/oauth/token`
 
-Post here request with `grant_type=refresh_token` to obtain new access token. Returns an access token.
+You can obtain access tokens for a user in a few additional ways.
+
+#### Refreshing a token
+
+To obtain a new access token from a refresh token, pass `grant_type=refresh_token` with the following extra parameters:
+
+- `refresh_token`: The refresh token.
+
+#### Getting a token with a password
+
+To obtain a token from a user's password, pass `grant_type=password` with the following extra parameters:
+
+- `username`: Username to authenticate.
+- `password`: The user's password.
+
+#### Response body
+
+Additional fields are returned in the response:
+
+- `id`: The primary key of this token in Pleroma's database.
+- `me` (user tokens only): The ActivityPub ID of the user who owns the token.
 
 ## Account Registration
 

@@ -17,12 +17,13 @@ defmodule Pleroma.Web.ApiSpec.UserImportOperation do
 
   def follow_operation do
     %Operation{
-      tags: ["follow_import"],
-      summary: "Imports your follows.",
+      tags: ["Data import"],
+      summary: "Import follows",
       operationId: "UserImportController.follow",
       requestBody: request_body("Parameters", import_request(), required: true),
       responses: %{
         200 => ok_response(),
+        403 => Operation.response("Error", "application/json", ApiError),
         500 => Operation.response("Error", "application/json", ApiError)
       },
       security: [%{"oAuth" => ["write:follow"]}]
@@ -31,8 +32,8 @@ defmodule Pleroma.Web.ApiSpec.UserImportOperation do
 
   def blocks_operation do
     %Operation{
-      tags: ["blocks_import"],
-      summary: "Imports your blocks.",
+      tags: ["Data import"],
+      summary: "Import blocks",
       operationId: "UserImportController.blocks",
       requestBody: request_body("Parameters", import_request(), required: true),
       responses: %{
@@ -45,8 +46,8 @@ defmodule Pleroma.Web.ApiSpec.UserImportOperation do
 
   def mutes_operation do
     %Operation{
-      tags: ["mutes_import"],
-      summary: "Imports your mutes.",
+      tags: ["Data import"],
+      summary: "Import mutes",
       operationId: "UserImportController.mutes",
       requestBody: request_body("Parameters", import_request(), required: true),
       responses: %{

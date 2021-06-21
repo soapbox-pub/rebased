@@ -21,9 +21,9 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
       |> assign(:user, admin)
       |> assign(:token, token)
 
-    Config.put([:media_proxy, :enabled], true)
-    Config.put([:media_proxy, :invalidation, :enabled], true)
-    Config.put([:media_proxy, :invalidation, :provider], MediaProxy.Invalidation.Script)
+    clear_config([:media_proxy, :enabled], true)
+    clear_config([:media_proxy, :invalidation, :enabled], true)
+    clear_config([:media_proxy, :invalidation, :provider], MediaProxy.Invalidation.Script)
 
     {:ok, %{admin: admin, token: token, conn: conn}}
   end

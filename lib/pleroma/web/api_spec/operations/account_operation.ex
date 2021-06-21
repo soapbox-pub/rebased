@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   @spec create_operation() :: Operation.t()
   def create_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account credentials"],
       summary: "Register an account",
       description:
         "Creates a user and account records. Returns an account access token for the app that initiated the request. The app should save this token for later, and should wait for the user to confirm their account by clicking a link in their email inbox.",
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def verify_credentials_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account credentials"],
       description: "Test to make sure that the user token works.",
       summary: "Verify account credentials",
       operationId: "AccountController.verify_credentials",
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def update_credentials_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account credentials"],
       summary: "Update account credentials",
       description: "Update the user's display and preferences.",
       operationId: "AccountController.update_credentials",
@@ -71,8 +71,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def relationships_operation do
     %Operation{
-      tags: ["accounts"],
-      summary: "Check relationships to other accounts",
+      tags: ["Retrieve account information"],
+      summary: "Relationship with current account",
       operationId: "AccountController.relationships",
       description: "Find out whether a given account is followed, blocked, muted, etc.",
       security: [%{"oAuth" => ["read:follows"]}],
@@ -95,11 +95,14 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def show_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Retrieve account information"],
       summary: "Account",
       operationId: "AccountController.show",
       description: "View information about a profile.",
-      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        with_relationships_param()
+      ],
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
         401 => Operation.response("Error", "application/json", ApiError),
@@ -110,8 +113,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def statuses_operation do
     %Operation{
-      tags: ["accounts"],
       summary: "Statuses",
+      tags: ["Retrieve account information"],
       operationId: "AccountController.statuses",
       description:
         "Statuses posted to the given account. Public (for public statuses only), or user token + `read:statuses` (for private statuses the user is authorized to see)",
@@ -130,7 +133,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :with_muted,
             :query,
             BooleanLike,
-            "Include statuses from muted acccounts."
+            "Include statuses from muted accounts."
           ),
           Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
           Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
@@ -144,7 +147,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             :with_muted,
             :query,
             BooleanLike,
-            "Include reactions from muted acccounts."
+            "Include reactions from muted accounts."
           )
         ] ++ pagination_params(),
       responses: %{
@@ -157,7 +160,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def followers_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Retrieve account information"],
       summary: "Followers",
       operationId: "AccountController.followers",
       security: [%{"oAuth" => ["read:accounts"]}],
@@ -176,7 +179,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def following_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Retrieve account information"],
       summary: "Following",
       operationId: "AccountController.following",
       security: [%{"oAuth" => ["read:accounts"]}],
@@ -193,7 +196,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def lists_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Retrieve account information"],
       summary: "Lists containing this account",
       operationId: "AccountController.lists",
       security: [%{"oAuth" => ["read:lists"]}],
@@ -205,7 +208,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def follow_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Follow",
       operationId: "AccountController.follow",
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -238,7 +241,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def unfollow_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Unfollow",
       operationId: "AccountController.unfollow",
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -254,7 +257,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def mute_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Mute",
       operationId: "AccountController.mute",
       security: [%{"oAuth" => ["follow", "write:mutes"]}],
@@ -284,7 +287,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def unmute_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Unmute",
       operationId: "AccountController.unmute",
       security: [%{"oAuth" => ["follow", "write:mutes"]}],
@@ -298,7 +301,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def block_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Block",
       operationId: "AccountController.block",
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
@@ -313,7 +316,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def unblock_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Unblock",
       operationId: "AccountController.unblock",
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
@@ -327,7 +330,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def follow_by_uri_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Account actions"],
       summary: "Follow by URI",
       operationId: "AccountController.follows",
       security: [%{"oAuth" => ["follow", "write:follows"]}],
@@ -342,12 +345,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def mutes_operation do
     %Operation{
-      tags: ["accounts"],
-      summary: "Muted accounts",
+      tags: ["Blocks and mutes"],
+      summary: "Retrieve list of mutes",
       operationId: "AccountController.mutes",
       description: "Accounts the user has muted.",
       security: [%{"oAuth" => ["follow", "read:mutes"]}],
-      parameters: pagination_params(),
+      parameters: [with_relationships_param() | pagination_params()],
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -356,8 +359,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def blocks_operation do
     %Operation{
-      tags: ["accounts"],
-      summary: "Blocked users",
+      tags: ["Blocks and mutes"],
+      summary: "Retrieve list of blocks",
       operationId: "AccountController.blocks",
       description: "View your blocks. See also accounts/:id/{block,unblock}",
       security: [%{"oAuth" => ["read:blocks"]}],
@@ -370,7 +373,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def endorsements_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Retrieve account information"],
       summary: "Endorsements",
       operationId: "AccountController.endorsements",
       description: "Not implemented",
@@ -383,7 +386,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def identity_proofs_operation do
     %Operation{
-      tags: ["accounts"],
+      tags: ["Retrieve account information"],
       summary: "Identity proofs",
       operationId: "AccountController.identity_proofs",
       # Validators complains about unused path params otherwise

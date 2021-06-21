@@ -59,6 +59,13 @@ sub vcl_backend_response {
       set beresp.http.CR = beresp.http.content-range;
     }
 
+    # Bypass cache for large files
+    # 50000000 ~ 50MB
+    if (std.integer(beresp.http.content-length, 0) > 50000000) {
+       set beresp.uncacheable = true;
+       return(deliver);
+    }
+
     # Don't cache objects that require authentication
     if (beresp.http.Authorization && !beresp.http.Cache-Control ~ "public") {
       set beresp.uncacheable = true;

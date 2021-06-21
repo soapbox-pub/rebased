@@ -17,12 +17,14 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
           "object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}
         }
       }) do
-    attachments
-    |> Enum.flat_map(fn item -> Enum.map(item["url"], & &1["href"]) end)
-    |> fetch_objects
-    |> prepare_objects(actor, Enum.map(attachments, & &1["name"]))
-    |> filter_objects
-    |> do_clean
+    if Pleroma.Config.get([:instance, :cleanup_attachments], false) do
+      attachments
+      |> Enum.flat_map(fn item -> Enum.map(item["url"], & &1["href"]) end)
+      |> fetch_objects
+      |> prepare_objects(actor, Enum.map(attachments, & &1["name"]))
+      |> filter_objects
+      |> do_clean
+    end
 
     {:ok, :success}
   end

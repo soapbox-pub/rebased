@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
   def index_operation do
     %Operation{
       tags: ["Lists"],
-      summary: "Show user's lists",
+      summary: "Retrieve a list of lists",
       description: "Fetch all lists that the user owns",
       security: [%{"oAuth" => ["read:lists"]}],
       operationId: "ListController.index",
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
   def create_operation do
     %Operation{
       tags: ["Lists"],
-      summary: "Create  a list",
+      summary: "Create a list",
       description: "Fetch the list with the given ID. Used for verifying the title of a list.",
       operationId: "ListController.create",
       requestBody: create_update_request(),
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
   def show_operation do
     %Operation{
       tags: ["Lists"],
-      summary: "Show a single list",
+      summary: "Retrieve a list",
       description: "Fetch the list with the given ID. Used for verifying the title of a list.",
       operationId: "ListController.show",
       parameters: [id_param()],
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
   def list_accounts_operation do
     %Operation{
       tags: ["Lists"],
-      summary: "View accounts in list",
+      summary: "Retrieve accounts in list",
       operationId: "ListController.list_accounts",
       parameters: [id_param()],
       security: [%{"oAuth" => ["read:lists"]}],

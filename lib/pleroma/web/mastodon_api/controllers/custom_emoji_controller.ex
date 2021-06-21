@@ -7,11 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.CustomEmojiController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(
-    :skip_plug,
-    [Pleroma.Web.Plugs.OAuthScopesPlug, Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug]
-    when action == :index
-  )
+  plug(:skip_auth when action == :index)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.CustomEmojiOperation
 

@@ -134,7 +134,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
           ap_id: data["actor"],
           local: false,
           last_refreshed_at: DateTime.utc_now(),
-          deactivated: true
+          is_active: false
         )
 
       _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)

@@ -27,6 +27,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
             body: File.read!("test/fixtures/tesla_mock/status.emelie.json")
           }
 
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
+          }
+
         %{method: :get, url: "https://mastodon.social/users/emelie"} ->
           %Tesla.Env{
             status: 200,
@@ -52,6 +62,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
             headers: [{"content-type", "application/activity+json"}],
             body: File.read!("test/fixtures/tesla_mock/emelie.json")
           }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
+          }
       end)
 
       response =
@@ -69,6 +89,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
             status: 200,
             headers: [{"content-type", "application/activity+json"}],
             body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
           }
       end)
 
@@ -141,7 +171,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "returns error when user is deactivated", %{conn: conn} do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
       user2 = insert(:user)
 
       response =
@@ -154,7 +184,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "returns error when user is blocked", %{conn: conn} do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+      clear_config([:user, :deny_follow_blocked], true)
       user = insert(:user)
       user2 = insert(:user)
 
@@ -365,7 +395,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
 
     test "returns error when user is blocked", %{conn: conn} do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+      clear_config([:user, :deny_follow_blocked], true)
       user = insert(:user)
       user2 = insert(:user)
       {:ok, _user_block} = Pleroma.User.block(user2, user)

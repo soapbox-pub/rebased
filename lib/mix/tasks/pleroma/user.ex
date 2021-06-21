@@ -107,21 +107,6 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["toggle_activated", nickname]) do
-    start_pleroma()
-
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.deactivate(user, !user.deactivated)
-
-      shell_info(
-        "Activation status of #{nickname}: #{if(user.deactivated, do: "de", else: "")}activated"
-      )
-    else
-      _ ->
-        shell_error("No user #{nickname}")
-    end
-  end
-
   def run(["reset_password", nickname]) do
     start_pleroma()
 
@@ -156,20 +141,41 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["activate", nickname]) do
+    start_pleroma()
+
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         false <- user.is_active do
+      User.set_activation(user, true)
+      :timer.sleep(500)
+
+      shell_info("Successfully activated #{nickname}")
+    else
+      true ->
+        shell_info("User #{nickname} already activated")
+
+      _ ->
+        shell_error("No user #{nickname}")
+    end
+  end
+
   def run(["deactivate", nickname]) do
     start_pleroma()
 
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      shell_info("Deactivating #{user.nickname}")
-      User.deactivate(user)
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         true <- user.is_active do
+      User.set_activation(user, false)
       :timer.sleep(500)
 
       user = User.get_cached_by_id(user.id)
 
       if Enum.empty?(Enum.filter(User.get_friends(user), & &1.local)) do
-        shell_info("Successfully unsubscribed all local followers from #{user.nickname}")
+        shell_info("Successfully deactivated #{nickname} and unsubscribed all local followers")
       end
     else
+      false ->
+        shell_info("User #{nickname} already deactivated")
+
       _ ->
         shell_error("No user #{nickname}")
     end
@@ -365,7 +371,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_moderator: false,
       is_admin: false,
       invisible: false
@@ -383,7 +389,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_moderator: false,
       is_admin: false,
       invisible: false
@@ -420,7 +426,7 @@ defmodule Mix.Tasks.Pleroma.User do
         shell_info(
           "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
             user.is_locked
-          }, deactivated: #{user.deactivated}"
+          }, is_active: #{user.is_active}"
         )
       end)
     end)

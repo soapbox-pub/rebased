@@ -34,7 +34,8 @@ defmodule Pleroma.Web.Plugs.FrontendStatic do
   end
 
   def call(conn, opts) do
-    with false <- invalid_path?(conn.path_info),
+    with false <- api_route?(conn.path_info),
+         false <- invalid_path?(conn.path_info),
          frontend_type <- Map.get(opts, :frontend_type, :primary),
          path when not is_nil(path) <- file_path("", frontend_type) do
       call_static(conn, opts, path)
@@ -51,6 +52,13 @@ defmodule Pleroma.Web.Plugs.FrontendStatic do
   defp invalid_path?([h | _], _match) when h in [".", "..", ""], do: true
   defp invalid_path?([h | t], match), do: String.contains?(h, match) or invalid_path?(t)
   defp invalid_path?([], _match), do: false
+
+  defp api_route?([]), do: false
+
+  defp api_route?([h | t]) do
+    api_routes = Pleroma.Web.Router.get_api_routes()
+    if h in api_routes, do: true, else: api_route?(t)
+  end
 
   defp call_static(conn, opts, from) do
     opts = Map.put(opts, :from, from)

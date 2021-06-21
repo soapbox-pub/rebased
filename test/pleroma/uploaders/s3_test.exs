@@ -5,7 +5,6 @@
 defmodule Pleroma.Uploaders.S3Test do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.Uploaders.S3
 
   import Mock
@@ -27,13 +26,13 @@ defmodule Pleroma.Uploaders.S3Test do
     end
 
     test "it returns path without bucket when truncated_namespace set to ''" do
-      Config.put([Pleroma.Uploaders.S3],
+      clear_config([Pleroma.Uploaders.S3],
         bucket: "test_bucket",
         bucket_namespace: "myaccount",
         truncated_namespace: ""
       )
 
-      Config.put([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
+      clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
 
       assert S3.get_file("test_image.jpg") == {
                :ok,
@@ -42,7 +41,7 @@ defmodule Pleroma.Uploaders.S3Test do
     end
 
     test "it returns path with bucket namespace when namespace is set" do
-      Config.put([Pleroma.Uploaders.S3],
+      clear_config([Pleroma.Uploaders.S3],
         bucket: "test_bucket",
         bucket_namespace: "family"
       )

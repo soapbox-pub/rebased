@@ -383,18 +383,7 @@ defmodule Pleroma.Web.StreamerTest do
       user: user,
       token: oauth_token
     } do
-      user_url = user.ap_id
       user2 = insert(:user)
-
-      body =
-        File.read!("test/fixtures/users_mock/localhost.json")
-        |> String.replace("{{nickname}}", user.nickname)
-        |> Jason.encode!()
-
-      Tesla.Mock.mock_global(fn
-        %{method: :get, url: ^user_url} ->
-          %Tesla.Env{status: 200, body: body}
-      end)
 
       Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
       {:ok, _follower, _followed, follow_activity} = CommonAPI.follow(user2, user)
@@ -409,19 +398,8 @@ defmodule Pleroma.Web.StreamerTest do
       token: oauth_token
     } do
       user_id = user.id
-      user_url = user.ap_id
       other_user = insert(:user)
       other_user_id = other_user.id
-
-      body =
-        File.read!("test/fixtures/users_mock/localhost.json")
-        |> String.replace("{{nickname}}", user.nickname)
-        |> Jason.encode!()
-
-      Tesla.Mock.mock_global(fn
-        %{method: :get, url: ^user_url} ->
-          %Tesla.Env{status: 200, body: body}
-      end)
 
       Streamer.get_topic_and_add_socket("user", user, oauth_token)
       {:ok, _follower, _followed, _follow_activity} = CommonAPI.follow(user, other_user)
@@ -510,7 +488,7 @@ defmodule Pleroma.Web.StreamerTest do
 
   describe "thread_containment/2" do
     test "it filters to user if recipients invalid and thread containment is enabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      clear_config([:instance, :skip_thread_containment], false)
       author = insert(:user)
       %{user: user, token: oauth_token} = oauth_access(["read"])
       User.follow(user, author, :follow_accept)
@@ -531,7 +509,7 @@ defmodule Pleroma.Web.StreamerTest do
     end
 
     test "it sends message if recipients invalid and thread containment is disabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], true)
+      clear_config([:instance, :skip_thread_containment], true)
       author = insert(:user)
       %{user: user, token: oauth_token} = oauth_access(["read"])
       User.follow(user, author, :follow_accept)
@@ -553,7 +531,7 @@ defmodule Pleroma.Web.StreamerTest do
     end
 
     test "it sends message if recipients invalid and thread containment is enabled but user's thread containment is disabled" do
-      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      clear_config([:instance, :skip_thread_containment], false)
       author = insert(:user)
       user = insert(:user, skip_thread_containment: true)
       %{token: oauth_token} = oauth_access(["read"], user: user)

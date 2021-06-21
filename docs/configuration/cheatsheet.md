@@ -8,9 +8,10 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
-## :chat
+## :shout
 
-* `enabled` - Enables the backend chat. Defaults to `true`.
+* `enabled` - Enables the backend Shoutbox chat feature. Defaults to `true`.
+* `limit` - Shout character limit. Defaults to `5_000`
 
 ## :instance
 * `name`: The instance’s name.
@@ -19,7 +20,6 @@ To add configuration to your config file, you can copy it from the base config. 
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
 * `description_limit`: The character limit for image descriptions.
-* `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
 * `avatar_upload_limit`: File size limit of user’s profile avatars.
@@ -37,7 +37,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federating`: Enable federation with other instances.
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
-* `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
+* `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
 * `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
@@ -49,7 +49,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
-* `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
@@ -64,6 +64,13 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+
+## :database
+* `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
+
+## Background migrations
+* `populate_hashtags_table/sleep_interval_ms`: Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances).
+* `populate_hashtags_table/fault_rate_allowance`: Max rate of failed objects to actually processed objects in order to enable the feature (any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records).
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
@@ -117,6 +124,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
     * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
+    * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -203,6 +211,21 @@ config :pleroma, :mrf_user_allowlist, %{
 
 * `days`: Default global expiration time for all local Create activities (in days)
 
+#### :mrf_hashtag
+
+* `sensitive`: List of hashtags to mark activities as sensitive (default: `nsfw`)
+* `federated_timeline_removal`: List of hashtags to remove activities from the federated timeline (aka TWNK)
+* `reject`: List of hashtags to reject activities from
+
+Notes:
+- The hashtags in the configuration do not have a leading `#`.
+- This MRF Policy is always enabled, if you want to disable it you have to set empty lists
+
+#### :mrf_follow_bot
+
+* `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
+
+
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
@@ -225,7 +248,7 @@ config :pleroma, :mrf_user_allowlist, %{
 
 This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
-Frontends can access these settings at `/api/pleroma/frontend_configurations`
+Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
@@ -321,9 +344,10 @@ This section describe PWA manifest instance-specific values. Currently this opti
 #### Pleroma.Web.MediaProxy.Invalidation.Script
 
 This strategy allow perform external shell script to purge cache.
-Urls of attachments pass to script as arguments.
+Urls of attachments are passed to the script as arguments.
 
-* `script_path`: path to external script.
+* `script_path`: Path to the external script.
+* `url_format`: Set to `:htcacheclean` if using Apache's htcacheclean utility.
 
 Example:
 
@@ -847,13 +871,13 @@ config :pleroma, :admin_token, "somerandomtoken"
 You can then do
 
 ```shell
-curl "http://localhost:4000/api/pleroma/admin/users/invites?admin_token=somerandomtoken"
+curl "http://localhost:4000/api/v1/pleroma/admin/users/invites?admin_token=somerandomtoken"
 ```
 
 or
 
 ```shell
-curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
+curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/v1/pleroma/admin/users/invites"
 ```
 
 Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
@@ -891,6 +915,22 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
 OpenLDAP server the value may be `uid: "uid"`.
+
+### :oauth2 (Pleroma as OAuth 2.0 provider settings)
+
+OAuth 2.0 provider settings:
+
+* `token_expires_in` - The lifetime in seconds of the access token.
+* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
+
+OAuth 2.0 provider and related endpoints:
+
+* `POST /api/v1/apps` creates client app basing on provided params.
+* `GET/POST /oauth/authorize` renders/submits authorization form.
+* `POST /oauth/token` creates/renews OAuth token.
+* `POST /oauth/revoke` revokes provided OAuth token.
+* `GET /api/v1/accounts/verify_credentials` (with proper `Authorization` header or `access_token` URI param) returns user info on requester (with `acct` field containing local nickname and `fqn` field containing fully-qualified nickname which could generally be used as email stub for OAuth software that demands email field in identity endpoint response, like Peertube).
 
 ### OAuth consumer mode
 
@@ -963,14 +1003,6 @@ config :ueberauth, Ueberauth,
     keycloak: {Ueberauth.Strategy.Keycloak, [uid_field: :email]}
   ]
 ```
-
-### OAuth 2.0 provider - :oauth2
-
-Configure OAuth 2 provider capabilities:
-
-* `token_expires_in` - The lifetime in seconds of the access token.
-* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 
 ## Link parsing
 

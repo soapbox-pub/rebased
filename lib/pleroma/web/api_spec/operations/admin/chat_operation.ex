@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
 
   def delete_message_operation do
     %Operation{
-      tags: ["admin", "chat"],
+      tags: ["Chat administration"],
       summary: "Delete an individual chat message",
       operationId: "AdminAPI.ChatController.delete_message",
       parameters: [
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write:chats"]
+          "oAuth" => ["admin:write:chats"]
         }
       ]
     }
@@ -41,8 +41,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
 
   def messages_operation do
     %Operation{
-      tags: ["admin", "chat"],
-      summary: "Get the most recent messages of the chat",
+      tags: ["Chat administration"],
+      summary: "Get chat's messages",
       operationId: "AdminAPI.ChatController.messages",
       parameters:
         [Operation.parameter(:id, :path, :string, "The ID of the Chat")] ++
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["read:chats"]
+          "oAuth" => ["admin:read:chats"]
         }
       ]
     }
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
 
   def show_operation do
     %Operation{
-      tags: ["chat"],
+      tags: ["Chat administration"],
       summary: "Create a chat",
       operationId: "AdminAPI.ChatController.show",
       parameters: [
@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["read"]
+          "oAuth" => ["admin:read"]
         }
       ]
     }

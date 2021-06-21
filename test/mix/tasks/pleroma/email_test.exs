@@ -63,7 +63,7 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
         insert(:user, %{
           is_confirmed: false,
           confirmation_token: "mytoken",
-          deactivated: false,
+          is_active: true,
           email: "local1@pleroma.com",
           local: true
         })
@@ -72,7 +72,7 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
         insert(:user, %{
           is_confirmed: false,
           confirmation_token: "mytoken",
-          deactivated: false,
+          is_active: true,
           email: "local2@pleroma.com",
           local: true
         })
@@ -90,28 +90,28 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
       insert(:user, %{
         is_confirmed: true,
         confirmation_token: "mytoken",
-        deactivated: false,
+        is_active: true,
         email: "confirmed@pleroma.com",
         local: true
       })
 
       # remote user
       insert(:user, %{
-        deactivated: false,
+        is_active: true,
         email: "remote@not-pleroma.com",
         local: false
       })
 
       # deactivated user =
       insert(:user, %{
-        deactivated: true,
+        is_active: false,
         email: "deactivated@pleroma.com",
         local: false
       })
 
       # invisible user
       insert(:user, %{
-        deactivated: false,
+        is_active: true,
         email: "invisible@pleroma.com",
         local: true,
         invisible: true

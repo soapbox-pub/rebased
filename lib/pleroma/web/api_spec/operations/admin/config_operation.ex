@@ -16,8 +16,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Admin", "Config"],
-      summary: "Get list of merged default settings with saved in database",
+      tags: ["Instance configuration"],
+      summary: "Retrieve instance configuration",
       operationId: "AdminAPI.ConfigController.show",
       parameters: [
         Operation.parameter(
@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
         )
         | admin_api_params()
       ],
-      security: [%{"oAuth" => ["read"]}],
+      security: [%{"oAuth" => ["admin:read"]}],
       responses: %{
         200 => Operation.response("Config", "application/json", config_response()),
         400 => Operation.response("Bad Request", "application/json", ApiError)
@@ -38,10 +38,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Admin", "Config"],
-      summary: "Update config settings",
+      tags: ["Instance configuration"],
+      summary: "Update instance configuration",
       operationId: "AdminAPI.ConfigController.update",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       parameters: admin_api_params(),
       requestBody:
         request_body("Parameters", %Schema{
@@ -71,10 +71,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.ConfigOperation do
 
   def descriptions_operation do
     %Operation{
-      tags: ["Admin", "Config"],
-      summary: "Get JSON with config descriptions.",
+      tags: ["Instance configuration"],
+      summary: "Retrieve config description",
       operationId: "AdminAPI.ConfigController.descriptions",
-      security: [%{"oAuth" => ["read"]}],
+      security: [%{"oAuth" => ["admin:read"]}],
       parameters: admin_api_params(),
       responses: %{
         200 =>

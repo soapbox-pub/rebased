@@ -18,7 +18,8 @@ defmodule Pleroma.Constants do
       "emoji",
       "context_id",
       "deleted_activity_id",
-      "pleroma_internal"
+      "pleroma_internal",
+      "generator"
     ]
   )
 
@@ -26,6 +27,4 @@ defmodule Pleroma.Constants do
     do:
       ~w(index.html robots.txt static static-fe finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc embed.js embed.css)
   )
-
-  def as_local_public, do: Pleroma.Web.base_url() <> "/#Public"
 end

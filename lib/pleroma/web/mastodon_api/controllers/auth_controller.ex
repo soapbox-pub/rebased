@@ -53,7 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   defp redirect_to_oauth_form(conn, _params) do
     with {:ok, app} <- local_mastofe_app() do
       path =
-        o_auth_path(conn, :authorize,
+        Routes.o_auth_path(conn, :authorize,
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   defp local_mastodon_post_login_path(conn) do
     case get_session(conn, :return_to) do
       nil ->
-        masto_fe_path(conn, :index, ["getting-started"])
+        Routes.masto_fe_path(conn, :index, ["getting-started"])
 
       return_to ->
         delete_session(conn, :return_to)

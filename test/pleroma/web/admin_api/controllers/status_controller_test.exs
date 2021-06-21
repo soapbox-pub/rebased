@@ -47,7 +47,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
       assert account["id"] == actor.id
       assert account["nickname"] == actor.nickname
-      assert account["deactivated"] == actor.deactivated
+      assert account["is_active"] == actor.is_active
       assert account["is_confirmed"] == actor.is_confirmed
     end
   end

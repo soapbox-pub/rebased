@@ -37,11 +37,13 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
   end
 
-  pipeline :expect_authentication do
+  # Note: expects _user_ authentication (user-unbound app-bound tokens don't qualify)
+  pipeline :expect_user_authentication do
     plug(Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug)
   end
 
-  pipeline :expect_public_instance_or_authentication do
+  # Note: expects public instance or _user_ authentication (user-unbound tokens don't qualify)
+  pipeline :expect_public_instance_or_user_authentication do
     plug(Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug)
   end
 
@@ -56,6 +58,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
     plug(Pleroma.Web.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Web.Plugs.EnsureUserTokenAssignsPlug)
+    plug(Pleroma.Web.Plugs.UserTrackingPlug)
   end
 
   pipeline :base_api do
@@ -65,23 +68,30 @@ defmodule Pleroma.Web.Router do
     plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
-  pipeline :api do
-    plug(:expect_public_instance_or_authentication)
+  pipeline :no_auth_or_privacy_expectations_api do
     plug(:base_api)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
+  end
+
+  # Pipeline for app-related endpoints (no user auth checks — app-bound tokens must be supported)
+  pipeline :app_api do
+    plug(:no_auth_or_privacy_expectations_api)
+  end
+
+  pipeline :api do
+    plug(:expect_public_instance_or_user_authentication)
+    plug(:no_auth_or_privacy_expectations_api)
   end
 
   pipeline :authenticated_api do
-    plug(:expect_authentication)
-    plug(:base_api)
-    plug(:after_auth)
+    plug(:expect_user_authentication)
+    plug(:no_auth_or_privacy_expectations_api)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :admin_api do
-    plug(:expect_authentication)
+    plug(:expect_user_authentication)
     plug(:base_api)
     plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
@@ -130,7 +140,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
-  scope "/api/pleroma", Pleroma.Web.TwitterAPI do
+  pipeline :static_fe do
+    plug(Pleroma.Web.Plugs.StaticFEPlug)
+  end
+
+  scope "/api/v1/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
     get("/password_reset/:token", PasswordController, :reset, as: :reset_password)
@@ -140,12 +154,12 @@ defmodule Pleroma.Web.Router do
     get("/healthcheck", UtilController, :healthcheck)
   end
 
-  scope "/api/pleroma", Pleroma.Web do
+  scope "/api/v1/pleroma", Pleroma.Web do
     pipe_through(:pleroma_api)
     post("/uploader_callback/:upload_path", UploaderController, :callback)
   end
 
-  scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
 
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
@@ -194,7 +208,7 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
     patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
 
-    get("/users", UserController, :list)
+    get("/users", UserController, :index)
     get("/users/:nickname", UserController, :show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
@@ -249,7 +263,7 @@ defmodule Pleroma.Web.Router do
     post("/backups", AdminAPIController, :create_backup)
   end
 
-  scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
+  scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
       pipe_through(:admin_api)
 
@@ -319,6 +333,8 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
+    # Note: use /api/v1/accounts/verify_credentials for userinfo of signed-in user
+
     get("/registration_details", OAuthController, :registration_details)
 
     post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
@@ -354,6 +370,12 @@ defmodule Pleroma.Web.Router do
 
     get("/statuses/:id/reactions/:emoji", EmojiReactionController, :index)
     get("/statuses/:id/reactions", EmojiReactionController, :index)
+  end
+
+  scope "/api/v0/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:authenticated_api)
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
@@ -408,6 +430,13 @@ defmodule Pleroma.Web.Router do
     get("/federation_status", InstancesController, :show)
   end
 
+  scope "/api/v2/pleroma", Pleroma.Web.PleromaAPI do
+    scope [] do
+      pipe_through(:authenticated_api)
+      get("/chats", ChatController, :index2)
+    end
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
@@ -429,10 +458,9 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", AccountController, :mute)
     post("/accounts/:id/unmute", AccountController, :unmute)
 
-    get("/apps/verify_credentials", AppController, :verify_credentials)
-
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
+    delete("/conversations/:id", ConversationController, :delete)
 
     get("/domain_blocks", DomainBlockController, :index)
     post("/domain_blocks", DomainBlockController, :create)
@@ -522,6 +550,13 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through(:app_api)
+
+    post("/apps", AppController, :create)
+    get("/apps/verify_credentials", AppController, :verify_credentials)
+  end
+
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
     get("/accounts/search", SearchController, :account_search)
@@ -536,8 +571,6 @@ defmodule Pleroma.Web.Router do
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
-
-    post("/apps", AppController, :create)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)
@@ -591,18 +624,12 @@ defmodule Pleroma.Web.Router do
 
     get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
     delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
-
-    post(
-      "/qvitter/statuses/notifications/read",
-      TwitterAPI.Controller,
-      :mark_notifications_as_read
-    )
   end
 
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
     # Note: http signature is only considered for json requests (no auth for non-json requests)
-    pipe_through([:accepts_html_json, :http_signature, Pleroma.Web.Plugs.StaticFEPlug])
+    pipe_through([:accepts_html_json, :http_signature, :static_fe])
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
@@ -616,7 +643,7 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
     # Note: http signature is only considered for json requests (no auth for non-json requests)
-    pipe_through([:accepts_html_xml_json, :http_signature, Pleroma.Web.Plugs.StaticFEPlug])
+    pipe_through([:accepts_html_xml_json, :http_signature, :static_fe])
 
     # Note: returns user _profile_ for json requests, redirects to user _feed_ for non-json ones
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
@@ -624,7 +651,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
-    pipe_through([:accepts_html_xml, Pleroma.Web.Plugs.StaticFEPlug])
+    pipe_through([:accepts_html_xml, :static_fe])
 
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
   end
@@ -675,6 +702,7 @@ defmodule Pleroma.Web.Router do
     # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
+    get("/users/:nickname/collections/featured", ActivityPubController, :pinned)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
@@ -735,11 +763,11 @@ defmodule Pleroma.Web.Router do
     get("/embed/:id", EmbedController, :show)
   end
 
-  scope "/proxy/", Pleroma.Web.MediaProxy do
-    get("/preview/:sig/:url", MediaProxyController, :preview)
-    get("/preview/:sig/:url/:filename", MediaProxyController, :preview)
-    get("/:sig/:url", MediaProxyController, :remote)
-    get("/:sig/:url/:filename", MediaProxyController, :remote)
+  scope "/proxy/", Pleroma.Web do
+    get("/preview/:sig/:url", MediaProxy.MediaProxyController, :preview)
+    get("/preview/:sig/:url/:filename", MediaProxy.MediaProxyController, :preview)
+    get("/:sig/:url", MediaProxy.MediaProxyController, :remote)
+    get("/:sig/:url/:filename", MediaProxy.MediaProxyController, :remote)
   end
 
   if Pleroma.Config.get(:env) == :dev do
@@ -786,9 +814,22 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
+    match(:*, "/api/pleroma*path", LegacyPleromaApiRerouterPlug, [])
     get("/api*path", RedirectController, :api_not_implemented)
     get("/*path", RedirectController, :redirector_with_preload)
 
     options("/*path", RedirectController, :empty)
+  end
+
+  # TODO: Change to Phoenix.Router.routes/1 for Phoenix 1.6.0+
+  def get_api_routes do
+    __MODULE__.__routes__()
+    |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
+    |> Enum.map(fn r ->
+      r.path
+      |> String.split("/", trim: true)
+      |> List.first()
+    end)
+    |> Enum.uniq()
   end
 end

@@ -17,22 +17,4 @@ defmodule Pleroma.ReverseProxy.Client do
   @callback stream_body(map()) :: {:ok, binary(), map()} | :done | {:error, atom() | String.t()}
 
   @callback close(reference() | pid() | map()) :: :ok
-
-  def request(method, url, headers, body \\ "", opts \\ []) do
-    client().request(method, url, headers, body, opts)
-  end
-
-  def stream_body(ref), do: client().stream_body(ref)
-
-  def close(ref), do: client().close(ref)
-
-  defp client do
-    :tesla
-    |> Application.get_env(:adapter)
-    |> client()
-  end
-
-  defp client(Tesla.Adapter.Hackney), do: Pleroma.ReverseProxy.Client.Hackney
-  defp client(Tesla.Adapter.Gun), do: Pleroma.ReverseProxy.Client.Tesla
-  defp client(_), do: Pleroma.Config.get!(Pleroma.ReverseProxy.Client)
 end

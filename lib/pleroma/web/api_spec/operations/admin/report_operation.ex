@@ -19,10 +19,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Get a list of reports",
+      tags: ["Report managment"],
+      summary: "Retrieve a list of reports",
       operationId: "AdminAPI.ReportController.index",
-      security: [%{"oAuth" => ["read:reports"]}],
+      security: [%{"oAuth" => ["admin:read:reports"]}],
       parameters: [
         Operation.parameter(
           :state,
@@ -69,11 +69,11 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Get an individual report",
+      tags: ["Report managment"],
+      summary: "Retrieve a report",
       operationId: "AdminAPI.ReportController.show",
       parameters: [id_param() | admin_api_params()],
-      security: [%{"oAuth" => ["read:reports"]}],
+      security: [%{"oAuth" => ["admin:read:reports"]}],
       responses: %{
         200 => Operation.response("Report", "application/json", report()),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -83,10 +83,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Change the state of one or multiple reports",
+      tags: ["Report managment"],
+      summary: "Change state of specified reports",
       operationId: "AdminAPI.ReportController.update",
-      security: [%{"oAuth" => ["write:reports"]}],
+      security: [%{"oAuth" => ["admin:write:reports"]}],
       parameters: admin_api_params(),
       requestBody: request_body("Parameters", update_request(), required: true),
       responses: %{
@@ -99,8 +99,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def notes_create_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Create report note",
+      tags: ["Report managment"],
+      summary: "Add a note to the report",
       operationId: "AdminAPI.ReportController.notes_create",
       parameters: [id_param() | admin_api_params()],
       requestBody:
@@ -110,7 +110,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
             content: %Schema{type: :string, description: "The message"}
           }
         }),
-      security: [%{"oAuth" => ["write:reports"]}],
+      security: [%{"oAuth" => ["admin:write:reports"]}],
       responses: %{
         204 => no_content_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -120,15 +120,15 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
 
   def notes_delete_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Delete report note",
+      tags: ["Report managment"],
+      summary: "Delete note attached to the report",
       operationId: "AdminAPI.ReportController.notes_delete",
       parameters: [
         Operation.parameter(:report_id, :path, :string, "Report ID"),
         Operation.parameter(:id, :path, :string, "Note ID")
         | admin_api_params()
       ],
-      security: [%{"oAuth" => ["write:reports"]}],
+      security: [%{"oAuth" => ["admin:write:reports"]}],
       responses: %{
         204 => no_content_response(),
         404 => Operation.response("Not Found", "application/json", ApiError)
@@ -136,11 +136,11 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
     }
   end
 
-  defp report_state do
+  def report_state do
     %Schema{type: :string, enum: ["open", "closed", "resolved"]}
   end
 
-  defp id_param do
+  def id_param do
     Operation.parameter(:id, :path, FlakeID, "Report ID",
       example: "9umDrYheeY451cQnEe",
       required: true
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       properties:
         Map.merge(Account.schema().properties, %{
           nickname: %Schema{type: :string},
-          deactivated: %Schema{type: :boolean},
+          is_active: %Schema{type: :boolean},
           local: %Schema{type: :boolean},
           roles: %Schema{
             type: :object,

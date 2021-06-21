@@ -8,7 +8,6 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   import Pleroma.Factory
   import SweetXml
 
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Feed.FeedView
@@ -16,7 +15,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   setup do: clear_config([:feed])
 
   test "gets a feed (ATOM)", %{conn: conn} do
-    Config.put(
+    clear_config(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -83,7 +82,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
-    Config.put(
+    clear_config(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
     )
@@ -128,10 +127,10 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              "These are public toots tagged with #pleromaart. You can interact with them if you have an account anywhere in the fediverse."
 
     assert xpath(xml, ~x"//channel/link/text()") ==
-             '#{Pleroma.Web.base_url()}/tags/pleromaart.rss'
+             '#{Pleroma.Web.Endpoint.url()}/tags/pleromaart.rss'
 
     assert xpath(xml, ~x"//channel/webfeeds:logo/text()") ==
-             '#{Pleroma.Web.base_url()}/static/logo.svg'
+             '#{Pleroma.Web.Endpoint.url()}/static/logo.svg'
 
     assert xpath(xml, ~x"//channel/item/title/text()"l) == [
              '42 This is :moominmamm...',

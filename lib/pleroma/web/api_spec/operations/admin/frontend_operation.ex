@@ -16,10 +16,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
-      summary: "Get a list of available frontends",
+      tags: ["Frontend managment"],
+      summary: "Retrieve a list of available frontends",
       operationId: "AdminAPI.FrontendController.index",
-      security: [%{"oAuth" => ["read"]}],
+      security: [%{"oAuth" => ["admin:read"]}],
       responses: %{
         200 => Operation.response("Response", "application/json", list_of_frontends()),
         403 => Operation.response("Forbidden", "application/json", ApiError)
@@ -29,10 +29,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
 
   def install_operation do
     %Operation{
-      tags: ["Admin", "Reports"],
+      tags: ["Frontend managment"],
       summary: "Install a frontend",
       operationId: "AdminAPI.FrontendController.install",
-      security: [%{"oAuth" => ["read"]}],
+      security: [%{"oAuth" => ["admin:read"]}],
       requestBody: request_body("Parameters", install_request(), required: true),
       responses: %{
         200 => Operation.response("Response", "application/json", list_of_frontends()),

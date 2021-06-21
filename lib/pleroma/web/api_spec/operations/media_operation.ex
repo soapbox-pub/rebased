@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
 
   def create_operation do
     %Operation{
-      tags: ["media"],
+      tags: ["Media attachments"],
       summary: "Upload media as attachment",
       description: "Creates an attachment to be used with a new status.",
       operationId: "MediaController.create",
@@ -56,8 +56,8 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
 
   def update_operation do
     %Operation{
-      tags: ["media"],
-      summary: "Upload media as attachment",
+      tags: ["Media attachments"],
+      summary: "Update attachment",
       description: "Creates an attachment to be used with a new status.",
       operationId: "MediaController.update",
       security: [%{"oAuth" => ["write:media"]}],
@@ -97,14 +97,15 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
 
   def show_operation do
     %Operation{
-      tags: ["media"],
-      summary: "Show Uploaded media attachment",
+      tags: ["Media attachments"],
+      summary: "Attachment",
       operationId: "MediaController.show",
       parameters: [id_param()],
       security: [%{"oAuth" => ["read:media"]}],
       responses: %{
         200 => Operation.response("Media", "application/json", Attachment),
         401 => Operation.response("Media", "application/json", ApiError),
+        403 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError)
       }
     }
@@ -112,8 +113,8 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
 
   def create2_operation do
     %Operation{
-      tags: ["media"],
-      summary: "Upload media as attachment",
+      tags: ["Media attachments"],
+      summary: "Upload media as attachment (v2)",
       description: "Creates an attachment to be used with a new status.",
       operationId: "MediaController.create2",
       security: [%{"oAuth" => ["write:media"]}],

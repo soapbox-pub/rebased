@@ -87,7 +87,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
   end
 
   test "check_activity_expiration_config/0" do
-    clear_config(Pleroma.ActivityExpiration, enabled: true)
+    clear_config([Pleroma.ActivityExpiration], enabled: true)
 
     assert capture_log(fn ->
              DeprecationWarnings.check_activity_expiration_config()
@@ -95,7 +95,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
   end
 
   test "check_uploders_s3_public_endpoint/0" do
-    clear_config(Pleroma.Uploaders.S3, public_endpoint: "https://fake.amazonaws.com/bucket/")
+    clear_config([Pleroma.Uploaders.S3], public_endpoint: "https://fake.amazonaws.com/bucket/")
 
     assert capture_log(fn ->
              DeprecationWarnings.check_uploders_s3_public_endpoint()
@@ -145,5 +145,15 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
              end) =~
                "Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings"
     end
+  end
+
+  test "check_old_chat_shoutbox/0" do
+    clear_config([:instance, :chat_limit], 1_000)
+    clear_config([:chat, :enabled], true)
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_old_chat_shoutbox()
+           end) =~
+             "Your config is using the old namespace for the Shoutbox configuration."
   end
 end

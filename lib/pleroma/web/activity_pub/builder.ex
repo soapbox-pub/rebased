@@ -12,10 +12,11 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Router.Helpers, as: Routes
 
   require Pleroma.Constants
 
@@ -108,7 +109,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   def group(owner, name \\ nil, description \\ nil) do
     id = Ecto.UUID.generate()
-    ap_id = "#{Web.base_url()}/groups/#{id}"
+    ap_id = "#{Endpoint.url()}/groups/#{id}"
 
     {:ok,
      %{
@@ -248,7 +249,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
           [actor.follower_address]
 
         public? and Visibility.is_local_public?(object) ->
-          [actor.follower_address, object.data["actor"], Pleroma.Constants.as_local_public()]
+          [actor.follower_address, object.data["actor"], Utils.as_local_public()]
 
         public? ->
           [actor.follower_address, object.data["actor"], Pleroma.Constants.as_public()]
@@ -297,5 +298,37 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "cc" => cc,
        "context" => object.data["context"]
      }, []}
+  end
+
+  @spec pin(User.t(), Object.t()) :: {:ok, map(), keyword()}
+  def pin(%User{} = user, object) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => pinned_url(user.nickname),
+       "object" => object.data["id"],
+       "actor" => user.ap_id,
+       "type" => "Add",
+       "to" => [Pleroma.Constants.as_public()],
+       "cc" => [user.follower_address]
+     }, []}
+  end
+
+  @spec unpin(User.t(), Object.t()) :: {:ok, map, keyword()}
+  def unpin(%User{} = user, object) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "target" => pinned_url(user.nickname),
+       "object" => object.data["id"],
+       "actor" => user.ap_id,
+       "type" => "Remove",
+       "to" => [Pleroma.Constants.as_public()],
+       "cc" => [user.follower_address]
+     }, []}
+  end
+
+  defp pinned_url(nickname) when is_binary(nickname) do
+    Routes.activity_pub_url(Endpoint, :pinned, nickname)
   end
 end

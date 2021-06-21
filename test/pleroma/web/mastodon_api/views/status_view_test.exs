@@ -262,14 +262,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       mentions: [],
       tags: [
         %{
-          name: "#{object_data["tag"]}",
-          url: "http://localhost:4001/tag/#{object_data["tag"]}"
+          name: "#{hd(object_data["tag"])}",
+          url: "http://localhost:4001/tag/#{hd(object_data["tag"])}"
         }
       ],
-      application: %{
-        name: "Web",
-        website: nil
-      },
+      application: nil,
       language: nil,
       emojis: [
         %{
@@ -289,7 +286,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         direct_conversation_id: nil,
         thread_muted: false,
         emoji_reactions: [],
-        parent_visible: false
+        parent_visible: false,
+        pinned_at: nil
       }
     }
 
@@ -461,7 +459,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       "url" => [
         %{
           "mediaType" => "image/png",
-          "href" => "someurl"
+          "href" => "someurl",
+          "width" => 200,
+          "height" => 100
         }
       ],
       "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
@@ -477,6 +477,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       text_url: "someurl",
       description: nil,
       pleroma: %{mime_type: "image/png"},
+      meta: %{original: %{width: 200, height: 100, aspect: 2}},
       blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
     }
 

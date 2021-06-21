@@ -8,7 +8,9 @@ variables: &global_variables
   MIX_ENV: test
 
 cache: &global_cache_policy
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - mix.lock
   paths:
     - deps
     - _build
@@ -22,17 +24,39 @@ stages:
   - docker
 
 before_script:
+  - echo $MIX_ENV
+  - rm -rf _build/*/lib/pleroma
   - apt-get update && apt-get install -y cmake
   - mix local.hex --force
   - mix local.rebar --force
+  - mix deps.get
   - apt-get -qq update
   - apt-get install -y libmagic-dev
 
+after_script:
+  - rm -rf _build/*/lib/pleroma
+
 build:
   stage: build
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   script:
-  - mix deps.get
   - mix compile --force
+
+spec-build:
+  stage: test
+  only:
+    changes:
+      - "lib/pleroma/web/api_spec/**/*.ex"
+      - "lib/pleroma/web/api_spec.ex"
+  artifacts:
+    paths:
+    - spec.json
+  script:
+  - mix pleroma.openapi_spec spec.json
 
 benchmark:
   stage: benchmark
@@ -44,13 +68,17 @@ benchmark:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
-    - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
     - mix pleroma.load_testing
 
 unit-testing:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   retry: 2
   cache: &testing_cache_policy
     <<: *global_cache_policy
@@ -62,7 +90,6 @@ unit-testing:
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
-    - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
     - mix coveralls --preload-modules
@@ -85,6 +112,11 @@ unit-testing:
 
 unit-testing-rum:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   retry: 2
   cache: *testing_cache_policy
   services:
@@ -96,7 +128,6 @@ unit-testing-rum:
     RUM_ENABLED: "true"
   script:
     - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
-    - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
@@ -104,16 +135,39 @@ unit-testing-rum:
 
 lint:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: *testing_cache_policy
   script:
     - mix format --check-formatted
 
 analysis:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: *testing_cache_policy
   script:
-    - mix deps.get
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+
+cycles:
+  stage: test
+  image: elixir:1.11
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
+  cache: {}
+  script:
+    - mix deps.get
+    - mix compile
+    - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
 docs-deploy:
   stage: deploy
@@ -154,6 +208,20 @@ review_app:
     - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
     - (ssh -t dokku@pleroma.online -- certs:add "$CI_ENVIRONMENT_SLUG" /home/dokku/server.crt /home/dokku/server.key) || true
     - git push -f dokku@pleroma.online:$CI_ENVIRONMENT_SLUG $CI_COMMIT_SHA:refs/heads/master
+
+spec-deploy:
+  stage: deploy
+  artifacts:
+    paths:
+    - spec.json
+  only:
+    - develop@pleroma/pleroma
+  image: alpine:latest
+  before_script:
+    - apk add curl
+  script:
+    - curl -X POST -F"token=$API_DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" -F"variables[JOB_REF]=$CI_JOB_ID" https://git.pleroma.social/api/v4/projects/1130/trigger/pipeline
+
 
 stop_review_app:
   image: alpine:3.9
@@ -213,7 +281,7 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.10.3-alpine 
+  image: elixir:1.10.3-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
@@ -349,3 +417,26 @@ docker-release:
     - dind
   only:
     - /^release/.*$/@pleroma/pleroma
+
+docker-adhoc:
+  stage: docker
+  image: docker:latest
+  cache: {}
+  dependencies: []
+  variables: *docker-variables
+  before_script: *before-docker
+  allow_failure: true
+  script:
+  script:
+    - mkdir -p /root/.docker/cli-plugins
+    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
+    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
+    - chmod +x ~/.docker/cli-plugins/docker-buildx
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --name mbuilder --driver docker-container --use
+    - docker buildx inspect --bootstrap
+    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
+  tags:
+    - dind
+  only:
+    - /^build-docker/.*$/@pleroma/pleroma

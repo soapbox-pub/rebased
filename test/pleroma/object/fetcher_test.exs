@@ -6,7 +6,6 @@ defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
 
@@ -67,6 +66,14 @@ defmodule Pleroma.Object.FetcherTest do
           %Tesla.Env{
             status: 500
           }
+
+        %{
+          method: :get,
+          url: "https://stereophonic.space/objects/02997b83-3ea7-4b63-94af-ef3aa2d4ed17"
+        } ->
+          %Tesla.Env{
+            status: 500
+          }
       end)
 
       :ok
@@ -87,20 +94,20 @@ defmodule Pleroma.Object.FetcherTest do
     setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     test "it returns thread depth exceeded error if thread depth is exceeded" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:error, "Max thread distance exceeded."} =
                Fetcher.fetch_object_from_id(@ap_id, depth: 1)
     end
 
     test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id)
     end
 
     test "it fetches object if requested depth does not exceed max thread depth" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 10)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 10)
 
       assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id, depth: 10)
     end
@@ -125,8 +132,7 @@ defmodule Pleroma.Object.FetcherTest do
       {:ok, object} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
+      assert _activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
       {:ok, object_again} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
@@ -245,7 +251,7 @@ defmodule Pleroma.Object.FetcherTest do
                    Pleroma.Signature,
                    [:passthrough],
                    [] do
-      Config.put([:activitypub, :sign_object_fetches], true)
+      clear_config([:activitypub, :sign_object_fetches], true)
 
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
@@ -256,7 +262,7 @@ defmodule Pleroma.Object.FetcherTest do
                    Pleroma.Signature,
                    [:passthrough],
                    [] do
-      Config.put([:activitypub, :sign_object_fetches], false)
+      clear_config([:activitypub, :sign_object_fetches], false)
 
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 

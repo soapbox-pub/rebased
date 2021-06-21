@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
   use Pleroma.DataCase
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy
   alias Pleroma.Web.ActivityPub.Visibility
@@ -39,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
 
   describe "with reject action" do
     test "works with objects with empty to or cc fields" do
-      Config.put([:mrf_object_age, :actions], [:reject])
+      clear_config([:mrf_object_age, :actions], [:reject])
 
       data =
         get_old_message()
@@ -50,7 +49,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     end
 
     test "it rejects an old post" do
-      Config.put([:mrf_object_age, :actions], [:reject])
+      clear_config([:mrf_object_age, :actions], [:reject])
 
       data = get_old_message()
 
@@ -58,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     end
 
     test "it allows a new post" do
-      Config.put([:mrf_object_age, :actions], [:reject])
+      clear_config([:mrf_object_age, :actions], [:reject])
 
       data = get_new_message()
 
@@ -68,7 +67,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
 
   describe "with delist action" do
     test "works with objects with empty to or cc fields" do
-      Config.put([:mrf_object_age, :actions], [:delist])
+      clear_config([:mrf_object_age, :actions], [:delist])
 
       data =
         get_old_message()
@@ -83,7 +82,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     end
 
     test "it delists an old post" do
-      Config.put([:mrf_object_age, :actions], [:delist])
+      clear_config([:mrf_object_age, :actions], [:delist])
 
       data = get_old_message()
 
@@ -95,7 +94,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     end
 
     test "it allows a new post" do
-      Config.put([:mrf_object_age, :actions], [:delist])
+      clear_config([:mrf_object_age, :actions], [:delist])
 
       data = get_new_message()
 
@@ -107,7 +106,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
 
   describe "with strip_followers action" do
     test "works with objects with empty to or cc fields" do
-      Config.put([:mrf_object_age, :actions], [:strip_followers])
+      clear_config([:mrf_object_age, :actions], [:strip_followers])
 
       data =
         get_old_message()
@@ -123,7 +122,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     end
 
     test "it strips followers collections from an old post" do
-      Config.put([:mrf_object_age, :actions], [:strip_followers])
+      clear_config([:mrf_object_age, :actions], [:strip_followers])
 
       data = get_old_message()
 
@@ -136,7 +135,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     end
 
     test "it allows a new post" do
-      Config.put([:mrf_object_age, :actions], [:strip_followers])
+      clear_config([:mrf_object_age, :actions], [:strip_followers])
 
       data = get_new_message()
 

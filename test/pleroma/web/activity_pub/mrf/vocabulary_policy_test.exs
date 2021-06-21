@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     setup do: clear_config([:mrf_vocabulary, :accept])
 
     test "it accepts based on parent activity type" do
-      Pleroma.Config.put([:mrf_vocabulary, :accept], ["Like"])
+      clear_config([:mrf_vocabulary, :accept], ["Like"])
 
       message = %{
         "type" => "Like",
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     end
 
     test "it accepts based on child object type" do
-      Pleroma.Config.put([:mrf_vocabulary, :accept], ["Create", "Note"])
+      clear_config([:mrf_vocabulary, :accept], ["Create", "Note"])
 
       message = %{
         "type" => "Create",
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     end
 
     test "it does not accept disallowed child objects" do
-      Pleroma.Config.put([:mrf_vocabulary, :accept], ["Create", "Note"])
+      clear_config([:mrf_vocabulary, :accept], ["Create", "Note"])
 
       message = %{
         "type" => "Create",
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     end
 
     test "it does not accept disallowed parent types" do
-      Pleroma.Config.put([:mrf_vocabulary, :accept], ["Announce", "Note"])
+      clear_config([:mrf_vocabulary, :accept], ["Announce", "Note"])
 
       message = %{
         "type" => "Create",
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     setup do: clear_config([:mrf_vocabulary, :reject])
 
     test "it rejects based on parent activity type" do
-      Pleroma.Config.put([:mrf_vocabulary, :reject], ["Like"])
+      clear_config([:mrf_vocabulary, :reject], ["Like"])
 
       message = %{
         "type" => "Like",
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     end
 
     test "it rejects based on child object type" do
-      Pleroma.Config.put([:mrf_vocabulary, :reject], ["Note"])
+      clear_config([:mrf_vocabulary, :reject], ["Note"])
 
       message = %{
         "type" => "Create",
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
     end
 
     test "it passes through objects that aren't disallowed" do
-      Pleroma.Config.put([:mrf_vocabulary, :reject], ["Like"])
+      clear_config([:mrf_vocabulary, :reject], ["Like"])
 
       message = %{
         "type" => "Announce",

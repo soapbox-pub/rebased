@@ -56,7 +56,7 @@ defmodule Pleroma.Web.FederatorTest do
       activity: activity,
       relay_mock: relay_mock
     } do
-      Pleroma.Config.put([:instance, :allow_relay], false)
+      clear_config([:instance, :allow_relay], false)
 
       with_mocks([relay_mock]) do
         Federator.publish(activity)
@@ -123,7 +123,8 @@ defmodule Pleroma.Web.FederatorTest do
           "type" => "Note",
           "content" => "hi world!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
@@ -145,7 +146,8 @@ defmodule Pleroma.Web.FederatorTest do
           "type" => "Note",
           "content" => "hi world!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
@@ -155,9 +157,9 @@ defmodule Pleroma.Web.FederatorTest do
     end
 
     test "it does not crash if MRF rejects the post" do
-      Pleroma.Config.put([:mrf_keyword, :reject], ["lain"])
+      clear_config([:mrf_keyword, :reject], ["lain"])
 
-      Pleroma.Config.put(
+      clear_config(
         [:mrf, :policies],
         Pleroma.Web.ActivityPub.MRF.KeywordPolicy
       )

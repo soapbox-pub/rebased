@@ -10,11 +10,11 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :update)
+  plug(OAuthScopesPlug, %{scopes: ["admin:write"]} when action == :update)
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"], admin: true}
+    %{scopes: ["admin:read"]}
     when action in [:show, :descriptions]
   )
 
@@ -122,7 +122,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     if Config.get(:configurable_from_database) do
       :ok
     else
-      {:error, "To use this endpoint you need to enable configuration from database."}
+      {:error, "You must enable configurable_from_database in your config file."}
     end
   end
 

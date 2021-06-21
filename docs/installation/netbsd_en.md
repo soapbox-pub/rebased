@@ -1,6 +1,6 @@
 # Installing on NetBSD
 
-## Required software 
+## Required software
 
 pkgin should have been installed by the NetBSD installer if you selected
 the right options. If it isn't installed, install it using pkg_add.
@@ -71,7 +71,7 @@ Configure Pleroma. Note that you need a domain name at this point:
 ```
 $ cd /home/pleroma/pleroma
 $ mix deps.get
-$ mix pleroma.instance gen # You will be asked a few questions here.
+$ MIX_ENV=prod mix pleroma.instance gen # You will be asked a few questions here.
 ```
 
 Since Postgres is configured, we can now initialize the database. There should
@@ -193,8 +193,6 @@ Run `# /etc/rc.d/pleroma start` to start Pleroma.
 
 Restart nginx with `# /etc/rc.d/nginx restart` and you should be up and running.
 
-If you need further help, contact niaa on freenode.
-
 Make sure your time is in sync, or other instances will receive your posts with
 incorrect timestamps. You should have ntpd running.
 
@@ -208,4 +206,4 @@ incorrect timestamps. You should have ntpd running.
 
 ## Questions
 
-Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat) via Matrix or **#pleroma** on **libera.chat** via IRC.

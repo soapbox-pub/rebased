@@ -16,9 +16,9 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def remote_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji pack administration"],
       summary: "Make request to another instance for emoji packs list",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       parameters: [
         url_param(),
         Operation.parameter(
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji packs"],
       summary: "Lists local custom emoji packs",
       operationId: "PleromaAPI.EmojiPackController.index",
       parameters: [
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji packs"],
       summary: "Show emoji pack",
       operationId: "PleromaAPI.EmojiPackController.show",
       parameters: [
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def archive_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji packs"],
       summary: "Requests a local pack archive from the instance",
       operationId: "PleromaAPI.EmojiPackController.archive",
       parameters: [name_param()],
@@ -115,10 +115,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def download_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji pack administration"],
       summary: "Download pack from another instance",
       operationId: "PleromaAPI.EmojiPackController.download",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       requestBody: request_body("Parameters", download_request(), required: true),
       responses: %{
         200 => ok_response(),
@@ -145,10 +145,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def create_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji pack administration"],
       summary: "Create an empty pack",
       operationId: "PleromaAPI.EmojiPackController.create",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       parameters: [name_param()],
       responses: %{
         200 => ok_response(),
@@ -161,10 +161,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji pack administration"],
       summary: "Delete a custom emoji pack",
       operationId: "PleromaAPI.EmojiPackController.delete",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       parameters: [name_param()],
       responses: %{
         200 => ok_response(),
@@ -177,10 +177,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji pack administration"],
       summary: "Updates (replaces) pack metadata",
       operationId: "PleromaAPI.EmojiPackController.update",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       requestBody: request_body("Parameters", update_request(), required: true),
       parameters: [name_param()],
       responses: %{
@@ -193,10 +193,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   def import_from_filesystem_operation do
     %Operation{
-      tags: ["Emoji Packs"],
+      tags: ["Emoji pack administration"],
       summary: "Imports packs from filesystem",
       operationId: "PleromaAPI.EmojiPackController.import",
-      security: [%{"oAuth" => ["write"]}],
+      security: [%{"oAuth" => ["admin:write"]}],
       responses: %{
         200 =>
           Operation.response("Array of imported pack names", "application/json", %Schema{

@@ -7,7 +7,6 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.Repo
   alias Pleroma.UserInviteToken
 
@@ -119,8 +118,8 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
     setup do: clear_config([:instance, :invites_enabled])
 
     test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn} do
-      Config.put([:instance, :registrations_open], false)
-      Config.put([:instance, :invites_enabled], false)
+      clear_config([:instance, :registrations_open], false)
+      clear_config([:instance, :invites_enabled], false)
 
       conn =
         conn
@@ -138,8 +137,8 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
     end
 
     test "it returns 500 if `registrations_open` is enabled", %{conn: conn} do
-      Config.put([:instance, :registrations_open], true)
-      Config.put([:instance, :invites_enabled], true)
+      clear_config([:instance, :registrations_open], true)
+      clear_config([:instance, :invites_enabled], true)
 
       conn =
         conn

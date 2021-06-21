@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaConversationOperation do
   def show_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "The conversation with the given ID",
+      summary: "Conversation",
       parameters: [
         Operation.parameter(:id, :path, :string, "Conversation ID",
           example: "123",
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaConversationOperation do
   def statuses_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Timeline for a given conversation",
+      summary: "Timeline for conversation",
       parameters: [
         Operation.parameter(:id, :path, :string, "Conversation ID",
           example: "123",
@@ -61,7 +61,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaConversationOperation do
   def update_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Update a conversation. Used to change the set of recipients.",
+      summary: "Update conversation",
+      description: "Change set of recipients for the conversation.",
       parameters: [
         Operation.parameter(:id, :path, :string, "Conversation ID",
           example: "123",
@@ -86,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaConversationOperation do
   def mark_as_read_operation do
     %Operation{
       tags: ["Conversations"],
-      summary: "Marks all user's conversations as read",
+      summary: "Marks all conversations as read",
       security: [%{"oAuth" => ["write:conversations"]}],
       operationId: "PleromaAPI.ConversationController.mark_as_read",
       responses: %{

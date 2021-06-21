@@ -8,21 +8,87 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- **Breaking:** Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
-- **Breaking**: AdminAPI changed User field `confirmation_pending` to `is_confirmed`
-- **Breaking**: AdminAPI changed User field `approval_pending` to `is_approved`
+- **Breaking:** Configuration: `:chat, enabled` moved to `:shout, enabled` and `:instance, chat_limit` moved to `:shout, limit`
+- Support for Erlang/OTP 24
+- The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
+- HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
+- Email address is now returned if requesting user is the owner of the user account so it can be exposed in client and FE user settings UIs.
+- Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
+
+### Added
+
+- MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
+- Return OAuth token `id` (primary key) in POST `/oauth/token`.
+- `AnalyzeMetadata` upload filter for extracting image/video attachment dimensions and generating blurhashes for images. Blurhashes for videos are not generated at this time.
+- Attachment dimensions and blurhashes are federated when available.
+- Pinned posts federation
+
+### Fixed
+- Don't crash so hard when email settings are invalid.
+- Checking activated Upload Filters for required commands.
+- Mix task `pleroma.database prune_objects`
+
+### Removed
+- **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)
+
+## Unreleased (Patch)
+
+### Fixed
+
+- Try to save exported ConfigDB settings (migrate_from_db) in the system temp directory if default location is not writable.
+- Uploading custom instance thumbnail via AdminAPI/AdminFE generated invalid URL to the image
+- Applying ConcurrentLimiter settings via AdminAPI
+- User login failures if their `notification_settings` were in a NULL state.
+- Mix task `pleroma.user delete_activities` query transaction timeout is now :infinity
+- MRF (`SimplePolicy`): Embedded objects are now checked. If any embedded object would be rejected, its parent is rejected. This fixes Announces leaking posts from blocked domains.
+- Fixed some Markdown issues, including trailing slash in links.
+
+## [2.3.0] - 2020-03-01
+
+### Security
+
+- Fixed client user agent leaking through MediaProxy
+
+### Removed
+
+- `:auth, :enforce_oauth_admin_scope_usage` configuration option.
+
+### Changed
+
+- **Breaking**: Changed `mix pleroma.user toggle_confirmed` to `mix pleroma.user confirm`
+- **Breaking**: Changed `mix pleroma.user toggle_activated` to `mix pleroma.user activate/deactivate`
+- **Breaking:** NSFW hashtag is no longer added on sensitive posts
 - Polls now always return a `voters_count`, even if they are single-choice.
 - Admin Emails: The ap id is used as the user link in emails now.
 - Improved registration workflow for email confirmation and account approval modes.
 - Search: When using Postgres 11+, Pleroma will use the `websearch_to_tsvector` function to parse search queries.
 - Emoji: Support the full Unicode 13.1 set of Emoji for reactions, plus regional indicators.
-- Admin API: Reports now ordered by newest
 - Deprecated `Pleroma.Uploaders.S3, :public_endpoint`. Now `Pleroma.Upload, :base_url` is the standard configuration key for all uploaders.
+- Improved Apache webserver support: updated sample configuration, MediaProxy cache invalidation verified with the included sample script
+- Improve OAuth 2.0 provider support. A missing `fqn` field was added to the response, but does not expose the user's email address.
+- Provide redirect of external posts from `/notice/:id` to their original URL
+- Admins no longer receive notifications for reports if they are the actor making the report.
+- Improved Mailer configuration setting descriptions for AdminFE.
+- Updated default avatar to look nicer.
+
+<details>
+  <summary>API Changes</summary>
+
+- **Breaking:** AdminAPI changed User field `confirmation_pending` to `is_confirmed`
+- **Breaking:** AdminAPI changed User field `approval_pending` to `is_approved`
+- **Breaking**: AdminAPI changed User field `deactivated` to `is_active`
+- **Breaking:** AdminAPI `GET /api/pleroma/admin/users/:nickname_or_id/statuses` changed response format and added the number of total users posts.
+- **Breaking:** AdminAPI `GET /api/pleroma/admin/instances/:instance/statuses` changed response format and added the number of total users posts.
+- Admin API: Reports now ordered by newest
+- Pleroma API: `GET /api/v1/pleroma/chats` is deprecated in favor of `GET /api/v2/pleroma/chats`.
+- Pleroma API: Reroute `/api/pleroma/*` to `/api/v1/pleroma/*`
+
+</details>
+- Improved hashtag timeline performance (requires a background migration).
 
 ### Added
 
 - Reports now generate notifications for admins and mods.
-- Experimental websocket-based federation between Pleroma instances.
 - Support for local-only statuses.
 - Support pagination of blocks and mutes.
 - Account backup.
@@ -35,17 +101,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth improvements and fixes: more secure session-based authentication (by token that could be revoked anytime), ability to revoke belonging OAuth token from any client etc.
 - Ability to set ActivityPub aliases for follower migration.
 - Configurable background job limits for RichMedia (link previews) and MediaProxyWarmingPolicy
-
+- Ability to define custom HTTP headers per each frontend
+- MRF (`NoEmptyPolicy`): New MRF Policy which will deny empty statuses or statuses of only mentions from being created by local users
+- New users will receive a simple email confirming their registration if no other emails will be dispatched. (e.g., Welcome, Confirmation, or Approval Required)
 
 <details>
   <summary>API Changes</summary>
 - Admin API: (`GET /api/pleroma/admin/users`) filter users by `unconfirmed` status and `actor_type`.
+- Admin API: OpenAPI spec for the user-related operations
+- Pleroma API: `GET /api/v2/pleroma/chats` added. It is exactly like `GET /api/v1/pleroma/chats` except supports pagination.
 - Pleroma API: Add `idempotency_key` to the chat message entity that can be used for optimistic message sending.
 - Pleroma API: (`GET /api/v1/pleroma/federation_status`) Add a way to get a list of unreachable instances.
 - Mastodon API: User and conversation mutes can now auto-expire if `expires_in` parameter was given while adding the mute.
 - Admin API: An endpoint to manage frontends.
 - Streaming API: Add follow relationships updates.
-- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types
+- WebPush: Introduce `pleroma:chat_mention` and `pleroma:emoji_reaction` notification types.
+- Mastodon API: Add monthly active users to `/api/v1/instance` (`pleroma.stats.mau`).
+- Mastodon API: Home, public, hashtag & list timelines accept `only_media`, `remote` & `local` parameters for filtration.
+- Mastodon API: `/api/v1/accounts/:id` & `/api/v1/mutes` endpoints accept `with_relationships` parameter and return filled `pleroma.relationship` field.
+- Mastodon API: Endpoint to remove a conversation (`DELETE /api/v1/conversations/:id`).
+- Mastodon API: `expires_in` in the scheduled post `params` field on `/api/v1/statuses` and `/api/v1/scheduled_statuses/:id` endpoints.
 </details>
 
 ### Fixed
@@ -55,15 +130,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Creating incorrect IPv4 address-style HTTP links when encountering certain numbers.
 - Reblog API Endpoint: Do not set visibility parameter to public by default and let CommonAPI to infer it from status, so a user can reblog their private status without explicitly setting reblog visibility to private.
 - Tag URLs in statuses are now absolute
+- Removed duplicate jobs to purge expired activities
+- File extensions of some attachments were incorrectly changed. This feature has been disabled for now.
+- Mix task pleroma.instance creates missing parent directories if the configuration or SQL output paths are changed.
 
 <details>
   <summary>API Changes</summary>
   - Mastodon API: Current user is now included in conversation if it's the only participant.
   - Mastodon API: Fixed last_status.account being not filled with account data.
+  - Mastodon API: Fix not being able to add or remove multiple users at once in lists.
+  - Mastodon API: Fixed own_votes being not returned with poll data.
+  - Mastodon API: Fixed creation of scheduled posts with polls.
+  - Mastodon API: Support for expires_in/expires_at in the Filters.
 </details>
-
-## Unreleased (Patch)
-
 
 ## [2.2.2] - 2020-01-18
 
@@ -461,7 +540,6 @@ switched to a new configuration mechanism, however it was not officially removed
 - Static-FE: Fix remote posts not being sanitized
 
 ### Fixed
-=======
 - Rate limiter crashes when there is no explicitly specified ip in the config
 - 500 errors when no `Accept` header is present if Static-FE is enabled
 - Instance panel not being updated immediately due to wrong `Cache-Control` headers

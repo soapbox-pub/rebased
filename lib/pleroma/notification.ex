@@ -112,13 +112,6 @@ defmodule Pleroma.Notification do
 
     Notification
     |> where(user_id: ^user.id)
-    |> where(
-      [n, a],
-      fragment(
-        "? not in (SELECT ap_id FROM users WHERE deactivated = 'true')",
-        a.actor
-      )
-    )
     |> join(:inner, [n], activity in assoc(n, :activity))
     |> join(:left, [n, a], object in Object,
       on:
@@ -129,7 +122,9 @@ defmodule Pleroma.Notification do
           a.data
         )
     )
+    |> join(:inner, [_n, a], u in User, on: u.ap_id == a.actor, as: :user_actor)
     |> preload([n, a, o], activity: {a, object: o})
+    |> where([user_actor: user_actor], user_actor.is_active)
     |> exclude_notification_muted(user, exclude_notification_muted_opts)
     |> exclude_blocked(user, exclude_blocked_opts)
     |> exclude_filtered(user)
@@ -156,9 +151,10 @@ defmodule Pleroma.Notification do
     query
     |> where([n, a], a.actor not in ^notification_muted_ap_ids)
     |> join(:left, [n, a], tm in ThreadMute,
-      on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
+      on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data),
+      as: :thread_mute
     )
-    |> where([n, a, o, tm], is_nil(tm.user_id))
+    |> where([thread_mute: thread_mute], is_nil(thread_mute.user_id))
   end
 
   defp exclude_filtered(query, user) do
@@ -507,8 +503,8 @@ defmodule Pleroma.Notification do
     [object_id]
   end
 
-  def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag"}}) do
-    User.all_superusers() |> Enum.map(fn user -> user.ap_id end)
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
+    (User.all_superusers() |> Enum.map(fn user -> user.ap_id end)) -- [actor]
   end
 
   def get_potential_receiver_ap_ids(activity) do

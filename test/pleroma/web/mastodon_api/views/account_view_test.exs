@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -74,6 +73,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
@@ -173,6 +173,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         },
         fields: []
       },
+      fqn: "shp@shitposter.club",
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: [],
@@ -211,7 +212,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   test "Represent a deactivated user for an admin" do
     admin = insert(:user, is_admin: true)
-    deactivated_user = insert(:user, deactivated: true)
+    deactivated_user = insert(:user, is_active: false)
     represented = AccountView.render("show.json", %{user: deactivated_user, for: admin})
     assert represented[:pleroma][:deactivated] == true
   end
@@ -467,6 +468,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                %{user: user, for: user}
              )[:pleroma][:unread_notifications_count] == 7
     end
+
+    test "shows email only to the account owner" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: other_user}
+             )[:pleroma][:email] == nil
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: user}
+             )[:pleroma][:email] == user.email
+    end
   end
 
   describe "follow requests counter" do
@@ -556,17 +574,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       )
 
     with media_preview_enabled <- [false, true] do
-      Config.put([:media_preview_proxy, :enabled], media_preview_enabled)
+      clear_config([:media_preview_proxy, :enabled], media_preview_enabled)
 
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       |> Enum.all?(fn
         {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
-          String.starts_with?(url, Pleroma.Web.base_url())
+          String.starts_with?(url, Pleroma.Web.Endpoint.url())
 
         {:emojis, emojis} ->
           Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
-            String.starts_with?(url, Pleroma.Web.base_url()) &&
-              String.starts_with?(static_url, Pleroma.Web.base_url())
+            String.starts_with?(url, Pleroma.Web.Endpoint.url()) &&
+              String.starts_with?(static_url, Pleroma.Web.Endpoint.url())
           end)
 
         _ ->

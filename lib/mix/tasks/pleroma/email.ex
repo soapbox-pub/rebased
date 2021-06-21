@@ -33,12 +33,12 @@ defmodule Mix.Tasks.Pleroma.Email do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_confirmed: false,
       invisible: false
     })
     |> Pleroma.Repo.chunk_stream(500)
-    |> Stream.each(&Pleroma.User.try_send_confirmation_email(&1))
+    |> Stream.each(&Pleroma.User.maybe_send_confirmation_email(&1))
     |> Stream.run()
   end
 end

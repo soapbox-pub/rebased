@@ -13,7 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                 Pleroma.Config.get!([:instance, :static_dir]),
                 "emoji"
               )
-  setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
   setup do: clear_config([:instance, :public], true)
 
@@ -31,7 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   end
 
   test "GET /api/pleroma/emoji/packs when :public: false", %{conn: conn} do
-    Config.put([:instance, :public], false)
+    clear_config([:instance, :public], false)
     conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
   end
 

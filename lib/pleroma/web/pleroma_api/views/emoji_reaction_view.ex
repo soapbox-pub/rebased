@@ -26,7 +26,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
     user_ap_ids
     |> Enum.map(&Pleroma.User.get_cached_by_ap_id/1)
     |> Enum.filter(fn
-      %{deactivated: false} -> true
+      %{is_active: true} -> true
       _ -> false
     end)
   end

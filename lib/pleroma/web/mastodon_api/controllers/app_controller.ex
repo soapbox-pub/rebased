@@ -3,24 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AppController do
+  @moduledoc """
+  Controller for supporting app-related actions.
+  If authentication is an option, app tokens (user-unbound) must be supported.
+  """
+
   use Pleroma.Web, :controller
 
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  plug(
-    :skip_plug,
-    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug]
-    when action == :create
-  )
-
-  plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :verify_credentials)
+  plug(:skip_auth when action in [:create, :verify_credentials])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -44,10 +41,13 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
     end
   end
 
-  @doc "GET /api/v1/apps/verify_credentials"
-  def verify_credentials(%{assigns: %{user: _user, token: token}} = conn, _) do
-    with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
-      render(conn, "short.json", app: app)
+  @doc """
+  GET /api/v1/apps/verify_credentials
+  Gets compact non-secret representation of the app. Supports app tokens and user tokens.
+  """
+  def verify_credentials(%{assigns: %{token: %Token{} = token}} = conn, _) do
+    with %{app: %App{} = app} <- Repo.preload(token, :app) do
+      render(conn, "compact_non_secret.json", app: app)
     end
   end
 end

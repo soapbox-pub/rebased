@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -15,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: oauth_access(["write:statuses"])
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
-      Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
       Config.get([:instance, :allow_relay], true)
 
       response =
@@ -82,6 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "sensitive" => 0
         })
 
+      # Idempotency plug response means detection fail
       assert %{"id" => second_id} = json_response(conn_two, 200)
       assert id == second_id
 
@@ -151,8 +152,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "Get MRF reason when posting a status is rejected by one", %{conn: conn} do
-      Config.put([:mrf_keyword, :reject], ["GNO"])
-      Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+      clear_config([:mrf_keyword, :reject], ["GNO"])
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
 
       assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
                conn
@@ -264,6 +265,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       fake_conn =
         conn
+        |> assign(:user, refresh_record(conn.assigns.user))
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/statuses", %{
           "status" =>
@@ -357,6 +359,69 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert activity.data["to"] == [user2.ap_id]
       assert activity.data["cc"] == []
     end
+
+    test "discloses application metadata when enabled" do
+      user = insert(:user, disclose_client: true)
+      %{user: _user, token: token, conn: conn} = oauth_access(["write:statuses"], user: user)
+
+      %Pleroma.Web.OAuth.Token{
+        app: %Pleroma.Web.OAuth.App{
+          client_name: app_name,
+          website: app_website
+        }
+      } = token
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe is my copilot"
+        })
+
+      assert %{
+               "content" => "cofe is my copilot"
+             } = json_response_and_validate_schema(result, 200)
+
+      activity = result.assigns.activity.id
+
+      result =
+        conn
+        |> get("api/v1/statuses/#{activity}")
+
+      assert %{
+               "content" => "cofe is my copilot",
+               "application" => %{
+                 "name" => ^app_name,
+                 "website" => ^app_website
+               }
+             } = json_response_and_validate_schema(result, 200)
+    end
+
+    test "hides application metadata when disabled" do
+      user = insert(:user, disclose_client: false)
+      %{user: _user, token: _token, conn: conn} = oauth_access(["write:statuses"], user: user)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "club mate is my wingman"
+        })
+
+      assert %{"content" => "club mate is my wingman"} =
+               json_response_and_validate_schema(result, 200)
+
+      activity = result.assigns.activity.id
+
+      result =
+        conn
+        |> get("api/v1/statuses/#{activity}")
+
+      assert %{
+               "content" => "club mate is my wingman",
+               "application" => nil
+             } = json_response_and_validate_schema(result, 200)
+    end
   end
 
   describe "posting scheduled statuses" do
@@ -381,6 +446,31 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert expected_scheduled_at == CommonAPI.Utils.to_masto_date(scheduled_at)
       assert [] == Repo.all(Activity)
+    end
+
+    test "with expiration" do
+      %{conn: conn} = oauth_access(["write:statuses", "read:statuses"])
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+        |> Kernel.<>("Z")
+
+      assert %{"id" => status_id, "params" => %{"expires_in" => 300}} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/statuses", %{
+                 "status" => "scheduled",
+                 "scheduled_at" => scheduled_at,
+                 "expires_in" => 300
+               })
+               |> json_response_and_validate_schema(200)
+
+      assert %{"id" => ^status_id, "params" => %{"expires_in" => 300}} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/scheduled_statuses/#{status_id}")
+               |> json_response_and_validate_schema(200)
     end
 
     test "ignores nil values", %{conn: conn} do
@@ -516,7 +606,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              end)
 
       assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
-      refute response["poll"]["expred"]
+      assert response["poll"]["expired"] == false
 
       question = Object.get_by_id(response["poll"]["id"])
 
@@ -591,6 +681,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       %{"error" => error} = json_response_and_validate_schema(conn, 422)
       assert error == "Expiration date is too far in the future"
+    end
+
+    test "scheduled poll", %{conn: conn} do
+      clear_config([ScheduledActivity, :enabled], true)
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+        |> Kernel.<>("Z")
+
+      %{"id" => scheduled_id} =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "very cool poll",
+          "poll" => %{
+            "options" => ~w(a b c),
+            "expires_in" => 420
+          },
+          "scheduled_at" => scheduled_at
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert {:ok, %{id: activity_id}} =
+               perform_job(Pleroma.Workers.ScheduledActivityWorker, %{
+                 activity_id: scheduled_id
+               })
+
+      assert Repo.all(Oban.Job) == []
+
+      object =
+        Activity
+        |> Repo.get(activity_id)
+        |> Object.normalize()
+
+      assert object.data["content"] == "very cool poll"
+      assert object.data["type"] == "Question"
+      assert length(object.data["oneOf"]) == 3
     end
   end
 
@@ -1083,18 +1211,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: clear_config([:instance, :max_pinned_statuses], 1)
 
     test "pin status", %{conn: conn, user: user, activity: activity} do
-      id_str = to_string(activity.id)
+      id = activity.id
 
-      assert %{"id" => ^id_str, "pinned" => true} =
+      assert %{"id" => ^id, "pinned" => true} =
                conn
                |> put_req_header("content-type", "application/json")
                |> post("/api/v1/statuses/#{activity.id}/pin")
                |> json_response_and_validate_schema(200)
 
-      assert [%{"id" => ^id_str, "pinned" => true}] =
+      assert [%{"id" => ^id, "pinned" => true}] =
                conn
                |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
                |> json_response_and_validate_schema(200)
+    end
+
+    test "non authenticated user", %{activity: activity} do
+      assert build_conn()
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/statuses/#{activity.id}/pin")
+             |> json_response(403) == %{"error" => "Invalid credentials."}
     end
 
     test "/pin: returns 400 error when activity is not public", %{conn: conn, user: user} do
@@ -1105,7 +1240,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/statuses/#{dm.id}/pin")
 
-      assert json_response_and_validate_schema(conn, 400) == %{"error" => "Could not pin"}
+      assert json_response_and_validate_schema(conn, 422) == %{
+               "error" => "Non-public status cannot be pinned"
+             }
+    end
+
+    test "pin by another user", %{activity: activity} do
+      %{conn: conn} = oauth_access(["write:accounts"])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/statuses/#{activity.id}/pin")
+             |> json_response(422) == %{"error" => "Someone else's status cannot be pinned"}
     end
 
     test "unpin status", %{conn: conn, user: user, activity: activity} do
@@ -1126,13 +1272,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                |> json_response_and_validate_schema(200)
     end
 
-    test "/unpin: returns 400 error when activity is not exist", %{conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/statuses/1/unpin")
-
-      assert json_response_and_validate_schema(conn, 400) == %{"error" => "Could not unpin"}
+    test "/unpin: returns 404 error when activity doesn't exist", %{conn: conn} do
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/statuses/1/unpin")
+             |> json_response_and_validate_schema(404) == %{"error" => "Record not found"}
     end
 
     test "max pinned statuses", %{conn: conn, user: user, activity: activity_one} do
@@ -1204,7 +1348,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   describe "cards" do
     setup do
-      Config.put([:rich_media, :enabled], true)
+      clear_config([:rich_media, :enabled], true)
 
       oauth_access(["read:statuses"])
     end
@@ -1416,7 +1560,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       |> assign(:token, insert(:oauth_token, user: user3, scopes: ["read:statuses"]))
       |> get("api/v1/timelines/home")
 
-    [reblogged_activity] = json_response(conn3, 200)
+    [reblogged_activity] = json_response_and_validate_schema(conn3, 200)
 
     assert reblogged_activity["reblog"]["in_reply_to_id"] == replied_to.id
 
@@ -1767,10 +1911,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "visibility" => "local"
       })
 
-    local = Pleroma.Constants.as_local_public()
+    local = Utils.as_local_public()
 
     assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
-             json_response(conn_one, 200)
+             json_response_and_validate_schema(conn_one, 200)
 
     assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
   end
