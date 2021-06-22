@@ -125,12 +125,6 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      }, []}
   end
 
-  def create_group(owner, params \\ %{}) do
-    with {:ok, group, _} <- group(owner, params[:name], params[:description]) do
-      create(owner, group, [])
-    end
-  end
-
   def create(actor, object, recipients) do
     context =
       if is_map(object) do
