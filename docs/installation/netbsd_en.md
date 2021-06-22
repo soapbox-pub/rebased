@@ -1,6 +1,8 @@
 # Installing on NetBSD
 
-## Required software
+{! backend/installation/generic_dependencies.include !}
+
+## Installing software used in this guide
 
 pkgin should have been installed by the NetBSD installer if you selected
 the right options. If it isn't installed, install it using pkg_add.
