@@ -40,25 +40,24 @@ defmodule Pleroma.Group do
 
   @spec create(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def create(params) do
-    with {:ok, user} <- generate_user() do
+    with {:ok, user} <- generate_user(params) do
       %__MODULE__{user_id: user.id, members_collection: "#{user.ap_id}/members"}
       |> changeset(params)
       |> Repo.insert()
     end
   end
 
-  defp generate_ap_id(id) do
-    "#{Endpoint.url()}/groups/#{id}"
+  defp generate_ap_id(slug) do
+    "#{Endpoint.url()}/groups/#{slug}"
   end
 
-  defp generate_user() do
-    id = Ecto.UUID.generate()
-    ap_id = generate_ap_id(id)
+  defp generate_user(%{slug: slug}) when is_binary(slug) do
+    ap_id = generate_ap_id(slug)
 
     %{
       ap_id: ap_id,
-      name: id,
-      nickname: id,
+      name: slug,
+      nickname: slug,
       follower_address: "#{ap_id}/followers",
       following_address: "#{ap_id}/following",
       local: true

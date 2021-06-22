@@ -425,6 +425,7 @@ defmodule Pleroma.User do
     struct
     |> cast(params, [:ap_id, :nickname, :name, :follower_address, :following_address, :local])
     |> validate_required([:ap_id, :nickname, :name, :follower_address, :following_address, :local])
+    |> validate_format(:nickname, local_nickname_regex())
   end
 
   def remote_user_changeset(struct \\ %User{local: false}, params) do

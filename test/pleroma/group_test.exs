@@ -13,7 +13,9 @@ defmodule Pleroma.GroupTest do
   test "get_for_object/1 gets a group based on the group object or the create activity" do
     user = insert(:user)
 
-    {:ok, group} = Group.create(%{owner_id: user.id, name: "cofe", description: "corndog"})
+    {:ok, group} =
+      Group.create(%{owner_id: user.id, slug: "cofe", name: "Cofe", description: "corndog"})
+
     group = Repo.preload(group, :user)
 
     group_object = %{
@@ -38,12 +40,16 @@ defmodule Pleroma.GroupTest do
 
   test "a user can create a group" do
     user = insert(:user)
-    {:ok, group} = Group.create(%{owner_id: user.id, name: "cofe", description: "corndog"})
+
+    {:ok, group} =
+      Group.create(%{owner_id: user.id, slug: "cofe", name: "Cofe", description: "corndog"})
+
     group = Repo.preload(group, :user)
 
     assert group.user.actor_type == "Group"
+    assert group.user.nickname == "cofe"
     assert group.owner_id == user.id
-    assert group.name == "cofe"
+    assert group.name == "Cofe"
     assert group.description == "corndog"
 
     # Deleting the owner does not delete the group, just orphans it
@@ -65,7 +71,8 @@ defmodule Pleroma.GroupTest do
     other_user = insert(:user)
     third_user = insert(:user)
 
-    {:ok, group} = Group.create(%{owner_id: user.id, name: "cofe", description: "corndog"})
+    {:ok, group} =
+      Group.create(%{owner_id: user.id, slug: "cofe", name: "Cofe", description: "corndog"})
 
     assert [] == Group.members(group)
 
