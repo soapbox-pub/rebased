@@ -32,6 +32,7 @@ defmodule Pleroma.Group do
     has_many(:members, through: [:user, :group_members])
 
     field(:name, :string)
+    field(:privacy, Ecto.Enum, values: [:public, :members_only], null: false)
     field(:description, :string)
     field(:members_collection, :string)
 
