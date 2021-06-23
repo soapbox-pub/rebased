@@ -7,6 +7,7 @@ defmodule Pleroma.Group do
 
   import Ecto.Changeset
 
+  alias Pleroma.Group
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Web.Endpoint
@@ -32,7 +33,6 @@ defmodule Pleroma.Group do
     has_many(:members, through: [:user, :group_members])
 
     field(:name, :string)
-    field(:privacy, Ecto.Enum, values: [:public, :members_only], null: false)
     field(:description, :string)
     field(:members_collection, :string)
 
@@ -45,6 +45,13 @@ defmodule Pleroma.Group do
       %__MODULE__{user_id: user.id, members_collection: "#{user.ap_id}/members"}
       |> changeset(params)
       |> Repo.insert()
+    end
+  end
+
+  def get_by_ap_id(ap_id) do
+    with %User{} = user <- User.get_cached_by_ap_id(ap_id),
+         group <- Repo.preload(user, :group).group do
+      group
     end
   end
 
@@ -95,12 +102,16 @@ defmodule Pleroma.Group do
 
   @spec get_for_object(map()) :: t() | nil
   def get_for_object(%{"type" => "Group", "id" => id}) do
-    with %User{} = user <- User.get_cached_by_ap_id(id),
-         group <- Repo.preload(user, :group).group do
-      group
-    end
+    get_by_ap_id(id)
   end
 
   def get_for_object(%{"type" => "Create", "object" => object}), do: get_for_object(object)
   def get_for_object(_), do: nil
+
+  @spec get_object_group(object :: map()) :: t() | nil
+  def get_object_group(%{"to" => to}) when is_list(to) do
+    Enum.find_value(to, fn address -> Group.get_by_ap_id(address) end)
+  end
+
+  def get_object_group(_), do: nil
 end

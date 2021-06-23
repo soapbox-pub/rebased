@@ -38,6 +38,19 @@ defmodule Pleroma.GroupTest do
     assert nil == Group.get_for_object(%{"nothing" => "PS4 games"})
   end
 
+  test "get_object_group/1 gets the group an object is directed to" do
+    user = insert(:user)
+    {:ok, group} = Group.create(%{owner_id: user.id, slug: "cofe"})
+    group = Repo.preload(group, :user)
+
+    message = %{
+      "type" => "Note",
+      "to" => [group.user.ap_id]
+    }
+
+    assert group.id == Group.get_object_group(message).id
+  end
+
   test "a user can create a group" do
     user = insert(:user)
 
