@@ -31,7 +31,7 @@ Other than things bundled in the OTP release Pleroma depends on:
 
 === "Alpine"
     ```
-    echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
+    awk 'NR==2' /etc/apk/repositories | sed 's/main/community/' | tee -a /etc/apk/repositories
     apk update
     apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot file-dev
     ```
@@ -50,7 +50,6 @@ Per [`docs/installation/optional/media_graphics_packages.md`](optional/media_gra
 
 === "Alpine"
     ```
-    echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
     apk update
     apk add imagemagick ffmpeg exiftool
     ```
