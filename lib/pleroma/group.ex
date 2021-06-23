@@ -34,6 +34,7 @@ defmodule Pleroma.Group do
 
     field(:name, :string)
     field(:description, :string)
+    field(:privacy, :string, default: "members_only")
     field(:members_collection, :string)
 
     timestamps()
@@ -49,8 +50,7 @@ defmodule Pleroma.Group do
   end
 
   def get_by_ap_id(ap_id) do
-    with %User{} = user <- User.get_cached_by_ap_id(ap_id),
-         group <- Repo.preload(user, :group).group do
+    with %User{group: group} <- User.get_cached_by_ap_id(ap_id) |> Repo.preload(:group) do
       group
     end
   end
@@ -80,8 +80,24 @@ defmodule Pleroma.Group do
     |> validate_required([:user_id, :owner_id, :members_collection])
   end
 
-  def is_member?(%{user_id: user_id}, member) do
+  def get_ap_id(%Group{user: %User{ap_id: ap_id}}), do: ap_id
+
+  def get_ap_id(%Group{} = group) do
+    group
+    |> Repo.preload(:user)
+    |> get_ap_id()
+  end
+
+  def is_member?(%{user_id: user_id}, %User{} = member) do
     UserRelationship.membership_exists?(%User{id: user_id}, member)
+  end
+
+  def is_member?(%Group{} = group, ap_id) when is_binary(ap_id) do
+    with %User{} = user <- User.get_cached_by_ap_id(ap_id) do
+      is_member?(group, user)
+    else
+      _ -> false
+    end
   end
 
   def members(group) do

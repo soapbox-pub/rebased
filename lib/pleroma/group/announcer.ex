@@ -11,24 +11,25 @@ defmodule Pleroma.Group.Announcer do
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Join Leave Add Remove Delete]
 
-  def should_announce(%Group{} = group, %{data: %{"type" => type, "actor" => actor}})
+  def should_announce?(%Group{id: group_id} = group, %{"type" => type} = object)
       when type in @object_types do
-    with {:actor, %User{} = user} <- {:actor, User.get_cached_by_ap_id(actor)},
-         {:membership, true} <- {:membership, Group.is_member?(group, user)} do
+    with %Group{id: ^group_id} <- Group.get_object_group(object),
+         %User{} = user <- User.get_cached_by_ap_id(object["actor"]),
+         true <- Group.is_member?(group, user) do
       true
     else
       _ -> false
     end
   end
 
-  def should_announce(_group, _object), do: false
+  def should_announce?(_group, _object), do: false
 
-  def announce(group, object) do
-    if should_announce(group, object), do: do_announce(group, object), else: {:noop, object}
-  end
-
-  defp do_announce(%Group{user: %User{} = _user}, _object) do
+  def announce(%Group{user: %User{} = _user}, _object) do
     # TODO
     # CommonAPI.repeat()
+  end
+
+  def maybe_announce(group, object) do
+    if should_announce?(group, object), do: announce(group, object), else: {:noop, object}
   end
 end
