@@ -21,15 +21,8 @@ defmodule Pleroma.Group.Privacy do
   def matches_privacy?(_group, _object), do: false
 
   defp valid_recipient?(%Group{privacy: "public"}, _recipient), do: true
-
-  defp valid_recipient?(%Group{} = group, recipient) do
-    cond do
-      Group.get_ap_id(group) == recipient -> true
-      Group.is_member?(group, recipient) -> true
-      true -> false
-    end
-  end
-
+  defp valid_recipient?(%Group{ap_id: address}, address), do: true
+  defp valid_recipient?(%Group{} = group, recipient), do: Group.is_member?(group, recipient)
   defp valid_recipient?(_group, _recipient), do: false
 
   defp get_recipients(data) do

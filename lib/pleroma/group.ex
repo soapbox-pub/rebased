@@ -32,6 +32,7 @@ defmodule Pleroma.Group do
 
     has_many(:members, through: [:user, :group_members])
 
+    field(:ap_id, :string)
     field(:name, :string)
     field(:description, :string)
     field(:privacy, :string, default: "members_only")
@@ -42,17 +43,15 @@ defmodule Pleroma.Group do
 
   @spec create(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def create(params) do
-    with {:ok, user} <- generate_user(params) do
-      %__MODULE__{user_id: user.id, members_collection: "#{user.ap_id}/members"}
+    with {:ok, %User{id: user_id, ap_id: ap_id}} <- generate_user(params) do
+      %__MODULE__{ap_id: ap_id, user_id: user_id, members_collection: "#{ap_id}/members"}
       |> changeset(params)
       |> Repo.insert()
     end
   end
 
   def get_by_ap_id(ap_id) do
-    with %User{group: group} <- User.get_cached_by_ap_id(ap_id) |> Repo.preload(:group) do
-      group
-    end
+    Repo.get_by(Group, ap_id: ap_id)
   end
 
   defp generate_ap_id(slug) do
@@ -76,16 +75,8 @@ defmodule Pleroma.Group do
 
   def changeset(struct, params) do
     struct
-    |> cast(params, [:user_id, :owner_id, :name, :description, :members_collection])
-    |> validate_required([:user_id, :owner_id, :members_collection])
-  end
-
-  def get_ap_id(%Group{user: %User{ap_id: ap_id}}), do: ap_id
-
-  def get_ap_id(%Group{} = group) do
-    group
-    |> Repo.preload(:user)
-    |> get_ap_id()
+    |> cast(params, [:ap_id, :user_id, :owner_id, :name, :description, :members_collection])
+    |> validate_required([:ap_id, :user_id, :owner_id, :members_collection])
   end
 
   def is_member?(%{user_id: user_id}, %User{} = member) do
