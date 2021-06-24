@@ -91,6 +91,8 @@ defmodule Pleroma.Group do
     end
   end
 
+  def is_member?(_group, _member), do: false
+
   def members(group) do
     Repo.preload(group, :members).members
   end

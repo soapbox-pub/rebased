@@ -7,6 +7,7 @@ defmodule Pleroma.Factory do
 
   require Pleroma.Constants
 
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.User
 
@@ -24,6 +25,22 @@ defmodule Pleroma.Factory do
   def conversation_factory do
     %Pleroma.Conversation{
       ap_id: sequence(:ap_id, &"https://some_conversation/#{&1}")
+    }
+  end
+
+  def group_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    owner = attrs[:owner] || insert(:user)
+
+    %Group{
+      ap_id: user.ap_id,
+      name: user.name,
+      description: user.bio,
+      privacy: attrs[:privacy] || "public",
+      user_id: user.id,
+      user: user,
+      owner_id: owner.id,
+      owner: owner
     }
   end
 
