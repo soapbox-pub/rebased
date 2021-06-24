@@ -7,6 +7,7 @@ defmodule Pleroma.Group.Announcer do
   Disseminates content to group members by announcing it.
   """
   alias Pleroma.Group
+  alias Pleroma.Group.Privacy
   alias Pleroma.User
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Join Leave Add Remove Delete]
@@ -15,7 +16,8 @@ defmodule Pleroma.Group.Announcer do
       when type in @object_types do
     with %Group{id: ^group_id} <- Group.get_object_group(object),
          %User{} = user <- User.get_cached_by_ap_id(object["actor"]),
-         true <- Group.is_member?(group, user) do
+         true <- Group.is_member?(group, user),
+         true <- Privacy.matches_privacy?(group, object) do
       true
     else
       _ -> false
