@@ -9,6 +9,8 @@ defmodule Pleroma.Group.Announcer do
   alias Pleroma.Group
   alias Pleroma.Group.Privacy
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Pipeline
+  alias Pleroma.Web.ActivityPub.Utils
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Join Leave Add Remove Delete]
 
@@ -26,10 +28,20 @@ defmodule Pleroma.Group.Announcer do
 
   def should_announce?(_group, _object), do: false
 
-  def announce(%Group{user: %User{} = _user}, _object) do
-    # TODO
-    # CommonAPI.repeat()
+  def announce(%Group{} = group, object) when is_map(object) do
+    %{
+      "type" => "Announce",
+      "id" => Utils.generate_activity_id(),
+      "actor" => group.ap_id,
+      "object" => object["id"],
+      "to" => [group.members_collection],
+      "context" => object["context"],
+      "published" => Utils.make_date()
+    }
+    |> Pipeline.common_pipeline(local: true)
   end
+
+  def announce(group, object), do: {:error, %{group: group, object: object}}
 
   def maybe_announce(group, object) do
     if should_announce?(group, object), do: announce(group, object), else: {:noop, object}

@@ -58,12 +58,11 @@ defmodule Pleroma.Group.AnnouncerTest do
     Group.add_member(group, user)
 
     note = %{
-      "actor" => user.ap_id,
       "to" => [group.ap_id],
       "cc" => []
     }
 
-    %{data: object} = insert(:note, note)
+    %{data: object} = insert(:note, user: user, data: note)
 
     {:ok, %Activity{data: activity}, _meta} = Announcer.announce(group, object)
 
