@@ -29,13 +29,35 @@ defmodule Pleroma.Factory do
   end
 
   def group_factory(attrs \\ %{}) do
-    user = attrs[:user] || insert(:user)
+    slug = attrs[:slug] || sequence(:slug, &"group#{&1}")
     owner = attrs[:owner] || insert(:user)
+
+    base_url =
+      if attrs[:local] == false do
+        domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
+        "https://#{domain}"
+      else
+        Pleroma.Web.Endpoint.url()
+      end
+
+    ap_id = "#{base_url}/groups/#{slug}"
+
+    urls = %{
+      ap_id: ap_id,
+      follower_address: ap_id <> "/followers",
+      following_address: ap_id <> "/following",
+      featured_address: ap_id <> "/collections/featured"
+    }
+
+    user_attrs = Map.put_new(urls, :nickname, slug)
+
+    user = attrs[:user] || insert(:user, user_attrs)
 
     %Group{
       ap_id: user.ap_id,
       name: user.name,
       description: user.bio,
+      members_collection: "#{user.ap_id}/members",
       privacy: attrs[:privacy] || "public",
       user_id: user.id,
       user: user,
