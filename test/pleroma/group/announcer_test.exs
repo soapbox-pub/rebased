@@ -68,7 +68,7 @@ defmodule Pleroma.Group.AnnouncerTest do
 
     assert activity["type"] == "Announce"
     assert activity["actor"] == group.ap_id
-    assert activity["to"] == [group.members_collection]
+    assert activity["to"] == [group.members_collection, object["actor"]]
     assert activity["cc"] == []
     assert activity["object"] == object["id"]
   end

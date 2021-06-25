@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
@@ -89,7 +90,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
         Enum.member?(recipients, Pleroma.Constants.as_public()) or
           Enum.member?(recipients, local_public)
 
+      valid_group_announce =
+        with %Group{id: group_id} = group <- Group.get_by_ap_id(actor.ap_id),
+             %Group{id: ^group_id} <- Group.get_object_group(object.data),
+             true <- Group.Privacy.matches_privacy?(group, object) do
+          true
+        else
+          _ -> false
+        end
+
       cond do
+        valid_group_announce ->
+          cng
+
         same_actor && is_public ->
           cng
           |> add_error(:actor, "can not announce this object publicly")
