@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Delivery
+  alias Pleroma.Group
   alias Pleroma.HTTP
   alias Pleroma.Instances
   alias Pleroma.Object
@@ -127,6 +128,14 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         []
       end
 
+    members =
+      with %User{group: %Group{} = group} <- Repo.preload(actor, :group),
+           true <- group.members_collection in activity.recipients do
+        Group.members(group)
+      else
+        _ -> []
+      end
+
     fetchers =
       with %Activity{data: %{"type" => "Delete"}} <- activity,
            %Object{id: object_id} <- Object.normalize(activity, fetch: false),
@@ -138,7 +147,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           []
       end
 
-    Pleroma.Web.Federator.Publisher.remote_users(actor, activity) ++ followers ++ fetchers
+    Pleroma.Web.Federator.Publisher.remote_users(actor, activity) ++
+      followers ++ fetchers ++ members
   end
 
   defp get_cc_ap_ids(ap_id, recipients) do
