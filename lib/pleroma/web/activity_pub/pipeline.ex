@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Utils
@@ -48,6 +49,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
          {_, {:ok, message, meta}} <- {:mrf, mrf().pipeline_filter(message, meta)},
          {_, {:ok, message, meta}} <- {:persist, activity_pub().persist(message, meta)},
          {_, {:ok, message, meta}} <- {:side_effects, side_effects().handle(message, meta)},
+         {_, {:ok, _}} <- {:group_annonuce, maybe_group_announce(message, meta)},
          {_, {:ok, _}} <- {:federation, maybe_federate(message, meta)} do
       {:ok, message, meta}
     else
@@ -55,6 +57,18 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
       e -> {:error, e}
     end
   end
+
+  defp maybe_group_announce(%{data: data}, _meta) do
+    with %Group{} = group <- Group.get_object_group(data),
+         true <- Group.Announcer.should_announce?(group, data),
+         {:ok, _} <- Group.Announcer.announce(group, data) do
+      {:ok, :group_announced}
+    else
+      _ -> {:ok, :not_group_announced}
+    end
+  end
+
+  defp maybe_group_announce(_message, _meta), do: {:ok, :not_group_announced}
 
   defp maybe_federate(%Object{}, _), do: {:ok, :not_federated}
 
