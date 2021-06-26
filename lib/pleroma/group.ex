@@ -8,10 +8,10 @@ defmodule Pleroma.Group do
   import Ecto.Changeset
 
   alias Pleroma.Group
-  alias Pleroma.User
   alias Pleroma.Repo
-  alias Pleroma.Web.Endpoint
+  alias Pleroma.User
   alias Pleroma.UserRelationship
+  alias Pleroma.Web.Endpoint
 
   @moduledoc """
   Groups contain all the additional information about a group that's not stored

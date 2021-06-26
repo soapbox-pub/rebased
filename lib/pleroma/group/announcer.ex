@@ -12,7 +12,21 @@ defmodule Pleroma.Group.Announcer do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
 
-  @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Join Leave Add Remove Delete]
+  @object_types [
+    "ChatMessage",
+    "Question",
+    "Answer",
+    "Audio",
+    "Video",
+    "Event",
+    "Article",
+    "Note",
+    "Join",
+    "Leave",
+    "Add",
+    "Remove",
+    "Delete"
+  ]
 
   def should_announce?(%Group{id: group_id} = group, %{"type" => type} = object)
       when type in @object_types do
