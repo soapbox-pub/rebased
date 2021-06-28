@@ -12,12 +12,16 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:groups"]} when action in [:create])
 
-  def create(%{assigns: %{user: %User{} = user}} = conn, params) do
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.GroupOperation
+
+  def create(%{assigns: %{user: %User{} = user}, body_params: params} = conn, _) do
     params = %{
-      slug: params["slug"],
-      name: params["display_name"],
-      locked: params["locked"] in ["on", true],
-      privacy: params["privacy"] || "public",
+      slug: params[:slug],
+      name: params[:display_name],
+      locked: params[:locked],
+      privacy: params[:privacy],
       owner_id: user.id
     }
 
