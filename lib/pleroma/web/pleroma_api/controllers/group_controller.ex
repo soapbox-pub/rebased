@@ -21,6 +21,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
     params = %{
       slug: params[:slug],
       name: params[:display_name],
+      description: params[:note],
       locked: params[:locked],
       privacy: params[:privacy],
       owner_id: user.id
