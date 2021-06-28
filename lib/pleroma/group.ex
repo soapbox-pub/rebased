@@ -6,6 +6,7 @@ defmodule Pleroma.Group do
   use Ecto.Schema
 
   import Ecto.Changeset
+  import Ecto.Query
 
   alias Pleroma.Group
   alias Pleroma.Repo
@@ -50,8 +51,31 @@ defmodule Pleroma.Group do
     end
   end
 
+  def get_by_id(id) do
+    Repo.get(Group, id)
+  end
+
   def get_by_ap_id(ap_id) do
     Repo.get_by(Group, ap_id: ap_id)
+  end
+
+  def get_by_slug(slug) do
+    User
+    |> where(nickname: ^slug)
+    |> preload(:group)
+    |> Repo.one()
+    |> case do
+      %User{group: %Group{} = group} -> group
+      error -> error
+    end
+  end
+
+  def get_by_slug_or_id(id) do
+    # TODO: Make this more efficient
+    case get_by_id(id) do
+      %Group{} = group -> group
+      _ -> get_by_slug(id)
+    end
   end
 
   defp generate_ap_id(slug) do

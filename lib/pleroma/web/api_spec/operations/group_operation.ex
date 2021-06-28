@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Group
   alias Pleroma.Web.ApiSpec.Schemas.PrivacyScope
 
@@ -31,6 +32,21 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError),
         429 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def show_operation do
+    %Operation{
+      tags: ["Retrieve group information"],
+      summary: "Group",
+      operationId: "GroupController.show",
+      description: "View information about a group.",
+      parameters: [id_param()],
+      responses: %{
+        200 => Operation.response("Group", "application/json", Group),
+        401 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -74,5 +90,12 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
         "privacy" => "public"
       }
     }
+  end
+
+  def id_param do
+    Operation.parameter(:id, :path, FlakeID, "Group ID",
+      example: "A8fI1zwFiqcRYXgBIu",
+      required: true
+    )
   end
 end

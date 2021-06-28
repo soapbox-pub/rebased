@@ -440,6 +440,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:authenticated_api)
     post("/groups", GroupController, :create)
+    get("/groups/:id", GroupController, :show)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

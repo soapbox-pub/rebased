@@ -11,6 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   plug(OAuthScopesPlug, %{scopes: ["write:groups"]} when action in [:create])
+  plug(OAuthScopesPlug, %{scopes: ["read:groups"]} when action in [:show])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -26,6 +27,12 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
     }
 
     with {:ok, %Group{} = group} <- Group.create(params) do
+      render(conn, "show.json", %{group: group})
+    end
+  end
+
+  def show(%{assigns: %{user: %User{}}} = conn, %{id: id}) do
+    with %Group{} = group <- Group.get_by_slug_or_id(id) do
       render(conn, "show.json", %{group: group})
     end
   end
