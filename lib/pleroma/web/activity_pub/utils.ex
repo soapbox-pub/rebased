@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.UUID
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Group
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -492,6 +493,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where(actor: ^follower_id)
     # this is to use the index
     |> Activity.Queries.by_object_id(followed_id)
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  def fetch_latest_join(%User{ap_id: user_id}, %Group{ap_id: group_id}) do
+    "Join"
+    |> Activity.Queries.by_type()
+    |> where(actor: ^user_id)
+    # this is to use the index
+    |> Activity.Queries.by_object_id(group_id)
     |> order_by([activity], fragment("? desc nulls last", activity.id))
     |> limit(1)
     |> Repo.one()

@@ -6,8 +6,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
 
   alias Pleroma.Group
   alias Pleroma.Repo
-  alias Pleroma.Web.PleromaAPI.GroupView
   alias Pleroma.User
+  alias Pleroma.Web.PleromaAPI.GroupView
 
   def render("show.json", %{group: %Group{} = group}) do
     group = Repo.preload(group, :user)
@@ -37,10 +37,12 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
   end
 
   def render("relationship.json", %{user: %User{} = user, group: %Group{} = group}) do
+    membership_state = Group.get_membership_state(group, user)
+
     %{
       id: group.id,
       # TODO: Make dynamic
-      requested: true,
+      requested: membership_state == :join_pending,
       admin: false,
       moderator: false,
       owner: user.id == group.owner_id,

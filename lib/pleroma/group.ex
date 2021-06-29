@@ -8,10 +8,12 @@ defmodule Pleroma.Group do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Pleroma.Activity
   alias Pleroma.Group
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
+  alias Pleroma.Web.ActivityPub
   alias Pleroma.Web.Endpoint
 
   @moduledoc """
@@ -152,4 +154,20 @@ defmodule Pleroma.Group do
   end
 
   def get_object_group(_), do: nil
+
+  def get_membership_state(%Group{} = group, %User{} = user) do
+    if is_member?(group, user) do
+      :join_accept
+    else
+      with %Activity{data: %{"state" => state}} <-
+             ActivityPub.Utils.fetch_latest_join(user, group) do
+        case state do
+          "pending" -> :join_pending
+          "accept" -> :join_accept
+          "reject" -> :join_reject
+          _ -> nil
+        end
+      end
+    end
+  end
 end

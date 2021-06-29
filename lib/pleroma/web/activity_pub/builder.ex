@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   """
 
   alias Pleroma.Emoji
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
@@ -50,6 +51,19 @@ defmodule Pleroma.Web.ActivityPub.Builder do
       "type" => "Follow",
       "object" => followed.ap_id,
       "to" => [followed.ap_id]
+    }
+
+    {:ok, data, []}
+  end
+
+  @spec join(User.t(), Group.t()) :: {:ok, map(), keyword()}
+  def join(user, group) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => user.ap_id,
+      "type" => "Join",
+      "object" => group.ap_id,
+      "to" => [group.ap_id]
     }
 
     {:ok, data, []}

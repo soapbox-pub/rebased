@@ -6,6 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
 
   alias Pleroma.Group
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
@@ -44,8 +45,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   end
 
   def join(%{assigns: %{user: %User{} = user}} = conn, %{id: id}) do
-    with %Group{} = group <- Group.get_by_id(id) do
-      # TODO: Actually do the join
+    with %Group{} = group <- Group.get_by_id(id),
+         {:ok, _, _, _} <- CommonAPI.join(user, group) do
       render(conn, "relationship.json", %{user: user, group: group})
     end
   end
