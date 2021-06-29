@@ -34,4 +34,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
       }
     }
   end
+
+  # TODO: Remove this. Just a placeholder for now.
+  def render(_, _), do: %{}
 end

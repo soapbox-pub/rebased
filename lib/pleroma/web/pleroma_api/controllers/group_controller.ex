@@ -37,4 +37,19 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
       render(conn, "show.json", %{group: group})
     end
   end
+
+  def statuses(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do
+    # TODO
+    render(conn, "placeholder.json", %{})
+  end
+
+  def members(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do
+    # TODO
+    render(conn, "placeholder.json", %{})
+  end
+
+  def post(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do
+    # TODO
+    render(conn, "placeholder.json", %{})
+  end
 end

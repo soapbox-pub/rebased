@@ -4,12 +4,17 @@
 
 defmodule Pleroma.Web.ApiSpec.GroupOperation do
   alias OpenApiSpex.Operation
+  alias OpenApiSpex.Reference
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.AccountOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Group
   alias Pleroma.Web.ApiSpec.Schemas.PrivacyScope
+  alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
+  alias Pleroma.Web.ApiSpec.Schemas.Status
+  alias Pleroma.Web.ApiSpec.StatusOperation
 
   import Pleroma.Web.ApiSpec.Helpers
 
@@ -47,6 +52,66 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
         200 => Operation.response("Group", "application/json", Group),
         401 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def statuses_operation do
+    %Operation{
+      summary: "Group",
+      tags: ["Retrieve group information"],
+      operationId: "GroupController.statuses",
+      description:
+        "Statuses posted to the given group. Public (for public statuses only), or user token + `read:statuses` (for private statuses the user is authorized to see)",
+      parameters:
+        [
+          %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
+        ] ++ pagination_params(),
+      responses: %{
+        200 => Operation.response("Statuses", "application/json", array_of_statuses()),
+        401 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def members_operation do
+    %Operation{
+      tags: ["Retrieve group information"],
+      summary: "Members",
+      operationId: "GroupController.members",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      description:
+        "Accounts which are members of the given group, if network is not hidden by the account owner.",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(:id, :query, :string, "ID of the resource owner"),
+        with_relationships_param() | pagination_params()
+      ],
+      responses: %{
+        200 =>
+          Operation.response("Accounts", "application/json", AccountOperation.array_of_accounts())
+      }
+    }
+  end
+
+  def post_operation do
+    %Operation{
+      tags: ["Group actions"],
+      summary: "Publish new status to the group",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      description: "Post a new status",
+      operationId: "StatusController.create",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      requestBody: request_body("Parameters", status_create_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response(
+            "Status. When `scheduled_at` is present, ScheduledStatus is returned instead",
+            "application/json",
+            %Schema{anyOf: [Status, ScheduledStatus]}
+          ),
+        422 => Operation.response("Bad Request / MRF Rejection", "application/json", ApiError)
       }
     }
   end
@@ -92,10 +157,108 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
     }
   end
 
+  defp status_create_request do
+    %Schema{
+      title: "GroupStatusCreateRequest",
+      type: :object,
+      properties: %{
+        status: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
+        },
+        media_ids: %Schema{
+          nullable: true,
+          type: :array,
+          items: %Schema{type: :string},
+          description: "Array of Attachment ids to be attached as media."
+        },
+        poll: StatusOperation.poll_params(),
+        in_reply_to_id: %Schema{
+          nullable: true,
+          allOf: [FlakeID],
+          description: "ID of the status being replied to, if status is a reply"
+        },
+        sensitive: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Mark status and attached media as sensitive?"
+        },
+        spoiler_text: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
+        },
+        scheduled_at: %Schema{
+          type: :string,
+          format: :"date-time",
+          nullable: true,
+          description:
+            "ISO 8601 Datetime at which to schedule a status. Providing this paramter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
+        },
+        language: %Schema{
+          type: :string,
+          nullable: true,
+          description: "ISO 639 language code for this status."
+        },
+        # Pleroma-specific properties:
+        preview: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description:
+            "If set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"
+        },
+        content_type: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "The MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
+        },
+        to: %Schema{
+          type: :array,
+          nullable: true,
+          items: %Schema{type: :string},
+          description:
+            "A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply"
+        },
+        expires_in: %Schema{
+          nullable: true,
+          type: :integer,
+          description:
+            "The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour."
+        },
+        in_reply_to_conversation_id: %Schema{
+          nullable: true,
+          type: :string,
+          description:
+            "Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`."
+        }
+      },
+      example: %{
+        "status" => "What time is it?",
+        "sensitive" => "false",
+        "poll" => %{
+          "options" => ["Cofe", "Adventure"],
+          "expires_in" => 420
+        }
+      }
+    }
+  end
+
   def id_param do
     Operation.parameter(:id, :path, FlakeID, "Group ID",
       example: "A8fI1zwFiqcRYXgBIu",
       required: true
     )
+  end
+
+  defp array_of_statuses do
+    %Schema{
+      title: "ArrayOfStatuses",
+      type: :array,
+      items: Status
+    }
   end
 end
