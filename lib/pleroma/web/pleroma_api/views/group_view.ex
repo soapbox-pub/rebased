@@ -35,6 +35,18 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
     }
   end
 
+  def render("relationship.json", %{user: %User{} = user, group: %Group{} = group}) do
+    %{
+      id: group.id,
+      # TODO: Make dynamic
+      requested: true,
+      admin: false,
+      moderator: false,
+      owner: user.id == group.owner_id,
+      member: Group.is_member?(group, user)
+    }
+  end
+
   # TODO: Remove this. Just a placeholder for now.
   def render(_, _), do: %{}
 end

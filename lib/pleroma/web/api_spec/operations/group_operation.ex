@@ -4,13 +4,13 @@
 
 defmodule Pleroma.Web.ApiSpec.GroupOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Reference
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Group
+  alias Pleroma.Web.ApiSpec.Schemas.GroupRelationship
   alias Pleroma.Web.ApiSpec.Schemas.PrivacyScope
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
@@ -56,6 +56,38 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
     }
   end
 
+  def join_operation do
+    %Operation{
+      tags: ["Group actions"],
+      summary: "Join",
+      operationId: "GroupController.join",
+      security: [%{"oAuth" => ["memberships", "write:memberships"]}],
+      description: "Join the given group",
+      parameters: [id_param()],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", GroupRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def leave_operation do
+    %Operation{
+      tags: ["Group actions"],
+      summary: "Leave",
+      operationId: "GroupController.leave",
+      security: [%{"oAuth" => ["memberships", "write:memberships"]}],
+      description: "Leave the given group",
+      parameters: [id_param()],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", GroupRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def statuses_operation do
     %Operation{
       summary: "Group",
@@ -63,10 +95,7 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
       operationId: "GroupController.statuses",
       description:
         "Statuses posted to the given group. Public (for public statuses only), or user token + `read:statuses` (for private statuses the user is authorized to see)",
-      parameters:
-        [
-          %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
-        ] ++ pagination_params(),
+      parameters: [id_param()] ++ pagination_params(),
       responses: %{
         200 => Operation.response("Statuses", "application/json", array_of_statuses()),
         401 => Operation.response("Error", "application/json", ApiError),
@@ -84,7 +113,7 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
       description:
         "Accounts which are members of the given group, if network is not hidden by the account owner.",
       parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        id_param(),
         Operation.parameter(:id, :query, :string, "ID of the resource owner"),
         with_relationships_param() | pagination_params()
       ],
@@ -102,7 +131,7 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
       security: [%{"oAuth" => ["write:statuses"]}],
       description: "Post a new status",
       operationId: "StatusController.create",
-      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      parameters: [id_param()],
       requestBody: request_body("Parameters", status_create_request(), required: true),
       responses: %{
         200 =>

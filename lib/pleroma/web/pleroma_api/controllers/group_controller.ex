@@ -10,8 +10,12 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  plug(OAuthScopesPlug, %{scopes: ["write:groups"]} when action in [:create])
-  plug(OAuthScopesPlug, %{scopes: ["read:groups"]} when action in [:show])
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:groups"]} when action in [:create, :join, :leave, :post]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:groups"]} when action in [:show, :statuses, :members])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -35,6 +39,20 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   def show(%{assigns: %{user: %User{}}} = conn, %{id: id}) do
     with %Group{} = group <- Group.get_by_slug_or_id(id) do
       render(conn, "show.json", %{group: group})
+    end
+  end
+
+  def join(%{assigns: %{user: %User{} = user}} = conn, %{id: id}) do
+    with %Group{} = group <- Group.get_by_id(id) do
+      # TODO: Actually do the join
+      render(conn, "relationship.json", %{user: user, group: group})
+    end
+  end
+
+  def leave(%{assigns: %{user: %User{} = user}} = conn, %{id: id}) do
+    with %Group{} = group <- Group.get_by_id(id) do
+      # TODO: Actually do the leave
+      render(conn, "relationship.json", %{user: user, group: group})
     end
   end
 

@@ -444,6 +444,8 @@ defmodule Pleroma.Web.Router do
     get("/groups/:id/statuses", GroupController, :statuses)
     get("/groups/:id/members", GroupController, :members)
     post("/groups/:id/statuses", GroupController, :post)
+    post("/groups/:id/join", GroupController, :join)
+    post("/groups/:id/leave", GroupController, :leave)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
