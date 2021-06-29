@@ -16,6 +16,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   )
 
   plug(OAuthScopesPlug, %{scopes: ["read:groups"]} when action in [:show, :statuses, :members])
+  plug(OAuthScopesPlug, %{scopes: ["read:memberships"]} when action in [:relationships])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -54,6 +55,11 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
       # TODO: Actually do the leave
       render(conn, "relationship.json", %{user: user, group: group})
     end
+  end
+
+  def relationships(%{assigns: %{user: %User{} = user}} = conn, %{id: id}) do
+    groups = Group.get_all_by_ids(List.wrap(id))
+    render(conn, "relationships.json", user: user, groups: groups)
   end
 
   def statuses(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do

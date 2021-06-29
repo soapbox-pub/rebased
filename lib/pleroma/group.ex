@@ -78,6 +78,11 @@ defmodule Pleroma.Group do
     end
   end
 
+  def get_all_by_ids(ids) do
+    from(g in __MODULE__, where: g.id in ^ids)
+    |> Repo.all()
+  end
+
   defp generate_ap_id(slug) do
     "#{Endpoint.url()}/groups/#{slug}"
   end

@@ -88,6 +88,30 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
     }
   end
 
+  def relationships_operation do
+    %Operation{
+      tags: ["Retrieve group information"],
+      summary: "Relationship between the logged in user and the given groups",
+      operationId: "GroupController.relationships",
+      description: "Find out whether the logged in user is a member, owner, etc. of the groups",
+      security: [%{"oAuth" => ["read:memberships"]}],
+      parameters: [
+        Operation.parameter(
+          :id,
+          :query,
+          %Schema{
+            oneOf: [%Schema{type: :array, items: %Schema{type: :string}}, %Schema{type: :string}]
+          },
+          "Group IDs",
+          example: "123"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Group", "application/json", array_of_relationships())
+      }
+    }
+  end
+
   def statuses_operation do
     %Operation{
       summary: "Group",
@@ -288,6 +312,41 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
       title: "ArrayOfStatuses",
       type: :array,
       items: Status
+    }
+  end
+
+  defp array_of_relationships do
+    %Schema{
+      title: "ArrayOfGroupRelationships",
+      description: "Response schema for group relationships",
+      type: :array,
+      items: GroupRelationship,
+      example: [
+        %{
+          "id" => "A8fI1zwFiqcRYXgBIu",
+          "requested" => true,
+          "member" => false,
+          "owner" => false,
+          "admin" => false,
+          "moderator" => false
+        },
+        %{
+          "id" => "A8n1lQ3ZVjOiUb6AUq",
+          "requested" => false,
+          "member" => true,
+          "owner" => true,
+          "admin" => true,
+          "moderator" => false
+        },
+        %{
+          "id" => "A8n1lgkLST7SFtEYO8",
+          "requested" => false,
+          "member" => true,
+          "owner" => false,
+          "admin" => false,
+          "moderator" => true
+        }
+      ]
     }
   end
 end

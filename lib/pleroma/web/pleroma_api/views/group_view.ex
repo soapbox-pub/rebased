@@ -6,6 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
 
   alias Pleroma.Group
   alias Pleroma.Repo
+  alias Pleroma.Web.PleromaAPI.GroupView
   alias Pleroma.User
 
   def render("show.json", %{group: %Group{} = group}) do
@@ -45,6 +46,10 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
       owner: user.id == group.owner_id,
       member: Group.is_member?(group, user)
     }
+  end
+
+  def render("relationships.json", %{user: user, groups: groups}) do
+    render_many(groups, GroupView, "relationship.json", user: user)
   end
 
   # TODO: Remove this. Just a placeholder for now.
