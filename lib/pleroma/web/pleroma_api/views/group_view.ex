@@ -54,6 +54,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
     render_many(groups, GroupView, "relationship.json", user: user)
   end
 
-  # TODO: Remove this. Just a placeholder for now.
-  def render(_, _), do: %{}
+  # TODO: Remove these. Just placeholders for now.
+  def render("empty_array.json", _), do: []
+  def render("empty_object.json", _), do: %{}
 end
