@@ -1692,9 +1692,7 @@ defmodule Pleroma.User do
       follower_count: 0,
       following_count: 0,
       is_locked: false,
-      is_confirmed: true,
       password_reset_pending: false,
-      is_approved: true,
       registration_reason: nil,
       confirmation_token: nil,
       domain_blocks: [],
@@ -1710,9 +1708,15 @@ defmodule Pleroma.User do
       raw_fields: [],
       is_discoverable: false,
       also_known_as: []
+      # id: preserved
+      # ap_id: preserved
+      # nickname: preserved
     })
   end
 
+  # Purge doesn't delete the user from the database.
+  # It just nulls all its fields and deactivates it.
+  # See `User.purge_user_changeset/1` above.
   def purge(%User{} = user) do
     user
     |> purge_user_changeset()
@@ -1729,20 +1733,18 @@ defmodule Pleroma.User do
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
+  # *Actually* delete the user from the DB
   defp delete_from_db(%User{} = user) do
     invalidate_cache(user)
     Repo.delete(user)
   end
 
-  defp maybe_delete_from_db(%User{local: true} = user) do
-    status = account_status(user)
+  # If the user never finalized their account, it's safe to delete them.
+  defp maybe_delete_from_db(%User{local: true, is_confirmed: false} = user),
+    do: delete_from_db(user)
 
-    if status in [:confirmation_pending, :approval_pending] do
-      delete_from_db(user)
-    else
-      {:ok, user}
-    end
-  end
+  defp maybe_delete_from_db(%User{local: true, is_approved: false} = user),
+    do: delete_from_db(user)
 
   defp maybe_delete_from_db(user), do: {:ok, user}
 
