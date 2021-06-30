@@ -1713,6 +1713,12 @@ defmodule Pleroma.User do
     })
   end
 
+  def purge(%User{} = user) do
+    user
+    |> purge_user_changeset()
+    |> update_and_set_cache()
+  end
+
   def delete(users) when is_list(users) do
     for user <- users, do: delete(user)
   end
@@ -1726,9 +1732,9 @@ defmodule Pleroma.User do
     Repo.delete(user)
   end
 
-  defp delete_or_deactivate(%User{local: false} = user), do: delete_and_invalidate_cache(user)
+  defp delete_or_purge(%User{local: false} = user), do: purge(user)
 
-  defp delete_or_deactivate(%User{local: true} = user) do
+  defp delete_or_purge(%User{local: true} = user) do
     status = account_status(user)
 
     case status do
@@ -1739,9 +1745,7 @@ defmodule Pleroma.User do
         delete_and_invalidate_cache(user)
 
       _ ->
-        user
-        |> purge_user_changeset()
-        |> update_and_set_cache()
+        purge(user)
     end
   end
 
@@ -1769,7 +1773,7 @@ defmodule Pleroma.User do
 
     delete_outgoing_pending_follow_requests(user)
 
-    delete_or_deactivate(user)
+    delete_or_purge(user)
   end
 
   def perform(:set_activation_async, user, status), do: set_activation(user, status)

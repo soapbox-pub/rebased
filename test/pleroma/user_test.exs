@@ -1684,6 +1684,24 @@ defmodule Pleroma.UserTest do
            } = user
   end
 
+  test "delete/1 purges a remote user" do
+    user =
+      insert(:user, %{
+        name: "qqqqqqq",
+        avatar: %{"a" => "b"},
+        banner: %{"a" => "b"},
+        local: false
+      })
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+    user = User.get_by_id(user.id)
+
+    assert user.name == nil
+    assert user.avatar == %{}
+    assert user.banner == %{}
+  end
+
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
