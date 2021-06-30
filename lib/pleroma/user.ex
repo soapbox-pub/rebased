@@ -1724,6 +1724,7 @@ defmodule Pleroma.User do
   end
 
   def delete(%User{} = user) do
+    # Purge the user immediately
     purge(user)
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
@@ -1749,6 +1750,9 @@ defmodule Pleroma.User do
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
+    # Purge the user again, in case perform/2 is called directly
+    purge(user)
+
     # Remove all relationships
     user
     |> get_followers()
