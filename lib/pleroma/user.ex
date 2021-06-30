@@ -1730,7 +1730,7 @@ defmodule Pleroma.User do
   # Purge doesn't delete the user from the database.
   # It just nulls all its fields and deactivates it.
   # See `User.purge_user_changeset/1` above.
-  def purge(%User{} = user) do
+  defp purge(%User{} = user) do
     user
     |> purge_user_changeset()
     |> update_and_set_cache()

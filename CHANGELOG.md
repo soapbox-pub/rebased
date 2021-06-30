@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Don't crash so hard when email settings are invalid.
 - Checking activated Upload Filters for required commands.
+- Remote users can no longer reappear after being deleted.
+- Deactivated users may now be deleted.
 - Mix task `pleroma.database prune_objects`
 
 ### Removed
