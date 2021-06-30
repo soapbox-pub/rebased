@@ -1680,8 +1680,6 @@ defmodule Pleroma.User do
       email: nil,
       name: nil,
       password_hash: nil,
-      keys: nil,
-      public_key: nil,
       avatar: %{},
       tags: [],
       last_refreshed_at: nil,
