@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.BooleanLike do
+  alias OpenApiSpex.Cast
   alias OpenApiSpex.Schema
 
   require OpenApiSpex
@@ -27,10 +28,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.BooleanLike do
       %Schema{type: :boolean},
       %Schema{type: :string},
       %Schema{type: :integer}
-    ]
+    ],
+    "x-validate": __MODULE__
   })
 
-  def after_cast(value, _schmea) do
-    {:ok, Pleroma.Web.ControllerHelper.truthy_param?(value)}
+  def cast(%Cast{value: value} = context) do
+    context
+    |> Map.put(:value, Pleroma.Web.Utils.Params.truthy_param?(value))
+    |> Cast.ok()
   end
 end

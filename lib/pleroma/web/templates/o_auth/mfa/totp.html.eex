@@ -7,7 +7,7 @@
 
 <h2>Two-factor authentication</h2>
 
-<%= form_for @conn, mfa_verify_path(@conn, :verify), [as: "mfa"], fn f -> %>
+<%= form_for @conn, Routes.mfa_verify_path(@conn, :verify), [as: "mfa"], fn f -> %>
 <div class="input">
   <%= label f, :code, "Authentication code" %>
   <%= text_input f, :code, [autocomplete: false, autocorrect: "off", autocapitalize: "off", autofocus: true, pattern: "[0-9]*", spellcheck: false] %>
@@ -19,6 +19,6 @@
 
 <%= submit "Verify" %>
 <% end %>
-<a href="<%= mfa_path(@conn, :show, %{challenge_type: "recovery", mfa_token: @mfa_token, state: @state, redirect_uri: @redirect_uri}) %>">
+<a href="<%= Routes.mfa_path(@conn, :show, %{challenge_type: "recovery", mfa_token: @mfa_token, state: @state, redirect_uri: @redirect_uri}) %>">
   Enter a two-factor recovery code
 </a>

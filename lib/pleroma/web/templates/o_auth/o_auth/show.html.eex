@@ -5,7 +5,7 @@
 <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <% end %>
 
-<%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
+<%= form_for @conn, Routes.o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
 
 <%= if @user do %>
   <div class="account-header">
@@ -61,5 +61,5 @@
 <% end %>
 
 <%= if Pleroma.Config.oauth_consumer_enabled?() do %>
-  <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
+  <%= render @view_module, Pleroma.Web.Auth.WrapperAuthenticator.oauth_consumer_template(), assigns %>
 <% end %>

@@ -20,7 +20,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEControllerTest do
       |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:accounts"]))
       |> put("/api/web/settings", %{"data" => %{"programming" => "socks"}})
 
-    assert _result = json_response(conn, 200)
+    assert %{} = json_response(conn, 200)
 
     user = User.get_cached_by_ap_id(user.ap_id)
     assert user.mastofe_settings == %{"programming" => "socks"}

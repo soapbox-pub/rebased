@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
   @moduledoc "Filter local activities which have no content"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
 
   @impl true
   def filter(%{"actor" => actor} = object) do
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
   def filter(object), do: {:ok, object}
 
   defp is_local?(actor) do
-    if actor |> String.starts_with?("#{Web.base_url()}") do
+    if actor |> String.starts_with?("#{Endpoint.url()}") do
       true
     else
       false

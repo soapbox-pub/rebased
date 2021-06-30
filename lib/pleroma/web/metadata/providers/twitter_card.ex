@@ -5,6 +5,7 @@
 
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   alias Pleroma.User
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata
   alias Pleroma.Web.Metadata.Providers.Provider
   alias Pleroma.Web.Metadata.Utils
@@ -16,17 +17,10 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   def build_tags(%{activity_id: id, object: object, user: user}) do
     attachments = build_attachments(id, object)
     scrubbed_content = Utils.scrub_html_and_truncate(object)
-    # Zero width space
-    content =
-      if scrubbed_content != "" and scrubbed_content != "\u200B" do
-        "“" <> scrubbed_content <> "”"
-      else
-        ""
-      end
 
     [
       title_tag(user),
-      {:meta, [property: "twitter:description", content: content], []}
+      {:meta, [property: "twitter:description", content: scrubbed_content], []}
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
@@ -55,14 +49,14 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   end
 
   def image_tag(user) do
-    {:meta, [property: "twitter:image", content: Utils.attachment_url(User.avatar_url(user))], []}
+    {:meta, [property: "twitter:image", content: MediaProxy.preview_url(User.avatar_url(user))],
+     []}
   end
 
   defp build_attachments(id, %{data: %{"attachment" => attachments}}) do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
-          # TODO: Add additional properties to objects when we have the data available.
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
               [
@@ -73,25 +67,37 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 | acc
               ]
 
+            # Not using preview_url for this. It saves bandwidth, but the image dimensions will
+            # be wrong. We generate it on the fly and have no way to capture or analyze the
+            # image to get the dimensions. This can be an issue for apps/FEs rendering images
+            # in timelines too, but you can get clever with the aspect ratio metadata as a
+            # workaround.
             "image" ->
               [
                 {:meta, [property: "twitter:card", content: "summary_large_image"], []},
                 {:meta,
                  [
                    property: "twitter:player",
-                   content: Utils.attachment_url(url["href"])
+                   content: MediaProxy.url(url["href"])
                  ], []}
                 | acc
               ]
+              |> maybe_add_dimensions(url)
 
-            # TODO: Need the true width and height values here or Twitter renders an iFrame with
-            # a bad aspect ratio
             "video" ->
+              # fallback to old placeholder values
+              height = url["height"] || 480
+              width = url["width"] || 480
+
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
-                {:meta, [property: "twitter:player:width", content: "480"], []},
-                {:meta, [property: "twitter:player:height", content: "480"], []}
+                {:meta, [property: "twitter:player:width", content: "#{width}"], []},
+                {:meta, [property: "twitter:player:height", content: "#{height}"], []},
+                {:meta, [property: "twitter:player:stream", content: MediaProxy.url(url["href"])],
+                 []},
+                {:meta,
+                 [property: "twitter:player:stream:content_type", content: url["mediaType"]], []}
                 | acc
               ]
 
@@ -108,5 +114,21 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
 
   defp player_url(id) do
     Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice_player, id)
+  end
+
+  # Videos have problems without dimensions, but we used to not provide WxH for images.
+  # A default (read: incorrect) fallback for images is likely to cause rendering bugs.
+  defp maybe_add_dimensions(metadata, url) do
+    cond do
+      !is_nil(url["height"]) && !is_nil(url["width"]) ->
+        metadata ++
+          [
+            {:meta, [property: "twitter:player:width", content: "#{url["width"]}"], []},
+            {:meta, [property: "twitter:player:height", content: "#{url["height"]}"], []}
+          ]
+
+      true ->
+        metadata
+    end
   end
 end
