@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Accept", "Reject"])
     |> validate_actor_presence()
-    |> validate_object_presence(allowed_types: ["Follow"])
+    |> validate_object_presence(allowed_types: ["Follow", "Join"])
     |> validate_accept_reject_rights()
   end
 

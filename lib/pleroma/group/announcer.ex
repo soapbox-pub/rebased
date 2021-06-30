@@ -21,10 +21,6 @@ defmodule Pleroma.Group.Announcer do
     "Event",
     "Article",
     "Note",
-    "Join",
-    "Leave",
-    "Add",
-    "Remove",
     "Delete"
   ]
 

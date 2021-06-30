@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Group
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -46,19 +47,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
           data: %{
             "actor" => actor,
             "type" => "Accept",
-            "object" => follow_activity_id
+            "object" => object_id
           }
         } = object,
         meta
       ) do
-    with %Activity{actor: follower_id} = follow_activity <-
-           Activity.get_by_ap_id(follow_activity_id),
-         %User{} = followed <- User.get_cached_by_ap_id(actor),
-         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _follower, followed} <-
-           FollowingRelationship.update(follower, followed, :follow_accept) do
-      Notification.update_notification_type(followed, follow_activity)
+    case Activity.get_by_ap_id(object_id) do
+      %Activity{data: %{"type" => "Follow"}} = activity -> handle_follow_accept(activity, actor)
+      %Activity{data: %{"type" => "Join"}} = activity -> handle_join_accept(activity, actor)
     end
 
     {:ok, object, meta}
@@ -132,6 +128,34 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     updated_object = Activity.get_by_ap_id(follow_id)
 
+    {:ok, updated_object, meta}
+  end
+
+  # Tasks this handle
+  # - Joins if possible
+  # - Sends a notification
+  # - Generates accept or reject if appropriate
+  @impl true
+  def handle(
+        %{
+          data: %{
+            "id" => join_id,
+            "type" => "Join",
+            "object" => group_ap_id,
+            "actor" => actor
+          }
+        } = object,
+        meta
+      ) do
+    with %User{} = user <- User.get_cached_by_ap_id(actor),
+         %Group{} = group <- Group.get_by_ap_id(group_ap_id),
+         %Group{user: %User{is_locked: false}} <- Repo.preload(group, :user) do
+      {:ok, _} = Group.add_member(group, user)
+      {:ok, accept_data, _} = Builder.accept(group, object)
+      {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+    end
+
+    updated_object = Activity.get_by_ap_id(join_id)
     {:ok, updated_object, meta}
   end
 
@@ -446,6 +470,26 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Nothing to do
   def handle_object_creation(object, meta) do
     {:ok, object, meta}
+  end
+
+  defp handle_follow_accept(%Activity{actor: follower_id} = activity, actor) do
+    with %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, activity} <- Utils.update_follow_state_for_all(activity, "accept"),
+         {:ok, _follower, followed} <-
+           FollowingRelationship.update(follower, followed, :follow_accept) do
+      Notification.update_notification_type(followed, activity)
+    end
+  end
+
+  defp handle_join_accept(%Activity{actor: follower_id} = activity, actor) do
+    with %Group{} = group <- Group.get_by_ap_id(actor),
+         %User{} = user <- User.get_cached_by_ap_id(follower_id),
+         {:ok, _activity} <- Utils.update_join_state_for_all(activity, "accept"),
+         {:ok, _} <- Group.add_member(group, user) do
+      # TODO: Notification
+      # Notification.update_notification_type(followed, activity)
+    end
   end
 
   defp undo_like(nil, object), do: delete_object(object)

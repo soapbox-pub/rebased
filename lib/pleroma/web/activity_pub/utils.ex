@@ -456,6 +456,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     {:ok, activity}
   end
 
+  def update_join_state_for_all(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        state
+      ) do
+    "Join"
+    |> Activity.Queries.by_type()
+    |> Activity.Queries.by_actor(actor)
+    |> Activity.Queries.by_object_id(object)
+    |> where(fragment("data->>'state' = 'pending'"))
+    |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
+    |> Repo.update_all([])
+
+    activity = Activity.get_by_id(activity.id)
+
+    {:ok, activity}
+  end
+
   def update_follow_state(
         %Activity{} = activity,
         state
