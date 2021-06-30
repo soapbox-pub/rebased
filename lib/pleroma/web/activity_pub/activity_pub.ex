@@ -52,14 +52,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {recipients, to, cc}
   end
 
-  defp check_actor_is_active(nil), do: true
+  defp check_actor_can_insert(%{"type" => "Delete"}), do: true
+  defp check_actor_can_insert(%{"type" => "Undo"}), do: true
 
-  defp check_actor_is_active(actor) when is_binary(actor) do
+  defp check_actor_can_insert(%{"actor" => actor}) when is_binary(actor) do
     case User.get_cached_by_ap_id(actor) do
       %User{is_active: true} -> true
       _ -> false
     end
   end
+
+  defp check_actor_can_insert(_), do: true
 
   defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
     limit = Config.get([:instance, :remote_limit])
@@ -116,7 +119,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
-         {_, true} <- {:actor_check, bypass_actor_check || check_actor_is_active(map["actor"])},
+         {_, true} <- {:actor_check, bypass_actor_check || check_actor_can_insert(map)},
          {_, true} <- {:remote_limit_pass, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
