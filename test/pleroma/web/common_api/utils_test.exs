@@ -168,6 +168,123 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
+  describe "format_input/3 with markdown" do
+    test "Paragraph" do
+      code = ~s[Hello\n\nWorld!]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<p>Hello</p><p>World!</p>"
+    end
+
+    test "links" do
+      code = "https://en.wikipedia.org/wiki/Animal_Crossing_(video_game)"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+
+      code = "https://github.com/pragdave/earmark/"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+    end
+
+    test "link with local mention" do
+      insert(:user, %{nickname: "lain"})
+
+      code = "https://example.com/@lain"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+    end
+
+    test "local mentions" do
+      mario = insert(:user, %{nickname: "mario"})
+      luigi = insert(:user, %{nickname: "luigi"})
+
+      code = "@mario @luigi yo what's up?"
+      {result, _, []} = Utils.format_input(code, "text/markdown")
+
+      assert result ==
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{
+                 mario.ap_id
+               }" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
+                 luigi.id
+               }" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+    end
+
+    test "remote mentions" do
+      mario = insert(:user, %{nickname: "mario@mushroom.world", local: false})
+      luigi = insert(:user, %{nickname: "luigi@mushroom.world", local: false})
+
+      code = "@mario@mushroom.world @luigi@mushroom.world yo what's up?"
+      {result, _, []} = Utils.format_input(code, "text/markdown")
+
+      assert result ==
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{
+                 mario.ap_id
+               }" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
+                 luigi.id
+               }" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+    end
+
+    test "raw HTML" do
+      code = ~s[<a href="http://example.org/">OwO</a><!-- what's this?-->]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<a href="http://example.org/">OwO</a>]
+    end
+
+    test "rulers" do
+      code = ~s[before\n\n-----\n\nafter]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<p>before</p><hr/><p>after</p>"
+    end
+
+    test "blockquote" do
+      code = ~s[> whoms't are you quoting?]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<blockquote><p>whoms’t are you quoting?</p></blockquote>"
+    end
+
+    test "code" do
+      code = ~s[`mix`]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><code class="inline">mix</code></p>]
+
+      code = ~s[``mix``]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><code class="inline">mix</code></p>]
+
+      code = ~s[```\nputs "Hello World"\n```]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<pre><code>puts &quot;Hello World&quot;</code></pre>]
+
+      code = ~s[    <div>\n    </div>]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<pre><code>&lt;div&gt;\n&lt;/div&gt;</code></pre>]
+    end
+
+    test "lists" do
+      code = ~s[- one\n- two\n- three\n- four]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<ul><li>one</li><li>two</li><li>three</li><li>four</li></ul>"
+
+      code = ~s[1. one\n2. two\n3. three\n4. four\n]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<ol><li>one</li><li>two</li><li>three</li><li>four</li></ol>"
+    end
+
+    test "delegated renderers" do
+      code = ~s[*aaaa~*]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><em>aaaa~</em></p>]
+
+      code = ~s[**aaaa~**]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><strong>aaaa~</strong></p>]
+
+      # strikethrough
+      code = ~s[~~aaaa~~~]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><del>aaaa</del>~</p>]
+    end
+  end
+
   describe "context_to_conversation_id" do
     test "creates a mapping object" do
       conversation_id = Utils.context_to_conversation_id("random context")

@@ -151,7 +151,7 @@ defmodule Pleroma.UserTest do
   test "ap_id returns the activity pub id for the user" do
     user = UserBuilder.build()
 
-    expected_ap_id = "#{Pleroma.Web.base_url()}/users/#{user.nickname}"
+    expected_ap_id = "#{Pleroma.Web.Endpoint.url()}/users/#{user.nickname}"
 
     assert expected_ap_id == User.ap_id(user)
   end
@@ -572,6 +572,24 @@ defmodule Pleroma.UserTest do
       )
     end
 
+    test "it fails gracefully with invalid email config" do
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      # Disable the mailer but enable all the things that want to send emails
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_approval_required], true)
+      clear_config([:welcome, :email, :enabled], true)
+      clear_config([:welcome, :email, :sender], "lain@lain.com")
+
+      # The user is still created
+      assert {:ok, %User{nickname: "nick"}} = User.register(cng)
+
+      # No emails are sent
+      ObanHelpers.perform_all()
+      refute_email_sent()
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       clear_config([:instance, :account_activation_required], true)
 
@@ -663,6 +681,16 @@ defmodule Pleroma.UserTest do
 
       assert user.is_confirmed
     end
+
+    test "it sets 'accepts_email_list'" do
+      params = Map.put_new(@full_user_data, :accepts_email_list, true)
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_email_list
+    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -734,6 +762,17 @@ defmodule Pleroma.UserTest do
       changeset = User.register_changeset(%User{}, params)
 
       refute changeset.valid?
+    end
+  end
+
+  describe "update_changeset/2" do
+    test "it sets :accepts_email_list" do
+      changeset =
+        %User{accepts_email_list: false}
+        |> User.update_changeset(%{accepts_email_list: true})
+
+      assert changeset.valid?
+      assert %User{accepts_email_list: true} = Ecto.Changeset.apply_changes(changeset)
     end
   end
 

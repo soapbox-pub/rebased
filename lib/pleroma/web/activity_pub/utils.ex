@@ -12,7 +12,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
@@ -37,6 +36,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
+
+  def as_local_public, do: Endpoint.url() <> "/#Public"
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
@@ -107,7 +108,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "#{Web.base_url()}/schemas/litepub-0.1.jsonld",
+        "#{Endpoint.url()}/schemas/litepub-0.1.jsonld",
         %{
           "@language" => "und"
         }
@@ -132,7 +133,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def generate_id(type) do
-    "#{Web.base_url()}/#{type}/#{UUID.generate()}"
+    "#{Endpoint.url()}/#{type}/#{UUID.generate()}"
   end
 
   def get_notified_from_object(%{"type" => type} = object) when type in @supported_object_types do

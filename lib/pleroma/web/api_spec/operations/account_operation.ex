@@ -458,6 +458,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           type: :string,
           nullable: true,
           description: "Invite token required when the registrations aren't public"
+        },
+        accepts_email_list: %Schema{
+          allOf: [BooleanLike],
+          description:
+            "Whether the user opts-in to receiving news and marketing updates from site admins."
         }
       },
       example: %{
@@ -635,7 +640,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description:
             "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
-        actor_type: ActorType
+        actor_type: ActorType,
+        accepts_email_list: %Schema{
+          allOf: [BooleanLike],
+          description:
+            "Whether the user opts-in to receiving news and marketing updates from site admins."
+        }
       },
       example: %{
         bot: false,

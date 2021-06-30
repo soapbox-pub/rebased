@@ -17,7 +17,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "returns a link to the xml lrdd" do
       host_info = WebFinger.host_meta()
 
-      assert String.contains?(host_info, Pleroma.Web.base_url())
+      assert String.contains?(host_info, Pleroma.Web.Endpoint.url())
     end
   end
 

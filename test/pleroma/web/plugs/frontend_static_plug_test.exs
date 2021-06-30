@@ -86,6 +86,8 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "objects",
       "activities",
       "notice",
+      "@:nickname",
+      ":nickname",
       "users",
       "tags",
       "mailer",
@@ -103,6 +105,6 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "check_password"
     ]
 
-    assert expected_routes == Pleroma.Web.get_api_routes()
+    assert expected_routes == Pleroma.Web.Router.get_api_routes()
   end
 end
