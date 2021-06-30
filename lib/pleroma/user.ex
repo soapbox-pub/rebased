@@ -1724,30 +1724,26 @@ defmodule Pleroma.User do
   end
 
   def delete(%User{} = user) do
+    purge(user)
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
-  defp delete_and_invalidate_cache(%User{} = user) do
+  defp delete_from_db(%User{} = user) do
     invalidate_cache(user)
     Repo.delete(user)
   end
 
-  defp delete_or_purge(%User{local: false} = user), do: purge(user)
-
-  defp delete_or_purge(%User{local: true} = user) do
+  defp maybe_delete_from_db(%User{local: true} = user) do
     status = account_status(user)
 
-    case status do
-      :confirmation_pending ->
-        delete_and_invalidate_cache(user)
-
-      :approval_pending ->
-        delete_and_invalidate_cache(user)
-
-      _ ->
-        purge(user)
+    if status in [:confirmation_pending, :approval_pending] do
+      delete_from_db(user)
+    else
+      {:ok, user}
     end
   end
+
+  defp maybe_delete_from_db(user), do: {:ok, user}
 
   def perform(:force_password_reset, user), do: force_password_reset(user)
 
@@ -1770,10 +1766,9 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
     delete_notifications_from_user_activities(user)
-
     delete_outgoing_pending_follow_requests(user)
 
-    delete_or_purge(user)
+    maybe_delete_from_db(user)
   end
 
   def perform(:set_activation_async, user, status), do: set_activation(user, status)
