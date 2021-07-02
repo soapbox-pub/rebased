@@ -193,7 +193,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> ActivityPub.fetch_activities_bounded(following, params)
         |> Enum.reverse()
 
-      render(conn, "index.json",
+      conn
+      |> add_link_headers(activities)
+      |> render("index.json",
         activities: activities,
         for: user,
         as: :activity,
