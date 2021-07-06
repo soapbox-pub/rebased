@@ -53,4 +53,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptValidationTest do
 
     assert {:error, _} = ObjectValidator.validate(accept_data, [])
   end
+
+  describe "with a Join activity" do
+    setup do
+      user = insert(:user)
+      group = insert(:group)
+
+      {:ok, join_data, _} = Builder.join(user, group)
+      {:ok, join_activity, _} = Pipeline.common_pipeline(join_data, local: true)
+
+      {:ok, accept_data, _} = Builder.accept(group, join_activity)
+
+      %{accept_data: accept_data}
+    end
+
+    test "it validates an Accept", %{accept_data: accept_data} do
+      assert {:ok, _, _} = ObjectValidator.validate(accept_data, [])
+    end
+  end
 end

@@ -53,4 +53,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.RejectValidationTest do
 
     assert {:error, _} = ObjectValidator.validate(reject_data, [])
   end
+
+  describe "with a Join activity" do
+    setup do
+      user = insert(:user)
+      group = insert(:group)
+
+      {:ok, join_data, _} = Builder.join(user, group)
+      {:ok, join_activity, _} = Pipeline.common_pipeline(join_data, local: true)
+
+      {:ok, reject_data, _} = Builder.reject(group, join_activity)
+
+      %{reject_data: reject_data}
+    end
+
+    test "it validates a Reject", %{reject_data: reject_data} do
+      assert {:ok, _, _} = ObjectValidator.validate(reject_data, [])
+    end
+  end
 end
