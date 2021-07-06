@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
@@ -14,6 +15,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defstruct valid?: true,
             errors: [],
             user: nil,
+            group: nil,
             params: %{},
             status: nil,
             summary: nil,
@@ -39,6 +41,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   def new(user, params) do
     %__MODULE__{user: user}
     |> put_params(params)
+    |> group()
   end
 
   def create(user, params) do
@@ -100,6 +103,15 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | summary: Map.get(params, :spoiler_text, "")}
   end
 
+  defp group(%{params: %{group_id: group_id}} = draft) do
+    case Group.get_by_id(group_id) do
+      %Group{} = group -> %__MODULE__{draft | group: group}
+      _ -> draft
+    end
+  end
+
+  defp group(draft), do: draft
+
   defp full_payload(%{status: status, summary: summary} = draft) do
     full_payload = String.trim(status <> summary)
 
@@ -130,6 +142,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     in_reply_to_conversation = Participation.get(draft.params[:in_reply_to_conversation_id])
     %__MODULE__{draft | in_reply_to_conversation: in_reply_to_conversation}
   end
+
+  defp visibility(%{group: %{privacy: privacy}}), do: privacy
 
   defp visibility(%{params: params} = draft) do
     case CommonAPI.get_visibility(params, draft.in_reply_to, draft.in_reply_to_conversation) do

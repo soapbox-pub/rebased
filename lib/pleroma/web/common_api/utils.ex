@@ -60,6 +60,28 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
 
+  def get_to_and_cc(%{group: %{privacy: "public"} = group} = draft) do
+    to = [group.ap_id | [Pleroma.Constants.as_public() | draft.mentions]]
+    cc = [draft.user.follower_address]
+
+    if draft.in_reply_to do
+      {Enum.uniq([draft.in_reply_to.data["actor"] | to]), cc}
+    else
+      {to, cc}
+    end
+  end
+
+  def get_to_and_cc(%{group: %{privacy: "members_only"} = group} = draft) do
+    to = [group.ap_id | draft.mentions]
+    cc = []
+
+    if draft.in_reply_to do
+      {Enum.uniq([draft.in_reply_to.data["actor"] | to]), cc}
+    else
+      {to, cc}
+    end
+  end
+
   def get_to_and_cc(%{in_reply_to_conversation: %Participation{} = participation}) do
     participation = Repo.preload(participation, :recipients)
     {Enum.map(participation.recipients, & &1.ap_id), []}
