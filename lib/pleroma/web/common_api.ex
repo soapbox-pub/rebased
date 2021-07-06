@@ -133,6 +133,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def leave(user, group) do
+    with {:ok, leave_data, _} <- Builder.leave(user, group),
+         {:ok, activity, _} <- Pipeline.common_pipeline(leave_data, local: true) do
+      {:ok, user, group, activity}
+    end
+  end
+
   def accept_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, accept_data, _} <- Builder.accept(followed, follow_activity),

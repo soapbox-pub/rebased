@@ -52,8 +52,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   end
 
   def leave(%{assigns: %{user: %User{} = user}} = conn, %{id: id}) do
-    with %Group{} = group <- Group.get_by_id(id) do
-      # TODO: Actually do the leave
+    with %Group{} = group <- Group.get_by_id(id),
+         {:ok, _, _, _} <- CommonAPI.leave(user, group) do
       render(conn, "relationship.json", %{user: user, group: group})
     end
   end

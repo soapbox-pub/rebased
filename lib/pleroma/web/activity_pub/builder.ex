@@ -69,6 +69,19 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
+  @spec join(User.t(), Group.t()) :: {:ok, map(), keyword()}
+  def leave(user, group) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => user.ap_id,
+      "type" => "Leave",
+      "object" => group.ap_id,
+      "to" => [group.ap_id]
+    }
+
+    {:ok, data, []}
+  end
+
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
