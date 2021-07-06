@@ -1695,8 +1695,6 @@ defmodule Pleroma.User do
       email: nil,
       name: nil,
       password_hash: nil,
-      keys: nil,
-      public_key: nil,
       avatar: %{},
       tags: [],
       last_refreshed_at: nil,
@@ -1707,9 +1705,7 @@ defmodule Pleroma.User do
       follower_count: 0,
       following_count: 0,
       is_locked: false,
-      is_confirmed: true,
       password_reset_pending: false,
-      is_approved: true,
       registration_reason: nil,
       confirmation_token: nil,
       domain_blocks: [],
@@ -1725,7 +1721,19 @@ defmodule Pleroma.User do
       raw_fields: [],
       is_discoverable: false,
       also_known_as: []
+      # id: preserved
+      # ap_id: preserved
+      # nickname: preserved
     })
+  end
+
+  # Purge doesn't delete the user from the database.
+  # It just nulls all its fields and deactivates it.
+  # See `User.purge_user_changeset/1` above.
+  defp purge(%User{} = user) do
+    user
+    |> purge_user_changeset()
+    |> update_and_set_cache()
   end
 
   def delete(users) when is_list(users) do
@@ -1733,37 +1741,33 @@ defmodule Pleroma.User do
   end
 
   def delete(%User{} = user) do
+    # Purge the user immediately
+    purge(user)
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
-  defp delete_and_invalidate_cache(%User{} = user) do
+  # *Actually* delete the user from the DB
+  defp delete_from_db(%User{} = user) do
     invalidate_cache(user)
     Repo.delete(user)
   end
 
-  defp delete_or_deactivate(%User{local: false} = user), do: delete_and_invalidate_cache(user)
+  # If the user never finalized their account, it's safe to delete them.
+  defp maybe_delete_from_db(%User{local: true, is_confirmed: false} = user),
+    do: delete_from_db(user)
 
-  defp delete_or_deactivate(%User{local: true} = user) do
-    status = account_status(user)
+  defp maybe_delete_from_db(%User{local: true, is_approved: false} = user),
+    do: delete_from_db(user)
 
-    case status do
-      :confirmation_pending ->
-        delete_and_invalidate_cache(user)
-
-      :approval_pending ->
-        delete_and_invalidate_cache(user)
-
-      _ ->
-        user
-        |> purge_user_changeset()
-        |> update_and_set_cache()
-    end
-  end
+  defp maybe_delete_from_db(user), do: {:ok, user}
 
   def perform(:force_password_reset, user), do: force_password_reset(user)
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
+    # Purge the user again, in case perform/2 is called directly
+    purge(user)
+
     # Remove all relationships
     user
     |> get_followers()
@@ -1781,10 +1785,9 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
     delete_notifications_from_user_activities(user)
-
     delete_outgoing_pending_follow_requests(user)
 
-    delete_or_deactivate(user)
+    maybe_delete_from_db(user)
   end
 
   def perform(:set_activation_async, user, status), do: set_activation(user, status)
