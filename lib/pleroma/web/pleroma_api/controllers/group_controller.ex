@@ -86,7 +86,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
       |> put_application(conn)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
-      try_render(conn, "show.json",
+      try_render(conn, "status.json",
         activity: activity,
         for: user,
         as: :activity,

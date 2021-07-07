@@ -25,11 +25,19 @@ defmodule Pleroma.Group.Privacy do
   defp valid_recipient?(%Group{} = group, recipient), do: Group.is_member?(group, recipient)
   defp valid_recipient?(_group, _recipient), do: false
 
-  defp get_recipients(data) do
-    to = Map.get(data, "to", [])
-    cc = Map.get(data, "cc", [])
-    bcc = Map.get(data, "bcc", [])
-    recipients = Enum.concat([to, cc, bcc])
+  defp get_recipients(object) when is_map(object) do
+    to = Map.get(object, "to", [])
+    cc = Map.get(object, "cc", [])
+    bcc = Map.get(object, "bcc", [])
+    recipients = Enum.concat([to, cc, bcc]) |> Enum.uniq()
     {recipients, to, cc}
+  end
+
+  def is_members_only?(object) when is_map(object) do
+    with %Group{privacy: "members_only"} = group <- Group.get_object_group(object) do
+      matches_privacy?(group, object)
+    else
+      _ -> false
+    end
   end
 end

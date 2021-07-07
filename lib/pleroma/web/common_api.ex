@@ -364,6 +364,10 @@ defmodule Pleroma.Web.CommonAPI do
     Visibility.is_public?(object)
   end
 
+  def get_visibility(%{group: %{privacy: privacy}}, in_reply_to, _)
+      when privacy in ~w{public members_only},
+      do: {privacy, get_replied_to_visibility(in_reply_to)}
+
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
   def get_visibility(%{visibility: visibility}, in_reply_to, _)

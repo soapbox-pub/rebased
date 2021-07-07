@@ -153,8 +153,8 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
       tags: ["Group actions"],
       summary: "Publish new status to the group",
       security: [%{"oAuth" => ["write:statuses"]}],
-      description: "Post a new status",
-      operationId: "StatusController.create",
+      description: "Post a new status to the group",
+      operationId: "GroupController.post",
       parameters: [id_param()],
       requestBody: request_body("Parameters", status_create_request(), required: true),
       responses: %{
@@ -243,13 +243,6 @@ defmodule Pleroma.Web.ApiSpec.GroupOperation do
           nullable: true,
           description:
             "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
-        },
-        scheduled_at: %Schema{
-          type: :string,
-          format: :"date-time",
-          nullable: true,
-          description:
-            "ISO 8601 Datetime at which to schedule a status. Providing this paramter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
         },
         language: %Schema{
           type: :string,

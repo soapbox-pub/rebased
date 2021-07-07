@@ -143,8 +143,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | in_reply_to_conversation: in_reply_to_conversation}
   end
 
-  defp visibility(%{group: %{privacy: privacy}}), do: privacy
-
   defp visibility(%{params: params} = draft) do
     case CommonAPI.get_visibility(params, draft.in_reply_to, draft.in_reply_to_conversation) do
       {visibility, "direct"} when visibility != "direct" ->

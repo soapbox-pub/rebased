@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.Visibility do
   alias Pleroma.Activity
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -133,6 +134,9 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       # this should use the sql for the object's activity
       Enum.any?(to, &String.contains?(&1, "/followers")) ->
         "private"
+
+      Group.Privacy.is_members_only?(object) ->
+        "members_only"
 
       object.data["directMessage"] == true ->
         "direct"
