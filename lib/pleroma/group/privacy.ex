@@ -42,4 +42,6 @@ defmodule Pleroma.Group.Privacy do
       _ -> false
     end
   end
+
+  def is_members_only?(_), do: false
 end
