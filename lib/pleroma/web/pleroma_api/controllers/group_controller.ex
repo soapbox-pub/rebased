@@ -5,7 +5,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [try_render: 3]
+    only: [try_render: 3, add_link_headers: 2]
 
   alias Pleroma.Group
   alias Pleroma.Repo
@@ -68,9 +68,18 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
     render(conn, "relationships.json", user: user, groups: groups)
   end
 
-  def statuses(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do
-    # TODO
-    render(conn, "empty_array.json", %{})
+  def statuses(%{assigns: %{user: reading_user}} = conn, %{id: id}) do
+    with %Group{} = group <- Group.get_by_id(id) do
+      activities = Group.Timeline.fetch_group_activities(group)
+
+      conn
+      |> add_link_headers(activities)
+      |> render("statuses.json",
+        activities: activities,
+        for: reading_user,
+        as: :activity
+      )
+    end
   end
 
   def members(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do

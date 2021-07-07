@@ -58,6 +58,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
   end
 
   def render("status.json", params), do: StatusView.render("show.json", params)
+  def render("statuses.json", params), do: StatusView.render("index.json", params)
 
   # TODO: Remove these. Just placeholders for now.
   def render("empty_array.json", _), do: []
