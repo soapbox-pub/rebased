@@ -7,6 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
   alias Pleroma.Group
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.PleromaAPI.GroupView
 
   def render("show.json", %{group: %Group{} = group}) do
@@ -55,6 +56,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
   def render("relationships.json", %{user: user, groups: groups}) do
     render_many(groups, GroupView, "relationship.json", user: user)
   end
+
+  def render("status.json", params), do: StatusView.render("show.json", params)
 
   # TODO: Remove these. Just placeholders for now.
   def render("empty_array.json", _), do: []
