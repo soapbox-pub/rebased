@@ -82,4 +82,25 @@ defmodule Pleroma.Group.PrivacyTest do
       refute Privacy.matches_privacy?(group, %{"bcc" => [members_collection]})
     end
   end
+
+  test "is_members_only?" do
+    group = insert(:group, privacy: "members_only")
+    user = insert(:user)
+    Group.add_member(group, user)
+
+    assert Privacy.is_members_only?(%{"to" => [group.ap_id]})
+    assert Privacy.is_members_only?(%{"to" => [group.ap_id, user.ap_id]})
+    assert Privacy.is_members_only?(%{"to" => [group.ap_id], "cc" => [user.ap_id]})
+    assert Privacy.is_members_only?(%{"to" => [group.ap_id], "bcc" => [user.ap_id]})
+
+    refute Privacy.is_members_only?(%{"to" => [group.ap_id, @public_uri]})
+    refute Privacy.is_members_only?(%{"to" => [group.ap_id, insert(:user).ap_id]})
+    refute Privacy.is_members_only?(%{"to" => [group.ap_id, "https://invalid.id/123"]})
+    refute Privacy.is_members_only?(%{"to" => [group.ap_id], "cc" => [insert(:user).ap_id]})
+    refute Privacy.is_members_only?(%{"to" => [group.ap_id], "bcc" => [insert(:user).ap_id]})
+
+    refute Privacy.is_members_only?(%{"cc" => [group.ap_id]})
+    refute Privacy.is_members_only?(%{"bcc" => [group.ap_id]})
+    refute Privacy.is_members_only?(%{})
+  end
 end

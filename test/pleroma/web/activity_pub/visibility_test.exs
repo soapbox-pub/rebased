@@ -13,11 +13,13 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
 
   setup do
     user = insert(:user)
+    group = insert(:group, privacy: "members_only")
     mentioned = insert(:user)
     following = insert(:user)
     unrelated = insert(:user)
     {:ok, following, user} = Pleroma.User.follow(following, user)
     {:ok, list} = Pleroma.List.create("foo", user)
+    Pleroma.Group.add_member(group, user)
 
     Pleroma.List.follow(list, unrelated)
 
@@ -39,6 +41,8 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
         visibility: "list:#{list.id}"
       })
 
+    {:ok, members_only} = CommonAPI.post(user, %{status: "group post", group_id: group.id})
+
     %{
       public: public,
       private: private,
@@ -48,7 +52,8 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
       mentioned: mentioned,
       following: following,
       unrelated: unrelated,
-      list: list
+      list: list,
+      members_only: members_only
     }
   end
 
@@ -235,13 +240,15 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     private: private,
     direct: direct,
     unlisted: unlisted,
-    list: list
+    list: list,
+    members_only: members_only
   } do
     assert Visibility.get_visibility(public) == "public"
     assert Visibility.get_visibility(private) == "private"
     assert Visibility.get_visibility(direct) == "direct"
     assert Visibility.get_visibility(unlisted) == "unlisted"
     assert Visibility.get_visibility(list) == "list"
+    assert Visibility.get_visibility(members_only) == "members_only"
   end
 
   test "get_visibility with directMessage flag" do

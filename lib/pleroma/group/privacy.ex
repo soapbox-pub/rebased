@@ -33,6 +33,8 @@ defmodule Pleroma.Group.Privacy do
     {recipients, to, cc}
   end
 
+  def is_members_only?(%{data: object}), do: is_members_only?(object)
+
   def is_members_only?(object) when is_map(object) do
     with %Group{privacy: "members_only"} = group <- Group.get_object_group(object) do
       matches_privacy?(group, object)
