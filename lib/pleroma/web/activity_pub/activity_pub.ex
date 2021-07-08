@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Conversation
   alias Pleroma.Conversation.Participation
   alias Pleroma.Filter
+  alias Pleroma.Group
   alias Pleroma.Hashtag
   alias Pleroma.Maps
   alias Pleroma.Notification
@@ -285,7 +286,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         :ok <- maybe_group_announce(activity) do
       {:ok, activity}
     else
       {:quick_insert, true, activity} ->
@@ -296,6 +298,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       {:error, message} ->
         Repo.rollback(message)
+    end
+  end
+
+  defp maybe_group_announce(activity) do
+    case Group.Announcer.maybe_announce(activity) do
+      {:ok, _} -> :ok
+      {:noop, _} -> :ok
+      error -> {:error, error}
     end
   end
 

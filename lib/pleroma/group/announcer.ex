@@ -8,6 +8,7 @@ defmodule Pleroma.Group.Announcer do
   """
   alias Pleroma.Group
   alias Pleroma.Group.Privacy
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
@@ -38,7 +39,7 @@ defmodule Pleroma.Group.Announcer do
 
   def should_announce?(_group, _object), do: false
 
-  def announce(%Group{} = group, object) when is_map(object) do
+  def build_announce!(%Group{} = group, object) when is_map(object) do
     %{
       "type" => "Announce",
       "id" => Utils.generate_activity_id(),
@@ -48,12 +49,28 @@ defmodule Pleroma.Group.Announcer do
       "context" => object["context"],
       "published" => Utils.make_date()
     }
+  end
+
+  def announce(%Group{} = group, object) when is_map(object) do
+    group
+    |> build_announce!(object)
     |> Pipeline.common_pipeline(local: true)
+    |> case do
+      {:ok, activity, _meta} -> {:ok, activity}
+      {:ok, value} -> {:ok, value}
+      error -> error
+    end
   end
 
   def announce(group, object), do: {:error, %{group: group, object: object}}
 
-  def maybe_announce(group, object) do
-    if should_announce?(group, object), do: announce(group, object), else: {:noop, object}
+  def maybe_announce(object) do
+    with %Object{data: data} = object <- Object.normalize(object),
+         %Group{} = group <- Group.get_object_group(object),
+         {_, true} <- {:should_announce, should_announce?(group, data)} do
+      announce(group, data)
+    else
+      _ -> {:noop, object}
+    end
   end
 end

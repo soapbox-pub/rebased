@@ -10,6 +10,7 @@ defmodule Pleroma.Group do
 
   alias Pleroma.Activity
   alias Pleroma.Group
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -149,11 +150,13 @@ defmodule Pleroma.Group do
   def get_for_object(_), do: nil
 
   @spec get_object_group(object :: map()) :: t() | nil
-  def get_object_group(%{"to" => to}) when is_list(to) do
-    Enum.find_value(to, fn address -> Group.get_by_ap_id(address) end)
+  def get_object_group(object) do
+    with %Object{data: %{"to" => to}} when is_list(to) <- Object.normalize(object) do
+      Enum.find_value(to, fn address -> Group.get_by_ap_id(address) end)
+    else
+      _ -> nil
+    end
   end
-
-  def get_object_group(_), do: nil
 
   def get_membership_state(%Group{} = group, %User{} = user) do
     if is_member?(group, user) do
