@@ -17,7 +17,6 @@ defmodule Pleroma.Group.Timeline do
     [group.members_collection]
     |> ActivityPub.fetch_activities_query(opts)
     |> fetch_paginated_optimized(opts, pagination)
-    |> Enum.reverse()
   end
 
   defp fetch_paginated_optimized(query, opts, pagination) do
