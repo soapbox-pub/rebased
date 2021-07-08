@@ -10,7 +10,7 @@ defmodule Pleroma.Group.Timeline do
   def fetch_group_activities(%Group{} = group, opts \\ %{}, pagination \\ :keyset) do
     opts =
       Map.merge(opts, %{
-        actor_id: group.id,
+        actor_id: group.ap_id,
         type: "Announce"
       })
 
