@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remote users can no longer reappear after being deleted.
 - Deactivated users may now be deleted.
 - Mix task `pleroma.database prune_objects`
+- Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
 
 ### Removed
 - **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)
