@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
   alias Pleroma.User
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   @moduledoc """
      Apply policies based on user tags
 

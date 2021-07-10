@@ -62,6 +62,14 @@ defmodule Pleroma.Web do
         )
       end
 
+      defp skip_auth(conn, _) do
+        skip_plug(conn, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug])
+      end
+
+      defp skip_public_check(conn, _) do
+        skip_plug(conn, EnsurePublicOrAuthenticatedPlug)
+      end
+
       # Executed just before actual controller action, invokes before-action hooks (callbacks)
       defp action(conn, params) do
         with %{halted: false} = conn <-

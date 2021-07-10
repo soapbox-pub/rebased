@@ -35,6 +35,9 @@ Currently Pleroma is not packaged by any OS/Distros, but if you want to package 
 ### Docker
 While we don’t provide docker files, other people have written very good ones. Take a look at <https://github.com/angristan/docker-pleroma> or <https://glitch.sh/sn0w/pleroma-docker>.
 
+### Raspberry Pi
+Community maintained Raspberry Pi image that you can flash and run Pleroma on your Raspberry Pi. Available here <https://github.com/guysoft/PleromaPi>.
+
 ### Compilation Troubleshooting
 If you ever encounter compilation issues during the updating of Pleroma, you can try these commands and see if they fix things:
 

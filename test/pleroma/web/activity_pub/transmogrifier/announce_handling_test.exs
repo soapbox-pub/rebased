@@ -150,27 +150,4 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
 
     assert {:error, _e} = Transmogrifier.handle_incoming(data)
   end
-
-  test "it does not clobber the addressing on announce activities" do
-    user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
-
-    data =
-      File.read!("test/fixtures/mastodon-announce.json")
-      |> Jason.decode!()
-      |> Map.put("object", Object.normalize(activity, fetch: false).data["id"])
-      |> Map.put("to", ["http://mastodon.example.org/users/admin/followers"])
-      |> Map.put("cc", [])
-
-    _user =
-      insert(:user,
-        local: false,
-        ap_id: data["actor"],
-        follower_address: "http://mastodon.example.org/users/admin/followers"
-      )
-
-    {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-    assert data["to"] == ["http://mastodon.example.org/users/admin/followers"]
-  end
 end

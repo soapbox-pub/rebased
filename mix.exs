@@ -121,8 +121,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_enum, "~> 1.4"},
-      {:ecto_explain, "~> 0.1.2"},
-      {:ecto_sql, "~> 3.4.4"},
+      {:ecto_sql, "~> 3.6.2"},
       {:postgrex, ">= 0.15.5"},
       {:oban, "~> 2.3.4"},
       {:gettext, "~> 0.18"},
@@ -158,7 +157,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.5.0"},
+      {:linkify, "~> 0.5.1"},
       {:http_signatures, "~> 0.1.0"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
@@ -196,10 +195,11 @@ defmodule Pleroma.Mixfile do
       {:majic,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
        ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
-      {:eblurhash,
-       git: "https://github.com/zotonic/eblurhash.git",
-       ref: "04a0b76eadf4de1be17726f39b6313b88708fd12"},
+      {:eblurhash, "~> 1.1.0"},
       {:open_api_spex, "~> 3.10"},
+
+      # indirect dependency version override
+      {:plug, "~> 1.10.4", override: true},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},

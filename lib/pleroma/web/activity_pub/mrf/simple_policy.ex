@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   @moduledoc "Filter activities depending on their origin instance"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   alias Pleroma.Config
   alias Pleroma.FollowingRelationship

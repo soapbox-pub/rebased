@@ -13,21 +13,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - **Breaking:** Configuration: `:chat, enabled` moved to `:shout, enabled` and `:instance, chat_limit` moved to `:shout, limit`
+- Support for Erlang/OTP 24
 - The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
 - HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
 - Email address is now returned if requesting user is the owner of the user account so it can be exposed in client and FE user settings UIs.
+- Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
 
 ### Added
 
 - MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
 - Return OAuth token `id` (primary key) in POST `/oauth/token`.
-- `AnalyzeMetadata` upload filter for extracting attachment dimensions and generating blurhashes.
+- `AnalyzeMetadata` upload filter for extracting image/video attachment dimensions and generating blurhashes for images. Blurhashes for videos are not generated at this time.
 - Attachment dimensions and blurhashes are federated when available.
 - Pinned posts federation
 
 ### Fixed
 - Don't crash so hard when email settings are invalid.
 - Checking activated Upload Filters for required commands.
+- Remote users can no longer reappear after being deleted.
+- Deactivated users may now be deleted.
+- Mix task `pleroma.database prune_objects`
+- Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
 
 ### Removed
 - **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)

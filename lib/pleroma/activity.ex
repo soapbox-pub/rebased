@@ -313,13 +313,15 @@ defmodule Pleroma.Activity do
 
   def delete_all_by_object_ap_id(_), do: nil
 
-  defp purge_web_resp_cache(%Activity{} = activity) do
-    %{path: path} = URI.parse(activity.data["id"])
-    @cachex.del(:web_resp_cache, path)
+  defp purge_web_resp_cache(%Activity{data: %{"id" => id}} = activity) when is_binary(id) do
+    with %{path: path} <- URI.parse(id) do
+      @cachex.del(:web_resp_cache, path)
+    end
+
     activity
   end
 
-  defp purge_web_resp_cache(nil), do: nil
+  defp purge_web_resp_cache(activity), do: activity
 
   def follow_accepted?(
         %Activity{data: %{"type" => "Follow", "object" => followed_ap_id}} = activity

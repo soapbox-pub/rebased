@@ -61,5 +61,5 @@
 <% end %>
 
 <%= if Pleroma.Config.oauth_consumer_enabled?() do %>
-  <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
+  <%= render @view_module, Pleroma.Web.Auth.WrapperAuthenticator.oauth_consumer_template(), assigns %>
 <% end %>

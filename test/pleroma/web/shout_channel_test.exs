@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ShoutChannelTest do
 
     {:ok, _, socket} =
       socket(UserSocket, "", %{user_name: user.nickname})
-      |> subscribe_and_join(ShoutChannel, "shout:public")
+      |> subscribe_and_join(ShoutChannel, "chat:public")
 
     {:ok, socket: socket}
   end

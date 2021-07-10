@@ -45,8 +45,6 @@ defmodule Pleroma.Web.AdminAPI.UserController do
     when action in [:follow, :unfollow]
   )
 
-  plug(:put_view, Pleroma.Web.AdminAPI.AccountView)
-
   action_fallback(AdminAPI.FallbackController)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.UserOperation

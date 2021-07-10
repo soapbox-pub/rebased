@@ -22,7 +22,12 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
           "attachment" => [
             %{
               "url" => [
-                %{"mediaType" => "image/png", "href" => "https://pleroma.gov/tenshi.png"}
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://pleroma.gov/tenshi.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
               ]
             },
             %{
@@ -35,7 +40,12 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
             },
             %{
               "url" => [
-                %{"mediaType" => "video/webm", "href" => "https://pleroma.gov/about/juche.webm"}
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
               ]
             },
             %{
@@ -55,11 +65,15 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
     assert Enum.all?(
              [
                {:meta, [property: "og:image", content: "https://pleroma.gov/tenshi.png"], []},
+               {:meta, [property: "og:image:width", content: "1280"], []},
+               {:meta, [property: "og:image:height", content: "1024"], []},
                {:meta,
                 [property: "og:audio", content: "http://www.gnu.org/music/free-software-song.au"],
                 []},
                {:meta, [property: "og:video", content: "https://pleroma.gov/about/juche.webm"],
-                []}
+                []},
+               {:meta, [property: "og:video:width", content: "800"], []},
+               {:meta, [property: "og:video:height", content: "600"], []}
              ],
              fn element -> element in result end
            )
@@ -92,5 +106,85 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
     assert {:meta, [property: "og:image", content: "https://pleroma.gov/tenshi.png"], []} in result
 
     refute {:meta, [property: "og:image", content: "https://misskey.microsoft/corndog.png"], []} in result
+  end
+
+  test "video attachments have image thumbnail with WxH metadata with Preview Proxy enabled" do
+    clear_config([:media_proxy, :enabled], true)
+    clear_config([:media_preview_proxy, :enabled], true)
+    user = insert(:user)
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "id" => "https://pleroma.gov/objects/whatever",
+          "content" => "test video post",
+          "sensitive" => false,
+          "attachment" => [
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
+
+    assert {:meta, [property: "og:image:width", content: "800"], []} in result
+    assert {:meta, [property: "og:image:height", content: "600"], []} in result
+
+    assert {:meta,
+            [
+              property: "og:image",
+              content:
+                "http://localhost:4001/proxy/preview/LzAnlke-l5oZbNzWsrHfprX1rGw/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
+            ], []} in result
+  end
+
+  test "video attachments have no image thumbnail with Preview Proxy disabled" do
+    clear_config([:media_proxy, :enabled], true)
+    clear_config([:media_preview_proxy, :enabled], false)
+    user = insert(:user)
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "id" => "https://pleroma.gov/objects/whatever",
+          "content" => "test video post",
+          "sensitive" => false,
+          "attachment" => [
+            %{
+              "url" => [
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
+
+    refute {:meta, [property: "og:image:width", content: "800"], []} in result
+    refute {:meta, [property: "og:image:height", content: "600"], []} in result
+
+    refute {:meta,
+            [
+              property: "og:image",
+              content:
+                "http://localhost:4001/proxy/preview/LzAnlke-l5oZbNzWsrHfprX1rGw/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
+            ], []} in result
   end
 end
