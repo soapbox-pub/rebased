@@ -7,6 +7,7 @@ defmodule Pleroma.Group.Privacy do
   Validate that ActivityPub objects match a group's privacy settings.
   """
   alias Pleroma.Group
+  alias Pleroma.Object
 
   def matches_privacy?(%Group{privacy: "public"}, _object), do: true
 
@@ -33,15 +34,12 @@ defmodule Pleroma.Group.Privacy do
     {recipients, to, cc}
   end
 
-  def is_members_only?(%{data: object}), do: is_members_only?(object)
-
-  def is_members_only?(object) when is_map(object) do
-    with %Group{privacy: "members_only"} = group <- Group.get_object_group(object) do
-      matches_privacy?(group, object)
+  def is_members_only?(object) do
+    with %Object{data: data} = object <- Object.normalize(object),
+         %Group{privacy: "members_only"} = group <- Group.get_object_group(object) do
+      matches_privacy?(group, data)
     else
       _ -> false
     end
   end
-
-  def is_members_only?(_), do: false
 end

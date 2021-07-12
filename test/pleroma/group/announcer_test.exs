@@ -14,11 +14,13 @@ defmodule Pleroma.Group.AnnouncerTest do
   test "should_announce?/2 with empty addressing returns false" do
     group = insert(:group)
 
-    object = %{
-      "type" => "Note",
-      "to" => [],
-      "cc" => []
-    }
+    object =
+      insert(:note,
+        data: %{
+          "to" => [],
+          "cc" => []
+        }
+      )
 
     refute Announcer.should_announce?(group, object)
   end
@@ -28,12 +30,14 @@ defmodule Pleroma.Group.AnnouncerTest do
     user = insert(:user)
     Group.add_member(group, user)
 
-    object = %{
-      "type" => "Note",
-      "actor" => user.ap_id,
-      "to" => [group.ap_id],
-      "cc" => []
-    }
+    object =
+      insert(:note,
+        data: %{
+          "actor" => user.ap_id,
+          "to" => [group.ap_id],
+          "cc" => []
+        }
+      )
 
     assert Announcer.should_announce?(group, object)
   end
@@ -42,12 +46,14 @@ defmodule Pleroma.Group.AnnouncerTest do
     group = insert(:group)
     user = insert(:user)
 
-    object = %{
-      "type" => "Note",
-      "actor" => user.ap_id,
-      "to" => [group.ap_id],
-      "cc" => []
-    }
+    object =
+      insert(:note,
+        data: %{
+          "actor" => user.ap_id,
+          "to" => [group.ap_id],
+          "cc" => []
+        }
+      )
 
     refute Announcer.should_announce?(group, object)
   end
@@ -57,19 +63,22 @@ defmodule Pleroma.Group.AnnouncerTest do
     user = insert(:user)
     Group.add_member(group, user)
 
-    note = %{
-      "to" => [group.ap_id],
-      "cc" => []
-    }
+    note =
+      insert(:note,
+        data: %{
+          "to" => [group.ap_id],
+          "cc" => []
+        }
+      )
 
     %{data: object} = insert(:note, user: user, data: note)
 
-    {:ok, %Activity{data: activity}, _meta} = Announcer.announce(group, object)
+    {:ok, %Activity{data: activity}} = Announcer.announce(group, object)
 
     assert activity["type"] == "Announce"
     assert activity["actor"] == group.ap_id
-    assert activity["to"] == [group.members_collection, object["actor"]]
+    assert activity["to"] == [group.members_collection, object.data["actor"]]
     assert activity["cc"] == []
-    assert activity["object"] == object["id"]
+    assert activity["object"] == object.data["id"]
   end
 end

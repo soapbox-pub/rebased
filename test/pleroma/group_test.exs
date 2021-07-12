@@ -42,11 +42,7 @@ defmodule Pleroma.GroupTest do
     user = insert(:user)
     {:ok, group} = Group.create(%{owner_id: user.id, slug: "cofe"})
     group = Repo.preload(group, :user)
-
-    message = %{
-      "type" => "Note",
-      "to" => [group.user.ap_id]
-    }
+    message = insert(:note, data: %{"to" => [group.user.ap_id]})
 
     assert group.id == Group.get_object_group(message).id
   end

@@ -25,12 +25,13 @@ defmodule Pleroma.Group.Announcer do
     "Delete"
   ]
 
-  def should_announce?(%Group{id: group_id} = group, %{"type" => type} = object)
-      when type in @object_types do
-    with %Group{id: ^group_id} <- Group.get_object_group(object),
-         %User{} = user <- User.get_cached_by_ap_id(object["actor"]),
+  def should_announce?(%Group{id: group_id} = group, object) do
+    with %Object{data: %{"type" => type} = data} = object when type in @object_types <-
+           Object.normalize(object),
+         %Group{id: ^group_id} <- Group.get_object_group(object),
+         %User{} = user <- User.get_cached_by_ap_id(data["actor"]),
          true <- Group.is_member?(group, user),
-         true <- Privacy.matches_privacy?(group, object) do
+         true <- Privacy.matches_privacy?(group, data) do
       true
     else
       _ -> false
@@ -51,18 +52,20 @@ defmodule Pleroma.Group.Announcer do
     }
   end
 
-  def announce(%Group{} = group, object) when is_map(object) do
-    group
-    |> build_announce!(object)
-    |> Pipeline.common_pipeline(local: true)
-    |> case do
-      {:ok, activity, _meta} -> {:ok, activity}
-      {:ok, value} -> {:ok, value}
-      error -> error
+  def announce(%Group{} = group, object) do
+    with %Object{data: object} <- Object.normalize(object) do
+      group
+      |> build_announce!(object)
+      |> Pipeline.common_pipeline(local: true)
+      |> case do
+        {:ok, activity, _meta} -> {:ok, activity}
+        {:ok, value} -> {:ok, value}
+        error -> error
+      end
+    else
+      _ -> {:error, %{group: group, object: object}}
     end
   end
-
-  def announce(group, object), do: {:error, %{group: group, object: object}}
 
   def maybe_announce(object) do
     with %Object{data: data} = object <- Object.normalize(object),

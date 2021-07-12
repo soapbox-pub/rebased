@@ -88,19 +88,41 @@ defmodule Pleroma.Group.PrivacyTest do
     user = insert(:user)
     Group.add_member(group, user)
 
-    assert Privacy.is_members_only?(%{"to" => [group.ap_id]})
-    assert Privacy.is_members_only?(%{"to" => [group.ap_id, user.ap_id]})
-    assert Privacy.is_members_only?(%{"to" => [group.ap_id], "cc" => [user.ap_id]})
-    assert Privacy.is_members_only?(%{"to" => [group.ap_id], "bcc" => [user.ap_id]})
+    assert Privacy.is_members_only?(insert(:note, data: %{"to" => [group.ap_id]}))
+    assert Privacy.is_members_only?(insert(:note, data: %{"to" => [group.ap_id, user.ap_id]}))
 
-    refute Privacy.is_members_only?(%{"to" => [group.ap_id, @public_uri]})
-    refute Privacy.is_members_only?(%{"to" => [group.ap_id, insert(:user).ap_id]})
-    refute Privacy.is_members_only?(%{"to" => [group.ap_id, "https://invalid.id/123"]})
-    refute Privacy.is_members_only?(%{"to" => [group.ap_id], "cc" => [insert(:user).ap_id]})
-    refute Privacy.is_members_only?(%{"to" => [group.ap_id], "bcc" => [insert(:user).ap_id]})
+    assert Privacy.is_members_only?(
+             insert(:note, data: %{"to" => [group.ap_id], "cc" => [user.ap_id]})
+           )
 
-    refute Privacy.is_members_only?(%{"cc" => [group.ap_id]})
-    refute Privacy.is_members_only?(%{"bcc" => [group.ap_id]})
-    refute Privacy.is_members_only?(%{})
+    assert Privacy.is_members_only?(
+             insert(:note, data: %{"to" => [group.ap_id], "bcc" => [user.ap_id]})
+           )
+
+    refute Privacy.is_members_only?(insert(:note, data: %{"to" => [group.ap_id, @public_uri]}))
+
+    refute Privacy.is_members_only?(
+             insert(:note, data: %{"to" => [group.ap_id, insert(:user).ap_id]})
+           )
+
+    refute Privacy.is_members_only?(
+             insert(:note, data: %{"to" => [group.ap_id, "https://invalid.id/123"]})
+           )
+
+    refute Privacy.is_members_only?(
+             insert(:note, data: %{"to" => [group.ap_id], "cc" => [insert(:user).ap_id]})
+           )
+
+    refute Privacy.is_members_only?(
+             insert(:note, data: %{"to" => [group.ap_id], "bcc" => [insert(:user).ap_id]})
+           )
+
+    refute Privacy.is_members_only?(insert(:note, data: %{"to" => [], "cc" => [group.ap_id]}))
+    refute Privacy.is_members_only?(insert(:note, data: %{"to" => [], "bcc" => [group.ap_id]}))
+    refute Privacy.is_members_only?(insert(:note, data: %{"to" => []}))
+
+    assert Privacy.is_members_only?(
+             insert(:note_activity, note: insert(:note, data: %{"to" => [group.ap_id]}))
+           )
   end
 end
