@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -403,83 +402,90 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  defp handle_user_activity(
-         %User{} = user,
-         %{"type" => "Create", "object" => %{"type" => "Note"} = object} = params
-       ) do
-    content = if is_binary(object["content"]), do: object["content"], else: ""
-    name = if is_binary(object["name"]), do: object["name"], else: ""
-    summary = if is_binary(object["summary"]), do: object["summary"], else: ""
-    length = String.length(content <> name <> summary)
+  defp fix_user_message(%User{ap_id: actor}, %{"type" => "Create", "object" => object} = activity)
+       when is_map(object) do
+    length =
+      [object["content"], object["summary"], object["name"]]
+      |> Enum.filter(&is_binary(&1))
+      |> Enum.join("")
+      |> String.length()
 
-    if length > Pleroma.Config.get([:instance, :limit]) do
-      {:error, dgettext("errors", "Note is over the character limit")}
-    else
+    limit = Pleroma.Config.get([:instance, :limit])
+
+    if length < limit do
       object =
         object
-        |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", user.ap_id)
-        |> Transmogrifier.fix_object()
+        |> Transmogrifier.strip_internal_fields()
+        |> Map.put("attributedTo", actor)
+        |> Map.put("actor", actor)
+        |> Map.put("id", Utils.generate_object_id())
 
-      ActivityPub.create(%{
-        to: params["to"],
-        actor: user,
-        context: object["context"],
-        object: object,
-        additional: Map.take(params, ["cc"])
-      })
-    end
-  end
-
-  defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"], fetch: false),
-         true <- user.is_moderator || user.ap_id == object.data["actor"],
-         {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
-         {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
-      {:ok, delete}
+      {:ok, Map.put(activity, "object", object)}
     else
-      _ -> {:error, dgettext("errors", "Can't delete object")}
+      {:error,
+       dgettext(
+         "errors",
+         "Character limit (%{limit} characters) exceeded, contains %{length} characters",
+         limit: limit,
+         length: length
+       )}
     end
   end
 
-  defp handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"], fetch: false),
-         {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
-         {_, {:ok, %Activity{} = activity, _meta}} <-
-           {:common_pipeline,
-            Pipeline.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
+  defp fix_user_message(
+         %User{ap_id: actor} = user,
+         %{"type" => "Delete", "object" => object} = activity
+       ) do
+    with {_, %Object{data: object_data}} <- {:normalize, Object.normalize(object, fetch: false)},
+         {_, true} <- {:permission, user.is_moderator || actor == object_data["actor"]} do
       {:ok, activity}
     else
-      _ -> {:error, dgettext("errors", "Can't like object")}
+      {:normalize, _} ->
+        {:error, "No such object found"}
+
+      {:permission, _} ->
+        {:forbidden, "You can't delete this object"}
     end
   end
 
-  defp handle_user_activity(_, _) do
-    {:error, dgettext("errors", "Unhandled activity type")}
+  defp fix_user_message(%User{}, activity) do
+    {:ok, activity}
   end
 
   def update_outbox(
-        %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
+        %{assigns: %{user: %User{nickname: nickname, ap_id: actor} = user}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    actor = user.ap_id
-
     params =
       params
-      |> Map.drop(["id"])
+      |> Map.drop(["nickname"])
+      |> Map.put("id", Utils.generate_activity_id())
       |> Map.put("actor", actor)
-      |> Transmogrifier.fix_addressing()
 
-    with {:ok, %Activity{} = activity} <- handle_user_activity(user, params) do
+    with {:ok, params} <- fix_user_message(user, params),
+         {:ok, activity, _} <- Pipeline.common_pipeline(params, local: true),
+         %Activity{data: activity_data} <- Activity.normalize(activity) do
       conn
       |> put_status(:created)
-      |> put_resp_header("location", activity.data["id"])
-      |> json(activity.data)
+      |> put_resp_header("location", activity_data["id"])
+      |> json(activity_data)
     else
+      {:forbidden, message} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(message)
+
       {:error, message} ->
         conn
         |> put_status(:bad_request)
         |> json(message)
+
+      e ->
+        Logger.warn(fn -> "AP C2S: #{inspect(e)}" end)
+
+        conn
+        |> put_status(:bad_request)
+        |> json("Bad Request")
     end
   end
 
