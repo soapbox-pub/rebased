@@ -11,8 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.PleromaAPI.GroupView
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.PleromaAPI.GroupView
 
   def render("index.json", %{users: users} = opts) do
     reading_user = opts[:for]
