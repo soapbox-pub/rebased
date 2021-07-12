@@ -67,7 +67,7 @@
   "jose": {:hex, :jose, "1.11.1", "59da64010c69aad6cde2f5b9248b896b84472e99bd18f246085b7b9fe435dcdb", [:mix, :rebar3], [], "hexpm", "078f6c9fb3cd2f4cfafc972c814261a7d1e8d2b3685c0a76eb87e158efff1ac5"},
   "jumper": {:hex, :jumper, "1.0.1", "3c00542ef1a83532b72269fab9f0f0c82bf23a35e27d278bfd9ed0865cecabff", [:mix], [], "hexpm", "318c59078ac220e966d27af3646026db9b5a5e6703cb2aa3e26bcfaba65b7433"},
   "libring": {:hex, :libring, "1.4.0", "41246ba2f3fbc76b3971f6bce83119dfec1eee17e977a48d8a9cfaaf58c2a8d6", [:mix], [], "hexpm"},
-  "linkify": {:hex, :linkify, "0.5.0", "e0ea8de73ff44742d6a889721221f4c4eccaad5284957ee9832ffeb347602d54", [:mix], [], "hexpm", "4ccd958350aee7c51c89e21f05b15d30596ebbba707e051d21766be1809df2d7"},
+  "linkify": {:hex, :linkify, "0.5.1", "6dc415cbc948b2f6ecec7cb226aab7ba9d3a1815bb501ae33e042334d707ecee", [:mix], [], "hexpm", "a3128c7e22fada4aa7214009501d8131e1fa3faf2f0a68b33dba379dc84ff944"},
   "majic": {:git, "https://git.pleroma.social/pleroma/elixir-libraries/majic.git", "289cda1b6d0d70ccb2ba508a2b0bd24638db2880", [ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"]},
   "makeup": {:hex, :makeup, "1.0.5", "d5a830bc42c9800ce07dd97fa94669dfb93d3bf5fcf6ea7a0c67b2e0e4a7f26c", [:mix], [{:nimble_parsec, "~> 0.5 or ~> 1.0", [hex: :nimble_parsec, repo: "hexpm", optional: false]}], "hexpm", "cfa158c02d3f5c0c665d0af11512fed3fba0144cf1aadee0f2ce17747fba2ca9"},
   "makeup_elixir": {:hex, :makeup_elixir, "0.14.1", "4f0e96847c63c17841d42c08107405a005a2680eb9c7ccadfd757bd31dabccfb", [:mix], [{:makeup, "~> 1.0", [hex: :makeup, repo: "hexpm", optional: false]}], "hexpm", "f2438b1a80eaec9ede832b5c41cd4f373b38fd7aa33e3b22d9db79e640cbde11"},

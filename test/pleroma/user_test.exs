@@ -1639,9 +1639,9 @@ defmodule Pleroma.UserTest do
         follower_count: 9,
         following_count: 9001,
         is_locked: true,
-        is_confirmed: false,
+        is_confirmed: true,
         password_reset_pending: true,
-        is_approved: false,
+        is_approved: true,
         registration_reason: "ahhhhh",
         confirmation_token: "qqqq",
         domain_blocks: ["lain.com"],
@@ -1669,8 +1669,8 @@ defmodule Pleroma.UserTest do
              email: nil,
              name: nil,
              password_hash: nil,
-             keys: nil,
-             public_key: nil,
+             keys: "RSA begin buplic key",
+             public_key: "--PRIVATE KEYE--",
              avatar: %{},
              tags: [],
              last_refreshed_at: nil,
@@ -1700,6 +1700,24 @@ defmodule Pleroma.UserTest do
              is_discoverable: false,
              also_known_as: []
            } = user
+  end
+
+  test "delete/1 purges a remote user" do
+    user =
+      insert(:user, %{
+        name: "qqqqqqq",
+        avatar: %{"a" => "b"},
+        banner: %{"a" => "b"},
+        local: false
+      })
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+    user = User.get_by_id(user.id)
+
+    assert user.name == nil
+    assert user.avatar == %{}
+    assert user.banner == %{}
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
