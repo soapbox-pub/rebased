@@ -13,7 +13,6 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:put_view, Pleroma.Web.MastodonAPI.AppView)
 
   plug(
     OAuthScopesPlug,

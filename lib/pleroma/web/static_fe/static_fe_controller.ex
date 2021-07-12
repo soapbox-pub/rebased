@@ -14,7 +14,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   alias Pleroma.Web.Router.Helpers
 
   plug(:put_layout, :static_fe)
-  plug(:put_view, Pleroma.Web.StaticFE.StaticFEView)
   plug(:assign_id)
 
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
@@ -166,6 +165,15 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   end
 
   defp assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
+    do: assign(conn, :notice_id, notice_id)
+
+  defp assign_id(%{path_info: ["@" <> _nickname, notice_id]} = conn, _opts),
+    do: assign(conn, :notice_id, notice_id)
+
+  defp assign_id(%{path_info: ["@" <> _nickname, "posts", notice_id]} = conn, _opts),
+    do: assign(conn, :notice_id, notice_id)
+
+  defp assign_id(%{path_info: [_nickname, "status", notice_id]} = conn, _opts),
     do: assign(conn, :notice_id, notice_id)
 
   defp assign_id(%{path_info: ["users", user_id]} = conn, _opts),

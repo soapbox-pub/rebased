@@ -8,7 +8,7 @@
 <h2>Registration Details</h2>
 
 <p>If you'd like to register a new account, please provide the details below.</p>
-<%= form_for @conn, o_auth_path(@conn, :register), [as: "authorization"], fn f -> %>
+<%= form_for @conn, Routes.o_auth_path(@conn, :register), [as: "authorization"], fn f -> %>
 
 <div class="input">
   <%= label f, :nickname, "Nickname" %>

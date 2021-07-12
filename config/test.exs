@@ -133,6 +133,10 @@ config :pleroma, :side_effects,
   ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
   logger: Pleroma.LoggerMock
 
+# Reduce recompilation time
+# https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
+config :phoenix, :plug_init_mode, :runtime
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
          false <- Visibility.is_public?(object) do
       same_actor = object.data["actor"] == actor.ap_id
       recipients = get_field(cng, :to) ++ get_field(cng, :cc)
-      local_public = Pleroma.Constants.as_local_public()
+      local_public = Utils.as_local_public()
 
       is_public =
         Enum.member?(recipients, Pleroma.Constants.as_public()) or
