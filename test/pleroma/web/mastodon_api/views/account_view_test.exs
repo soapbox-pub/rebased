@@ -593,4 +593,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       |> assert()
     end
   end
+
+  test "renders group data if the account is a Group actor" do
+    group = insert(:group)
+    result = AccountView.render("show.json", %{user: group.user, skip_visibility_check: true})
+
+    assert result.pleroma.group.id == group.id
+  end
 end

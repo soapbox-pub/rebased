@@ -6,10 +6,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
 
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Group
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.PleromaAPI.GroupView
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users} = opts) do
@@ -293,6 +295,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
+    |> maybe_put_group(user)
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -413,6 +416,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_email_address(data, _, _), do: data
+
+  defp maybe_put_group(data, user) do
+    with %Group{} = group <- Group.get_by_user(user) do
+      Kernel.put_in(data, [:pleroma, :group], GroupView.render("show.json", %{group: group}))
+    else
+      _ -> data
+    end
+  end
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

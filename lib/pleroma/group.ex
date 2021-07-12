@@ -86,6 +86,9 @@ defmodule Pleroma.Group do
     |> Repo.all()
   end
 
+  def get_by_user(%User{group: %Group{} = group}), do: group
+  def get_by_user(%User{} = user), do: Repo.preload(user, :group).group
+
   defp generate_ap_id(slug) do
     "#{Endpoint.url()}/groups/#{slug}"
   end

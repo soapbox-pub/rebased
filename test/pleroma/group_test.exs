@@ -98,4 +98,9 @@ defmodule Pleroma.GroupTest do
     {:ok, group} = Group.remove_member(group, other_user)
     refute Group.is_member?(group, other_user)
   end
+
+  test "get_by_user/1 returns a group if the user is a Group actor" do
+    group = insert(:group)
+    assert Group.get_by_user(group.user).id == group.id
+  end
 end
