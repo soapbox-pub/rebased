@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
@@ -113,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator do
 
   defp validate_data(data_cng) do
     data_cng
-    |> validate_inclusion(:type, ["Article", "Note"])
+    |> validate_inclusion(:type, ["Article", "Note", "Page"])
     |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
