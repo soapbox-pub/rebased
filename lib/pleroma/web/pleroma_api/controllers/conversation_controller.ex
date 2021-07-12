@@ -13,7 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.ConversationController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:put_view, Pleroma.Web.MastodonAPI.ConversationView)
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:show, :statuses])
 
   plug(

@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   alias Pleroma.Config
 
   @moduledoc "Detect new emojis by their shortcode and steals them"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   defp accept_host?(host), do: host in Config.get([:mrf_steal_emoji, :hosts], [])
 

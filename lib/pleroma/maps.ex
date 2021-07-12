@@ -12,4 +12,10 @@ defmodule Pleroma.Maps do
       _ -> map
     end
   end
+
+  def safe_put_in(data, keys, value) when is_map(data) and is_list(keys) do
+    Kernel.put_in(data, keys, value)
+  rescue
+    _ -> data
+  end
 end
