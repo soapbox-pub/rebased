@@ -37,6 +37,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
     }
   end
 
+  def render("show.json", _), do: nil
+
   def render("relationship.json", %{user: %User{} = user, group: %Group{} = group}) do
     membership_state = Group.get_membership_state(group, user)
 
