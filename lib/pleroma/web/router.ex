@@ -96,8 +96,12 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
+    plug(Pleroma.Web.Plugs.UserIsStaffPlug)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
+  end
+
+  pipeline :require_admin do
+    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
   end
 
   pipeline :mastodon_html do
@@ -156,7 +160,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
+    pipe_through([:admin_api, :require_admin])
 
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
     put("/users/tag", AdminAPIController, :tag_users)
@@ -261,7 +265,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
-      pipe_through(:admin_api)
+      pipe_through([:admin_api, :require_admin])
 
       post("/", EmojiPackController, :create)
       patch("/", EmojiPackController, :update)
@@ -276,7 +280,7 @@ defmodule Pleroma.Web.Router do
 
     # Modifying packs
     scope "/packs" do
-      pipe_through(:admin_api)
+      pipe_through([:admin_api, :require_admin])
 
       get("/import", EmojiPackController, :import_from_filesystem)
       get("/remote", EmojiPackController, :remote)
