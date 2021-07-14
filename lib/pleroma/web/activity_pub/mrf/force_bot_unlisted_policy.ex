@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
   alias Pleroma.User
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   @moduledoc "Remove bot posts from federated timeline"
 
   require Pleroma.Constants

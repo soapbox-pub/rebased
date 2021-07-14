@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoOpPolicy do
   @moduledoc "Does nothing (lets the messages go through unmodified)"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(object) do

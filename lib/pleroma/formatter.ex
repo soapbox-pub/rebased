@@ -62,7 +62,7 @@ defmodule Pleroma.Formatter do
 
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
     tag = String.downcase(tag)
-    url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
+    url = "#{Pleroma.Web.Endpoint.url()}/tag/#{tag}"
 
     link =
       Phoenix.HTML.Tag.content_tag(:a, tag_text,
@@ -119,6 +119,10 @@ defmodule Pleroma.Formatter do
     else
       Linkify.link(text, options)
     end
+  end
+
+  def markdown_to_html(text) do
+    Earmark.as_html!(text, %Earmark.Options{compact_output: true})
   end
 
   def html_escape({text, mentions, hashtags}, type) do

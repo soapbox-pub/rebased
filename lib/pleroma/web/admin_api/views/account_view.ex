@@ -76,7 +76,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "display_name" => display_name,
       "is_active" => user.is_active,
       "local" => user.local,
-      "roles" => User.roles(user),
+      "roles" => roles(user),
       "tags" => user.tags || [],
       "is_confirmed" => user.is_confirmed,
       "is_approved" => user.is_approved,
@@ -85,6 +85,10 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "actor_type" => user.actor_type,
       "created_at" => CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
+  end
+
+  def render("created_many.json", %{users: users}) do
+    render_many(users, AccountView, "created.json", as: :user)
   end
 
   def render("created.json", %{user: user}) do
@@ -98,7 +102,11 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
     }
   end
 
-  def render("create-error.json", %{changeset: %Ecto.Changeset{changes: changes, errors: errors}}) do
+  def render("create_errors.json", %{changesets: changesets}) do
+    render_many(changesets, AccountView, "create_error.json", as: :changeset)
+  end
+
+  def render("create_error.json", %{changeset: %Ecto.Changeset{changes: changes, errors: errors}}) do
     %{
       type: "error",
       code: 409,
@@ -142,4 +150,11 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
+
+  defp roles(%{is_moderator: is_moderator, is_admin: is_admin}) do
+    %{
+      admin: is_admin,
+      moderator: is_moderator
+    }
+  end
 end

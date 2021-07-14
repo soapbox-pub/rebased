@@ -8,10 +8,13 @@ defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+
   require Logger
   require Pleroma.Constants
+
   import Ecto.Query
   import Mix.Pleroma
+
   use Mix.Task
 
   @shortdoc "A collection of database related tasks"
@@ -92,6 +95,15 @@ defmodule Mix.Tasks.Pleroma.Database do
         fragment("split_part(?->>'actor', '/', 3) != ?", o.data, ^Pleroma.Web.Endpoint.host())
     )
     |> Repo.delete_all(timeout: :infinity)
+
+    prune_hashtags_query = """
+    DELETE FROM hashtags AS ht
+    WHERE NOT EXISTS (
+      SELECT 1 FROM hashtags_objects hto
+      WHERE ht.id = hto.hashtag_id)
+    """
+
+    Repo.query(prune_hashtags_query)
 
     if Keyword.get(options, :vacuum) do
       Maintenance.vacuum("full")
@@ -212,6 +224,34 @@ defmodule Mix.Tasks.Pleroma.Database do
       end
 
       shell_info('Done.')
+    end
+  end
+
+  # Rolls back a specific migration (leaving subsequent migrations applied).
+  # WARNING: imposes a risk of unrecoverable data loss — proceed at your own responsibility.
+  # Based on https://stackoverflow.com/a/53825840
+  def run(["rollback", version]) do
+    prompt = "SEVERE WARNING: this operation may result in unrecoverable data loss. Continue?"
+
+    if shell_prompt(prompt, "n") in ~w(Yn Y y) do
+      {_, result, _} =
+        Ecto.Migrator.with_repo(Pleroma.Repo, fn repo ->
+          version = String.to_integer(version)
+          re = ~r/^#{version}_.*\.exs/
+          path = Ecto.Migrator.migrations_path(repo)
+
+          with {_, "" <> file} <- {:find, Enum.find(File.ls!(path), &String.match?(&1, re))},
+               {_, [{mod, _} | _]} <- {:compile, Code.compile_file(Path.join(path, file))},
+               {_, :ok} <- {:rollback, Ecto.Migrator.down(repo, version, mod)} do
+            {:ok, "Reversed migration: #{file}"}
+          else
+            {:find, _} -> {:error, "No migration found with version prefix: #{version}"}
+            {:compile, e} -> {:error, "Problem compiling migration module: #{inspect(e)}"}
+            {:rollback, e} -> {:error, "Problem reversing migration: #{inspect(e)}"}
+          end
+        end)
+
+      shell_info(inspect(result))
     end
   end
 end
