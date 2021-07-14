@@ -91,12 +91,11 @@ defmodule Mix.Tasks.Pleroma.InstanceTest do
     assert generated_config =~ "password: \"dbpass\""
     assert generated_config =~ "configurable_from_database: true"
     assert generated_config =~ "http: [ip: {127, 0, 0, 1}, port: 4000]"
-    assert generated_config =~ "filters: [Pleroma.Upload.Filter.Exiftool]"
     assert File.read!(tmp_path() <> "setup.psql") == generated_setup_psql()
     assert File.exists?(Path.expand("./test/instance/static/robots.txt"))
   end
 
   defp generated_setup_psql do
-    ~s(CREATE USER dbuser WITH ENCRYPTED PASSWORD 'dbpass';\nCREATE DATABASE dbname OWNER dbuser;\n\\c dbname;\n--Extensions made by ecto.migrate that need superuser access\nCREATE EXTENSION IF NOT EXISTS citext;\nCREATE EXTENSION IF NOT EXISTS pg_trgm;\nCREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\nCREATE EXTENSION IF NOT EXISTS rum;\n)
+    ~s(CREATE USER dbuser WITH ENCRYPTED PASSWORD 'dbpass';\nCREATE DATABASE dbname OWNER dbuser;\n\\c dbname;\n--Extensions made by ecto.migrate that need superuser access\nCREATE EXTENSION IF NOT EXISTS citext;\nCREATE EXTENSION IF NOT EXISTS pg_trgm;\nCREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\n\n)
   end
 end

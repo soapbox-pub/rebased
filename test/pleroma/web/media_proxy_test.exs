@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MediaProxyTest do
 
       assert String.starts_with?(
                encoded,
-               Config.get([:media_proxy, :base_url], Pleroma.Web.base_url())
+               Config.get([:media_proxy, :base_url], Pleroma.Web.Endpoint.url())
              )
 
       assert String.ends_with?(encoded, "/logo.png")

@@ -5,7 +5,7 @@
 defmodule Pleroma.Emoji.Formatter do
   alias Pleroma.Emoji
   alias Pleroma.HTML
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
   def emojify(text) do
@@ -44,7 +44,7 @@ defmodule Pleroma.Emoji.Formatter do
     Emoji.get_all()
     |> Enum.filter(fn {emoji, %Emoji{}} -> String.contains?(text, ":#{emoji}:") end)
     |> Enum.reduce(%{}, fn {name, %Emoji{file: file}}, acc ->
-      Map.put(acc, name, to_string(URI.merge(Web.base_url(), file)))
+      Map.put(acc, name, to_string(URI.merge(Endpoint.url(), file)))
     end)
   end
 
