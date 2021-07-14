@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub.Persisting do
-  @callback persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  @callback persist(map(), keyword()) :: {:ok, struct()}
 end

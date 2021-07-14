@@ -300,7 +300,7 @@ See [Admin-API](admin_api.md)
 * Note: Behaves exactly the same as `POST /api/v1/upload`.
   Can only accept images - any attempt to upload non-image files will be met with `HTTP 415 Unsupported Media Type`.
 
-## `/api/v1/pleroma/notification_settings`
+## `/api/pleroma/notification_settings`
 ### Updates user notification settings
 * Method `PUT`
 * Authentication: required

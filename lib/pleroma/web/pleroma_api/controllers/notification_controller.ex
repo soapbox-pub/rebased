@@ -14,8 +14,6 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
     %{scopes: ["write:notifications"]} when action == :mark_as_read
   )
 
-  plug(:put_view, Pleroma.Web.MastodonAPI.NotificationView)
-
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaNotificationOperation
 
   def mark_as_read(%{assigns: %{user: user}, body_params: %{id: notification_id}} = conn, _) do

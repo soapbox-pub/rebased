@@ -5,14 +5,21 @@
 defmodule Pleroma.Emails.UserEmail do
   @moduledoc "User emails"
 
-  use Phoenix.Swoosh, view: Pleroma.Web.EmailView, layout: {Pleroma.Web.LayoutView, :email}
-
   alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
+  import Swoosh.Email
+  import Phoenix.Swoosh, except: [render_body: 3]
   import Pleroma.Config.Helpers, only: [instance_name: 0, sender: 0]
+
+  def render_body(email, template, assigns \\ %{}) do
+    email
+    |> put_new_layout({Pleroma.Web.LayoutView, :email})
+    |> put_new_view(Pleroma.Web.EmailView)
+    |> Phoenix.Swoosh.render_body(template, assigns)
+  end
 
   defp recipient(email, nil), do: email
   defp recipient(email, name), do: {name, email}

@@ -1,6 +1,6 @@
 <h2>Sign in with external provider</h2>
 
-<%= form_for @conn, o_auth_path(@conn, :prepare_request), [as: "authorization", method: "get"], fn f -> %>
+<%= form_for @conn, Routes.o_auth_path(@conn, :prepare_request), [as: "authorization", method: "get"], fn f -> %>
   <div style="display: none">
     <%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
   </div>

@@ -1,0 +1,80 @@
+{
+  "id": "https://fed.brid.gy/jk.nipponalba.scot",
+  "url": "https://fed.brid.gy/r/https://jk.nipponalba.scot",
+  "urls": [
+    {
+      "value": "https://jk.nipponalba.scot"
+    },
+    {
+      "value": "https://social.nipponalba.scot/jk"
+    },
+    {
+      "value": "https://px.nipponalba.scot/jk"
+    }
+  ],
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "type": "Person",
+  "name": "J K 🇯🇵🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "image": [
+    {
+      "url": "https://jk.nipponalba.scot/images/profile.jpg",
+      "type": "Image",
+      "name": "profile picture"
+    }
+  ],
+  "tag": [
+    {
+      "type": "Tag",
+      "name": "Craft Beer"
+    },
+    {
+      "type": "Tag",
+      "name": "Single Malt Whisky"
+    },
+    {
+      "type": "Tag",
+      "name": "Homebrewing"
+    },
+    {
+      "type": "Tag",
+      "name": "Scottish Politics"
+    },
+    {
+      "type": "Tag",
+      "name": "Scottish History"
+    },
+    {
+      "type": "Tag",
+      "name": "Japanese History"
+    },
+    {
+      "type": "Tag",
+      "name": "Tech"
+    },
+    {
+      "type": "Tag",
+      "name": "Veganism"
+    },
+    {
+      "type": "Tag",
+      "name": "Cooking"
+    }
+  ],
+  "icon": [
+    {
+      "url": "https://jk.nipponalba.scot/images/profile.jpg",
+      "type": "Image",
+      "name": "profile picture"
+    }
+  ],
+  "preferredUsername": "jk.nipponalba.scot",
+  "summary": "",
+  "publicKey": {
+    "id": "jk.nipponalba.scot",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdarxwzxnNbJ2hneWOYHkYJowk\npyigQtxlUd0VjgSQHwxU9kWqfbrHBVADyTtcqi/4dAzQd3UnCI1TPNnn4LPZY9PW\noiWd3Zl1/EfLFxO7LU9GS7fcSLQkyj5JNhSlN3I8QPudZbybrgRDVZYooDe1D+52\n5KLGqC2ajrIVOiDRTQIDAQAB\n-----END PUBLIC KEY-----"
+  },
+  "inbox": "https://fed.brid.gy/jk.nipponalba.scot/inbox",
+  "outbox": "https://fed.brid.gy/jk.nipponalba.scot/outbox",
+  "following": "https://fed.brid.gy/jk.nipponalba.scot/following",
+  "followers": "https://fed.brid.gy/jk.nipponalba.scot/followers"
+}

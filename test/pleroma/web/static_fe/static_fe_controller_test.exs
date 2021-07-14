@@ -7,6 +7,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
 
   alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -185,16 +186,16 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
     test "302 for remote cached status", %{conn: conn, user: user} do
       message = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "to" => user.follower_address,
-        "cc" => "https://www.w3.org/ns/activitystreams#Public",
         "type" => "Create",
+        "actor" => user.ap_id,
         "object" => %{
+          "to" => user.follower_address,
+          "cc" => "https://www.w3.org/ns/activitystreams#Public",
+          "id" => Utils.generate_object_id(),
           "content" => "blah blah blah",
           "type" => "Note",
-          "attributedTo" => user.ap_id,
-          "inReplyTo" => nil
-        },
-        "actor" => user.ap_id
+          "attributedTo" => user.ap_id
+        }
       }
 
       assert {:ok, activity} = Transmogrifier.handle_incoming(message)

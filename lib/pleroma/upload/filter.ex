@@ -15,13 +15,13 @@ defmodule Pleroma.Upload.Filter do
 
   require Logger
 
-  @callback filter(Pleroma.Upload.t()) ::
+  @callback filter(upload :: struct()) ::
               {:ok, :filtered}
               | {:ok, :noop}
-              | {:ok, :filtered, Pleroma.Upload.t()}
+              | {:ok, :filtered, upload :: struct()}
               | {:error, any()}
 
-  @spec filter([module()], Pleroma.Upload.t()) :: {:ok, Pleroma.Upload.t()} | {:error, any()}
+  @spec filter([module()], upload :: struct()) :: {:ok, upload :: struct()} | {:error, any()}
 
   def filter([], upload) do
     {:ok, upload}

@@ -115,7 +115,8 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       ],
       operationId: "TimelineController.hashtag",
       responses: %{
-        200 => Operation.response("Array of Status", "application/json", array_of_statuses())
+        200 => Operation.response("Array of Status", "application/json", array_of_statuses()),
+        401 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
