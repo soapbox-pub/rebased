@@ -51,10 +51,10 @@ defmodule Pleroma.Web.Feed.FeedView do
   def feed_logo do
     case Pleroma.Config.get([:feed, :logo]) do
       nil ->
-        "#{Pleroma.Web.base_url()}/static/logo.svg"
+        "#{Pleroma.Web.Endpoint.url()}/static/logo.svg"
 
       logo ->
-        "#{Pleroma.Web.base_url()}#{logo}"
+        "#{Pleroma.Web.Endpoint.url()}#{logo}"
     end
     |> MediaProxy.url()
   end

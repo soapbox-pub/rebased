@@ -27,13 +27,13 @@ defmodule Pleroma.User do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
   alias Pleroma.Workers.BackgroundWorker
@@ -148,6 +148,7 @@ defmodule Pleroma.User do
     field(:accepts_chat_messages, :boolean, default: nil)
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
+    field(:accepts_email_list, :boolean, default: false)
 
     embeds_one(
       :notification_settings,
@@ -359,7 +360,7 @@ defmodule Pleroma.User do
 
       _ ->
         unless options[:no_default] do
-          Config.get([:assets, :default_user_avatar], "#{Web.base_url()}/images/avi.png")
+          Config.get([:assets, :default_user_avatar], "#{Endpoint.url()}/images/avi.png")
         end
     end
   end
@@ -367,12 +368,12 @@ defmodule Pleroma.User do
   def banner_url(user, options \\ []) do
     case user.banner do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
+      _ -> !options[:no_default] && "#{Endpoint.url()}/images/banner.png"
     end
   end
 
   # Should probably be renamed or removed
-  def ap_id(%User{nickname: nickname}), do: "#{Web.base_url()}/users/#{nickname}"
+  def ap_id(%User{nickname: nickname}), do: "#{Endpoint.url()}/users/#{nickname}"
 
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
@@ -515,7 +516,8 @@ defmodule Pleroma.User do
         :is_discoverable,
         :actor_type,
         :accepts_chat_messages,
-        :disclose_client
+        :disclose_client,
+        :accepts_email_list
       ]
     )
     |> unique_constraint(:nickname)
@@ -678,7 +680,8 @@ defmodule Pleroma.User do
       :name,
       :nickname,
       :email,
-      :accepts_chat_messages
+      :accepts_chat_messages,
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
@@ -722,7 +725,8 @@ defmodule Pleroma.User do
       :password_confirmation,
       :emoji,
       :accepts_chat_messages,
-      :registration_reason
+      :registration_reason,
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -1680,8 +1684,6 @@ defmodule Pleroma.User do
       email: nil,
       name: nil,
       password_hash: nil,
-      keys: nil,
-      public_key: nil,
       avatar: %{},
       tags: [],
       last_refreshed_at: nil,
@@ -1692,9 +1694,7 @@ defmodule Pleroma.User do
       follower_count: 0,
       following_count: 0,
       is_locked: false,
-      is_confirmed: true,
       password_reset_pending: false,
-      is_approved: true,
       registration_reason: nil,
       confirmation_token: nil,
       domain_blocks: [],
@@ -1709,8 +1709,21 @@ defmodule Pleroma.User do
       fields: [],
       raw_fields: [],
       is_discoverable: false,
-      also_known_as: []
+      also_known_as: [],
+      accepts_email_list: false
+      # id: preserved
+      # ap_id: preserved
+      # nickname: preserved
     })
+  end
+
+  # Purge doesn't delete the user from the database.
+  # It just nulls all its fields and deactivates it.
+  # See `User.purge_user_changeset/1` above.
+  def purge(%User{} = user) do
+    user
+    |> purge_user_changeset()
+    |> update_and_set_cache()
   end
 
   def delete(users) when is_list(users) do
@@ -1718,37 +1731,33 @@ defmodule Pleroma.User do
   end
 
   def delete(%User{} = user) do
+    # Purge the user immediately
+    purge(user)
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
-  defp delete_and_invalidate_cache(%User{} = user) do
+  # *Actually* delete the user from the DB
+  defp delete_from_db(%User{} = user) do
     invalidate_cache(user)
     Repo.delete(user)
   end
 
-  defp delete_or_deactivate(%User{local: false} = user), do: delete_and_invalidate_cache(user)
+  # If the user never finalized their account, it's safe to delete them.
+  defp maybe_delete_from_db(%User{local: true, is_confirmed: false} = user),
+    do: delete_from_db(user)
 
-  defp delete_or_deactivate(%User{local: true} = user) do
-    status = account_status(user)
+  defp maybe_delete_from_db(%User{local: true, is_approved: false} = user),
+    do: delete_from_db(user)
 
-    case status do
-      :confirmation_pending ->
-        delete_and_invalidate_cache(user)
-
-      :approval_pending ->
-        delete_and_invalidate_cache(user)
-
-      _ ->
-        user
-        |> purge_user_changeset()
-        |> update_and_set_cache()
-    end
-  end
+  defp maybe_delete_from_db(user), do: {:ok, user}
 
   def perform(:force_password_reset, user), do: force_password_reset(user)
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
+    # Purge the user again, in case perform/2 is called directly
+    purge(user)
+
     # Remove all relationships
     user
     |> get_followers()
@@ -1766,10 +1775,9 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
     delete_notifications_from_user_activities(user)
-
     delete_outgoing_pending_follow_requests(user)
 
-    delete_or_deactivate(user)
+    maybe_delete_from_db(user)
   end
 
   def perform(:set_activation_async, user, status), do: set_activation(user, status)
