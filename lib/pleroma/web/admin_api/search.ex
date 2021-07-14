@@ -17,7 +17,7 @@ defmodule Pleroma.Web.AdminAPI.Search do
       |> Map.drop([:page, :page_size])
       |> Map.put(:invisible, false)
       |> User.Query.build()
-      |> order_by([u], u.nickname)
+      |> order_by(desc: :id)
 
     paginated_query =
       User.Query.paginate(query, params[:page] || 1, params[:page_size] || @page_size)

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
 - Email address is now returned if requesting user is the owner of the user account so it can be exposed in client and FE user settings UIs.
 - Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
+- AdminAPI: sort users so the newest are at the top.
 - ActivityPub Client-to-Server(C2S): Limitation on the type of Activity/Object are lifted as they are now passed through ObjectValidators
 
 ### Added
