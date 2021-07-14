@@ -921,7 +921,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       "is_approved" => true,
       "url" => user.ap_id,
       "registration_reason" => nil,
-      "actor_type" => "Person"
+      "actor_type" => "Person",
+      "created_at" => CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
     |> Map.merge(attrs)
   end
