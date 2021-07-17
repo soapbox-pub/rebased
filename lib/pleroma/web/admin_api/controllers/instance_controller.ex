@@ -19,18 +19,18 @@ defmodule Pleroma.Web.AdminAPI.InstanceController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["admin:read:statuses"]}
-    when action in [:list_instance_statuses]
+    when action in [:list_statuses]
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["admin:write:accounts", "admin:write:statuses"]}
-    when action in [:delete_instance]
+    when action in [:delete]
   )
 
   action_fallback(AdminAPI.FallbackController)
 
-  def list_instance_statuses(conn, %{"instance" => instance} = params) do
+  def list_statuses(conn, %{"instance" => instance} = params) do
     with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceController do
     |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
   end
 
-  def delete_instance(conn, %{"instance" => instance}) do
+  def delete(conn, %{"instance" => instance}) do
     with {:ok, _job} <- Instance.delete_users_and_activities(instance) do
       json(conn, instance)
     end

@@ -30,38 +30,36 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
     {:ok, %{admin: admin, token: token, conn: conn}}
   end
 
-  describe "instances" do
-    test "GET /instances/:instance/statuses", %{conn: conn} do
-      user = insert(:user, local: false, ap_id: "https://archae.me/users/archaeme")
-      user2 = insert(:user, local: false, ap_id: "https://test.com/users/test")
-      insert_pair(:note_activity, user: user)
-      activity = insert(:note_activity, user: user2)
+  test "GET /instances/:instance/statuses", %{conn: conn} do
+    user = insert(:user, local: false, ap_id: "https://archae.me/users/archaeme")
+    user2 = insert(:user, local: false, ap_id: "https://test.com/users/test")
+    insert_pair(:note_activity, user: user)
+    activity = insert(:note_activity, user: user2)
 
-      %{"total" => 2, "activities" => activities} =
-        conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
+    %{"total" => 2, "activities" => activities} =
+      conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
 
-      assert length(activities) == 2
+    assert length(activities) == 2
 
-      %{"total" => 1, "activities" => [_]} =
-        conn |> get("/api/pleroma/admin/instances/test.com/statuses") |> json_response(200)
+    %{"total" => 1, "activities" => [_]} =
+      conn |> get("/api/pleroma/admin/instances/test.com/statuses") |> json_response(200)
 
-      %{"total" => 0, "activities" => []} =
-        conn |> get("/api/pleroma/admin/instances/nonexistent.com/statuses") |> json_response(200)
+    %{"total" => 0, "activities" => []} =
+      conn |> get("/api/pleroma/admin/instances/nonexistent.com/statuses") |> json_response(200)
 
-      CommonAPI.repeat(activity.id, user)
+    CommonAPI.repeat(activity.id, user)
 
-      %{"total" => 2, "activities" => activities} =
-        conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
+    %{"total" => 2, "activities" => activities} =
+      conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(200)
 
-      assert length(activities) == 2
+    assert length(activities) == 2
 
-      %{"total" => 3, "activities" => activities} =
-        conn
-        |> get("/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
-        |> json_response(200)
+    %{"total" => 3, "activities" => activities} =
+      conn
+      |> get("/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
+      |> json_response(200)
 
-      assert length(activities) == 3
-    end
+    assert length(activities) == 3
   end
 
   test "DELETE /instances/:instance", %{conn: conn} do
