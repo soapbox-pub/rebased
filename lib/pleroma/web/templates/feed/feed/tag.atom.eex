@@ -9,13 +9,13 @@
       xmlns:ostatus="http://ostatus.org/schema/1.0"
       xmlns:statusnet="http://status.net/schema/api/1/">
 
-    <id><%= '#{tag_feed_url(@conn, :feed, @tag)}.rss' %></id>
+    <id><%= '#{Routes.tag_feed_url(@conn, :feed, @tag)}.rss' %></id>
     <title>#<%= @tag %></title>
 
     <subtitle>These are public toots tagged with #<%= @tag %>. You can interact with them if you have an account anywhere in the fediverse.</subtitle>
     <logo><%= feed_logo() %></logo>
     <updated><%= most_recent_update(@activities) %></updated>
-    <link rel="self" href="<%= '#{tag_feed_url(@conn, :feed, @tag)}.atom'  %>" type="application/atom+xml"/>
+    <link rel="self" href="<%= '#{Routes.tag_feed_url(@conn, :feed, @tag)}.atom'  %>" type="application/atom+xml"/>
     <%= for activity <- @activities do %>
     <%= render @view_module, "_tag_activity.atom", Map.merge(assigns, prepare_activity(activity, actor: true)) %>
     <% end %>

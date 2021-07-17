@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ApiSpec.UserImportOperation do
       requestBody: request_body("Parameters", import_request(), required: true),
       responses: %{
         200 => ok_response(),
+        403 => Operation.response("Error", "application/json", ApiError),
         500 => Operation.response("Error", "application/json", ApiError)
       },
       security: [%{"oAuth" => ["write:follow"]}]

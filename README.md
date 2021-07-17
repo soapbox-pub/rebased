@@ -35,6 +35,9 @@ Currently Pleroma is not packaged by any OS/Distros, but if you want to package 
 ### Docker
 While we don’t provide docker files, other people have written very good ones. Take a look at <https://github.com/angristan/docker-pleroma> or <https://glitch.sh/sn0w/pleroma-docker>.
 
+### Raspberry Pi
+Community maintained Raspberry Pi image that you can flash and run Pleroma on your Raspberry Pi. Available here <https://github.com/guysoft/PleromaPi>.
+
 ### Compilation Troubleshooting
 If you ever encounter compilation issues during the updating of Pleroma, you can try these commands and see if they fix things:
 
@@ -50,5 +53,5 @@ If you are not developing Pleroma, it is better to use the OTP release, which co
 - Latest Git revision: <https://docs-develop.pleroma.social>
 
 ## Community Channels
-* IRC: **#pleroma** and **#pleroma-dev** on freenode, webchat is available at <https://irc.pleroma.social>
-* Matrix: <https://matrix.to/#/#freenode_#pleroma:matrix.org> and <https://matrix.to/#/#freenode_#pleroma-dev:matrix.org>
+* IRC: **#pleroma** and **#pleroma-dev** on libera.chat, webchat is available at <https://irc.pleroma.social>
+* Matrix: [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat) and [#pleroma-dev:libera.chat](https://matrix.to/#/#pleroma-dev:libera.chat)

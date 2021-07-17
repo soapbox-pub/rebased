@@ -35,13 +35,13 @@ defmodule Pleroma.ApplicationRequirementsTest do
     setup do: clear_config([:welcome])
     setup do: clear_config([Pleroma.Emails.Mailer])
 
-    test "raises if welcome email enabled but mail disabled" do
+    test "warns if welcome email enabled but mail disabled" do
       clear_config([:welcome, :email, :enabled], true)
       clear_config([Pleroma.Emails.Mailer, :enabled], false)
 
-      assert_raise Pleroma.ApplicationRequirements.VerifyError, "The mail disabled.", fn ->
-        capture_log(&Pleroma.ApplicationRequirements.verify!/0)
-      end
+      assert capture_log(fn ->
+               assert Pleroma.ApplicationRequirements.verify!() == :ok
+             end) =~ "Welcome emails will NOT be sent"
     end
   end
 
@@ -57,15 +57,13 @@ defmodule Pleroma.ApplicationRequirementsTest do
 
     setup do: clear_config([:instance, :account_activation_required])
 
-    test "raises if account confirmation is required but mailer isn't enable" do
+    test "warns if account confirmation is required but mailer isn't enabled" do
       clear_config([:instance, :account_activation_required], true)
       clear_config([Pleroma.Emails.Mailer, :enabled], false)
 
-      assert_raise Pleroma.ApplicationRequirements.VerifyError,
-                   "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails.",
-                   fn ->
-                     capture_log(&Pleroma.ApplicationRequirements.verify!/0)
-                   end
+      assert capture_log(fn ->
+               assert Pleroma.ApplicationRequirements.verify!() == :ok
+             end) =~ "Users will NOT be able to confirm their accounts"
     end
 
     test "doesn't do anything if account confirmation is disabled" do

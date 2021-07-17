@@ -10,6 +10,7 @@ defmodule Pleroma.Object do
 
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Hashtag
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
@@ -27,6 +28,8 @@ defmodule Pleroma.Object do
 
   schema "objects" do
     field(:data, :map)
+
+    many_to_many(:hashtags, Hashtag, join_through: "hashtags_objects", on_replace: :delete)
 
     timestamps()
   end
@@ -49,7 +52,8 @@ defmodule Pleroma.Object do
   end
 
   def create(data) do
-    Object.change(%Object{}, %{data: data})
+    %Object{}
+    |> Object.change(%{data: data})
     |> Repo.insert()
   end
 
@@ -58,7 +62,40 @@ defmodule Pleroma.Object do
     |> cast(params, [:data])
     |> validate_required([:data])
     |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
+    # Expecting `maybe_handle_hashtags_change/1` to run last:
+    |> maybe_handle_hashtags_change(struct)
   end
+
+  # Note: not checking activity type (assuming non-legacy objects are associated with Create act.)
+  defp maybe_handle_hashtags_change(changeset, struct) do
+    with %Ecto.Changeset{valid?: true} <- changeset,
+         data_hashtags_change = get_change(changeset, :data),
+         {_, true} <- {:changed, hashtags_changed?(struct, data_hashtags_change)},
+         {:ok, hashtag_records} <-
+           data_hashtags_change
+           |> object_data_hashtags()
+           |> Hashtag.get_or_create_by_names() do
+      put_assoc(changeset, :hashtags, hashtag_records)
+    else
+      %{valid?: false} ->
+        changeset
+
+      {:changed, false} ->
+        changeset
+
+      {:error, _} ->
+        validate_change(changeset, :data, fn _, _ ->
+          [data: "error referencing hashtags"]
+        end)
+    end
+  end
+
+  defp hashtags_changed?(%Object{} = struct, %{"tag" => _} = data) do
+    Enum.sort(embedded_hashtags(struct)) !=
+      Enum.sort(object_data_hashtags(data))
+  end
+
+  defp hashtags_changed?(_, _), do: false
 
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
@@ -187,9 +224,13 @@ defmodule Pleroma.Object do
   def swap_object_with_tombstone(object) do
     tombstone = make_tombstone(object)
 
-    object
-    |> Object.change(%{data: tombstone})
-    |> Repo.update()
+    with {:ok, object} <-
+           object
+           |> Object.change(%{data: tombstone})
+           |> Repo.update() do
+      Hashtag.unlink(object)
+      {:ok, object}
+    end
   end
 
   def delete(%Object{data: %{"id" => id}} = object) do
@@ -325,7 +366,7 @@ defmodule Pleroma.Object do
   end
 
   def local?(%Object{data: %{"id" => id}}) do
-    String.starts_with?(id, Pleroma.Web.base_url() <> "/")
+    String.starts_with?(id, Pleroma.Web.Endpoint.url() <> "/")
   end
 
   def replies(object, opts \\ []) do
@@ -349,4 +390,39 @@ defmodule Pleroma.Object do
 
   def self_replies(object, opts \\ []),
     do: replies(object, Keyword.put(opts, :self_only, true))
+
+  def tags(%Object{data: %{"tag" => tags}}) when is_list(tags), do: tags
+
+  def tags(_), do: []
+
+  def hashtags(%Object{} = object) do
+    # Note: always using embedded hashtags regardless whether they are migrated to hashtags table
+    #   (embedded hashtags stay in sync anyways, and we avoid extra joins and preload hassle)
+    embedded_hashtags(object)
+  end
+
+  def embedded_hashtags(%Object{data: data}) do
+    object_data_hashtags(data)
+  end
+
+  def embedded_hashtags(_), do: []
+
+  def object_data_hashtags(%{"tag" => tags}) when is_list(tags) do
+    tags
+    |> Enum.filter(fn
+      %{"type" => "Hashtag"} = data -> Map.has_key?(data, "name")
+      plain_text when is_bitstring(plain_text) -> true
+      _ -> false
+    end)
+    |> Enum.map(fn
+      %{"name" => "#" <> hashtag} -> String.downcase(hashtag)
+      %{"name" => hashtag} -> String.downcase(hashtag)
+      hashtag when is_bitstring(hashtag) -> String.downcase(hashtag)
+    end)
+    |> Enum.uniq()
+    # Note: "" elements (plain text) might occur in `data.tag` for incoming objects
+    |> Enum.filter(&(&1 not in [nil, ""]))
+  end
+
+  def object_data_hashtags(_), do: []
 end

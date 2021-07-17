@@ -12,8 +12,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.Auth.Authenticator
-  alias Pleroma.Web.ControllerHelper
+  alias Pleroma.Web.Auth.WrapperAuthenticator, as: Authenticator
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.MFAController
@@ -24,6 +23,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
   alias Pleroma.Web.Plugs.RateLimiter
+  alias Pleroma.Web.Utils.Params
 
   require Logger
 
@@ -32,10 +32,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   plug(:fetch_session)
   plug(:fetch_flash)
 
-  plug(:skip_plug, [
-    Pleroma.Web.Plugs.OAuthScopesPlug,
-    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
-  ])
+  plug(:skip_auth)
 
   plug(RateLimiter, [name: :authentication] when action == :create_authorization)
 
@@ -50,7 +47,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def authorize(%Plug.Conn{assigns: %{token: %Token{}}} = conn, %{"force_login" => _} = params) do
-    if ControllerHelper.truthy_param?(params["force_login"]) do
+    if Params.truthy_param?(params["force_login"]) do
       do_authorize(conn, params)
     else
       handle_existing_authorization(conn, params)
@@ -427,7 +424,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       |> Map.put("state", state)
 
     # Handing the request to Ueberauth
-    redirect(conn, to: o_auth_path(conn, :request, provider, params))
+    redirect(conn, to: Routes.o_auth_path(conn, :request, provider, params))
   end
 
   def request(%Plug.Conn{} = conn, params) do
@@ -601,7 +598,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   # Special case: Local MastodonFE
-  defp redirect_uri(%Plug.Conn{} = conn, "."), do: auth_url(conn, :login)
+  defp redirect_uri(%Plug.Conn{} = conn, "."), do: Routes.auth_url(conn, :login)
 
   defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 
