@@ -210,6 +210,7 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
     get("/instances/:instance/statuses", InstanceController, :list_instance_statuses)
+    delete("/instances/:instance", InstanceController, :delete_instance)
 
     get("/instance_document/:name", InstanceDocumentController, :show)
     patch("/instance_document/:name", InstanceDocumentController, :update)

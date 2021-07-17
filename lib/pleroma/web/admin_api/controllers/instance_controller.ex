@@ -7,6 +7,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceController do
 
   import Pleroma.Web.ControllerHelper, only: [fetch_integer_param: 3]
 
+  alias Pleroma.Instances.Instance
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
@@ -19,6 +20,12 @@ defmodule Pleroma.Web.AdminAPI.InstanceController do
     OAuthScopesPlug,
     %{scopes: ["admin:read:statuses"]}
     when action in [:list_instance_statuses]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:write:accounts", "admin:write:statuses"]}
+    when action in [:delete_instance]
   )
 
   action_fallback(AdminAPI.FallbackController)
@@ -39,6 +46,12 @@ defmodule Pleroma.Web.AdminAPI.InstanceController do
     conn
     |> put_view(AdminAPI.StatusView)
     |> render("index.json", %{total: result[:total], activities: result[:items], as: :activity})
+  end
+
+  def delete_instance(conn, %{"instance" => instance}) do
+    with {:ok, _job} <- Instance.delete_users_and_activities(instance) do
+      json(conn, instance)
+    end
   end
 
   defp page_params(params) do

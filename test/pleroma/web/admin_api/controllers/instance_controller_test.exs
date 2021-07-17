@@ -8,6 +8,8 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
 
   setup_all do
@@ -60,5 +62,21 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
 
       assert length(activities) == 3
     end
+  end
+
+  test "DELETE /instances/:instance", %{conn: conn} do
+    user = insert(:user, nickname: "lain@lain.com")
+    post = insert(:note_activity, user: user)
+
+    response =
+      conn
+      |> delete("/api/pleroma/admin/instances/lain.com")
+      |> json_response(200)
+
+    [:ok] = ObanHelpers.perform_all()
+
+    assert response == "lain.com"
+    refute Repo.reload(user).is_active
+    refute Repo.reload(post)
   end
 end
