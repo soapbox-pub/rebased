@@ -26,8 +26,10 @@ defmodule Pleroma.Workers.PollWorker do
   end
 
   def schedule_poll_end(%Activity{data: %{"type" => "Create"}, id: activity_id} = activity) do
-    with %Object{data: %{"type" => "Question", "closed" => closed}} <- Object.normalize(activity),
-         {:ok, end_time} <- NaiveDateTime.from_iso8601(closed) do
+    with %Object{data: %{"type" => "Question", "closed" => closed}} when is_binary(closed) <-
+           Object.normalize(activity),
+         {:ok, end_time} <- NaiveDateTime.from_iso8601(closed),
+         :gt <- NaiveDateTime.compare(end_time, NaiveDateTime.utc_now()) do
       %{
         op: "poll_end",
         activity_id: activity_id
