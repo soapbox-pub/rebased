@@ -471,9 +471,11 @@ defmodule Pleroma.Notification do
         end
 
       notifications =
-        Enum.map([actor | voters], fn ap_id ->
-          with %User{} = user <- User.get_by_ap_id(ap_id) do
-            create_notification(activity, user, type: "poll")
+        Enum.reduce([actor | voters], [], fn ap_id, acc ->
+          with %User{local: true} = user <- User.get_by_ap_id(ap_id) do
+            [create_notification(activity, user, type: "poll") | acc]
+          else
+            _ -> acc
           end
         end)
 
