@@ -195,7 +195,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "pleroma:chat_mention",
         "pleroma:report",
         "move",
-        "follow_request"
+        "follow_request",
+        "poll"
       ],
       description: """
       The type of event that resulted in the notification.
