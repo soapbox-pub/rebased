@@ -128,6 +128,7 @@ defmodule Pleroma.Notification do
     |> where([user_actor: user_actor], user_actor.is_active)
     |> exclude_notification_muted(user, exclude_notification_muted_opts)
     |> exclude_blocked(user, exclude_blocked_opts)
+    |> exclude_blockers(user)
     |> exclude_filtered(user)
     |> exclude_visibility(opts)
   end
@@ -139,6 +140,17 @@ defmodule Pleroma.Notification do
     query
     |> where([n, a], a.actor not in ^blocked_ap_ids)
     |> FollowingRelationship.keep_following_or_not_domain_blocked(user)
+  end
+
+  defp exclude_blockers(query, user) do
+    if Pleroma.Config.get([:activitypub, :blockers_visible]) == true do
+      query
+    else
+      blocker_ap_ids = User.incoming_relationships_ungrouped_ap_ids(user, [:block])
+
+      query
+      |> where([n, a], a.actor not in ^blocker_ap_ids)
+    end
   end
 
   defp exclude_notification_muted(query, _, %{@include_muted_option => true}) do

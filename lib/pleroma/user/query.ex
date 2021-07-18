@@ -124,6 +124,10 @@ defmodule Pleroma.User.Query do
     where(query, [u], u.is_moderator == ^bool)
   end
 
+  defp compose_query({:accepts_email_list, bool}, query) do
+    where(query, [u], u.accepts_email_list == ^bool)
+  end
+
   defp compose_query({:super_users, _}, query) do
     where(
       query,

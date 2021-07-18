@@ -10,6 +10,7 @@
 /test/fixtures/test_tmp.txt
 /test/fixtures/image_tmp.jpg
 /test/tmp/
+/test/frontend_static_test/
 /doc
 /instance
 /priv/ssh_keys
@@ -28,11 +29,15 @@ erl_crash.dump
 # variables.
 /config/*.secret.exs
 /config/generated_config.exs
+/config/runtime.exs
 /config/*.env
 
 
 # Database setup file, some may forget to delete it
 /config/setup_db*.psql
+
+# Whitelist Soapbox FE build
+!/instance/static/frontends/soapbox-fe/vendor/**
 
 .DS_Store
 .env
@@ -50,9 +55,6 @@ docs/generated_config.md
 
 .idea
 pleroma.iml
-
-# asdf
-.tool-versions
 
 # Editor temp files
 /*~
