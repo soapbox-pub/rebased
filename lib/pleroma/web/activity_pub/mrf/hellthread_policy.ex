@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
 
   @moduledoc "Block messages with too much mentions (configurable)"
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   defp delist_message(message, threshold) when threshold > 0 do
     follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address

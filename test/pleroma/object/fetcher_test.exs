@@ -66,6 +66,14 @@ defmodule Pleroma.Object.FetcherTest do
           %Tesla.Env{
             status: 500
           }
+
+        %{
+          method: :get,
+          url: "https://stereophonic.space/objects/02997b83-3ea7-4b63-94af-ef3aa2d4ed17"
+        } ->
+          %Tesla.Env{
+            status: 500
+          }
       end)
 
       :ok
@@ -124,8 +132,7 @@ defmodule Pleroma.Object.FetcherTest do
       {:ok, object} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
+      assert _activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
       {:ok, object_again} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")

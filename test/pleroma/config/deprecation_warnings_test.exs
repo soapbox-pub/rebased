@@ -146,4 +146,14 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
                "Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings"
     end
   end
+
+  test "check_old_chat_shoutbox/0" do
+    clear_config([:instance, :chat_limit], 1_000)
+    clear_config([:chat, :enabled], true)
+
+    assert capture_log(fn ->
+             DeprecationWarnings.check_old_chat_shoutbox()
+           end) =~
+             "Your config is using the old namespace for the Shoutbox configuration."
+  end
 end

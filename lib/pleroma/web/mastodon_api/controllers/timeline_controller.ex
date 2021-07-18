@@ -12,12 +12,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   alias Pleroma.Pagination
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:public, :hashtag])
+  plug(:skip_public_check when action in [:public, :hashtag])
 
   # TODO: Replace with a macro when there is a Phoenix release with the following commit in it:
   # https://github.com/phoenixframework/phoenix/commit/2e8c63c01fec4dde5467dbbbf9705ff9e780735e
@@ -36,8 +35,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
     when action in [:public, :hashtag]
   )
-
-  plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.TimelineOperation
 
@@ -133,34 +130,25 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   end
 
   defp hashtag_fetching(params, user, local_only) do
-    tags =
+    # Note: not sanitizing tag options at this stage (may be mix-cased, have duplicates etc.)
+    tags_any =
       [params[:tag], params[:any]]
       |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(&String.downcase/1)
+      |> Enum.filter(& &1)
 
-    tag_all =
-      params
-      |> Map.get(:all, [])
-      |> Enum.map(&String.downcase/1)
+    tag_all = Map.get(params, :all, [])
+    tag_reject = Map.get(params, :none, [])
 
-    tag_reject =
-      params
-      |> Map.get(:none, [])
-      |> Enum.map(&String.downcase/1)
-
-    _activities =
-      params
-      |> Map.put(:type, "Create")
-      |> Map.put(:local_only, local_only)
-      |> Map.put(:blocking_user, user)
-      |> Map.put(:muting_user, user)
-      |> Map.put(:user, user)
-      |> Map.put(:tag, tags)
-      |> Map.put(:tag_all, tag_all)
-      |> Map.put(:tag_reject, tag_reject)
-      |> ActivityPub.fetch_public_activities()
+    params
+    |> Map.put(:type, "Create")
+    |> Map.put(:local_only, local_only)
+    |> Map.put(:blocking_user, user)
+    |> Map.put(:muting_user, user)
+    |> Map.put(:user, user)
+    |> Map.put(:tag, tags_any)
+    |> Map.put(:tag_all, tag_all)
+    |> Map.put(:tag_reject, tag_reject)
+    |> ActivityPub.fetch_public_activities()
   end
 
   # GET /api/v1/timelines/tag/:tag

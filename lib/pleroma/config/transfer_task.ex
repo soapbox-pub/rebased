@@ -13,23 +13,25 @@ defmodule Pleroma.Config.TransferTask do
 
   @type env() :: :test | :benchmark | :dev | :prod
 
-  @reboot_time_keys [
-    {:pleroma, :hackney_pools},
-    {:pleroma, :chat},
-    {:pleroma, Oban},
-    {:pleroma, :rate_limit},
-    {:pleroma, :markup},
-    {:pleroma, :streamer},
-    {:pleroma, :pools},
-    {:pleroma, :connections_pool}
-  ]
+  defp reboot_time_keys,
+    do: [
+      {:pleroma, :hackney_pools},
+      {:pleroma, :shout},
+      {:pleroma, Oban},
+      {:pleroma, :rate_limit},
+      {:pleroma, :markup},
+      {:pleroma, :streamer},
+      {:pleroma, :pools},
+      {:pleroma, :connections_pool}
+    ]
 
-  @reboot_time_subkeys [
-    {:pleroma, Pleroma.Captcha, [:seconds_valid]},
-    {:pleroma, Pleroma.Upload, [:proxy_remote]},
-    {:pleroma, :instance, [:upload_limit]},
-    {:pleroma, :gopher, [:enabled]}
-  ]
+  defp reboot_time_subkeys,
+    do: [
+      {:pleroma, Pleroma.Captcha, [:seconds_valid]},
+      {:pleroma, Pleroma.Upload, [:proxy_remote]},
+      {:pleroma, :instance, [:upload_limit]},
+      {:pleroma, :gopher, [:enabled]}
+    ]
 
   def start_link(restart_pleroma? \\ true) do
     load_and_update_env([], restart_pleroma?)
@@ -165,12 +167,12 @@ defmodule Pleroma.Config.TransferTask do
   end
 
   defp group_and_key_need_reboot?(group, key) do
-    Enum.any?(@reboot_time_keys, fn {g, k} -> g == group and k == key end)
+    Enum.any?(reboot_time_keys(), fn {g, k} -> g == group and k == key end)
   end
 
   defp group_and_subkey_need_reboot?(group, key, value) do
     Keyword.keyword?(value) and
-      Enum.any?(@reboot_time_subkeys, fn {g, k, subkeys} ->
+      Enum.any?(reboot_time_subkeys(), fn {g, k, subkeys} ->
         g == group and k == key and
           Enum.any?(Keyword.keys(value), &(&1 in subkeys))
       end)

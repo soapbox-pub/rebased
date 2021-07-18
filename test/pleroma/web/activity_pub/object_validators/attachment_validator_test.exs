@@ -72,5 +72,38 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
 
       assert attachment.mediaType == "image/jpeg"
     end
+
+    test "it handles image dimensions" do
+      attachment = %{
+        "url" => [
+          %{
+            "type" => "Link",
+            "mediaType" => "image/jpeg",
+            "href" => "https://example.com/images/1.jpg",
+            "width" => 200,
+            "height" => 100
+          }
+        ],
+        "type" => "Document",
+        "name" => nil,
+        "mediaType" => "image/jpeg"
+      }
+
+      {:ok, attachment} =
+        AttachmentValidator.cast_and_validate(attachment)
+        |> Ecto.Changeset.apply_action(:insert)
+
+      assert [
+               %{
+                 href: "https://example.com/images/1.jpg",
+                 type: "Link",
+                 mediaType: "image/jpeg",
+                 width: 200,
+                 height: 100
+               }
+             ] = attachment.url
+
+      assert attachment.mediaType == "image/jpeg"
+    end
   end
 end

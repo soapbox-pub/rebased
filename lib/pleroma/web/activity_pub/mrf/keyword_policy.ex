@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   @moduledoc "Reject or Word-Replace messages with a keyword or regex"
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   defp string_matches?(string, _) when not is_binary(string) do
     false
   end
