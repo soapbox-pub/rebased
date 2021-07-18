@@ -139,7 +139,7 @@ defmodule Pleroma.NotificationTest do
 
     {:ok, notifications} = Notification.create_poll_notifications(activity)
 
-    assert [user1.id, user3.id, user2.id] == Enum.map(notifications, & &1.user_id)
+    assert [user2.id, user3.id, user1.id] == Enum.map(notifications, & &1.user_id)
   end
 
   describe "CommonApi.post/2 notification-related functionality" do

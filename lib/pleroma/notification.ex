@@ -483,9 +483,11 @@ defmodule Pleroma.Notification do
         end
 
       notifications =
-        Enum.map([actor | voters], fn ap_id ->
-          with %User{} = user <- User.get_by_ap_id(ap_id) do
-            create_notification(activity, user, type: "poll")
+        Enum.reduce([actor | voters], [], fn ap_id, acc ->
+          with %User{local: true} = user <- User.get_by_ap_id(ap_id) do
+            [create_notification(activity, user, type: "poll") | acc]
+          else
+            _ -> acc
           end
         end)
 
@@ -643,11 +645,17 @@ defmodule Pleroma.Notification do
         :block_from_strangers,
         %Activity{} = activity,
         %User{notification_settings: %{block_from_strangers: true}} = user,
-        _opts
+        opts
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
-    !User.following?(follower, user)
+
+    cond do
+      opts[:type] == "poll" -> false
+      user.ap_id == actor -> false
+      !User.following?(follower, user) -> true
+      true -> false
+    end
   end
 
   # To do: consider defining recency in hours and checking FollowingRelationship with a single SQL
