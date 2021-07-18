@@ -201,6 +201,36 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def question_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "type" => "Question",
+      "actor" => user.ap_id,
+      "attachment" => [],
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [user.follower_address],
+      "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
+      "oneOf" => [
+        %{
+          "type" => "Note",
+          "name" => "chocolate",
+          "replies" => %{"totalItems" => 0, "type" => "Collection"}
+        },
+        %{
+          "type" => "Note",
+          "name" => "vanilla",
+          "replies" => %{"totalItems" => 0, "type" => "Collection"}
+        }
+      ]
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
   def direct_note_activity_factory do
     dm = insert(:direct_note)
 
@@ -348,6 +378,33 @@ defmodule Pleroma.Factory do
       actor: data["actor"],
       recipients: data["to"] ++ data["cc"]
     }
+  end
+
+  def question_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    question = attrs[:question] || insert(:question, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :question, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => question.data["actor"],
+        "to" => question.data["to"],
+        "object" => question.data["id"],
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => question.data["context"]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
   end
 
   def oauth_app_factory do
