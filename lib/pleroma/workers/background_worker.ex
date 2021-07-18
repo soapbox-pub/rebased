@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackgroundWorker do
+  alias Pleroma.Instances.Instance
   alias Pleroma.User
 
   use Pleroma.Workers.WorkerHelper, queue: "background"
@@ -37,5 +38,9 @@ defmodule Pleroma.Workers.BackgroundWorker do
     target = User.get_cached_by_id(target_id)
 
     Pleroma.FollowingRelationship.move_following(origin, target)
+  end
+
+  def perform(%Job{args: %{"op" => "delete_instance", "host" => host}}) do
+    Instance.perform(:delete_instance, host)
   end
 end

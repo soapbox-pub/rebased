@@ -257,7 +257,8 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
-    get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+    get("/instances/:instance/statuses", InstanceController, :list_statuses)
+    delete("/instances/:instance", InstanceController, :delete)
 
     get("/reports", ReportController, :index)
     get("/reports/:id", ReportController, :show)
