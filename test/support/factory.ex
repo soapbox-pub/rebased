@@ -208,10 +208,12 @@ defmodule Pleroma.Factory do
       "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
       "type" => "Question",
       "actor" => user.ap_id,
+      "attributedTo" => user.ap_id,
       "attachment" => [],
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "cc" => [user.follower_address],
       "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
+      "closed" => DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601(),
       "oneOf" => [
         %{
           "type" => "Note",
