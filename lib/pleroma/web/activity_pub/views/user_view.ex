@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
 
+  alias Pleroma.Group
   alias Pleroma.Keys
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -120,6 +121,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
+    |> Map.merge(maybe_make_group_fields(user))
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -304,6 +306,21 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       }
     else
       %{}
+    end
+  end
+
+  defp maybe_make_group_fields(%User{group: %Group{} = group}) do
+    %{
+      "members" => group.members_collection
+    }
+  end
+
+  defp maybe_make_group_fields(user) do
+    with %User{actor_type: "Group"} <- user,
+         %User{group: %Group{}} = user <- Repo.preload(user, :group) do
+      maybe_make_group_fields(user)
+    else
+      _ -> %{}
     end
   end
 end

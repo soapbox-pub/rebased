@@ -662,6 +662,11 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
+    pipe_through([:accepts_html_xml_json, :http_signature])
+    get("/groups/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+  end
+
+  scope "/", Pleroma.Web do
     # Note: html format is supported only if static FE is enabled
     pipe_through([:accepts_html_xml, :static_fe])
 

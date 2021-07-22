@@ -483,6 +483,7 @@ defmodule Pleroma.User do
       ]
     )
     |> cast(params, [:name], empty_values: [])
+    |> maybe_put_group_assoc(params)
     |> validate_required([:ap_id])
     |> validate_required([:name], trim: false)
     |> unique_constraint(:nickname)
@@ -491,6 +492,15 @@ defmodule Pleroma.User do
     |> validate_length(:name, max: name_limit)
     |> validate_fields(true)
     |> validate_non_local()
+  end
+
+  defp maybe_put_group_assoc(cng, params) do
+    if params[:group] do
+      group = change(%Group{}, params[:group])
+      put_assoc(cng, :group, group)
+    else
+      cng
+    end
   end
 
   defp validate_non_local(cng) do
@@ -2506,4 +2516,9 @@ defmodule Pleroma.User do
     |> where([u], u.local == true)
     |> Repo.aggregate(:count)
   end
+
+  def create_group(%User{actor_type: "Group"}) do
+  end
+
+  def create_group(user), do: user
 end

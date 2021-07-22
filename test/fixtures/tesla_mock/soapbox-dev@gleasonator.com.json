@@ -1,0 +1,57 @@
+{
+  "type": "Group",
+  "name": ":soapbox: Soapbox Developers",
+  "preferredUsername": "soapbox-dev",
+  "id": "https://gleasonator.com/groups/soapbox-dev",
+  "url": "https://gleasonator.com/groups/soapbox-dev",
+  "summary": "Development of Soapbox social media server. <a href=\"https://soapbox.pub\">https://soapbox.pub</a>",
+  "icon": {
+    "url": "https://media.gleasonator.com/soapbox-logo.png",
+    "type": "Image"
+  },
+  "image": {
+    "url": "https://media.gleasonator.com/soapbox-banner.png",
+    "type": "Image"
+  },
+  "inbox": "https://gleasonator.com/groups/soapbox-dev/inbox",
+  "outbox": "https://gleasonator.com/groups/soapbox-dev/outbox",
+  "endpoints": {
+    "sharedInbox": "https://gleasonator.com/inbox",
+    "uploadMedia": "https://gleasonator.com/api/ap/upload_media",
+    "oauthTokenEndpoint": "https://gleasonator.com/oauth/token",
+    "oauthRegistrationEndpoint": "https://gleasonator.com/api/v1/apps",
+    "oauthAuthorizationEndpoint": "https://gleasonator.com/oauth/authorize"
+  },
+  "followers" : "https://gleasonator.com/groups/soapbox-dev/followers",
+  "following" : "https://gleasonator.com/groups/soapbox-dev/following",
+  "members": "https://gleasonator.com/groups/soapbox-dev/members",
+  "publicKey": {
+    "id": "https://gleasonator.com/groups/soapbox-dev#main-key",
+    "owner": "https://gleasonator.com/groups/soapbox-dev",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArJtIgvmRUMQh3/n5B41u\nfeCu83E/WvaF3JPfpg+sh4sgONNP34KpKJ4FqYTKM63xGkGWcHA96/39Q+GG20tT\nECpPcTbRuQJ6DxJeYabtXiAcrTgitRMd/2XTaeWqaPwXIfj4n3eD6mVbJUbk9DAs\nb2dFppCcRu2ClouhO1LeoQgVitE31iNHNnN4jsQY9Z8BW0OuP+brwi/Ea/JftRfN\nF2jq9zYC1UjaE8M1VXlq5MKie73QGU32RHcrc0VE4P4druzT6Ew69QSLqeEiDsw2\n8ULrJBxZKPtn17x5PzavpNm8Xl0M/YIy3irxVCjw1J5LkLuRoZMv5ZB7Dfpp0uW0\nyQIDAQAB\n-----END PUBLIC KEY-----\n\n"
+  },
+  "owner": "https://gleasonator.com/users/alex",
+  "admins": ["https://gleasonator.com/users/alex"],
+  "moderators": ["https://social.teci.world/users/curtis"],
+  "tag": [
+    {
+      "type": "Emoji",
+      "id": "https://gleasonator.com/emoji/soapbox.png",
+      "icon": {
+        "url": "https://gleasonator.com/emoji/soapbox.png",
+        "type": "Image"
+      },
+      "name": ":soapbox:",
+      "updated": "1970-01-01T00:00:00Z"
+    }
+  ],
+  "attachment": [
+    {
+      "name": "Website",
+      "type": "PropertyValue",
+      "value": "<a href=\"https://soapbox.pub\" rel=\"ugc\">https://soapbox.pub</a>"
+    }
+  ],
+  "rejectsPublicObjects": false,
+  "manuallyApprovesMembers": false
+}

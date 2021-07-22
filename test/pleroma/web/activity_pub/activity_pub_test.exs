@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.ActivityBuilder
   alias Pleroma.Config
+  alias Pleroma.Group
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -207,6 +208,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.name == "Bernie2020 group"
       assert user.actor_type == "Group"
+    end
+
+    test "works with groups" do
+      user_id = "https://gleasonator.com/groups/soapbox-dev"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+      assert user.ap_id == user_id
+      assert user.nickname == "soapbox-dev@gleasonator.com"
+      assert user.ap_enabled
+      assert user.follower_address == "https://gleasonator.com/groups/soapbox-dev/followers"
+
+      %User{group: %Group{} = group} = Repo.preload(user, :group)
+      assert group.members_collection == "https://gleasonator.com/groups/soapbox-dev/members"
+      assert group.ap_id == user_id
     end
 
     test "works for bridgy actors" do

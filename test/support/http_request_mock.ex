@@ -424,6 +424,15 @@ defmodule HttpRequestMock do
     {:error, :nxdomain}
   end
 
+  def get("https://gleasonator.com/groups/soapbox-dev", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/soapbox-dev@gleasonator.com.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("http://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{

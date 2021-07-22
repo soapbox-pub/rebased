@@ -1459,30 +1459,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         nil
       end
 
-    user_data = %{
-      ap_id: data["id"],
-      uri: get_actor_url(data["url"]),
-      ap_enabled: true,
-      banner: normalize_image(data["image"]),
-      fields: fields,
-      emoji: emojis,
-      is_locked: is_locked,
-      is_discoverable: is_discoverable,
-      invisible: invisible,
-      avatar: normalize_image(data["icon"]),
-      name: data["name"],
-      follower_address: data["followers"],
-      following_address: data["following"],
-      featured_address: featured_address,
-      bio: data["summary"] || "",
-      actor_type: actor_type,
-      also_known_as: Map.get(data, "alsoKnownAs", []),
-      public_key: public_key,
-      inbox: data["inbox"],
-      shared_inbox: shared_inbox,
-      accepts_chat_messages: accepts_chat_messages,
-      pinned_objects: pinned_objects
-    }
+    user_data =
+      %{
+        ap_id: data["id"],
+        uri: get_actor_url(data["url"]),
+        ap_enabled: true,
+        banner: normalize_image(data["image"]),
+        fields: fields,
+        emoji: emojis,
+        is_locked: is_locked,
+        is_discoverable: is_discoverable,
+        invisible: invisible,
+        avatar: normalize_image(data["icon"]),
+        name: data["name"],
+        follower_address: data["followers"],
+        following_address: data["following"],
+        featured_address: featured_address,
+        bio: data["summary"] || "",
+        actor_type: actor_type,
+        also_known_as: Map.get(data, "alsoKnownAs", []),
+        public_key: public_key,
+        inbox: data["inbox"],
+        shared_inbox: shared_inbox,
+        accepts_chat_messages: accepts_chat_messages,
+        pinned_objects: pinned_objects
+      }
+      |> Map.put(:group, object_to_group_data(data))
 
     # nickname can be nil because of virtual actors
     if data["preferredUsername"] do
@@ -1495,6 +1497,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Map.put(user_data, :nickname, nil)
     end
   end
+
+  defp object_to_group_data(%{"type" => "Group"} = data) do
+    # TODO: Ingest more fields such as privacy, owner, etc.
+    %{
+      ap_id: data["id"],
+      members_collection: data["members"]
+    }
+  end
+
+  defp object_to_group_data(_object), do: nil
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
