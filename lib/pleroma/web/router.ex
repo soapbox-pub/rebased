@@ -711,9 +711,12 @@ defmodule Pleroma.Web.Router do
 
     get("/api/ap/whoami", ActivityPubController, :whoami)
     get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
+    get("/groups/:nickname/inbox", ActivityPubController, :read_inbox)
 
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
     post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+    get("/groups/:nickname/outbox", ActivityPubController, :outbox)
+    post("/groups/:nickname/outbox", ActivityPubController, :update_outbox)
     post("/api/ap/upload_media", ActivityPubController, :upload_media)
 
     # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
@@ -726,6 +729,7 @@ defmodule Pleroma.Web.Router do
     pipe_through(:activitypub)
     post("/inbox", ActivityPubController, :inbox)
     post("/users/:nickname/inbox", ActivityPubController, :inbox)
+    post("/groups/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/relay", Pleroma.Web.ActivityPub do
