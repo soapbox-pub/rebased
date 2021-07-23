@@ -114,6 +114,13 @@ defmodule Pleroma.Group do
     |> validate_required([:ap_id, :user_id, :owner_id, :members_collection])
   end
 
+  def is_local?(%Group{} = group) do
+    case Repo.preload(group, :user) do
+      %Group{user: %User{local: local}} -> local
+      _ -> false
+    end
+  end
+
   def is_member?(%{user_id: user_id}, %User{} = member) do
     UserRelationship.membership_exists?(%User{id: user_id}, member)
   end

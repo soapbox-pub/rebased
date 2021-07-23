@@ -26,7 +26,8 @@ defmodule Pleroma.Group.Announcer do
   ]
 
   def should_announce?(%Group{id: group_id} = group, object) do
-    with %Object{data: %{"type" => type} = data} = object when type in @object_types <-
+    with true <- Group.is_local?(group),
+         %Object{data: %{"type" => type} = data} = object when type in @object_types <-
            Object.normalize(object),
          %Group{id: ^group_id} <- Group.get_object_group(object),
          %User{} = user <- User.get_cached_by_ap_id(data["actor"]),
