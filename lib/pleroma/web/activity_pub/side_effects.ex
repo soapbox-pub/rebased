@@ -149,7 +149,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       ) do
     with %User{} = user <- User.get_cached_by_ap_id(actor),
          %Group{} = group <- Group.get_by_ap_id(group_ap_id),
-         %Group{user: %User{is_locked: false}} <- Repo.preload(group, :user) do
+         %Group{user: %User{local: true, is_locked: false}} <- Repo.preload(group, :user) do
       {:ok, accept_data, _} = Builder.accept(group, object)
       {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
     end
