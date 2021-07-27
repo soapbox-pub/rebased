@@ -452,7 +452,7 @@ config :pleroma, :media_preview_proxy,
 
 config :pleroma, :chat, enabled: true
 
-config :phoenix, :format_encoders, json: Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
 
 config :phoenix, :json_library, Jason
 
