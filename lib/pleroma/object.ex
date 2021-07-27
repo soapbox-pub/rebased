@@ -325,7 +325,7 @@ defmodule Pleroma.Object do
   end
 
   def local?(%Object{data: %{"id" => id}}) do
-    String.starts_with?(id, Pleroma.Web.base_url() <> "/")
+    String.starts_with?(id, Pleroma.Web.Endpoint.url() <> "/")
   end
 
   def replies(object, opts \\ []) do

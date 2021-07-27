@@ -196,6 +196,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     test_notifications_rendering([notification], user, [expected])
   end
 
+  test "Poll notification" do
+    user = insert(:user)
+    activity = insert(:question_activity, user: user)
+    {:ok, [notification]} = Notification.create_poll_notifications(activity)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "poll",
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: user
+        }),
+      status: StatusView.render("show.json", %{activity: activity, for: user}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], user, [expected])
+  end
+
   test "Report notification" do
     reporting_user = insert(:user)
     reported_user = insert(:user)

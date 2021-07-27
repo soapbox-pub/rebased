@@ -18,6 +18,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.PollWorker
 
   import Pleroma.Factory
   import Mock
@@ -43,6 +44,12 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert object.data["type"] == "Question"
       assert object.data["oneOf"] |> length() == 2
+
+      assert_enqueued(
+        worker: PollWorker,
+        args: %{op: "poll_end", activity_id: activity.id},
+        scheduled_at: NaiveDateTime.from_iso8601!(object.data["closed"])
+      )
     end
   end
 
@@ -514,7 +521,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(user, %{status: "hey :blank:"})
 
       assert %{"blank" => url} = Object.normalize(activity).data["emoji"]
-      assert url == "#{Pleroma.Web.base_url()}/emoji/blank.png"
+      assert url == "#{Pleroma.Web.Endpoint.url()}/emoji/blank.png"
     end
 
     test "deactivated users can't post" do
@@ -571,7 +578,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity, fetch: false)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
+      assert object.data["content"] == "<p><b>2hu</b></p>"
       assert object.data["source"] == post
     end
 

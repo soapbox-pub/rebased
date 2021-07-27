@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.WebFinger do
   alias Pleroma.HTTP
   alias Pleroma.User
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.XML
   alias Pleroma.XmlBuilder
@@ -13,7 +13,7 @@ defmodule Pleroma.Web.WebFinger do
   require Logger
 
   def host_meta do
-    base_url = Web.base_url()
+    base_url = Endpoint.url()
 
     {
       :XRD,

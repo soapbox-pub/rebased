@@ -69,7 +69,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     to =
       case visibility do
         "public" -> [Pleroma.Constants.as_public() | draft.mentions]
-        "local" -> [Pleroma.Constants.as_local_public() | draft.mentions]
+        "local" -> [Utils.as_local_public() | draft.mentions]
       end
 
     cc = [draft.user.follower_address]
@@ -294,7 +294,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def format_input(text, "text/markdown", options) do
     text
     |> Formatter.mentions_escape(options)
-    |> Earmark.as_html!(%Earmark.Options{renderer: Pleroma.EarmarkRenderer})
+    |> Formatter.markdown_to_html()
     |> Formatter.linkify(options)
     |> Formatter.html_escape("text/html")
   end

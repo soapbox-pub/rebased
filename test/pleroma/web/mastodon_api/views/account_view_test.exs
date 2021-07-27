@@ -470,6 +470,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
   end
 
+  test "shows accepts_email_list only to the account owner" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    user = User.get_cached_by_ap_id(user.ap_id)
+
+    assert AccountView.render(
+             "show.json",
+             %{user: user, for: other_user}
+           )[:pleroma][:accepts_email_list] == nil
+
+    assert AccountView.render(
+             "show.json",
+             %{user: user, for: user}
+           )[:pleroma][:accepts_email_list] == user.accepts_email_list
+  end
+
   describe "follow requests counter" do
     test "shows zero when no follow requests are pending" do
       user = insert(:user)
@@ -562,12 +579,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       |> Enum.all?(fn
         {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
-          String.starts_with?(url, Pleroma.Web.base_url())
+          String.starts_with?(url, Pleroma.Web.Endpoint.url())
 
         {:emojis, emojis} ->
           Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
-            String.starts_with?(url, Pleroma.Web.base_url()) &&
-              String.starts_with?(static_url, Pleroma.Web.base_url())
+            String.starts_with?(url, Pleroma.Web.Endpoint.url()) &&
+              String.starts_with?(static_url, Pleroma.Web.Endpoint.url())
           end)
 
         _ ->

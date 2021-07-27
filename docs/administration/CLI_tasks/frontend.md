@@ -3,13 +3,15 @@
 === "OTP"
 
     ```sh
-    ./bin/pleroma_ctl frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>]
+    ./bin/pleroma_ctl frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>] [--primary] [--admin]
+    ./bin/pleroma_ctl frontend enable <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>] [--primary] [--admin]
     ```
 
 === "From Source"
 
     ```sh
-    mix pleroma.frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>]
+    mix pleroma.frontend install <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>] [--primary] [--admin]
+    mix pleroma.frontend enable <frontend> [--ref <ref>] [--file <file>] [--build-url <build-url>] [--path <path>] [--build-dir <build-dir>] [--primary] [--admin]
     ```
 
 Frontend can be installed either from local zip file, or automatically downloaded from the web.
@@ -94,3 +96,18 @@ The installation process is the same, but you will have to give all the needed o
 
 If you don't have a zip file but just want to install a frontend from a local path, you can simply copy the files over a folder of this template: `${instance_static}/frontends/${name}/${ref}`.
 
+## Enabling a frontend
+
+Once installed, a frontend can be enabled with the `enable` command:
+
+=== "OTP"
+
+    ```sh
+    ./bin/pleroma_ctl frontend enable gensokyo --primary
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.frontend enable gensokyo --primary
+    ```
