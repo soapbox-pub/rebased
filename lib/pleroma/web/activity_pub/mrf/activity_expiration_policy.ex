@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
   @moduledoc "Adds expiration to all local Create activities"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(activity) do

@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicy do
   @moduledoc "Block messages which mention a user"
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(%{"type" => "Create"} = message) do

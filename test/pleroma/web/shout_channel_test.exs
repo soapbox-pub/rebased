@@ -2,9 +2,9 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ChatChannelTest do
+defmodule Pleroma.Web.ShoutChannelTest do
   use Pleroma.Web.ChannelCase
-  alias Pleroma.Web.ChatChannel
+  alias Pleroma.Web.ShoutChannel
   alias Pleroma.Web.UserSocket
 
   import Pleroma.Factory
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ChatChannelTest do
 
     {:ok, _, socket} =
       socket(UserSocket, "", %{user_name: user.nickname})
-      |> subscribe_and_join(ChatChannel, "chat:public")
+      |> subscribe_and_join(ShoutChannel, "chat:public")
 
     {:ok, socket: socket}
   end
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ChatChannelTest do
   end
 
   describe "message lengths" do
-    setup do: clear_config([:instance, :chat_limit])
+    setup do: clear_config([:shout, :limit])
 
     test "it ignores messages of length zero", %{socket: socket} do
       push(socket, "new_msg", %{"text" => ""})
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ChatChannelTest do
     end
 
     test "it ignores messages above a certain length", %{socket: socket} do
-      clear_config([:instance, :chat_limit], 2)
+      clear_config([:shout, :limit], 2)
       push(socket, "new_msg", %{"text" => "123"})
       refute_broadcast("new_msg", %{text: "123"})
     end

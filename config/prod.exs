@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # For production, we often load configuration from external
 # sources, such as your system environment. For this reason,
@@ -63,7 +63,12 @@ config :logger, :ex_syslogger, level: :info
 
 # Finally import the config/prod.secret.exs
 # which should be versioned separately.
-import_config "prod.secret.exs"
+if File.exists?("./config/prod.secret.exs") do
+  import_config "prod.secret.exs"
+else
+  "`config/prod.secret.exs` not found. You may want to create one by running `mix pleroma.instance gen`"
+  |> IO.warn([])
+end
 
 if File.exists?("./config/prod.exported_from_db.secret.exs"),
   do: import_config("prod.exported_from_db.secret.exs")

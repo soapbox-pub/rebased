@@ -34,24 +34,32 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
 
   describe "add_param/4" do
     test "add file parameter" do
-      %Request{
-        body: %Tesla.Multipart{
-          boundary: _,
-          content_type_params: [],
-          parts: [
-            %Tesla.Multipart.Part{
-              body: %File.Stream{
-                line_or_bytes: 2048,
-                modes: [:raw, :read_ahead, :read, :binary],
-                path: "some-path/filename.png",
-                raw: true
-              },
-              dispositions: [name: "filename.png", filename: "filename.png"],
-              headers: []
-            }
-          ]
-        }
-      } = RequestBuilder.add_param(%Request{}, :file, "filename.png", "some-path/filename.png")
+      assert match?(
+               %Request{
+                 body: %Tesla.Multipart{
+                   boundary: _,
+                   content_type_params: [],
+                   parts: [
+                     %Tesla.Multipart.Part{
+                       body: %File.Stream{
+                         line_or_bytes: 2048,
+                         modes: [:raw, :read_ahead, :binary],
+                         path: "some-path/filename.png",
+                         raw: true
+                       },
+                       dispositions: [name: "filename.png", filename: "filename.png"],
+                       headers: []
+                     }
+                   ]
+                 }
+               },
+               RequestBuilder.add_param(
+                 %Request{},
+                 :file,
+                 "filename.png",
+                 "some-path/filename.png"
+               )
+             )
     end
 
     test "add key to body" do

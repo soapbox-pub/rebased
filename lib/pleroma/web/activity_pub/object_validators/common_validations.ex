@@ -9,11 +9,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   alias Pleroma.Object
   alias Pleroma.User
 
+  @spec validate_any_presence(Ecto.Changeset.t(), [atom()]) :: Ecto.Changeset.t()
   def validate_any_presence(cng, fields) do
     non_empty =
       fields
       |> Enum.map(fn field -> get_field(cng, field) end)
       |> Enum.any?(fn
+        nil -> false
         [] -> false
         _ -> true
       end)
@@ -29,6 +31,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end
   end
 
+  @spec validate_actor_presence(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
   def validate_actor_presence(cng, options \\ []) do
     field_name = Keyword.get(options, :field_name, :actor)
 
@@ -47,6 +50,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end)
   end
 
+  @spec validate_object_presence(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
   def validate_object_presence(cng, options \\ []) do
     field_name = Keyword.get(options, :field_name, :object)
     allowed_types = Keyword.get(options, :allowed_types, false)
@@ -68,6 +72,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end)
   end
 
+  @spec validate_object_or_user_presence(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
   def validate_object_or_user_presence(cng, options \\ []) do
     field_name = Keyword.get(options, :field_name, :object)
     options = Keyword.put(options, :field_name, field_name)
@@ -83,6 +88,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     if actor_cng.valid?, do: actor_cng, else: object_cng
   end
 
+  @spec validate_host_match(Ecto.Changeset.t(), [atom()]) :: Ecto.Changeset.t()
   def validate_host_match(cng, fields \\ [:id, :actor]) do
     if same_domain?(cng, fields) do
       cng
@@ -95,6 +101,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end
   end
 
+  @spec validate_fields_match(Ecto.Changeset.t(), [atom()]) :: Ecto.Changeset.t()
   def validate_fields_match(cng, fields) do
     if map_unique?(cng, fields) do
       cng
@@ -122,12 +129,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end)
   end
 
+  @spec same_domain?(Ecto.Changeset.t(), [atom()]) :: boolean()
   def same_domain?(cng, fields \\ [:actor, :object]) do
     map_unique?(cng, fields, fn value -> URI.parse(value).host end)
   end
 
   # This figures out if a user is able to create, delete or modify something
   # based on the domain and superuser status
+  @spec validate_modification_rights(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   def validate_modification_rights(cng) do
     actor = User.get_cached_by_ap_id(get_field(cng, :actor))
 

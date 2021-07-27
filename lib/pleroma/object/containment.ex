@@ -71,6 +71,14 @@ defmodule Pleroma.Object.Containment do
     compare_uris(id_uri, other_uri)
   end
 
+  # Mastodon pin activities don't have an id, so we check the object field, which will be pinned.
+  def contain_origin_from_id(id, %{"object" => object}) when is_binary(object) do
+    id_uri = URI.parse(id)
+    object_uri = URI.parse(object)
+
+    compare_uris(id_uri, object_uri)
+  end
+
   def contain_origin_from_id(_id, _data), do: :error
 
   def contain_child(%{"object" => %{"id" => id, "attributedTo" => _} = object}),

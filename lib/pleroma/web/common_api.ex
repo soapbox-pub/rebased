@@ -228,17 +228,7 @@ defmodule Pleroma.Web.CommonAPI do
       {:find_object, _} ->
         {:error, :not_found}
 
-      {:common_pipeline,
-       {
-         :error,
-         {
-           :validate_object,
-           {
-             :error,
-             changeset
-           }
-         }
-       }} = e ->
+      {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
         if {:object, {"already liked by this actor", []}} in changeset.errors do
           {:ok, :already_liked}
         else
@@ -411,29 +401,58 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def pin(id, %{ap_id: user_ap_id} = user) do
-    with %Activity{
-           actor: ^user_ap_id,
-           data: %{"type" => "Create"},
-           object: %Object{data: %{"type" => object_type}}
-         } = activity <- Activity.get_by_id_with_object(id),
-         true <- object_type in ["Note", "Article", "Question"],
-         true <- Visibility.is_public?(activity),
-         {:ok, _user} <- User.add_pinnned_activity(user, activity) do
+  @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
+  def pin(id, %User{} = user) do
+    with %Activity{} = activity <- create_activity_by_id(id),
+         true <- activity_belongs_to_actor(activity, user.ap_id),
+         true <- object_type_is_allowed_for_pin(activity.object),
+         true <- activity_is_public(activity),
+         {:ok, pin_data, _} <- Builder.pin(user, activity.object),
+         {:ok, _pin, _} <-
+           Pipeline.common_pipeline(pin_data,
+             local: true,
+             activity_id: id
+           ) do
       {:ok, activity}
     else
-      {:error, %{errors: [pinned_activities: {err, _}]}} -> {:error, err}
-      _ -> {:error, dgettext("errors", "Could not pin")}
+      {:error, {:side_effects, error}} -> error
+      error -> error
     end
   end
 
+  defp create_activity_by_id(id) do
+    with nil <- Activity.create_by_id_with_object(id) do
+      {:error, :not_found}
+    end
+  end
+
+  defp activity_belongs_to_actor(%{actor: actor}, actor), do: true
+  defp activity_belongs_to_actor(_, _), do: {:error, :ownership_error}
+
+  defp object_type_is_allowed_for_pin(%{data: %{"type" => type}}) do
+    with false <- type in ["Note", "Article", "Question"] do
+      {:error, :not_allowed}
+    end
+  end
+
+  defp activity_is_public(activity) do
+    with false <- Visibility.is_public?(activity) do
+      {:error, :visibility_error}
+    end
+  end
+
+  @spec unpin(String.t(), User.t()) :: {:ok, User.t()} | {:error, term()}
   def unpin(id, user) do
-    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
-         {:ok, _user} <- User.remove_pinnned_activity(user, activity) do
+    with %Activity{} = activity <- create_activity_by_id(id),
+         {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),
+         {:ok, _unpin, _} <-
+           Pipeline.common_pipeline(unpin_data,
+             local: true,
+             activity_id: activity.id,
+             expires_at: activity.data["expires_at"],
+             featured_address: user.featured_address
+           ) do
       {:ok, activity}
-    else
-      {:error, %{errors: [pinned_activities: {err, _}]}} -> {:error, err}
-      _ -> {:error, dgettext("errors", "Could not unpin")}
     end
   end
 
