@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remote users can no longer reappear after being deleted.
 - Deactivated users may now be deleted.
 - Mix task `pleroma.database prune_objects`
+- Fixed rendering of JSON errors on ActivityPub endpoints.
 - Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
 
 ### Removed

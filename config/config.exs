@@ -460,7 +460,7 @@ config :pleroma, :shout,
   enabled: true,
   limit: 5_000
 
-config :phoenix, :format_encoders, json: Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
 
 config :phoenix, :json_library, Jason
 
