@@ -24,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
+  alias Pleroma.Workers.PollWorker
 
   require Logger
 
@@ -194,7 +195,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Set up notifications
   @impl true
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
-    with {:ok, object, meta} <- handle_object_creation(meta[:object_data], meta),
+    with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
@@ -318,7 +319,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
-  def handle_object_creation(%{"type" => "ChatMessage"} = object, meta) do
+  def handle_object_creation(%{"type" => "ChatMessage"} = object, _activity, meta) do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       actor = User.get_cached_by_ap_id(object.data["actor"])
       recipient = User.get_cached_by_ap_id(hd(object.data["to"]))
@@ -353,7 +354,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
-  def handle_object_creation(%{"type" => "Answer"} = object_map, meta) do
+  def handle_object_creation(%{"type" => "Question"} = object, activity, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      PollWorker.schedule_poll_end(activity)
+      {:ok, object, meta}
+    end
+  end
+
+  def handle_object_creation(%{"type" => "Answer"} = object_map, _activity, meta) do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object_map, meta) do
       Object.increase_vote_count(
         object.data["inReplyTo"],
@@ -365,15 +373,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
-  def handle_object_creation(%{"type" => objtype} = object, meta)
-      when objtype in ~w[Audio Video Question Event Article] do
+  def handle_object_creation(%{"type" => objtype} = object, _activity, meta)
+      when objtype in ~w[Audio Video Event Article] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end
   end
 
   # Nothing to do
-  def handle_object_creation(object, meta) do
+  def handle_object_creation(object, _activity, meta) do
     {:ok, object, meta}
   end
 

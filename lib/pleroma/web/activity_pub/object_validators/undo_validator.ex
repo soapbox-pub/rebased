@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
 
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.User
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -42,7 +43,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
     data_cng
     |> validate_inclusion(:type, ["Undo"])
     |> validate_required([:id, :type, :object, :actor, :to, :cc])
-    |> validate_actor_presence()
+    |> validate_undo_actor(:actor)
     |> validate_object_presence()
     |> validate_undo_rights()
   end
@@ -58,5 +59,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator do
     else
       _ -> cng
     end
+  end
+
+  defp validate_undo_actor(cng, field_name) do
+    validate_change(cng, field_name, fn field_name, actor ->
+      case User.get_cached_by_ap_id(actor) do
+        %User{} -> []
+        _ -> [{field_name, "can't find user"}]
+      end
+    end)
   end
 end

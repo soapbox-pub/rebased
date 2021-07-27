@@ -6,10 +6,10 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   alias Pleroma.Gun
   use GenServer, restart: :temporary
 
-  @registry Pleroma.Gun.ConnectionPool
+  defp registry, do: Pleroma.Gun.ConnectionPool
 
   def start_link([key | _] = opts) do
-    GenServer.start_link(__MODULE__, opts, name: {:via, Registry, {@registry, key}})
+    GenServer.start_link(__MODULE__, opts, name: {:via, Registry, {registry(), key}})
   end
 
   @impl true
@@ -24,7 +24,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       time = :erlang.monotonic_time(:millisecond)
 
       {_, _} =
-        Registry.update_value(@registry, key, fn _ ->
+        Registry.update_value(registry(), key, fn _ ->
           {conn_pid, [client_pid], 1, time}
         end)
 
@@ -65,7 +65,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
     time = :erlang.monotonic_time(:millisecond)
 
     {{conn_pid, used_by, _, _}, _} =
-      Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
+      Registry.update_value(registry(), key, fn {conn_pid, used_by, crf, last_reference} ->
         {conn_pid, [client_pid | used_by], crf(time - last_reference, crf), time}
       end)
 
@@ -92,7 +92,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   @impl true
   def handle_call(:remove_client, {client_pid, _}, %{key: key} = state) do
     {{_conn_pid, used_by, _crf, _last_reference}, _} =
-      Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
+      Registry.update_value(registry(), key, fn {conn_pid, used_by, crf, last_reference} ->
         {conn_pid, List.delete(used_by, client_pid), crf, last_reference}
       end)
 

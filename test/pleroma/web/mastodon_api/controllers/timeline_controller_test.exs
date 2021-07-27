@@ -273,6 +273,24 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       [%{"id" => ^reply_from_me}, %{"id" => ^activity_id}] = response
     end
 
+    test "doesn't return posts from users who blocked you when :blockers_visible is disabled" do
+      clear_config([:activitypub, :blockers_visible], false)
+
+      %{conn: conn, user: blockee} = oauth_access(["read:statuses"])
+      blocker = insert(:user)
+      {:ok, _} = User.block(blocker, blockee)
+
+      conn = assign(conn, :user, blockee)
+
+      {:ok, _} = CommonAPI.post(blocker, %{status: "hey!"})
+
+      response =
+        get(conn, "/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert length(response) == 0
+    end
+
     test "doesn't return replies if follow is posting with users from blocked domain" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)

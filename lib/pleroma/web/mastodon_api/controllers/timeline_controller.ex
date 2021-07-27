@@ -37,8 +37,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     when action in [:public, :hashtag]
   )
 
-  plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
-
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.TimelineOperation
 
   # GET /api/v1/timelines/home
@@ -205,7 +203,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> ActivityPub.fetch_activities_bounded(following, params)
         |> Enum.reverse()
 
-      render(conn, "index.json",
+      conn
+      |> add_link_headers(activities)
+      |> render("index.json",
         activities: activities,
         for: user,
         as: :activity,
