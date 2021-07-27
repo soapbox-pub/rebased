@@ -61,7 +61,7 @@ config :phoenix, :plug_init_mode, :runtime
 if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
 else
-  IO.puts(
+  IO.warn(
     "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
   )
 end
