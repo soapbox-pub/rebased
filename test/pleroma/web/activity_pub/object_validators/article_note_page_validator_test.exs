@@ -2,10 +2,10 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidatorTest do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest do
   use Pleroma.DataCase, async: true
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator
   alias Pleroma.Web.ActivityPub.Utils
 
   import Pleroma.Factory
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidatorTest do
     end
 
     test "a basic note validates", %{note: note} do
-      %{valid?: true} = ArticleNoteValidator.cast_and_validate(note)
+      %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
     end
   end
 end

@@ -14,8 +14,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result = json_response_and_validate_schema(conn, 200)
 
     email = Pleroma.Config.get([:instance, :email])
-    thumbnail = Pleroma.Web.base_url() <> Pleroma.Config.get([:instance, :instance_thumbnail])
-    background = Pleroma.Web.base_url() <> Pleroma.Config.get([:instance, :background_image])
+    thumbnail = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :instance_thumbnail])
+    background = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :background_image])
 
     # Note: not checking for "max_toot_chars" since it's optional
     assert %{
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "background_upload_limit" => _,
              "banner_upload_limit" => _,
              "background_image" => from_config_background,
-             "chat_limit" => _,
+             "shout_limit" => _,
              "description_limit" => _
            } = result
 

@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   alias Pleroma.Config
   alias Pleroma.User
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   require Pleroma.Constants
 

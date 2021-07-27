@@ -68,7 +68,12 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.NoOpPolicy])
 
       expected = %{
-        mrf_policies: ["NoOpPolicy"],
+        mrf_policies: ["NoOpPolicy", "HashtagPolicy"],
+        mrf_hashtag: %{
+          federated_timeline_removal: [],
+          reject: [],
+          sensitive: ["nsfw"]
+        },
         exclusions: false
       }
 
@@ -79,8 +84,13 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       clear_config([:mrf, :policies], [MRFModuleMock])
 
       expected = %{
-        mrf_policies: ["MRFModuleMock"],
+        mrf_policies: ["MRFModuleMock", "HashtagPolicy"],
         mrf_module_mock: "some config data",
+        mrf_hashtag: %{
+          federated_timeline_removal: [],
+          reject: [],
+          sensitive: ["nsfw"]
+        },
         exclusions: false
       }
 

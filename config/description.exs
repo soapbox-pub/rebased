@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 websocket_config = [
   path: "/websocket",
@@ -461,6 +461,42 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :features,
+    type: :group,
+    description: "Customizable features",
+    children: [
+      %{
+        key: :improved_hashtag_timeline,
+        type: {:dropdown, :atom},
+        description:
+          "Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).",
+        suggestions: [:auto, :enabled, :disabled]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :populate_hashtags_table,
+    type: :group,
+    description: "`populate_hashtags_table` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
@@ -504,14 +540,6 @@ config :pleroma, :config_description, [
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
-        suggestions: [
-          5_000
-        ]
-      },
-      %{
-        key: :chat_limit,
-        type: :integer,
-        description: "Character limit of the instance chat messages",
         suggestions: [
           5_000
         ]
@@ -646,7 +674,8 @@ config :pleroma, :config_description, [
       %{
         key: :allow_relay,
         type: :boolean,
-        description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
+        description:
+          "Permits remote instances to subscribe to all public posts of your instance. (Important!) This may increase the visibility of your instance."
       },
       %{
         key: :public,
@@ -1146,7 +1175,6 @@ config :pleroma, :config_description, [
             alwaysShowSubjectInput: true,
             background: "/static/aurora_borealis.jpg",
             collapseMessageWithSubject: false,
-            disableChat: false,
             greentext: false,
             hideFilteredStatuses: false,
             hideMutedPosts: false,
@@ -1192,12 +1220,6 @@ config :pleroma, :config_description, [
             type: :boolean,
             description:
               "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :disableChat,
-            label: "PleromaFE Chat",
-            type: :boolean,
-            description: "Disables PleromaFE Chat component"
           },
           %{
             key: :greentext,
@@ -2616,13 +2638,22 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :chat,
+    key: :shout,
     type: :group,
-    description: "Pleroma chat settings",
+    description: "Pleroma shout settings",
     children: [
       %{
         key: :enabled,
-        type: :boolean
+        type: :boolean,
+        description: "Enables the backend Shoutbox chat feature."
+      },
+      %{
+        key: :limit,
+        type: :integer,
+        description: "Shout message character limit.",
+        suggestions: [
+          5_000
+        ]
       }
     ]
   },
@@ -2903,6 +2934,23 @@ config :pleroma, :config_description, [
             suggestions: ["..."]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf_follow_bot,
+    tab: :mrf,
+    related_policy: "Pleroma.Web.ActivityPub.MRF.FollowBotPolicy",
+    label: "MRF FollowBot Policy",
+    type: :group,
+    description: "Automatically follows newly discovered accounts.",
+    children: [
+      %{
+        key: :follower_nickname,
+        type: :string,
+        description: "The name of the bot account to use for following newly discovered users.",
+        suggestions: ["followbot"]
       }
     ]
   },

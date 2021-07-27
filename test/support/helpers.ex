@@ -42,8 +42,7 @@ defmodule Pleroma.Tests.Helpers do
     # Displaying a warning to prevent unintentional clearing of all but one keys in section
     if Keyword.keyword?(temp_setting) and length(temp_setting) == 1 do
       Logger.warn(
-        "Please change to `clear_config([section]); clear_config([section, key], value)`: " <>
-          "#{inspect(config_path)}, #{inspect(temp_setting)}"
+        "Please change `clear_config([section], key: value)` to `clear_config([section, key], value)`"
       )
     end
 

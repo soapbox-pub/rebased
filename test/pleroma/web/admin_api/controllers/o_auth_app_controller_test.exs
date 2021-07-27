@@ -8,7 +8,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
 
   setup do
     admin = insert(:user, is_admin: true)
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppControllerTest do
     end
 
     test "success", %{conn: conn} do
-      base_url = Web.base_url()
+      base_url = Endpoint.url()
       app_name = "Trusted app"
 
       response =
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppControllerTest do
     end
 
     test "with trusted", %{conn: conn} do
-      base_url = Web.base_url()
+      base_url = Endpoint.url()
       app_name = "Trusted app"
 
       response =

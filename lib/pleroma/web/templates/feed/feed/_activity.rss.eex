@@ -22,7 +22,7 @@
 
   <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
 
-  <%= for tag <- @data["tag"] || [] do %>
+  <%= for tag <- Pleroma.Object.hashtags(@object) do %>
     <category term="<%= tag %>"></category>
   <% end %>
 
@@ -38,7 +38,7 @@
     <%= if id == Pleroma.Constants.as_public() do %>
       <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection">http://activityschema.org/collection/public</link>
     <% else %>
-      <%= unless Regex.match?(~r/^#{Pleroma.Web.base_url()}.+followers$/, id) do %>
+      <%= unless Regex.match?(~r/^#{Pleroma.Web.Endpoint.url()}.+followers$/, id) do %>
         <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person"><%= id %></link>
       <% end %>
     <% end %>
