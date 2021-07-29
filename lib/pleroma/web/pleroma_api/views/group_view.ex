@@ -42,8 +42,6 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
   def render("relationship.json", %{user: %User{} = user, group: %Group{} = group}) do
     membership_state = Group.get_membership_state(group, user)
 
-    IO.inspect(membership_state)
-
     %{
       id: group.id,
       # TODO: Make dynamic
