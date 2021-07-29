@@ -110,7 +110,15 @@ defmodule Pleroma.Group do
 
   def changeset(struct, params) do
     struct
-    |> cast(params, [:ap_id, :user_id, :owner_id, :name, :description, :members_collection])
+    |> cast(params, [
+      :ap_id,
+      :user_id,
+      :owner_id,
+      :name,
+      :description,
+      :privacy,
+      :members_collection
+    ])
     |> validate_required([:ap_id, :user_id, :owner_id, :members_collection])
   end
 
