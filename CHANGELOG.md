@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+### Added
+
+### Fixed
+
+### Removed
+
+## 2.4.0 - 2020-08-xx
+
+### Changed
+
 - **Breaking:** Configuration: `:chat, enabled` moved to `:shout, enabled` and `:instance, chat_limit` moved to `:shout, limit`
 - Support for Erlang/OTP 24
 - The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
@@ -34,14 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task `pleroma.database prune_objects`
 - Fixed rendering of JSON errors on ActivityPub endpoints.
 - Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
-
-### Removed
-- **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)
-
-## Unreleased (Patch)
-
-### Fixed
-
 - Try to save exported ConfigDB settings (migrate_from_db) in the system temp directory if default location is not writable.
 - Uploading custom instance thumbnail via AdminAPI/AdminFE generated invalid URL to the image
 - Applying ConcurrentLimiter settings via AdminAPI
@@ -49,6 +51,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task `pleroma.user delete_activities` query transaction timeout is now :infinity
 - MRF (`SimplePolicy`): Embedded objects are now checked. If any embedded object would be rejected, its parent is rejected. This fixes Announces leaking posts from blocked domains.
 - Fixed some Markdown issues, including trailing slash in links.
+
+### Removed
+- **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)
 
 ## [2.3.0] - 2020-03-01
 
