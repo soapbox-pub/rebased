@@ -31,7 +31,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
       url: group.ap_id,
       source: %{
         fields: [],
-        note: group.description,
+        note: group.user.raw_bio || "",
         privacy: group.privacy
       }
     }
