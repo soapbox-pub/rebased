@@ -21,13 +21,13 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
       avatar: User.avatar_url(group.user),
       header: User.banner_url(group.user),
       created_at: group.inserted_at,
-      display_name: group.name,
+      display_name: group.user.name,
       emojis: [],
       fields: [],
       # TODO: get proper count
       members_count: Group.members(group) |> Enum.count(),
       locked: group.user.is_locked,
-      note: group.description,
+      note: group.user.bio,
       url: group.ap_id,
       source: %{
         fields: [],
