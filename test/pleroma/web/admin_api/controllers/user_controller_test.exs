@@ -14,9 +14,9 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
   setup_all do
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
     conn = get(build_conn(), "/api/pleroma/admin/users/#{user.nickname}?admin_token=password123")
 
-    assert json_response(conn, 200)
+    assert json_response_and_validate_schema(conn, 200)
   end
 
   test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         |> assign(:token, good_token)
         |> get(url)
 
-      assert json_response(conn, 200)
+      assert json_response_and_validate_schema(conn, 200)
     end
 
     for good_token <- [good_token1, good_token2, good_token3] do
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         |> assign(:token, bad_token)
         |> get(url)
 
-      assert json_response(conn, :forbidden)
+      assert json_response_and_validate_schema(conn, :forbidden)
     end
   end
 
@@ -131,7 +131,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         assert ModerationLog.get_log_entry_message(log_entry) ==
                  "@#{admin.nickname} deleted users: @#{user.nickname}"
 
-        assert json_response(conn, 200) == [user.nickname]
+        assert json_response_and_validate_schema(conn, 200) == [user.nickname]
 
         user = Repo.get(User, user.id)
         refute user.is_active
@@ -152,28 +152,30 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       user_one = insert(:user)
       user_two = insert(:user)
 
-      conn =
+      response =
         conn
         |> put_req_header("accept", "application/json")
+        |> put_req_header("content-type", "application/json")
         |> delete("/api/pleroma/admin/users", %{
           nicknames: [user_one.nickname, user_two.nickname]
         })
+        |> json_response_and_validate_schema(200)
 
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
                "@#{admin.nickname} deleted users: @#{user_one.nickname}, @#{user_two.nickname}"
 
-      response = json_response(conn, 200)
       assert response -- [user_one.nickname, user_two.nickname] == []
     end
   end
 
   describe "/api/pleroma/admin/users" do
     test "Create", %{conn: conn} do
-      conn =
+      response =
         conn
         |> put_req_header("accept", "application/json")
+        |> put_req_header("content-type", "application/json")
         |> post("/api/pleroma/admin/users", %{
           "users" => [
             %{
@@ -188,8 +190,9 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
             }
           ]
         })
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(&Map.get(&1, "type"))
 
-      response = json_response(conn, 200) |> Enum.map(&Map.get(&1, "type"))
       assert response == ["success", "success"]
 
       log_entry = Repo.one(ModerationLog)
@@ -203,6 +206,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
+        |> put_req_header("content-type", "application/json")
         |> post("/api/pleroma/admin/users", %{
           "users" => [
             %{
@@ -213,7 +217,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
           ]
         })
 
-      assert json_response(conn, 409) == [
+      assert json_response_and_validate_schema(conn, 409) == [
                %{
                  "code" => 409,
                  "data" => %{
@@ -232,6 +236,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
+        |> put_req_header("content-type", "application/json")
         |> post("/api/pleroma/admin/users", %{
           "users" => [
             %{
@@ -242,7 +247,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
           ]
         })
 
-      assert json_response(conn, 409) == [
+      assert json_response_and_validate_schema(conn, 409) == [
                %{
                  "code" => 409,
                  "data" => %{
@@ -261,6 +266,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/json")
+        |> put_req_header("content-type", "application/json")
         |> post("/api/pleroma/admin/users", %{
           "users" => [
             %{
@@ -276,7 +282,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
           ]
         })
 
-      assert json_response(conn, 409) == [
+      assert json_response_and_validate_schema(conn, 409) == [
                %{
                  "code" => 409,
                  "data" => %{
@@ -307,7 +313,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
 
-      assert user_response(user) == json_response(conn, 200)
+      assert user_response(user) == json_response_and_validate_schema(conn, 200)
     end
 
     test "when the user doesn't exist", %{conn: conn} do
@@ -315,7 +321,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
 
-      assert %{"error" => "Not found"} == json_response(conn, 404)
+      assert %{"error" => "Not found"} == json_response_and_validate_schema(conn, 404)
     end
   end
 
@@ -326,6 +332,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn
       |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
       |> post("/api/pleroma/admin/users/follow", %{
         "follower" => follower.nickname,
         "followed" => user.nickname
@@ -352,6 +359,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn
       |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
       |> post("/api/pleroma/admin/users/unfollow", %{
         "follower" => follower.nickname,
         "followed" => user.nickname
@@ -376,26 +384,24 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?page=1")
 
-      users =
-        [
-          user_response(
-            admin,
-            %{"roles" => %{"admin" => true, "moderator" => false}}
-          ),
-          user_response(user, %{"local" => false, "tags" => ["foo", "bar"]}),
-          user_response(
-            user2,
-            %{
-              "local" => true,
-              "is_approved" => false,
-              "registration_reason" => "I'm a chill dude",
-              "actor_type" => "Person"
-            }
-          )
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(
+          user2,
+          %{
+            "local" => true,
+            "is_approved" => false,
+            "registration_reason" => "I'm a chill dude",
+            "actor_type" => "Person"
+          }
+        ),
+        user_response(user, %{"local" => false, "tags" => ["foo", "bar"]}),
+        user_response(
+          admin,
+          %{"roles" => %{"admin" => true, "moderator" => false}}
+        )
+      ]
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 3,
                "page_size" => 50,
                "users" => users
@@ -403,14 +409,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "pagination works correctly with service users", %{conn: conn} do
-      service1 = User.get_or_create_service_actor_by_ap_id(Web.base_url() <> "/meido", "meido")
+      service1 = User.get_or_create_service_actor_by_ap_id(Endpoint.url() <> "/meido", "meido")
 
       insert_list(25, :user)
 
       assert %{"count" => 26, "page_size" => 10, "users" => users1} =
                conn
                |> get("/api/pleroma/admin/users?page=1&filters=", %{page_size: "10"})
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert Enum.count(users1) == 10
       assert service1 not in users1
@@ -418,7 +424,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       assert %{"count" => 26, "page_size" => 10, "users" => users2} =
                conn
                |> get("/api/pleroma/admin/users?page=2&filters=", %{page_size: "10"})
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert Enum.count(users2) == 10
       assert service1 not in users2
@@ -426,7 +432,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       assert %{"count" => 26, "page_size" => 10, "users" => users3} =
                conn
                |> get("/api/pleroma/admin/users?page=3&filters=", %{page_size: "10"})
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert Enum.count(users3) == 6
       assert service1 not in users3
@@ -437,7 +443,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?page=2")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
                "users" => []
@@ -449,7 +455,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?query=bo")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user, %{"local" => true})]
@@ -462,7 +468,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?query=domain.com")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user)]
@@ -475,7 +481,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?query=nickname@domain.com")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user)]
@@ -488,7 +494,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?name=display")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user)]
@@ -501,7 +507,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?email=email@example.com")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user)]
@@ -514,18 +520,18 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn1 = get(conn, "/api/pleroma/admin/users?query=a&page_size=1&page=1")
 
-      assert json_response(conn1, 200) == %{
+      assert json_response_and_validate_schema(conn1, 200) == %{
                "count" => 2,
                "page_size" => 1,
-               "users" => [user_response(user)]
+               "users" => [user_response(user2)]
              }
 
       conn2 = get(conn, "/api/pleroma/admin/users?query=a&page_size=1&page=2")
 
-      assert json_response(conn2, 200) == %{
+      assert json_response_and_validate_schema(conn2, 200) == %{
                "count" => 2,
                "page_size" => 1,
-               "users" => [user_response(user2)]
+               "users" => [user_response(user)]
              }
     end
 
@@ -542,7 +548,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         |> assign(:token, token)
         |> get("/api/pleroma/admin/users?query=bo&filters=local")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user)]
@@ -557,20 +563,18 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=local")
 
-      users =
-        [
-          user_response(user),
-          user_response(admin, %{
-            "roles" => %{"admin" => true, "moderator" => false}
-          }),
-          user_response(old_admin, %{
-            "is_active" => true,
-            "roles" => %{"admin" => true, "moderator" => false}
-          })
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user),
+        user_response(admin, %{
+          "roles" => %{"admin" => true, "moderator" => false}
+        }),
+        user_response(old_admin, %{
+          "is_active" => true,
+          "roles" => %{"admin" => true, "moderator" => false}
+        })
+      ]
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 3,
                "page_size" => 50,
                "users" => users
@@ -587,7 +591,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       result =
         conn
         |> get("/api/pleroma/admin/users?filters=unconfirmed")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       users =
         Enum.map([old_user, sad_user], fn user ->
@@ -596,7 +600,6 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
             "is_approved" => true
           })
         end)
-        |> Enum.sort_by(& &1["nickname"])
 
       assert result == %{"count" => 2, "page_size" => 50, "users" => users}
     end
@@ -620,7 +623,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         )
       ]
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => users
@@ -634,20 +637,18 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=is_admin")
 
-      users =
-        [
-          user_response(admin, %{
-            "is_active" => true,
-            "roles" => %{"admin" => true, "moderator" => false}
-          }),
-          user_response(second_admin, %{
-            "is_active" => true,
-            "roles" => %{"admin" => true, "moderator" => false}
-          })
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(second_admin, %{
+          "is_active" => true,
+          "roles" => %{"admin" => true, "moderator" => false}
+        }),
+        user_response(admin, %{
+          "is_active" => true,
+          "roles" => %{"admin" => true, "moderator" => false}
+        })
+      ]
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
                "users" => users
@@ -661,7 +662,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=is_moderator")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [
@@ -682,16 +683,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       response =
         conn
-        |> get(user_path(conn, :list), %{actor_types: ["Person"]})
-        |> json_response(200)
+        |> get(user_path(conn, :index), %{actor_types: ["Person"]})
+        |> json_response_and_validate_schema(200)
 
-      users =
-        [
-          user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}}),
-          user_response(user1),
-          user_response(user2)
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user2),
+        user_response(user1),
+        user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}})
+      ]
 
       assert response == %{"count" => 3, "page_size" => 50, "users" => users}
     end
@@ -705,17 +704,15 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       response =
         conn
-        |> get(user_path(conn, :list), %{actor_types: ["Person", "Service"]})
-        |> json_response(200)
+        |> get(user_path(conn, :index), %{actor_types: ["Person", "Service"]})
+        |> json_response_and_validate_schema(200)
 
-      users =
-        [
-          user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}}),
-          user_response(user1),
-          user_response(user2),
-          user_response(user_service, %{"actor_type" => "Service"})
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user2),
+        user_response(user1),
+        user_response(user_service, %{"actor_type" => "Service"}),
+        user_response(admin, %{"roles" => %{"admin" => true, "moderator" => false}})
+      ]
 
       assert response == %{"count" => 4, "page_size" => 50, "users" => users}
     end
@@ -728,8 +725,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       response =
         conn
-        |> get(user_path(conn, :list), %{actor_types: ["Service"]})
-        |> json_response(200)
+        |> get(user_path(conn, :index), %{actor_types: ["Service"]})
+        |> json_response_and_validate_schema(200)
 
       users = [user_response(user_service, %{"actor_type" => "Service"})]
 
@@ -744,14 +741,12 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?tags[]=first&tags[]=second")
 
-      users =
-        [
-          user_response(user1, %{"tags" => ["first"]}),
-          user_response(user2, %{"tags" => ["second"]})
-        ]
-        |> Enum.sort_by(& &1["nickname"])
+      users = [
+        user_response(user2, %{"tags" => ["second"]}),
+        user_response(user1, %{"tags" => ["first"]})
+      ]
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
                "users" => users
@@ -773,10 +768,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "count" => 2,
                "page_size" => 50,
                "users" => [
-                 %{"id" => ^admin_id},
-                 %{"id" => ^user_id}
+                 %{"id" => ^user_id},
+                 %{"id" => ^admin_id}
                ]
-             } = json_response(conn, 200)
+             } = json_response_and_validate_schema(conn, 200)
     end
 
     test "it works with multiple filters" do
@@ -793,7 +788,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
         |> assign(:token, token)
         |> get("/api/pleroma/admin/users?filters=deactivated,external")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [user_response(user)]
@@ -805,7 +800,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "count" => 1,
                "page_size" => 50,
                "users" => [
@@ -820,13 +815,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     user_two = insert(:user, is_active: false)
 
     conn =
-      patch(
-        conn,
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
         "/api/pleroma/admin/users/activate",
         %{nicknames: [user_one.nickname, user_two.nickname]}
       )
 
-    response = json_response(conn, 200)
+    response = json_response_and_validate_schema(conn, 200)
     assert Enum.map(response["users"], & &1["is_active"]) == [true, true]
 
     log_entry = Repo.one(ModerationLog)
@@ -840,13 +836,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     user_two = insert(:user, is_active: true)
 
     conn =
-      patch(
-        conn,
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
         "/api/pleroma/admin/users/deactivate",
         %{nicknames: [user_one.nickname, user_two.nickname]}
       )
 
-    response = json_response(conn, 200)
+    response = json_response_and_validate_schema(conn, 200)
     assert Enum.map(response["users"], & &1["is_active"]) == [false, false]
 
     log_entry = Repo.one(ModerationLog)
@@ -860,13 +857,14 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     user_two = insert(:user, is_approved: false)
 
     conn =
-      patch(
-        conn,
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
         "/api/pleroma/admin/users/approve",
         %{nicknames: [user_one.nickname, user_two.nickname]}
       )
 
-    response = json_response(conn, 200)
+    response = json_response_and_validate_schema(conn, 200)
     assert Enum.map(response["users"], & &1["is_approved"]) == [true, true]
 
     log_entry = Repo.one(ModerationLog)
@@ -878,9 +876,12 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
     user = insert(:user)
 
-    conn = patch(conn, "/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
 
-    assert json_response(conn, 200) ==
+    assert json_response_and_validate_schema(conn, 200) ==
              user_response(
                user,
                %{"is_active" => !user.is_active}
@@ -907,7 +908,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       "is_approved" => true,
       "url" => user.ap_id,
       "registration_reason" => nil,
-      "actor_type" => "Person"
+      "actor_type" => "Person",
+      "created_at" => CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
     |> Map.merge(attrs)
   end

@@ -28,6 +28,7 @@ erl_crash.dump
 # variables.
 /config/*.secret.exs
 /config/generated_config.exs
+/config/runtime.exs
 /config/*.env
 
 

@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicy do
   @moduledoc "Ensure no content placeholder is present (such as the dot from mastodon)"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(

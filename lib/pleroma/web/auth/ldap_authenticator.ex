@@ -7,8 +7,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
   require Logger
 
-  import Pleroma.Web.Auth.Authenticator,
-    only: [fetch_credentials: 1, fetch_user: 1]
+  import Pleroma.Web.Auth.Helpers, only: [fetch_credentials: 1, fetch_user: 1]
 
   @behaviour Pleroma.Web.Auth.Authenticator
   @base Pleroma.Web.Auth.PleromaAuthenticator

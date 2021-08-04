@@ -411,7 +411,7 @@ defmodule Pleroma.ReverseProxy do
     {:ok, :no_duration_limit, :no_duration_limit}
   end
 
-  defp client, do: Pleroma.ReverseProxy.Client
+  defp client, do: Pleroma.ReverseProxy.Client.Wrapper
 
   defp track_failed_url(url, error, opts) do
     ttl =

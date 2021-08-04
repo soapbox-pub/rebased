@@ -2,12 +2,12 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ChatChannel do
+defmodule Pleroma.Web.ShoutChannel do
   use Phoenix.Channel
 
   alias Pleroma.User
-  alias Pleroma.Web.ChatChannel.ChatChannelState
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.ShoutChannel.ShoutChannelState
 
   def join("chat:public", _message, socket) do
     send(self(), :after_join)
@@ -15,18 +15,18 @@ defmodule Pleroma.Web.ChatChannel do
   end
 
   def handle_info(:after_join, socket) do
-    push(socket, "messages", %{messages: ChatChannelState.messages()})
+    push(socket, "messages", %{messages: ShoutChannelState.messages()})
     {:noreply, socket}
   end
 
   def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
     text = String.trim(text)
 
-    if String.length(text) in 1..Pleroma.Config.get([:instance, :chat_limit]) do
+    if String.length(text) in 1..Pleroma.Config.get([:shout, :limit]) do
       author = User.get_cached_by_nickname(user_name)
       author_json = AccountView.render("show.json", user: author, skip_visibility_check: true)
 
-      message = ChatChannelState.add_message(%{text: text, author: author_json})
+      message = ShoutChannelState.add_message(%{text: text, author: author_json})
 
       broadcast!(socket, "new_msg", message)
     end
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ChatChannel do
   end
 end
 
-defmodule Pleroma.Web.ChatChannel.ChatChannelState do
+defmodule Pleroma.Web.ShoutChannel.ShoutChannelState do
   use Agent
 
   @max_messages 20

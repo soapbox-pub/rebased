@@ -10,8 +10,8 @@ suositeltavaa tehdä komennon `doas` avulla, katso `doas (1)` ja `doas.conf (5)`
 Tästä eteenpäin oletuksena on, että domain "esimerkki.com" osoittaa
 serverin IP-osoitteeseen.
 
-Jos asennuksen kanssa on ongelmia, IRC-kanava #pleroma Freenodessa tai
-Matrix-kanava #freenode_#pleroma:matrix.org ovat hyviä paikkoja löytää apua
+Jos asennuksen kanssa on ongelmia, IRC-kanava #pleroma Libera.chat tai
+Matrix-kanava #pleroma:libera.chat ovat hyviä paikkoja löytää apua
 (englanniksi), `/msg eal kukkuu` jos haluat välttämättä puhua härmää.
 
 Asenna tarvittava ohjelmisto:
