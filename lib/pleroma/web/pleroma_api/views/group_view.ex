@@ -57,10 +57,26 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
     render_many(groups, GroupView, "relationship.json", user: user)
   end
 
-  def render("status.json", params), do: StatusView.render("show.json", params)
-  def render("statuses.json", params), do: StatusView.render("index.json", params)
+  def render("status.json", params) do
+    StatusView.render("show.json", params)
+    |> get_reblog()
+  end
+
+  def render("statuses.json", params) do
+    StatusView.render("index.json", params)
+    |> Enum.map(&get_reblog/1)
+  end
 
   # TODO: Remove these. Just placeholders for now.
   def render("empty_array.json", _), do: []
   def render("empty_object.json", _), do: %{}
+
+  # All statuses are reblogged by the group.
+  # Extract the original status.
+  defp get_reblog(status) do
+    case status do
+      %{reblog: %{} = reblog} -> reblog
+      _ -> nil
+    end
+  end
 end
