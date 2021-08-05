@@ -217,7 +217,9 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> get("/users/#{user.nickname}")
 
       assert conn.status == 302
-      assert redirected_to(conn) == "#{Pleroma.Web.base_url()}/users/#{user.nickname}/feed.atom"
+
+      assert redirected_to(conn) ==
+               "#{Pleroma.Web.Endpoint.url()}/users/#{user.nickname}/feed.atom"
     end
 
     test "with non-html / non-json format, it returns error when user is not found", %{conn: conn} do

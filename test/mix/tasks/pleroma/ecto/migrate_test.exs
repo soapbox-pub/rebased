@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.MigrateTest do
 
     assert capture_log(fn ->
              Mix.Tasks.Pleroma.Ecto.Migrate.run()
-           end) =~ "[info] Already up"
+           end) =~ "[info] Migrations already up"
 
     Logger.configure(level: level)
   end
