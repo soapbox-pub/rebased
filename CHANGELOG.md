@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-## 2.4.0 - 2020-08-xx
+## 2.4.0 - 2021-08-xx
 
 ### Changed
 
@@ -55,7 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - **Breaking**: Remove deprecated `/api/qvitter/statuses/notifications/read` (replaced by `/api/v1/pleroma/notifications/read`)
 
-## [2.3.0] - 2020-03-01
+## [2.3.0] - 2021-03-01
 
 ### Security
 
@@ -156,7 +156,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Mastodon API: Support for expires_in/expires_at in the Filters.
 </details>
 
-## [2.2.2] - 2020-01-18
+## [2.2.2] - 2021-01-18
 
 ### Fixed
 
