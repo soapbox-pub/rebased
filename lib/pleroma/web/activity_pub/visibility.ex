@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_list?(_), do: false
 
   @spec visible_for_user?(Object.t() | Activity.t() | nil, User.t() | nil) :: boolean()
+  def visible_for_user?(%Object{data: %{"type" => "Tombstone"}}, _), do: false
   def visible_for_user?(%Activity{actor: ap_id}, %User{ap_id: ap_id}), do: true
   def visible_for_user?(%Object{data: %{"actor" => ap_id}}, %User{ap_id: ap_id}), do: true
   def visible_for_user?(nil, _), do: false

@@ -18,11 +18,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
 - Email address is now returned if requesting user is the owner of the user account so it can be exposed in client and FE user settings UIs.
 - Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
+- AdminAPI: sort users so the newest are at the top.
+- ActivityPub Client-to-Server(C2S): Limitation on the type of Activity/Object are lifted as they are now passed through ObjectValidators
 
 ### Added
 
 - MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
 - Return OAuth token `id` (primary key) in POST `/oauth/token`.
+- AdminAPI: return `created_at` date with users.
 - `AnalyzeMetadata` upload filter for extracting image/video attachment dimensions and generating blurhashes for images. Blurhashes for videos are not generated at this time.
 - Attachment dimensions and blurhashes are federated when available.
 - Pinned posts federation
@@ -33,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remote users can no longer reappear after being deleted.
 - Deactivated users may now be deleted.
 - Mix task `pleroma.database prune_objects`
+- Fixed rendering of JSON errors on ActivityPub endpoints.
 - Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
 
 ### Removed

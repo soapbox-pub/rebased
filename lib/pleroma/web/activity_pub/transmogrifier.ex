@@ -353,29 +353,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end)
   end
 
-  # Compatibility wrapper for Mastodon votes
-  defp handle_create(%{"object" => %{"type" => "Answer"}} = data, _user) do
-    handle_incoming(data)
-  end
-
-  defp handle_create(%{"object" => object} = data, user) do
-    %{
-      to: data["to"],
-      object: object,
-      actor: user,
-      context: object["context"],
-      local: false,
-      published: data["published"],
-      additional:
-        Map.take(data, [
-          "cc",
-          "directMessage",
-          "id"
-        ])
-    }
-    |> ActivityPub.create()
-  end
-
   def handle_incoming(data, options \\ [])
 
   # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
@@ -406,43 +383,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # length of https:// = 8, should validate better, but good enough for now.
   def handle_incoming(%{"id" => id}, _options) when is_binary(id) and byte_size(id) < 8,
     do: :error
-
-  # TODO: validate those with a Ecto scheme
-  # - tags
-  # - emoji
-  def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => "Page"} = object} = data,
-        options
-      ) do
-    actor = Containment.get_actor(data)
-
-    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor) do
-      data =
-        data
-        |> Map.put("object", fix_object(object, options))
-        |> Map.put("actor", actor)
-        |> fix_addressing()
-
-      with {:ok, created_activity} <- handle_create(data, user) do
-        reply_depth = (options[:depth] || 0) + 1
-
-        if Federator.allowed_thread_distance?(reply_depth) do
-          for reply_id <- replies(object) do
-            Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
-              "id" => reply_id,
-              "depth" => reply_depth
-            })
-          end
-        end
-
-        {:ok, created_activity}
-      end
-    else
-      %Activity{} = activity -> {:ok, activity}
-      _e -> :error
-    end
-  end
 
   def handle_incoming(
         %{"type" => "Listen", "object" => %{"type" => "Audio"} = object} = data,
@@ -507,7 +447,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
         options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note} do
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note Page} do
     fetch_options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
 
     object =

@@ -437,7 +437,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_object_creation(%{"type" => objtype} = object, meta)
-      when objtype in ~w[Audio Video Question Event Article Note] do
+      when objtype in ~w[Audio Video Question Event Article Note Page] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end
