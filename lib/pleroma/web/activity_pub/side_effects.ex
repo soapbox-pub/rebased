@@ -264,7 +264,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     Utils.add_announce_to_object(object, announced_object)
 
-    if !User.is_internal_user?(user) do
+    unless User.is_internal_user?(user) or user.actor_type == "Group" do
       Notification.create_notifications(object)
 
       object

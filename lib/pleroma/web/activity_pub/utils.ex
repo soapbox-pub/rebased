@@ -626,14 +626,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor}},
         object
       ) do
-    unless actor |> User.get_cached_by_ap_id() |> User.invisible?() do
+    with %User{invisible: false, actor_type: actor_type} when actor_type != "Group" <-
+           User.get_cached_by_ap_id(actor) do
       announcements = take_announcements(object)
 
       with announcements <- Enum.uniq([actor | announcements]) do
         update_element_in_object("announcement", announcements, object)
       end
     else
-      {:ok, object}
+      _ -> {:ok, object}
     end
   end
 
