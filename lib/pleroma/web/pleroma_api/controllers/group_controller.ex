@@ -99,7 +99,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
         activity: activity,
         for: user,
         as: :activity,
-        with_direct_conversation_id: true
+        with_direct_conversation_id: true,
+        extract_reblog: false
       )
     else
       {:error, {:reject, message}} ->

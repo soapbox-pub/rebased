@@ -56,6 +56,10 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
     render_many(groups, GroupView, "relationship.json", user: user)
   end
 
+  def render("status.json", %{extract_reblog: false} = params) do
+    StatusView.render("show.json", params)
+  end
+
   def render("status.json", params) do
     StatusView.render("show.json", params)
     |> get_reblog()
