@@ -98,7 +98,6 @@ defmodule Pleroma.Group do
 
     %{
       ap_id: ap_id,
-      name: slug,
       nickname: slug,
       follower_address: "#{ap_id}/followers",
       following_address: "#{ap_id}/following",

@@ -1502,7 +1502,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # TODO: Ingest more fields such as privacy, owner, etc.
     %{
       ap_id: data["id"],
-      members_collection: data["members"]
+      members_collection: data["members"],
+      name: data["name"],
+      description: data["summary"] || ""
     }
   end
 

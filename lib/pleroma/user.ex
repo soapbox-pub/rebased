@@ -424,7 +424,7 @@ defmodule Pleroma.User do
   def group_changeset(struct \\ %User{actor_type: "Group"}, params) do
     struct
     |> cast(params, [:ap_id, :nickname, :name, :follower_address, :following_address, :local])
-    |> validate_required([:ap_id, :nickname, :name, :follower_address, :following_address, :local])
+    |> validate_required([:ap_id, :nickname, :follower_address, :following_address, :local])
     |> validate_format(:nickname, local_nickname_regex())
   end
 
