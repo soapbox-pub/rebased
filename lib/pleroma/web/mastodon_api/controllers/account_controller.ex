@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   import Pleroma.Web.ControllerHelper,
     only: [
       add_link_headers: 2,
-      truthy_param?: 1,
       assign_account_by_id: 2,
       embed_relationships?: 1,
       json_response: 3
@@ -25,16 +24,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.Utils.Params
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_plug, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :create)
+  plug(:skip_auth when action == :create)
 
-  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:show, :statuses])
+  plug(:skip_public_check when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
@@ -189,7 +188,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :accepts_email_list
       ]
       |> Enum.reduce(%{}, fn key, acc ->
-        Maps.put_if_present(acc, key, params[key], &{:ok, truthy_param?(&1)})
+        Maps.put_if_present(acc, key, params[key], &{:ok, Params.truthy_param?(&1)})
       end)
       |> Maps.put_if_present(:name, params[:display_name])
       |> Maps.put_if_present(:bio, params[:note])

@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.Web.ActivityPub.ObjectValidators.UrlObjectValidator
 
   import Ecto.Changeset
 
@@ -62,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   def fix_media_type(data) do
     data = Map.put_new(data, "mediaType", data["mimeType"])
 
-    if MIME.valid?(data["mediaType"]) do
+    if is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] do
       data
     else
       Map.put(data, "mediaType", "application/octet-stream")
@@ -92,7 +91,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     end
   end
 
-  def validate_data(cng) do
+  defp validate_data(cng) do
     cng
     |> validate_inclusion(:type, ~w[Document Audio Image Video])
     |> validate_required([:mediaType, :url, :type])

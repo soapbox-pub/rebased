@@ -514,11 +514,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, post_2} = CommonAPI.post(user, %{status: "second post"})
 
       response_1 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1")
-      assert [res] = json_response(response_1, 200)
+      assert [res] = json_response_and_validate_schema(response_1, 200)
       assert res["id"] == post_2.id
 
       response_2 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1&max_id=#{res["id"]}")
-      assert [res] = json_response(response_2, 200)
+      assert [res] = json_response_and_validate_schema(response_2, 200)
       assert res["id"] == post_1.id
 
       refute response_1 == response_2
@@ -881,7 +881,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [] ==
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert %{"showing_reblogs" => true} =
                conn
@@ -892,7 +892,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^reblog_id}] =
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
     end
 
     test "following with reblogs" do
@@ -910,7 +910,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^reblog_id}] =
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert %{"showing_reblogs" => false} =
                conn
@@ -921,7 +921,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [] ==
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
     end
 
     test "following / unfollowing errors", %{user: user, conn: conn} do

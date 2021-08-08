@@ -7,7 +7,6 @@ defmodule Pleroma.Web.Metadata.Utils do
   alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.HTML
-  alias Pleroma.Web.MediaProxy
 
   def scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
     content
@@ -37,10 +36,6 @@ defmodule Pleroma.Web.Metadata.Utils do
   end
 
   def scrub_html(content), do: content
-
-  def attachment_url(url) do
-    MediaProxy.preview_url(url)
-  end
 
   def user_name_string(user) do
     "#{user.name} " <>

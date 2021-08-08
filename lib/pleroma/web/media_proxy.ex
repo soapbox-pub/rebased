@@ -121,8 +121,13 @@ defmodule Pleroma.Web.MediaProxy do
     end
   end
 
+  def decode_url(encoded) do
+    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
+    decode_url(sig, base64)
+  end
+
   defp signed_url(url) do
-    :crypto.hmac(:sha, Config.get([Endpoint, :secret_key_base]), url)
+    :crypto.mac(:hmac, :sha, Config.get([Endpoint, :secret_key_base]), url)
   end
 
   def filename(url_or_path) do

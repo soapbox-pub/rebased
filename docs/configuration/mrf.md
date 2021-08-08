@@ -82,7 +82,7 @@ For example, here is a sample policy module which rewrites all messages to "new 
 ```elixir
 defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
   @moduledoc "MRF policy which rewrites all Notes to have 'new message content'."
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   # Catch messages which contain Note objects with actual data to filter.
   # Capture the object as `object`, the message content as `content` and the

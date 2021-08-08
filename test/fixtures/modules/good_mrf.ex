@@ -1,5 +1,5 @@
 defmodule Fixtures.Modules.GoodMRF do
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(a), do: {:ok, a}

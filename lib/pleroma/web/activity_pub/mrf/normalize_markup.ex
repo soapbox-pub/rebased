@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
   @moduledoc "Scrub configured hypertext markup"
   alias Pleroma.HTML
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(%{"type" => "Create", "object" => child_object} = object) do

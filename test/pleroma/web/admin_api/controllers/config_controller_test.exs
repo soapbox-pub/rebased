@@ -409,7 +409,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "saving config which need pleroma reboot", %{conn: conn} do
-      clear_config([:chat, :enabled], true)
+      clear_config([:shout, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -417,7 +417,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "/api/pleroma/admin/config",
                %{
                  configs: [
-                   %{group: ":pleroma", key: ":chat", value: [%{"tuple" => [":enabled", true]}]}
+                   %{group: ":pleroma", key: ":shout", value: [%{"tuple" => [":enabled", true]}]}
                  ]
                }
              )
@@ -426,7 +426,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                  %{
                    "db" => [":enabled"],
                    "group" => ":pleroma",
-                   "key" => ":chat",
+                   "key" => ":shout",
                    "value" => [%{"tuple" => [":enabled", true]}]
                  }
                ],
@@ -454,7 +454,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
-      clear_config([:chat, :enabled], true)
+      clear_config([:shout, :enabled], true)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -462,7 +462,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "/api/pleroma/admin/config",
                %{
                  configs: [
-                   %{group: ":pleroma", key: ":chat", value: [%{"tuple" => [":enabled", true]}]}
+                   %{group: ":pleroma", key: ":shout", value: [%{"tuple" => [":enabled", true]}]}
                  ]
                }
              )
@@ -471,7 +471,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                  %{
                    "db" => [":enabled"],
                    "group" => ":pleroma",
-                   "key" => ":chat",
+                   "key" => ":shout",
                    "value" => [%{"tuple" => [":enabled", true]}]
                  }
                ],
@@ -1409,6 +1409,79 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                ],
                "need_reboot" => false
              }
+    end
+
+    test "custom instance thumbnail", %{conn: conn} do
+      clear_config([:instance])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => ":instance",
+        "value" => [
+          %{
+            "tuple" => [
+              ":instance_thumbnail",
+              "https://example.com/media/new_thumbnail.jpg"
+            ]
+          }
+        ]
+      }
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+             |> json_response_and_validate_schema(200) ==
+               %{
+                 "configs" => [
+                   %{
+                     "db" => [":instance_thumbnail"],
+                     "group" => ":pleroma",
+                     "key" => ":instance",
+                     "value" => params["value"]
+                   }
+                 ],
+                 "need_reboot" => false
+               }
+
+      assert conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+             |> Map.take(["thumbnail"]) ==
+               %{"thumbnail" => "https://example.com/media/new_thumbnail.jpg"}
+    end
+
+    test "Concurrent Limiter", %{conn: conn} do
+      clear_config([ConcurrentLimiter])
+
+      params = %{
+        "group" => ":pleroma",
+        "key" => "ConcurrentLimiter",
+        "value" => [
+          %{
+            "tuple" => [
+              "Pleroma.Web.RichMedia.Helpers",
+              [
+                %{"tuple" => [":max_running", 6]},
+                %{"tuple" => [":max_waiting", 6]}
+              ]
+            ]
+          },
+          %{
+            "tuple" => [
+              "Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy",
+              [
+                %{"tuple" => [":max_running", 7]},
+                %{"tuple" => [":max_waiting", 7]}
+              ]
+            ]
+          }
+        ]
+      }
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{"configs" => [params]})
+             |> json_response_and_validate_schema(200)
     end
   end
 

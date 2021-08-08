@@ -123,7 +123,8 @@ defmodule Pleroma.Web.FederatorTest do
           "type" => "Note",
           "content" => "hi world!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
@@ -145,7 +146,8 @@ defmodule Pleroma.Web.FederatorTest do
           "type" => "Note",
           "content" => "hi world!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }

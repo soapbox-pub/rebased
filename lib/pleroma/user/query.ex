@@ -27,7 +27,7 @@ defmodule Pleroma.User.Query do
       - e.g. Pleroma.User.Query.build(%{ap_id: ["http://ap_id1", "http://ap_id2"]})
   """
   import Ecto.Query
-  import Pleroma.Web.AdminAPI.Search, only: [not_empty_string: 1]
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
