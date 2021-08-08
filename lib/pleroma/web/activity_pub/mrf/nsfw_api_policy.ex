@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
   require Logger
   require Pleroma.Constants
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   @policy :mrf_nsfw_api
 
   def build_request_url(url) do
