@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.EventValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.GroupValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.JoinLeaveValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
@@ -155,7 +155,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def validate(%{"type" => type} = object, meta)
       when type in ~w[Accept Reject Follow Update Like EmojiReact Announce
-      ChatMessage Answer Join] do
+      ChatMessage Answer Join Leave] do
     validator =
       case type do
         "Accept" -> AcceptRejectValidator
@@ -167,7 +167,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         "Announce" -> AnnounceValidator
         "ChatMessage" -> ChatMessageValidator
         "Answer" -> AnswerValidator
-        "Join" -> JoinValidator
+        "Join" -> JoinLeaveValidator
+        "Leave" -> JoinLeaveValidator
       end
 
     with {:ok, object} <-

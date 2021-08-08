@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinLeaveValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator do
   defp validate_data(cng) do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
-    |> validate_inclusion(:type, ["Join"])
+    |> validate_inclusion(:type, ["Join", "Leave"])
     |> validate_inclusion(:state, ~w{pending reject accept})
     |> validate_actor_presence()
     |> validate_actor_presence(field_name: :object)
