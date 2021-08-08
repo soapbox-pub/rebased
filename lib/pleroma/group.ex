@@ -182,10 +182,9 @@ defmodule Pleroma.Group do
       with %Activity{data: %{"state" => state}} <-
              ActivityPub.Utils.fetch_latest_join(user, group) do
         case state do
-          "pending" -> :join_pending
           "accept" -> :join_accept
           "reject" -> :join_reject
-          _ -> nil
+          _ -> :join_pending
         end
       end
     end

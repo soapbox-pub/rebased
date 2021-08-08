@@ -131,9 +131,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, updated_object, meta}
   end
 
-  # Tasks this handle
+  # Tasks this handles
   # - Joins if possible
-  # - Sends a notification
   # - Generates accept or reject if appropriate
   @impl true
   def handle(
@@ -155,6 +154,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     updated_object = Activity.get_by_ap_id(join_id)
     {:ok, updated_object, meta}
+  end
+
+  # Tasks this handles
+  # - Removes the user from the group
+  @impl true
+  def handle(
+        %{data: %{"type" => "Leave", "object" => group_ap_id, "actor" => actor}} = activity,
+        meta
+      ) do
+    with %Group{} = group <- Group.get_by_ap_id(group_ap_id),
+         %User{} = user <- User.get_cached_by_ap_id(actor) do
+      # If this fails, throw a match error on purpose
+      {:ok, %Group{}} = Group.remove_member(group, user)
+    end
+
+    {:ok, activity, meta}
   end
 
   # Tasks this handles:
@@ -480,13 +495,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
-  defp handle_join_accept(%Activity{actor: follower_id} = activity, actor) do
+  defp handle_join_accept(%Activity{actor: member_id} = activity, actor) do
     with %Group{} = group <- Group.get_by_ap_id(actor),
-         %User{} = user <- User.get_cached_by_ap_id(follower_id),
+         %User{} = user <- User.get_cached_by_ap_id(member_id),
          {:ok, _activity} <- Utils.update_join_state_for_all(activity, "accept"),
          {:ok, _} <- Group.add_member(group, user) do
       # TODO: Notification
-      # Notification.update_notification_type(followed, activity)
+      # Notification.update_notification_type(group, activity)
     end
   end
 

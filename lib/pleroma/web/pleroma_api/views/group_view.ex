@@ -43,8 +43,8 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
 
     %{
       id: group.id,
-      # TODO: Make dynamic
       requested: membership_state == :join_pending,
+      # TODO: Make dynamic
       admin: false,
       moderator: false,
       owner: user.id == group.owner_id,
