@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   alias Pleroma.User
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   require Logger
 

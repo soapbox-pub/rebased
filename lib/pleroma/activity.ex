@@ -113,6 +113,7 @@ defmodule Pleroma.Activity do
     from([a] in query,
       left_join: b in Bookmark,
       on: b.user_id == ^user.id and b.activity_id == a.id,
+      as: :bookmark,
       preload: [bookmark: b]
     )
   end
@@ -123,6 +124,7 @@ defmodule Pleroma.Activity do
     from([a] in query,
       left_join: r in ReportNote,
       on: a.id == r.activity_id,
+      as: :report_note,
       preload: [report_notes: r]
     )
   end
@@ -182,38 +184,46 @@ defmodule Pleroma.Activity do
     |> Repo.one()
   end
 
-  @spec get_by_id(String.t()) :: Activity.t() | nil
-  def get_by_id(id) do
-    case FlakeId.flake_id?(id) do
-      true ->
-        Activity
-        |> where([a], a.id == ^id)
-        |> restrict_deactivated_users()
-        |> Repo.one()
+  @doc """
+  Gets activity by ID, doesn't load activities from deactivated actors by default.
+  """
+  @spec get_by_id(String.t(), keyword()) :: t() | nil
+  def get_by_id(id, opts \\ [filter: [:restrict_deactivated]]), do: get_by_id_with_opts(id, opts)
 
-      _ ->
-        nil
+  @spec get_by_id_with_user_actor(String.t()) :: t() | nil
+  def get_by_id_with_user_actor(id), do: get_by_id_with_opts(id, preload: [:user_actor])
+
+  @spec get_by_id_with_object(String.t()) :: t() | nil
+  def get_by_id_with_object(id), do: get_by_id_with_opts(id, preload: [:object])
+
+  defp get_by_id_with_opts(id, opts) do
+    if FlakeId.flake_id?(id) do
+      query = Queries.by_id(id)
+
+      with_filters_query =
+        if is_list(opts[:filter]) do
+          Enum.reduce(opts[:filter], query, fn
+            {:type, type}, acc -> Queries.by_type(acc, type)
+            :restrict_deactivated, acc -> restrict_deactivated_users(acc)
+            _, acc -> acc
+          end)
+        else
+          query
+        end
+
+      with_preloads_query =
+        if is_list(opts[:preload]) do
+          Enum.reduce(opts[:preload], with_filters_query, fn
+            :user_actor, acc -> with_preloaded_user_actor(acc)
+            :object, acc -> with_preloaded_object(acc)
+            _, acc -> acc
+          end)
+        else
+          with_filters_query
+        end
+
+      Repo.one(with_preloads_query)
     end
-  end
-
-  def get_by_id_with_user_actor(id) do
-    case FlakeId.flake_id?(id) do
-      true ->
-        Activity
-        |> where([a], a.id == ^id)
-        |> with_preloaded_user_actor()
-        |> Repo.one()
-
-      _ ->
-        nil
-    end
-  end
-
-  def get_by_id_with_object(id) do
-    Activity
-    |> where(id: ^id)
-    |> with_preloaded_object()
-    |> Repo.one()
   end
 
   def all_by_ids_with_object(ids) do
@@ -267,6 +277,11 @@ defmodule Pleroma.Activity do
 
   def get_create_by_object_ap_id_with_object(_), do: nil
 
+  @spec create_by_id_with_object(String.t()) :: t() | nil
+  def create_by_id_with_object(id) do
+    get_by_id_with_opts(id, preload: [:object], filter: [type: "Create"])
+  end
+
   defp get_in_reply_to_activity_from_object(%Object{data: %{"inReplyTo" => ap_id}}) do
     get_create_by_object_ap_id_with_object(ap_id)
   end
@@ -277,7 +292,8 @@ defmodule Pleroma.Activity do
     get_in_reply_to_activity_from_object(Object.normalize(activity, fetch: false))
   end
 
-  def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])
+  def normalize(%Activity{data: %{"id" => ap_id}}), do: get_by_ap_id_with_object(ap_id)
+  def normalize(%{"id" => ap_id}), do: get_by_ap_id_with_object(ap_id)
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
 
@@ -298,13 +314,15 @@ defmodule Pleroma.Activity do
 
   def delete_all_by_object_ap_id(_), do: nil
 
-  defp purge_web_resp_cache(%Activity{} = activity) do
-    %{path: path} = URI.parse(activity.data["id"])
-    @cachex.del(:web_resp_cache, path)
+  defp purge_web_resp_cache(%Activity{data: %{"id" => id}} = activity) when is_binary(id) do
+    with %{path: path} <- URI.parse(id) do
+      @cachex.del(:web_resp_cache, path)
+    end
+
     activity
   end
 
-  defp purge_web_resp_cache(nil), do: nil
+  defp purge_web_resp_cache(activity), do: activity
 
   def follow_accepted?(
         %Activity{data: %{"type" => "Follow", "object" => followed_ap_id}} = activity
@@ -366,12 +384,6 @@ defmodule Pleroma.Activity do
     end
   end
 
-  @spec pinned_by_actor?(Activity.t()) :: boolean()
-  def pinned_by_actor?(%Activity{} = activity) do
-    actor = user_actor(activity)
-    activity.id in actor.pinned_activities
-  end
-
   @spec get_by_object_ap_id_with_object(String.t()) :: t() | nil
   def get_by_object_ap_id_with_object(ap_id) when is_binary(ap_id) do
     ap_id
@@ -382,4 +394,13 @@ defmodule Pleroma.Activity do
   end
 
   def get_by_object_ap_id_with_object(_), do: nil
+
+  @spec add_by_params_query(String.t(), String.t(), String.t()) :: Ecto.Query.t()
+  def add_by_params_query(object_id, actor, target) do
+    object_id
+    |> Queries.by_object_id()
+    |> Queries.by_type("Add")
+    |> Queries.by_actor(actor)
+    |> where([a], fragment("?->>'target' = ?", a.data, ^target))
+  end
 end

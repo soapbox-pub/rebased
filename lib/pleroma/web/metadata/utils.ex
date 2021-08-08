@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Utils do
+  alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.HTML
-  alias Pleroma.Web.MediaProxy
 
   def scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
-    |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
+    |> Activity.HTML.get_cached_stripped_html_for_activity(object, "metadata")
     |> Emoji.Formatter.demojify()
     |> HtmlEntities.decode()
     |> Formatter.truncate()
@@ -36,10 +36,6 @@ defmodule Pleroma.Web.Metadata.Utils do
   end
 
   def scrub_html(content), do: content
-
-  def attachment_url(url) do
-    MediaProxy.preview_url(url)
-  end
 
   def user_name_string(user) do
     "#{user.name} " <>

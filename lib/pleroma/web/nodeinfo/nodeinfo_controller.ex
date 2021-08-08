@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Nodeinfo.Nodeinfo
 
   def schemas(conn, _params) do
@@ -13,11 +13,11 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       links: [
         %{
           rel: "http://nodeinfo.diaspora.software/ns/schema/2.0",
-          href: Web.base_url() <> "/nodeinfo/2.0.json"
+          href: Endpoint.url() <> "/nodeinfo/2.0.json"
         },
         %{
           rel: "http://nodeinfo.diaspora.software/ns/schema/2.1",
-          href: Web.base_url() <> "/nodeinfo/2.1.json"
+          href: Endpoint.url() <> "/nodeinfo/2.1.json"
         }
       ]
     }

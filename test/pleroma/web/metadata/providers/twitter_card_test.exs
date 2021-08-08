@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata.Providers.TwitterCard
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Router
@@ -17,7 +18,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
   test "it renders twitter card for user info" do
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
-    avatar_url = Utils.attachment_url(User.avatar_url(user))
+    avatar_url = MediaProxy.preview_url(User.avatar_url(user))
     res = TwitterCard.build_tags(%{user: user})
 
     assert res == [
@@ -46,7 +47,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
     assert [
              {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "“pleroma in a nutshell”"], []},
+             {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
              {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
               []},
              {:meta, [property: "twitter:card", content: "summary"], []}
@@ -91,7 +92,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
     assert [
              {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "“pleroma in a nutshell”"], []},
+             {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
              {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
               []},
              {:meta, [property: "twitter:card", content: "summary"], []}
@@ -111,7 +112,14 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
           "content" => "pleroma in a nutshell",
           "attachment" => [
             %{
-              "url" => [%{"mediaType" => "image/png", "href" => "https://pleroma.gov/tenshi.png"}]
+              "url" => [
+                %{
+                  "mediaType" => "image/png",
+                  "href" => "https://pleroma.gov/tenshi.png",
+                  "height" => 1024,
+                  "width" => 1280
+                }
+              ]
             },
             %{
               "url" => [
@@ -123,7 +131,12 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
             },
             %{
               "url" => [
-                %{"mediaType" => "video/webm", "href" => "https://pleroma.gov/about/juche.webm"}
+                %{
+                  "mediaType" => "video/webm",
+                  "href" => "https://pleroma.gov/about/juche.webm",
+                  "height" => 600,
+                  "width" => 800
+                }
               ]
             }
           ]
@@ -134,17 +147,25 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
     assert [
              {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "“pleroma in a nutshell”"], []},
+             {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
              {:meta, [property: "twitter:card", content: "summary_large_image"], []},
              {:meta, [property: "twitter:player", content: "https://pleroma.gov/tenshi.png"], []},
+             {:meta, [property: "twitter:player:width", content: "1280"], []},
+             {:meta, [property: "twitter:player:height", content: "1024"], []},
              {:meta, [property: "twitter:card", content: "player"], []},
              {:meta,
               [
                 property: "twitter:player",
                 content: Router.Helpers.o_status_url(Endpoint, :notice_player, activity.id)
               ], []},
-             {:meta, [property: "twitter:player:width", content: "480"], []},
-             {:meta, [property: "twitter:player:height", content: "480"], []}
+             {:meta, [property: "twitter:player:width", content: "800"], []},
+             {:meta, [property: "twitter:player:height", content: "600"], []},
+             {:meta,
+              [
+                property: "twitter:player:stream",
+                content: "https://pleroma.gov/about/juche.webm"
+              ], []},
+             {:meta, [property: "twitter:player:stream:content_type", content: "video/webm"], []}
            ] == result
   end
 end
