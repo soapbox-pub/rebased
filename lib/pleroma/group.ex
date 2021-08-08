@@ -146,6 +146,10 @@ defmodule Pleroma.Group do
     Repo.preload(group, :members).members
   end
 
+  def get_members_query(%Group{} = group) do
+    Ecto.assoc(group, :members)
+  end
+
   def add_member(%{user_id: user_id} = group, member) do
     with {:ok, _relationship} <- UserRelationship.create_membership(%User{id: user_id}, member) do
       {:ok, group}

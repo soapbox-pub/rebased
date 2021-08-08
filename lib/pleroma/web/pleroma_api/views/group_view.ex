@@ -7,6 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
   alias Pleroma.Group
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.PleromaAPI.GroupView
 
@@ -54,6 +55,10 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
 
   def render("relationships.json", %{user: user, groups: groups}) do
     render_many(groups, GroupView, "relationship.json", user: user)
+  end
+
+  def render("accounts.json", params) do
+    AccountView.render("index.json", params)
   end
 
   def render("status.json", %{extract_reblog: false} = params) do

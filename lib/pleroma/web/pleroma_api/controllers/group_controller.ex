@@ -5,12 +5,14 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [try_render: 3, add_link_headers: 2]
+    only: [try_render: 3, add_link_headers: 2, embed_relationships?: 1]
 
   alias Pleroma.Group
+  alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.FallbackController
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
@@ -82,9 +84,28 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
     end
   end
 
-  def members(%{assigns: %{user: %User{}}} = conn, %{id: _id}) do
-    # TODO
-    render(conn, "empty_array.json", %{})
+  defp get_members_paginated(%Group{} = group, params) do
+    group
+    |> Group.get_members_query()
+    |> Pagination.fetch_paginated(params)
+  end
+
+  def members(%{assigns: %{user: %User{} = user}} = conn, %{id: id} = params) do
+    with %Group{} = group <- Group.get_by_id(id) do
+      params = normalize_params(params)
+      members = get_members_paginated(group, params)
+
+      conn
+      |> add_link_headers(members)
+      |> render("accounts.json",
+        for: user,
+        users: members,
+        as: :user,
+        embed_relationships: embed_relationships?(params)
+      )
+    else
+      nil -> FallbackController.call(conn, {:error, :not_found}) |> halt()
+    end
   end
 
   def post(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, %{id: id}) do
@@ -130,4 +151,10 @@ defmodule Pleroma.Web.PleromaAPI.GroupController do
   end
 
   defp put_application(params, _), do: Map.put(params, :generator, nil)
+
+  defp normalize_params(params) do
+    params
+    |> Enum.map(fn {key, value} -> {to_string(key), value} end)
+    |> Enum.into(%{})
+  end
 end
