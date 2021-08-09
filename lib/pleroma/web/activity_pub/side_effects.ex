@@ -281,7 +281,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     unless User.is_internal_user?(user) or user.actor_type == "Group" do
       Notification.create_notifications(object)
+    end
 
+    unless User.is_internal_user?(user) do
       object
       |> Topics.get_activity_topics()
       |> Streamer.stream(object)

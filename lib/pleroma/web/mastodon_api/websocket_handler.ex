@@ -82,6 +82,11 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     end
   end
 
+  def websocket_info({:render_group_update_with_user, view, template, item}, state) do
+    user = %User{} = User.get_cached_by_ap_id(state.user.ap_id)
+    websocket_info({:text, view.render(template, item, user)}, %{state | user: user})
+  end
+
   def websocket_info({:text, message}, state) do
     # If the websocket processed X messages, force an hibernate/GC.
     # We don't hibernate at every message to balance CPU usage/latency with RAM usage.
