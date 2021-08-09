@@ -687,12 +687,14 @@ config :pleroma, :config_description, [
       },
       %{
         key: :quarantined_instances,
-        type: {:list, :string},
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
         description:
-          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent",
+          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent and the reason for doing so",
         suggestions: [
-          "quarantined.com",
-          "*.quarantined.com"
+          {"quarantined.com", "Reason"},
+          {"*.quarantined.com", "Reason"}
         ]
       },
       %{
