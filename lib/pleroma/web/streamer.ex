@@ -115,6 +115,29 @@ defmodule Pleroma.Web.Streamer do
     {:error, :unauthorized}
   end
 
+  # Group streams.
+  def get_topic(
+        "group",
+        %User{id: user_id},
+        %Token{user_id: user_id} = oauth_token,
+        %{"group" => id}
+      ) do
+    cond do
+      OAuthScopesPlug.filter_descendants(["read", "read:groups"], oauth_token.scopes) == [] ->
+        {:error, :unauthorized}
+
+      Pleroma.Group.get_by_id(id) ->
+        {:ok, "group:" <> to_string(id)}
+
+      true ->
+        {:error, :bad_topic}
+    end
+  end
+
+  def get_topic("group", _user, _oauth_token, _params) do
+    {:error, :unauthorized}
+  end
+
   def get_topic(_stream, _user, _oauth_token, _params) do
     {:error, :bad_topic}
   end

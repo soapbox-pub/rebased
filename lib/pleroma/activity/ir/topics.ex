@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Ir.Topics do
+  alias Pleroma.Group
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -18,7 +19,7 @@ defmodule Pleroma.Activity.Ir.Topics do
   end
 
   defp generate_topics(object, activity) do
-    ["user", "list"] ++ visibility_tags(object, activity)
+    ["user", "list"] ++ visibility_tags(object, activity) ++ group_topics(object, activity)
   end
 
   defp visibility_tags(object, activity) do
@@ -47,6 +48,15 @@ defmodule Pleroma.Activity.Ir.Topics do
   defp item_creation_tags(tags, _, _) do
     tags
   end
+
+  defp group_topics(_object, %{data: %{"type" => "Announce", "actor" => actor}}) do
+    case Group.get_by_ap_id(actor) do
+      %Group{id: group_id} -> ["group:#{group_id}"]
+      _ -> []
+    end
+  end
+
+  defp group_topics(_object, _activity), do: []
 
   defp hashtags_to_topics(object) do
     object
