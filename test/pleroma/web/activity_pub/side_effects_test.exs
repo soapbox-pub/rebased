@@ -157,6 +157,30 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "Question objects" do
+    setup do
+      user = insert(:user)
+      question = build(:question, user: user)
+      question_activity = build(:question_activity, question: question)
+      activity_data = Map.put(question_activity.data, "object", question.data["id"])
+      meta = [object_data: question.data, local: false]
+
+      {:ok, activity, meta} = ActivityPub.persist(activity_data, meta)
+
+      %{activity: activity, meta: meta}
+    end
+
+    test "enqueues the poll end", %{activity: activity, meta: meta} do
+      {:ok, activity, meta} = SideEffects.handle(activity, meta)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PollWorker,
+        args: %{op: "poll_end", activity_id: activity.id},
+        scheduled_at: NaiveDateTime.from_iso8601!(meta[:object_data]["closed"])
+      )
+    end
+  end
+
   describe "delete users with confirmation pending" do
     setup do
       user = insert(:user, is_confirmed: false)

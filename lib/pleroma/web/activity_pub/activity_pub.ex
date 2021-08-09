@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.PollWorker
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -288,6 +289,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          _ <- notify_and_stream(activity),
+         :ok <- maybe_schedule_poll_notifications(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -300,6 +302,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:error, message} ->
         Repo.rollback(message)
     end
+  end
+
+  defp maybe_schedule_poll_notifications(activity) do
+    PollWorker.schedule_poll_end(activity)
+    :ok
   end
 
   @spec listen(map()) :: {:ok, Activity.t()} | {:error, any()}

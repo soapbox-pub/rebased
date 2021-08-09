@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - AdminAPI: return `created_at` date with users.
 - `AnalyzeMetadata` upload filter for extracting image/video attachment dimensions and generating blurhashes for images. Blurhashes for videos are not generated at this time.
 - Attachment dimensions and blurhashes are federated when available.
+- Mastodon API: support `poll` notification.
 - Pinned posts federation
 
 ### Fixed
