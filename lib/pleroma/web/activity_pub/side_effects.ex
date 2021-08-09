@@ -10,7 +10,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   collection, and so on.
   """
   alias Pleroma.Activity
-  alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.FollowingRelationship
@@ -225,6 +224,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         meta
         |> add_notifications(notifications)
 
+      ap_streamer().stream_out(activity)
+
       {:ok, activity, meta}
     else
       e -> Repo.rollback(e)
@@ -245,9 +246,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     if !User.is_internal_user?(user) do
       Notification.create_notifications(object)
 
-      object
-      |> Topics.get_activity_topics()
-      |> Streamer.stream(object)
+      ap_streamer().stream_out(object)
     end
 
     {:ok, object, meta}
