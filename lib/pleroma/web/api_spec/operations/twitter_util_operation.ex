@@ -8,6 +8,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
 
+  import Pleroma.Web.ApiSpec.Helpers
+
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
     apply(__MODULE__, operation, [])
@@ -63,17 +65,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       summary: "Change account password",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.change_password",
-      parameters: [
-        Operation.parameter(:password, :query, :string, "Current password", required: true),
-        Operation.parameter(:new_password, :query, :string, "New password", required: true),
-        Operation.parameter(
-          :new_password_confirmation,
-          :query,
-          :string,
-          "New password, confirmation",
-          required: true
-        )
-      ],
+      requestBody: request_body("Parameters", change_password_request(), required: true),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -82,6 +74,23 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
           }),
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp change_password_request do
+    %Schema{
+      title: "ChangePasswordRequest",
+      description: "POST body for changing the account's passowrd",
+      type: :object,
+      required: [:password, :new_password, :new_password_confirmation],
+      properties: %{
+        password: %Schema{type: :string, description: "Current password"},
+        new_password: %Schema{type: :string, description: "New password"},
+        new_password_confirmation: %Schema{
+          type: :string,
+          description: "New password, confirmation"
+        }
       }
     }
   end
