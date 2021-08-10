@@ -1,4 +1,7 @@
 # Installing on Alpine Linux
+
+{! backend/installation/otp_vs_from_source_source.include !}
+
 ## Installation
 
 This guide is a step-by-step installation guide for Alpine Linux. The instructions were verified against Alpine v3.10 standard image. You might miss additional dependencies if you use `netboot` instead.
