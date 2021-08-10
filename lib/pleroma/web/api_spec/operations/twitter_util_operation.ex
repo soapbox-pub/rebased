@@ -101,11 +101,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       summary: "Change account email",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.change_email",
-      parameters: [
-        Operation.parameter(:password, :query, :string, "Current password", required: true),
-        Operation.parameter(:email, :query, :string, "New email", required: true)
-      ],
-      requestBody: nil,
+      requestBody: request_body("Parameters", change_email_request(), required: true),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -114,6 +110,19 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
           }),
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp change_email_request do
+    %Schema{
+      title: "ChangeEmailRequest",
+      description: "POST body for changing the account's email",
+      type: :object,
+      required: [:email, :password],
+      properties: %{
+        email: %Schema{type: :string, description: "New email"},
+        password: %Schema{type: :string, description: "Current password"}
       }
     }
   end

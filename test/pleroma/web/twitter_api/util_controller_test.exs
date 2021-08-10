@@ -261,11 +261,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn =
         conn
         |> assign(:token, nil)
-        |> post(
-          "/api/pleroma/change_email?#{
-            URI.encode_query(%{password: "hi", email: "test@test.com"})
-          }"
-        )
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "hi", email: "test@test.com"})
 
       assert json_response_and_validate_schema(conn, 403) == %{
                "error" => "Insufficient permissions: write:accounts."
@@ -274,12 +271,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     test "with proper permissions and invalid password", %{conn: conn} do
       conn =
-        post(
-          conn,
-          "/api/pleroma/change_email?#{
-            URI.encode_query(%{password: "hi", email: "test@test.com"})
-          }"
-        )
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "hi", email: "test@test.com"})
 
       assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
     end
@@ -288,10 +282,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn: conn
     } do
       conn =
-        post(
-          conn,
-          "/api/pleroma/change_email?#{URI.encode_query(%{password: "test", email: "foobar"})}"
-        )
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test", email: "foobar"})
 
       assert json_response_and_validate_schema(conn, 200) == %{
                "error" => "Email has invalid format."
@@ -301,7 +294,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "with proper permissions, valid password and no email", %{
       conn: conn
     } do
-      conn = post(conn, "/api/pleroma/change_email?#{URI.encode_query(%{password: "test"})}")
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test"})
 
       assert %{"error" => "Missing field: email."} = json_response_and_validate_schema(conn, 400)
     end
@@ -310,10 +306,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn: conn
     } do
       conn =
-        post(
-          conn,
-          "/api/pleroma/change_email?#{URI.encode_query(%{password: "test", email: ""})}"
-        )
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test", email: ""})
 
       assert json_response_and_validate_schema(conn, 200) == %{"error" => "Email can't be blank."}
     end
@@ -324,10 +319,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user = insert(:user)
 
       conn =
-        post(
-          conn,
-          "/api/pleroma/change_email?#{URI.encode_query(%{password: "test", email: user.email})}"
-        )
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test", email: user.email})
 
       assert json_response_and_validate_schema(conn, 200) == %{
                "error" => "Email has already been taken."
@@ -338,12 +332,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn: conn
     } do
       conn =
-        post(
-          conn,
-          "/api/pleroma/change_email?#{
-            URI.encode_query(%{password: "test", email: "cofe@foobar.com"})
-          }"
-        )
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test", email: "cofe@foobar.com"})
 
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
