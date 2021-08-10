@@ -74,10 +74,10 @@ defmodule Pleroma.Group do
   end
 
   def get_by_slug_or_id(id) do
-    # TODO: Make this more efficient
-    case get_by_id(id) do
-      %Group{} = group -> group
-      _ -> get_by_slug(id)
+    unless FlakeId.flake_id?(id) do
+      get_by_slug(id)
+    else
+      get_by_id(id) || get_by_slug(id)
     end
   end
 
