@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - MastodonAPI: Stream out Create activities
 - MRF ObjectAgePolicy: Fix pattern matching on "published"
-- TwitterAPI: Make `change_password` require params on body instead of query
+- TwitterAPI: Make `change_password` and `change_email` require params on body instead of query
 
 ## 2.4.0 - 2021-08-08
 
