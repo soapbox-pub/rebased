@@ -49,6 +49,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
           message
           |> Map.put("to", to)
           |> Map.put("cc", cc)
+          |> Kernel.put_in(["object", "to"], to)
+          |> Kernel.put_in(["object", "cc"], cc)
 
         {:ok, message}
       else
@@ -70,6 +72,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
           message
           |> Map.put("to", to)
           |> Map.put("cc", cc)
+          |> Kernel.put_in(["object", "to"], to)
+          |> Kernel.put_in(["object", "cc"], cc)
 
         {:ok, message}
       else
@@ -82,7 +86,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   end
 
   @impl true
-  def filter(%{"type" => "Create", "published" => _} = message) do
+  def filter(%{"type" => "Create", "object" => %{"published" => _}} = message) do
     with actions <- Config.get([:mrf_object_age, :actions]),
          {:reject, _} <- check_date(message),
          {:ok, message} <- check_reject(message, actions),
