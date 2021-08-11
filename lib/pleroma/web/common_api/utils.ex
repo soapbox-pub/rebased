@@ -412,19 +412,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
-  # Do not notify subscribers if author is making a reply
-  def maybe_notify_subscribers(recipients, %Activity{
-        object: %Object{data: %{"inReplyTo" => _ap_id}}
-      }) do
-    recipients
-  end
-
   def maybe_notify_subscribers(
         recipients,
-        %Activity{data: %{"actor" => actor, "type" => type}} = activity
-      )
-      when type == "Create" do
-    with %User{} = user <- User.get_cached_by_ap_id(actor) do
+        %Activity{data: %{"actor" => actor, "type" => "Create"}} = activity
+      ) do
+    # Do not notify subscribers if author is making a reply
+    with %Object{data: object} <- Object.normalize(activity, fetch: false),
+         nil <- object["inReplyTo"],
+         %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
         |> User.subscriber_users()
