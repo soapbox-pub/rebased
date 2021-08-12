@@ -1499,12 +1499,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp object_to_group_data(%{"type" => "Group"} = data) do
-    # TODO: Ingest more fields such as privacy, owner, etc.
+    # TODO: Ingest more fields such as owner, etc.
+    privacy =
+      case data do
+        %{"capabilities" => %{"acceptsPublicObjects" => true}} -> "public"
+        _ -> "members_only"
+      end
+
     %{
       ap_id: data["id"],
       members_collection: data["members"],
       name: data["name"],
-      description: data["summary"] || ""
+      description: data["summary"] || "",
+      privacy: privacy
     }
   end
 

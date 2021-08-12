@@ -71,6 +71,17 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
     do: render("service.json", %{user: user}) |> Map.put("preferredUsername", user.nickname)
 
+  # The actor is really a Group
+  def render("user.json", %{user: %User{group: %Group{} = group}}) do
+    render("group.json", %{group: group})
+  end
+
+  # If the actor_type is "Group", preload the group and try again
+  def render("user.json", %{user: %User{actor_type: "Group", group: group} = user})
+      when group != nil do
+    render("user.json", %{user: Repo.preload(user, :group)})
+  end
+
   def render("user.json", %{user: user}) do
     {:ok, user} = User.ensure_keys_present(user)
     {:ok, _, public_key} = Keys.keys_from_pem(user.keys)
@@ -121,7 +132,61 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
-    |> Map.merge(maybe_make_group_fields(user))
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  def render("group.json", %{group: %Group{user: %User{} = user} = group}) do
+    {:ok, user} = User.ensure_keys_present(user)
+    {:ok, _, public_key} = Keys.keys_from_pem(user.keys)
+    public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
+    public_key = :public_key.pem_encode([public_key])
+    user = User.sanitize_html(user)
+
+    endpoints = render("endpoints.json", %{user: user})
+
+    emoji_tags = Transmogrifier.take_emoji_tags(user)
+
+    fields = Enum.map(user.fields, &Map.put(&1, "type", "PropertyValue"))
+
+    capabilities =
+      if is_boolean(user.accepts_chat_messages) do
+        %{
+          "acceptsChatMessages" => user.accepts_chat_messages,
+          "acceptsPublicObjects" => group.privacy == "public"
+        }
+      else
+        %{}
+      end
+
+    %{
+      "id" => group.ap_id,
+      "type" => "Group",
+      "following" => "#{user.ap_id}/following",
+      "followers" => "#{user.ap_id}/followers",
+      "members" => group.members_collection,
+      "inbox" => "#{user.ap_id}/inbox",
+      "outbox" => "#{user.ap_id}/outbox",
+      "featured" => "#{user.ap_id}/collections/featured",
+      "preferredUsername" => user.nickname,
+      "name" => group.name || user.name,
+      "summary" => group.description || user.bio,
+      "url" => group.ap_id,
+      "manuallyApprovesFollowers" => user.is_locked,
+      "manuallyApprovesMembers" => user.is_locked,
+      "publicKey" => %{
+        "id" => "#{user.ap_id}#main-key",
+        "owner" => user.ap_id,
+        "publicKeyPem" => public_key
+      },
+      "endpoints" => endpoints,
+      "attachment" => fields,
+      "tag" => emoji_tags,
+      "discoverable" => user.is_discoverable,
+      "capabilities" => capabilities,
+      "alsoKnownAs" => user.also_known_as
+    }
+    |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
+    |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -306,21 +371,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       }
     else
       %{}
-    end
-  end
-
-  defp maybe_make_group_fields(%User{group: %Group{} = group}) do
-    %{
-      "members" => group.members_collection
-    }
-  end
-
-  defp maybe_make_group_fields(user) do
-    with %User{actor_type: "Group"} <- user,
-         %User{group: %Group{}} = user <- Repo.preload(user, :group) do
-      maybe_make_group_fields(user)
-    else
-      _ -> %{}
     end
   end
 end
