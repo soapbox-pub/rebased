@@ -150,6 +150,13 @@ defmodule Pleroma.Group do
     Ecto.assoc(group, :members)
   end
 
+  def get_external_members(%Group{} = group) do
+    group
+    |> get_members_query()
+    |> where([u], u.local == false)
+    |> Repo.all()
+  end
+
   def add_member(%{user_id: user_id} = group, member) do
     with {:ok, _relationship} <- UserRelationship.create_membership(%User{id: user_id}, member) do
       {:ok, group}
