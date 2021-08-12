@@ -735,12 +735,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # Mastodon Accept/Reject requires a non-normalized object containing the actor URIs,
   # because of course it does.
   def prepare_outgoing(%{"type" => "Accept"} = data) do
-    with follow_activity <- Activity.normalize(data["object"]) do
+    with accepted_activity <- Activity.normalize(data["object"]) do
       object = %{
-        "actor" => follow_activity.actor,
-        "object" => follow_activity.data["object"],
-        "id" => follow_activity.data["id"],
-        "type" => "Follow"
+        "actor" => accepted_activity.actor,
+        "object" => accepted_activity.data["object"],
+        "id" => accepted_activity.data["id"],
+        "type" => accepted_activity.data["type"]
       }
 
       data =
@@ -753,12 +753,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def prepare_outgoing(%{"type" => "Reject"} = data) do
-    with follow_activity <- Activity.normalize(data["object"]) do
+    with accepted_activity <- Activity.normalize(data["object"]) do
       object = %{
-        "actor" => follow_activity.actor,
-        "object" => follow_activity.data["object"],
-        "id" => follow_activity.data["id"],
-        "type" => "Follow"
+        "actor" => accepted_activity.actor,
+        "object" => accepted_activity.data["object"],
+        "id" => accepted_activity.data["id"],
+        "type" => accepted_activity.data["type"]
       }
 
       data =
