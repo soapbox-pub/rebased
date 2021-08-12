@@ -26,19 +26,23 @@ defmodule Pleroma.Activity.Search do
         :plain
       end
 
-    Activity
-    |> Activity.with_preloaded_object()
-    |> Activity.restrict_deactivated_users()
-    |> restrict_public()
-    |> query_with(index_type, search_query, search_function)
-    |> maybe_restrict_local(user)
-    |> maybe_restrict_author(author)
-    |> maybe_restrict_blocked(user)
-    |> Pagination.fetch_paginated(
-      %{"offset" => offset, "limit" => limit, "skip_order" => index_type == :rum},
-      :offset
-    )
-    |> maybe_fetch(user, search_query)
+    try do
+      Activity
+      |> Activity.with_preloaded_object()
+      |> Activity.restrict_deactivated_users()
+      |> restrict_public()
+      |> query_with(index_type, search_query, search_function)
+      |> maybe_restrict_local(user)
+      |> maybe_restrict_author(author)
+      |> maybe_restrict_blocked(user)
+      |> Pagination.fetch_paginated(
+        %{"offset" => offset, "limit" => limit, "skip_order" => index_type == :rum},
+        :offset
+      )
+      |> maybe_fetch(user, search_query)
+    rescue
+      _ -> maybe_fetch([], user, search_query)
+    end
   end
 
   def maybe_restrict_author(query, %User{} = author) do
