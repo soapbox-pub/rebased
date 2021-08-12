@@ -190,6 +190,10 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(Utils.make_json_ld_header())
   end
 
+  def render("group.json", %{group: %Group{} = group}) do
+    render("group.json", %{group: Repo.preload(group, :user)})
+  end
+
   def render("following.json", %{user: user, page: page} = opts) do
     showing_items = (opts[:for] && opts[:for] == user) || !user.hide_follows
     showing_count = showing_items || !user.hide_follows_count
