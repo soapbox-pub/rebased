@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-05-13 16:37+0000\n"
-"PO-Revision-Date: 2021-07-27 18:45+0000\n"
+"PO-Revision-Date: 2021-08-13 15:42+0000\n"
 "Last-Translator: marcin mikołajczak <me@mkljczk.pl>\n"
 "Language-Team: Polish <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/pl/>\n"
@@ -98,19 +98,19 @@ msgstr[2] "powinno zawierać najwyżej %{count} elementów"
 
 ## From Ecto.Changeset.validate_number/3
 msgid "must be less than %{number}"
-msgstr ""
+msgstr "musi wynosić mniej niż %{number}"
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "musi wynosić więcej niż %{number}"
 
 msgid "must be less than or equal to %{number}"
-msgstr ""
+msgstr "musi być mniejsze lub równe %{number}"
 
 msgid "must be greater than or equal to %{number}"
-msgstr ""
+msgstr "musi być większe lub równe %{number}"
 
 msgid "must be equal to %{number}"
-msgstr ""
+msgstr "musi być równe %{number}"
 
 #: lib/pleroma/web/common_api/common_api.ex:421
 #, elixir-format
@@ -152,7 +152,7 @@ msgstr "Nie znaleziono użytkownika"
 #: lib/pleroma/web/pleroma_api/controllers/account_controller.ex:114
 #, elixir-format
 msgid "Can't get favorites"
-msgstr ""
+msgstr "Nie można uzyskać ulubionych"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:437
 #, elixir-format
@@ -172,7 +172,7 @@ msgstr "Komentarz może mieć co najwyżej %{max_size} znaków"
 #: lib/pleroma/config/config_db.ex:222
 #, elixir-format
 msgid "Config with params %{params} not found"
-msgstr ""
+msgstr "Nie znaleziono konfiguracji z parametrami %{params}"
 
 #: lib/pleroma/web/common_api/common_api.ex:95
 #, elixir-format
@@ -213,38 +213,38 @@ msgstr "Nie udało się cofnąć powtórzenia"
 #: lib/pleroma/web/common_api/common_api.ex:437
 #, elixir-format
 msgid "Could not update state"
-msgstr ""
+msgstr "Nie można zaktualizować stanu"
 
 #: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:202
 #, elixir-format
 msgid "Error."
-msgstr ""
+msgstr "Błąd."
 
 #: lib/pleroma/web/twitter_api/twitter_api.ex:106
 #, elixir-format
 msgid "Invalid CAPTCHA"
-msgstr ""
+msgstr "Niewłaściwa CAPTCHA"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:117
 #: lib/pleroma/web/oauth/oauth_controller.ex:569
 #, elixir-format
 msgid "Invalid credentials"
-msgstr ""
+msgstr "Nieprawidłowe dane uwierzytelniania"
 
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:38
 #, elixir-format
 msgid "Invalid credentials."
-msgstr ""
+msgstr "Nieprawidłowe dane uwierzytelniania."
 
 #: lib/pleroma/web/common_api/common_api.ex:265
 #, elixir-format
 msgid "Invalid indices"
-msgstr ""
+msgstr "Nieprawidłowe indeksy"
 
 #: lib/pleroma/web/admin_api/admin_api_controller.ex:1147
 #, elixir-format
 msgid "Invalid parameters"
-msgstr ""
+msgstr "Nieprawidłowe parametry"
 
 #: lib/pleroma/web/common_api/utils.ex:411
 #, elixir-format
@@ -307,7 +307,7 @@ msgstr "Coś się zepsuło"
 #: lib/pleroma/web/common_api/activity_draft.ex:107
 #, elixir-format
 msgid "The message visibility must be direct"
-msgstr ""
+msgstr "Widoczność wiadomości musi być „Bezpośrednia”"
 
 #: lib/pleroma/web/common_api/utils.ex:566
 #, elixir-format
@@ -317,17 +317,17 @@ msgstr "Ten status przekracza limit znaków"
 #: lib/pleroma/plugs/ensure_public_or_authenticated_plug.ex:31
 #, elixir-format
 msgid "This resource requires authentication."
-msgstr ""
+msgstr "Ten zasób wymaga uwierzytelnienia."
 
 #: lib/pleroma/plugs/rate_limiter/rate_limiter.ex:206
 #, elixir-format
 msgid "Throttled"
-msgstr ""
+msgstr "Ograniczono"
 
 #: lib/pleroma/web/common_api/common_api.ex:266
 #, elixir-format
 msgid "Too many choices"
-msgstr ""
+msgstr "Zbyt wiele wyborów"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:442
 #, elixir-format
@@ -349,17 +349,18 @@ msgstr "Twoje konto jest obecnie nieaktywne"
 #: lib/pleroma/web/oauth/oauth_controller.ex:332
 #, elixir-format
 msgid "Your login is missing a confirmed e-mail address"
-msgstr ""
+msgstr "Twój adres e-mail nie został potwierdzony"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:389
 #, elixir-format
 msgid "can't read inbox of %{nickname} as %{as_nickname}"
-msgstr ""
+msgstr "Nie można odczytać skrzynki odbiorczej %{nickname} jako %{as_nickname}"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:472
 #, elixir-format
 msgid "can't update outbox of %{nickname} as %{as_nickname}"
 msgstr ""
+"Nie można zaktualizować skrzynki nadawczcej %{nickname} jako %{as_nickname}"
 
 #: lib/pleroma/web/common_api/common_api.ex:388
 #, elixir-format
@@ -405,7 +406,7 @@ msgstr "Nie udało się"
 #: lib/pleroma/web/oauth/oauth_controller.ex:411
 #, elixir-format
 msgid "Failed to authenticate: %{message}."
-msgstr ""
+msgstr "Nie udało się uwierzytelnić: %{message}."
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:442
 #, elixir-format
@@ -441,7 +442,7 @@ msgstr "Nieobsługiwana wersja schematu Nodeinfo"
 #: lib/pleroma/web/oauth/oauth_controller.ex:169
 #, elixir-format
 msgid "This action is outside the authorized scopes"
-msgstr ""
+msgstr "Ta akcja wykracza poza dozwolone zakresy"
 
 #: lib/pleroma/web/oauth/fallback_controller.ex:14
 #, elixir-format
@@ -535,6 +536,8 @@ msgstr "Wymagany reset hasła"
 #, elixir-format
 msgid "Security violation: OAuth scopes check was neither handled nor explicitly skipped."
 msgstr ""
+"Naruszenie bezpieczeństwa: sprawdzanie zakresów OAuth nie zostało ani "
+"wykonane, ani celowo pominięte."
 
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:28
 #, elixir-format
