@@ -65,10 +65,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp get_context_id(_), do: nil
 
-  defp reblogged?(activity, user) do
-    object = Object.normalize(activity, fetch: false) || %{}
-    present?(user && user.ap_id in (object.data["announcements"] || []))
+  # Check if the user reblogged this status
+  defp reblogged?(activity, %User{ap_id: ap_id}) do
+    with %Object{data: %{"announcements" => announcements}} when is_list(announcements) <-
+           Object.normalize(activity, fetch: false) do
+      ap_id in announcements
+    else
+      _ -> false
+    end
   end
+
+  # False if the user is logged out
+  defp reblogged?(_activity, _user), do: false
 
   def render("index.json", opts) do
     reading_user = opts[:for]
