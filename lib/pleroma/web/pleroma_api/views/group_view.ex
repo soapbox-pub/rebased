@@ -4,6 +4,7 @@
 defmodule Pleroma.Web.PleromaAPI.GroupView do
   use Pleroma.Web, :view
 
+  alias Pleroma.Activity
   alias Pleroma.Group
   alias Pleroma.Repo
   alias Pleroma.User
@@ -61,13 +62,18 @@ defmodule Pleroma.Web.PleromaAPI.GroupView do
     AccountView.render("index.json", params)
   end
 
-  def render("status.json", %{extract_reblog: false} = params) do
-    StatusView.render("show.json", params)
+  def render(
+        "status.json",
+        %{activity: %{data: %{"type" => "Announce", "object" => ap_id}}} = params
+      ) do
+    with %Activity{} = create_activity <- Activity.get_create_by_object_ap_id(ap_id) do
+      params = Map.put(params, :activity, create_activity)
+      StatusView.render("show.json", params)
+    end
   end
 
   def render("status.json", params) do
     StatusView.render("show.json", params)
-    |> get_reblog()
   end
 
   def render("statuses.json", params) do

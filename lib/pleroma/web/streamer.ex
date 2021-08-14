@@ -325,6 +325,7 @@ defmodule Pleroma.Web.Streamer do
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, auth?} ->
         if auth? do
+          # HACK: Why is this needed?
           send(pid, {:render_group_update_with_user, StreamerView, "group_update.json", item})
         else
           send(pid, {:text, anon_render})

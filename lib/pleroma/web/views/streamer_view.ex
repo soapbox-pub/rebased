@@ -45,8 +45,7 @@ defmodule Pleroma.Web.StreamerView do
         Pleroma.Web.PleromaAPI.GroupView.render(
           "status.json",
           activity: activity,
-          for: user,
-          as: :activity
+          for: user
         )
         |> Jason.encode!()
     }
@@ -95,8 +94,7 @@ defmodule Pleroma.Web.StreamerView do
       payload:
         Pleroma.Web.PleromaAPI.GroupView.render(
           "status.json",
-          activity: activity,
-          as: :activity
+          activity: activity
         )
         |> Jason.encode!()
     }
