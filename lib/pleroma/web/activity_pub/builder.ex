@@ -126,21 +126,25 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      |> Pleroma.Maps.put_if_present("context", context), []}
   end
 
+  @spec note(ActivityDraft.t()) :: {:ok, map(), keyword()}
   def note(%ActivityDraft{} = draft) do
-    %{
-      "type" => "Note",
-      "to" => draft.to,
-      "cc" => draft.cc,
-      "content" => draft.content_html,
-      "summary" => draft.summary,
-      "sensitive" => draft.sensitive,
-      "context" => draft.context,
-      "attachment" => draft.attachments,
-      "actor" => draft.user.ap_id,
-      "tag" => Keyword.values(draft.tags) |> Enum.uniq()
-    }
-    |> add_in_reply_to(draft.in_reply_to)
-    |> Map.merge(draft.extra)
+    data =
+      %{
+        "type" => "Note",
+        "to" => draft.to,
+        "cc" => draft.cc,
+        "content" => draft.content_html,
+        "summary" => draft.summary,
+        "sensitive" => draft.sensitive,
+        "context" => draft.context,
+        "attachment" => draft.attachments,
+        "actor" => draft.user.ap_id,
+        "tag" => Keyword.values(draft.tags) |> Enum.uniq()
+      }
+      |> add_in_reply_to(draft.in_reply_to)
+      |> Map.merge(draft.extra)
+
+    {:ok, data, []}
   end
 
   defp add_in_reply_to(object, nil), do: object

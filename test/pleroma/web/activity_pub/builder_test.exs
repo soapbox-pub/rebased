@@ -28,19 +28,21 @@ defmodule Pleroma.Web.ActivityPub.BuilderTest do
         extra: %{"custom_tag" => "test"}
       }
 
-      assert Builder.note(draft) == %{
-               "actor" => user.ap_id,
-               "attachment" => [],
-               "cc" => [user3.ap_id],
-               "content" => "<h1>This is :moominmamma: note</h1>",
-               "context" => "2hu",
-               "sensitive" => false,
-               "summary" => "test summary",
-               "tag" => ["jimm"],
-               "to" => [user2.ap_id],
-               "type" => "Note",
-               "custom_tag" => "test"
-             }
+      expected = %{
+        "actor" => user.ap_id,
+        "attachment" => [],
+        "cc" => [user3.ap_id],
+        "content" => "<h1>This is :moominmamma: note</h1>",
+        "context" => "2hu",
+        "sensitive" => false,
+        "summary" => "test summary",
+        "tag" => ["jimm"],
+        "to" => [user2.ap_id],
+        "type" => "Note",
+        "custom_tag" => "test"
+      }
+
+      assert {:ok, ^expected, []} = Builder.note(draft)
     end
   end
 end
