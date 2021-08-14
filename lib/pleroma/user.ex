@@ -214,7 +214,7 @@ defmodule Pleroma.User do
     )
 
     # Some `users` are actually groups. In this case, they can have a corresponding `Group`
-    has_one(:group, Group)
+    has_one(:group, Group, on_replace: :update)
 
     timestamps()
   end
@@ -448,6 +448,7 @@ defmodule Pleroma.User do
       |> fix_follower_address()
 
     struct
+    |> Repo.preload(:group)
     |> cast(
       params,
       [
@@ -496,8 +497,7 @@ defmodule Pleroma.User do
 
   defp maybe_put_group_assoc(cng, params) do
     if params[:group] do
-      group = change(%Group{}, params[:group])
-      put_assoc(cng, :group, group)
+      put_assoc(cng, :group, params[:group])
     else
       cng
     end
