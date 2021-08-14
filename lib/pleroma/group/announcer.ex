@@ -6,6 +6,7 @@ defmodule Pleroma.Group.Announcer do
   @moduledoc """
   Disseminates content to group members by announcing it.
   """
+  alias Pleroma.Activity
   alias Pleroma.Group
   alias Pleroma.Group.Privacy
   alias Pleroma.Object
@@ -68,13 +69,15 @@ defmodule Pleroma.Group.Announcer do
     end
   end
 
-  def maybe_announce(object) do
-    with %Object{data: data} = object <- Object.normalize(object),
+  def maybe_announce(%Activity{data: %{"type" => "Create"}} = activity) do
+    with %Object{data: data} = object <- Object.normalize(activity),
          %Group{} = group <- Group.get_object_group(object),
          {_, true} <- {:should_announce, should_announce?(group, data)} do
       announce(group, data)
     else
-      _ -> {:noop, object}
+      _ -> {:noop, activity}
     end
   end
+
+  def maybe_announce(object), do: {:noop, object}
 end
