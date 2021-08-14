@@ -681,41 +681,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "make_note_data/1" do
-    test "returns note data" do
-      user = insert(:user)
-      note = insert(:note)
-      user2 = insert(:user)
-      user3 = insert(:user)
-
-      draft = %ActivityDraft{
-        user: user,
-        to: [user2.ap_id],
-        context: "2hu",
-        content_html: "<h1>This is :moominmamma: note</h1>",
-        in_reply_to: note.id,
-        tags: [name: "jimm"],
-        summary: "test summary",
-        cc: [user3.ap_id],
-        extra: %{"custom_tag" => "test"}
-      }
-
-      assert Utils.make_note_data(draft) == %{
-               "actor" => user.ap_id,
-               "attachment" => [],
-               "cc" => [user3.ap_id],
-               "content" => "<h1>This is :moominmamma: note</h1>",
-               "context" => "2hu",
-               "sensitive" => false,
-               "summary" => "test summary",
-               "tag" => ["jimm"],
-               "to" => [user2.ap_id],
-               "type" => "Note",
-               "custom_tag" => "test"
-             }
-    end
-  end
-
   describe "maybe_add_attachments/3" do
     test "returns parsed results when attachment_links is false" do
       assert Utils.maybe_add_attachments(
