@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
 
@@ -214,7 +215,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     emoji = Map.merge(emoji, summary_emoji)
 
     object =
-      Utils.make_note_data(draft)
+      Builder.note(draft)
       |> Map.put("emoji", emoji)
       |> Map.put("source", draft.status)
       |> Map.put("generator", draft.params[:generator])

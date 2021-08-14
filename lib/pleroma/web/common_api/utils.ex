@@ -291,33 +291,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.html_escape("text/html")
   end
 
-  def make_note_data(%ActivityDraft{} = draft) do
-    %{
-      "type" => "Note",
-      "to" => draft.to,
-      "cc" => draft.cc,
-      "content" => draft.content_html,
-      "summary" => draft.summary,
-      "sensitive" => draft.sensitive,
-      "context" => draft.context,
-      "attachment" => draft.attachments,
-      "actor" => draft.user.ap_id,
-      "tag" => Keyword.values(draft.tags) |> Enum.uniq()
-    }
-    |> add_in_reply_to(draft.in_reply_to)
-    |> Map.merge(draft.extra)
-  end
-
-  defp add_in_reply_to(object, nil), do: object
-
-  defp add_in_reply_to(object, in_reply_to) do
-    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
-      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
-    else
-      _ -> object
-    end
-  end
-
   def format_naive_asctime(date) do
     date |> DateTime.from_naive!("Etc/UTC") |> format_asctime
   end
