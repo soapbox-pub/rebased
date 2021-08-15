@@ -367,6 +367,7 @@ defmodule Pleroma.Activity do
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
+  def add_to_index(_activity), do: nil
 
   def direct_conversation_id(activity, for_user) do
     alias Pleroma.Conversation.Participation

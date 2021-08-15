@@ -866,8 +866,13 @@ config :pleroma, Pleroma.User.Backup,
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
-  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
+  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Search, [max_running: 20, max_waiting: 50]}
 ]
+
+config :pleroma, Pleroma.Search, module: Pleroma.Activity.Search
+
+config :pleroma, Pleroma.Search.Meilisearch, url: "http://127.0.0.1:7700/"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

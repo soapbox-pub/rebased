@@ -133,6 +133,8 @@ config :pleroma, :side_effects,
   ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
   logger: Pleroma.LoggerMock
 
+config :pleroma, Pleroma.Search, module: Pleroma.Activity.Search
+
 # Reduce recompilation time
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime

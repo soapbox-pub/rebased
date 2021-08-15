@@ -140,6 +140,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
 
+      search_module = Pleroma.Config.get([Pleroma.Search, :module])
+
+      ConcurrentLimiter.limit(Pleroma.Search, fn ->
+        Task.start(fn -> search_module.add_to_index(activity) end)
+      end)
+
       {:ok, activity}
     else
       %Activity{} = activity ->

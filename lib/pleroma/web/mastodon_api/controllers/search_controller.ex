@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ControllerHelper
@@ -100,7 +99,9 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   end
 
   defp resource_search(_, "statuses", query, options) do
-    statuses = with_fallback(fn -> Activity.search(options[:for_user], query, options) end)
+    search_module = Pleroma.Config.get([Pleroma.Search, :module], Pleroma.Activity)
+
+    statuses = with_fallback(fn -> search_module.search(options[:for_user], query, options) end)
 
     StatusView.render("index.json",
       activities: statuses,
