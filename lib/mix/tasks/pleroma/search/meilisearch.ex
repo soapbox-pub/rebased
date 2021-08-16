@@ -18,7 +18,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       Pleroma.HTTP.post(
         "#{endpoint}/indexes/objects/settings/ranking-rules",
         Jason.encode!([
-          "desc(id)",
+          "desc(published)",
           "typo",
           "words",
           "proximity",
@@ -54,7 +54,15 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
         |> Stream.map(fn objects ->
           Enum.map(objects, fn object ->
             data = object.data
-            %{id: object.id, source: data["source"], ap: data["id"]}
+
+            {:ok, published, _} = DateTime.from_iso8601(data["published"])
+
+            %{
+              id: object.id,
+              source: data["source"],
+              ap: data["id"],
+              published: published |> DateTime.to_unix()
+            }
           end)
         end)
         |> Stream.each(fn objects ->
