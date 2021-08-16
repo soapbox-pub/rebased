@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
             # Only index public posts which are notes and have some text
             where:
               fragment("data->>'type' = 'Note'") and
-                fragment("LENGTH(data->>'source') > 0") and
+                fragment("LENGTH(data->>'content') > 0") and
                 fragment("data->'to' \\? ?", ^Pleroma.Constants.as_public()),
             order_by: [desc: fragment("data->'published'")]
           ),
@@ -56,10 +56,11 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
             data = object.data
 
             {:ok, published, _} = DateTime.from_iso8601(data["published"])
+            {:ok, content} = FastSanitize.strip_tags(data["content"])
 
             %{
               id: object.id,
-              source: data["source"],
+              content: content,
               ap: data["id"],
               published: published |> DateTime.to_unix()
             }
@@ -87,11 +88,6 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, result} =
-      Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects/documents", "", [], [])
-
-    if not Map.has_key?(Jason.decode!(result.body), "updateId") do
-      IO.puts("Failed to clear: #{result}")
-    end
+    {:ok, _} = Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects", "", [], [])
   end
 end

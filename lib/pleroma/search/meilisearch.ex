@@ -56,7 +56,7 @@ defmodule Pleroma.Search.Meilisearch do
           Jason.encode!([
             %{
               id: object.id,
-              source: data["source"],
+              content: data["content"] |> Pleroma.HTML.filter_tags(),
               ap: data["id"],
               published: published |> DateTime.to_unix()
             }
