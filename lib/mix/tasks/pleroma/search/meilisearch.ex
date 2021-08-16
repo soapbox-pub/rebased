@@ -39,7 +39,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
               fragment("data->>'type' = 'Note'") and
                 fragment("LENGTH(data->>'source') > 0") and
                 fragment("data->'to' \\? ?", ^Pleroma.Constants.as_public()),
-            order_by: fragment("data->'published' DESC")
+            order_by: [desc: fragment("data->'published'")]
           ),
           timeout: :infinity
         )
@@ -66,11 +66,15 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           end)
         end)
         |> Stream.each(fn objects ->
-          {:ok, _} =
+          {:ok, result} =
             Pleroma.HTTP.post(
               "#{endpoint}/indexes/objects/documents",
               Jason.encode!(objects)
             )
+
+          if not Map.has_key?(Jason.decode!(result.body), "updateId") do
+            IO.puts("Failed to index: #{result}")
+          end
         end)
         |> Stream.run()
       end,
@@ -83,6 +87,11 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, _} = Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects/documents", "", [], [])
+    {:ok, result} =
+      Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects/documents", "", [], [])
+
+    if not Map.has_key?(Jason.decode!(result.body), "updateId") do
+      IO.puts("Failed to clear: #{result}")
+    end
   end
 end

@@ -32,7 +32,7 @@ defmodule Pleroma.Search.Meilisearch do
       |> maybe_restrict_author(author)
       |> maybe_restrict_blocked(user)
       |> maybe_fetch(user, query)
-      |> order_by([activity], desc: activity.id)
+      |> order_by([object: obj], desc: obj.data["published"])
       |> Pleroma.Repo.all()
     rescue
       _ -> maybe_fetch([], user, query)
@@ -48,10 +48,19 @@ defmodule Pleroma.Search.Meilisearch do
 
       endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
+      {:ok, published, _} = DateTime.from_iso8601(data["published"])
+
       {:ok, result} =
         Pleroma.HTTP.post(
           "#{endpoint}/indexes/objects/documents",
-          Jason.encode!([%{id: object.id, source: data["source"], ap: data["id"]}])
+          Jason.encode!([
+            %{
+              id: object.id,
+              source: data["source"],
+              ap: data["id"],
+              published: published |> DateTime.to_unix()
+            }
+          ])
         )
 
       if not Map.has_key?(Jason.decode!(result.body), "updateId") do
