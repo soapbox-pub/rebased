@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
         ])
       )
 
-    chunk_size = 100_000
+    chunk_size = 10_000
 
     Pleroma.Repo.transaction(
       fn ->
