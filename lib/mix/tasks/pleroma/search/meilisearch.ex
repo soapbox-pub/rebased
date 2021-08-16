@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   require Logger
+  require Pleroma.Constants
 
   import Mix.Pleroma
   import Ecto.Query
@@ -29,7 +30,11 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     Pleroma.Repo.chunk_stream(
       from(Pleroma.Object,
-        where: fragment("data->>'type' = 'Note'") and fragment("LENGTH(data->>'source') > 0")
+        # Only index public posts which are notes and have some text
+        where:
+          fragment("data->>'type' = 'Note'") and
+            fragment("LENGTH(data->>'source') > 0") and
+            fragment("data->'to' \\? ?", ^Pleroma.Constants.as_public())
       ),
       200,
       :batches
@@ -50,5 +55,13 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       IO.puts("Indexed #{Enum.count(objects)} entries")
     end)
     |> Stream.run()
+  end
+
+  def run(["clear"]) do
+    start_pleroma()
+
+    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+
+    {:ok, _} = Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects/documents", "", [], [])
   end
 end

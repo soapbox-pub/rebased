@@ -1,5 +1,6 @@
 defmodule Pleroma.Search.Meilisearch do
   require Logger
+  require Pleroma.Constants
 
   alias Pleroma.Activity
 
@@ -41,7 +42,8 @@ defmodule Pleroma.Search.Meilisearch do
   def add_to_index(activity) do
     object = activity.object
 
-    if activity.data["type"] == "Create" and not is_nil(object) and object.data["type"] == "Note" do
+    if activity.data["type"] == "Create" and not is_nil(object) and object.data["type"] == "Note" and
+         Pleroma.Constants.as_public() in object.data["to"] do
       data = object.data
 
       endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
@@ -56,5 +58,18 @@ defmodule Pleroma.Search.Meilisearch do
         Logger.error("Failed to add activity #{activity.id} to index: #{result.body}")
       end
     end
+  end
+
+  def remove_from_index(object) do
+    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+
+    {:ok, _} =
+      Pleroma.HTTP.request(
+        :delete,
+        "#{endpoint}/indexes/objects/documents/#{object.id}",
+        "",
+        [],
+        []
+      )
   end
 end
