@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
-  import Mix.Pleroma
+  require Logger
 
+  import Mix.Pleroma
   import Ecto.Query
 
   def run(["index"]) do
@@ -12,12 +13,25 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
+    {:ok, _} =
+      Pleroma.HTTP.post(
+        "#{endpoint}/indexes/objects/settings/ranking-rules",
+        Jason.encode!([
+          "desc(id)",
+          "typo",
+          "words",
+          "proximity",
+          "attribute",
+          "wordsPosition",
+          "exactness"
+        ])
+      )
+
     Pleroma.Repo.chunk_stream(
       from(Pleroma.Object,
-        limit: 200,
         where: fragment("data->>'type' = 'Note'") and fragment("LENGTH(data->>'source') > 0")
       ),
-      100,
+      200,
       :batches
     )
     |> Stream.map(fn objects ->
@@ -26,12 +40,14 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
         %{id: object.id, source: data["source"], ap: data["id"]}
       end)
     end)
-    |> Stream.each(fn activities ->
+    |> Stream.each(fn objects ->
       {:ok, _} =
         Pleroma.HTTP.post(
           "#{endpoint}/indexes/objects/documents",
-          Jason.encode!(activities)
+          Jason.encode!(objects)
         )
+
+      IO.puts("Indexed #{Enum.count(objects)} entries")
     end)
     |> Stream.run()
   end
