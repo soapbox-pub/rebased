@@ -663,7 +663,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     pipe_through([:accepts_html_xml_json, :http_signature])
-    get("/groups/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+    get("/groups/:nickname", Feed.UserController, :feed_redirect, as: :group_feed)
   end
 
   scope "/", Pleroma.Web do
