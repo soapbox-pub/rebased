@@ -251,6 +251,7 @@ defmodule Pleroma.UserSearchTest do
         |> Map.put(:last_digest_emailed_at, nil)
         |> Map.put(:multi_factor_authentication_settings, nil)
         |> Map.put(:notification_settings, nil)
+        |> Map.put(:group, nil)
 
       assert user == expected
     end

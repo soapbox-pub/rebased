@@ -41,11 +41,6 @@ defmodule Pleroma.Web.StreamerTest do
       assert {:ok, "hashtag:cofe"} = Streamer.get_topic("hashtag", nil, nil, %{"tag" => "cofe"})
     end
 
-    test "allows group streams" do
-      assert {:ok, "group:AABqBkdeSmowESi7Rw"} =
-               Streamer.get_topic("group", nil, nil, %{"group" => "AABqBkdeSmowESi7Rw"})
-    end
-
     test "disallows user streams" do
       assert {:error, _} = Streamer.get_topic("user", nil, nil)
       assert {:error, _} = Streamer.get_topic("user:notification", nil, nil)
@@ -111,6 +106,15 @@ defmodule Pleroma.Web.StreamerTest do
         assert {:error, :unauthorized} =
                  Streamer.get_topic("user:notification", user, invalid_notification_token)
       end
+    end
+
+    test "allows group streams", %{user: user, token: token} do
+      %{id: group_id} = insert(:group)
+
+      expected = "group:#{group_id}"
+      result = Streamer.get_topic("group", user, token, %{"group" => group_id})
+
+      assert {:ok, ^expected} = result
     end
 
     test "allows hashtag streams (regardless of OAuth token scopes)", %{
