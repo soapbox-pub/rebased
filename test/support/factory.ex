@@ -62,7 +62,8 @@ defmodule Pleroma.Factory do
       user_id: user.id,
       user: user,
       owner_id: owner.id,
-      owner: owner
+      owner: owner,
+      accepts_joins: true
     }
   end
 

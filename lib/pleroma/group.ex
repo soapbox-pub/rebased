@@ -41,6 +41,7 @@ defmodule Pleroma.Group do
     field(:description, :string)
     field(:privacy, :string, default: "members_only")
     field(:members_collection, :string)
+    field(:accepts_joins, :boolean, default: false)
 
     timestamps()
   end

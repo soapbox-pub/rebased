@@ -1506,12 +1506,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         _ -> "members_only"
       end
 
+    accepts_joins =
+      case data do
+        %{"capabilities" => %{"acceptsJoins" => true}} -> true
+        _ -> false
+      end
+
     %{
       ap_id: data["id"],
       members_collection: data["members"],
       name: data["name"],
       description: data["summary"] || "",
-      privacy: privacy
+      privacy: privacy,
+      accepts_joins: accepts_joins
     }
   end
 
