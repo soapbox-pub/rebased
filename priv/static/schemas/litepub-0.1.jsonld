@@ -13,6 +13,7 @@
             },
             "discoverable": "toot:discoverable",
             "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+            "manuallyApprovesMembers": "litepub:manuallyApprovesMembers",
             "capabilities": "litepub:capabilities",
             "ostatus": "http://ostatus.org#",
             "schema": "http://schema.org#",
