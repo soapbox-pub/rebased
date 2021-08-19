@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-08-15 15:40+0000\n"
-"PO-Revision-Date: 2021-08-18 14:45+0000\n"
+"PO-Revision-Date: 2021-08-20 15:45+0000\n"
 "Last-Translator: @liimee <alt3753.7@gmail.com>\n"
 "Language-Team: Indonesian <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/id/>\n"
@@ -133,7 +133,7 @@ msgstr "Tidak dapat mencari pengguna"
 #: lib/pleroma/web/pleroma_api/controllers/account_controller.ex:61
 #, elixir-format
 msgid "Can't get favorites"
-msgstr ""
+msgstr "Tidak dapat mendapatkan favorit"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:438
 #, elixir-format
@@ -352,7 +352,7 @@ msgstr "kesalahan"
 #: lib/pleroma/web/pleroma_api/controllers/mascot_controller.ex:32
 #, elixir-format
 msgid "mascots can only be images"
-msgstr ""
+msgstr "maskot hanya dapat berbentuk gambar"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:62
 #, elixir-format
@@ -464,7 +464,7 @@ msgstr "Tidak dapat menghapus reaksi emoji"
 #: lib/pleroma/web/twitter_api/twitter_api.ex:129
 #, elixir-format
 msgid "Invalid CAPTCHA (Missing parameter: %{name})"
-msgstr ""
+msgstr "CAPTCHA Tidak Valid (Parameter kurang: %{name})"
 
 #: lib/pleroma/web/mastodon_api/controllers/list_controller.ex:92
 #, elixir-format
@@ -474,7 +474,7 @@ msgstr ""
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:123
 #, elixir-format
 msgid "Missing parameter: %{name}"
-msgstr ""
+msgstr "Parameter kurang: %{name}"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:210
 #: lib/pleroma/web/oauth/oauth_controller.ex:321
@@ -577,4 +577,4 @@ msgstr ""
 #: lib/pleroma/plugs/user_is_admin_plug.ex:21
 #, elixir-format
 msgid "User is not an admin."
-msgstr ""
+msgstr "Pengguna bukan seorang admin."
