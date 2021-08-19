@@ -101,7 +101,8 @@ defmodule Pleroma.Group do
       nickname: slug,
       follower_address: "#{ap_id}/followers",
       following_address: "#{ap_id}/following",
-      local: true
+      local: true,
+      accepts_chat_messages: false
     }
     |> User.group_changeset()
     |> Repo.insert()

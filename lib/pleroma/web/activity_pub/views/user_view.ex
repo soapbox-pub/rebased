@@ -173,7 +173,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "tag" => emoji_tags,
       "discoverable" => user.is_discoverable,
       "capabilities" => %{
-        "acceptsChatMessages" => user.accepts_chat_messages || false,
+        "acceptsChatMessages" => false,
         "acceptsPublicObjects" => group.privacy == "public"
       },
       "alsoKnownAs" => user.also_known_as
