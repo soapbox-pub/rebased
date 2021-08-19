@@ -1502,8 +1502,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # TODO: Ingest more fields such as owner, etc.
     privacy =
       case data do
-        %{"capabilities" => %{"acceptsPublicObjects" => true}} -> "public"
-        _ -> "members_only"
+        %{"private" => true} -> "members_only"
+        _ -> "public"
       end
 
     accepts_joins =

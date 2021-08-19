@@ -39,7 +39,7 @@ defmodule Pleroma.Group do
     field(:ap_id, :string)
     field(:name, :string)
     field(:description, :string)
-    field(:privacy, :string, default: "members_only")
+    field(:privacy, :string, default: "public")
     field(:members_collection, :string)
     field(:accepts_joins, :boolean, default: false)
 

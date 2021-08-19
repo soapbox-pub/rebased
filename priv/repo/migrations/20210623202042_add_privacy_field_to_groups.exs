@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddPrivacyFieldToGroups do
 
   def change do
     alter table(:groups) do
-      add(:privacy, :string, default: "members_only")
+      add(:privacy, :string, default: "public")
     end
   end
 end
