@@ -39,28 +39,46 @@ defmodule Pleroma.Search.Meilisearch do
     end
   end
 
-  def add_to_index(activity) do
-    object = activity.object
-
-    if activity.data["type"] == "Create" and not is_nil(object) and object.data["type"] == "Note" and
+  def object_to_search_data(object) do
+    if not is_nil(object) and object.data["type"] == "Note" and
          Pleroma.Constants.as_public() in object.data["to"] do
       data = object.data
 
-      endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+      content_str =
+        case data["content"] do
+          [nil | rest] -> to_string(rest)
+          str -> str
+        end
 
-      {:ok, published, _} = DateTime.from_iso8601(data["published"])
+      content =
+        with {:ok, scrubbed} <- FastSanitize.strip_tags(content_str),
+             trimmed <- String.trim(scrubbed) do
+          trimmed
+        end
+
+      if String.length(content) > 1 do
+        {:ok, published, _} = DateTime.from_iso8601(data["published"])
+
+        %{
+          id: object.id,
+          content: content,
+          ap: data["id"],
+          published: published |> DateTime.to_unix()
+        }
+      end
+    end
+  end
+
+  def add_to_index(activity) do
+    maybe_search_data = object_to_search_data(activity)
+
+    if activity.data["type"] == "Create" and maybe_search_data do
+      endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
       {:ok, result} =
         Pleroma.HTTP.post(
           "#{endpoint}/indexes/objects/documents",
-          Jason.encode!([
-            %{
-              id: object.id,
-              content: data["content"] |> Pleroma.HTML.filter_tags(),
-              ap: data["id"],
-              published: published |> DateTime.to_unix()
-            }
-          ])
+          Jason.encode!([maybe_search_data])
         )
 
       if not Map.has_key?(Jason.decode!(result.body), "updateId") do

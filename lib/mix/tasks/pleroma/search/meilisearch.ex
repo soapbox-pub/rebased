@@ -51,40 +51,9 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           ),
           timeout: :infinity
         )
+        |> Stream.map(&Pleroma.Search.Meilisearch.object_to_search_data/1)
+        |> Stream.filter(fn o -> not is_nil(o) end)
         |> Stream.chunk_every(chunk_size)
-        |> Stream.map(fn objects ->
-          Enum.map(objects, fn object ->
-            data = object.data
-
-            content_str =
-              case data["content"] do
-                [nil | rest] -> to_string(rest)
-                str -> str
-              end
-
-            {:ok, published, _} = DateTime.from_iso8601(data["published"])
-
-            content =
-              with {:ok, scrubbed} <- FastSanitize.strip_tags(content_str),
-                   trimmed <- String.trim(scrubbed) do
-                trimmed
-              end
-
-            # Only index if there is anything in the string. If there is a single symbol,
-            # it's probably a dot from mastodon posts with just the picture
-            if String.length(content) > 1 do
-              %{
-                id: object.id,
-                content: content,
-                ap: data["id"],
-                published: published |> DateTime.to_unix()
-              }
-            else
-              nil
-            end
-          end)
-          |> Enum.filter(fn o -> not is_nil(o) end)
-        end)
         |> Stream.transform(0, fn objects, acc ->
           new_acc = acc + Enum.count(objects)
 
