@@ -57,7 +57,9 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
         |> Stream.transform(0, fn objects, acc ->
           new_acc = acc + Enum.count(objects)
 
-          IO.puts("Indexed #{new_acc} entries")
+          # Reset to the beginning of the line and rewrite it
+          IO.write("\r")
+          IO.write("Indexed #{new_acc} entries")
 
           {[objects], new_acc}
         end)
@@ -76,6 +78,8 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       end,
       timeout: :infinity
     )
+
+    IO.write("\n")
   end
 
   def run(["clear"]) do
