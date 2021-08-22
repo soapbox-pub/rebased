@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-08-15 15:40+0000\n"
-"PO-Revision-Date: 2021-08-20 15:45+0000\n"
+"PO-Revision-Date: 2021-08-23 04:45+0000\n"
 "Last-Translator: @liimee <alt3753.7@gmail.com>\n"
 "Language-Team: Indonesian <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/id/>\n"
@@ -179,7 +179,7 @@ msgstr ""
 #: lib/pleroma/web/common_api/common_api.ex:463
 #, elixir-format
 msgid "Could not unpin"
-msgstr ""
+msgstr "Tidak dapat berhenti menyematkan"
 
 #: lib/pleroma/web/common_api/common_api.ex:216
 #, elixir-format
@@ -221,7 +221,7 @@ msgstr ""
 #: lib/pleroma/web/admin_api/controllers/fallback_controller.ex:29
 #, elixir-format
 msgid "Invalid parameters"
-msgstr ""
+msgstr "Parameter tidak valid"
 
 #: lib/pleroma/web/common_api/utils.ex:414
 #, elixir-format
@@ -241,7 +241,7 @@ msgstr "Layanan Kocaptcha tidak tersedia"
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:112
 #, elixir-format
 msgid "Missing parameters"
-msgstr ""
+msgstr "Parameter kurang"
 
 #: lib/pleroma/web/common_api/utils.ex:547
 #, elixir-format
@@ -264,7 +264,7 @@ msgstr "Tidak ditemukan"
 #: lib/pleroma/web/common_api/common_api.ex:331
 #, elixir-format
 msgid "Poll's author can't vote"
-msgstr ""
+msgstr "Pembuat japat tidak boleh memilih"
 
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:20
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:37 lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:49
