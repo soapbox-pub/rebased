@@ -28,6 +28,14 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
         ])
       )
 
+    {:ok, _} =
+      Pleroma.HTTP.post(
+        "#{endpoint}/indexes/objects/settings/searchable-attributes",
+        Jason.encode!([
+          "content"
+        ])
+      )
+
     chunk_size = 10_000
 
     Pleroma.Repo.transaction(
@@ -55,8 +63,14 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           Enum.map(objects, fn object ->
             data = object.data
 
+            content_str =
+              case data["content"] do
+                [nil | rest] -> to_string(rest)
+                str -> str
+              end
+
             {:ok, published, _} = DateTime.from_iso8601(data["published"])
-            {:ok, content} = FastSanitize.strip_tags(data["content"])
+            {:ok, content} = FastSanitize.strip_tags(content_str)
 
             %{
               id: object.id,
