@@ -147,12 +147,8 @@ defmodule Pleroma.Web.CommonAPI do
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
-      # Also delete from search index
-      search_module = Pleroma.Config.get([Pleroma.Search, :module])
-
-      ConcurrentLimiter.limit(Pleroma.Search, fn ->
-        Task.start(fn -> search_module.remove_from_index(object) end)
-      end)
+      # Remove from search index for local posts
+      Pleroma.Search.remove_from_index(object)
 
       {:ok, delete}
     else
