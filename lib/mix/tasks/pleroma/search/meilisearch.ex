@@ -52,13 +52,6 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           timeout: :infinity
         )
         |> Stream.chunk_every(chunk_size)
-        |> Stream.transform(0, fn objects, acc ->
-          new_acc = acc + Enum.count(objects)
-
-          IO.puts("Indexed #{new_acc} entries")
-
-          {[objects], new_acc}
-        end)
         |> Stream.map(fn objects ->
           Enum.map(objects, fn object ->
             data = object.data
@@ -70,15 +63,34 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
               end
 
             {:ok, published, _} = DateTime.from_iso8601(data["published"])
-            {:ok, content} = FastSanitize.strip_tags(content_str)
 
-            %{
-              id: object.id,
-              content: content,
-              ap: data["id"],
-              published: published |> DateTime.to_unix()
-            }
+            content =
+              with {:ok, scrubbed} <- FastSanitize.strip_tags(content_str),
+                   trimmed <- String.trim(scrubbed) do
+                trimmed
+              end
+
+            # Only index if there is anything in the string. If there is a single symbol,
+            # it's probably a dot from mastodon posts with just the picture
+            if String.length(content) > 1 do
+              %{
+                id: object.id,
+                content: content,
+                ap: data["id"],
+                published: published |> DateTime.to_unix()
+              }
+            else
+              nil
+            end
           end)
+          |> Enum.filter(fn o -> not is_nil(o) end)
+        end)
+        |> Stream.transform(0, fn objects, acc ->
+          new_acc = acc + Enum.count(objects)
+
+          IO.puts("Indexed #{new_acc} entries")
+
+          {[objects], new_acc}
         end)
         |> Stream.each(fn objects ->
           {:ok, result} =
@@ -102,6 +114,9 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, _} = Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects", "", [], [])
+    {:ok, _} =
+      Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects/documents", "", [],
+        timeout: :infinity
+      )
   end
 end
