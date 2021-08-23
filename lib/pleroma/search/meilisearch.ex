@@ -13,6 +13,18 @@ defmodule Pleroma.Search.Meilisearch do
     if is_nil(private_key), do: [], else: [{"X-Meili-API-Key", private_key}]
   end
 
+  def meili_get!(path) do
+    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+
+    {:ok, result} =
+      Pleroma.HTTP.get(
+        Path.join(endpoint, path),
+        meili_headers()
+      )
+
+    Jason.decode!(result.body)
+  end
+
   def meili_post!(path, params) do
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 

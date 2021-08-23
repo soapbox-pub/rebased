@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   import Mix.Pleroma
   import Ecto.Query
 
-  import Pleroma.Search.Meilisearch, only: [meili_post!: 2, meili_delete!: 1]
+  import Pleroma.Search.Meilisearch, only: [meili_post!: 2, meili_delete!: 1, meili_get!: 1]
 
   def run(["index"]) do
     start_pleroma()
@@ -110,5 +110,13 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
     else
       IO.puts("Error fetching the key, check the master key is correct: #{inspect(decoded)}")
     end
+  end
+
+  def run(["stats"]) do
+    start_pleroma()
+
+    result = meili_get!("/indexes/objects/stats")
+    IO.puts("Number of entries: #{result["numberOfDocuments"]}")
+    IO.puts("Indexing? #{result["isIndexing"]}")
   end
 end
