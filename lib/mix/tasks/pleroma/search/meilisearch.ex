@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     Pleroma.Repo.transaction(
       fn ->
-        Pleroma.Repo.stream(
+        query =
           from(Pleroma.Object,
             # Only index public posts which are notes and have some text
             where:
@@ -46,7 +46,13 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
                 fragment("LENGTH(data->>'content') > 0") and
                 fragment("data->'to' \\? ?", ^Pleroma.Constants.as_public()),
             order_by: [desc: fragment("data->'published'")]
-          ),
+          )
+
+        count = query |> Pleroma.Repo.aggregate(:count, :data)
+        IO.puts("Entries to index: #{count}")
+
+        Pleroma.Repo.stream(
+          query,
           timeout: :infinity
         )
         |> Stream.map(&Pleroma.Search.Meilisearch.object_to_search_data/1)
