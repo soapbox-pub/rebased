@@ -112,7 +112,7 @@ defmodule Pleroma.Search.Meilisearch do
   end
 
   def add_to_index(activity) do
-    maybe_search_data = object_to_search_data(activity)
+    maybe_search_data = object_to_search_data(activity.object)
 
     if activity.data["type"] == "Create" and maybe_search_data do
       result =
