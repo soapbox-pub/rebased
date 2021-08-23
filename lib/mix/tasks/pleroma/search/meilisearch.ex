@@ -9,32 +9,30 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   import Mix.Pleroma
   import Ecto.Query
 
+  import Pleroma.Search.Meilisearch, only: [meili_post!: 2, meili_delete!: 1]
+
   def run(["index"]) do
     start_pleroma()
 
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+    meili_post!(
+      "/indexes/objects/settings/ranking-rules",
+      [
+        "desc(published)",
+        "typo",
+        "words",
+        "proximity",
+        "attribute",
+        "wordsPosition",
+        "exactness"
+      ]
+    )
 
-    {:ok, _} =
-      Pleroma.HTTP.post(
-        "#{endpoint}/indexes/objects/settings/ranking-rules",
-        Jason.encode!([
-          "desc(published)",
-          "typo",
-          "words",
-          "proximity",
-          "attribute",
-          "wordsPosition",
-          "exactness"
-        ])
-      )
-
-    {:ok, _} =
-      Pleroma.HTTP.post(
-        "#{endpoint}/indexes/objects/settings/searchable-attributes",
-        Jason.encode!([
-          "content"
-        ])
-      )
+    meili_post!(
+      "/indexes/objects/settings/searchable-attributes",
+      [
+        "content"
+      ]
+    )
 
     chunk_size = 10_000
 
@@ -64,14 +62,14 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           {[objects], new_acc}
         end)
         |> Stream.each(fn objects ->
-          {:ok, result} =
-            Pleroma.HTTP.post(
-              "#{endpoint}/indexes/objects/documents",
-              Jason.encode!(objects)
+          result =
+            meili_post!(
+              "/indexes/objects/documents",
+              objects
             )
 
-          if not Map.has_key?(Jason.decode!(result.body), "updateId") do
-            IO.puts("Failed to index: #{result}")
+          if not Map.has_key?(result, "updateId") do
+            IO.puts("Failed to index: #{inspect(result)}")
           end
         end)
         |> Stream.run()
@@ -85,11 +83,26 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   def run(["clear"]) do
     start_pleroma()
 
+    meili_delete!("/indexes/objects/documents")
+  end
+
+  def run(["show-private-key", master_key]) do
+    start_pleroma()
+
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, _} =
-      Pleroma.HTTP.request(:delete, "#{endpoint}/indexes/objects/documents", "", [],
-        timeout: :infinity
+    {:ok, result} =
+      Pleroma.HTTP.get(
+        Path.join(endpoint, "/keys"),
+        [{"X-Meili-API-Key", master_key}]
       )
+
+    decoded = Jason.decode!(result.body)
+
+    if decoded["private"] do
+      IO.puts(decoded["private"])
+    else
+      IO.puts("Error fetching the key, check the master key is correct: #{inspect(decoded)}")
+    end
   end
 end

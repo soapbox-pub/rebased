@@ -7,20 +7,50 @@ defmodule Pleroma.Search.Meilisearch do
   import Pleroma.Activity.Search
   import Ecto.Query
 
+  defp meili_headers() do
+    private_key = Pleroma.Config.get([Pleroma.Search.Meilisearch, :private_key])
+
+    if is_nil(private_key), do: [], else: [{"X-Meili-API-Key", private_key}]
+  end
+
+  def meili_post!(path, params) do
+    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+
+    {:ok, result} =
+      Pleroma.HTTP.post(
+        Path.join(endpoint, path),
+        Jason.encode!(params),
+        meili_headers()
+      )
+
+    Jason.decode!(result.body)
+  end
+
+  def meili_delete!(path) do
+    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+
+    {:ok, _} =
+      Pleroma.HTTP.request(
+        :delete,
+        Path.join(endpoint, path),
+        "",
+        meili_headers(),
+        timeout: :infinity
+      )
+  end
+
   def search(user, query, options \\ []) do
     limit = Enum.min([Keyword.get(options, :limit), 40])
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
-
-    {:ok, result} =
-      Pleroma.HTTP.post(
-        "#{endpoint}/indexes/objects/search",
-        Jason.encode!(%{q: query, offset: offset, limit: limit})
+    result =
+      meili_post!(
+        "/indexes/objects/search",
+        %{q: query, offset: offset, limit: limit}
       )
 
-    hits = Jason.decode!(result.body)["hits"] |> Enum.map(& &1["ap"])
+    hits = result["hits"] |> Enum.map(& &1["ap"])
 
     try do
       hits
@@ -73,30 +103,19 @@ defmodule Pleroma.Search.Meilisearch do
     maybe_search_data = object_to_search_data(activity)
 
     if activity.data["type"] == "Create" and maybe_search_data do
-      endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
-
-      {:ok, result} =
-        Pleroma.HTTP.post(
-          "#{endpoint}/indexes/objects/documents",
-          Jason.encode!([maybe_search_data])
+      result =
+        meili_post!(
+          "/indexes/objects/documents",
+          [maybe_search_data]
         )
 
-      if not Map.has_key?(Jason.decode!(result.body), "updateId") do
-        Logger.error("Failed to add activity #{activity.id} to index: #{result.body}")
+      if not Map.has_key?(result, "updateId") do
+        Logger.error("Failed to add activity #{activity.id} to index: #{inspect(result)}")
       end
     end
   end
 
   def remove_from_index(object) do
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
-
-    {:ok, _} =
-      Pleroma.HTTP.request(
-        :delete,
-        "#{endpoint}/indexes/objects/documents/#{object.id}",
-        "",
-        [],
-        []
-      )
+    meili_delete!("/indexes/objects/documents/#{object.id}")
   end
 end
