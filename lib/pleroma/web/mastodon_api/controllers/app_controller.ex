@@ -14,16 +14,26 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   plug(:skip_auth when action in [:create, :verify_credentials])
+
+  plug(:skip_plug, OAuthScopesPlug when action in [:index])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   @local_mastodon_name "Mastodon-Local"
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AppOperation
+
+  @doc "GET /api/v1/apps"
+  def index(%{assigns: %{user: user}} = conn, _params) do
+    with apps <- App.get_user_apps(user) do
+      render(conn, "index.json", %{apps: apps})
+    end
+  end
 
   @doc "POST /api/v1/apps"
   def create(%{body_params: params} = conn, _params) do

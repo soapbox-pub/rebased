@@ -444,6 +444,8 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
+    get("/apps", AppController, :index)
+
     get("/accounts/verify_credentials", AccountController, :verify_credentials)
     patch("/accounts/update_credentials", AccountController, :update_credentials)
 

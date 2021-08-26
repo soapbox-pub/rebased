@@ -13,6 +13,19 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
     apply(__MODULE__, operation, [])
   end
 
+  @spec index_operation() :: Operation.t()
+  def index_operation do
+    %Operation{
+      tags: ["Applications"],
+      summary: "List applications",
+      description: "List the OAuth applications for the current user",
+      operationId: "AppController.index",
+      responses: %{
+        200 => Operation.response("App", "application/json", index_response()),
+      }
+    }
+  end
+
   @spec create_operation() :: Operation.t()
   def create_operation do
     %Operation{
@@ -143,6 +156,32 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
           "BCk-QqERU0q-CfYZjcuB6lnyyOYfJ2AifKqfeGIm7Z-HiTU5T9eTG5GxVA0_OH5mMlI4UkkDTpaZwozy0TzdZ2M=",
         "website" => "https://myapp.com/"
       }
+    }
+  end
+
+  defp index_response do
+    %Schema{
+      title: "AppIndexResponse",
+      description: "Response schema for GET /api/v1/apps",
+      type: :object,
+      properties: [%{
+        id: %Schema{type: :string},
+        name: %Schema{type: :string},
+        client_id: %Schema{type: :string},
+        client_secret: %Schema{type: :string},
+        redirect_uri: %Schema{type: :string},
+        vapid_key: %Schema{type: :string},
+        website: %Schema{type: :string, nullable: true}
+      }],
+      example: [%{
+        "id" => "123",
+        "name" => "My App",
+        "client_id" => "TWhM-tNSuncnqN7DBJmoyeLnk6K3iJJ71KKXxgL1hPM",
+        "client_secret" => "ZEaFUFmF0umgBX1qKJDjaU99Q31lDkOU8NutzTOoliw",
+        "vapid_key" =>
+          "BCk-QqERU0q-CfYZjcuB6lnyyOYfJ2AifKqfeGIm7Z-HiTU5T9eTG5GxVA0_OH5mMlI4UkkDTpaZwozy0TzdZ2M=",
+        "website" => "https://myapp.com/"
+      }]
     }
   end
 end
