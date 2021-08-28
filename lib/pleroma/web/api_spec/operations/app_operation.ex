@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       operationId: "AppController.create",
       requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       responses: %{
-        200 => Operation.response("App", "application/json", create_response()),
+        200 => create_response(),
         422 =>
           Operation.response(
             "Unprocessable Entity",
@@ -135,29 +135,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
   end
 
   defp create_response do
-    %Schema{
-      title: "AppCreateResponse",
-      description: "Response schema for an app",
-      type: :object,
-      properties: %{
-        id: %Schema{type: :string},
-        name: %Schema{type: :string},
-        client_id: %Schema{type: :string},
-        client_secret: %Schema{type: :string},
-        redirect_uri: %Schema{type: :string},
-        vapid_key: %Schema{type: :string},
-        website: %Schema{type: :string, nullable: true}
-      },
-      example: %{
-        "id" => "123",
-        "name" => "My App",
-        "client_id" => "TWhM-tNSuncnqN7DBJmoyeLnk6K3iJJ71KKXxgL1hPM",
-        "client_secret" => "ZEaFUFmF0umgBX1qKJDjaU99Q31lDkOU8NutzTOoliw",
-        "vapid_key" =>
-          "BCk-QqERU0q-CfYZjcuB6lnyyOYfJ2AifKqfeGIm7Z-HiTU5T9eTG5GxVA0_OH5mMlI4UkkDTpaZwozy0TzdZ2M=",
-        "website" => "https://myapp.com/"
-      }
-    }
+    Operation.response("App", "application/json", App)
   end
 
   defp array_of_apps do

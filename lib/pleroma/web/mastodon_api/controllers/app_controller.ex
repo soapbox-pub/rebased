@@ -20,7 +20,7 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
 
   plug(:skip_auth when action in [:create, :verify_credentials])
 
-  plug(:skip_plug, OAuthScopesPlug when action in [:index])
+  plug(OAuthScopesPlug, %{scopes: ["follow", "read"]} when action in [:index])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
