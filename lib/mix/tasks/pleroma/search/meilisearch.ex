@@ -18,12 +18,12 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       "/indexes/objects/settings/ranking-rules",
       [
         "desc(published)",
-        "typo",
         "words",
+        "exactness",
         "proximity",
-        "attribute",
         "wordsPosition",
-        "exactness"
+        "typo",
+        "attribute"
       ]
     )
 
