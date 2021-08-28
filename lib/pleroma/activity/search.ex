@@ -65,10 +65,17 @@ defmodule Pleroma.Activity.Search do
   end
 
   defp query_with(q, :gin, search_query, :plain) do
+    %{rows: [[tsc]]} =
+      Ecto.Adapters.SQL.query!(
+        Pleroma.Repo,
+        "select current_setting('default_text_search_config')::regconfig::oid;"
+      )
+
     from([a, o] in q,
       where:
         fragment(
-          "to_tsvector(?->>'content') @@ plainto_tsquery(?)",
+          "to_tsvector(?::oid::regconfig, ?->>'content') @@ plainto_tsquery(?)",
+          ^tsc,
           o.data,
           ^search_query
         )
@@ -76,10 +83,17 @@ defmodule Pleroma.Activity.Search do
   end
 
   defp query_with(q, :gin, search_query, :websearch) do
+    %{rows: [[tsc]]} =
+      Ecto.Adapters.SQL.query!(
+        Pleroma.Repo,
+        "select current_setting('default_text_search_config')::regconfig::oid;"
+      )
+
     from([a, o] in q,
       where:
         fragment(
-          "to_tsvector(?->>'content') @@ websearch_to_tsquery(?)",
+          "to_tsvector(?::oid::regconfig, ?->>'content') @@ websearch_to_tsquery(?)",
+          ^tsc,
           o.data,
           ^search_query
         )
