@@ -15,11 +15,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-## Unreleased-patch
-- Mastodon API: Activity Search fallbacks on status fetching after a DB Timeout/Error
-- Make activity search properly use GIN indexes
+## 2.4.1 - 2021-08-29
 
-## 2.4.0 - 2021-08-xx
+### Changed
+- Make `mix pleroma.database set_text_search_config` run concurrently and indefinitely
+
+### Added
+- AdminAPI: Missing configuration description for StealEmojiPolicy
+
+### Fixed
+- MastodonAPI: Stream out Create activities
+- MRF ObjectAgePolicy: Fix pattern matching on "published"
+- TwitterAPI: Make `change_password` and `change_email` require params on body instead of query
+- Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
+- AdminAPI: Fix rendering reports containing a `nil` object
+- Mastodon API: Activity Search fallbacks on status fetching after a DB Timeout/Error
+- Mastodon API: Fix crash in Streamer related to reblogging
+- AdminAPI: List available frontends when `static/frontends` folder is missing
+- Make activity search properly use language-aware GIN indexes
+- AdminAPI: Fix suggestions for MRF Policies
+
+## 2.4.0 - 2021-08-08
 
 ### Changed
 
