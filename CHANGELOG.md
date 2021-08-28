@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Activity Search fallbacks on status fetching after a DB Timeout/Error
 - Mastodon API: Fix crash in Streamer related to reblogging
 - AdminAPI: List available frontends when `static/frontends` folder is missing
+- Make activity search properly use language-aware GIN indexes
 
 ## 2.4.0 - 2021-08-08
 
