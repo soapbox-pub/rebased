@@ -209,7 +209,9 @@ defmodule Mix.Tasks.Pleroma.Database do
           new.fts_content := to_tsvector(new.data->>'content');
           RETURN new;
           END
-          $$ LANGUAGE plpgsql"
+          $$ LANGUAGE plpgsql",
+          [],
+          timeout: :infinity
         )
 
         shell_info("Refresh RUM index")
@@ -219,7 +221,9 @@ defmodule Mix.Tasks.Pleroma.Database do
 
         Ecto.Adapters.SQL.query!(
           Pleroma.Repo,
-          "CREATE INDEX objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); "
+          "CREATE INDEX CONCURRENTLY objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); ",
+          [],
+          timeout: :infinity
         )
       end
 
