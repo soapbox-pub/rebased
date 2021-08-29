@@ -30,7 +30,7 @@ defmodule Pleroma.Web.OAuth.App do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(struct, params) do
-    cast(struct, params, [:client_name, :redirect_uris, :scopes, :website, :trusted])
+    cast(struct, params, [:client_name, :redirect_uris, :scopes, :website, :trusted, :user_id])
   end
 
   @spec register_changeset(t(), map()) :: Ecto.Changeset.t()

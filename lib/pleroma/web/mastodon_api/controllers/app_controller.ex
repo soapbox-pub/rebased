@@ -10,10 +10,14 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
 
   use Pleroma.Web, :controller
 
+  alias Pleroma.Maps
+  alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
+
+  require Logger
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
@@ -26,13 +30,21 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AppOperation
 
   @doc "POST /api/v1/apps"
-  def create(%{body_params: params} = conn, _params) do
+  def create(%{assigns: %{user: user}, body_params: params} = conn, _params) do
     scopes = Scopes.fetch_scopes(params, ["read"])
+
+    user_id =
+      with %User{id: id} <- user do
+        id
+      else
+        _ -> nil
+      end
 
     app_attrs =
       params
       |> Map.take([:client_name, :redirect_uris, :website])
       |> Map.put(:scopes, scopes)
+      |> Maps.put_if_present(:user_id, user_id)
 
     with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,
