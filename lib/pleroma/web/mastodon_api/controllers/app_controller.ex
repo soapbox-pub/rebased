@@ -11,8 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Maps
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
