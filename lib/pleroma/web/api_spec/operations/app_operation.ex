@@ -14,19 +14,6 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
     apply(__MODULE__, operation, [])
   end
 
-  @spec index_operation() :: Operation.t()
-  def index_operation do
-    %Operation{
-      tags: ["Applications"],
-      summary: "List applications",
-      description: "List the OAuth applications for the current user",
-      operationId: "AppController.index",
-      responses: %{
-        200 => Operation.response("Array of App", "application/json", array_of_apps())
-      }
-    }
-  end
-
   @spec create_operation() :: Operation.t()
   def create_operation do
     %Operation{
@@ -136,9 +123,5 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
 
   defp create_response do
     Operation.response("App", "application/json", App)
-  end
-
-  defp array_of_apps do
-    %Schema{type: :array, items: App, example: [App.schema().example]}
   end
 end

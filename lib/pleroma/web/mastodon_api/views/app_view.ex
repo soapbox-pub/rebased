@@ -15,10 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
     }
   end
 
-  def render("index.json", %{apps: apps}) do
-    render_many(apps, Pleroma.Web.MastodonAPI.AppView, "show.json")
-  end
-
   def render("show.json", %{admin: true, app: %App{} = app} = assigns) do
     "show.json"
     |> render(Map.delete(assigns, :admin))

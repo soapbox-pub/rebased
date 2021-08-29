@@ -372,6 +372,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
 
+    get("/apps", AppController, :index)
     get("/statuses/:id/reactions/:emoji", EmojiReactionController, :index)
     get("/statuses/:id/reactions", EmojiReactionController, :index)
   end
@@ -443,8 +444,6 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
-
-    get("/apps", AppController, :index)
 
     get("/accounts/verify_credentials", AccountController, :verify_credentials)
     patch("/accounts/update_credentials", AccountController, :update_credentials)
