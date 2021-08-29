@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       operationId: "AppController.create",
       requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       responses: %{
-        200 => create_response(),
+        200 => Operation.response("App", "application/json", App),
         422 =>
           Operation.response(
             "Unprocessable Entity",
@@ -119,9 +119,5 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
         "website" => "https://myapp.com/"
       }
     }
-  end
-
-  defp create_response do
-    Operation.response("App", "application/json", App)
   end
 end
