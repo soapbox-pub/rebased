@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.Preload do
   alias Phoenix.HTML
-  require Logger
 
   def build_tags(_conn, params) do
     preload_data =
