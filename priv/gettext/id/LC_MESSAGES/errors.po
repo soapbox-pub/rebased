@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-08-15 15:40+0000\n"
-"PO-Revision-Date: 2021-08-26 00:45+0000\n"
+"PO-Revision-Date: 2021-09-03 06:45+0000\n"
 "Last-Translator: @liimee <alt3753.7@gmail.com>\n"
 "Language-Team: Indonesian <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/id/>\n"
@@ -37,7 +37,7 @@ msgstr "tidak valid"
 
 ## From Ecto.Changeset.validate_format/3
 msgid "has invalid format"
-msgstr ""
+msgstr "memiliki format yang tidak valid"
 
 ## From Ecto.Changeset.validate_subset/3
 msgid "has an invalid entry"
@@ -522,7 +522,7 @@ msgstr ""
 #: lib/pleroma/plugs/ensure_authenticated_plug.ex:28
 #, elixir-format
 msgid "Two-factor authentication enabled, you must use a access token."
-msgstr ""
+msgstr "Otentikasi dua-faktor diaktifkan, Anda harus menggunakan token akses."
 
 #: lib/pleroma/web/pleroma_api/controllers/emoji_pack_controller.ex:210
 #, elixir-format
@@ -557,7 +557,7 @@ msgstr ""
 #: lib/pleroma/web/admin_api/controllers/admin_api_controller.ex:451
 #, elixir-format
 msgid "You can't revoke your own admin/moderator status."
-msgstr ""
+msgstr "Anda tidak bisa mencabut status admin/moderator Anda sendiri."
 
 #: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:126
 #, elixir-format
