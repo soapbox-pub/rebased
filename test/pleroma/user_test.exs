@@ -2199,9 +2199,38 @@ defmodule Pleroma.UserTest do
       [user: insert(:user)]
     end
 
-    test "blank email returns error", %{user: user} do
+    test "blank email returns error if we require an email on registration", %{user: user} do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
       assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, "")
       assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, nil)
+    end
+
+    test "blank email should be fine if we do not require an email on registration", %{user: user} do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
+      assert {:ok, %User{email: nil}} = User.change_email(user, "")
+      assert {:ok, %User{email: nil}} = User.change_email(user, nil)
     end
 
     test "non unique email returns error", %{user: user} do
@@ -2218,6 +2247,25 @@ defmodule Pleroma.UserTest do
 
     test "changes email", %{user: user} do
       assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
+    end
+
+    test "adds email", %{user: user} do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
+      assert {:ok, _} = User.change_email(user, "")
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      assert {:ok, %User{email: "cofe2@cofe.party"}} = User.change_email(user, "cofe2@cofe.party")
     end
   end
 
