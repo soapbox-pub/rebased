@@ -1164,7 +1164,7 @@ config :pleroma, :config_description, [
     type: :group,
     description:
       "This form can be used to configure a keyword list that keeps the configuration data for any " <>
-        "kind of frontend. By default, settings for pleroma_fe and masto_fe are configured. If you want to " <>
+        "kind of frontend. By default, settings for pleroma_fe are configured. If you want to " <>
         "add your own configuration your settings all fields must be complete.",
     children: [
       %{
@@ -1362,25 +1362,6 @@ config :pleroma, :config_description, [
             type: :string,
             description: "Which theme to use. Available themes are defined in styles.json",
             suggestions: ["pleroma-dark"]
-          }
-        ]
-      },
-      %{
-        key: :masto_fe,
-        label: "Masto FE",
-        type: :map,
-        description: "Settings for Masto FE",
-        suggestions: [
-          %{
-            showInstanceSpecificPanel: true
-          }
-        ],
-        children: [
-          %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
-            type: :boolean,
-            description: "Whenether to show the instance's specific panel"
           }
         ]
       }

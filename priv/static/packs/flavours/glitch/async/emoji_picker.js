@@ -1,2 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[60],{789:function(n,r,i){"use strict";i.r(r);var o=i(1082);i.d(r,"Picker",(function(){return o.a}));var c=i(1058);i.d(r,"Emoji",(function(){return c.a}))}}]);
-//# sourceMappingURL=emoji_picker.js.map
