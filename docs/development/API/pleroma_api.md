@@ -351,6 +351,26 @@ See [Admin-API](admin_api.md)
 * Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
 * Note: This endpoint emits a `Move` activity to all followers of the current account. Some remote servers will automatically unfollow the current account and follow the target account upon seeing this, but this depends on the remote server implementation and cannot be guaranteed. For local followers , they will automatically unfollow and follow if and only if they have set the `allow_following_move` preference ("Allow auto-follow when following account moves").
 
+## `/api/pleroma/aliases`
+### Get aliases of the current account
+* Method `GET`
+* Authentication: required
+* Response: JSON. Returns `{"aliases": [alias, ...]}`, where `alias` is the nickname of an alias, e.g. `foo@example.org`.
+
+### Add alias to the current account
+* Method `PUT`
+* Authentication: required
+* Params:
+    * `alias`: the nickname of the alias to add, e.g. `foo@example.org`.
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
+### Delete alias from the current account
+* Method `DELETE`
+* Authentication: required
+* Params:
+    * `alias`: the nickname of the alias to delete, e.g. `foo@example.org`.
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
 # Pleroma Conversations
 
 Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
