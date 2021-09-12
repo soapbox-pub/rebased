@@ -29,7 +29,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :update_notificaton_settings,
            :disable_account,
            :move_account,
-           :add_alias
+           :add_alias,
+           :delete_alias
          ]
   )
 
@@ -198,8 +199,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def delete_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+    with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
+         {:ok, _user} <- user |> User.delete_alias(alias_user) do
+      json(conn, %{status: "success"})
+    else
+      {:error, :no_such_alias} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Account has no such alias."})
+
+      {:error, error} ->
+        json(conn, %{error: error})
+    end
+  end
+
   def list_aliases(%{assigns: %{user: user}} = conn, %{}) do
-    alias_nicks = user
+    alias_nicks =
+      user
       |> User.alias_users()
       |> Enum.map(&User.full_nickname/1)
 

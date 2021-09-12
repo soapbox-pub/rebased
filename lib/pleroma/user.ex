@@ -2289,6 +2289,19 @@ defmodule Pleroma.User do
     end
   end
 
+  def delete_alias(user, alias_user) do
+    current_aliases = user.also_known_as || []
+    alias_ap_id = alias_user.ap_id
+
+    if alias_ap_id in current_aliases do
+      user
+      |> cast(%{also_known_as: current_aliases -- [alias_ap_id]}, [:also_known_as])
+      |> update_and_set_cache()
+    else
+      {:error, :no_such_alias}
+    end
+  end
+
   # Internal function; public one is `deactivate/2`
   defp set_activation_status(user, status) do
     user

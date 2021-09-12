@@ -347,6 +347,7 @@ defmodule Pleroma.Web.Router do
 
     put("/aliases", UtilController, :add_alias)
     get("/aliases", UtilController, :list_aliases)
+    delete("/aliases", UtilController, :delete_alias)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do

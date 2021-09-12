@@ -312,6 +312,46 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def delete_alias_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Delete an alias from this account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.delete_alias",
+      requestBody: request_body("Parameters", delete_alias_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              status: %Schema{
+                type: :string,
+                example: "success"
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp delete_alias_request do
+    %Schema{
+      title: "DeleteAliasRequest",
+      description: "PUT body for deleting aliases",
+      type: :object,
+      required: [:alias],
+      properties: %{
+        alias: %Schema{
+          type: :string,
+          description: "The nickname of the account to delete from aliases"
+        }
+      }
+    }
+  end
+
   def healthcheck_operation do
     %Operation{
       tags: ["Accounts"],

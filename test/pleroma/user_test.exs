@@ -2550,4 +2550,28 @@ defmodule Pleroma.UserTest do
       assert alias_user.ap_id == user.ap_id
     end
   end
+
+  describe "delete_alias/2" do
+    test "should delete existing alias" do
+      user = insert(:user)
+      user2 = insert(:user, also_known_as: [user.ap_id])
+
+      assert {:ok, user_updated} = user2 |> User.delete_alias(user)
+
+      assert user_updated.also_known_as == []
+    end
+
+    test "should report error on non-existing alias" do
+      user = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user, also_known_as: [user.ap_id])
+
+      assert {:error, :no_such_alias} = user3 |> User.delete_alias(user2)
+
+      user3_updated = User.get_cached_by_ap_id(user3.ap_id)
+
+      assert user3_updated.also_known_as |> length() == 1
+      assert user.ap_id in user3_updated.also_known_as
+    end
+  end
 end
