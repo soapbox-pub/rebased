@@ -1739,8 +1739,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                  "target" => ^new_ap_id,
                  "type" => "Move"
                },
-               local: true
+               local: true,
+               recipients: recipients
              } = activity
+
+      assert old_user.follower_address in recipients
 
       params = %{
         "op" => "move_following",
