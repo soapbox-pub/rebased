@@ -249,6 +249,69 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def list_aliases_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "List account aliases",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      operationId: "UtilController.list_aliases",
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              aliases: %Schema{
+                type: :array,
+                items: %Schema{type: :string},
+                example: ["foo@example.org"]
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def add_alias_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Add an alias to this account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.add_alias",
+      requestBody: request_body("Parameters", add_alias_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              status: %Schema{
+                type: :string,
+                example: "success"
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp add_alias_request do
+    %Schema{
+      title: "AddAliasRequest",
+      description: "PUT body for adding aliases",
+      type: :object,
+      required: [:alias],
+      properties: %{
+        alias: %Schema{
+          type: :string,
+          description: "The nickname of the account to add to aliases"
+        }
+      }
+    }
+  end
+
   def healthcheck_operation do
     %Operation{
       tags: ["Accounts"],

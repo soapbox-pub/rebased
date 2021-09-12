@@ -28,7 +28,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :delete_account,
            :update_notificaton_settings,
            :disable_account,
-           :move_account
+           :move_account,
+           :add_alias
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]}
+    when action in [
+           :list_aliases
          ]
   )
 
@@ -177,6 +186,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       {:error, msg} ->
         json(conn, %{error: msg})
     end
+  end
+
+  def add_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+    with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
+         {:ok, _user} <- user |> User.add_alias(alias_user) do
+      json(conn, %{status: "success"})
+    else
+      {:error, error} ->
+        json(conn, %{error: error})
+    end
+  end
+
+  def list_aliases(%{assigns: %{user: user}} = conn, %{}) do
+    alias_nicks = user
+      |> User.alias_users()
+      |> Enum.map(&User.full_nickname/1)
+
+    json(conn, %{aliases: alias_nicks})
   end
 
   defp find_user_by_nickname(nickname) do

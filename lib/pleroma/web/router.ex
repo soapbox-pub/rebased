@@ -344,6 +344,9 @@ defmodule Pleroma.Web.Router do
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
     post("/move_account", UtilController, :move_account)
+
+    put("/aliases", UtilController, :add_alias)
+    get("/aliases", UtilController, :list_aliases)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do

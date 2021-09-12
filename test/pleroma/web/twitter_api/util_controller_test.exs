@@ -651,4 +651,83 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert User.following?(follower, target_user)
     end
   end
+
+  describe "GET /api/pleroma/aliases" do
+    setup do: oauth_access(["read:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> get("/api/pleroma/aliases")
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: read:accounts."
+             }
+    end
+
+    test "with permissions", %{
+      conn: conn
+    } do
+      assert %{"aliases" => []} = conn
+        |> get("/api/pleroma/aliases")
+        |> json_response_and_validate_schema(200)
+    end
+
+    test "with permissions and aliases", %{} do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+
+      %{user: _user, conn: conn} = oauth_access(["read:accounts"], user: user)
+
+      assert %{"aliases" => aliases} = conn
+        |> get("/api/pleroma/aliases")
+        |> json_response_and_validate_schema(200)
+      assert aliases == [user2 |> User.full_nickname()]
+    end
+  end
+
+  describe "PUT /api/pleroma/aliases" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/aliases", %{alias: "none"})
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
+    end
+
+    test "with permissions, no alias param", %{
+      conn: conn
+    } do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/aliases", %{})
+
+      assert %{"error" => "Missing field: alias."} = json_response_and_validate_schema(conn, 400)
+    end
+
+    test "with permissions, with alias param", %{
+      conn: conn
+    } do
+      user2 = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/aliases", %{alias: user2 |> User.full_nickname()})
+
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "status" => "success"
+             }
+    end
+  end
 end
