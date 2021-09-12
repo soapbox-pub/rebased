@@ -2270,6 +2270,25 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  def alias_users(user) do
+    user.also_known_as
+    |> Enum.map(&User.get_cached_by_ap_id/1)
+    |> Enum.filter(fn user -> user != nil end)
+  end
+
+  def add_alias(user, new_alias_user) do
+    current_aliases = user.also_known_as || []
+    new_alias_ap_id = new_alias_user.ap_id
+
+    if new_alias_ap_id in current_aliases do
+      {:ok, user}
+    else
+      user
+      |> cast(%{also_known_as: current_aliases ++ [new_alias_ap_id]}, [:also_known_as])
+      |> update_and_set_cache()
+    end
+  end
+
   # Internal function; public one is `deactivate/2`
   defp set_activation_status(user, status) do
     user

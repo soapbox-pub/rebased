@@ -2498,4 +2498,56 @@ defmodule Pleroma.UserTest do
     %{object: %{data: %{"id" => object_id}}} = Activity.get_by_id_with_object(id)
     object_id
   end
+
+  describe "add_alias/2" do
+    test "should add alias for another user" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user_updated} = user |> User.add_alias(user2)
+
+      assert user_updated.also_known_as |> length() == 1
+      assert user2.ap_id in user_updated.also_known_as
+    end
+
+    test "should add multiple aliases" do
+      user = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+      assert {:ok, user_updated} = user |> User.add_alias(user3)
+
+      assert user_updated.also_known_as |> length() == 2
+      assert user2.ap_id in user_updated.also_known_as
+      assert user3.ap_id in user_updated.also_known_as
+    end
+
+    test "should not add duplicate aliases" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+
+      assert {:ok, user_updated} = user |> User.add_alias(user2)
+
+      assert user_updated.also_known_as |> length() == 1
+      assert user2.ap_id in user_updated.also_known_as
+    end
+  end
+
+  describe "alias_users/1" do
+    test "should get aliases for a user" do
+      user = insert(:user)
+      user2 = insert(:user, also_known_as: [user.ap_id])
+
+      aliases = user2 |> User.alias_users()
+
+      assert aliases |> length() == 1
+
+      alias_user = aliases |> Enum.at(0)
+
+      assert alias_user.ap_id == user.ap_id
+    end
+  end
 end
