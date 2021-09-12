@@ -214,6 +214,41 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def move_account_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Move account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.move_account",
+      requestBody: request_body("Parameters", move_account_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{status: %Schema{type: :string, example: "success"}}
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp move_account_request do
+    %Schema{
+      title: "MoveAccountRequest",
+      description: "POST body for moving the account",
+      type: :object,
+      required: [:password, :target_account],
+      properties: %{
+        password: %Schema{type: :string, description: "Current password"},
+        target_account: %Schema{
+          type: :string,
+          description: "The nickname of the target account to move to"
+        }
+      }
+    }
+  end
+
   def healthcheck_operation do
     %Operation{
       tags: ["Accounts"],

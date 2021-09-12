@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
@@ -26,7 +27,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :change_password,
            :delete_account,
            :update_notificaton_settings,
-           :disable_account
+           :disable_account,
+           :move_account
          ]
   )
 
@@ -155,6 +157,35 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
       {:error, msg} ->
         json(conn, %{error: msg})
+    end
+  end
+
+  def move_account(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
+      {:ok, user} ->
+        with {:ok, target_user} <- find_user_by_nickname(body_params.target_account),
+             {:ok, _user} <- ActivityPub.move(user, target_user) do
+          json(conn, %{status: "success"})
+        else
+          {:not_found} ->
+            json(conn, %{error: "Target account not found."})
+
+          {:error, error} ->
+            json(conn, %{error: error})
+        end
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
+  defp find_user_by_nickname(nickname) do
+    user = User.get_cached_by_nickname(nickname)
+
+    if user == nil do
+      {:not_found, nil}
+    else
+      {:ok, user}
     end
   end
 

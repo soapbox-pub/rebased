@@ -516,4 +516,139 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert user.password_hash == nil
     end
   end
+
+  describe "POST /api/pleroma/move_account" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      target_user = insert(:user)
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "hi",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
+    end
+
+    test "with proper permissions and invalid password", %{conn: conn} do
+      target_user = insert(:user)
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "hi",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with proper permissions, valid password and target account does not alias this",
+         %{
+           conn: conn
+         } do
+      target_user = insert(:user)
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "error" => "Target account must have the origin in `alsoKnownAs`"
+             }
+    end
+
+    test "with proper permissions, valid password and target account aliases this", %{
+      conn: conn,
+      user: user
+    } do
+      target_user = insert(:user, also_known_as: [user.ap_id])
+      target_nick = target_user |> User.full_nickname()
+      follower = insert(:user)
+
+      User.follow(follower, user)
+
+      assert User.following?(follower, user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post(
+          "/api/pleroma/move_account",
+          %{
+            password: "test",
+            target_account: target_nick
+          }
+        )
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => user.id,
+        "target_id" => target_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+
+      refute User.following?(follower, user)
+      assert User.following?(follower, target_user)
+    end
+
+    test "prefix nickname by @ should work", %{
+      conn: conn,
+      user: user
+    } do
+      target_user = insert(:user, also_known_as: [user.ap_id])
+      target_nick = target_user |> User.full_nickname()
+      follower = insert(:user)
+
+      User.follow(follower, user)
+
+      assert User.following?(follower, user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post(
+          "/api/pleroma/move_account",
+          %{
+            password: "test",
+            target_account: "@" <> target_nick
+          }
+        )
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => user.id,
+        "target_id" => target_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+
+      refute User.following?(follower, user)
+      assert User.following?(follower, target_user)
+    end
+  end
 end
