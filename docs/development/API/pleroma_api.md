@@ -341,6 +341,16 @@ See [Admin-API](admin_api.md)
 * Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
 * Note: Currently, Mastodon has no API for changing email. If they add it in future it might be incompatible with Pleroma.
 
+## `/api/pleroma/move_account`
+### Move account
+* Method `POST`
+* Authentication: required
+* Params:
+    * `password`: user's password
+    * `target_account`: the nickname of the target account (e.g. `foo@example.org`)
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+* Note: This endpoint emits a `Move` activity to all followers of the current account. Some remote servers will automatically unfollow the current account and follow the target account upon seeing this, but this depends on the remote server implementation and cannot be guaranteed. For local followers , they will automatically unfollow and follow if and only if they have set the `allow_following_move` preference ("Allow auto-follow when following account moves").
+
 # Pleroma Conversations
 
 Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
