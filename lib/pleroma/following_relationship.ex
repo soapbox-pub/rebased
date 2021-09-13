@@ -194,11 +194,12 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], f in assoc(r, :follower))
     |> where(following_id: ^origin.id)
     |> where([r, f], f.allow_following_move == true)
+    |> where([r, f], f.local == true)
     |> limit(50)
     |> preload([:follower])
     |> Repo.all()
     |> Enum.map(fn following_relationship ->
-      Repo.delete(following_relationship)
+      Pleroma.Web.CommonAPI.unfollow(following_relationship.follower, origin)
       Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
     end)
     |> case do

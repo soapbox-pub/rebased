@@ -1775,6 +1775,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert {:error, "Target account must have the origin in `alsoKnownAs`"} =
                ActivityPub.move(old_user, new_user)
     end
+
+    test "do not move remote user following relationships" do
+      %{ap_id: old_ap_id} = old_user = insert(:user)
+      %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+      follower_remote = insert(:user, local: false)
+
+      User.follow(follower_remote, old_user)
+
+      assert User.following?(follower_remote, old_user)
+
+      assert {:ok, activity} = ActivityPub.move(old_user, new_user)
+
+      assert %Activity{
+               actor: ^old_ap_id,
+               data: %{
+                 "actor" => ^old_ap_id,
+                 "object" => ^old_ap_id,
+                 "target" => ^new_ap_id,
+                 "type" => "Move"
+               },
+               local: true
+             } = activity
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => old_user.id,
+        "target_id" => new_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+
+      assert User.following?(follower_remote, old_user)
+      refute User.following?(follower_remote, new_user)
+    end
   end
 
   test "doesn't retrieve replies activities with exclude_replies" do
