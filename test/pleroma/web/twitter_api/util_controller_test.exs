@@ -592,6 +592,79 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
              }
     end
 
+    test "with proper permissions, valid password, remote target account aliases this and local cache does not exist",
+         %{} do
+      user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
+      %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
+
+      target_nick = "mewmew@lm.kazv.moe"
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+    end
+
+    test "with proper permissions, valid password, remote target account aliases this and local cache does not alias this",
+         %{} do
+      user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
+      %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
+
+      target_user =
+        insert(
+          :user,
+          ap_id: "https://lm.kazv.moe/users/mewmew",
+          nickname: "mewmew@lm.kazv.moe",
+          local: false
+        )
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+    end
+
+    test "with proper permissions, valid password, remote target account does not alias this and local cache aliases this",
+         %{
+           user: user,
+           conn: conn
+         } do
+      target_user =
+        insert(
+          :user,
+          ap_id: "https://lm.kazv.moe/users/mewmew",
+          nickname: "mewmew@lm.kazv.moe",
+          local: false,
+          also_known_as: [user.ap_id]
+        )
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "error" => "Target account must have the origin in `alsoKnownAs`"
+             }
+    end
+
     test "with proper permissions, valid password and target account aliases this", %{
       conn: conn,
       user: user
