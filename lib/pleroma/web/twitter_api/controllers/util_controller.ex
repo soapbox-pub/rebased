@@ -196,6 +196,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
          {:ok, _user} <- user |> User.add_alias(alias_user) do
       json(conn, %{status: "success"})
     else
+      {:not_found, _} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Target account does not exist."})
+
       {:error, error} ->
         json(conn, %{error: error})
     end
