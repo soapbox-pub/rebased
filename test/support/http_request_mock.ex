@@ -725,6 +725,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://mastodon.social/.well-known/webfinger?resource=acct:not_found@mastodon.social",
+        _,
+        _,
+        [{"accept", "application/xrd+xml,application/jrd+json"}]
+      ) do
+    {:ok, %Tesla.Env{status: 404}}
+  end
+
   def get("http://gs.example.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{

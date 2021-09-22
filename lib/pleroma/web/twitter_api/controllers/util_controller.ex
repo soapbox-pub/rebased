@@ -173,12 +173,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def move_account(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
     case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
       {:ok, user} ->
-        with {:ok, target_user} <- find_user_by_nickname(body_params.target_account),
+        with {:ok, target_user} <- find_or_fetch_user_by_nickname(body_params.target_account),
              {:ok, _user} <- ActivityPub.move(user, target_user) do
           json(conn, %{status: "success"})
         else
-          {:not_found} ->
-            json(conn, %{error: "Target account not found."})
+          {:not_found, _} ->
+            conn
+            |> put_status(404)
+            |> json(%{error: "Target account not found."})
 
           {:error, error} ->
             json(conn, %{error: error})
@@ -230,6 +232,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       {:not_found, nil}
     else
       {:ok, user}
+    end
+  end
+
+  defp find_or_fetch_user_by_nickname(nickname) do
+    user = User.get_by_nickname(nickname)
+
+    if user != nil and user.local do
+      {:ok, user}
+    else
+      with {:ok, user} <- User.fetch_by_nickname(nickname) do
+        {:ok, user}
+      else
+        _ ->
+          {:not_found, nil}
+      end
     end
   end
 

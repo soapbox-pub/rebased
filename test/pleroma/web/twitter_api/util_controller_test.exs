@@ -573,6 +573,25 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
              }
     end
 
+    test "with proper permissions, valid password and target account does not exist",
+         %{
+           conn: conn
+         } do
+      target_nick = "not_found@mastodon.social"
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 404) == %{
+               "error" => "Target account not found."
+             }
+    end
+
     test "with proper permissions, valid password and target account aliases this", %{
       conn: conn,
       user: user
