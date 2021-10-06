@@ -81,9 +81,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
       missing_dependencies = Pleroma.Helpers.MediaHelper.missing_dependencies()
 
       assert missing_dependencies == [],
-             "Error: missing dependencies (please refer to `docs/installation`): #{
-               inspect(missing_dependencies)
-             }"
+             "Error: missing dependencies (please refer to `docs/installation`): #{inspect(missing_dependencies)}"
     end
 
     setup do

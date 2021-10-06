@@ -1886,9 +1886,7 @@ defmodule Pleroma.UserTest do
       bio = "A.k.a. @nick@domain.com"
 
       expected_text =
-        ~s(A.k.a. <span class="h-card"><a class="u-url mention" data-user="#{remote_user.id}" href="#{
-          remote_user.ap_id
-        }" rel="ugc">@<span>nick@domain.com</span></a></span>)
+        ~s(A.k.a. <span class="h-card"><a class="u-url mention" data-user="#{remote_user.id}" href="#{remote_user.ap_id}" rel="ugc">@<span>nick@domain.com</span></a></span>)
 
       assert expected_text == User.parse_bio(bio, user)
     end

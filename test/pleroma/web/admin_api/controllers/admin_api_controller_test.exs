@@ -267,9 +267,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} revoked admin role from @#{user_one.nickname}, @#{
-                 user_two.nickname
-               }"
+               "@#{admin.nickname} revoked admin role from @#{user_one.nickname}, @#{user_two.nickname}"
     end
   end
 
@@ -860,9 +858,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} confirmed email for users: @#{first_user.nickname}, @#{
-                 second_user.nickname
-               }"
+               "@#{admin.nickname} confirmed email for users: @#{first_user.nickname}, @#{second_user.nickname}"
     end
   end
 
@@ -883,9 +879,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
-                 second_user.nickname
-               }"
+               "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{second_user.nickname}"
 
       ObanHelpers.perform_all()
 

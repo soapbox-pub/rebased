@@ -26,11 +26,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings", %{user: user, conn: conn} do
       conn
       |> put(
-        "/api/pleroma/notification_settings?#{
-          URI.encode_query(%{
-            block_from_strangers: true
-          })
-        }"
+        "/api/pleroma/notification_settings?#{URI.encode_query(%{block_from_strangers: true})}"
       )
       |> json_response_and_validate_schema(:ok)
 
@@ -45,11 +41,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings to enable hiding contents", %{user: user, conn: conn} do
       conn
       |> put(
-        "/api/pleroma/notification_settings?#{
-          URI.encode_query(%{
-            hide_notification_contents: 1
-          })
-        }"
+        "/api/pleroma/notification_settings?#{URI.encode_query(%{hide_notification_contents: 1})}"
       )
       |> json_response_and_validate_schema(:ok)
 

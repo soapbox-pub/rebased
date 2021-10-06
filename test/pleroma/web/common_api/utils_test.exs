@@ -160,11 +160,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output ==
-               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{
-                 user.id
-               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{
-                 user.id
-               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
     end
   end
 
@@ -201,11 +197,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{
-                 mario.ap_id
-               }" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
-                 luigi.id
-               }" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
     end
 
     test "remote mentions" do
@@ -216,11 +208,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{
-                 mario.ap_id
-               }" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
-                 luigi.id
-               }" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
     end
 
     test "raw HTML" do
