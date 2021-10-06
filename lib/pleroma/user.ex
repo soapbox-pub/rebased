@@ -2246,7 +2246,7 @@ defmodule Pleroma.User do
   def change_email(user, email) do
     user
     |> cast(%{email: email}, [:email])
-    |> validate_required([:email])
+    |> maybe_validate_required_email(false)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
     |> update_and_set_cache()
