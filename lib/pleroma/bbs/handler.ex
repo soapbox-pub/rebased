@@ -19,9 +19,7 @@ defmodule Pleroma.BBS.Handler do
   def on_connect(username, ip, port, method) do
     Logger.debug(fn ->
       """
-      Incoming SSH shell #{inspect(self())} requested for #{username} from #{inspect(ip)}:#{
-        inspect(port)
-      } using #{inspect(method)}
+      Incoming SSH shell #{inspect(self())} requested for #{username} from #{inspect(ip)}:#{inspect(port)} using #{inspect(method)}
       """
     end)
   end

@@ -88,9 +88,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data = json_response_and_validate_schema(conn, 200)
 
       assert user_data["note"] ==
-               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{
-                 user2.id
-               }" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{user2.id}" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
 
       assert user_data["source"]["note"] == raw_bio
 

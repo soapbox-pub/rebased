@@ -66,9 +66,7 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrlTest do
   end
 
   defp construct_s3_url(timestamp, valid_till) do
-    "https://pleroma.s3.ap-southeast-1.amazonaws.com/sachin%20%281%29%20_a%20-%25%2Aasdasd%20BNN%20bnnn%20.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIBLWWK6RGDQXDLJQ%2F20190716%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=#{
-      timestamp
-    }&X-Amz-Expires=#{valid_till}&X-Amz-Signature=04ffd6b98634f4b1bbabc62e0fac4879093cd54a6eed24fe8eb38e8369526bbf&X-Amz-SignedHeaders=host"
+    "https://pleroma.s3.ap-southeast-1.amazonaws.com/sachin%20%281%29%20_a%20-%25%2Aasdasd%20BNN%20bnnn%20.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIBLWWK6RGDQXDLJQ%2F20190716%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=#{timestamp}&X-Amz-Expires=#{valid_till}&X-Amz-Signature=04ffd6b98634f4b1bbabc62e0fac4879093cd54a6eed24fe8eb38e8369526bbf&X-Amz-SignedHeaders=host"
   end
 
   defp construct_metadata(timestamp, valid_till, url) do

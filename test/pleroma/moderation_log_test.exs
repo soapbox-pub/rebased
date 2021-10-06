@@ -236,9 +236,7 @@ defmodule Pleroma.ModerationLogTest do
       log = Repo.get(ModerationLog, log2.id)
 
       assert log.data["message"] ==
-               "@#{moderator.nickname} added note 'look at this' to report ##{report.id} on user @#{
-                 user.nickname
-               }"
+               "@#{moderator.nickname} added note 'look at this' to report ##{report.id} on user @#{user.nickname}"
     end
 
     test "logging status sensitivity update", %{moderator: moderator} do

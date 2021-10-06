@@ -44,9 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       |> get("/api/v1/notifications")
 
     expected_response =
-      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
-        user.ap_id
-      }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{user.ap_id}\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
     assert [%{"status" => %{"content" => response}} | _rest] =
              json_response_and_validate_schema(conn, 200)
@@ -114,9 +112,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     conn = get(conn, "/api/v1/notifications/#{notification.id}")
 
     expected_response =
-      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
-        user.ap_id
-      }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{user.ap_id}\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
     assert %{"status" => %{"content" => response}} = json_response_and_validate_schema(conn, 200)
     assert response == expected_response

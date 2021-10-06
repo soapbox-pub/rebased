@@ -1597,9 +1597,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          %User{} = old_user <- User.get_by_nickname(nickname),
          {_, false} <- {:ap_id_comparison, data[:ap_id] == old_user.ap_id} do
       Logger.info(
-        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{
-          data[:ap_id]
-        }, renaming."
+        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{data[:ap_id]}, renaming."
       )
 
       old_user

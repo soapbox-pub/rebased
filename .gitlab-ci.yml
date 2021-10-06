@@ -134,6 +134,7 @@ unit-testing-rum:
     - mix test --preload-modules
 
 lint:
+  image: elixir:1.12
   stage: test
   only:
     changes:
