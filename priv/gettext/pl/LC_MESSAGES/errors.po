@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-05-13 16:37+0000\n"
-"PO-Revision-Date: 2021-08-13 15:42+0000\n"
+"PO-Revision-Date: 2021-08-15 08:45+0000\n"
 "Last-Translator: marcin mikołajczak <me@mkljczk.pl>\n"
 "Language-Team: Polish <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/pl/>\n"
@@ -453,7 +453,7 @@ msgstr "Nieznany błąd, sprawdź szczegóły i spróbuj ponownie."
 #: lib/pleroma/web/oauth/oauth_controller.ex:155
 #, elixir-format
 msgid "Unlisted redirect_uri."
-msgstr ""
+msgstr "Niewypisany redirect_uri."
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:391
 #, elixir-format
@@ -463,7 +463,7 @@ msgstr "Nieobsługiwany dostawca OAuth: %{provider}."
 #: lib/pleroma/uploaders/uploader.ex:72
 #, elixir-format
 msgid "Uploader callback timeout"
-msgstr ""
+msgstr "Przekroczono czas wysyłania pliku"
 
 #: lib/pleroma/web/uploader_controller.ex:23
 #, elixir-format
