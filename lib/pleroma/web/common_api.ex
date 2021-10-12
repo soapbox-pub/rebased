@@ -147,9 +147,6 @@ defmodule Pleroma.Web.CommonAPI do
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
-      # Remove from search index for local posts
-      Pleroma.Search.remove_from_index(object)
-
       {:ok, delete}
     else
       {:find_activity, _} ->
