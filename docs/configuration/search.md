@@ -12,6 +12,15 @@ While it has no external dependencies, it has problems with performance and rele
 
 ## Meilisearch
 
+Note that it's quite a bit more memory hungry than PostgreSQL (around 4-5G for ~1.2 million
+posts while idle and up to 7G while indexing initially). The disk usage for this additional index is also
+around 4 gigabytes. Like [RUM](./cheatsheet.md#rum-indexing-for-full-text-search) indexes, it offers considerably
+higher performance and ordering by timestamp in a reasonable amount of time.
+Additionally, the search results seem to be more accurate.
+
+Due to high memory usage, it may be best to set it up on a different machine, if running pleroma on a low-resource
+computer, and use private key authentication to secure the remote search instance.
+
 To use [meilisearch](https://www.meilisearch.com/), set the search module to `Pleroma.Search.Meilisearch`:
 
 > config :pleroma, Pleroma.Search, module: Pleroma.Search.Meilisearch
