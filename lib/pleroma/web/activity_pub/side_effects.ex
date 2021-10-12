@@ -330,7 +330,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     if result == :ok do
       Notification.create_notifications(object)
 
-      Pleroma.Search.remove_from_index(object)
+      Pleroma.Search.remove_from_index(deleted_object)
 
       {:ok, object, meta}
     else
