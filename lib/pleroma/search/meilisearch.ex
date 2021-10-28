@@ -47,7 +47,7 @@ defmodule Pleroma.Search.Meilisearch do
         Path.join(endpoint, path),
         "",
         meili_headers(),
-        timeout: :infinity
+        []
       )
   end
 
