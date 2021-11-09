@@ -158,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
       {:linkify, "~> 0.5.1"},
-      {:http_signatures, "~> 0.1.0"},
+      {:http_signatures, "~> 0.1.1"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
       {:prometheus, "~> 4.6"},
