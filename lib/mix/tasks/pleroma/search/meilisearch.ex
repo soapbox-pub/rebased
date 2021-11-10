@@ -11,8 +11,10 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
   import Pleroma.Search.Meilisearch, only: [meili_post!: 2, meili_delete!: 1, meili_get!: 1]
 
-  def run(["index"]) do
+  def run(["index" | args]) do
     start_pleroma()
+
+    is_reindex = "--reindex" in args
 
     meili_post!(
       "/indexes/objects/settings/ranking-rules",
@@ -68,6 +70,19 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           {[objects], new_acc}
         end)
         |> Stream.each(fn objects ->
+          objects =
+            objects
+            |> Enum.filter(fn o ->
+              if is_reindex do
+                result = meili_get!("/indexes/objects/documents/#{o.id}")
+
+                # Filter out the already indexed documents. This is true when the document does not exist
+                result["errorCode"] == "document_not_found"
+              else
+                true
+              end
+            end)
+
           result =
             meili_post!(
               "/indexes/objects/documents",
