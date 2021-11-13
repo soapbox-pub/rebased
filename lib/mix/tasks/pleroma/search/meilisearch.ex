@@ -76,8 +76,14 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
               if is_reindex do
                 result = meili_get!("/indexes/objects/documents/#{o.id}")
 
+                # With >= 0.24.0 the name for "errorCode" is just "code"
+                error_code_key =
+                  if meili_get!("/version")["pkgVersion"] |> Version.match?(">= 0.24.0"),
+                    do: "code",
+                    else: "errorCode"
+
                 # Filter out the already indexed documents. This is true when the document does not exist
-                result["errorCode"] == "document_not_found"
+                result[error_code_key] == "document_not_found"
               else
                 true
               end
