@@ -7,7 +7,7 @@ defmodule Pleroma.Search.Meilisearch do
   import Pleroma.Activity.Search
   import Ecto.Query
 
-  defp meili_headers() do
+  defp meili_headers do
     private_key = Pleroma.Config.get([Pleroma.Search.Meilisearch, :private_key])
 
     [{"Content-Type", "application/json"}] ++

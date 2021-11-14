@@ -11,8 +11,8 @@ defmodule Pleroma.Search.MeilisearchTest do
   import Tesla.Mock
   import Mock
 
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Search.Meilisearch
+  alias Pleroma.Web.CommonAPI
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)

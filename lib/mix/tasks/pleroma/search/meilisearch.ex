@@ -82,7 +82,8 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
                     do: "code",
                     else: "errorCode"
 
-                # Filter out the already indexed documents. This is true when the document does not exist
+                # Filter out the already indexed documents.
+                # This is true when the document does not exist
                 result[error_code_key] == "document_not_found"
               else
                 true
