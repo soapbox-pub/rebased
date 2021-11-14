@@ -9,11 +9,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
   alias Pleroma.Emoji
   alias Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy
 
-  setup_all do
-    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-    :ok
-  end
-
   setup do
     emoji_path = [:instance, :static_dir] |> Config.get() |> Path.join("emoji/stolen")
 
@@ -49,6 +44,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
     refute "firedfox" in installed()
     refute File.exists?(path)
 
+    Tesla.Mock.mock(fn %{method: :get, url: "https://example.org/emoji/firedfox.png"} ->
+      %Tesla.Env{status: 200, body: File.read!("test/fixtures/image.jpg")}
+    end)
+
     clear_config(:mrf_steal_emoji, hosts: ["example.org"], size_limit: 284_468)
 
     assert {:ok, _message} = StealEmojiPolicy.filter(message)
@@ -77,6 +76,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
 
   test "reject if size is above the limit", %{message: message} do
     refute "firedfox" in installed()
+
+    Tesla.Mock.mock(fn %{method: :get, url: "https://example.org/emoji/firedfox.png"} ->
+      %Tesla.Env{status: 200, body: File.read!("test/fixtures/image.jpg")}
+    end)
 
     clear_config(:mrf_steal_emoji, hosts: ["example.org"], size_limit: 50_000)
 
