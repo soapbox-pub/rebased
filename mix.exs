@@ -146,7 +146,7 @@ defmodule Pleroma.Mixfile do
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
        git: "https://github.com/msantos/crypt.git",
-       ref: "031d812ea45593de598bdbc3d28bf45a6e976de3"},
+       ref: "f75cd55325e33cbea198fb41fe41871392f8fb76"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption,
        git: "https://github.com/lanodan/elixir-web-push-encryption.git", branch: "bugfix/otp-24"},
