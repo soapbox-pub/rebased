@@ -138,7 +138,7 @@ defmodule Pleroma.Mixfile do
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.7.4"},
+      {:mogrify, "~> 0.9.1"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
