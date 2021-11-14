@@ -297,7 +297,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.3
+  image: arm32v7/elixir:1.10.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -321,7 +321,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.3
+  image: arm64v8/elixir:1.10.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
