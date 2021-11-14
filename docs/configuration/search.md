@@ -60,7 +60,7 @@ have to do it one time, but it might take a while, depending on the amount of po
 consuming process for `meilisearch`, and it will take a lot of RAM when running if you have a lot of posts (seems to be around 5G for ~1.2
 million posts while idle and up to 7G while indexing initially, but your experience may be different).
 
-To start te initial indexing, run the `index` command:
+To start the initial indexing, run the `index` command:
 
 === "OTP"
     ```sh
