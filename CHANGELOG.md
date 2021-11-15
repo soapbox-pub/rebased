@@ -69,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Checking activated Upload Filters for required commands.
 - Remote users can no longer reappear after being deleted.
 - Deactivated users may now be deleted.
+- Deleting an activity with a lot of likes/boosts no longer causes a database timeout.
 - Mix task `pleroma.database prune_objects`
 - Fixed rendering of JSON errors on ActivityPub endpoints.
 - Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
