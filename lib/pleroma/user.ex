@@ -2474,8 +2474,8 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def active_user_count(weeks \\ 4) do
-    active_after = Timex.shift(NaiveDateTime.utc_now(), weeks: -weeks)
+  def active_user_count(days \\ 30) do
+    active_after = Timex.shift(NaiveDateTime.utc_now(), days: -days)
 
     __MODULE__
     |> where([u], u.last_active_at >= ^active_after)
