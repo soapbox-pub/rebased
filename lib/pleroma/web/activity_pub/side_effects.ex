@@ -227,7 +227,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
 
-      Pleroma.Search.add_to_index(Map.put(activity, :object, object))
+      Pleroma.Search.DatabaseSearch.add_to_index(Map.put(activity, :object, object))
 
       meta =
         meta
@@ -330,7 +330,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     if result == :ok do
       Notification.create_notifications(object)
 
-      Pleroma.Search.remove_from_index(deleted_object)
+      Pleroma.Search.DatabaseSearch.remove_from_index(deleted_object)
 
       {:ok, object, meta}
     else
