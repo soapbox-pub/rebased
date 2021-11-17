@@ -4,7 +4,7 @@ defmodule Pleroma.Search.Meilisearch do
 
   alias Pleroma.Activity
 
-  import Pleroma.Activity.Search
+  import Pleroma.Search.DatabaseSearch
   import Ecto.Query
 
   defp meili_headers do

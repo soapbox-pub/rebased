@@ -6,7 +6,7 @@
 
 To use built-in search that has no external dependencies, set the search module to `Pleroma.Activity`:
 
-> config :pleroma, Pleroma.Search, module: Pleroma.Activity
+> config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
 
 While it has no external dependencies, it has problems with performance and relevancy.
 

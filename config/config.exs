@@ -870,7 +870,7 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Search, [max_running: 30, max_waiting: 50]}
 ]
 
-config :pleroma, Pleroma.Search, module: Pleroma.Activity.Search
+config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
 
 config :pleroma, Pleroma.Search.Meilisearch, url: "http://127.0.0.1:7700/", private_key: nil
 

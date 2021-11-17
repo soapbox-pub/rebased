@@ -141,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       # Add local posts to search index
-      if local, do: Pleroma.Search.DatabaseSearch.add_to_index(activity)
+      if local, do: Pleroma.Search.add_to_index(activity)
 
       {:ok, activity}
     else

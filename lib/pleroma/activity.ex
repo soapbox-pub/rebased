@@ -366,7 +366,7 @@ defmodule Pleroma.Activity do
     from(activity in query, where: activity.actor not in subquery(deactivated_users_query))
   end
 
-  defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
+  defdelegate search(user, query, options \\ []), to: Pleroma.Search.DatabaseSearch
 
   def direct_conversation_id(activity, for_user) do
     alias Pleroma.Conversation.Participation
