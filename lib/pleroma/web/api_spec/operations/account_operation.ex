@@ -794,7 +794,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       properties: %{
         comment: %Schema{
           type: :string,
-          description: "Account note body",
+          description: "Account note body"
         }
       },
       example: %{

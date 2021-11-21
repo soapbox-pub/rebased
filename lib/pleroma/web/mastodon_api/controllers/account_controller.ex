@@ -441,7 +441,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "POST /api/v1/accounts/:id/note"
-  def note(%{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn, _params) do
+  def note(
+        %{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn,
+        _params
+      ) do
     with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
       render(conn, "relationship.json", user: noter, target: target)
     else

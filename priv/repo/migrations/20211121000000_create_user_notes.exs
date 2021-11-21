@@ -10,8 +10,6 @@ defmodule Pleroma.Repo.Migrations.CreateUserNotes do
       timestamps()
     end
 
-    create_if_not_exists(
-      unique_index(:user_notes, [:source_id, :target_id])
-    )
+    create_if_not_exists(unique_index(:user_notes, [:source_id, :target_id]))
   end
 end
