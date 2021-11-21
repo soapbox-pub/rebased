@@ -12,7 +12,7 @@ config :pleroma, :frontends, primary: %{"name" => "soapbox-fe", "ref" => "vendor
 # Sane default upload filters
 config :pleroma, Pleroma.Upload,
   filters: [
-    Pleroma.Upload.Filter.SetMeta,
+    Pleroma.Upload.Filter.AnalyzeMetadata,
     Pleroma.Upload.Filter.Dedupe,
     Pleroma.Upload.Filter.Exiftool
   ]
