@@ -37,7 +37,13 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   end
 
   defp installed do
-    File.ls!(Frontend.dir())
+    frontend_directory = Pleroma.Frontend.dir()
+
+    if File.exists?(frontend_directory) do
+      File.ls!(frontend_directory)
+    else
+      []
+    end
   end
 
   defp params_to_frontend(params) when is_map(params) do

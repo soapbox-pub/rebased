@@ -1,5 +1,9 @@
 # Installing on Linux using OTP releases
 
+{! backend/installation/otp_vs_from_source.include !}
+
+This guide covers a installation using an OTP release. To install Pleroma from source, please check out the corresponding guide for your distro.
+
 ## Pre-requisites
 * A machine running Linux with GNU (e.g. Debian, Ubuntu) or musl (e.g. Alpine) libc and `x86_64`, `aarch64` or `armv7l` CPU, you have root access to. If you are not sure if it's compatible see [Detecting flavour section](#detecting-flavour) below
 * A (sub)domain pointed to the machine

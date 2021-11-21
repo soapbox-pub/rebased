@@ -81,17 +81,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def change_password(%{assigns: %{user: user}} = conn, %{
-        password: password,
-        new_password: new_password,
-        new_password_confirmation: new_password_confirmation
-      }) do
-    case CommonAPI.Utils.confirm_current_password(user, password) do
+  def change_password(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
       {:ok, user} ->
         with {:ok, _user} <-
                User.reset_password(user, %{
-                 password: new_password,
-                 password_confirmation: new_password_confirmation
+                 password: body_params.new_password,
+                 password_confirmation: body_params.new_password_confirmation
                }) do
           json(conn, %{status: "success"})
         else
@@ -108,10 +104,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def change_email(%{assigns: %{user: user}} = conn, %{password: password, email: email}) do
-    case CommonAPI.Utils.confirm_current_password(user, password) do
+  def change_email(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
       {:ok, user} ->
-        with {:ok, _user} <- User.change_email(user, email) do
+        with {:ok, _user} <- User.change_email(user, body_params.email) do
           json(conn, %{status: "success"})
         else
           {:error, changeset} ->

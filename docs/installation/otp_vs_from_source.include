@@ -1,0 +1,3 @@
+## OTP releases vs from-source installations
+
+There are two ways to install Pleroma. You can use OTP releases or do a from-source installation. OTP releases are as close as you can get to binary releases with Erlang/Elixir. The release is self-contained, and provides everything needed to boot it, it is easily administered via the provided shell script to open up a remote console, start/stop/restart the release, start in the background, send remote commands, and more. With from source installations you install Pleroma from source, meaning you have to install certain dependencies like Erlang+Elixir and compile Pleroma yourself.

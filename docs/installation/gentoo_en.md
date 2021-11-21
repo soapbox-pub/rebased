@@ -1,4 +1,7 @@
 # Installing on Gentoo GNU/Linux
+
+{! backend/installation/otp_vs_from_source_source.include !}
+
 ## Installation
 
 This guide will assume that you have administrative rights, either as root or a user with [sudo permissions](https://wiki.gentoo.org/wiki/Sudo). Lines that begin with `#` indicate that they should be run as the superuser. Lines using `$` should be run as the indicated user, e.g. `pleroma$` should be run as the `pleroma` user.
