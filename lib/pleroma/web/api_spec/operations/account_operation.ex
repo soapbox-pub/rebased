@@ -328,6 +328,29 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def note_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Create note",
+      operationId: "AccountController.note",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      requestBody: request_body("Parameters", note_request()),
+      description: "Create a note for the given account.",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(
+          :comment,
+          :query,
+          %Schema{type: :string},
+          "Account note body"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def follow_by_uri_operation do
     %Operation{
       tags: ["Account actions"],
@@ -685,6 +708,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "blocked_by" => true,
           "muting" => false,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => false,
           "domain_blocking" => false,
           "subscribing" => false,
@@ -699,6 +723,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "blocked_by" => true,
           "muting" => true,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => true,
           "domain_blocking" => false,
           "subscribing" => false,
@@ -713,6 +738,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "blocked_by" => false,
           "muting" => true,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => false,
           "domain_blocking" => true,
           "subscribing" => true,
@@ -756,6 +782,23 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       example: %{
         "notifications" => true,
         "expires_in" => 86_400
+      }
+    }
+  end
+
+  defp note_request do
+    %Schema{
+      title: "AccountNoteRequest",
+      description: "POST body for adding anote for an account",
+      type: :object,
+      properties: %{
+        comment: %Schema{
+          type: :string,
+          description: "Account note body",
+        }
+      },
+      example: %{
+        "comment" => "Example note"
       }
     }
   end

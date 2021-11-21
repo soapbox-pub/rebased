@@ -162,7 +162,8 @@ See [Admin-API](admin_api.md)
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 
@@ -186,7 +187,8 @@ See [Admin-API](admin_api.md)
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -156,7 +157,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           target,
           &User.muting_reblogs?(&1, &2)
         ),
-      endorsed: false
+      endorsed: false,
+      note:
+        UserNote.show(
+          reading_user,
+          target
+        )
     }
   end
 

@@ -1776,4 +1776,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     assert [%{"id" => ^id2}] = result
   end
+
+  test "create a note on a user" do
+    %{conn: conn} = oauth_access(["write:accounts"])
+    other_user = insert(:user)
+
+    ret_conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/accounts/#{other_user.id}/note", %{
+        "comment" => "Example note"
+      })
+
+    assert %{"note" => "Example note"} = json_response_and_validate_schema(ret_conn, 200)
+  end
 end
