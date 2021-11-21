@@ -789,7 +789,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   defp note_request do
     %Schema{
       title: "AccountNoteRequest",
-      description: "POST body for adding anote for an account",
+      description: "POST body for adding a note for an account",
       type: :object,
       properties: %{
         comment: %Schema{
