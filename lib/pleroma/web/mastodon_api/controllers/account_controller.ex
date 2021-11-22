@@ -447,8 +447,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       ) do
     with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
       render(conn, "relationship.json", user: noter, target: target)
-    else
-      {:error, message} -> json_response(conn, :forbidden, %{error: message})
     end
   end
 

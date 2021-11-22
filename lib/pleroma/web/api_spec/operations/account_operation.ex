@@ -331,7 +331,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   def note_operation do
     %Operation{
       tags: ["Account actions"],
-      summary: "Create note",
+      summary: "Set a private note about a user.",
       operationId: "AccountController.note",
       security: [%{"oAuth" => ["follow", "write:accounts"]}],
       requestBody: request_body("Parameters", note_request()),
