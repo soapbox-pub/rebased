@@ -14,29 +14,50 @@ defmodule Pleroma.Search.Meilisearch do
       if is_nil(private_key), do: [], else: [{"X-Meili-API-Key", private_key}]
   end
 
-  def meili_get!(path) do
+  def meili_get(path) do
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, result} =
+    result =
       Pleroma.HTTP.get(
         Path.join(endpoint, path),
         meili_headers()
       )
 
-    Jason.decode!(result.body)
+    with {:ok, res} <- result do
+      {:ok, Jason.decode!(res.body)}
+    end
   end
 
-  def meili_post!(path, params) do
+  def meili_post(path, params) do
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, result} =
+    result =
       Pleroma.HTTP.post(
         Path.join(endpoint, path),
         Jason.encode!(params),
         meili_headers()
       )
 
-    Jason.decode!(result.body)
+    with {:ok, res} <- result do
+      {:ok, Jason.decode!(res.body)}
+    end
+  end
+
+  def meili_put(path, params) do
+    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+
+    result =
+      Pleroma.HTTP.request(
+        :put,
+        Path.join(endpoint, path),
+        Jason.encode!(params),
+        meili_headers(),
+        []
+      )
+
+    with {:ok, res} <- result do
+      {:ok, Jason.decode!(res.body)}
+    end
   end
 
   def meili_delete!(path) do
@@ -57,34 +78,40 @@ defmodule Pleroma.Search.Meilisearch do
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
-    result =
-      meili_post!(
+    res =
+      meili_post(
         "/indexes/objects/search",
         %{q: query, offset: offset, limit: limit}
       )
 
-    hits = result["hits"] |> Enum.map(& &1["ap"])
+    with {:ok, result} <- res do
+      hits = result["hits"] |> Enum.map(& &1["ap"])
 
-    try do
-      hits
-      |> Activity.create_by_object_ap_id()
-      |> Activity.with_preloaded_object()
-      |> Activity.with_preloaded_object()
-      |> Activity.restrict_deactivated_users()
-      |> maybe_restrict_local(user)
-      |> maybe_restrict_author(author)
-      |> maybe_restrict_blocked(user)
-      |> maybe_fetch(user, query)
-      |> order_by([object: obj], desc: obj.data["published"])
-      |> Pleroma.Repo.all()
-    rescue
-      _ -> maybe_fetch([], user, query)
+      try do
+        hits
+        |> Activity.create_by_object_ap_id()
+        |> Activity.with_preloaded_object()
+        |> Activity.with_preloaded_object()
+        |> Activity.restrict_deactivated_users()
+        |> maybe_restrict_local(user)
+        |> maybe_restrict_author(author)
+        |> maybe_restrict_blocked(user)
+        |> maybe_fetch(user, query)
+        |> order_by([object: obj], desc: obj.data["published"])
+        |> Pleroma.Repo.all()
+      rescue
+        _ -> maybe_fetch([], user, query)
+      end
     end
   end
 
   def object_to_search_data(object) do
+    # Only index public or unlisted Notes
     if not is_nil(object) and object.data["type"] == "Note" and
-         Pleroma.Constants.as_public() in object.data["to"] do
+         not is_nil(object.data["content"]) and
+         (Pleroma.Constants.as_public() in object.data["to"] or
+            Pleroma.Constants.as_public() in object.data["cc"]) and
+         String.length(object.data["content"]) > 1 do
       data = object.data
 
       content_str =
@@ -117,13 +144,17 @@ defmodule Pleroma.Search.Meilisearch do
 
     if activity.data["type"] == "Create" and maybe_search_data do
       result =
-        meili_post!(
+        meili_put(
           "/indexes/objects/documents",
           [maybe_search_data]
         )
 
-      if not Map.has_key?(result, "updateId") do
-        Logger.error("Failed to add activity #{activity.id} to index: #{inspect(result)}")
+      with {:ok, res} <- result,
+           true <- Map.has_key?(res, "updateId") do
+        # Do nothing
+      else
+        _ ->
+          Logger.error("Failed to add activity #{activity.id} to index: #{inspect(result)}")
       end
     end
   end

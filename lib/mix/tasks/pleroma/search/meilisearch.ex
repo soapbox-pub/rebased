@@ -3,38 +3,40 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
-  require Logger
   require Pleroma.Constants
 
   import Mix.Pleroma
   import Ecto.Query
 
-  import Pleroma.Search.Meilisearch, only: [meili_post!: 2, meili_delete!: 1, meili_get!: 1]
+  import Pleroma.Search.Meilisearch,
+    only: [meili_post: 2, meili_put: 2, meili_get: 1, meili_delete!: 1]
 
-  def run(["index" | args]) do
+  def run(["index"]) do
     start_pleroma()
 
-    is_reindex = "--reindex" in args
+    {:ok, _} =
+      meili_post(
+        "/indexes/objects/settings/ranking-rules",
+        [
+          "desc(published)",
+          "words",
+          "exactness",
+          "proximity",
+          "wordsPosition",
+          "typo",
+          "attribute"
+        ]
+      )
 
-    meili_post!(
-      "/indexes/objects/settings/ranking-rules",
-      [
-        "desc(published)",
-        "words",
-        "exactness",
-        "proximity",
-        "wordsPosition",
-        "typo",
-        "attribute"
-      ]
-    )
+    {:ok, _} =
+      meili_post(
+        "/indexes/objects/settings/searchable-attributes",
+        [
+          "content"
+        ]
+      )
 
-    meili_post!(
-      "/indexes/objects/settings/searchable-attributes",
-      [
-        "content"
-      ]
-    )
+    IO.puts("Created indices. Starting to insert posts.")
 
     chunk_size = 10_000
 
@@ -42,11 +44,11 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       fn ->
         query =
           from(Pleroma.Object,
-            # Only index public posts which are notes and have some text
+            # Only index public and unlisted posts which are notes and have some text
             where:
               fragment("data->>'type' = 'Note'") and
-                fragment("LENGTH(data->>'content') > 0") and
-                fragment("data->'to' \\? ?", ^Pleroma.Constants.as_public()),
+                (fragment("data->'to' \\? ?", ^Pleroma.Constants.as_public()) or
+                   fragment("data->'cc' \\? ?", ^Pleroma.Constants.as_public())),
             order_by: [desc: fragment("data->'published'")]
           )
 
@@ -70,34 +72,18 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
           {[objects], new_acc}
         end)
         |> Stream.each(fn objects ->
-          objects =
-            objects
-            |> Enum.filter(fn o ->
-              if is_reindex do
-                result = meili_get!("/indexes/objects/documents/#{o.id}")
-
-                # With >= 0.24.0 the name for "errorCode" is just "code"
-                error_code_key =
-                  if meili_get!("/version")["pkgVersion"] |> Version.match?(">= 0.24.0"),
-                    do: "code",
-                    else: "errorCode"
-
-                # Filter out the already indexed documents.
-                # This is true when the document does not exist
-                result[error_code_key] == "document_not_found"
-              else
-                true
-              end
-            end)
-
           result =
-            meili_post!(
+            meili_put(
               "/indexes/objects/documents",
               objects
             )
 
-          if not Map.has_key?(result, "updateId") do
-            IO.puts("Failed to index: #{inspect(result)}")
+          with {:ok, res} <- result do
+            if not Map.has_key?(res, "updateId") do
+              IO.puts("\nFailed to index: #{inspect(result)}")
+            end
+          else
+            e -> IO.puts("\nFailed to index due to network error: #{inspect(e)}")
           end
         end)
         |> Stream.run()
@@ -137,7 +123,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   def run(["stats"]) do
     start_pleroma()
 
-    result = meili_get!("/indexes/objects/stats")
+    {:ok, result} = meili_get("/indexes/objects/stats")
     IO.puts("Number of entries: #{result["numberOfDocuments"]}")
     IO.puts("Indexing? #{result["isIndexing"]}")
   end
