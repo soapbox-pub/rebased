@@ -197,7 +197,7 @@ defmodule Pleroma.Mixfile do
        git: "https://gitlab.com/soapbox-pub/elixir-libraries/majic.git",
        ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
       {:oembed_providers, "~> 0.1.0"},
-      {:eblurhash, "~> 1.1.0"},
+      {:eblurhash, "~> 1.2"},
       {:open_api_spex, "~> 3.10"},
 
       # indirect dependency version override
