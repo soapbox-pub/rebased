@@ -97,8 +97,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         !label_in_collection?(ap_id, params["cc"])
 
     if need_splice? do
-      cc_list = extract_list(params["cc"])
-      Map.put(params, "cc", [ap_id | cc_list])
+      cc = [ap_id | extract_list(params["cc"])]
+
+      params
+      |> Map.put("cc", cc)
+      |> Maps.safe_put_in(["object", "cc"], cc)
     else
       params
     end

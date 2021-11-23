@@ -252,7 +252,7 @@ defmodule Pleroma.Web.Router do
     post("/users/revoke_invite", InviteController, :revoke)
     post("/users/email_invite", InviteController, :email)
 
-    get("/users", UserController, :list)
+    get("/users", UserController, :index)
     get("/users/:nickname", UserController, :show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
@@ -642,12 +642,6 @@ defmodule Pleroma.Web.Router do
 
     get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
     delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
-
-    post(
-      "/qvitter/statuses/notifications/read",
-      TwitterAPI.Controller,
-      :mark_notifications_as_read
-    )
   end
 
   scope "/", Pleroma.Web do
@@ -731,6 +725,7 @@ defmodule Pleroma.Web.Router do
     # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
+    get("/users/:nickname/collections/featured", ActivityPubController, :pinned)
   end
 
   scope "/", Pleroma.Web.ActivityPub do

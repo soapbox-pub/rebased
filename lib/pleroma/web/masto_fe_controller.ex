@@ -8,13 +8,12 @@ defmodule Pleroma.Web.MastoFEController do
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.AuthController
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :put_settings)
 
   # Note: :index action handles attempt of unauthenticated access to private instance with redirect
-  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action == :index)
+  plug(:skip_public_check when action == :index)
 
   plug(
     OAuthScopesPlug,
@@ -22,10 +21,7 @@ defmodule Pleroma.Web.MastoFEController do
     when action == :index
   )
 
-  plug(
-    :skip_plug,
-    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :manifest
-  )
+  plug(:skip_auth when action == :manifest)
 
   @doc "GET /web/*path"
   def index(conn, _params) do

@@ -10,12 +10,6 @@ defmodule Pleroma.Web.AdminAPI.Search do
 
   @page_size 50
 
-  defmacro not_empty_string(string) do
-    quote do
-      is_binary(unquote(string)) and unquote(string) != ""
-    end
-  end
-
   @spec user(map()) :: {:ok, [User.t()], pos_integer()}
   def user(params \\ %{}) do
     query =

@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.CommonAPI.Utils do
   import Pleroma.Web.Gettext
-  import Pleroma.Web.ControllerHelper, only: [truthy_param?: 1]
 
   alias Calendar.Strftime
   alias Pleroma.Activity
@@ -19,6 +18,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Plugs.AuthenticationPlug
+  alias Pleroma.Web.Utils.Params
 
   require Logger
   require Pleroma.Constants
@@ -160,7 +160,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         |> DateTime.add(expires_in)
         |> DateTime.to_iso8601()
 
-      key = if truthy_param?(data.poll[:multiple]), do: "anyOf", else: "oneOf"
+      key = if Params.truthy_param?(data.poll[:multiple]), do: "anyOf", else: "oneOf"
       poll = %{"type" => "Question", key => option_notes, "closed" => end_time}
 
       {:ok, {poll, emoji}}
@@ -203,7 +203,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     attachment_links =
       draft.params
       |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
-      |> truthy_param?()
+      |> Params.truthy_param?()
 
     content_type = get_content_type(draft.params[:content_type])
 
@@ -217,7 +217,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     draft.status
     |> format_input(content_type, options)
     |> maybe_add_attachments(draft.attachments, attachment_links)
-    |> maybe_add_nsfw_tag(draft.params)
   end
 
   defp get_content_type(content_type) do
@@ -227,13 +226,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "text/plain"
     end
   end
-
-  defp maybe_add_nsfw_tag({text, mentions, tags}, %{"sensitive" => sensitive})
-       when sensitive in [true, "True", "true", "1"] do
-    {text, mentions, [{"#nsfw", "nsfw"} | tags]}
-  end
-
-  defp maybe_add_nsfw_tag(data, _), do: data
 
   def make_context(_, %Participation{} = participation) do
     Repo.preload(participation, :conversation).conversation.ap_id
@@ -420,19 +412,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
-  # Do not notify subscribers if author is making a reply
-  def maybe_notify_subscribers(recipients, %Activity{
-        object: %Object{data: %{"inReplyTo" => _ap_id}}
-      }) do
-    recipients
-  end
-
   def maybe_notify_subscribers(
         recipients,
-        %Activity{data: %{"actor" => actor, "type" => type}} = activity
-      )
-      when type == "Create" do
-    with %User{} = user <- User.get_cached_by_ap_id(actor) do
+        %Activity{data: %{"actor" => actor, "type" => "Create"}} = activity
+      ) do
+    # Do not notify subscribers if author is making a reply
+    with %Object{data: object} <- Object.normalize(activity, fetch: false),
+         nil <- object["inReplyTo"],
+         %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
         |> User.subscriber_users()

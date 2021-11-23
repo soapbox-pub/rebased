@@ -16,7 +16,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     recv_timeout: 2_000
   ]
 
-  @headers [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
+  defp headers, do: [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
@@ -82,11 +82,11 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def fetch_data_for_activity(_), do: %{}
 
   def oembed_get(url) do
-    Pleroma.HTTP.get(url, @headers, @options)
+    Pleroma.HTTP.get(url, headers(), @options)
   end
 
   def rich_media_get(url) do
-    headers = @headers
+    headers = headers()
 
     head_check =
       case Pleroma.HTTP.head(url, headers, @options) do

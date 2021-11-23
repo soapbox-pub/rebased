@@ -24,20 +24,34 @@ stages:
   - docker
 
 before_script:
+  - echo $MIX_ENV
+  - rm -rf _build/*/lib/pleroma
   - apt-get update && apt-get install -y cmake
   - mix local.hex --force
   - mix local.rebar --force
+  - mix deps.get
   - apt-get -qq update
   - apt-get install -y libmagic-dev
 
+after_script:
+  - rm -rf _build/*/lib/pleroma
+
 build:
   stage: build
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   script:
-  - mix deps.get
   - mix compile --force
 
 spec-build:
   stage: test
+  only:
+    changes:
+      - "lib/pleroma/web/api_spec/**/*.ex"
+      - "lib/pleroma/web/api_spec.ex"
   artifacts:
     paths:
     - spec.json
@@ -54,13 +68,17 @@ benchmark:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
-    - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
     - mix pleroma.load_testing
 
 unit-testing:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   # retry: 2
   cache: &testing_cache_policy
     <<: *global_cache_policy
@@ -72,7 +90,6 @@ unit-testing:
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
-    - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
     - mix coveralls --preload-modules
@@ -95,6 +112,11 @@ unit-testing:
 
 # unit-testing-rum:
 #   stage: test
+#   only:
+#     changes:
+#       - "**/*.ex"
+#       - "**/*.exs"
+#       - "mix.lock"
 #   retry: 2
 #   cache: *testing_cache_policy
 #   services:
@@ -106,7 +128,6 @@ unit-testing:
 #     RUM_ENABLED: "true"
 #   script:
 #     - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
-#     - mix deps.get
 #     - mix ecto.create
 #     - mix ecto.migrate
 #     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
@@ -114,16 +135,39 @@ unit-testing:
 
 lint:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: *testing_cache_policy
   script:
     - mix format --check-formatted
 
 analysis:
   stage: test
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   cache: *testing_cache_policy
   script:
-    - mix deps.get
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+
+cycles:
+  stage: test
+  image: elixir:1.11
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
+  cache: {}
+  script:
+    - mix deps.get
+    - mix compile
+    - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
 docs-deploy:
   stage: deploy

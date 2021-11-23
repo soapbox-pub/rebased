@@ -11,8 +11,8 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   alias Pleroma.MFA
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
-  alias Pleroma.Web.Auth.Authenticator
   alias Pleroma.Web.Auth.TOTPAuthenticator
+  alias Pleroma.Web.Auth.WrapperAuthenticator
   alias Pleroma.Web.CommonAPI
 
   @status_types ["Article", "Event", "Note", "Video", "Page", "Question"]
@@ -88,7 +88,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   #
   def do_follow(conn, %{"authorization" => %{"name" => _, "password" => _, "id" => id}}) do
     with {_, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
-         {_, {:ok, user}, _} <- {:auth, Authenticator.get_user(conn), followee},
+         {_, {:ok, user}, _} <- {:auth, WrapperAuthenticator.get_user(conn), followee},
          {_, _, _, false} <- {:mfa_required, followee, user, MFA.require?(user)},
          {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
       redirect(conn, to: "/users/#{followee.id}")

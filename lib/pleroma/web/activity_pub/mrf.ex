@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           type: [:module, {:list, :module}],
           description:
             "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF.Policy}
         },
         %{
           key: :transparency,
@@ -50,17 +50,6 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   }
 
   @required_description_keys [:key, :related_policy]
-
-  @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
-  @callback describe() :: {:ok | :error, Map.t()}
-  @callback config_description() :: %{
-              optional(:children) => [map()],
-              key: atom(),
-              related_policy: String.t(),
-              label: String.t(),
-              description: String.t()
-            }
-  @optional_callbacks config_description: 0
 
   def filter(policies, %{} = message) do
     policies
@@ -92,7 +81,9 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   end
 
   def get_policies do
-    Pleroma.Config.get([:mrf, :policies], []) |> get_policies()
+    Pleroma.Config.get([:mrf, :policies], [])
+    |> get_policies()
+    |> Enum.concat([Pleroma.Web.ActivityPub.MRF.HashtagPolicy])
   end
 
   defp get_policies(policy) when is_atom(policy), do: [policy]
@@ -140,7 +131,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def describe, do: get_policies() |> describe()
 
   def config_descriptions do
-    Pleroma.Web.ActivityPub.MRF
+    Pleroma.Web.ActivityPub.MRF.Policy
     |> Pleroma.Docs.Generator.list_behaviour_implementations()
     |> config_descriptions()
   end

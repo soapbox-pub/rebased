@@ -3,21 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.Loader do
-  defp reject_keys,
-    do: [
-      Pleroma.Repo,
-      Pleroma.Web.Endpoint,
-      :env,
-      :configurable_from_database,
-      :database,
-      :swarm
-    ]
+  # These modules are only being used as keys here (for equality check),
+  # so it's okay to use `Module.concat/1` to have the compiler ignore them.
+  @reject_keys [
+    Module.concat(["Pleroma.Repo"]),
+    Module.concat(["Pleroma.Web.Endpoint"]),
+    :env,
+    :configurable_from_database,
+    :database,
+    :swarm
+  ]
 
-  defp reject_groups,
-    do: [
-      :postgrex,
-      :tesla
-    ]
+  @reject_groups [
+    :postgrex,
+    :tesla
+  ]
 
   if Code.ensure_loaded?(Config.Reader) do
     @reader Config.Reader
@@ -54,7 +54,7 @@ defmodule Pleroma.Config.Loader do
   @spec filter_group(atom(), keyword()) :: keyword()
   def filter_group(group, configs) do
     Enum.reject(configs[group], fn {key, _v} ->
-      key in reject_keys() or group in reject_groups() or
+      key in @reject_keys or group in @reject_groups or
         (group == :phoenix and key == :serve_endpoints)
     end)
   end

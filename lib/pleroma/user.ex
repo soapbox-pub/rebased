@@ -99,6 +99,7 @@ defmodule Pleroma.User do
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
     field(:following_address, :string)
+    field(:featured_address, :string)
     field(:search_rank, :float, virtual: true)
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
@@ -130,7 +131,6 @@ defmodule Pleroma.User do
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
-    field(:pinned_activities, {:array, :string}, default: [])
     field(:email_notifications, :map, default: %{"digest" => false})
     field(:mascot, :map, default: nil)
     field(:emoji, :map, default: %{})
@@ -149,6 +149,7 @@ defmodule Pleroma.User do
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
     field(:accepts_email_list, :boolean, default: false)
+    field(:pinned_objects, :map, default: %{})
 
     embeds_one(
       :notification_settings,
@@ -373,14 +374,21 @@ defmodule Pleroma.User do
   end
 
   # Should probably be renamed or removed
+  @spec ap_id(User.t()) :: String.t()
   def ap_id(%User{nickname: nickname}), do: "#{Endpoint.url()}/users/#{nickname}"
 
+  @spec ap_followers(User.t()) :: String.t()
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
   @spec ap_following(User.t()) :: String.t()
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
+
+  @spec ap_featured_collection(User.t()) :: String.t()
+  def ap_featured_collection(%User{featured_address: fa}) when is_binary(fa), do: fa
+
+  def ap_featured_collection(%User{} = user), do: "#{ap_id(user)}/collections/featured"
 
   defp truncate_fields_param(params) do
     if Map.has_key?(params, :fields) do
@@ -444,6 +452,7 @@ defmodule Pleroma.User do
         :uri,
         :follower_address,
         :following_address,
+        :featured_address,
         :hide_followers,
         :hide_follows,
         :hide_followers_count,
@@ -455,7 +464,8 @@ defmodule Pleroma.User do
         :invisible,
         :actor_type,
         :also_known_as,
-        :accepts_chat_messages
+        :accepts_chat_messages,
+        :pinned_objects
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -689,7 +699,7 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, local_nickname_regex())
     |> put_ap_id()
     |> unique_constraint(:ap_id)
-    |> put_following_and_follower_address()
+    |> put_following_and_follower_and_featured_address()
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
@@ -751,7 +761,7 @@ defmodule Pleroma.User do
     |> put_password_hash
     |> put_ap_id()
     |> unique_constraint(:ap_id)
-    |> put_following_and_follower_address()
+    |> put_following_and_follower_and_featured_address()
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
@@ -769,11 +779,16 @@ defmodule Pleroma.User do
     put_change(changeset, :ap_id, ap_id)
   end
 
-  defp put_following_and_follower_address(changeset) do
-    followers = ap_followers(%User{nickname: get_field(changeset, :nickname)})
+  defp put_following_and_follower_and_featured_address(changeset) do
+    user = %User{nickname: get_field(changeset, :nickname)}
+    followers = ap_followers(user)
+    following = ap_following(user)
+    featured = ap_featured_collection(user)
 
     changeset
     |> put_change(:follower_address, followers)
+    |> put_change(:following_address, following)
+    |> put_change(:featured_address, featured)
   end
 
   defp autofollow_users(user) do
@@ -1720,7 +1735,7 @@ defmodule Pleroma.User do
   # Purge doesn't delete the user from the database.
   # It just nulls all its fields and deactivates it.
   # See `User.purge_user_changeset/1` above.
-  def purge(%User{} = user) do
+  defp purge(%User{} = user) do
     user
     |> purge_user_changeset()
     |> update_and_set_cache()
@@ -2263,13 +2278,6 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def roles(%{is_moderator: is_moderator, is_admin: is_admin}) do
-    %{
-      admin: is_admin,
-      moderator: is_moderator
-    }
-  end
-
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
     limit = Config.get([:instance, limit_name], 0)
@@ -2358,45 +2366,35 @@ defmodule Pleroma.User do
     cast(user, %{is_approved: approved?}, [:is_approved])
   end
 
-  def add_pinnned_activity(user, %Pleroma.Activity{id: id}) do
-    if id not in user.pinned_activities do
-      max_pinned_statuses = Config.get([:instance, :max_pinned_statuses], 0)
-      params = %{pinned_activities: user.pinned_activities ++ [id]}
-
-      # if pinned activity was scheduled for deletion, we remove job
-      if expiration = Pleroma.Workers.PurgeExpiredActivity.get_expiration(id) do
-        Oban.cancel_job(expiration.id)
-      end
+  @spec add_pinned_object_id(User.t(), String.t()) :: {:ok, User.t()} | {:error, term()}
+  def add_pinned_object_id(%User{} = user, object_id) do
+    if !user.pinned_objects[object_id] do
+      params = %{pinned_objects: Map.put(user.pinned_objects, object_id, NaiveDateTime.utc_now())}
 
       user
-      |> cast(params, [:pinned_activities])
-      |> validate_length(:pinned_activities,
-        max: max_pinned_statuses,
-        message: "You have already pinned the maximum number of statuses"
-      )
+      |> cast(params, [:pinned_objects])
+      |> validate_change(:pinned_objects, fn :pinned_objects, pinned_objects ->
+        max_pinned_statuses = Config.get([:instance, :max_pinned_statuses], 0)
+
+        if Enum.count(pinned_objects) <= max_pinned_statuses do
+          []
+        else
+          [pinned_objects: "You have already pinned the maximum number of statuses"]
+        end
+      end)
     else
       change(user)
     end
     |> update_and_set_cache()
   end
 
-  def remove_pinnned_activity(user, %Pleroma.Activity{id: id, data: data}) do
-    params = %{pinned_activities: List.delete(user.pinned_activities, id)}
-
-    # if pinned activity was scheduled for deletion, we reschedule it for deletion
-    if data["expires_at"] do
-      # MRF.ActivityExpirationPolicy used UTC timestamps for expires_at in original implementation
-      {:ok, expires_at} =
-        data["expires_at"] |> Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime.cast()
-
-      Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
-        activity_id: id,
-        expires_at: expires_at
-      })
-    end
-
+  @spec remove_pinned_object_id(User.t(), String.t()) :: {:ok, t()} | {:error, term()}
+  def remove_pinned_object_id(%User{} = user, object_id) do
     user
-    |> cast(params, [:pinned_activities])
+    |> cast(
+      %{pinned_objects: Map.delete(user.pinned_objects, object_id)},
+      [:pinned_objects]
+    )
     |> update_and_set_cache()
   end
 
