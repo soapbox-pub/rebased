@@ -16,3 +16,10 @@ config :pleroma, Pleroma.Upload,
     Pleroma.Upload.Filter.Dedupe,
     Pleroma.Upload.Filter.Exiftool
   ]
+
+# Increase the pool size and timeout
+config :pleroma, :dangerzone, override_repo_pool_size: true
+
+config :pleroma, Pleroma.Repo,
+  pool_size: 40,
+  timeout: 30_000
