@@ -1,1 +1,0 @@
-{"version":3,"sources":["webpack:///app/javascript/tank/sources/git/git.pleroma.social/pleroma/mastofe/app/javascript/core/mailer.js"],"names":[],"mappings":"0FAAA,e","file":"core/mailer.js","sourcesContent":["import 'styles/mailer.scss';\n"],"sourceRoot":""}

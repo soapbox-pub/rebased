@@ -480,7 +480,7 @@ defmodule Pleroma.UserTest do
             )
 
     test "it sends a welcome chat message when Simple policy applied to local instance" do
-      clear_config([:mrf_simple, :media_nsfw], ["localhost"])
+      clear_config([:mrf_simple, :media_nsfw], [{"localhost", ""}])
 
       welcome_user = insert(:user)
       clear_config([:welcome, :chat_message, :enabled], true)
@@ -1649,7 +1649,6 @@ defmodule Pleroma.UserTest do
         ap_enabled: true,
         is_moderator: true,
         is_admin: true,
-        mastofe_settings: %{"a" => "b"},
         mascot: %{"a" => "b"},
         emoji: %{"a" => "b"},
         pleroma_settings_store: %{"q" => "x"},
@@ -1691,7 +1690,6 @@ defmodule Pleroma.UserTest do
              ap_enabled: false,
              is_moderator: false,
              is_admin: false,
-             mastofe_settings: nil,
              mascot: nil,
              emoji: %{},
              pleroma_settings_store: %{},
@@ -1888,9 +1886,7 @@ defmodule Pleroma.UserTest do
       bio = "A.k.a. @nick@domain.com"
 
       expected_text =
-        ~s(A.k.a. <span class="h-card"><a class="u-url mention" data-user="#{remote_user.id}" href="#{
-          remote_user.ap_id
-        }" rel="ugc">@<span>nick@domain.com</span></a></span>)
+        ~s(A.k.a. <span class="h-card"><a class="u-url mention" data-user="#{remote_user.id}" href="#{remote_user.ap_id}" rel="ugc">@<span>nick@domain.com</span></a></span>)
 
       assert expected_text == User.parse_bio(bio, user)
     end
@@ -2199,9 +2195,38 @@ defmodule Pleroma.UserTest do
       [user: insert(:user)]
     end
 
-    test "blank email returns error", %{user: user} do
+    test "blank email returns error if we require an email on registration", %{user: user} do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
       assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, "")
       assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, nil)
+    end
+
+    test "blank email should be fine if we do not require an email on registration", %{user: user} do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
+      assert {:ok, %User{email: nil}} = User.change_email(user, "")
+      assert {:ok, %User{email: nil}} = User.change_email(user, nil)
     end
 
     test "non unique email returns error", %{user: user} do
@@ -2218,6 +2243,25 @@ defmodule Pleroma.UserTest do
 
     test "changes email", %{user: user} do
       assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
+    end
+
+    test "adds email", %{user: user} do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
+      assert {:ok, _} = User.change_email(user, "")
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      assert {:ok, %User{email: "cofe2@cofe.party"}} = User.change_email(user, "cofe2@cofe.party")
     end
   end
 

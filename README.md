@@ -30,7 +30,7 @@ If your platform is not supported, or you just want to be able to edit the sourc
 - [OpenBSD (fi)](https://docs-develop.pleroma.social/backend/installation/openbsd_fi/)
 
 ### OS/Distro packages
-Currently Pleroma is not packaged by any OS/Distros, but if you want to package it for one, we can guide you through the process on our [community channels](#community-channels). If you want to change default options in your Pleroma package, please **discuss it with us first**.
+Currently Pleroma is packaged for [YunoHost](https://yunohost.org). If you want to package Pleroma for any OS/Distros, we can guide you through the process on our [community channels](#community-channels). If you want to change default options in your Pleroma package, please **discuss it with us first**.
 
 ### Docker
 While we don’t provide docker files, other people have written very good ones. Take a look at <https://github.com/angristan/docker-pleroma> or <https://glitch.sh/sn0w/pleroma-docker>.

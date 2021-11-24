@@ -159,6 +159,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
         %{
           key: :replace,
           type: {:list, :tuple},
+          key_placeholder: "instance",
+          value_placeholder: "reason",
           description: """
             **Pattern**: a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
 

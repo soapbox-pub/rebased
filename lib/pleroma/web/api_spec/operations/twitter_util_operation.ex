@@ -121,7 +121,10 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       type: :object,
       required: [:email, :password],
       properties: %{
-        email: %Schema{type: :string, description: "New email"},
+        email: %Schema{
+          type: :string,
+          description: "New email. Set to blank to remove the user's email."
+        },
         password: %Schema{type: :string, description: "Current password"}
       }
     }

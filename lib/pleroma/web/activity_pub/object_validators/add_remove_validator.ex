@@ -10,19 +10,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
 
   require Pleroma.Constants
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.User
 
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:target)
-    field(:object, ObjectValidators.ObjectID)
-    field(:actor, ObjectValidators.ObjectID)
-    field(:type)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
+
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
   end
 
   def cast_and_validate(data) do

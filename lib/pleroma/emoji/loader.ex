@@ -60,9 +60,7 @@ defmodule Pleroma.Emoji.Loader do
 
           if not Enum.empty?(files) do
             Logger.warn(
-              "Found files in the emoji folder. These will be ignored, please move them to a subdirectory\nFound files: #{
-                Enum.join(files, ", ")
-              }"
+              "Found files in the emoji folder. These will be ignored, please move them to a subdirectory\nFound files: #{Enum.join(files, ", ")}"
             )
           end
 
@@ -122,9 +120,7 @@ defmodule Pleroma.Emoji.Loader do
         extensions = Config.get([:emoji, :pack_extensions])
 
         Logger.info(
-          "No emoji.txt found for pack \"#{pack_name}\", assuming all #{
-            Enum.join(extensions, ", ")
-          } files are emoji"
+          "No emoji.txt found for pack \"#{pack_name}\", assuming all #{Enum.join(extensions, ", ")} files are emoji"
         )
 
         make_shortcode_to_file_map(pack_dir, extensions)
