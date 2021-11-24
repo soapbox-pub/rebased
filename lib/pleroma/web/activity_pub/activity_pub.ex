@@ -641,7 +641,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put(:type, ["Create", "Announce"])
       |> Map.put(:user, reading_user)
       |> Map.put(:actor_id, user.ap_id)
-      |> Map.put(:pinned_object_ids, Map.keys(user.pinned_objects))
+      |> Map.put(:pinned_object_ids, (if user.pinned_objects, do: Map.keys(user.pinned_objects), else: []))
 
     params =
       if User.blocks?(reading_user, user) do
