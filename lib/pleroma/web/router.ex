@@ -594,6 +594,8 @@ defmodule Pleroma.Web.Router do
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
+
+    get("/suggestions", SuggestionController, :index2)
   end
 
   scope "/api", Pleroma.Web do

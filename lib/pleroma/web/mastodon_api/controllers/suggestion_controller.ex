@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(Pleroma.Web.Plugs.OAuthScopesPlug, %{scopes: ["read"]} when action == :index)
+  plug(Pleroma.Web.Plugs.OAuthScopesPlug, %{scopes: ["read"]} when action in [:index, :index2])
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -26,7 +26,22 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
     }
   end
 
+  def index2_operation do
+    %OpenApiSpex.Operation{
+      tags: ["Suggestions"],
+      summary: "Follow suggestions (Not implemented)",
+      operationId: "SuggestionController.index2",
+      responses: %{
+        200 => Pleroma.Web.ApiSpec.Helpers.empty_array_response()
+      }
+    }
+  end
+
   @doc "GET /api/v1/suggestions"
   def index(conn, params),
+    do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
+
+  @doc "GET /api/v2/suggestions"
+  def index2(conn, params),
     do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 end

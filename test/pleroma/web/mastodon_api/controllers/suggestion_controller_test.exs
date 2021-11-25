@@ -15,4 +15,13 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
 
     assert res == []
   end
+
+  test "returns empty result (v2)", %{conn: conn} do
+    res =
+      conn
+      |> get("/api/v2/suggestions")
+      |> json_response_and_validate_schema(200)
+
+    assert res == []
+  end
 end
