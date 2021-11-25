@@ -774,6 +774,12 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
+    pipe_through(:api)
+
+    get("/manifest.json", ManifestController, :show)
+  end
+
+  scope "/", Pleroma.Web do
     pipe_through(:mastodon_html)
 
     get("/web/login", MastodonAPI.AuthController, :login)
