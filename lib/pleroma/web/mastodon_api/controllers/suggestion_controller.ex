@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
     do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 
   @doc "GET /api/v2/suggestions"
-  def index2(conn, params) do
+  def index2(%{assigns: %{user: user}} = conn, params) do
     limit = Map.get(params, :limit, 40) |> min(80)
 
     users =
@@ -51,6 +51,6 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
       |> User.Query.build()
       |> Pleroma.Repo.all()
 
-    render(conn, "index.json", %{users: users, source: :staff, skip_visibility_check: true})
+    render(conn, "index.json", %{users: users, source: :staff, for: user})
   end
 end
