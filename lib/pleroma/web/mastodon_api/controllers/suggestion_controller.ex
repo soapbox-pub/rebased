@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   use Pleroma.Web, :controller
+  alias Pleroma.User
 
   require Logger
 
@@ -29,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   def index2_operation do
     %OpenApiSpex.Operation{
       tags: ["Suggestions"],
-      summary: "Follow suggestions (Not implemented)",
+      summary: "Follow suggestions",
       operationId: "SuggestionController.index2",
       responses: %{
         200 => Pleroma.Web.ApiSpec.Helpers.empty_array_response()
@@ -42,6 +43,14 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
     do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 
   @doc "GET /api/v2/suggestions"
-  def index2(conn, params),
-    do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
+  def index2(conn, params) do
+    limit = Map.get(params, :limit, 40) |> min(80)
+
+    users =
+      %{is_suggested: true, limit: limit}
+      |> User.Query.build()
+      |> Pleroma.Repo.all()
+
+    render(conn, "index.json", %{users: users, source: :staff, skip_visibility_check: true})
+  end
 end

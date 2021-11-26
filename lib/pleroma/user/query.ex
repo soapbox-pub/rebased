@@ -167,6 +167,10 @@ defmodule Pleroma.User.Query do
     where(query, [u], u.is_confirmed == false)
   end
 
+  defp compose_query({:is_suggested, bool}, query) do
+    where(query, [u], u.is_suggested == ^bool)
+  end
+
   defp compose_query({:followers, %User{id: id}}, query) do
     query
     |> where([u], u.id != ^id)

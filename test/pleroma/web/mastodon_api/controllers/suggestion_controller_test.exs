@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
   use Pleroma.Web.ConnCase, async: true
+  import Pleroma.Factory
 
   setup do: oauth_access(["read"])
 
@@ -16,12 +17,14 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
     assert res == []
   end
 
-  test "returns empty result (v2)", %{conn: conn} do
+  test "returns v2 suggestions", %{conn: conn} do
+    %{id: user_id} = insert(:user, is_suggested: true)
+
     res =
       conn
       |> get("/api/v2/suggestions")
       |> json_response_and_validate_schema(200)
 
-    assert res == []
+    assert [%{"source" => "staff", "account" => %{"id" => ^user_id}}] = res
   end
 end

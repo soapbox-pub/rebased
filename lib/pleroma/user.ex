@@ -149,6 +149,7 @@ defmodule Pleroma.User do
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
     field(:pinned_objects, :map, default: %{})
+    field(:is_suggested, :boolean, default: false)
 
     embeds_one(
       :notification_settings,
