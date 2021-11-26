@@ -261,6 +261,46 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `PATCH /api/v1/pleroma/admin/users/suggest`
+
+### Suggest a user
+
+Adds the user(s) to follower recommendations.
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## `PATCH /api/v1/pleroma/admin/users/unsuggest`
+
+### Unsuggest a user
+
+Removes the user(s) from follower recommendations.
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user

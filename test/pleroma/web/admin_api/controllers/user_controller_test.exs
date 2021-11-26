@@ -873,6 +873,58 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
              "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
+  test "PATCH /api/pleroma/admin/users/suggest", %{admin: admin, conn: conn} do
+    user1 = insert(:user, is_suggested: false)
+    user2 = insert(:user, is_suggested: false)
+
+    _response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/pleroma/admin/users/suggest",
+        %{nicknames: [user1.nickname, user2.nickname]}
+      )
+      |> json_response_and_validate_schema(200)
+
+    [user1, user2] = Repo.reload!([user1, user2])
+
+    assert user1.is_suggested
+    assert user2.is_suggested
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} added suggested users: @#{user1.nickname}, @#{
+               user2.nickname
+             }"
+  end
+
+  test "PATCH /api/pleroma/admin/users/unsuggest", %{admin: admin, conn: conn} do
+    user1 = insert(:user, is_suggested: true)
+    user2 = insert(:user, is_suggested: true)
+
+    _response =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/pleroma/admin/users/unsuggest",
+        %{nicknames: [user1.nickname, user2.nickname]}
+      )
+      |> json_response_and_validate_schema(200)
+
+    [user1, user2] = Repo.reload!([user1, user2])
+
+    refute user1.is_suggested
+    refute user2.is_suggested
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} removed suggested users: @#{user1.nickname}, @#{
+               user2.nickname
+             }"
+  end
+
   test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
     user = insert(:user)
 

@@ -194,6 +194,9 @@ defmodule Pleroma.Web.Router do
     patch("/users/deactivate", UserController, :deactivate)
     patch("/users/approve", UserController, :approve)
 
+    patch("/users/suggest", UserController, :suggest)
+    patch("/users/unsuggest", UserController, :unsuggest)
+
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
