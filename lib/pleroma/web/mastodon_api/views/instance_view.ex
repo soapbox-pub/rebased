@@ -59,6 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "mastodon_api",
       "mastodon_api_streaming",
       "polls",
+      "v2_suggestions",
       "pleroma_explicit_addressing",
       "shareable_emoji_packs",
       "multifetch",
