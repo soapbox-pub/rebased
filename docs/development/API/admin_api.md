@@ -359,6 +359,22 @@ Removes the user(s) from follower recommendations.
 }
 ```
 
+## `DELETE /api/v1/pleroma/admin/instances/:instance`
+
+### Delete all users and activities from a remote instance
+
+Note: this will trigger a job to remove instance content in the background.
+It may take some time.
+
+- Params:
+  - `instance`: remote instance host
+- Response:
+  - The `instance` name as a string
+
+```json
+"lain.com"
+```
+
 ## `GET /api/v1/pleroma/admin/statuses`
 
 ### Retrives all latest statuses

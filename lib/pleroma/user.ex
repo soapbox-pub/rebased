@@ -148,6 +148,7 @@ defmodule Pleroma.User do
     field(:accepts_chat_messages, :boolean, default: nil)
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
+    field(:accepts_email_list, :boolean, default: false)
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
 
@@ -526,7 +527,8 @@ defmodule Pleroma.User do
         :is_discoverable,
         :actor_type,
         :accepts_chat_messages,
-        :disclose_client
+        :disclose_client,
+        :accepts_email_list
       ]
     )
     |> unique_constraint(:nickname)
@@ -689,7 +691,8 @@ defmodule Pleroma.User do
       :name,
       :nickname,
       :email,
-      :accepts_chat_messages
+      :accepts_chat_messages,
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
@@ -733,7 +736,8 @@ defmodule Pleroma.User do
       :password_confirmation,
       :emoji,
       :accepts_chat_messages,
-      :registration_reason
+      :registration_reason,
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -1737,7 +1741,8 @@ defmodule Pleroma.User do
       fields: [],
       raw_fields: [],
       is_discoverable: false,
-      also_known_as: []
+      also_known_as: [],
+      accepts_email_list: false
       # id: preserved
       # ap_id: preserved
       # nickname: preserved

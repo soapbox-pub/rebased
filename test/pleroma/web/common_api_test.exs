@@ -18,6 +18,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.PollWorker
 
   import Pleroma.Factory
   import Mock
@@ -48,6 +49,12 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert object.data["type"] == "Question"
       assert object.data["oneOf"] |> length() == 2
+
+      assert_enqueued(
+        worker: PollWorker,
+        args: %{op: "poll_end", activity_id: activity.id},
+        scheduled_at: NaiveDateTime.from_iso8601!(object.data["closed"])
+      )
     end
   end
 

@@ -229,6 +229,7 @@ Notes:
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
+* `blockers_visible`: Whether a user can see the posts of users who blocked them
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
@@ -385,6 +386,7 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"].
 * `parsers`: list of Rich Media parsers.
+* `oembed_providers_enabled`: Embed rich media from a list of known providers. This takes precedence over other parsers.
 * `failure_backoff`: Amount of milliseconds after request failure, during which the request will not be retried.
 
 ## HTTP server

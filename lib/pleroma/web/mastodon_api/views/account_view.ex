@@ -292,6 +292,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
+    |> maybe_put_accepts_email_list(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
   end
 
@@ -403,6 +404,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_unread_notification_count(data, _, _), do: data
+
+  defp maybe_put_accepts_email_list(data, %User{id: user_id}, %User{id: user_id} = user) do
+    Kernel.put_in(
+      data,
+      [:pleroma, :accepts_email_list],
+      user.accepts_email_list
+    )
+  end
+
+  defp maybe_put_accepts_email_list(data, _, _), do: data
 
   defp maybe_put_email_address(data, %User{id: user_id}, %User{id: user_id} = user) do
     Kernel.put_in(

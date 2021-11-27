@@ -1688,6 +1688,11 @@ config :pleroma, :config_description, [
         description: "Whether to federate blocks to other instances"
       },
       %{
+        key: :blockers_visible,
+        type: :boolean,
+        description: "Whether a user can see someone who has blocked them"
+      },
+      %{
         key: :sign_object_fetches,
         type: :boolean,
         description: "Sign object fetches with HTTP signatures"
@@ -1997,6 +2002,12 @@ config :pleroma, :config_description, [
         key: :enabled,
         type: :boolean,
         description: "Enables RichMedia parsing of URLs"
+      },
+      %{
+        key: :oembed_providers_enabled,
+        type: :boolean,
+        description:
+          "Embed rich media from a list of known providers. This takes precedence over other parsers."
       },
       %{
         key: :ignore_hosts,

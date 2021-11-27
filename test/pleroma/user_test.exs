@@ -681,6 +681,16 @@ defmodule Pleroma.UserTest do
 
       assert user.is_confirmed
     end
+
+    test "it sets 'accepts_email_list'" do
+      params = Map.put_new(@full_user_data, :accepts_email_list, true)
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_email_list
+    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -752,6 +762,17 @@ defmodule Pleroma.UserTest do
       changeset = User.register_changeset(%User{}, params)
 
       refute changeset.valid?
+    end
+  end
+
+  describe "update_changeset/2" do
+    test "it sets :accepts_email_list" do
+      changeset =
+        %User{accepts_email_list: false}
+        |> User.update_changeset(%{accepts_email_list: true})
+
+      assert changeset.valid?
+      assert %User{accepts_email_list: true} = Ecto.Changeset.apply_changes(changeset)
     end
   end
 
