@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
   use Pleroma.Web.ConnCase, async: true
   alias Pleroma.UserRelationship
+  alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
   setup do: oauth_access(["read", "write"])
@@ -46,7 +47,19 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
 
   test "returns v2 suggestions excluding blocked accounts", %{conn: conn, user: blocker} do
     blocked = insert(:user, is_suggested: true)
-    {:ok, _} = Pleroma.Web.CommonAPI.block(blocker, blocked)
+    {:ok, _} = CommonAPI.block(blocker, blocked)
+
+    res =
+      conn
+      |> get("/api/v2/suggestions")
+      |> json_response_and_validate_schema(200)
+
+    assert [] = res
+  end
+
+  test "returns v2 suggestions excluding followed accounts", %{conn: conn, user: follower} do
+    followed = insert(:user, is_suggested: true)
+    {:ok, _, _, _} = CommonAPI.follow(follower, followed)
 
     res =
       conn

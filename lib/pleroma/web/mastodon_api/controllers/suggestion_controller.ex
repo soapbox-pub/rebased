@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   use Pleroma.Web, :controller
   import Ecto.Query
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
   alias Pleroma.UserRelationship
 
@@ -66,20 +67,15 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
     do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 
   @doc "GET /api/v2/suggestions"
-  def index2(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
+  def index2(%{assigns: %{user: user}} = conn, params) do
     limit = Map.get(params, :limit, 40) |> min(80)
 
     users =
       %{is_suggested: true, invisible: false, limit: limit}
       |> User.Query.build()
-      |> where([u], u.id != ^user_id)
-      |> join(:left, [u], r in UserRelationship,
-        as: :relationships,
-        on:
-          r.target_id == u.id and r.source_id == ^user_id and
-            r.relationship_type in [:block, :mute, :suggestion_dismiss]
-      )
-      |> where([relationships: r], is_nil(r.target_id))
+      |> exclude_user(user)
+      |> exclude_relationships(user, [:block, :mute, :suggestion_dismiss])
+      |> exclude_following(user)
       |> Pleroma.Repo.all()
 
     render(conn, "index.json", %{
@@ -88,6 +84,30 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
       for: user,
       skip_visibility_check: true
     })
+  end
+
+  defp exclude_user(query, %User{id: user_id}) do
+    where(query, [u], u.id != ^user_id)
+  end
+
+  defp exclude_relationships(query, %User{id: user_id}, relationship_types) do
+    query
+    |> join(:left, [u], r in UserRelationship,
+      as: :user_relationships,
+      on:
+        r.target_id == u.id and r.source_id == ^user_id and
+          r.relationship_type in ^relationship_types
+    )
+    |> where([user_relationships: r], is_nil(r.target_id))
+  end
+
+  defp exclude_following(query, %User{id: user_id}) do
+    query
+    |> join(:left, [u], r in FollowingRelationship,
+      as: :following_relationships,
+      on: r.following_id == u.id and r.follower_id == ^user_id and r.state == :follow_accept
+    )
+    |> where([following_relationships: r], is_nil(r.following_id))
   end
 
   @doc "DELETE /api/v1/suggestions/:account_id"
