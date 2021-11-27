@@ -877,7 +877,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     user1 = insert(:user, is_suggested: false)
     user2 = insert(:user, is_suggested: false)
 
-    _response =
+    response =
       conn
       |> put_req_header("content-type", "application/json")
       |> patch(
@@ -886,6 +886,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       )
       |> json_response_and_validate_schema(200)
 
+    assert Enum.map(response["users"], & &1["is_suggested"]) == [true, true]
     [user1, user2] = Repo.reload!([user1, user2])
 
     assert user1.is_suggested
@@ -901,7 +902,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     user1 = insert(:user, is_suggested: true)
     user2 = insert(:user, is_suggested: true)
 
-    _response =
+    response =
       conn
       |> put_req_header("content-type", "application/json")
       |> patch(
@@ -910,6 +911,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       )
       |> json_response_and_validate_schema(200)
 
+    assert Enum.map(response["users"], & &1["is_suggested"]) == [false, false]
     [user1, user2] = Repo.reload!([user1, user2])
 
     refute user1.is_suggested
@@ -954,6 +956,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       "display_name" => HTML.strip_tags(user.name || user.nickname),
       "is_confirmed" => true,
       "is_approved" => true,
+      "is_suggested" => false,
       "url" => user.ap_id,
       "registration_reason" => nil,
       "actor_type" => "Person",
