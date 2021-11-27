@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   use Pleroma.Web, :controller
+  import Ecto.Query
   alias Pleroma.User
   alias Pleroma.UserRelationship
 
@@ -65,15 +66,28 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
     do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 
   @doc "GET /api/v2/suggestions"
-  def index2(%{assigns: %{user: user}} = conn, params) do
+  def index2(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
     limit = Map.get(params, :limit, 40) |> min(80)
 
     users =
-      %{is_suggested: true, limit: limit}
+      %{is_suggested: true, invisible: false, limit: limit}
       |> User.Query.build()
+      |> where([u], u.id != ^user_id)
+      |> join(:left, [u], r in UserRelationship,
+        as: :relationships,
+        on:
+          r.target_id == u.id and r.source_id == ^user_id and
+            r.relationship_type in [:block, :mute, :suggestion_dismiss]
+      )
+      |> where([relationships: r], is_nil(r.target_id))
       |> Pleroma.Repo.all()
 
-    render(conn, "index.json", %{users: users, source: :staff, for: user})
+    render(conn, "index.json", %{
+      users: users,
+      source: :staff,
+      for: user,
+      skip_visibility_check: true
+    })
   end
 
   @doc "DELETE /api/v1/suggestions/:account_id"

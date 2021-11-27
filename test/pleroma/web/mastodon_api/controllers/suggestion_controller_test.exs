@@ -29,6 +29,33 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
     assert [%{"source" => "staff", "account" => %{"id" => ^user_id}}] = res
   end
 
+  test "returns v2 suggestions excluding dismissed accounts", %{conn: conn} do
+    %{id: user_id} = insert(:user, is_suggested: true)
+
+    conn
+    |> delete("/api/v1/suggestions/#{user_id}")
+    |> json_response_and_validate_schema(200)
+
+    res =
+      conn
+      |> get("/api/v2/suggestions")
+      |> json_response_and_validate_schema(200)
+
+    assert [] = res
+  end
+
+  test "returns v2 suggestions excluding blocked accounts", %{conn: conn, user: blocker} do
+    blocked = insert(:user, is_suggested: true)
+    {:ok, _} = Pleroma.Web.CommonAPI.block(blocker, blocked)
+
+    res =
+      conn
+      |> get("/api/v2/suggestions")
+      |> json_response_and_validate_schema(200)
+
+    assert [] = res
+  end
+
   test "dismiss suggestion", %{conn: conn, user: source} do
     target = insert(:user, is_suggested: true)
 

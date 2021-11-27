@@ -46,6 +46,7 @@ defmodule Pleroma.User.Query do
             unconfirmed: boolean(),
             is_admin: boolean(),
             is_moderator: boolean(),
+            is_suggested: boolean(),
             super_users: boolean(),
             invisible: boolean(),
             internal: boolean(),
