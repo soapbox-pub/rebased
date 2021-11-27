@@ -4,9 +4,10 @@
 
 defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
   use Pleroma.Web.ConnCase, async: true
+  alias Pleroma.UserRelationship
   import Pleroma.Factory
 
-  setup do: oauth_access(["read"])
+  setup do: oauth_access(["read", "write"])
 
   test "returns empty result", %{conn: conn} do
     res =
@@ -26,5 +27,17 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert [%{"source" => "staff", "account" => %{"id" => ^user_id}}] = res
+  end
+
+  test "dismiss suggestion", %{conn: conn, user: source} do
+    target = insert(:user, is_suggested: true)
+
+    res =
+      conn
+      |> delete("/api/v1/suggestions/#{target.id}")
+      |> json_response_and_validate_schema(200)
+
+    assert res == %{}
+    assert UserRelationship.exists?(:suggestion_dismiss, source, target)
   end
 end

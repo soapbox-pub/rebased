@@ -894,9 +894,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     log_entry = Repo.one(ModerationLog)
 
     assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} added suggested users: @#{user1.nickname}, @#{
-               user2.nickname
-             }"
+             "@#{admin.nickname} added suggested users: @#{user1.nickname}, @#{user2.nickname}"
   end
 
   test "PATCH /api/pleroma/admin/users/unsuggest", %{admin: admin, conn: conn} do
@@ -920,9 +918,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     log_entry = Repo.one(ModerationLog)
 
     assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} removed suggested users: @#{user1.nickname}, @#{
-               user2.nickname
-             }"
+             "@#{admin.nickname} removed suggested users: @#{user1.nickname}, @#{user2.nickname}"
   end
 
   test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
