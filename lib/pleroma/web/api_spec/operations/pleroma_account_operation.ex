@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.AccountOperation
   alias Pleroma.Web.ApiSpec.StatusOperation
 
   import Pleroma.Web.ApiSpec.Helpers
@@ -55,6 +56,27 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
             "Array of Statuses",
             "application/json",
             StatusOperation.array_of_statuses()
+          ),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def endorsements_operation do
+    %Operation{
+      tags: ["Retrieve account information"],
+      summary: "Endorsements",
+      description: "Returns endorsed accounts",
+      operationId: "PleromaAPI.AccountController.endorsements",
+      parameters: [id_param() | pagination_params()],
+      security: [%{"oAuth" => ["read:account"]}],
+      responses: %{
+        200 =>
+          Operation.response(
+            "Array of Accounts",
+            "application/json",
+            AccountOperation.array_of_accounts()
           ),
         403 => Operation.response("Forbidden", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)

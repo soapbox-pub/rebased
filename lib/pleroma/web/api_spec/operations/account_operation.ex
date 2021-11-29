@@ -328,6 +328,35 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def endorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Endorse",
+      operationId: "AccountController.endorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description:
+        "Addds the given account to endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
+  def unendorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Unendorse",
+      operationId: "AccountController.unendorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Removes the given account from endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def follow_by_uri_operation do
     %Operation{
       tags: ["Account actions"],
