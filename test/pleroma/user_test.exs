@@ -2410,13 +2410,16 @@ defmodule Pleroma.UserTest do
   test "active_user_count/1" do
     insert(:user)
     insert(:user, %{local: false})
-    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -5)})
-    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -3)})
     insert(:user, %{last_active_at: NaiveDateTime.utc_now()})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), days: -15)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -6)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), months: -7)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), years: -2)})
 
     assert User.active_user_count() == 2
-    assert User.active_user_count(6) == 3
-    assert User.active_user_count(1) == 1
+    assert User.active_user_count(180) == 3
+    assert User.active_user_count(365) == 4
+    assert User.active_user_count(1000) == 5
   end
 
   describe "pins" do
