@@ -63,6 +63,15 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
     end
   end
 
+  describe "instance_list_from_tuples/1" do
+    test "returns a list of instances from a list of {instance, reason} tuples" do
+      list = [{"some.tld", "a reason"}, {"other.tld", "another reason"}]
+      expected = ["some.tld", "other.tld"]
+
+      assert MRF.instance_list_from_tuples(list) == expected
+    end
+  end
+
   describe "describe/0" do
     test "it works as expected with noop policy" do
       clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.NoOpPolicy])

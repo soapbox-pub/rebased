@@ -96,14 +96,12 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
+    plug(Pleroma.Web.Plugs.UserIsStaffPlug)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
-  pipeline :mastodon_html do
-    plug(:browser)
-    plug(:authenticate)
-    plug(:after_auth)
+  pipeline :require_admin do
+    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
   end
 
   pipeline :pleroma_html do
@@ -160,7 +158,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
+    pipe_through([:admin_api, :require_admin])
 
     put("/users/disable_mfa", AdminAPIController, :disable_mfa)
     put("/users/tag", AdminAPIController, :tag_users)
@@ -213,7 +211,8 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
-    get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+    get("/instances/:instance/statuses", InstanceController, :list_statuses)
+    delete("/instances/:instance", InstanceController, :delete)
 
     get("/instance_document/:name", InstanceDocumentController, :show)
     patch("/instance_document/:name", InstanceDocumentController, :update)
@@ -265,7 +264,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
-      pipe_through(:admin_api)
+      pipe_through([:admin_api, :require_admin])
 
       post("/", EmojiPackController, :create)
       patch("/", EmojiPackController, :update)
@@ -280,7 +279,7 @@ defmodule Pleroma.Web.Router do
 
     # Modifying packs
     scope "/packs" do
-      pipe_through(:admin_api)
+      pipe_through([:admin_api, :require_admin])
 
       get("/import", EmojiPackController, :import_from_filesystem)
       get("/remote", EmojiPackController, :remote)
@@ -542,13 +541,6 @@ defmodule Pleroma.Web.Router do
     get("/timelines/list/:list_id", TimelineController, :list)
   end
 
-  scope "/api/web", Pleroma.Web do
-    pipe_through(:authenticated_api)
-
-    # Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere
-    put("/settings", MastoFEController, :put_settings)
-  end
-
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:app_api)
 
@@ -742,23 +734,6 @@ defmodule Pleroma.Web.Router do
 
   scope "/nodeinfo", Pleroma.Web do
     get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
-  end
-
-  scope "/", Pleroma.Web do
-    pipe_through(:api)
-
-    get("/web/manifest.json", MastoFEController, :manifest)
-  end
-
-  scope "/", Pleroma.Web do
-    pipe_through(:mastodon_html)
-
-    get("/web/login", MastodonAPI.AuthController, :login)
-    delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
-
-    get("/web/*path", MastoFEController, :index)
-
-    get("/embed/:id", EmbedController, :show)
   end
 
   scope "/", Pleroma.Web do

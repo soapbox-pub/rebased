@@ -302,7 +302,7 @@ defmodule Pleroma.Activity do
     |> Queries.by_object_id()
     |> Queries.exclude_type("Delete")
     |> select([u], u)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: :infinity)
     |> elem(1)
     |> Enum.find(fn
       %{data: %{"type" => "Create", "object" => ap_id}} when is_binary(ap_id) -> ap_id == id

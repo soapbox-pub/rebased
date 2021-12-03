@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.4.1"),
+      version: version("2.4.51"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -138,15 +138,15 @@ defmodule Pleroma.Mixfile do
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
       {:jason, "~> 1.2"},
-      {:mogrify, "~> 0.7.4"},
+      {:mogrify, "~> 0.9.1"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
-      {:earmark, "1.4.15"},
+      {:earmark, "~> 1.4.15"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/crypt.git",
-       ref: "cf2aa3f11632e8b0634810a15b3e612c7526f6a3"},
+       git: "https://github.com/msantos/crypt.git",
+       ref: "f75cd55325e33cbea198fb41fe41871392f8fb76"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption,
        git: "https://github.com/lanodan/elixir-web-push-encryption.git", branch: "bugfix/otp-24"},
@@ -158,7 +158,7 @@ defmodule Pleroma.Mixfile do
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
       {:linkify, "~> 0.5.1"},
-      {:http_signatures, "~> 0.1.0"},
+      {:http_signatures, "~> 0.1.1"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
       {:prometheus, "~> 4.6"},
@@ -208,7 +208,7 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "~> 1.17.0", override: true},
+      {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()

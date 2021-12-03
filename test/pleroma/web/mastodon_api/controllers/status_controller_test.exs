@@ -16,6 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.ScheduledActivityWorker
 
   import Pleroma.Factory
 
@@ -705,11 +706,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert {:ok, %{id: activity_id}} =
-               perform_job(Pleroma.Workers.ScheduledActivityWorker, %{
+               perform_job(ScheduledActivityWorker, %{
                  activity_id: scheduled_id
                })
 
-      assert Repo.all(Oban.Job) == []
+      refute_enqueued(worker: ScheduledActivityWorker)
 
       object =
         Activity
