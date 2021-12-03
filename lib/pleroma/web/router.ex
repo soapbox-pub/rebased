@@ -192,6 +192,9 @@ defmodule Pleroma.Web.Router do
     post("/users/unfollow", UserController, :unfollow)
     post("/users", UserController, :create)
 
+    patch("/users/suggest", UserController, :suggest)
+    patch("/users/unsuggest", UserController, :unsuggest)
+
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
@@ -554,6 +557,7 @@ defmodule Pleroma.Web.Router do
     delete("/push/subscription", SubscriptionController, :delete)
 
     get("/suggestions", SuggestionController, :index)
+    delete("/suggestions/:account_id", SuggestionController, :dismiss)
 
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
@@ -612,6 +616,8 @@ defmodule Pleroma.Web.Router do
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
+
+    get("/suggestions", SuggestionController, :index2)
   end
 
   scope "/api", Pleroma.Web do

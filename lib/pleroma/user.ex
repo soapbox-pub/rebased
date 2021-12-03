@@ -150,6 +150,7 @@ defmodule Pleroma.User do
     field(:disclose_client, :boolean, default: true)
     field(:accepts_email_list, :boolean, default: false)
     field(:pinned_objects, :map, default: %{})
+    field(:is_suggested, :boolean, default: false)
 
     embeds_one(
       :notification_settings,
@@ -1680,6 +1681,22 @@ defmodule Pleroma.User do
   end
 
   def confirm(%User{} = user), do: {:ok, user}
+
+  def set_suggestion(users, is_suggested) when is_list(users) do
+    Repo.transaction(fn ->
+      Enum.map(users, fn user ->
+        with {:ok, user} <- set_suggestion(user, is_suggested), do: user
+      end)
+    end)
+  end
+
+  def set_suggestion(%User{is_suggested: is_suggested} = user, is_suggested), do: {:ok, user}
+
+  def set_suggestion(%User{} = user, is_suggested) when is_boolean(is_suggested) do
+    user
+    |> change(is_suggested: is_suggested)
+    |> update_and_set_cache()
+  end
 
   def update_notification_settings(%User{} = user, settings) do
     user
