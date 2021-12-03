@@ -736,6 +736,12 @@ defmodule Pleroma.Web.Router do
     get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
   end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:pleroma_html)
+
+    post("/auth/password", TwitterAPI.PasswordController, :request)
+  end
+
   scope "/proxy/", Pleroma.Web do
     get("/preview/:sig/:url", MediaProxy.MediaProxyController, :preview)
     get("/preview/:sig/:url/:filename", MediaProxy.MediaProxyController, :preview)
