@@ -94,6 +94,7 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "internal",
       ".well-known",
       "nodeinfo",
+      "auth",
       "proxy",
       "test",
       "user_exists",
