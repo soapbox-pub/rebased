@@ -756,11 +756,15 @@ defmodule Pleroma.Web.Router do
     get("/web/login", MastodonAPI.AuthController, :login)
     delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
 
-    post("/auth/password", MastodonAPI.AuthController, :password_reset)
-
     get("/web/*path", MastoFEController, :index)
 
     get("/embed/:id", EmbedController, :show)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:pleroma_html)
+
+    post("/auth/password", TwitterAPI.PasswordController, :request)
   end
 
   scope "/proxy/", Pleroma.Web do
