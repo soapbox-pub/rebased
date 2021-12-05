@@ -12,10 +12,16 @@ defmodule Pleroma.Telemetry.Logger do
     [:pleroma, :connection_pool, :reclaim, :stop],
     [:pleroma, :connection_pool, :provision_failure],
     [:pleroma, :connection_pool, :client, :dead],
-    [:pleroma, :connection_pool, :client, :add]
+    [:pleroma, :connection_pool, :client, :add],
+    [:pleroma, :repo, :query]
   ]
   def attach do
-    :telemetry.attach_many("pleroma-logger", @events, &handle_event/4, [])
+    :telemetry.attach_many(
+      "pleroma-logger",
+      @events,
+      &Pleroma.Telemetry.Logger.handle_event/4,
+      []
+    )
   end
 
   # Passing anonymous functions instead of strings to logger is intentional,
@@ -91,4 +97,39 @@ defmodule Pleroma.Telemetry.Logger do
   end
 
   def handle_event([:pleroma, :connection_pool, :client, :add], _, _, _), do: :ok
+
+  def handle_event(
+        [:pleroma, :repo, :query] = _name,
+        %{query_time: query_time} = _measurements,
+        %{source: source, query: query} = _metadata,
+        _config
+      )
+      when query_time > 500_000 and source not in [nil, "oban_jobs"] do
+    {:current_stacktrace, stacktrace} = Process.info(self(), :current_stacktrace)
+
+    stacktrace =
+      Enum.filter(stacktrace, fn
+        {__MODULE__, _, _, _} ->
+          false
+
+        {mod, _, _, _} ->
+          mod
+          |> to_string()
+          |> String.starts_with?("Elixir.Pleroma.")
+      end)
+
+    Logger.warn(fn ->
+      """
+      Query took longer than 500ms!
+
+      Total time: #{query_time / 1_000}ms
+
+      #{inspect(query)}
+
+      #{inspect(stacktrace, pretty: true)}
+      """
+    end)
+  end
+
+  def handle_event([:pleroma, :repo, :query], _measurements, _metadata, _config), do: :ok
 end
