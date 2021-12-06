@@ -24,6 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     with {:ok, follower, _followed, _} <- result do
       options = cast_params(params)
       set_reblogs_visibility(options[:reblogs], result)
+      set_subscription(options[:notify], result)
       {:ok, follower}
     end
   end
@@ -34,6 +35,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
   defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do
     CommonAPI.show_reblogs(follower, followed)
+  end
+
+  defp set_subscription(true, {:ok, follower, followed, _}) do
+    User.subscribe(follower, followed)
+  end
+
+  defp set_subscription(_, {:ok, follower, followed, _}) do
+    User.unsubscribe(follower, followed)
   end
 
   @spec get_followers(User.t(), map()) :: list(User.t())
@@ -73,7 +82,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean,
-      account_ap_id: :string
+      account_ap_id: :string,
+      notify: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
