@@ -362,8 +362,7 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
-    deactivated_users_query =
-      from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
+    deactivated_users_query = from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
 
     from(activity in query, where: activity.actor not in subquery(deactivated_users_query))
   end
