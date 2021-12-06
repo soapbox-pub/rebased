@@ -41,9 +41,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     User.subscribe(follower, followed)
   end
 
-  defp set_subscription(_, {:ok, follower, followed, _}) do
+  defp set_subscription(false, {:ok, follower, followed, _}) do
     User.unsubscribe(follower, followed)
   end
+
+  defp set_subscription(_, _), do: {:ok, nil}
 
   @spec get_followers(User.t(), map()) :: list(User.t())
   def get_followers(user, params \\ %{}) do

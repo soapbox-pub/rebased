@@ -284,7 +284,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             "muting_notifications" => false,
             "requested" => false,
             "showing_reblogs" => true,
-            "subscribing" => false
+            "subscribing" => false,
+            "notifying" => false
           },
           "skip_thread_containment" => false,
           "tags" => []

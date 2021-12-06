@@ -196,7 +196,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           "muting_notifications" => false,
           "requested" => false,
           "showing_reblogs" => true,
-          "subscribing" => false
+          "subscribing" => false,
+          "notifying" => false
         },
         "settings_store" => %{
           "pleroma-fe" => %{}
