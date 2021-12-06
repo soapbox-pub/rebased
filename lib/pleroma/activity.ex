@@ -362,11 +362,10 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
-    deactivated_users =
+    deactivated_users_query =
       from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
-      |> Repo.all()
 
-    Activity.Queries.exclude_authors(query, deactivated_users)
+    from(activity in query, where: activity.actor not in subquery(deactivated_users_query))
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
