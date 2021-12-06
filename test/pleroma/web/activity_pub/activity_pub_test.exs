@@ -783,13 +783,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, activity_one} = CommonAPI.post(deactivated, %{status: "hey!"})
     {:ok, activity_two} = CommonAPI.post(active, %{status: "yay!"})
     {:ok, _updated_user} = User.set_activation(deactivated, false)
-  
+
     activities = ActivityPub.fetch_activities([], %{})
-  
+
     refute Enum.member?(activities, activity_one)
     assert Enum.member?(activities, activity_two)
   end
-
 
   test "always see your own posts even when they address people you block" do
     user = insert(:user)
