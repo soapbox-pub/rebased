@@ -63,8 +63,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         date: date
       })
 
-    with {:ok, %{status: code}} when code in 200..299 <-
-           result =
+    with {:ok, %{status: code}} = result when code in 200..299 <-
              HTTP.post(
                inbox,
                json,
