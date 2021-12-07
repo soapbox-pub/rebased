@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                      "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
                    "mediaType" => "video/mp4",
                    "type" => "Link",
-                   "width" => nil,
+                   "width" => 480,
                    "height" => nil
                  }
                ]
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                    "mediaType" => "video/mp4",
                    "type" => "Link",
                    "width" => nil,
-                   "height" => nil
+                   "height" => 1080
                  }
                ]
              }
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.VideoHandlingTest do
                    "mediaType" => "video/mp4",
                    "type" => "Link",
                    "width" => nil,
-                   "height" => nil
+                   "height" => 1080
                  }
                ]
              }
