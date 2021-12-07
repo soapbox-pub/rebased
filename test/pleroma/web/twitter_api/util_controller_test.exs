@@ -26,11 +26,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings", %{user: user, conn: conn} do
       conn
       |> put(
-        "/api/pleroma/notification_settings?#{
-          URI.encode_query(%{
-            block_from_strangers: true
-          })
-        }"
+        "/api/pleroma/notification_settings?#{URI.encode_query(%{block_from_strangers: true})}"
       )
       |> json_response_and_validate_schema(:ok)
 
@@ -45,11 +41,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings to enable hiding contents", %{user: user, conn: conn} do
       conn
       |> put(
-        "/api/pleroma/notification_settings?#{
-          URI.encode_query(%{
-            hide_notification_contents: 1
-          })
-        }"
+        "/api/pleroma/notification_settings?#{URI.encode_query(%{hide_notification_contents: 1})}"
       )
       |> json_response_and_validate_schema(:ok)
 
@@ -302,15 +294,52 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert %{"error" => "Missing field: email."} = json_response_and_validate_schema(conn, 400)
     end
 
-    test "with proper permissions, valid password and blank email", %{
-      conn: conn
-    } do
+    test "with proper permissions, valid password and blank email, when instance requires user email",
+         %{
+           conn: conn
+         } do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
       conn =
         conn
         |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/pleroma/change_email", %{password: "test", email: ""})
 
       assert json_response_and_validate_schema(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with proper permissions, valid password and blank email, when instance does not require user email",
+         %{
+           conn: conn
+         } do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test", email: ""})
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
 
     test "with proper permissions, valid password and non unique email", %{

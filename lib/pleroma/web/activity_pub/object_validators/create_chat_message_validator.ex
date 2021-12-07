@@ -17,11 +17,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   @primary_key false
 
   embedded_schema do
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        activity_fields()
+      end
+    end
+
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:actor, ObjectValidators.ObjectID)
     field(:type, :string)
     field(:to, ObjectValidators.Recipients, default: [])
-    field(:object, ObjectValidators.ObjectID)
   end
 
   def cast_and_apply(data) do

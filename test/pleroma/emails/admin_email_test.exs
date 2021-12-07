@@ -27,11 +27,7 @@ defmodule Pleroma.Emails.AdminEmailTest do
     assert res.subject == "#{config[:name]} Report"
 
     assert res.html_body ==
-             "<p>Reported by: <a href=\"#{reporter_url}\">#{reporter.nickname}</a></p>\n<p>Reported Account: <a href=\"#{
-               account_url
-             }\">#{account.nickname}</a></p>\n<p>Comment: Test comment\n<p> Statuses:\n  <ul>\n    <li><a href=\"#{
-               status_url
-             }\">#{status_url}</li>\n  </ul>\n</p>\n\n<p>\n<a href=\"http://localhost:4001/pleroma/admin/#/reports/index\">View Reports in AdminFE</a>\n"
+             "<p>Reported by: <a href=\"#{reporter_url}\">#{reporter.nickname}</a></p>\n<p>Reported Account: <a href=\"#{account_url}\">#{account.nickname}</a></p>\n<p>Comment: Test comment\n<p> Statuses:\n  <ul>\n    <li><a href=\"#{status_url}\">#{status_url}</li>\n  </ul>\n</p>\n\n<p>\n<a href=\"http://localhost:4001/pleroma/admin/#/reports/index\">View Reports in AdminFE</a>\n"
   end
 
   test "it works when the reporter is a remote user without email" do
