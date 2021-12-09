@@ -17,14 +17,14 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
     # Let the user make 100 posts
 
     1..100
-    |> Enum.each(fn i -> CommonAPI.post(user, %{"status" => to_string(i)}) end)
+    |> Enum.each(fn i -> CommonAPI.post(user, %{status: to_string(i)}) end)
 
     # Let 10 random users post
     posts =
       users
       |> Enum.take_random(10)
       |> Enum.map(fn {:ok, random_user} ->
-        {:ok, activity} = CommonAPI.post(random_user, %{"status" => "."})
+        {:ok, activity} = CommonAPI.post(random_user, %{status: "."})
         activity
       end)
 
@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
             |> Conn.assign(:user, reading_user)
             |> Conn.assign(:skip_link_headers, true)
 
-          Pleroma.Web.MastodonAPI.AccountController.statuses(conn, %{"id" => user.id})
+          Pleroma.Web.MastodonAPI.AccountController.statuses(conn, %{id: user.id})
         end
       },
       inputs: %{"user" => user, "no user" => nil},
@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
     )
 
     users
-    |> Enum.each(fn {:ok, follower, user} -> Pleroma.User.follow(follower, user) end)
+    |> Enum.each(fn {:ok, follower} -> Pleroma.User.follow(follower, user) end)
 
     Benchee.run(
       %{
@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
             |> Conn.assign(:user, reading_user)
             |> Conn.assign(:skip_link_headers, true)
 
-          Pleroma.Web.MastodonAPI.AccountController.statuses(conn, %{"id" => user.id})
+          Pleroma.Web.MastodonAPI.AccountController.statuses(conn, %{id: user.id})
         end
       },
       inputs: %{"user" => user, "no user" => nil},
