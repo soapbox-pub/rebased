@@ -524,4 +524,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                )
     end
   end
+
+  describe "fix_attachments/1" do
+    test "puts dimensions into attachment url field" do
+      object = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => "https://media.example.tld/1.jpg",
+            "width" => 880,
+            "height" => 960,
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      expected = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => [
+              %{
+                "type" => "Link",
+                "mediaType" => "image/jpeg",
+                "href" => "https://media.example.tld/1.jpg",
+                "width" => 880,
+                "height" => 960
+              }
+            ],
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_attachments(object) == expected
+    end
+  end
 end
