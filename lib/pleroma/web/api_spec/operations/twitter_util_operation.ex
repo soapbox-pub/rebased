@@ -246,7 +246,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
           type: :string,
           description: "The user's own password for confirmation.",
           format: :password
-        },
+        }
       },
       example: %{
         "password" => "prettyp0ony1313"
