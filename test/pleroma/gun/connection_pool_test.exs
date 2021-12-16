@@ -46,6 +46,8 @@ defmodule Pleroma.Gun.ConnectionPoolTest do
       end
   end
 
+  @tag :skip
+  # https://git.pleroma.social/pleroma/pleroma/-/issues/2628
   test "connection limit is respected with concurrent requests" do
     clear_config([:connections_pool, :max_connections]) do
       clear_config([:connections_pool, :max_connections], 1)

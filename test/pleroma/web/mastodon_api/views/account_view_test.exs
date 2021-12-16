@@ -83,6 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        is_suggested: false,
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
@@ -183,6 +184,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        is_suggested: false,
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
@@ -485,6 +487,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                %{user: user, for: user}
              )[:pleroma][:email] == user.email
     end
+  end
+
+  test "shows accepts_email_list only to the account owner" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    user = User.get_cached_by_ap_id(user.ap_id)
+
+    assert AccountView.render(
+             "show.json",
+             %{user: user, for: other_user}
+           )[:pleroma][:accepts_email_list] == nil
+
+    assert AccountView.render(
+             "show.json",
+             %{user: user, for: user}
+           )[:pleroma][:accepts_email_list] == user.accepts_email_list
   end
 
   describe "follow requests counter" do

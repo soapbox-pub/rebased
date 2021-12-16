@@ -68,12 +68,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     end
   end
 
-  defp handle_href(href, mediaType) do
+  defp handle_href(href, mediaType, data) do
     [
       %{
         "href" => href,
         "type" => "Link",
-        "mediaType" => mediaType
+        "mediaType" => mediaType,
+        "width" => data["width"],
+        "height" => data["height"]
       }
     ]
   end
@@ -81,10 +83,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   defp fix_url(data) do
     cond do
       is_binary(data["url"]) ->
-        Map.put(data, "url", handle_href(data["url"], data["mediaType"]))
+        Map.put(data, "url", handle_href(data["url"], data["mediaType"], data))
 
       is_binary(data["href"]) and data["url"] == nil ->
-        Map.put(data, "url", handle_href(data["href"], data["mediaType"]))
+        Map.put(data, "url", handle_href(data["href"], data["mediaType"], data))
 
       true ->
         data

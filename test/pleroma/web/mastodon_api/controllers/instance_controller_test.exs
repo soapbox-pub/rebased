@@ -48,6 +48,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["metadata"]["fields_limits"]
     assert result["pleroma"]["vapid_public_key"]
     assert result["pleroma"]["stats"]["mau"] == 0
+    assert result["soapbox"]["version"] =~ "."
 
     assert email == from_config_email
     assert thumbnail == from_config_thumbnail

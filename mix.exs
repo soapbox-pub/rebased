@@ -87,7 +87,7 @@ defmodule Pleroma.Mixfile do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks", "priv/scrubbers"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -133,6 +133,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 3.1", override: true},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
+      {:csv, "~> 2.4"},
       {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.4.0", override: true},
       {:castore, "~> 0.1"},
@@ -146,7 +147,7 @@ defmodule Pleroma.Mixfile do
       {:earmark, "1.4.15"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/crypt.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/crypt.git",
        ref: "cf2aa3f11632e8b0634810a15b3e612c7526f6a3"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption,
@@ -164,14 +165,14 @@ defmodule Pleroma.Mixfile do
       {:poolboy, "~> 1.5"},
       {:prometheus, "~> 4.6"},
       {:prometheus_ex,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus.ex.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus.ex.git",
        ref: "a4e9beb3c1c479d14b352fd9d6dd7b1f6d7deee5",
        override: true},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
       # Note: once `prometheus_phx` is integrated into `prometheus_phoenix`, remove the former:
       {:prometheus_phx,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus-phx.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus-phx.git",
        branch: "no-logging"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
@@ -184,19 +185,20 @@ defmodule Pleroma.Mixfile do
       {:plug_static_index_html, "~> 1.0.0"},
       {:flake_id, "~> 0.1.0"},
       {:concurrent_limiter,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/concurrent_limiter.git",
        ref: "d81be41024569330f296fc472e24198d7499ba78"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/majic.git",
        ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
-      {:eblurhash, "~> 1.1.0"},
+      {:oembed_providers, "~> 0.1.0"},
+      {:eblurhash, "~> 1.2"},
       {:open_api_spex, "~> 3.10"},
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:ecto_psql_extras, "~> 0.6"},
@@ -211,7 +213,7 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "~> 1.17.0", override: true},
+      {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()
