@@ -13,6 +13,7 @@ config :pleroma, Pleroma.Web.Endpoint,
    url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
    http: [ip: {<%= String.replace(listen_ip, ".", ", ") %>}, port: <%= listen_port %>],
    secret_key_base: "<%= secret %>",
+   live_view: [signing_salt: "<%= lv_signing_salt %>"],
    signing_salt: "<%= signing_salt %>"
 
 config :pleroma, :instance,
