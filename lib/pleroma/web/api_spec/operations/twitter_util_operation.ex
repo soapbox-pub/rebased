@@ -121,7 +121,10 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       type: :object,
       required: [:email, :password],
       properties: %{
-        email: %Schema{type: :string, description: "New email"},
+        email: %Schema{
+          type: :string,
+          description: "New email. Set to blank to remove the user's email."
+        },
         password: %Schema{type: :string, description: "Current password"}
       }
     }
@@ -188,6 +191,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       parameters: [
         Operation.parameter(:password, :query, :string, "Password")
       ],
+      requestBody: request_body("Parameters", delete_account_request(), required: false),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -232,6 +236,24 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       operationId: "UtilController.remote_subscribe",
       parameters: [],
       responses: %{200 => Operation.response("Web Page", "test/html", %Schema{type: :string})}
+    }
+  end
+
+  defp delete_account_request do
+    %Schema{
+      title: "AccountDeleteRequest",
+      description: "POST body for deleting one's own account",
+      type: :object,
+      properties: %{
+        password: %Schema{
+          type: :string,
+          description: "The user's own password for confirmation.",
+          format: :password
+        }
+      },
+      example: %{
+        "password" => "prettyp0ony1313"
+      }
     }
   end
 end

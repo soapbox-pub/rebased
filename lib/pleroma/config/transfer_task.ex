@@ -148,9 +148,7 @@ defmodule Pleroma.Config.TransferTask do
     rescue
       error ->
         error_msg =
-          "updating env causes error, group: #{inspect(group)}, key: #{inspect(key)}, value: #{
-            inspect(value)
-          } error: #{inspect(error)}"
+          "updating env causes error, group: #{inspect(group)}, key: #{inspect(key)}, value: #{inspect(value)} error: #{inspect(error)}"
 
         Logger.warn(error_msg)
 

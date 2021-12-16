@@ -112,6 +112,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "move" ->
         put_target(response, activity, reading_user, %{})
 
+      "poll" ->
+        put_status(response, activity, reading_user, status_render_opts)
+
       "pleroma:emoji_reaction" ->
         response
         |> put_status(parent_activity_fn.(), reading_user, status_render_opts)

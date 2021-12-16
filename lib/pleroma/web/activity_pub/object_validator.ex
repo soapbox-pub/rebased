@@ -213,6 +213,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def stringify_keys(object) when is_map(object) do
     object
+    |> Enum.filter(fn {_, v} -> v != nil end)
     |> Map.new(fn {key, val} -> {to_string(key), stringify_keys(val)} end)
   end
 

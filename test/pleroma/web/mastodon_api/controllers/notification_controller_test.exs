@@ -44,9 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       |> get("/api/v1/notifications")
 
     expected_response =
-      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
-        user.ap_id
-      }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{user.ap_id}\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
     assert [%{"status" => %{"content" => response}} | _rest] =
              json_response_and_validate_schema(conn, 200)
@@ -103,6 +101,25 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [_] = result
   end
 
+  test "excludes mentions from blockers when blockers_visible is false" do
+    clear_config([:activitypub, :blockers_visible], false)
+
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    blocker = insert(:user)
+
+    {:ok, _} = CommonAPI.block(blocker, user)
+    {:ok, activity} = CommonAPI.post(blocker, %{status: "hi @#{user.nickname}"})
+
+    {:ok, [_notification]} = Notification.create_notifications(activity)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+
+    assert [] == json_response_and_validate_schema(conn, 200)
+  end
+
   test "getting a single notification" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
@@ -114,9 +131,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     conn = get(conn, "/api/v1/notifications/#{notification.id}")
 
     expected_response =
-      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
-        user.ap_id
-      }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{user.ap_id}\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
     assert %{"status" => %{"content" => response}} = json_response_and_validate_schema(conn, 200)
     assert response == expected_response
