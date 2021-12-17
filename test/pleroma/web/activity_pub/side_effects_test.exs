@@ -552,4 +552,71 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       end
     end
   end
+
+  describe "removing a follower" do
+    setup do
+      user = insert(:user)
+      followed = insert(:user)
+
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, followed)
+
+      {:ok, reject_data, []} = Builder.reject(followed, follow_activity)
+      {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: true)
+
+      %{user: user, followed: followed, reject: reject}
+    end
+
+    test "", %{user: user, followed: followed, reject: reject} do
+      assert User.following?(user, followed)
+      assert Pleroma.FollowingRelationship.get(user, followed)
+
+      {:ok, _, _} = SideEffects.handle(reject)
+
+      refute User.following?(user, followed)
+      refute Pleroma.FollowingRelationship.get(user, followed)
+      assert User.get_follow_state(user, followed) == nil
+      assert User.get_follow_state(user, followed, nil) == nil
+    end
+  end
+
+  describe "removing a follower from remote" do
+    setup do
+      user = insert(:user)
+      followed = insert(:user, local: false)
+
+      # Mock a local-to-remote follow
+      {:ok, follow_data, []} = Builder.follow(user, followed)
+      follow_data =
+        follow_data
+        |> Map.put("state", "accept")
+      {:ok, follow, _meta} = ActivityPub.persist(follow_data, local: true)
+      {:ok, _, _} = SideEffects.handle(follow)
+
+      # Mock a remote-to-local accept
+      {:ok, accept_data, _} = Builder.accept(followed, follow)
+      {:ok, accept, _} = ActivityPub.persist(accept_data, local: false)
+      {:ok, _, _} = SideEffects.handle(accept)
+
+      # Mock a remote-to-local reject
+      {:ok, reject_data, []} = Builder.reject(followed, follow)
+      {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: false)
+
+      %{user: user, followed: followed, reject: reject}
+    end
+
+    test "", %{user: user, followed: followed, reject: reject} do
+      assert User.following?(user, followed)
+      assert Pleroma.FollowingRelationship.get(user, followed)
+
+      {:ok, _, _} = SideEffects.handle(reject)
+
+      refute User.following?(user, followed)
+      refute Pleroma.FollowingRelationship.get(user, followed)
+
+      assert Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, followed).data["state"] == "reject"
+
+      assert User.get_follow_state(user, followed) == nil
+      assert User.get_follow_state(user, followed, nil) == nil
+    end
+  end
 end
