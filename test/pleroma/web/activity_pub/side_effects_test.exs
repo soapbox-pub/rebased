@@ -88,6 +88,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert User.blocks?(user, blocked)
     end
 
+    test "it updates following relationship", %{user: user, blocked: blocked, block: block} do
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute Pleroma.FollowingRelationship.get(user, blocked)
+      assert User.get_follow_state(user, blocked) == nil
+      assert User.get_follow_state(blocked, user) == nil
+      assert User.get_follow_state(user, blocked, nil) == nil
+      assert User.get_follow_state(blocked, user, nil) == nil
+    end
+
     test "it blocks but does not unfollow if the relevant setting is set", %{
       user: user,
       blocked: blocked,
