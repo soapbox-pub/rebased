@@ -586,9 +586,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       # Mock a local-to-remote follow
       {:ok, follow_data, []} = Builder.follow(user, followed)
+
       follow_data =
         follow_data
         |> Map.put("state", "accept")
+
       {:ok, follow, _meta} = ActivityPub.persist(follow_data, local: true)
       {:ok, _, _} = SideEffects.handle(follow)
 
@@ -613,7 +615,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       refute User.following?(user, followed)
       refute Pleroma.FollowingRelationship.get(user, followed)
 
-      assert Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, followed).data["state"] == "reject"
+      assert Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, followed).data["state"] ==
+               "reject"
 
       assert User.get_follow_state(user, followed) == nil
       assert User.get_follow_state(user, followed, nil) == nil
