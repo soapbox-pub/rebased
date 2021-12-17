@@ -103,6 +103,7 @@ defmodule Pleroma.Emoji.Loader do
     pack_file = Path.join(pack_dir, "pack.json")
 
     if File.exists?(pack_file) do
+      Logger.info("Loading emoji pack from JSON: #{pack_file}")
       contents = Jason.decode!(File.read!(pack_file))
 
       contents["files"]
@@ -115,6 +116,7 @@ defmodule Pleroma.Emoji.Loader do
       emoji_txt = Path.join(pack_dir, "emoji.txt")
 
       if File.exists?(emoji_txt) do
+        Logger.info("Loading emoji pack from emoji.txt: #{emoji_txt}")
         load_from_file(emoji_txt, emoji_groups)
       else
         extensions = Config.get([:emoji, :pack_extensions])
