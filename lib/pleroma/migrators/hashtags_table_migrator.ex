@@ -13,6 +13,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
   use Pleroma.Migrators.Support.BaseMigrator
 
   alias Pleroma.Hashtag
+  alias Pleroma.HashtagObject
   alias Pleroma.Migrators.Support.BaseMigrator
   alias Pleroma.Object
 
@@ -120,7 +121,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
         try do
           with {rows_count, _} when is_integer(rows_count) <-
-                 Repo.insert_all("hashtags_objects", maps, on_conflict: :nothing) do
+                 Repo.insert_all(HashtagObject, maps, on_conflict: :nothing) do
             object.id
           else
             e ->

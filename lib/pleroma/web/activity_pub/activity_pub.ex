@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Filter
   alias Pleroma.Hashtag
+  alias Pleroma.HashtagObject
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -775,8 +776,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_embedded_tag_reject_any(query, _), do: query
 
   defp object_ids_query_for_tags(tags) do
-    from(hto in "hashtags_objects")
-    |> join(:inner, [hto], ht in Pleroma.Hashtag, on: hto.hashtag_id == ht.id)
+    from(hto in HashtagObject)
+    |> join(:inner, [hto], ht in Hashtag, on: hto.hashtag_id == ht.id)
     |> where([hto, ht], ht.name in ^tags)
     |> select([hto], hto.object_id)
     |> distinct([hto], true)
@@ -825,7 +826,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # Note: NO extra ordering should be done on "activities.id desc nulls last" for optimal plan
     from(
       [_activity, object] in query,
-      join: hto in "hashtags_objects",
+      join: hto in HashtagObject,
       on: hto.object_id == object.id,
       where: hto.hashtag_id in ^hashtag_ids,
       distinct: [desc: object.id],

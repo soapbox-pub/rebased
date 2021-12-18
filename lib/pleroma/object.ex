@@ -11,6 +11,7 @@ defmodule Pleroma.Object do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Hashtag
+  alias Pleroma.HashtagObject
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
@@ -31,7 +32,7 @@ defmodule Pleroma.Object do
   schema "objects" do
     field(:data, :map)
 
-    many_to_many(:hashtags, Hashtag, join_through: "hashtags_objects", on_replace: :delete)
+    many_to_many(:hashtags, Hashtag, join_through: HashtagObject, on_replace: :delete)
 
     timestamps()
   end
