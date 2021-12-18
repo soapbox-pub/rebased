@@ -22,6 +22,8 @@ defmodule Pleroma.Object do
 
   @type t() :: %__MODULE__{}
 
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
+
   @derive {Jason.Encoder, only: [:data]}
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
