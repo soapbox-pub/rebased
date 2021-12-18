@@ -18,7 +18,7 @@ defmodule Pleroma.PaginationTest do
     end
 
     test "paginates by min_id", %{notes: notes} do
-      id = Enum.at(notes, 2).id |> Integer.to_string()
+      id = Enum.at(notes, 2).id
 
       %{total: total, items: paginated} =
         Pagination.fetch_paginated(Object, %{min_id: id, total: true})
@@ -28,7 +28,7 @@ defmodule Pleroma.PaginationTest do
     end
 
     test "paginates by since_id", %{notes: notes} do
-      id = Enum.at(notes, 2).id |> Integer.to_string()
+      id = Enum.at(notes, 2).id
 
       %{total: total, items: paginated} =
         Pagination.fetch_paginated(Object, %{since_id: id, total: true})
@@ -38,7 +38,7 @@ defmodule Pleroma.PaginationTest do
     end
 
     test "paginates by max_id", %{notes: notes} do
-      id = Enum.at(notes, 1).id |> Integer.to_string()
+      id = Enum.at(notes, 1).id
 
       %{total: total, items: paginated} =
         Pagination.fetch_paginated(Object, %{max_id: id, total: true})
@@ -48,7 +48,7 @@ defmodule Pleroma.PaginationTest do
     end
 
     test "paginates by min_id & limit", %{notes: notes} do
-      id = Enum.at(notes, 2).id |> Integer.to_string()
+      id = Enum.at(notes, 2).id
 
       paginated = Pagination.fetch_paginated(Object, %{min_id: id, limit: 1})
 
@@ -56,7 +56,7 @@ defmodule Pleroma.PaginationTest do
     end
 
     test "handles id gracefully", %{notes: notes} do
-      id = Enum.at(notes, 1).id |> Integer.to_string()
+      id = Enum.at(notes, 1).id
 
       paginated =
         Pagination.fetch_paginated(Object, %{
