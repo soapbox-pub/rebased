@@ -57,11 +57,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp get_context_id(%{data: %{"context_id" => context_id}}) when not is_nil(context_id),
+  defp get_context_id(%{data: %{"context_id" => context_id}}) when is_binary(context_id),
     do: context_id
 
-  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context),
-    do: Utils.context_to_conversation_id(context)
+  defp get_context_id(%{data: %{"context_id" => context_id}}) when is_integer(context_id),
+    do: to_string(context_id)
+
+  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context) do
+    case Utils.context_to_conversation_id(context) do
+      id when is_binary(id) -> id
+      id when is_integer(id) -> to_string(id)
+      _ -> nil
+    end
+  end
 
   defp get_context_id(_), do: nil
 
