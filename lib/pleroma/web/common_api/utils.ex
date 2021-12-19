@@ -291,33 +291,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.html_escape("text/html")
   end
 
-  def make_note_data(%ActivityDraft{} = draft) do
-    %{
-      "type" => "Note",
-      "to" => draft.to,
-      "cc" => draft.cc,
-      "content" => draft.content_html,
-      "summary" => draft.summary,
-      "sensitive" => draft.sensitive,
-      "context" => draft.context,
-      "attachment" => draft.attachments,
-      "actor" => draft.user.ap_id,
-      "tag" => Keyword.values(draft.tags) |> Enum.uniq()
-    }
-    |> add_in_reply_to(draft.in_reply_to)
-    |> Map.merge(draft.extra)
-  end
-
-  defp add_in_reply_to(object, nil), do: object
-
-  defp add_in_reply_to(object, in_reply_to) do
-    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
-      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
-    else
-      _ -> object
-    end
-  end
-
   def format_naive_asctime(date) do
     date |> DateTime.from_naive!("Etc/UTC") |> format_asctime
   end
@@ -412,19 +385,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
-  # Do not notify subscribers if author is making a reply
-  def maybe_notify_subscribers(recipients, %Activity{
-        object: %Object{data: %{"inReplyTo" => _ap_id}}
-      }) do
-    recipients
-  end
-
   def maybe_notify_subscribers(
         recipients,
-        %Activity{data: %{"actor" => actor, "type" => type}} = activity
-      )
-      when type == "Create" do
-    with %User{} = user <- User.get_cached_by_ap_id(actor) do
+        %Activity{data: %{"actor" => actor, "type" => "Create"}} = activity
+      ) do
+    # Do not notify subscribers if author is making a reply
+    with %Object{data: object} <- Object.normalize(activity, fetch: false),
+         nil <- object["inReplyTo"],
+         %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
         |> User.subscriber_users()

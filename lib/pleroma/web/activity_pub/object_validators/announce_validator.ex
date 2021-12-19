@@ -20,13 +20,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
-    field(:object, ObjectValidators.ObjectID)
-    field(:actor, ObjectValidators.ObjectID)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
+
     field(:context, :string)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
     field(:published, ObjectValidators.DateTime)
   end
 

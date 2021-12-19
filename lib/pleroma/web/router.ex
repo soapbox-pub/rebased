@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
+  import Phoenix.LiveDashboard.Router
 
   pipeline :accepts_html do
     plug(:accepts, ["html"])
@@ -104,12 +105,6 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.UserIsAdminPlug)
   end
 
-  pipeline :mastodon_html do
-    plug(:browser)
-    plug(:authenticate)
-    plug(:after_auth)
-  end
-
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -192,6 +187,9 @@ defmodule Pleroma.Web.Router do
     post("/users/unfollow", UserController, :unfollow)
     post("/users", UserController, :create)
 
+    patch("/users/suggest", UserController, :suggest)
+    patch("/users/unsuggest", UserController, :unsuggest)
+
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
@@ -258,7 +256,8 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
 
-    get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+    get("/instances/:instance/statuses", InstanceController, :list_statuses)
+    delete("/instances/:instance", InstanceController, :delete)
 
     get("/reports", ReportController, :index)
     get("/reports/:id", ReportController, :show)
@@ -554,17 +553,11 @@ defmodule Pleroma.Web.Router do
     delete("/push/subscription", SubscriptionController, :delete)
 
     get("/suggestions", SuggestionController, :index)
+    delete("/suggestions/:account_id", SuggestionController, :dismiss)
 
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
     get("/timelines/list/:list_id", TimelineController, :list)
-  end
-
-  scope "/api/web", Pleroma.Web do
-    pipe_through(:authenticated_api)
-
-    # Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere
-    put("/settings", MastoFEController, :put_settings)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
@@ -612,6 +605,8 @@ defmodule Pleroma.Web.Router do
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
+
+    get("/suggestions", SuggestionController, :index2)
   end
 
   scope "/api", Pleroma.Web do
@@ -765,20 +760,13 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     pipe_through(:api)
 
-    get("/web/manifest.json", MastoFEController, :manifest)
+    get("/manifest.json", ManifestController, :show)
   end
 
   scope "/", Pleroma.Web do
-    pipe_through(:mastodon_html)
+    pipe_through(:pleroma_html)
 
-    get("/web/login", MastodonAPI.AuthController, :login)
-    delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
-
-    post("/auth/password", MastodonAPI.AuthController, :password_reset)
-
-    get("/web/*path", MastoFEController, :index)
-
-    get("/embed/:id", EmbedController, :show)
+    post("/auth/password", TwitterAPI.PasswordController, :request)
   end
 
   scope "/proxy/", Pleroma.Web do
@@ -794,6 +782,11 @@ defmodule Pleroma.Web.Router do
 
       forward("/mailbox", Plug.Swoosh.MailboxPreview, base_path: "/dev/mailbox")
     end
+  end
+
+  scope "/" do
+    pipe_through([:pleroma_html, :authenticate, :require_admin])
+    live_dashboard("/phoenix/live_dashboard")
   end
 
   # Test-only routes needed to test action dispatching and plug chain execution

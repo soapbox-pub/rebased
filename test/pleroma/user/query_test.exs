@@ -34,4 +34,14 @@ defmodule Pleroma.User.QueryTest do
       assert %{internal: true} |> Query.build() |> Repo.aggregate(:count) == 2
     end
   end
+
+  test "is_suggested param" do
+    _user1 = insert(:user, is_suggested: false)
+    user2 = insert(:user, is_suggested: true)
+
+    assert [^user2] =
+             %{is_suggested: true}
+             |> User.Query.build()
+             |> Repo.all()
+  end
 end

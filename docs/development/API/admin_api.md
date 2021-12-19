@@ -261,6 +261,46 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `PATCH /api/v1/pleroma/admin/users/suggest`
+
+### Suggest a user
+
+Adds the user(s) to follower recommendations.
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## `PATCH /api/v1/pleroma/admin/users/unsuggest`
+
+### Unsuggest a user
+
+Removes the user(s) from follower recommendations.
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
 ## `GET /api/v1/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user
@@ -317,6 +357,22 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     // activities list
   ]
 }
+```
+
+## `DELETE /api/v1/pleroma/admin/instances/:instance`
+
+### Delete all users and activities from a remote instance
+
+Note: this will trigger a job to remove instance content in the background.
+It may take some time.
+
+- Params:
+  - `instance`: remote instance host
+- Response:
+  - The `instance` name as a string
+
+```json
+"lain.com"
 ```
 
 ## `GET /api/v1/pleroma/admin/statuses`

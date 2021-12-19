@@ -10,7 +10,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   collection, and so on.
   """
   alias Pleroma.Activity
-  alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.FollowingRelationship
@@ -24,6 +23,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
+  alias Pleroma.Workers.PollWorker
 
   require Logger
 
@@ -195,12 +195,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Set up notifications
   @impl true
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
-    with {:ok, object, meta} <- handle_object_creation(meta[:object_data], meta),
+    with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
 
-      if in_reply_to = object.data["inReplyTo"] && object.data["type"] != "Answer" do
+      if in_reply_to = object.data["type"] != "Answer" && object.data["inReplyTo"] do
         Object.increase_replies_count(in_reply_to)
       end
 
@@ -225,6 +225,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         meta
         |> add_notifications(notifications)
 
+      ap_streamer().stream_out(activity)
+
       {:ok, activity, meta}
     else
       e -> Repo.rollback(e)
@@ -245,9 +247,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     if !User.is_internal_user?(user) do
       Notification.create_notifications(object)
 
-      object
-      |> Topics.get_activity_topics()
-      |> Streamer.stream(object)
+      ap_streamer().stream_out(object)
     end
 
     {:ok, object, meta}
@@ -389,7 +389,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
-  def handle_object_creation(%{"type" => "ChatMessage"} = object, meta) do
+  def handle_object_creation(%{"type" => "ChatMessage"} = object, _activity, meta) do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       actor = User.get_cached_by_ap_id(object.data["actor"])
       recipient = User.get_cached_by_ap_id(hd(object.data["to"]))
@@ -424,7 +424,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
-  def handle_object_creation(%{"type" => "Answer"} = object_map, meta) do
+  def handle_object_creation(%{"type" => "Question"} = object, activity, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      PollWorker.schedule_poll_end(activity)
+      {:ok, object, meta}
+    end
+  end
+
+  def handle_object_creation(%{"type" => "Answer"} = object_map, _activity, meta) do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object_map, meta) do
       Object.increase_vote_count(
         object.data["inReplyTo"],
@@ -436,15 +443,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
-  def handle_object_creation(%{"type" => objtype} = object, meta)
-      when objtype in ~w[Audio Video Question Event Article Note Page] do
+  def handle_object_creation(%{"type" => objtype} = object, _activity, meta)
+      when objtype in ~w[Audio Video Event Article Note Page] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end
   end
 
   # Nothing to do
-  def handle_object_creation(object, meta) do
+  def handle_object_creation(object, _activity, meta) do
     {:ok, object, meta}
   end
 

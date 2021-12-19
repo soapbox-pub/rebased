@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Endpoint do
   alias Pleroma.Config
 
   socket("/socket", Pleroma.Web.UserSocket)
+  socket("/live", Phoenix.LiveView.Socket)
 
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 

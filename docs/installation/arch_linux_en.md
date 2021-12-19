@@ -1,4 +1,7 @@
 # Installing on Arch Linux
+
+{! backend/installation/otp_vs_from_source_source.include !}
+
 ## Installation
 
 This guide will assume that you have administrative rights, either as root or a user with [sudo permissions](https://wiki.archlinux.org/index.php/Sudo). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.

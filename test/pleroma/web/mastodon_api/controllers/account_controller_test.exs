@@ -709,9 +709,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^follower2_id}, %{"id" => ^follower1_id}] =
                conn
                |> get(
-                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{
-                   follower3_id
-                 }"
+                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{follower3_id}"
                )
                |> json_response_and_validate_schema(200)
 

@@ -174,9 +174,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         conn
         |> get(
-          "/api/v1/pleroma/accounts/#{user.id}/favourites?since_id=#{third_activity.id}&max_id=#{
-            seventh_activity.id
-          }"
+          "/api/v1/pleroma/accounts/#{user.id}/favourites?since_id=#{third_activity.id}&max_id=#{seventh_activity.id}"
         )
         |> json_response_and_validate_schema(:ok)
 

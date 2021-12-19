@@ -38,9 +38,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
         end
       else
         Logger.debug(
-          "MRF.StealEmojiPolicy: :#{shortcode}: at #{url} (#{byte_size(response.body)} B) over size limit (#{
-            size_limit
-          } B)"
+          "MRF.StealEmojiPolicy: :#{shortcode}: at #{url} (#{byte_size(response.body)} B) over size limit (#{size_limit} B)"
         )
 
         nil
@@ -91,6 +89,51 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   end
 
   def filter(message), do: {:ok, message}
+
+  @impl true
+  @spec config_description :: %{
+          children: [
+            %{
+              description: <<_::272, _::_*256>>,
+              key: :hosts | :rejected_shortcodes | :size_limit,
+              suggestions: [any(), ...],
+              type: {:list, :string} | {:list, :string} | :integer
+            },
+            ...
+          ],
+          description: <<_::448>>,
+          key: :mrf_steal_emoji,
+          label: <<_::80>>,
+          related_policy: <<_::352>>
+        }
+  def config_description do
+    %{
+      key: :mrf_steal_emoji,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy",
+      label: "MRF Emojis",
+      description: "Steals emojis from selected instances when it sees them.",
+      children: [
+        %{
+          key: :hosts,
+          type: {:list, :string},
+          description: "List of hosts to steal emojis from",
+          suggestions: [""]
+        },
+        %{
+          key: :rejected_shortcodes,
+          type: {:list, :string},
+          description: "Regex-list of shortcodes to reject",
+          suggestions: [""]
+        },
+        %{
+          key: :size_limit,
+          type: :integer,
+          description: "File size limit (in bytes), checked before an emoji is saved to the disk",
+          suggestions: ["100000"]
+        }
+      ]
+    }
+  end
 
   @impl true
   def describe do

@@ -63,18 +63,17 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         date: date
       })
 
-    with {:ok, %{status: code}} when code in 200..299 <-
-           result =
-             HTTP.post(
-               inbox,
-               json,
-               [
-                 {"Content-Type", "application/activity+json"},
-                 {"Date", date},
-                 {"signature", signature},
-                 {"digest", digest}
-               ]
-             ) do
+    with {:ok, %{status: code}} = result when code in 200..299 <-
+           HTTP.post(
+             inbox,
+             json,
+             [
+               {"Content-Type", "application/activity+json"},
+               {"Date", date},
+               {"signature", signature},
+               {"digest", digest}
+             ]
+           ) do
       if not Map.has_key?(params, :unreachable_since) || params[:unreachable_since] do
         Instances.set_reachable(inbox)
       end
@@ -112,6 +111,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
       quarantined_instances =
         Config.get([:instance, :quarantined_instances], [])
+        |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
         |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
 
       !Pleroma.Web.ActivityPub.MRF.subdomain_match?(quarantined_instances, host)

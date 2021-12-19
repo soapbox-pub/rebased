@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           type: [:module, {:list, :module}],
           description:
             "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF.Policy}
         },
         %{
           key: :transparency,
@@ -33,9 +33,11 @@ defmodule Pleroma.Web.ActivityPub.MRF do
         %{
           key: :transparency_exclusions,
           label: "MRF transparency exclusions",
-          type: {:list, :string},
+          type: {:list, :tuple},
+          key_placeholder: "instance",
+          value_placeholder: "reason",
           description:
-            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value. You can also provide a reason for excluding these instance names. The instances and reasons won't be publicly disclosed.",
           suggestions: [
             "exclusion.com"
           ]
@@ -100,6 +102,11 @@ defmodule Pleroma.Web.ActivityPub.MRF do
     Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
   end
 
+  @spec instance_list_from_tuples([{String.t(), String.t()}]) :: [String.t()]
+  def instance_list_from_tuples(list) do
+    Enum.map(list, fn {instance, _} -> instance end)
+  end
+
   def describe(policies) do
     {:ok, policy_configs} =
       policies
@@ -150,9 +157,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           [description | acc]
         else
           Logger.warn(
-            "#{policy} config description doesn't have one or all required keys #{
-              inspect(@required_description_keys)
-            }"
+            "#{policy} config description doesn't have one or all required keys #{inspect(@required_description_keys)}"
           )
 
           acc
