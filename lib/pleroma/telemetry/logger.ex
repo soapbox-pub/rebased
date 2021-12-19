@@ -101,13 +101,19 @@ defmodule Pleroma.Telemetry.Logger do
   def handle_event(
         [:pleroma, :repo, :query] = _name,
         %{query_time: query_time} = _measurements,
-        %{source: source, query: query} = _metadata,
+        %{source: source, query: query, params: query_params, repo: repo} = _metadata,
         _config
       )
       when query_time > 500_000 and source not in [nil, "oban_jobs"] do
     {:current_stacktrace, stacktrace} = Process.info(self(), :current_stacktrace)
 
-    stacktrace =
+    sql_explain =
+      with {:ok, %{rows: explain_result_rows}} <-
+             repo.query("EXPLAIN " <> query, query_params, log: false) do
+        Enum.map_join(explain_result_rows, "\n", & &1)
+      end
+
+    pleroma_stacktrace =
       Enum.filter(stacktrace, fn
         {__MODULE__, _, _, _} ->
           false
@@ -120,13 +126,17 @@ defmodule Pleroma.Telemetry.Logger do
 
     Logger.warn(fn ->
       """
-      Query took longer than 500ms!
+      Slow query!
 
       Total time: #{query_time / 1_000}ms
 
-      #{inspect(query)}
+      #{query}
 
-      #{inspect(stacktrace, pretty: true)}
+      #{inspect(query_params)}
+
+      #{sql_explain}
+
+      #{Exception.format_stacktrace(pleroma_stacktrace)}
       """
     end)
   end
