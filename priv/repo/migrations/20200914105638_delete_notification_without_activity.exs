@@ -7,7 +7,7 @@ defmodule Pleroma.Repo.Migrations.DeleteNotificationWithoutActivity do
   def up do
     from(
       q in Pleroma.Notification,
-      left_join: c in assoc(q, :activity),
+      left_join: c in "activities",
       select: %{id: type(q.id, :integer)},
       where: is_nil(c.id)
     )

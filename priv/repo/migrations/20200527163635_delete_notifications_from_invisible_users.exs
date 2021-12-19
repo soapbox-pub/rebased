@@ -6,7 +6,7 @@ defmodule Pleroma.Repo.Migrations.DeleteNotificationsFromInvisibleUsers do
 
   def up do
     Pleroma.Notification
-    |> join(:inner, [n], activity in assoc(n, :activity))
+    |> join(:inner, [n], activity in "activities")
     |> where(
       [n, a],
       fragment("? in (SELECT ap_id FROM users WHERE invisible = true)", a.actor)

@@ -26,7 +26,7 @@ defmodule Pleroma.Activity do
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
-  schema "activities" do
+  schema "objects" do
     field(:data, :map)
     field(:local, :boolean, default: true)
     field(:actor, :string)
