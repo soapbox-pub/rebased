@@ -200,7 +200,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
 
-      if in_reply_to = object.data["inReplyTo"] && object.data["type"] != "Answer" do
+      if in_reply_to = object.data["type"] != "Answer" && object.data["inReplyTo"] do
         Object.increase_replies_count(in_reply_to)
       end
 
