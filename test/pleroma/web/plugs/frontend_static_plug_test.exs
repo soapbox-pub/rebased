@@ -96,6 +96,7 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "nodeinfo",
       "auth",
       "proxy",
+      "phoenix",
       "test",
       "user_exists",
       "check_password"
