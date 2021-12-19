@@ -86,7 +86,7 @@ defmodule Pleroma.Mixfile do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks", "priv/scrubbers"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -208,7 +208,7 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "~> 1.17.0", override: true},
+      {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()

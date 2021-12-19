@@ -473,7 +473,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     test "with proper permissions and wrong or missing password", %{conn: conn} do
       for params <- [%{"password" => "hi"}, %{}] do
-        ret_conn = post(conn, "/api/pleroma/delete_account", params)
+        ret_conn =
+          conn
+          |> put_req_header("content-type", "application/json")
+          |> post("/api/pleroma/delete_account", params)
 
         assert json_response_and_validate_schema(ret_conn, 200) == %{
                  "error" => "Invalid password."
@@ -481,8 +484,28 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       end
     end
 
-    test "with proper permissions and valid password", %{conn: conn, user: user} do
-      conn = post(conn, "/api/pleroma/delete_account?password=test")
+    test "with proper permissions and valid password (URL query)", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/delete_account?password=test")
+
+      ObanHelpers.perform_all()
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+
+      user = User.get_by_id(user.id)
+      refute user.is_active
+      assert user.name == nil
+      assert user.bio == ""
+      assert user.password_hash == nil
+    end
+
+    test "with proper permissions and valid password (JSON body)", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/delete_account", %{password: "test"})
+
       ObanHelpers.perform_all()
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
 

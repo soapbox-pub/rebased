@@ -216,7 +216,71 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
         request_body(
           "Parameters",
           %Schema{
-            description: "POST body for deleting multiple users",
+            description: "POST body for approving multiple users",
+            type: :object,
+            properties: %{
+              nicknames: %Schema{
+                type: :array,
+                items: %Schema{type: :string}
+              }
+            }
+          }
+        ),
+      responses: %{
+        200 =>
+          Operation.response("Response", "application/json", %Schema{
+            type: :object,
+            properties: %{user: %Schema{type: :array, items: user()}}
+          }),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
+      }
+    }
+  end
+
+  def suggest_operation do
+    %Operation{
+      tags: ["User administration"],
+      summary: "Suggest multiple users",
+      operationId: "AdminAPI.UserController.suggest",
+      security: [%{"oAuth" => ["admin:write:accounts"]}],
+      parameters: admin_api_params(),
+      requestBody:
+        request_body(
+          "Parameters",
+          %Schema{
+            description: "POST body for adding multiple suggested users",
+            type: :object,
+            properties: %{
+              nicknames: %Schema{
+                type: :array,
+                items: %Schema{type: :string}
+              }
+            }
+          }
+        ),
+      responses: %{
+        200 =>
+          Operation.response("Response", "application/json", %Schema{
+            type: :object,
+            properties: %{user: %Schema{type: :array, items: user()}}
+          }),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unsuggest_operation do
+    %Operation{
+      tags: ["User administration"],
+      summary: "Unsuggest multiple users",
+      operationId: "AdminAPI.UserController.unsuggest",
+      security: [%{"oAuth" => ["admin:write:accounts"]}],
+      parameters: admin_api_params(),
+      requestBody:
+        request_body(
+          "Parameters",
+          %Schema{
+            description: "POST body for removing multiple suggested users",
             type: :object,
             properties: %{
               nicknames: %Schema{
