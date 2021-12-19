@@ -744,6 +744,12 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
+    pipe_through(:api)
+
+    get("/manifest.json", ManifestController, :show)
+  end
+
+  scope "/", Pleroma.Web do
     pipe_through(:pleroma_html)
 
     post("/auth/password", TwitterAPI.PasswordController, :request)
