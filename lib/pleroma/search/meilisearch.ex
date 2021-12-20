@@ -7,6 +7,8 @@ defmodule Pleroma.Search.Meilisearch do
   import Pleroma.Search.DatabaseSearch
   import Ecto.Query
 
+  @behaviour Pleroma.Search.SearchBackend
+
   defp meili_headers do
     private_key = Pleroma.Config.get([Pleroma.Search.Meilisearch, :private_key])
 
@@ -139,6 +141,7 @@ defmodule Pleroma.Search.Meilisearch do
     end
   end
 
+  @impl true
   def add_to_index(activity) do
     maybe_search_data = object_to_search_data(activity.object)
 
@@ -159,6 +162,7 @@ defmodule Pleroma.Search.Meilisearch do
     end
   end
 
+  @impl true
   def remove_from_index(object) do
     meili_delete!("/indexes/objects/documents/#{object.id}")
   end

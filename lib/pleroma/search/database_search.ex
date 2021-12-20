@@ -13,6 +13,8 @@ defmodule Pleroma.Search.DatabaseSearch do
 
   import Ecto.Query
 
+  @behaviour Pleroma.Search.SearchBackend
+
   def search(user, search_query, options \\ []) do
     index_type = if Pleroma.Config.get([:database, :rum_enabled]), do: :rum, else: :gin
     limit = Enum.min([Keyword.get(options, :limit), 40])
@@ -45,7 +47,10 @@ defmodule Pleroma.Search.DatabaseSearch do
     end
   end
 
+  @impl true
   def add_to_index(_activity), do: nil
+
+  @impl true
   def remove_from_index(_object), do: nil
 
   def maybe_restrict_author(query, %User{} = author) do
