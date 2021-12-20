@@ -25,11 +25,15 @@ To use [meilisearch](https://www.meilisearch.com/), set the search module to `Pl
 
 > config :pleroma, Pleroma.Search, module: Pleroma.Search.Meilisearch
 
-You then need to set the address of the meilisearch instance, and optionally the private key for authentication.
+You then need to set the address of the meilisearch instance, and optionally the private key for authentication. You might
+also want to change the `initial_indexing_chunk_size` to be smaller if you're server is not very powerful, but not higher than `100_000`,
+because meilisearch will refuse to process it if it's too big. However, in general you want this to be as big as possible, because meilisearch
+indexes faster when it can process many posts in a single batch.
 
 > config :pleroma, Pleroma.Search.Meilisearch,
 >    url: "http://127.0.0.1:7700/",
->    private_key: "private key"
+>    private_key: "private key",
+>    initial_indexing_chunk_size: 100_000
 
 Information about setting up meilisearch can be found in the
 [official documentation](https://docs.meilisearch.com/learn/getting_started/installation.html).

@@ -3508,6 +3508,14 @@ config :pleroma, :config_description, [
         description:
           "Private key for meilisearch authentication, or `nil` to disable private key authentication.",
         suggestion: [nil]
+      },
+      %{
+        key: :initial_indexing_chunk_size,
+        type: :int,
+        description:
+          "Amount of posts in a batch when running the initial indexing operation. Should probably not be more than 100000" <>
+            " since there's a limit on maximum insert size",
+        suggestion: [100_000]
       }
     ]
   }
