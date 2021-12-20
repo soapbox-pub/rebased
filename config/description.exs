@@ -3475,5 +3475,40 @@ config :pleroma, :config_description, [
         ]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search,
+    type: :group,
+    description: "General search settings.",
+    children: [
+      %{
+        key: :module,
+        type: :keyword,
+        description: "Selected search module.",
+        suggestion: [Pleroma.Search.DatabaseSearch, Pleroma.Search.Meilisearch]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search.Meilisearch,
+    type: :group,
+    description: "Meilisearch settings.",
+    children: [
+      %{
+        key: :url,
+        type: :string,
+        description: "Meilisearch URL.",
+        suggestion: ["http://127.0.0.1:7700/"]
+      },
+      %{
+        key: :private_key,
+        type: :string,
+        description:
+          "Private key for meilisearch authentication, or `nil` to disable private key authentication.",
+        suggestion: [nil]
+      }
+    ]
   }
 ]
