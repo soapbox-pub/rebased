@@ -60,6 +60,15 @@ have to do it one time, but it might take a while, depending on the amount of po
 consuming process for `meilisearch`, and it will take a lot of RAM when running if you have a lot of posts (seems to be around 5G for ~1.2
 million posts while idle and up to 7G while indexing initially, but your experience may be different).
 
+The sequence of actions is as follows:
+
+1. First, change the configuration to use `Pleroma.Search.Meilisearch` as the search backend
+2. Restart your instance, at this point it can be used while the search indexing is running, though search won't return anything
+3. Start the initial indexing process (as described below with `index`),
+   and wait until the task says it sent everything from the database to index
+4. Wait until everything is actually indexed (by checking with `stats` as described below),
+   at this point you don't have to do anything, just wait a while.
+
 To start the initial indexing, run the `index` command:
 
 === "OTP"
