@@ -14,17 +14,29 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   def run(["index"]) do
     start_pleroma()
 
+    meili_version =
+      (
+        {:ok, result} = meili_get("/version")
+
+        result["pkgVersion"]
+      )
+
+    # The ranking rule syntax was changed but nothing about that is mentioned in the changelog
+    if not Version.match?(meili_version, ">= 0.24.0") do
+      raise "Meilisearch <0.24.0 not supported"
+    end
+
     {:ok, _} =
       meili_post(
         "/indexes/objects/settings/ranking-rules",
         [
-          "desc(published)",
+          "published:desc",
           "words",
           "exactness",
           "proximity",
-          "wordsPosition",
           "typo",
-          "attribute"
+          "attribute",
+          "sort"
         ]
       )
 
