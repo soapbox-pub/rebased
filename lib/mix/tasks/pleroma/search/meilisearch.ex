@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
     IO.puts("Created indices. Starting to insert posts.")
 
-    chunk_size = 10_000
+    chunk_size = Pleroma.Config.get([Pleroma.Search.Meilisearch, :initial_indexing_chunk_size])
 
     Pleroma.Repo.transaction(
       fn ->

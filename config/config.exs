@@ -872,7 +872,10 @@ config :pleroma, ConcurrentLimiter, [
 
 config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
 
-config :pleroma, Pleroma.Search.Meilisearch, url: "http://127.0.0.1:7700/", private_key: nil
+config :pleroma, Pleroma.Search.Meilisearch,
+  url: "http://127.0.0.1:7700/",
+  private_key: nil,
+  initial_indexing_chunk_size: 100_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
