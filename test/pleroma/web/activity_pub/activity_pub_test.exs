@@ -1394,8 +1394,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         ActivityPub.fetch_activities([user1.ap_id | User.following(user1)], %{user: user1})
         |> Enum.map(fn a -> a.id end)
 
-      assert [public_activity.id, private_activity_1.id] == activities
-      assert length(activities) == 2
+      assert [public_activity.id, private_activity_1.id, private_activity_3.id] == activities
+      assert length(activities) == 3
     end
   end
 
