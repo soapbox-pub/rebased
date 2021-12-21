@@ -91,7 +91,6 @@ defmodule Pleroma.Repo.Migrations.AddActivityFieldsToObjects do
 
         --- Normalize the child object into child.
         SELECT * INTO child FROM objects
-        INNER JOIN objects ON COALESCE(objects.data->'object'->>'id', objects.data->>'object') = objects.data->>'id'
         WHERE COALESCE(object.data->'object'->>'id', object.data->>'object') = objects.data->>'id';
 
         --- Fetch the author's AS2 following collection.
@@ -112,7 +111,6 @@ defmodule Pleroma.Repo.Migrations.AddActivityFieldsToObjects do
         --- If there's a parent, load it and do this all over again.
         IF (child.data->'inReplyTo' IS NOT NULL) AND (child.data->'inReplyTo' != 'null'::jsonb) THEN
           SELECT * INTO object FROM objects
-          INNER JOIN objects ON COALESCE(objects.data->'object'->>'id', objects.data->>'object') = objects.data->>'id'
           WHERE child.data->>'inReplyTo' = objects.data->>'id';
         ELSE
           RETURN true;
