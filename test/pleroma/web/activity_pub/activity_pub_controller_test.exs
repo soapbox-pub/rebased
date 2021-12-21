@@ -1143,7 +1143,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
 
-      assert Pleroma.Repo.aggregate(Activity, :count, :id) == 2
+      assert Pleroma.Repo.aggregate(Object, :count, :id) == 4
 
       ObanHelpers.perform_all()
 
