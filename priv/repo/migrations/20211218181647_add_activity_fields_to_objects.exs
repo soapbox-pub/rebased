@@ -14,23 +14,38 @@ defmodule Pleroma.Repo.Migrations.AddActivityFieldsToObjects do
     create_if_not_exists(index(:objects, [:local]))
     create_if_not_exists(index(:objects, [:actor, "id DESC NULLS LAST"]))
     create_if_not_exists(index(:objects, [:recipients], using: :gin))
-    create_if_not_exists(index(:objects, ["(data->'to')"], name: :activities_to_index, using: :gin))
-    create_if_not_exists(index(:objects, ["(data->'cc')"], name: :activities_cc_index, using: :gin))
+
+    create_if_not_exists(
+      index(:objects, ["(data->'to')"], name: :activities_to_index, using: :gin)
+    )
+
+    create_if_not_exists(
+      index(:objects, ["(data->'cc')"], name: :activities_cc_index, using: :gin)
+    )
 
     # Copy all activities into the newly formatted objects table
     execute("INSERT INTO objects (SELECT * FROM activities)")
 
     # Update notifications foreign key
     execute("alter table notifications drop constraint notifications_activity_id_fkey")
-    execute("alter table notifications add constraint notifications_object_id_fkey foreign key (activity_id) references objects(id) on delete cascade")
+
+    execute(
+      "alter table notifications add constraint notifications_object_id_fkey foreign key (activity_id) references objects(id) on delete cascade"
+    )
 
     # Update bookmarks foreign key
     execute("alter table bookmarks drop constraint bookmarks_activity_id_fkey")
-    execute("alter table bookmarks add constraint bookmarks_object_id_fkey foreign key (activity_id) references objects(id) on delete cascade")
+
+    execute(
+      "alter table bookmarks add constraint bookmarks_object_id_fkey foreign key (activity_id) references objects(id) on delete cascade"
+    )
 
     # Update report notes foreign key
     execute("alter table report_notes drop constraint report_notes_activity_id_fkey")
-    execute("alter table report_notes add constraint report_notes_object_id_fkey foreign key (activity_id) references objects(id)")
+
+    execute(
+      "alter table report_notes add constraint report_notes_object_id_fkey foreign key (activity_id) references objects(id)"
+    )
 
     # Nuke the old activities table
     execute("drop table activities")
