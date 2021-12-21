@@ -1161,7 +1161,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_instance(query, %{instance: instance}) when is_binary(instance) do
     from(
       activity in query,
-      where: fragment("split_part(actor::text, '/'::text, 3) = ?", ^instance)
+      where: fragment("split_part(?::text, '/'::text, 3) = ?", activity.actor, ^instance)
     )
   end
 
