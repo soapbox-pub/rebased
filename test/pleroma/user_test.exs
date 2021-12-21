@@ -19,6 +19,8 @@ defmodule Pleroma.UserTest do
   import ExUnit.CaptureLog
   import Swoosh.TestAssertions
 
+  require Ecto.Query
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -436,7 +438,11 @@ defmodule Pleroma.UserTest do
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
 
-      activity = Repo.one(Pleroma.Activity)
+      activity =
+        Activity
+        |> Ecto.Query.where(fragment("data->>'type' = 'Create'"))
+        |> Repo.one()
+
       assert registered_user.ap_id in activity.recipients
       assert Object.normalize(activity, fetch: false).data["content"] =~ "direct message"
       assert activity.actor == welcome_user.ap_id
@@ -452,7 +458,11 @@ defmodule Pleroma.UserTest do
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
 
-      activity = Repo.one(Pleroma.Activity)
+      activity =
+        Activity
+        |> Ecto.Query.where(fragment("data->>'type' = 'Create'"))
+        |> Repo.one()
+
       assert registered_user.ap_id in activity.recipients
       assert Object.normalize(activity, fetch: false).data["content"] =~ "chat message"
       assert activity.actor == welcome_user.ap_id
@@ -491,7 +501,11 @@ defmodule Pleroma.UserTest do
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
 
-      activity = Repo.one(Pleroma.Activity)
+      activity =
+        Activity
+        |> Ecto.Query.where(fragment("data->>'type' = 'Create'"))
+        |> Repo.one()
+
       assert registered_user.ap_id in activity.recipients
       assert Object.normalize(activity, fetch: false).data["content"] =~ "chat message"
       assert activity.actor == welcome_user.ap_id

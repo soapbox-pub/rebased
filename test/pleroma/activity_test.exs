@@ -51,7 +51,8 @@ defmodule Pleroma.ActivityTest do
     {:ok, bookmark3} = Bookmark.create(user3.id, activity.id)
 
     queried_activity =
-      Ecto.Query.from(Pleroma.Activity)
+      Activity
+      |> Ecto.Query.where(id: ^activity.id)
       |> Activity.with_preloaded_bookmark(user3)
       |> Repo.one()
 
@@ -64,17 +65,19 @@ defmodule Pleroma.ActivityTest do
     annoyed_user = insert(:user)
     {:ok, _} = ThreadMute.add_mute(annoyed_user.id, activity.data["context"])
 
+    query = Ecto.Query.where(Activity, id: ^activity.id)
+
     activity_with_unset_thread_muted_field =
-      Ecto.Query.from(Activity)
+      query
       |> Repo.one()
 
     activity_for_user =
-      Ecto.Query.from(Activity)
+      query
       |> Activity.with_set_thread_muted_field(user)
       |> Repo.one()
 
     activity_for_annoyed_user =
-      Ecto.Query.from(Activity)
+      query
       |> Activity.with_set_thread_muted_field(annoyed_user)
       |> Repo.one()
 
@@ -90,7 +93,7 @@ defmodule Pleroma.ActivityTest do
       {:ok, bookmark} = Bookmark.create(user.id, activity.id)
 
       queried_activity =
-        Ecto.Query.from(Pleroma.Activity)
+        Ecto.Query.where(Activity, id: ^activity.id)
         |> Activity.with_preloaded_bookmark(user)
         |> Repo.one()
 
@@ -103,7 +106,7 @@ defmodule Pleroma.ActivityTest do
       {:ok, bookmark} = Bookmark.create(user.id, activity.id)
 
       queried_activity =
-        Ecto.Query.from(Pleroma.Activity)
+        Ecto.Query.where(Activity, id: ^activity.id)
         |> Repo.one()
 
       assert Activity.get_bookmark(queried_activity, user) == bookmark
@@ -266,7 +269,11 @@ defmodule Pleroma.ActivityTest do
     insert(:add_activity, user: user, note: note)
     insert(:add_activity, user: user)
 
-    assert Repo.aggregate(Activity, :count, :id) == 4
+    activities_query =
+      Activity
+      |> Ecto.Query.where(fragment("data->>'type' IN ('Create', 'Add')"))
+
+    assert Repo.aggregate(activities_query, :count, :id) == 4
 
     add_query =
       Activity.add_by_params_query(note.data["object"], user.ap_id, user.featured_address)
@@ -276,6 +283,6 @@ defmodule Pleroma.ActivityTest do
     Repo.delete_all(add_query)
     assert Repo.aggregate(add_query, :count, :id) == 0
 
-    assert Repo.aggregate(Activity, :count, :id) == 2
+    assert Repo.aggregate(activities_query, :count, :id) == 2
   end
 end

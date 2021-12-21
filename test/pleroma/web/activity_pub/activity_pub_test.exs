@@ -1514,8 +1514,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                  content: content
                })
 
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 2
+      assert Repo.aggregate(Object, :count, :id) == 3
       assert Repo.aggregate(Notification, :count, :id) == 0
     end
   end
