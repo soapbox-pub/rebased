@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
+  import Phoenix.LiveDashboard.Router
 
   pipeline :accepts_html do
     plug(:accepts, ["html"])
@@ -191,6 +192,9 @@ defmodule Pleroma.Web.Router do
     patch("/users/activate", UserController, :activate)
     patch("/users/deactivate", UserController, :deactivate)
     patch("/users/approve", UserController, :approve)
+
+    patch("/users/suggest", UserController, :suggest)
+    patch("/users/unsuggest", UserController, :unsuggest)
 
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
@@ -535,6 +539,7 @@ defmodule Pleroma.Web.Router do
     delete("/push/subscription", SubscriptionController, :delete)
 
     get("/suggestions", SuggestionController, :index)
+    delete("/suggestions/:account_id", SuggestionController, :dismiss)
 
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
@@ -586,6 +591,8 @@ defmodule Pleroma.Web.Router do
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
+
+    get("/suggestions", SuggestionController, :index2)
   end
 
   scope "/api", Pleroma.Web do
@@ -737,6 +744,12 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
+    pipe_through(:api)
+
+    get("/manifest.json", ManifestController, :show)
+  end
+
+  scope "/", Pleroma.Web do
     pipe_through(:pleroma_html)
 
     post("/auth/password", TwitterAPI.PasswordController, :request)
@@ -755,6 +768,11 @@ defmodule Pleroma.Web.Router do
 
       forward("/mailbox", Plug.Swoosh.MailboxPreview, base_path: "/dev/mailbox")
     end
+  end
+
+  scope "/" do
+    pipe_through([:pleroma_html, :authenticate, :require_admin])
+    live_dashboard("/phoenix/live_dashboard")
   end
 
   # Test-only routes needed to test action dispatching and plug chain execution

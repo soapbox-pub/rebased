@@ -151,7 +151,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       index_query(user, params)
       |> Pagination.fetch_paginated(params)
 
-    render(conn, "index.json", chats: chats)
+    conn
+    |> add_link_headers(chats)
+    |> render("index.json", chats: chats)
   end
 
   defp index_query(%{id: user_id} = user, params) do

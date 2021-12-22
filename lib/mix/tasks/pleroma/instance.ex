@@ -199,6 +199,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       jwt_secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
+      lv_signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
       {web_push_public_key, web_push_private_key} = :crypto.generate_key(:ecdh, :prime256v1)
       template_dir = Application.app_dir(:pleroma, "priv") <> "/templates"
 
@@ -217,6 +218,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           secret: secret,
           jwt_secret: jwt_secret,
           signing_salt: signing_salt,
+          lv_signing_salt: lv_signing_salt,
           web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
           web_push_private_key: Base.url_encode64(web_push_private_key, padding: false),
           db_configurable?: db_configurable?,
