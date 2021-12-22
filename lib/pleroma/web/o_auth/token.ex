@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.Token do
@@ -25,6 +25,18 @@ defmodule Pleroma.Web.OAuth.Token do
     belongs_to(:app, App)
 
     timestamps()
+  end
+
+  def lifespan do
+    Pleroma.Config.get!([:oauth2, :token_expires_in])
+  end
+
+  @doc "Gets token by unique access token"
+  @spec get_by_token(String.t()) :: {:ok, t()} | {:error, :not_found}
+  def get_by_token(token) do
+    token
+    |> Query.get_by_token()
+    |> Repo.find_resource()
   end
 
   @doc "Gets token for app by access token"
@@ -75,11 +87,11 @@ defmodule Pleroma.Web.OAuth.Token do
   end
 
   defp put_valid_until(changeset, attrs) do
-    expires_in =
-      Map.get(attrs, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), expires_in()))
+    valid_until =
+      Map.get(attrs, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), lifespan()))
 
     changeset
-    |> change(%{valid_until: expires_in})
+    |> change(%{valid_until: valid_until})
     |> validate_required([:valid_until])
   end
 
@@ -130,6 +142,4 @@ defmodule Pleroma.Web.OAuth.Token do
   end
 
   def is_expired?(_), do: false
-
-  defp expires_in, do: Pleroma.Config.get([:oauth2, :token_expires_in], 600)
 end

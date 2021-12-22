@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
@@ -15,6 +15,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
@@ -45,7 +46,8 @@ defmodule Pleroma.Web.CommonAPI do
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,
             Pipeline.common_pipeline(create_activity_data,
-              local: true
+              local: true,
+              idempotency_key: opts[:idempotency_key]
             )} do
       {:ok, activity}
     else
@@ -140,7 +142,7 @@ defmodule Pleroma.Web.CommonAPI do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(activity_id)},
          {_, %Object{} = object, _} <-
-           {:find_object, Object.normalize(activity, false), activity},
+           {:find_object, Object.normalize(activity, fetch: false), activity},
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
@@ -171,7 +173,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id, user, params \\ %{}) do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
-         object = %Object{} <- Object.normalize(activity, false),
+         object = %Object{} <- Object.normalize(activity, fetch: false),
          {_, nil} <- {:existing_announce, Utils.get_existing_announce(user.ap_id, object)},
          public = public_announce?(object, params),
          {:ok, announce, _} <- Builder.announce(user, object, public: public),
@@ -189,7 +191,7 @@ defmodule Pleroma.Web.CommonAPI do
   def unrepeat(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
-         %Object{} = note <- Object.normalize(activity, false),
+         %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
          {:ok, undo, _} <- Builder.undo(user, announce),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
@@ -226,17 +228,7 @@ defmodule Pleroma.Web.CommonAPI do
       {:find_object, _} ->
         {:error, :not_found}
 
-      {:common_pipeline,
-       {
-         :error,
-         {
-           :validate_object,
-           {
-             :error,
-             changeset
-           }
-         }
-       }} = e ->
+      {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
         if {:object, {"already liked by this actor", []}} in changeset.errors do
           {:ok, :already_liked}
         else
@@ -251,7 +243,7 @@ defmodule Pleroma.Web.CommonAPI do
   def unfavorite(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
            {:find_activity, Activity.get_by_id(id)},
-         %Object{} = note <- Object.normalize(activity, false),
+         %Object{} = note <- Object.normalize(activity, fetch: false),
          %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
          {:ok, undo, _} <- Builder.undo(user, like),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
@@ -264,7 +256,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         object <- Object.normalize(activity),
+         object <- Object.normalize(activity, fetch: false),
          {:ok, emoji_react, _} <- Builder.emoji_react(user, object, emoji),
          {:ok, activity, _} <- Pipeline.common_pipeline(emoji_react, local: true) do
       {:ok, activity}
@@ -357,7 +349,7 @@ defmodule Pleroma.Web.CommonAPI do
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
   def get_visibility(%{visibility: visibility}, in_reply_to, _)
-      when visibility in ~w{public unlisted private direct},
+      when visibility in ~w{public local unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
   def get_visibility(%{visibility: "list:" <> list_id}, in_reply_to, _) do
@@ -375,7 +367,7 @@ defmodule Pleroma.Web.CommonAPI do
   def get_replied_to_visibility(nil), do: nil
 
   def get_replied_to_visibility(activity) do
-    with %Object{} = object <- Object.normalize(activity) do
+    with %Object{} = object <- Object.normalize(activity, fetch: false) do
       Visibility.get_visibility(object)
     end
   end
@@ -398,73 +390,108 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def listen(user, data) do
-    visibility = Map.get(data, :visibility, "public")
-
-    with {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
-         listen_data <-
-           data
-           |> Map.take([:album, :artist, :title, :length])
-           |> Map.new(fn {key, value} -> {to_string(key), value} end)
-           |> Map.put("type", "Audio")
-           |> Map.put("to", to)
-           |> Map.put("cc", cc)
-           |> Map.put("actor", user.ap_id),
-         {:ok, activity} <-
-           ActivityPub.listen(%{
-             actor: user,
-             to: to,
-             object: listen_data,
-             context: Utils.generate_context_id(),
-             additional: %{"cc" => cc}
-           }) do
-      {:ok, activity}
+    with {:ok, draft} <- ActivityDraft.listen(user, data) do
+      ActivityPub.listen(draft.changes)
     end
   end
 
   def post(user, %{status: _} = data) do
-    with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
+    with {:ok, draft} <- ActivityDraft.create(user, data) do
       ActivityPub.create(draft.changes, draft.preview?)
     end
   end
 
-  def pin(id, %{ap_id: user_ap_id} = user) do
-    with %Activity{
-           actor: ^user_ap_id,
-           data: %{"type" => "Create"},
-           object: %Object{data: %{"type" => object_type}}
-         } = activity <- Activity.get_by_id_with_object(id),
-         true <- object_type in ["Note", "Article", "Question"],
-         true <- Visibility.is_public?(activity),
-         {:ok, _user} <- User.add_pinnned_activity(user, activity) do
+  @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
+  def pin(id, %User{} = user) do
+    with %Activity{} = activity <- create_activity_by_id(id),
+         true <- activity_belongs_to_actor(activity, user.ap_id),
+         true <- object_type_is_allowed_for_pin(activity.object),
+         true <- activity_is_public(activity),
+         {:ok, pin_data, _} <- Builder.pin(user, activity.object),
+         {:ok, _pin, _} <-
+           Pipeline.common_pipeline(pin_data,
+             local: true,
+             activity_id: id
+           ) do
       {:ok, activity}
     else
-      {:error, %{errors: [pinned_activities: {err, _}]}} -> {:error, err}
-      _ -> {:error, dgettext("errors", "Could not pin")}
+      {:error, {:side_effects, error}} -> error
+      error -> error
     end
   end
 
+  defp create_activity_by_id(id) do
+    with nil <- Activity.create_by_id_with_object(id) do
+      {:error, :not_found}
+    end
+  end
+
+  defp activity_belongs_to_actor(%{actor: actor}, actor), do: true
+  defp activity_belongs_to_actor(_, _), do: {:error, :ownership_error}
+
+  defp object_type_is_allowed_for_pin(%{data: %{"type" => type}}) do
+    with false <- type in ["Note", "Article", "Question"] do
+      {:error, :not_allowed}
+    end
+  end
+
+  defp activity_is_public(activity) do
+    with false <- Visibility.is_public?(activity) do
+      {:error, :visibility_error}
+    end
+  end
+
+  @spec unpin(String.t(), User.t()) :: {:ok, User.t()} | {:error, term()}
   def unpin(id, user) do
-    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
-         {:ok, _user} <- User.remove_pinnned_activity(user, activity) do
+    with %Activity{} = activity <- create_activity_by_id(id),
+         {:ok, unpin_data, _} <- Builder.unpin(user, activity.object),
+         {:ok, _unpin, _} <-
+           Pipeline.common_pipeline(unpin_data,
+             local: true,
+             activity_id: activity.id,
+             expires_at: activity.data["expires_at"],
+             featured_address: user.featured_address
+           ) do
       {:ok, activity}
-    else
-      {:error, %{errors: [pinned_activities: {err, _}]}} -> {:error, err}
-      _ -> {:error, dgettext("errors", "Could not unpin")}
     end
   end
 
-  def add_mute(user, activity) do
+  def add_mute(user, activity, params \\ %{}) do
+    expires_in = Map.get(params, :expires_in, 0)
+
     with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]),
          _ <- Pleroma.Notification.mark_context_as_read(user, activity.data["context"]) do
+      if expires_in > 0 do
+        Pleroma.Workers.MuteExpireWorker.enqueue(
+          "unmute_conversation",
+          %{"user_id" => user.id, "activity_id" => activity.id},
+          schedule_in: expires_in
+        )
+      end
+
       {:ok, activity}
     else
       {:error, _} -> {:error, dgettext("errors", "conversation is already muted")}
     end
   end
 
-  def remove_mute(user, activity) do
+  def remove_mute(%User{} = user, %Activity{} = activity) do
     ThreadMute.remove_mute(user.id, activity.data["context"])
     {:ok, activity}
+  end
+
+  def remove_mute(user_id, activity_id) do
+    with {:user, %User{} = user} <- {:user, User.get_by_id(user_id)},
+         {:activity, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)} do
+      remove_mute(user, activity)
+    else
+      {what, result} = error ->
+        Logger.warn(
+          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
+        )
+
+        {:error, error}
+    end
   end
 
   def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})

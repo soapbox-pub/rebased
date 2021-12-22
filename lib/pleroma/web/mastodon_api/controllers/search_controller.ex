@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SearchController do
@@ -8,14 +8,16 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ControllerHelper
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
   require Logger
+
+  @search_limit 40
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -77,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     [
       resolve: params[:resolve],
       following: params[:following],
-      limit: params[:limit],
+      limit: min(params[:limit], @search_limit),
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),
@@ -108,7 +110,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   end
 
   defp resource_search(:v2, "hashtags", query, options) do
-    tags_path = Web.base_url() <> "/tag/"
+    tags_path = Endpoint.url() <> "/tag/"
 
     query
     |> prepare_tags(options)

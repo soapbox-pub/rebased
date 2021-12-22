@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
@@ -12,6 +12,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI.Report
+  alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -42,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     {:ok, [notification]} = Notification.create_notifications(activity)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
     chat = Chat.get(recipient.id, user.ap_id)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
@@ -142,23 +144,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     refute Repo.one(Notification)
   end
 
-  @tag capture_log: true
   test "Move notification" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
     follower = insert(:user)
-
-    old_user_url = old_user.ap_id
-
-    body =
-      File.read!("test/fixtures/users_mock/localhost.json")
-      |> String.replace("{{nickname}}", old_user.nickname)
-      |> Jason.encode!()
-
-    Tesla.Mock.mock(fn
-      %{method: :get, url: ^old_user_url} ->
-        %Tesla.Env{status: 200, body: body}
-    end)
 
     User.follow(follower, old_user)
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
@@ -205,6 +194,47 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     }
 
     test_notifications_rendering([notification], user, [expected])
+  end
+
+  test "Poll notification" do
+    user = insert(:user)
+    activity = insert(:question_activity, user: user)
+    {:ok, [notification]} = Notification.create_poll_notifications(activity)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "poll",
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: user
+        }),
+      status: StatusView.render("show.json", %{activity: activity, for: user}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], user, [expected])
+  end
+
+  test "Report notification" do
+    reporting_user = insert(:user)
+    reported_user = insert(:user)
+    {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+
+    {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "pleroma:report",
+      account: AccountView.render("show.json", %{user: reporting_user, for: moderator_user}),
+      created_at: Utils.to_masto_date(notification.inserted_at),
+      report: ReportView.render("show.json", Report.extract_report_info(activity))
+    }
+
+    test_notifications_rendering([notification], moderator_user, [expected])
   end
 
   test "muted notification" do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.RateLimiter do
@@ -72,6 +72,8 @@ defmodule Pleroma.Web.Plugs.RateLimiter do
 
   require Logger
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   @doc false
   def init(plug_opts) do
     plug_opts
@@ -124,7 +126,7 @@ defmodule Pleroma.Web.Plugs.RateLimiter do
       key_name = make_key_name(action_settings)
       limit = get_limits(action_settings)
 
-      case Cachex.get(bucket_name, key_name) do
+      case @cachex.get(bucket_name, key_name) do
         {:error, :no_cache} ->
           @inspect_bucket_not_found
 
@@ -157,7 +159,7 @@ defmodule Pleroma.Web.Plugs.RateLimiter do
     key_name = make_key_name(action_settings)
     limit = get_limits(action_settings)
 
-    case Cachex.get_and_update(bucket_name, key_name, &increment_value(&1, limit)) do
+    case @cachex.get_and_update(bucket_name, key_name, &increment_value(&1, limit)) do
       {:commit, value} ->
         {:ok, value}
 

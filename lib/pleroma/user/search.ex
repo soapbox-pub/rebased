@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
@@ -85,7 +85,6 @@ defmodule Pleroma.User.Search do
     |> base_query(following)
     |> filter_blocked_user(for_user)
     |> filter_invisible_users()
-    |> filter_discoverable_users()
     |> filter_internal_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
@@ -161,10 +160,6 @@ defmodule Pleroma.User.Search do
 
   defp filter_invisible_users(query) do
     from(q in query, where: q.invisible == false)
-  end
-
-  defp filter_discoverable_users(query) do
-    from(q in query, where: q.is_discoverable == true)
   end
 
   defp filter_internal_users(query) do

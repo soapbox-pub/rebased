@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
@@ -27,6 +27,45 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                build_conn()
                |> get("/api/v1/accounts/-1")
                |> json_response_and_validate_schema(404)
+    end
+
+    test "relationship field" do
+      %{conn: conn, user: user} = oauth_access(["read"])
+
+      other_user = insert(:user)
+
+      response =
+        conn
+        |> get("/api/v1/accounts/#{other_user.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert response["id"] == other_user.id
+      assert response["pleroma"]["relationship"] == %{}
+
+      assert %{"pleroma" => %{"relationship" => %{"following" => false, "followed_by" => false}}} =
+               conn
+               |> get("/api/v1/accounts/#{other_user.id}?with_relationships=true")
+               |> json_response_and_validate_schema(200)
+
+      {:ok, _, %{id: other_id}} = User.follow(user, other_user)
+
+      assert %{
+               "id" => ^other_id,
+               "pleroma" => %{"relationship" => %{"following" => true, "followed_by" => false}}
+             } =
+               conn
+               |> get("/api/v1/accounts/#{other_id}?with_relationships=true")
+               |> json_response_and_validate_schema(200)
+
+      {:ok, _, _} = User.follow(other_user, user)
+
+      assert %{
+               "id" => ^other_id,
+               "pleroma" => %{"relationship" => %{"following" => true, "followed_by" => true}}
+             } =
+               conn
+               |> get("/api/v1/accounts/#{other_id}?with_relationships=true")
+               |> json_response_and_validate_schema(200)
     end
 
     test "works by nickname" do
@@ -126,7 +165,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "returns 404 for deactivated user", %{conn: conn} do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
 
       assert %{"error" => "Can't find user"} =
                conn
@@ -256,7 +295,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "deactivated user", %{conn: conn} do
-      user = insert(:user, deactivated: true)
+      user = insert(:user, is_active: false)
 
       assert %{"error" => "Can't find user"} ==
                conn
@@ -320,7 +359,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       user_two = insert(:user)
       user_three = insert(:user)
 
-      {:ok, _user_three} = User.follow(user_three, user_one)
+      {:ok, _user_three, _user_one} = User.follow(user_three, user_one)
 
       {:ok, activity} = CommonAPI.post(user_one, %{status: "HI!!!"})
 
@@ -436,6 +475,54 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_visibilities[]=direct")
       assert [%{"id" => ^public_activity_id}] = json_response_and_validate_schema(conn, 200)
     end
+
+    test "muted reactions", %{user: user, conn: conn} do
+      user2 = insert(:user)
+      User.mute(user, user2)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user2, "🎅")
+
+      result =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
+
+    test "paginates a user's statuses", %{user: user, conn: conn} do
+      {:ok, post_1} = CommonAPI.post(user, %{status: "first post"})
+      {:ok, post_2} = CommonAPI.post(user, %{status: "second post"})
+
+      response_1 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1")
+      assert [res] = json_response_and_validate_schema(response_1, 200)
+      assert res["id"] == post_2.id
+
+      response_2 = get(conn, "/api/v1/accounts/#{user.id}/statuses?limit=1&max_id=#{res["id"]}")
+      assert [res] = json_response_and_validate_schema(response_2, 200)
+      assert res["id"] == post_1.id
+
+      refute response_1 == response_2
+    end
   end
 
   defp local_and_remote_activities(%{local: local, remote: remote}) do
@@ -535,16 +622,55 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting followers", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, %{id: user_id}} = User.follow(user, other_user)
+      {:ok, %{id: user_id}, other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
       assert [%{"id" => ^user_id}] = json_response_and_validate_schema(conn, 200)
     end
 
+    test "following with relationship", %{conn: conn, user: user} do
+      other_user = insert(:user)
+      {:ok, %{id: id}, _} = User.follow(other_user, user)
+
+      assert [
+               %{
+                 "id" => ^id,
+                 "pleroma" => %{
+                   "relationship" => %{
+                     "id" => ^id,
+                     "following" => false,
+                     "followed_by" => true
+                   }
+                 }
+               }
+             ] =
+               conn
+               |> get("/api/v1/accounts/#{user.id}/followers?with_relationships=true")
+               |> json_response_and_validate_schema(200)
+
+      {:ok, _, _} = User.follow(user, other_user)
+
+      assert [
+               %{
+                 "id" => ^id,
+                 "pleroma" => %{
+                   "relationship" => %{
+                     "id" => ^id,
+                     "following" => true,
+                     "followed_by" => true
+                   }
+                 }
+               }
+             ] =
+               conn
+               |> get("/api/v1/accounts/#{user.id}/followers?with_relationships=true")
+               |> json_response_and_validate_schema(200)
+    end
+
     test "getting followers, hide_followers", %{user: user, conn: conn} do
       other_user = insert(:user, hide_followers: true)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
@@ -554,7 +680,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting followers, hide_followers, same user requesting" do
       user = insert(:user)
       other_user = insert(:user, hide_followers: true)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -566,9 +692,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "getting followers, pagination", %{user: user, conn: conn} do
-      {:ok, %User{id: follower1_id}} = :user |> insert() |> User.follow(user)
-      {:ok, %User{id: follower2_id}} = :user |> insert() |> User.follow(user)
-      {:ok, %User{id: follower3_id}} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower1_id}, _user} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower2_id}, _user} = :user |> insert() |> User.follow(user)
+      {:ok, %User{id: follower3_id}, _user} = :user |> insert() |> User.follow(user)
 
       assert [%{"id" => ^follower3_id}, %{"id" => ^follower2_id}] =
                conn
@@ -583,9 +709,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^follower2_id}, %{"id" => ^follower1_id}] =
                conn
                |> get(
-                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{
-                   follower3_id
-                 }"
+                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{follower3_id}"
                )
                |> json_response_and_validate_schema(200)
 
@@ -604,7 +728,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "getting following", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/following")
 
@@ -612,10 +736,28 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert id == to_string(other_user.id)
     end
 
+    test "following with relationship", %{conn: conn, user: user} do
+      other_user = insert(:user)
+      {:ok, user, other_user} = User.follow(user, other_user)
+
+      conn = get(conn, "/api/v1/accounts/#{user.id}/following?with_relationships=true")
+
+      id = other_user.id
+
+      assert [
+               %{
+                 "id" => ^id,
+                 "pleroma" => %{
+                   "relationship" => %{"id" => ^id, "following" => true, "followed_by" => false}
+                 }
+               }
+             ] = json_response_and_validate_schema(conn, 200)
+    end
+
     test "getting following, hide_follows, other user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -629,7 +771,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "getting following, hide_follows, same user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+      {:ok, user, _other_user} = User.follow(user, other_user)
 
       conn =
         build_conn()
@@ -644,9 +786,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       following1 = insert(:user)
       following2 = insert(:user)
       following3 = insert(:user)
-      {:ok, _} = User.follow(user, following1)
-      {:ok, _} = User.follow(user, following2)
-      {:ok, _} = User.follow(user, following3)
+      {:ok, _, _} = User.follow(user, following1)
+      {:ok, _, _} = User.follow(user, following2)
+      {:ok, _, _} = User.follow(user, following3)
 
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
 
@@ -737,7 +879,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [] ==
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert %{"showing_reblogs" => true} =
                conn
@@ -748,7 +890,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^reblog_id}] =
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
     end
 
     test "following with reblogs" do
@@ -766,7 +908,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^reblog_id}] =
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
 
       assert %{"showing_reblogs" => false} =
                conn
@@ -777,7 +919,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [] ==
                conn
                |> get("/api/v1/timelines/home")
-               |> json_response(200)
+               |> json_response_and_validate_schema(200)
     end
 
     test "following / unfollowing errors", %{user: user, conn: conn} do
@@ -959,7 +1101,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{"error" => "{\"email\":[\"Invalid email\"]}"} =
                json_response_and_validate_schema(conn, 400)
 
-      Pleroma.Config.put([User, :email_blacklist], [])
+      clear_config([User, :email_blacklist], [])
 
       conn =
         build_conn()
@@ -979,8 +1121,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       user = Repo.preload(token_from_db, :user).user
 
       assert user
-      refute user.confirmation_pending
-      refute user.approval_pending
+      assert user.is_confirmed
+      assert user.is_approved
     end
 
     test "registers but does not log in with :account_activation_required", %{conn: conn} do
@@ -1040,7 +1182,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       refute response["token_type"]
 
       user = Repo.get_by(User, email: "lain@example.org")
-      assert user.confirmation_pending
+      refute user.is_confirmed
     end
 
     test "registers but does not log in with :account_approval_required", %{conn: conn} do
@@ -1102,7 +1244,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       user = Repo.get_by(User, email: "lain@example.org")
 
-      assert user.approval_pending
+      refute user.is_approved
       assert user.registration_reason == "I'm a cool dude, bro"
     end
 
@@ -1378,8 +1520,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> json_response_and_validate_schema(:ok)
 
       assert Token |> Repo.get_by(token: access_token) |> Repo.preload(:user) |> Map.get(:user)
-
-      Cachex.del(:used_captcha_cache, token)
     end
 
     test "returns 400 if any captcha field is not provided", %{conn: conn} do
@@ -1487,7 +1627,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "returns the relationships for the current user", %{user: user, conn: conn} do
       %{id: other_user_id} = other_user = insert(:user)
-      {:ok, _user} = User.follow(user, other_user)
+      {:ok, _user, _other_user} = User.follow(user, other_user)
 
       assert [%{"id" => ^other_user_id}] =
                conn
@@ -1509,28 +1649,131 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
   test "getting a list of mutes" do
     %{user: user, conn: conn} = oauth_access(["read:mutes"])
-    other_user = insert(:user)
+    %{id: id1} = other_user1 = insert(:user)
+    %{id: id2} = other_user2 = insert(:user)
+    %{id: id3} = other_user3 = insert(:user)
 
-    {:ok, _user_relationships} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user1)
+    {:ok, _user_relationships} = User.mute(user, other_user2)
+    {:ok, _user_relationships} = User.mute(user, other_user3)
 
-    conn = get(conn, "/api/v1/mutes")
+    result =
+      conn
+      |> get("/api/v1/mutes")
+      |> json_response_and_validate_schema(200)
 
-    other_user_id = to_string(other_user.id)
-    assert [%{"id" => ^other_user_id}] = json_response_and_validate_schema(conn, 200)
+    assert [id1, id2, id3] == Enum.map(result, & &1["id"])
+
+    result =
+      conn
+      |> get("/api/v1/mutes?limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id1}] = result
+
+    result =
+      conn
+      |> get("/api/v1/mutes?since_id=#{id1}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}, %{"id" => ^id3}] = result
+
+    result =
+      conn
+      |> get("/api/v1/mutes?since_id=#{id1}&max_id=#{id3}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
+
+    result =
+      conn
+      |> get("/api/v1/mutes?since_id=#{id1}&limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
+  end
+
+  test "list of mutes with with_relationships parameter" do
+    %{user: user, conn: conn} = oauth_access(["read:mutes"])
+    %{id: id1} = other_user1 = insert(:user)
+    %{id: id2} = other_user2 = insert(:user)
+    %{id: id3} = other_user3 = insert(:user)
+
+    {:ok, _, _} = User.follow(other_user1, user)
+    {:ok, _, _} = User.follow(other_user2, user)
+    {:ok, _, _} = User.follow(other_user3, user)
+
+    {:ok, _} = User.mute(user, other_user1)
+    {:ok, _} = User.mute(user, other_user2)
+    {:ok, _} = User.mute(user, other_user3)
+
+    assert [
+             %{
+               "id" => ^id1,
+               "pleroma" => %{"relationship" => %{"muting" => true, "followed_by" => true}}
+             },
+             %{
+               "id" => ^id2,
+               "pleroma" => %{"relationship" => %{"muting" => true, "followed_by" => true}}
+             },
+             %{
+               "id" => ^id3,
+               "pleroma" => %{"relationship" => %{"muting" => true, "followed_by" => true}}
+             }
+           ] =
+             conn
+             |> get("/api/v1/mutes?with_relationships=true")
+             |> json_response_and_validate_schema(200)
   end
 
   test "getting a list of blocks" do
     %{user: user, conn: conn} = oauth_access(["read:blocks"])
-    other_user = insert(:user)
+    %{id: id1} = other_user1 = insert(:user)
+    %{id: id2} = other_user2 = insert(:user)
+    %{id: id3} = other_user3 = insert(:user)
 
-    {:ok, _user_relationship} = User.block(user, other_user)
+    {:ok, _user_relationship} = User.block(user, other_user1)
+    {:ok, _user_relationship} = User.block(user, other_user3)
+    {:ok, _user_relationship} = User.block(user, other_user2)
 
-    conn =
+    result =
       conn
       |> assign(:user, user)
       |> get("/api/v1/blocks")
+      |> json_response_and_validate_schema(200)
 
-    other_user_id = to_string(other_user.id)
-    assert [%{"id" => ^other_user_id}] = json_response_and_validate_schema(conn, 200)
+    assert [id1, id2, id3] == Enum.map(result, & &1["id"])
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id1}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?since_id=#{id1}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}, %{"id" => ^id3}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?since_id=#{id1}&max_id=#{id3}")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks?since_id=#{id1}&limit=1")
+      |> json_response_and_validate_schema(200)
+
+    assert [%{"id" => ^id2}] = result
   end
 end

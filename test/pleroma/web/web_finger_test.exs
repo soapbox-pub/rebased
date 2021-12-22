@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFingerTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   alias Pleroma.Web.WebFinger
   import Pleroma.Factory
   import Tesla.Mock
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "returns a link to the xml lrdd" do
       host_info = WebFinger.host_meta()
 
-      assert String.contains?(host_info, Pleroma.Web.base_url())
+      assert String.contains?(host_info, Pleroma.Web.Endpoint.url())
     end
   end
 
@@ -45,6 +45,26 @@ defmodule Pleroma.Web.WebFingerTest do
       assert {:error, _} = WebFinger.finger("pleroma.social")
     end
 
+    test "returns error when there is no content-type header" do
+      Tesla.Mock.mock(fn
+        %{url: "http://social.heldscal.la/.well-known/host-meta"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/social.heldscal.la_host_meta")
+           }}
+
+        %{
+          url:
+            "https://social.heldscal.la/.well-known/webfinger?resource=acct:invalid_content@social.heldscal.la"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: ""}}
+      end)
+
+      user = "invalid_content@social.heldscal.la"
+      assert {:error, {:content_type, nil}} = WebFinger.finger(user)
+    end
+
     test "returns error when fails parse xml or json" do
       user = "invalid_content@social.heldscal.la"
       assert {:error, %Jason.DecodeError{}} = WebFinger.finger(user)
@@ -56,12 +76,13 @@ defmodule Pleroma.Web.WebFingerTest do
       {:ok, _data} = WebFinger.finger(user)
     end
 
-    test "returns the ActivityPub actor URI for an ActivityPub user with the ld+json mimetype" do
+    test "returns the ActivityPub actor URI and subscribe address for an ActivityPub user with the ld+json mimetype" do
       user = "kaniini@gerzilla.de"
 
       {:ok, data} = WebFinger.finger(user)
 
       assert data["ap_id"] == "https://gerzilla.de/channel/kaniini"
+      assert data["subscribe_address"] == "https://gerzilla.de/follow?f=&url={uri}"
     end
 
     test "it work for AP-only user" do
@@ -111,6 +132,53 @@ defmodule Pleroma.Web.WebFingerTest do
     test "it works with idna domains as link" do
       ap_id = "https://" <> to_string(:idna.encode("zetsubou.みんな")) <> "/users/lain"
       {:ok, _data} = WebFinger.finger(ap_id)
+    end
+
+    test "respects json content-type" do
+      Tesla.Mock.mock(fn
+        %{
+          url:
+            "https://mastodon.social/.well-known/webfinger?resource=acct:emelie@mastodon.social"
+        } ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/webfinger_emelie.json"),
+             headers: [{"content-type", "application/jrd+json"}]
+           }}
+
+        %{url: "http://mastodon.social/.well-known/host-meta"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/mastodon.social_host_meta")
+           }}
+      end)
+
+      {:ok, _data} = WebFinger.finger("emelie@mastodon.social")
+    end
+
+    test "respects xml content-type" do
+      Tesla.Mock.mock(fn
+        %{
+          url: "https://pawoo.net/.well-known/webfinger?resource=acct:pekorino@pawoo.net"
+        } ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/https___pawoo.net_users_pekorino.xml"),
+             headers: [{"content-type", "application/xrd+xml"}]
+           }}
+
+        %{url: "http://pawoo.net/.well-known/host-meta"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/pawoo.net_host_meta")
+           }}
+      end)
+
+      {:ok, _data} = WebFinger.finger("pekorino@pawoo.net")
     end
   end
 end

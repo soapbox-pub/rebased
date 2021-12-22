@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
@@ -7,7 +7,6 @@ defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
 
   import Pleroma.Factory
 
-  alias Pleroma.Config
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.User
@@ -61,7 +60,7 @@ defmodule Pleroma.Web.AdminAPI.RelayControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/relay")
 
-      assert json_response_and_validate_schema(conn, 200)["relays"] == [
+      assert json_response_and_validate_schema(conn, 200)["relays"] |> Enum.sort() == [
                %{
                  "actor" => "http://mastodon.example.org/users/admin",
                  "followed_back" => true

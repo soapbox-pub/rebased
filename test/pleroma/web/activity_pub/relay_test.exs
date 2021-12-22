@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.RelayTest do
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
              )
 
       Pleroma.Repo.delete(user)
-      Cachex.clear(:user_cache)
+      User.invalidate_cache(user)
 
       assert {:ok, %Activity{} = activity} = Relay.unfollow(user_ap_id, %{force: true})
 
@@ -148,7 +148,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert {:ok, %Activity{} = activity} = Relay.publish(note)
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
-      assert activity.data["to"] == [service_actor.follower_address]
+      assert service_actor.follower_address in activity.data["to"]
       assert called(Pleroma.Web.Federator.publish(activity))
     end
 

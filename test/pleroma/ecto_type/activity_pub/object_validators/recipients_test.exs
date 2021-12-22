@@ -1,15 +1,15 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.RecipientsTest do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators.Recipients
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
-  test "it asserts that all elements of the list are object ids" do
+  test "it only keeps elements that are valid object ids" do
     list = ["https://lain.com/users/lain", "invalid"]
 
-    assert :error == Recipients.cast(list)
+    assert {:ok, ["https://lain.com/users/lain"]} == Recipients.cast(list)
   end
 
   test "it works with a list" do

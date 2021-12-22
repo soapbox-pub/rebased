@@ -1,12 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
 
@@ -21,6 +20,17 @@ defmodule Pleroma.Object.FetcherTest do
       %{method: :get, url: "https://mastodon.example.org/users/userisgone404"} ->
         %Tesla.Env{status: 404}
 
+      %{
+        method: :get,
+        url:
+          "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          headers: [{"content-type", "application/json"}],
+          body: File.read!("test/fixtures/spoofed-object.json")
+        }
+
       env ->
         apply(HttpRequestMock, :request, [env])
     end)
@@ -34,22 +44,33 @@ defmodule Pleroma.Object.FetcherTest do
         %{method: :get, url: "https://social.sakamoto.gq/notice/9wTkLEnuq47B25EehM"} ->
           %Tesla.Env{
             status: 200,
-            body: File.read!("test/fixtures/fetch_mocks/9wTkLEnuq47B25EehM.json")
+            body: File.read!("test/fixtures/fetch_mocks/9wTkLEnuq47B25EehM.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
           }
 
         %{method: :get, url: "https://social.sakamoto.gq/users/eal"} ->
           %Tesla.Env{
             status: 200,
-            body: File.read!("test/fixtures/fetch_mocks/eal.json")
+            body: File.read!("test/fixtures/fetch_mocks/eal.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
           }
 
         %{method: :get, url: "https://busshi.moe/users/tuxcrafting/statuses/104410921027210069"} ->
           %Tesla.Env{
             status: 200,
-            body: File.read!("test/fixtures/fetch_mocks/104410921027210069.json")
+            body: File.read!("test/fixtures/fetch_mocks/104410921027210069.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
           }
 
         %{method: :get, url: "https://busshi.moe/users/tuxcrafting"} ->
+          %Tesla.Env{
+            status: 500
+          }
+
+        %{
+          method: :get,
+          url: "https://stereophonic.space/objects/02997b83-3ea7-4b63-94af-ef3aa2d4ed17"
+        } ->
           %Tesla.Env{
             status: 500
           }
@@ -73,20 +94,20 @@ defmodule Pleroma.Object.FetcherTest do
     setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     test "it returns thread depth exceeded error if thread depth is exceeded" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:error, "Max thread distance exceeded."} =
                Fetcher.fetch_object_from_id(@ap_id, depth: 1)
     end
 
     test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 0)
 
       assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id)
     end
 
     test "it fetches object if requested depth does not exceed max thread depth" do
-      Config.put([:instance, :federation_incoming_replies_max_depth], 10)
+      clear_config([:instance, :federation_incoming_replies_max_depth], 10)
 
       assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id, depth: 10)
     end
@@ -111,8 +132,7 @@ defmodule Pleroma.Object.FetcherTest do
       {:ok, object} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
+      assert _activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
       {:ok, object_again} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
@@ -130,6 +150,13 @@ defmodule Pleroma.Object.FetcherTest do
       assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
                Fetcher.fetch_object_from_id(
                  "http://mastodon.example.org/@admin/99541947525187367"
+               )
+    end
+
+    test "it does not fetch a spoofed object uploaded on an instance as an attachment" do
+      assert {:error, _} =
+               Fetcher.fetch_object_from_id(
+                 "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
                )
     end
   end
@@ -224,7 +251,7 @@ defmodule Pleroma.Object.FetcherTest do
                    Pleroma.Signature,
                    [:passthrough],
                    [] do
-      Config.put([:activitypub, :sign_object_fetches], true)
+      clear_config([:activitypub, :sign_object_fetches], true)
 
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
@@ -235,7 +262,7 @@ defmodule Pleroma.Object.FetcherTest do
                    Pleroma.Signature,
                    [:passthrough],
                    [] do
-      Config.put([:activitypub, :sign_object_fetches], false)
+      clear_config([:activitypub, :sign_object_fetches], false)
 
       Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 

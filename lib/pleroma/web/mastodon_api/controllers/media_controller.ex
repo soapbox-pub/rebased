@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MediaController do
@@ -13,7 +13,6 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
   plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:create, :create2])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
   plug(OAuthScopesPlug, %{scopes: ["read:media"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:media"]} when action != :show)

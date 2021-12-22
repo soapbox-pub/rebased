@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -54,10 +54,15 @@ config :pleroma, Pleroma.Repo,
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
+# Reduce recompilation time
+# https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
+config :phoenix, :plug_init_mode, :runtime
+
 if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
 else
   IO.puts(
+    :stderr,
     "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
   )
 end

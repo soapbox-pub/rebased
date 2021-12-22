@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.UserController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ActivityPubController
@@ -17,44 +18,34 @@ defmodule Pleroma.Web.Feed.UserController do
   def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname}) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname_or_id(nickname)} do
       Pleroma.Web.Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
+    else
+      _ -> Pleroma.Web.Fallback.RedirectController.redirector(conn, nil)
     end
   end
 
   def feed_redirect(%{assigns: %{format: format}} = conn, _params)
       when format in ["json", "activity+json"] do
-    with %{halted: false} = conn <-
-           Pleroma.Web.Plugs.EnsureAuthenticatedPlug.call(conn,
-             unless_func: &Pleroma.Web.Plugs.FederatingPlug.federating?/1
-           ) do
-      ActivityPubController.call(conn, :user)
-    end
+    ActivityPubController.call(conn, :user)
   end
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      redirect(conn, external: "#{user_feed_url(conn, :feed, user.nickname)}.atom")
+      redirect(conn, external: "#{Routes.user_feed_url(conn, :feed, user.nickname)}.atom")
     end
   end
 
-  def feed(conn, params) do
-    unless Pleroma.Config.restrict_unauthenticated_access?(:profiles, :local) do
-      render_feed(conn, params)
-    else
-      errors(conn, {:error, :not_found})
-    end
-  end
-
-  def render_feed(conn, %{"nickname" => nickname} = params) do
+  def feed(conn, %{"nickname" => nickname} = params) do
     format = get_format(conn)
 
     format =
-      if format in ["rss", "atom"] do
+      if format in ["atom", "rss"] do
         format
       else
         "atom"
       end
 
-    with {_, %User{local: true} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
+    with {_, %User{local: true} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)},
+         {_, :visible} <- {:visibility, User.visible_for(user, _reading_user = nil)} do
       activities =
         %{
           type: ["Create"],
@@ -69,7 +60,7 @@ defmodule Pleroma.Web.Feed.UserController do
       |> render("user.#{format}",
         user: user,
         activities: activities,
-        feed_config: Pleroma.Config.get([:feed])
+        feed_config: Config.get([:feed])
       )
     end
   end
@@ -80,6 +71,8 @@ defmodule Pleroma.Web.Feed.UserController do
 
   def errors(conn, {:fetch_user, %User{local: false}}), do: errors(conn, {:error, :not_found})
   def errors(conn, {:fetch_user, nil}), do: errors(conn, {:error, :not_found})
+
+  def errors(conn, {:visibility, _}), do: errors(conn, {:error, :not_found})
 
   def errors(conn, _) do
     render_error(conn, :internal_server_error, "Something went wrong")

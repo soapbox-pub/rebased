@@ -55,7 +55,7 @@ defmodule Pleroma.LoadTesting.Users do
       name: "Test テスト User #{i}",
       email: "user#{i}@example.com",
       nickname: "nick#{i}",
-      password_hash: Pbkdf2.hash_pwd_salt("test"),
+      password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("test"),
       bio: "Tester Number #{i}",
       local: !remote
     }
@@ -109,8 +109,8 @@ defmodule Pleroma.LoadTesting.Users do
   end
 
   def make_friends(%User{} = main_user, %User{} = user) do
-    {:ok, _} = User.follow(main_user, user)
-    {:ok, _} = User.follow(user, main_user)
+    {:ok, _, _} = User.follow(main_user, user)
+    {:ok, _, _} = User.follow(user, main_user)
   end
 
   @spec get_users(User.t(), keyword()) :: [User.t()]

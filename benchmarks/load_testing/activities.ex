@@ -299,7 +299,7 @@ defmodule Pleroma.LoadTesting.Activities do
       "url" => [
         %{
           "href" =>
-            "#{Pleroma.Web.base_url()}/media/b1b873552422a07bf53af01f3c231c841db4dfc42c35efde681abaf0f2a4eab7.jpg",
+            "#{Pleroma.Web.Endpoint.url()}/media/b1b873552422a07bf53af01f3c231c841db4dfc42c35efde681abaf0f2a4eab7.jpg",
           "mediaType" => "image/jpeg",
           "type" => "Link"
         }
@@ -394,7 +394,7 @@ defmodule Pleroma.LoadTesting.Activities do
 
   defp other_data(actor, content) do
     %{host: host} = URI.parse(actor.ap_id)
-    datetime = DateTime.utc_now()
+    datetime = DateTime.utc_now() |> to_string()
     context_id = "https://#{host}/contexts/#{UUID.generate()}"
     activity_id = "https://#{host}/activities/#{UUID.generate()}"
     object_id = "https://#{host}/objects/#{UUID.generate()}"

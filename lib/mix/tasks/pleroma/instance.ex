@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Instance do
@@ -36,9 +36,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           listen_port: :string,
           strip_uploads: :string,
           anonymize_uploads: :string,
-          dedupe_uploads: :string,
-          skip_release_env: :boolean,
-          release_env_file: :string
+          dedupe_uploads: :string
         ],
         aliases: [
           o: :output,
@@ -163,12 +161,21 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
         |> Path.expand()
 
+      {strip_uploads_message, strip_uploads_default} =
+        if Pleroma.Utils.command_available?("exiftool") do
+          {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as installed. (y/n)",
+           "y"}
+        else
+          {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as not installed, please install it if you answer yes. (y/n)",
+           "n"}
+        end
+
       strip_uploads =
         get_option(
           options,
           :strip_uploads,
-          "Do you want to strip location (GPS) data from uploaded images? (y/n)",
-          "y"
+          strip_uploads_message,
+          strip_uploads_default
         ) === "y"
 
       anonymize_uploads =
@@ -192,6 +199,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       jwt_secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
+      lv_signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
       {web_push_public_key, web_push_private_key} = :crypto.generate_key(:ecdh, :prime256v1)
       template_dir = Application.app_dir(:pleroma, "priv") <> "/templates"
 
@@ -210,6 +218,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           secret: secret,
           jwt_secret: jwt_secret,
           signing_salt: signing_salt,
+          lv_signing_salt: lv_signing_salt,
           web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
           web_push_private_key: Base.url_encode64(web_push_private_key, padding: false),
           db_configurable?: db_configurable?,
@@ -235,6 +244,13 @@ defmodule Mix.Tasks.Pleroma.Instance do
           rum_enabled: rum_enabled
         )
 
+      config_dir = Path.dirname(config_path)
+      psql_dir = Path.dirname(psql_path)
+
+      [config_dir, psql_dir, static_dir, uploads_dir]
+      |> Enum.reject(&File.exists?/1)
+      |> Enum.map(&File.mkdir_p!/1)
+
       shell_info("Writing config to #{config_path}.")
 
       File.write(config_path, result_config)
@@ -242,24 +258,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
       File.write(psql_path, result_psql)
 
       write_robots_txt(static_dir, indexable, template_dir)
-
-      if Keyword.get(options, :skip_release_env, false) do
-        shell_info("""
-        Release environment file is skip. Please generate the release env file before start.
-        `MIX_ENV=#{Mix.env()} mix pleroma.release_env gen`
-        """)
-      else
-        shell_info("Generation the environment file:")
-
-        release_env_args =
-          with path when not is_nil(path) <- Keyword.get(options, :release_env_file) do
-            ["gen", "--path", path]
-          else
-            _ -> ["gen"]
-          end
-
-        Mix.Tasks.Pleroma.ReleaseEnv.run(release_env_args)
-      end
 
       shell_info(
         "\n All files successfully written! Refer to the installation instructions for your platform for next steps."
@@ -273,7 +271,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
-          (Enum.map(paths, &"- #{&1}\n") |> Enum.join("")) <>
+          (Enum.map(will_overwrite, &"- #{&1}\n") |> Enum.join("")) <>
           "Rerun with `--force` to overwrite them."
       )
     end
@@ -285,10 +283,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
         template_dir <> "/robots_txt.eex",
         indexable: indexable
       )
-
-    unless File.exists?(static_dir) do
-      File.mkdir_p!(static_dir)
-    end
 
     robots_txt_path = Path.join(static_dir, "robots.txt")
 
@@ -304,7 +298,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
   defp upload_filters(filters) when is_map(filters) do
     enabled_filters =
       if filters.strip do
-        [Pleroma.Upload.Filter.ExifTool]
+        [Pleroma.Upload.Filter.Exiftool]
       else
         []
       end

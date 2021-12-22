@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
   use Pleroma.Web.ConnCase
 
+  import Mock
   import Tesla.Mock
   import Pleroma.Factory
 
@@ -12,8 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
                 Pleroma.Config.get!([:instance, :static_dir]),
                 "emoji"
               )
-  setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
-
   setup do: clear_config([:instance, :public], true)
 
   setup do
@@ -198,6 +197,31 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
              |> json_response_and_validate_schema(:not_found) == %{
                "error" => "pack \"not_loaded\" is not found"
              }
+    end
+
+    test "returns an error on add file when file system is not writable", %{
+      admin_conn: admin_conn
+    } do
+      pack_file = Path.join([@emoji_path, "not_loaded", "pack.json"])
+
+      with_mocks([
+        {File, [:passthrough], [stat: fn ^pack_file -> {:error, :eacces} end]}
+      ]) do
+        assert admin_conn
+               |> put_req_header("content-type", "multipart/form-data")
+               |> post("/api/pleroma/emoji/packs/files?name=not_loaded", %{
+                 shortcode: "blank3",
+                 filename: "dir/blank.png",
+                 file: %Plug.Upload{
+                   filename: "blank.png",
+                   path: "#{@emoji_path}/test_pack/blank.png"
+                 }
+               })
+               |> json_response_and_validate_schema(500) == %{
+                 "error" =>
+                   "Unexpected error occurred while adding file to pack. (POSIX error: Permission denied)"
+               }
+      end
     end
 
     test "remove file with not loaded pack", %{admin_conn: admin_conn} do

@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Attachment
-  alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
+  alias Pleroma.Web.ApiSpec.StatusOperation
 
   require OpenApiSpex
 
@@ -29,8 +29,9 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
           spoiler_text: %Schema{type: :string, nullable: true},
           visibility: %Schema{allOf: [VisibilityScope], nullable: true},
           scheduled_at: %Schema{type: :string, format: :"date-time", nullable: true},
-          poll: %Schema{allOf: [Poll], nullable: true},
-          in_reply_to_id: %Schema{type: :string, nullable: true}
+          poll: StatusOperation.poll_params(),
+          in_reply_to_id: %Schema{type: :string, nullable: true},
+          expires_in: %Schema{type: :integer, nullable: true}
         }
       }
     },
@@ -46,7 +47,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
         scheduled_at: nil,
         poll: nil,
         idempotency: nil,
-        in_reply_to_id: nil
+        in_reply_to_id: nil,
+        expires_in: nil
       },
       media_attachments: [Attachment.schema().example]
     }

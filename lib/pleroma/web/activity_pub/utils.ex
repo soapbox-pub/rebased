@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
@@ -12,7 +12,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
@@ -37,6 +36,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
+
+  def as_local_public, do: Endpoint.url() <> "/#Public"
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
@@ -96,8 +97,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         !label_in_collection?(ap_id, params["cc"])
 
     if need_splice? do
-      cc_list = extract_list(params["cc"])
-      Map.put(params, "cc", [ap_id | cc_list])
+      cc = [ap_id | extract_list(params["cc"])]
+
+      params
+      |> Map.put("cc", cc)
+      |> Maps.safe_put_in(["object", "cc"], cc)
     else
       params
     end
@@ -107,7 +111,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "#{Web.base_url()}/schemas/litepub-0.1.jsonld",
+        "#{Endpoint.url()}/schemas/litepub-0.1.jsonld",
         %{
           "@language" => "und"
         }
@@ -132,7 +136,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def generate_id(type) do
-    "#{Web.base_url()}/#{type}/#{UUID.generate()}"
+    "#{Endpoint.url()}/#{type}/#{UUID.generate()}"
   end
 
   def get_notified_from_object(%{"type" => type} = object) when type in @supported_object_types do
@@ -175,7 +179,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
 
     with true <- Config.get!([:instance, :federating]),
-         true <- type != "Block" || outgoing_blocks do
+         true <- type != "Block" || outgoing_blocks,
+         false <- Visibility.is_local_public?(activity) do
       Pleroma.Web.Federator.publish(activity)
     end
 
@@ -701,12 +706,28 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_flag_data(_, _), do: %{}
 
-  defp build_flag_object(%{account: account, statuses: statuses} = _) do
-    [account.ap_id] ++ build_flag_object(%{statuses: statuses})
+  defp build_flag_object(%{account: account, statuses: statuses}) do
+    [account.ap_id | build_flag_object(%{statuses: statuses})]
   end
 
   defp build_flag_object(%{statuses: statuses}) do
     Enum.map(statuses || [], &build_flag_object/1)
+  end
+
+  defp build_flag_object(%Activity{data: %{"id" => id}, object: %{data: data}}) do
+    activity_actor = User.get_by_ap_id(data["actor"])
+
+    %{
+      "type" => "Note",
+      "id" => id,
+      "content" => data["content"],
+      "published" => data["published"],
+      "actor" =>
+        AccountView.render(
+          "show.json",
+          %{user: activity_actor, skip_visibility_check: true}
+        )
+    }
   end
 
   defp build_flag_object(act) when is_map(act) or is_binary(act) do
@@ -719,22 +740,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     case Activity.get_by_ap_id_with_object(id) do
       %Activity{} = activity ->
-        activity_actor = User.get_by_ap_id(activity.object.data["actor"])
+        build_flag_object(activity)
 
-        %{
-          "type" => "Note",
-          "id" => activity.data["id"],
-          "content" => activity.object.data["content"],
-          "published" => activity.object.data["published"],
-          "actor" =>
-            AccountView.render(
-              "show.json",
-              %{user: activity_actor, skip_visibility_check: true}
-            )
-        }
-
-      _ ->
-        %{"id" => id, "deleted" => true}
+      nil ->
+        if activity = Activity.get_by_object_ap_id_with_object(id) do
+          build_flag_object(activity)
+        else
+          %{"id" => id, "deleted" => true}
+        end
     end
   end
 

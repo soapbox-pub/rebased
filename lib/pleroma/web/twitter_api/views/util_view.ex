@@ -1,19 +1,19 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilView do
   use Pleroma.Web, :view
   import Phoenix.HTML.Form
   alias Pleroma.Config
-  alias Pleroma.Web
+  alias Pleroma.Web.Endpoint
 
   def status_net_config(instance) do
     """
     <config>
     <site>
     <name>#{Keyword.get(instance, :name)}</name>
-    <site>#{Web.base_url()}</site>
+    <site>#{Endpoint.url()}</site>
     <textlimit>#{Keyword.get(instance, :limit)}</textlimit>
     <closed>#{!Keyword.get(instance, :registrations_open)}</closed>
     </site>

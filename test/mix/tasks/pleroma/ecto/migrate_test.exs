@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-onl
 
 defmodule Mix.Tasks.Pleroma.Ecto.MigrateTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
   import ExUnit.CaptureLog
   require Logger
 
@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.MigrateTest do
 
     assert capture_log(fn ->
              Mix.Tasks.Pleroma.Ecto.Migrate.run()
-           end) =~ "[info] Already up"
+           end) =~ "[info] Migrations already up"
 
     Logger.configure(level: level)
   end

@@ -1,12 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.RateLimiterTest do
   use Pleroma.Web.ConnCase
 
   alias Phoenix.ConnTest
-  alias Pleroma.Config
   alias Pleroma.Web.Plugs.RateLimiter
   alias Plug.Conn
 
@@ -22,8 +21,8 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
     setup do: clear_config([Pleroma.Web.Plugs.RemoteIp, :enabled])
 
     test "config is required for plug to work" do
-      Config.put([:rate_limit, @limiter_name], {1, 1})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, @limiter_name], {1, 1})
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       assert %{limits: {1, 1}, name: :test_init, opts: [name: :test_init]} ==
                [name: @limiter_name]
@@ -49,13 +48,14 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
     refute RateLimiter.disabled?(build_conn())
   end
 
+  @tag :erratic
   test "it restricts based on config values" do
     limiter_name = :test_plug_opts
     scale = 80
     limit = 5
 
-    Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
-    Config.put([:rate_limit, limiter_name], {scale, limit})
+    clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+    clear_config([:rate_limit, limiter_name], {scale, limit})
 
     plug_opts = RateLimiter.init(name: limiter_name)
     conn = build_conn(:get, "/")
@@ -86,8 +86,8 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
     test "`bucket_name` option overrides default bucket name" do
       limiter_name = :test_bucket_name
 
-      Config.put([:rate_limit, limiter_name], {1000, 5})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, limiter_name], {1000, 5})
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       base_bucket_name = "#{limiter_name}:group1"
       plug_opts = RateLimiter.init(name: limiter_name, bucket_name: base_bucket_name)
@@ -101,8 +101,8 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
 
     test "`params` option allows different queries to be tracked independently" do
       limiter_name = :test_params
-      Config.put([:rate_limit, limiter_name], {1000, 5})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, limiter_name], {1000, 5})
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       plug_opts = RateLimiter.init(name: limiter_name, params: ["id"])
 
@@ -117,8 +117,8 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
 
     test "it supports combination of options modifying bucket name" do
       limiter_name = :test_options_combo
-      Config.put([:rate_limit, limiter_name], {1000, 5})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, limiter_name], {1000, 5})
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       base_bucket_name = "#{limiter_name}:group1"
 
@@ -138,10 +138,11 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
   end
 
   describe "unauthenticated users" do
+    @tag :erratic
     test "are restricted based on remote IP" do
       limiter_name = :test_unauthenticated
-      Config.put([:rate_limit, limiter_name], [{1000, 5}, {1, 10}])
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, limiter_name], [{1000, 5}, {1, 10}])
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       plug_opts = RateLimiter.init(name: limiter_name)
 
@@ -175,13 +176,14 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
       :ok
     end
 
+    @tag :erratic
     test "can have limits separate from unauthenticated connections" do
       limiter_name = :test_authenticated1
 
       scale = 50
       limit = 5
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
-      Config.put([:rate_limit, limiter_name], [{1000, 1}, {scale, limit}])
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, limiter_name], [{1000, 1}, {scale, limit}])
 
       plug_opts = RateLimiter.init(name: limiter_name)
 
@@ -200,10 +202,11 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
       assert conn.halted
     end
 
+    @tag :erratic
     test "different users are counted independently" do
       limiter_name = :test_authenticated2
-      Config.put([:rate_limit, limiter_name], [{1, 10}, {1000, 5}])
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+      clear_config([:rate_limit, limiter_name], [{1, 10}, {1000, 5}])
+      clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       plug_opts = RateLimiter.init(name: limiter_name)
 
@@ -232,8 +235,8 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
 
   test "doesn't crash due to a race condition when multiple requests are made at the same time and the bucket is not yet initialized" do
     limiter_name = :test_race_condition
-    Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
-    Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+    clear_config([:rate_limit, limiter_name], {1000, 5})
+    clear_config([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
     opts = RateLimiter.init(name: limiter_name)
 

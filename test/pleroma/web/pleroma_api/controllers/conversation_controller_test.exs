@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Repo
@@ -104,7 +104,7 @@ defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
     [participation] = Participation.for_user(user)
     participation = Repo.preload(participation, :recipients)
 
-    assert user in participation.recipients
+    assert refresh_record(user) in participation.recipients
     assert other_user in participation.recipients
   end
 
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == false
     assert Participation.get(participation1.id).read == false
-    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 2
+    assert Participation.unread_count(other_user) == 2
 
     [%{"unread" => false}, %{"unread" => false}] =
       conn
@@ -131,6 +131,6 @@ defmodule Pleroma.Web.PleromaAPI.ConversationControllerTest do
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == true
     assert Participation.get(participation1.id).read == true
-    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 0
+    assert Participation.unread_count(other_user) == 0
   end
 end

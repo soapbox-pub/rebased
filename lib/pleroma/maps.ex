@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Maps do
@@ -11,5 +11,11 @@ defmodule Pleroma.Maps do
     else
       _ -> map
     end
+  end
+
+  def safe_put_in(data, keys, value) when is_map(data) and is_list(keys) do
+    Kernel.put_in(data, keys, value)
+  rescue
+    _ -> data
   end
 end

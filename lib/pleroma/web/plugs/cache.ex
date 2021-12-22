@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.Cache do
@@ -41,6 +41,8 @@ defmodule Pleroma.Web.Plugs.Cache do
 
   @defaults %{ttl: nil, query_params: true}
 
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   @impl true
   def init([]), do: @defaults
 
@@ -53,7 +55,7 @@ defmodule Pleroma.Web.Plugs.Cache do
   def call(%{method: "GET"} = conn, opts) do
     key = cache_key(conn, opts)
 
-    case Cachex.get(:web_resp_cache, key) do
+    case @cachex.get(:web_resp_cache, key) do
       {:ok, nil} ->
         cache_resp(conn, opts)
 
@@ -97,11 +99,11 @@ defmodule Pleroma.Web.Plugs.Cache do
 
         conn =
           unless opts[:tracking_fun] do
-            Cachex.put(:web_resp_cache, key, {content_type, body}, ttl: ttl)
+            @cachex.put(:web_resp_cache, key, {content_type, body}, ttl: ttl)
             conn
           else
             tracking_fun_data = Map.get(conn.assigns, :tracking_fun_data, nil)
-            Cachex.put(:web_resp_cache, key, {content_type, body, tracking_fun_data}, ttl: ttl)
+            @cachex.put(:web_resp_cache, key, {content_type, body, tracking_fun_data}, ttl: ttl)
 
             opts.tracking_fun.(conn, tracking_fun_data)
           end

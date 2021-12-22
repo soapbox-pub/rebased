@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
@@ -44,9 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       |> get("/api/v1/notifications")
 
     expected_response =
-      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
-        user.ap_id
-      }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{user.ap_id}\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
     assert [%{"status" => %{"content" => response}} | _rest] =
              json_response_and_validate_schema(conn, 200)
@@ -75,6 +73,53 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [_] = result
   end
 
+  test "by default, does not contain pleroma:report" do
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+    third_user = insert(:user)
+
+    user
+    |> User.admin_api_update(%{is_moderator: true})
+
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
+
+    {:ok, _report} =
+      CommonAPI.report(third_user, %{account_id: other_user.id, status_ids: [activity.id]})
+
+    result =
+      conn
+      |> get("/api/v1/notifications")
+      |> json_response_and_validate_schema(200)
+
+    assert [] == result
+
+    result =
+      conn
+      |> get("/api/v1/notifications?include_types[]=pleroma:report")
+      |> json_response_and_validate_schema(200)
+
+    assert [_] = result
+  end
+
+  test "excludes mentions from blockers when blockers_visible is false" do
+    clear_config([:activitypub, :blockers_visible], false)
+
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    blocker = insert(:user)
+
+    {:ok, _} = CommonAPI.block(blocker, user)
+    {:ok, activity} = CommonAPI.post(blocker, %{status: "hi @#{user.nickname}"})
+
+    {:ok, [_notification]} = Notification.create_notifications(activity)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+
+    assert [] == json_response_and_validate_schema(conn, 200)
+  end
+
   test "getting a single notification" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
@@ -86,9 +131,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     conn = get(conn, "/api/v1/notifications/#{notification.id}")
 
     expected_response =
-      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
-        user.ap_id
-      }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{user.ap_id}\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
     assert %{"status" => %{"content" => response}} = json_response_and_validate_schema(conn, 200)
     assert response == expected_response
@@ -502,7 +545,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response_and_validate_schema(ret_conn, 200)) == 1
 
-    {:ok, _user_relationships} = User.mute(user, user2, false)
+    {:ok, _user_relationships} = User.mute(user, user2, %{notifications: false})
 
     conn = get(conn, "/api/v1/notifications")
 
@@ -527,23 +570,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert length(json_response_and_validate_schema(conn, 200)) == 1
   end
 
-  @tag capture_log: true
   test "see move notifications" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
     %{user: follower, conn: conn} = oauth_access(["read:notifications"])
-
-    old_user_url = old_user.ap_id
-
-    body =
-      File.read!("test/fixtures/users_mock/localhost.json")
-      |> String.replace("{{nickname}}", old_user.nickname)
-      |> Jason.encode!()
-
-    Tesla.Mock.mock(fn
-      %{method: :get, url: ^old_user_url} ->
-        %Tesla.Env{status: 200, body: body}
-    end)
 
     User.follow(follower, old_user)
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)

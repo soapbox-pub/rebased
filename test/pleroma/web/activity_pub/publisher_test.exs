@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.PublisherTest do
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
         },
         %{
           "rel" => "http://ostatus.org/schema/1.0/subscribe",
-          "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
+          "template" => "#{Pleroma.Web.Endpoint.url()}/ostatus_subscribe?acct={uri}"
         }
       ]
 
@@ -267,6 +267,80 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
   end
 
   describe "publish/2" do
+    test_with_mock "doesn't publish a non-public activity to quarantined instances.",
+                   Pleroma.Web.Federator.Publisher,
+                   [:passthrough],
+                   [] do
+      Config.put([:instance, :quarantined_instances], [{"domain.com", "some reason"}])
+
+      follower =
+        insert(:user, %{
+          local: false,
+          inbox: "https://domain.com/users/nick1/inbox",
+          ap_enabled: true
+        })
+
+      actor = insert(:user, follower_address: follower.ap_id)
+
+      {:ok, follower, actor} = Pleroma.User.follow(follower, actor)
+      actor = refresh_record(actor)
+
+      note_activity =
+        insert(:followers_only_note_activity,
+          user: actor,
+          recipients: [follower.ap_id]
+        )
+
+      res = Publisher.publish(actor, note_activity)
+
+      assert res == :ok
+
+      assert not called(
+               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
+                 inbox: "https://domain.com/users/nick1/inbox",
+                 actor_id: actor.id,
+                 id: note_activity.data["id"]
+               })
+             )
+    end
+
+    test_with_mock "Publishes a non-public activity to non-quarantined instances.",
+                   Pleroma.Web.Federator.Publisher,
+                   [:passthrough],
+                   [] do
+      Config.put([:instance, :quarantined_instances], [{"somedomain.com", "some reason"}])
+
+      follower =
+        insert(:user, %{
+          local: false,
+          inbox: "https://domain.com/users/nick1/inbox",
+          ap_enabled: true
+        })
+
+      actor = insert(:user, follower_address: follower.ap_id)
+
+      {:ok, follower, actor} = Pleroma.User.follow(follower, actor)
+      actor = refresh_record(actor)
+
+      note_activity =
+        insert(:followers_only_note_activity,
+          user: actor,
+          recipients: [follower.ap_id]
+        )
+
+      res = Publisher.publish(actor, note_activity)
+
+      assert res == :ok
+
+      assert called(
+               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
+                 inbox: "https://domain.com/users/nick1/inbox",
+                 actor_id: actor.id,
+                 id: note_activity.data["id"]
+               })
+             )
+    end
+
     test_with_mock "publishes an activity with BCC to all relevant peers.",
                    Pleroma.Web.Federator.Publisher,
                    [:passthrough],
@@ -281,8 +355,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user, follower_address: follower.ap_id)
       user = insert(:user)
 
-      {:ok, _follower_one} = Pleroma.User.follow(follower, actor)
-      actor = refresh_record(actor)
+      {:ok, follower, actor} = Pleroma.User.follow(follower, actor)
 
       note_activity =
         insert(:note_activity,
@@ -323,7 +396,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
 
       note_activity = insert(:note_activity, user: actor)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       activity_path = String.trim_leading(note_activity.data["id"], Pleroma.Web.Endpoint.url())
       object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())

@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UtilsTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -165,7 +165,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
           }
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
       {:ok, votes, object} = CommonAPI.vote(other_user, object, [0, 1])
       assert Enum.sort(Utils.get_existing_votes(other_user.ap_id, object)) == Enum.sort(votes)
     end
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
           }
         })
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
       {:ok, [vote], object} = CommonAPI.vote(other_user, object, [0])
       {:ok, _activity} = CommonAPI.favorite(user, activity.id)
       [fetched_vote] = Utils.get_existing_votes(other_user.ap_id, object)
@@ -242,7 +242,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "updates likes" do
       user = insert(:user)
       activity = insert(:note_activity)
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, fetch: false)
 
       assert {:ok, updated_object} =
                Utils.update_element_in_object(
@@ -302,7 +302,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   describe "get_existing_like/2" do
     test "fetches existing like" do
       note_activity = insert(:note_activity)
-      assert object = Object.normalize(note_activity)
+      assert object = Object.normalize(note_activity, fetch: false)
 
       user = insert(:user)
       refute Utils.get_existing_like(user.ap_id, object)
@@ -320,7 +320,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
     test "fetches existing announce" do
       note_activity = insert(:note_activity)
-      assert object = Object.normalize(note_activity)
+      assert object = Object.normalize(note_activity, fetch: false)
       actor = insert(:user)
 
       {:ok, announce} = CommonAPI.repeat(note_activity.id, actor)
@@ -412,7 +412,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   describe "lazy_put_activity_defaults/2" do
     test "returns map with id and published data" do
       note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
       res = Utils.lazy_put_activity_defaults(%{"context" => object.data["id"]})
       assert res["context"] == object.data["id"]
       assert res["context_id"] == object.id
@@ -431,7 +431,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
     test "returns activity data with object" do
       note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
       res =
         Utils.lazy_put_activity_defaults(%{

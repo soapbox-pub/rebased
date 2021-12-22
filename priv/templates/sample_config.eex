@@ -13,6 +13,7 @@ config :pleroma, Pleroma.Web.Endpoint,
    url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
    http: [ip: {<%= String.replace(listen_ip, ".", ", ") %>}, port: <%= listen_port %>],
    secret_key_base: "<%= secret %>",
+   live_view: [signing_salt: "<%= lv_signing_salt %>"],
    signing_salt: "<%= signing_salt %>"
 
 config :pleroma, :instance,
@@ -32,8 +33,7 @@ config :pleroma, Pleroma.Repo,
   username: "<%= dbuser %>",
   password: "<%= dbpass %>",
   database: "<%= dbname %>",
-  hostname: "<%= dbhost %>",
-  pool_size: 10
+  hostname: "<%= dbhost %>"
 
 # Configure web push notifications
 config :web_push_encryption, :vapid_details,
@@ -50,12 +50,18 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 #   sts: true
 
 # Configure S3 support if desired.
-# The public S3 endpoint is different depending on region and provider,
+# The public S3 endpoint (base_url) is different depending on region and provider,
 # consult your S3 provider's documentation for details on what to use.
+#
+# config :pleroma, Pleroma.Upload,
+#  uploader: Pleroma.Uploaders.S3,
+#  base_url: "https://s3.amazonaws.com"
 #
 # config :pleroma, Pleroma.Uploaders.S3,
 #   bucket: "some-bucket",
-#   public_endpoint: "https://s3.amazonaws.com"
+#   bucket_namespace: "my-namespace",
+#   truncated_namespace: nil,
+#   streaming_enabled: true
 #
 # Configure S3 credentials:
 # config :ex_aws, :s3,

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Instances.Instance do
@@ -8,6 +8,8 @@ defmodule Pleroma.Instances.Instance do
   alias Pleroma.Instances
   alias Pleroma.Instances.Instance
   alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Workers.BackgroundWorker
 
   use Ecto.Schema
 
@@ -77,7 +79,7 @@ defmodule Pleroma.Instances.Instance do
     )
   end
 
-  def reachable?(_), do: true
+  def reachable?(url_or_host) when is_binary(url_or_host), do: true
 
   def set_reachable(url_or_host) when is_binary(url_or_host) do
     with host <- host(url_or_host),
@@ -119,6 +121,17 @@ defmodule Pleroma.Instances.Instance do
 
   def set_unreachable(_, _), do: {:error, nil}
 
+  def get_consistently_unreachable do
+    reachability_datetime_threshold = Instances.reachability_datetime_threshold()
+
+    from(i in Instance,
+      where: ^reachability_datetime_threshold > i.unreachable_since,
+      order_by: i.unreachable_since,
+      select: {i.host, i.unreachable_since}
+    )
+    |> Repo.all()
+  end
+
   defp parse_datetime(datetime) when is_binary(datetime) do
     NaiveDateTime.from_iso8601(datetime)
   end
@@ -155,7 +168,8 @@ defmodule Pleroma.Instances.Instance do
 
   defp scrape_favicon(%URI{} = instance_uri) do
     try do
-      with {:ok, %Tesla.Env{body: html}} <-
+      with {_, true} <- {:reachable, reachable?(instance_uri.host)},
+           {:ok, %Tesla.Env{body: html}} <-
              Pleroma.HTTP.get(to_string(instance_uri), [{"accept", "text/html"}], pool: :media),
            {_, [favicon_rel | _]} when is_binary(favicon_rel) <-
              {:parse,
@@ -164,7 +178,15 @@ defmodule Pleroma.Instances.Instance do
              {:merge, URI.merge(instance_uri, favicon_rel) |> to_string()} do
         favicon
       else
-        _ -> nil
+        {:reachable, false} ->
+          Logger.debug(
+            "Instance.scrape_favicon(\"#{to_string(instance_uri)}\") ignored unreachable host"
+          )
+
+          nil
+
+        _ ->
+          nil
       end
     rescue
       e ->
@@ -174,5 +196,25 @@ defmodule Pleroma.Instances.Instance do
 
         nil
     end
+  end
+
+  @doc """
+  Deletes all users from an instance in a background task, thus also deleting
+  all of those users' activities and notifications.
+  """
+  def delete_users_and_activities(host) when is_binary(host) do
+    BackgroundWorker.enqueue("delete_instance", %{"host" => host})
+  end
+
+  def perform(:delete_instance, host) when is_binary(host) do
+    User.Query.build(%{nickname: "@#{host}"})
+    |> Repo.chunk_stream(100, :batches)
+    |> Stream.each(fn users ->
+      users
+      |> Enum.each(fn user ->
+        User.perform(:delete, user)
+      end)
+    end)
+    |> Stream.run()
   end
 end

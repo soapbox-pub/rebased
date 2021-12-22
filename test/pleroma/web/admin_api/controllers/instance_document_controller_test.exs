@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.InstanceDocumentControllerTest do
   use Pleroma.Web.ConnCase, async: true
   import Pleroma.Factory
-  alias Pleroma.Config
 
   @dir "test/tmp/instance_static"
   @default_instance_panel ~s(<p>Welcome to <a href="https://pleroma.social" target="_blank">Pleroma!</a></p>)

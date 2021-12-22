@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.QueryTest do
@@ -33,5 +33,15 @@ defmodule Pleroma.User.QueryTest do
 
       assert %{internal: true} |> Query.build() |> Repo.aggregate(:count) == 2
     end
+  end
+
+  test "is_suggested param" do
+    _user1 = insert(:user, is_suggested: false)
+    user2 = insert(:user, is_suggested: true)
+
+    assert [^user2] =
+             %{is_suggested: true}
+             |> User.Query.build()
+             |> Repo.all()
   end
 end

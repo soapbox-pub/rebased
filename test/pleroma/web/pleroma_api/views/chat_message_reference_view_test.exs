@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
@@ -25,11 +25,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     }
 
     {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
-    {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "kippis :firefox:")
+
+    {:ok, activity} =
+      CommonAPI.post_chat_message(user, recipient, "kippis :firefox:", idempotency_key: "123")
 
     chat = Chat.get(user.id, recipient.ap_id)
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
 
@@ -42,10 +44,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert chat_message[:created_at]
     assert chat_message[:unread] == false
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
+    assert chat_message[:idempotency_key] == "123"
 
     clear_config([:rich_media, :enabled], true)
 
-    Tesla.Mock.mock(fn
+    Tesla.Mock.mock_global(fn
       %{url: "https://example.com/ogp"} ->
         %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
     end)
@@ -55,7 +58,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
         media_id: upload.id
       )
 
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, fetch: false)
 
     cm_ref = MessageReference.for_chat_and_object(chat, object)
 

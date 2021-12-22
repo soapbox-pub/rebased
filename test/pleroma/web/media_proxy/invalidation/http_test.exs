@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
@@ -8,10 +8,6 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
 
   import ExUnit.CaptureLog
   import Tesla.Mock
-
-  setup do
-    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
-  end
 
   test "logs hasn't error message when request is valid" do
     mock(fn

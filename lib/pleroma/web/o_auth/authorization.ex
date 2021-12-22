@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.Authorization do
@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   import Ecto.Changeset
   import Ecto.Query
@@ -53,7 +54,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
   end
 
   defp add_lifetime(changeset) do
-    put_change(changeset, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10))
+    lifespan = Token.lifespan()
+    put_change(changeset, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), lifespan))
   end
 
   @spec use_changeset(Authtorizatiton.t(), map()) :: Changeset.t()

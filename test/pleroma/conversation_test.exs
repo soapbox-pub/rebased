@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ConversationTest do
@@ -48,7 +48,7 @@ defmodule Pleroma.ConversationTest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: "Hey"})
 
-    object = Pleroma.Object.normalize(activity)
+    object = Pleroma.Object.normalize(activity, fetch: false)
     context = object.data["context"]
 
     conversation = Conversation.get_for_ap_id(context)
@@ -64,7 +64,7 @@ defmodule Pleroma.ConversationTest do
     {:ok, activity} =
       CommonAPI.post(har, %{status: "Hey @#{jafnhar.nickname}", visibility: "direct"})
 
-    object = Pleroma.Object.normalize(activity)
+    object = Pleroma.Object.normalize(activity, fetch: false)
     context = object.data["context"]
 
     conversation =
@@ -86,7 +86,7 @@ defmodule Pleroma.ConversationTest do
         in_reply_to_status_id: activity.id
       })
 
-    object = Pleroma.Object.normalize(activity)
+    object = Pleroma.Object.normalize(activity, fetch: false)
     context = object.data["context"]
 
     conversation_two =
@@ -110,7 +110,7 @@ defmodule Pleroma.ConversationTest do
         in_reply_to_status_id: activity.id
       })
 
-    object = Pleroma.Object.normalize(activity)
+    object = Pleroma.Object.normalize(activity, fetch: false)
     context = object.data["context"]
 
     conversation_three =

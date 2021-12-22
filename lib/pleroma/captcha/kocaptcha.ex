@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha.Kocaptcha do
@@ -10,7 +10,7 @@ defmodule Pleroma.Captcha.Kocaptcha do
   def new do
     endpoint = Pleroma.Config.get!([__MODULE__, :endpoint])
 
-    case Tesla.get(endpoint <> "/new") do
+    case Pleroma.HTTP.get(endpoint <> "/new") do
       {:error, _} ->
         %{error: :kocaptcha_service_unavailable}
 

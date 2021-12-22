@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
@@ -14,8 +14,8 @@ defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
 
   def index_operation do
     %Operation{
-      tags: ["custom_emojis"],
-      summary: "List custom custom emojis",
+      tags: ["Custom emojis"],
+      summary: "Retrieve a list of custom emojis",
       description: "Returns custom emojis that are available on the server.",
       operationId: "CustomEmojiController.index",
       responses: %{

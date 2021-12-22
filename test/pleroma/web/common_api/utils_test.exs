@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.CommonAPI.Utils
   use Pleroma.DataCase
 
@@ -159,11 +160,116 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output ==
-               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{
-                 user.id
-               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{
-                 user.id
-               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+    end
+  end
+
+  describe "format_input/3 with markdown" do
+    test "Paragraph" do
+      code = ~s[Hello\n\nWorld!]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<p>Hello</p><p>World!</p>"
+    end
+
+    test "links" do
+      code = "https://en.wikipedia.org/wiki/Animal_Crossing_(video_game)"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+
+      code = "https://github.com/pragdave/earmark/"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+    end
+
+    test "link with local mention" do
+      insert(:user, %{nickname: "lain"})
+
+      code = "https://example.com/@lain"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+    end
+
+    test "local mentions" do
+      mario = insert(:user, %{nickname: "mario"})
+      luigi = insert(:user, %{nickname: "luigi"})
+
+      code = "@mario @luigi yo what's up?"
+      {result, _, []} = Utils.format_input(code, "text/markdown")
+
+      assert result ==
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+    end
+
+    test "remote mentions" do
+      mario = insert(:user, %{nickname: "mario@mushroom.world", local: false})
+      luigi = insert(:user, %{nickname: "luigi@mushroom.world", local: false})
+
+      code = "@mario@mushroom.world @luigi@mushroom.world yo what's up?"
+      {result, _, []} = Utils.format_input(code, "text/markdown")
+
+      assert result ==
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+    end
+
+    test "raw HTML" do
+      code = ~s[<a href="http://example.org/">OwO</a><!-- what's this?-->]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<a href="http://example.org/">OwO</a>]
+    end
+
+    test "rulers" do
+      code = ~s[before\n\n-----\n\nafter]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<p>before</p><hr/><p>after</p>"
+    end
+
+    test "blockquote" do
+      code = ~s[> whoms't are you quoting?]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<blockquote><p>whoms’t are you quoting?</p></blockquote>"
+    end
+
+    test "code" do
+      code = ~s[`mix`]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><code class="inline">mix</code></p>]
+
+      code = ~s[``mix``]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><code class="inline">mix</code></p>]
+
+      code = ~s[```\nputs "Hello World"\n```]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<pre><code>puts &quot;Hello World&quot;</code></pre>]
+
+      code = ~s[    <div>\n    </div>]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<pre><code>&lt;div&gt;\n&lt;/div&gt;</code></pre>]
+    end
+
+    test "lists" do
+      code = ~s[- one\n- two\n- three\n- four]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<ul><li>one</li><li>two</li><li>three</li><li>four</li></ul>"
+
+      code = ~s[1. one\n2. two\n3. three\n4. four\n]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == "<ol><li>one</li><li>two</li><li>three</li><li>four</li></ol>"
+    end
+
+    test "delegated renderers" do
+      code = ~s[*aaaa~*]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><em>aaaa~</em></p>]
+
+      code = ~s[**aaaa~**]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><strong>aaaa~</strong></p>]
+
+      # strikethrough
+      code = ~s[~~aaaa~~~]
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><del>aaaa</del>~</p>]
     end
   end
 
@@ -235,9 +341,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for public posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "public"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "public", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert length(cc) == 1
@@ -252,9 +358,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "public",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 3
       assert length(cc) == 1
@@ -268,9 +380,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for unlisted posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "unlisted"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "unlisted", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert length(cc) == 1
@@ -285,9 +397,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "unlisted",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 3
       assert length(cc) == 1
@@ -301,9 +419,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for private posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "private"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
       assert length(to) == 2
       assert Enum.empty?(cc)
 
@@ -316,9 +434,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "private",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert Enum.empty?(cc)
@@ -330,9 +454,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "for direct posts, not a reply" do
       user = insert(:user)
       mentioned_user = insert(:user)
-      mentions = [mentioned_user.ap_id]
+      draft = %ActivityDraft{user: user, mentions: [mentioned_user.ap_id], visibility: "direct"}
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct", nil)
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 1
       assert Enum.empty?(cc)
@@ -345,9 +469,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       third_user = insert(:user)
       {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
-      mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "direct",
+        in_reply_to: activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 1
       assert Enum.empty?(cc)
@@ -356,7 +486,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       {:ok, direct_activity} = CommonAPI.post(third_user, %{status: "uguu", visibility: "direct"})
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, direct_activity, "direct", nil)
+      draft = %ActivityDraft{
+        user: user,
+        mentions: [mentioned_user.ap_id],
+        visibility: "direct",
+        in_reply_to: direct_activity
+      }
+
+      {to, cc} = Utils.get_to_and_cc(draft)
 
       assert length(to) == 2
       assert Enum.empty?(cc)
@@ -529,41 +666,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert Utils.maybe_add_list_data(%{additional: %{}, object: %{}}, user, {:list, list.id}) ==
                %{additional: %{}, object: %{}}
-    end
-  end
-
-  describe "make_note_data/11" do
-    test "returns note data" do
-      user = insert(:user)
-      note = insert(:note)
-      user2 = insert(:user)
-      user3 = insert(:user)
-
-      assert Utils.make_note_data(
-               user.ap_id,
-               [user2.ap_id],
-               "2hu",
-               "<h1>This is :moominmamma: note</h1>",
-               [],
-               note.id,
-               [name: "jimm"],
-               "test summary",
-               [user3.ap_id],
-               false,
-               %{"custom_tag" => "test"}
-             ) == %{
-               "actor" => user.ap_id,
-               "attachment" => [],
-               "cc" => [user3.ap_id],
-               "content" => "<h1>This is :moominmamma: note</h1>",
-               "context" => "2hu",
-               "sensitive" => false,
-               "summary" => "test summary",
-               "tag" => ["jimm"],
-               "to" => [user2.ap_id],
-               "type" => "Note",
-               "custom_tag" => "test"
-             }
     end
   end
 

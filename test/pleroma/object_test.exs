@@ -1,14 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
+
   import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
+
   alias Pleroma.Activity
+  alias Pleroma.Hashtag
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -78,8 +81,8 @@ defmodule Pleroma.ObjectTest do
     setup do: clear_config([:instance, :cleanup_attachments])
 
     test "Disabled via config" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([:instance, :cleanup_attachments], false)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([:instance, :cleanup_attachments], false)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -112,8 +115,8 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "in subdirectories" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -146,9 +149,9 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "with dedupe enabled" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([Pleroma.Upload, :filters], [Pleroma.Upload.Filter.Dedupe])
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([Pleroma.Upload, :filters], [Pleroma.Upload.Filter.Dedupe])
+      clear_config([:instance, :cleanup_attachments], true)
 
       uploads_dir = Pleroma.Config.get!([Pleroma.Uploaders.Local, :uploads])
 
@@ -184,8 +187,8 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "with objects that have legacy data.url attribute" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -220,9 +223,9 @@ defmodule Pleroma.ObjectTest do
     end
 
     test "With custom base_url" do
-      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-      Pleroma.Config.put([Pleroma.Upload, :base_url], "https://sub.domain.tld/dir/")
-      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+      clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      clear_config([Pleroma.Upload, :base_url], "https://sub.domain.tld/dir/")
+      clear_config([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpeg",
@@ -256,23 +259,22 @@ defmodule Pleroma.ObjectTest do
   end
 
   describe "normalizer" do
-    test "fetches unknown objects by default" do
-      %Object{} =
-        object = Object.normalize("http://mastodon.example.org/@admin/99541947525187367")
-
-      assert object.data["url"] == "http://mastodon.example.org/@admin/99541947525187367"
+    @url "http://mastodon.example.org/@admin/99541947525187367"
+    test "does not fetch unknown objects by default" do
+      assert nil == Object.normalize(@url)
     end
 
-    test "fetches unknown objects when fetch_remote is explicitly true" do
-      %Object{} =
-        object = Object.normalize("http://mastodon.example.org/@admin/99541947525187367", true)
+    test "fetches unknown objects when fetch is explicitly true" do
+      %Object{} = object = Object.normalize(@url, fetch: true)
 
-      assert object.data["url"] == "http://mastodon.example.org/@admin/99541947525187367"
+      assert object.data["url"] == @url
     end
 
-    test "does not fetch unknown objects when fetch_remote is false" do
+    test "does not fetch unknown objects when fetch is false" do
       assert is_nil(
-               Object.normalize("http://mastodon.example.org/@admin/99541947525187367", false)
+               Object.normalize(@url,
+                 fetch: false
+               )
              )
     end
   end
@@ -281,7 +283,11 @@ defmodule Pleroma.ObjectTest do
     setup do
       mock(fn
         %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_original.json")}
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/tesla_mock/poll_original.json"),
+            headers: HttpRequestMock.activitypub_object_headers()
+          }
 
         env ->
           apply(HttpRequestMock, :request, [env])
@@ -306,7 +312,10 @@ defmodule Pleroma.ObjectTest do
       mock_modified: mock_modified
     } do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -315,7 +324,8 @@ defmodule Pleroma.ObjectTest do
 
       mock_modified.(%Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
@@ -327,7 +337,10 @@ defmodule Pleroma.ObjectTest do
 
     test "returns the old object if refetch fails", %{mock_modified: mock_modified} do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -350,7 +363,10 @@ defmodule Pleroma.ObjectTest do
       mock_modified: mock_modified
     } do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -359,7 +375,8 @@ defmodule Pleroma.ObjectTest do
 
       mock_modified.(%Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: 100)
@@ -371,7 +388,10 @@ defmodule Pleroma.ObjectTest do
 
     test "preserves internal fields on refetch", %{mock_modified: mock_modified} do
       %Object{} =
-        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+        object =
+        Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d",
+          fetch: true
+        )
 
       Object.set_cache(object)
 
@@ -387,7 +407,8 @@ defmodule Pleroma.ObjectTest do
 
       mock_modified.(%Tesla.Env{
         status: 200,
-        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json"),
+        headers: HttpRequestMock.activitypub_object_headers()
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
@@ -397,6 +418,30 @@ defmodule Pleroma.ObjectTest do
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 3
 
       assert updated_object.data["like_count"] == 1
+    end
+  end
+
+  describe ":hashtags association" do
+    test "Hashtag records are created with Object record and updated on its change" do
+      user = insert(:user)
+
+      {:ok, %{object: object}} =
+        CommonAPI.post(user, %{status: "some text #hashtag1 #hashtag2 ..."})
+
+      assert [%Hashtag{name: "hashtag1"}, %Hashtag{name: "hashtag2"}] =
+               Enum.sort_by(object.hashtags, & &1.name)
+
+      {:ok, object} = Object.update_data(object, %{"tag" => []})
+
+      assert [] = object.hashtags
+
+      object = Object.get_by_id(object.id) |> Repo.preload(:hashtags)
+      assert [] = object.hashtags
+
+      {:ok, object} = Object.update_data(object, %{"tag" => ["abc", "def"]})
+
+      assert [%Hashtag{name: "abc"}, %Hashtag{name: "def"}] =
+               Enum.sort_by(object.hashtags, & &1.name)
     end
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   end
 
   test "updates a scheduled activity" do
-    Pleroma.Config.put([ScheduledActivity, :enabled], true)
+    clear_config([ScheduledActivity, :enabled], true)
     %{user: user, conn: conn} = oauth_access(["write:statuses"])
 
     scheduled_at = Timex.shift(NaiveDateTime.utc_now(), minutes: 60)
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   end
 
   test "deletes a scheduled activity" do
-    Pleroma.Config.put([ScheduledActivity, :enabled], true)
+    clear_config([ScheduledActivity, :enabled], true)
     %{user: user, conn: conn} = oauth_access(["write:statuses"])
     scheduled_at = Timex.shift(NaiveDateTime.utc_now(), minutes: 60)
 

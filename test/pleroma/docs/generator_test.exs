@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Docs.GeneratorTest do
@@ -23,7 +23,7 @@ defmodule Pleroma.Docs.GeneratorTest do
           key: :filters,
           type: {:list, :module},
           description: "",
-          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF.Policy}
         },
         %{
           key: Pleroma.Upload,

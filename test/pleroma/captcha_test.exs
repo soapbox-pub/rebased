@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.CaptchaTest do
@@ -69,7 +69,7 @@ defmodule Pleroma.CaptchaTest do
 
   describe "Captcha Wrapper" do
     test "validate" do
-      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+      clear_config([Pleroma.Captcha, :enabled], true)
 
       new = Captcha.new()
 
@@ -80,11 +80,10 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
       assert :ok = Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer)
-      Cachex.del(:used_captcha_cache, token)
     end
 
     test "doesn't validate invalid answer" do
-      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+      clear_config([Pleroma.Captcha, :enabled], true)
 
       new = Captcha.new()
 
@@ -100,7 +99,7 @@ defmodule Pleroma.CaptchaTest do
     end
 
     test "nil answer_data" do
-      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+      clear_config([Pleroma.Captcha, :enabled], true)
 
       new = Captcha.new()
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Search do
@@ -19,16 +19,30 @@ defmodule Pleroma.Activity.Search do
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
 
-    Activity
-    |> Activity.with_preloaded_object()
-    |> Activity.restrict_deactivated_users()
-    |> restrict_public()
-    |> query_with(index_type, search_query)
-    |> maybe_restrict_local(user)
-    |> maybe_restrict_author(author)
-    |> maybe_restrict_blocked(user)
-    |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => limit}, :offset)
-    |> maybe_fetch(user, search_query)
+    search_function =
+      if :persistent_term.get({Pleroma.Repo, :postgres_version}) >= 11 do
+        :websearch
+      else
+        :plain
+      end
+
+    try do
+      Activity
+      |> Activity.with_preloaded_object()
+      |> Activity.restrict_deactivated_users()
+      |> restrict_public()
+      |> query_with(index_type, search_query, search_function)
+      |> maybe_restrict_local(user)
+      |> maybe_restrict_author(author)
+      |> maybe_restrict_blocked(user)
+      |> Pagination.fetch_paginated(
+        %{"offset" => offset, "limit" => limit, "skip_order" => index_type == :rum},
+        :offset
+      )
+      |> maybe_fetch(user, search_query)
+    rescue
+      _ -> maybe_fetch([], user, search_query)
+    end
   end
 
   def maybe_restrict_author(query, %User{} = author) do
@@ -50,22 +64,59 @@ defmodule Pleroma.Activity.Search do
     )
   end
 
-  defp query_with(q, :gin, search_query) do
+  defp query_with(q, :gin, search_query, :plain) do
+    %{rows: [[tsc]]} =
+      Ecto.Adapters.SQL.query!(
+        Pleroma.Repo,
+        "select current_setting('default_text_search_config')::regconfig::oid;"
+      )
+
     from([a, o] in q,
       where:
         fragment(
-          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+          "to_tsvector(?::oid::regconfig, ?->>'content') @@ plainto_tsquery(?)",
+          ^tsc,
           o.data,
           ^search_query
         )
     )
   end
 
-  defp query_with(q, :rum, search_query) do
+  defp query_with(q, :gin, search_query, :websearch) do
+    %{rows: [[tsc]]} =
+      Ecto.Adapters.SQL.query!(
+        Pleroma.Repo,
+        "select current_setting('default_text_search_config')::regconfig::oid;"
+      )
+
     from([a, o] in q,
       where:
         fragment(
-          "? @@ plainto_tsquery('english', ?)",
+          "to_tsvector(?::oid::regconfig, ?->>'content') @@ websearch_to_tsquery(?)",
+          ^tsc,
+          o.data,
+          ^search_query
+        )
+    )
+  end
+
+  defp query_with(q, :rum, search_query, :plain) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "? @@ plainto_tsquery(?)",
+          o.fts_content,
+          ^search_query
+        ),
+      order_by: [fragment("? <=> now()::date", o.inserted_at)]
+    )
+  end
+
+  defp query_with(q, :rum, search_query, :websearch) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "? @@ websearch_to_tsquery(?)",
           o.fts_content,
           ^search_query
         ),

@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.MFATest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   import Pleroma.Factory
   alias Pleroma.MFA
@@ -30,8 +30,8 @@ defmodule Pleroma.MFATest do
       {:ok, [code1, code2]} = MFA.generate_backup_codes(user)
       updated_user = refresh_record(user)
       [hash1, hash2] = updated_user.multi_factor_authentication_settings.backup_codes
-      assert Pbkdf2.verify_pass(code1, hash1)
-      assert Pbkdf2.verify_pass(code2, hash2)
+      assert Pleroma.Password.Pbkdf2.verify_pass(code1, hash1)
+      assert Pleroma.Password.Pbkdf2.verify_pass(code2, hash2)
     end
   end
 

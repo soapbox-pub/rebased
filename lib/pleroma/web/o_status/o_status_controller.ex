@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.OStatusController do
@@ -15,10 +15,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.Metadata.PlayerView
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.Router
-
-  plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug,
-    unless_func: &Pleroma.Web.Plugs.FederatingPlug.federating?/1
-  )
 
   plug(
     RateLimiter,
@@ -37,14 +33,12 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     ActivityPubController.call(conn, :object)
   end
 
-  def object(%{assigns: %{format: format}} = conn, _params) do
+  def object(conn, _params) do
     with id <- Endpoint.url() <> conn.request_path,
          {_, %Activity{} = activity} <-
            {:activity, Activity.get_create_by_object_ap_id_with_object(id)},
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
-      case format do
-        _ -> redirect(conn, to: "/notice/#{activity.id}")
-      end
+      redirect(conn, to: "/notice/#{activity.id}")
     else
       reason when reason in [{:public?, false}, {:activity, nil}] ->
         {:error, :not_found}
@@ -59,13 +53,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     ActivityPubController.call(conn, :activity)
   end
 
-  def activity(%{assigns: %{format: format}} = conn, _params) do
+  def activity(conn, _params) do
     with id <- Endpoint.url() <> conn.request_path,
          {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
-      case format do
-        _ -> redirect(conn, to: "/notice/#{activity.id}")
-      end
+      redirect(conn, to: "/notice/#{activity.id}")
     else
       reason when reason in [{:public?, false}, {:activity, nil}] ->
         {:error, :not_found}
@@ -81,15 +73,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       cond do
         format in ["json", "activity+json"] ->
-          if activity.local do
-            %{data: %{"id" => redirect_url}} = Object.normalize(activity)
-            redirect(conn, external: redirect_url)
-          else
-            {:error, :not_found}
-          end
+          %{data: %{"id" => redirect_url}} = Object.normalize(activity, fetch: false)
+          redirect(conn, external: redirect_url)
 
         activity.data["type"] == "Create" ->
-          %Object{} = object = Object.normalize(activity)
+          %Object{} = object = Object.normalize(activity, fetch: false)
 
           RedirectController.redirector_with_meta(
             conn,
@@ -119,7 +107,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   def notice_player(conn, %{"id" => id}) do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.is_public?(activity),
-         %Object{} = object <- Object.normalize(activity),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, _reading_user = nil)},
+         %Object{} = object <- Object.normalize(activity, fetch: false),
          %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
          true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
       conn

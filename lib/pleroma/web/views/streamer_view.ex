@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StreamerView do
@@ -69,6 +69,28 @@ defmodule Pleroma.Web.StreamerView do
       event: "pleroma:chat_update",
       payload:
         representation
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  def render("follow_relationships_update.json", item) do
+    %{
+      event: "pleroma:follow_relationships_update",
+      payload:
+        %{
+          state: item.state,
+          follower: %{
+            id: item.follower.id,
+            follower_count: item.follower.follower_count,
+            following_count: item.follower.following_count
+          },
+          following: %{
+            id: item.following.id,
+            follower_count: item.following.follower_count,
+            following_count: item.following.following_count
+          }
+        }
         |> Jason.encode!()
     }
     |> Jason.encode!()

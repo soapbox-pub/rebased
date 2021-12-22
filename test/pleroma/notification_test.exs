@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
@@ -30,6 +30,33 @@ defmodule Pleroma.NotificationTest do
       {:ok, activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
       refute {:ok, [nil]} == Notification.create_notifications(activity)
+    end
+
+    test "creates a notification for a report" do
+      reporting_user = insert(:user)
+      reported_user = insert(:user)
+      {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+
+      {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      assert notification.user_id == moderator_user.id
+      assert notification.type == "pleroma:report"
+    end
+
+    test "suppresses notification to reporter if reporter is an admin" do
+      reporting_admin = insert(:user, is_admin: true)
+      reported_user = insert(:user)
+      other_admin = insert(:user, is_admin: true)
+
+      {:ok, activity} = CommonAPI.report(reporting_admin, %{account_id: reported_user.id})
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      refute notification.user_id == reporting_admin.id
+      assert notification.user_id == other_admin.id
+      assert notification.type == "pleroma:report"
     end
 
     test "creates a notification for an emoji reaction" do
@@ -100,6 +127,19 @@ defmodule Pleroma.NotificationTest do
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
     end
+  end
+
+  test "create_poll_notifications/1" do
+    [user1, user2, user3, _, _] = insert_list(5, :user)
+    question = insert(:question, user: user1)
+    activity = insert(:question_activity, question: question)
+
+    {:ok, _, _} = CommonAPI.vote(user2, question, [0])
+    {:ok, _, _} = CommonAPI.vote(user3, question, [1])
+
+    {:ok, notifications} = Notification.create_poll_notifications(activity)
+
+    assert [user2.id, user3.id, user1.id] == Enum.map(notifications, & &1.user_id)
   end
 
   describe "CommonApi.post/2 notification-related functionality" do
@@ -229,7 +269,7 @@ defmodule Pleroma.NotificationTest do
       muter = insert(:user)
       muted = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(muter, muted, false)
+      {:ok, _user_relationships} = User.mute(muter, muted, %{notifications: false})
 
       {:ok, activity} = CommonAPI.post(muted, %{status: "Hi @#{muter.nickname}"})
 
@@ -597,6 +637,8 @@ defmodule Pleroma.NotificationTest do
         "actor" => user.ap_id,
         "object" => %{
           "type" => "Note",
+          "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "content" => "message with a Mention tag, but no explicit tagging",
           "tag" => [
             %{
@@ -628,6 +670,9 @@ defmodule Pleroma.NotificationTest do
         "actor" => user.ap_id,
         "object" => %{
           "type" => "Note",
+          "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [other_user.ap_id],
           "content" => "hi everyone",
           "attributedTo" => user.ap_id
         }
@@ -766,7 +811,7 @@ defmodule Pleroma.NotificationTest do
       other_user = insert(:user)
 
       {:ok, other_user} = User.block_domain(other_user, blocked_domain)
-      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, other_user, user} = User.follow(other_user, user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{other_user.nickname}!"})
 
@@ -924,6 +969,7 @@ defmodule Pleroma.NotificationTest do
         "cc" => [],
         "object" => %{
           "type" => "Note",
+          "id" => remote_user.ap_id <> "/objects/test",
           "content" => "Hello!",
           "tag" => [
             %{
@@ -963,7 +1009,6 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(local_user))
     end
 
-    @tag capture_log: true
     test "move activity generates a notification" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
@@ -972,18 +1017,6 @@ defmodule Pleroma.NotificationTest do
 
       User.follow(follower, old_user)
       User.follow(other_follower, old_user)
-
-      old_user_url = old_user.ap_id
-
-      body =
-        File.read!("test/fixtures/users_mock/localhost.json")
-        |> String.replace("{{nickname}}", old_user.nickname)
-        |> Jason.encode!()
-
-      Tesla.Mock.mock(fn
-        %{method: :get, url: ^old_user_url} ->
-          %Tesla.Env{status: 200, body: body}
-      end)
 
       Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
       ObanHelpers.perform_all()
@@ -1015,7 +1048,7 @@ defmodule Pleroma.NotificationTest do
 
     test "it returns notifications for muted user without notifications", %{user: user} do
       muted = insert(:user)
-      {:ok, _user_relationships} = User.mute(user, muted, false)
+      {:ok, _user_relationships} = User.mute(user, muted, %{notifications: false})
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
 
@@ -1057,7 +1090,7 @@ defmodule Pleroma.NotificationTest do
       blocked = insert(:user, ap_id: "http://some-domain.com")
 
       {:ok, user} = User.block_domain(user, "some-domain.com")
-      {:ok, _} = User.follow(user, blocked)
+      {:ok, _, _} = User.follow(user, blocked)
 
       {:ok, _activity} = CommonAPI.post(blocked, %{status: "hey @#{user.nickname}"})
 

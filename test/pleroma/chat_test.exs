@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ChatTest do
@@ -73,7 +73,8 @@ defmodule Pleroma.ChatTest do
       other_user = insert(:user)
 
       {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
-      :timer.sleep(1500)
+      {:ok, chat} = time_travel(chat, -2)
+
       {:ok, chat_two} = Chat.bump_or_create(user.id, other_user.ap_id)
 
       assert chat.id == chat_two.id

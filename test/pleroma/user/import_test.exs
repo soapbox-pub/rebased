@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.ImportTest do
@@ -30,7 +30,7 @@ defmodule Pleroma.User.ImportTest do
 
       assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
-      assert result == [user2, user3]
+      assert result == [refresh_record(user2), refresh_record(user3)]
       assert User.following?(user1, user2)
       assert User.following?(user1, user3)
     end

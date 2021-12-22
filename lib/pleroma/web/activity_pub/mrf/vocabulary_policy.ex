@@ -1,12 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
   @moduledoc "Filter messages which belong to certain activity vocabularies"
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
+  @impl true
   def filter(%{"type" => "Undo", "object" => child_message} = message) do
     with {:ok, _} <- filter(child_message) do
       {:ok, message}
@@ -36,6 +37,33 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
 
   def filter(message), do: {:ok, message}
 
+  @impl true
   def describe,
-    do: {:ok, %{mrf_vocabulary: Pleroma.Config.get(:mrf_vocabulary) |> Enum.into(%{})}}
+    do: {:ok, %{mrf_vocabulary: Pleroma.Config.get(:mrf_vocabulary) |> Map.new()}}
+
+  @impl true
+  def config_description do
+    %{
+      key: :mrf_vocabulary,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.VocabularyPolicy",
+      label: "MRF Vocabulary",
+      description: "Filter messages which belong to certain activity vocabularies",
+      children: [
+        %{
+          key: :accept,
+          type: {:list, :string},
+          description:
+            "A list of ActivityStreams terms to accept. If empty, all supported messages are accepted.",
+          suggestions: ["Create", "Follow", "Mention", "Announce", "Like"]
+        },
+        %{
+          key: :reject,
+          type: {:list, :string},
+          description:
+            "A list of ActivityStreams terms to reject. If empty, no messages are rejected.",
+          suggestions: ["Create", "Follow", "Mention", "Announce", "Like"]
+        }
+      ]
+    }
+  end
 end

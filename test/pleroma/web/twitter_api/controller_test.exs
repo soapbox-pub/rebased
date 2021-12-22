@@ -1,75 +1,24 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Builders.ActivityBuilder
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
 
   import Pleroma.Factory
 
-  describe "POST /api/qvitter/statuses/notifications/read" do
-    test "without valid credentials", %{conn: conn} do
-      conn = post(conn, "/api/qvitter/statuses/notifications/read", %{"latest_id" => 1_234_567})
-      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
-    end
-
-    test "with credentials, without any params" do
-      %{conn: conn} = oauth_access(["write:notifications"])
-
-      conn = post(conn, "/api/qvitter/statuses/notifications/read")
-
-      assert json_response(conn, 400) == %{
-               "error" => "You need to specify latest_id",
-               "request" => "/api/qvitter/statuses/notifications/read"
-             }
-    end
-
-    test "with credentials, with params" do
-      %{user: current_user, conn: conn} =
-        oauth_access(["read:notifications", "write:notifications"])
-
-      other_user = insert(:user)
-
-      {:ok, _activity} =
-        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
-
-      response_conn =
-        conn
-        |> assign(:user, current_user)
-        |> get("/api/v1/notifications")
-
-      [notification] = response = json_response(response_conn, 200)
-
-      assert length(response) == 1
-
-      assert notification["pleroma"]["is_seen"] == false
-
-      response_conn =
-        conn
-        |> assign(:user, current_user)
-        |> post("/api/qvitter/statuses/notifications/read", %{"latest_id" => notification["id"]})
-
-      [notification] = response = json_response(response_conn, 200)
-
-      assert length(response) == 1
-
-      assert notification["pleroma"]["is_seen"] == true
-    end
-  end
-
   describe "GET /api/account/confirm_email/:id/:token" do
     setup do
       {:ok, user} =
         insert(:user)
-        |> User.confirmation_changeset(need_confirmation: true)
+        |> User.confirmation_changeset(set_confirmation: false)
         |> Repo.update()
 
-      assert user.confirmation_pending
+      refute user.is_confirmed
 
       [user: user]
     end
@@ -85,7 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = User.get_cached_by_id(user.id)
 
-      refute user.confirmation_pending
+      assert user.is_confirmed
       refute user.confirmation_token
     end
 

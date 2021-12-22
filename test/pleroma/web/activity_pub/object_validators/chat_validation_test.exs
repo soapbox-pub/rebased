@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
       user = insert(:user)
       recipient = insert(:user)
       {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "hey")
-      object = Object.normalize(activity, false)
+      object = Object.normalize(activity, fetch: false)
 
       {:ok, create_data, _} = Builder.create(user, object.data, [recipient.ap_id])
 
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 
-      assert Map.put(valid_chat_message, "attachment", nil) == object
+      assert valid_chat_message == object
       assert match?(%{"firefox" => _}, object["emoji"])
     end
 
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
     test "does not validate if the message is longer than the remote_limit", %{
       valid_chat_message: valid_chat_message
     } do
-      Pleroma.Config.put([:instance, :remote_limit], 2)
+      clear_config([:instance, :remote_limit], 2)
       refute match?({:ok, _object, _meta}, ObjectValidator.validate(valid_chat_message, []))
     end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ReportView do
@@ -19,8 +19,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       reports:
         reports[:items]
         |> Enum.map(&Report.extract_report_info/1)
-        |> Enum.map(&render(__MODULE__, "show.json", &1))
-        |> Enum.reverse(),
+        |> Enum.map(&render(__MODULE__, "show.json", &1)),
       total: reports[:total]
     }
   end

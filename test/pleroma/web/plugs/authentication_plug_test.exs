@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
     user = %User{
       id: 1,
       name: "dude",
-      password_hash: Pbkdf2.hash_pwd_salt("guy")
+      password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("guy")
     }
 
     conn =
@@ -48,6 +48,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user == conn.assigns.auth_user
+    assert conn.assigns.token == nil
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
   end
 
@@ -62,6 +63,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert conn.assigns.token == nil
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
 
     user = User.get_by_id(user.id)
@@ -83,6 +85,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert conn.assigns.token == nil
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
 
     user = User.get_by_id(user.id)

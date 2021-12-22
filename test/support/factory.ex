@@ -1,9 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
+
+  require Pleroma.Constants
+
   alias Pleroma.Object
   alias Pleroma.User
 
@@ -24,12 +27,12 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def user_factory do
+  def user_factory(attrs \\ %{}) do
     user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
       nickname: sequence(:nickname, &"nick#{&1}"),
-      password_hash: Pbkdf2.hash_pwd_salt("test"),
+      password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
       is_discoverable: true,
       last_digest_emailed_at: NaiveDateTime.utc_now(),
@@ -39,13 +42,33 @@ defmodule Pleroma.Factory do
       ap_enabled: true
     }
 
-    %{
-      user
-      | ap_id: User.ap_id(user),
-        follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user),
-        raw_bio: user.bio
-    }
+    urls =
+      if attrs[:local] == false do
+        base_domain = attrs[:domain] || Enum.random(["domain1.com", "domain2.com", "domain3.com"])
+
+        ap_id = "https://#{base_domain}/users/#{user.nickname}"
+
+        %{
+          ap_id: ap_id,
+          follower_address: ap_id <> "/followers",
+          following_address: ap_id <> "/following",
+          featured_address: ap_id <> "/collections/featured"
+        }
+      else
+        %{
+          ap_id: User.ap_id(user),
+          follower_address: User.ap_followers(user),
+          following_address: User.ap_following(user),
+          featured_address: User.ap_featured_collection(user)
+        }
+      end
+
+    attrs = Map.delete(attrs, :domain)
+
+    user
+    |> Map.put(:raw_bio, user.bio)
+    |> Map.merge(urls)
+    |> merge_attributes(attrs)
   end
 
   def user_relationship_factory(attrs \\ %{}) do
@@ -86,6 +109,42 @@ defmodule Pleroma.Factory do
     %Pleroma.Object{
       data: merge_attributes(data, Map.get(attrs, :data, %{}))
     }
+  end
+
+  def attachment_note_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    {length, attrs} = Map.pop(attrs, :length, 1)
+
+    data = %{
+      "attachment" =>
+        Stream.repeatedly(fn -> attachment_data(user.ap_id, attrs[:href]) end)
+        |> Enum.take(length)
+    }
+
+    build(:note, Map.put(attrs, :data, data))
+  end
+
+  defp attachment_data(ap_id, href) do
+    href = href || sequence(:href, &"#{Pleroma.Web.Endpoint.url()}/media/#{&1}.jpg")
+
+    %{
+      "url" => [
+        %{
+          "href" => href,
+          "type" => "Link",
+          "mediaType" => "image/jpeg"
+        }
+      ],
+      "name" => "some name",
+      "type" => "Document",
+      "actor" => ap_id,
+      "mediaType" => "image/jpeg"
+    }
+  end
+
+  def followers_only_note_factory(attrs \\ %{}) do
+    %Pleroma.Object{data: data} = note_factory(attrs)
+    %Pleroma.Object{data: Map.merge(data, %{"to" => [data["actor"] <> "/followers"]})}
   end
 
   def audio_factory(attrs \\ %{}) do
@@ -137,8 +196,8 @@ defmodule Pleroma.Factory do
   end
 
   def article_factory do
-    note_factory()
-    |> Map.put("type", "Article")
+    %Pleroma.Object{data: data} = note_factory()
+    %Pleroma.Object{data: Map.merge(data, %{"type" => "Article"})}
   end
 
   def tombstone_factory do
@@ -151,6 +210,38 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Object{
       data: data
+    }
+  end
+
+  def question_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "type" => "Question",
+      "actor" => user.ap_id,
+      "attributedTo" => user.ap_id,
+      "attachment" => [],
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [user.follower_address],
+      "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
+      "closed" => DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601(),
+      "oneOf" => [
+        %{
+          "type" => "Note",
+          "name" => "chocolate",
+          "replies" => %{"totalItems" => 0, "type" => "Collection"}
+        },
+        %{
+          "type" => "Note",
+          "name" => "vanilla",
+          "replies" => %{"totalItems" => 0, "type" => "Collection"}
+        }
+      ]
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
     }
   end
 
@@ -172,6 +263,72 @@ defmodule Pleroma.Factory do
       actor: data["actor"],
       recipients: data["to"]
     }
+  end
+
+  def add_activity_factory(attrs \\ %{}) do
+    featured_collection_activity(attrs, "Add")
+  end
+
+  def remove_activity_factor(attrs \\ %{}) do
+    featured_collection_activity(attrs, "Remove")
+  end
+
+  defp featured_collection_activity(attrs, type) do
+    user = attrs[:user] || insert(:user)
+    note = attrs[:note] || insert(:note, user: user)
+
+    data_attrs =
+      attrs
+      |> Map.get(:data_attrs, %{})
+      |> Map.put(:type, type)
+
+    attrs = Map.drop(attrs, [:user, :note, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "target" => user.featured_address,
+        "object" => note.data["object"],
+        "actor" => note.data["actor"],
+        "type" => "Add",
+        "to" => [Pleroma.Constants.as_public()],
+        "cc" => [user.follower_address]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
+  end
+
+  def followers_only_note_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    note = insert(:followers_only_note, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :note, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => note.data["actor"],
+        "to" => note.data["to"],
+        "object" => note.data,
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => note.data["context"]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
   end
 
   def note_activity_factory(attrs \\ %{}) do
@@ -243,7 +400,7 @@ defmodule Pleroma.Factory do
 
   def like_activity_factory(attrs \\ %{}) do
     note_activity = attrs[:note_activity] || insert(:note_activity)
-    object = Object.normalize(note_activity)
+    object = Object.normalize(note_activity, fetch: false)
     user = insert(:user)
 
     data =
@@ -301,6 +458,33 @@ defmodule Pleroma.Factory do
       actor: data["actor"],
       recipients: data["to"] ++ data["cc"]
     }
+  end
+
+  def question_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    question = attrs[:question] || insert(:question, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :question, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => question.data["actor"],
+        "to" => question.data["to"],
+        "object" => question.data["id"],
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => question.data["context"]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
   end
 
   def oauth_app_factory do
@@ -439,7 +623,8 @@ defmodule Pleroma.Factory do
     %Pleroma.Filter{
       user: build(:user),
       filter_id: sequence(:filter_id, & &1),
-      phrase: "cofe"
+      phrase: "cofe",
+      context: ["home"]
     }
   end
 end

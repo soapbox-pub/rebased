@@ -1,0 +1,1 @@
+external_emoji, https://example.com/emoji.png

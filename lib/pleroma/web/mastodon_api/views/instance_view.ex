@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceView do
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     instance = Config.get(:instance)
 
     %{
-      uri: Pleroma.Web.base_url(),
+      uri: Pleroma.Web.Endpoint.url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
@@ -23,7 +23,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Pleroma.Stats.get_stats(),
-      thumbnail: Keyword.get(instance, :instance_thumbnail),
+      thumbnail:
+        URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
+        |> to_string,
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
@@ -34,8 +36,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
-      background_image: Keyword.get(instance, :background_image),
-      chat_limit: Keyword.get(instance, :chat_limit),
+      background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
+      shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
       pleroma: %{
         metadata: %{
@@ -45,6 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats])
         },
+        stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
     }
@@ -56,6 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "mastodon_api",
       "mastodon_api_streaming",
       "polls",
+      "v2_suggestions",
       "pleroma_explicit_addressing",
       "shareable_emoji_packs",
       "multifetch",
@@ -66,8 +70,12 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:gopher, :enabled]) do
         "gopher"
       end,
-      if Config.get([:chat, :enabled]) do
+      # backwards compat
+      if Config.get([:shout, :enabled]) do
         "chat"
+      end,
+      if Config.get([:shout, :enabled]) do
+        "shout"
       end,
       if Config.get([:instance, :allow_relay]) do
         "relay"
@@ -76,7 +84,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
-      "pleroma_chat_messages"
+      "pleroma_chat_messages",
+      if Config.get([:instance, :show_reactions]) do
+        "exposable_reactions"
+      end
     ]
     |> Enum.filter(& &1)
   end
@@ -88,7 +99,20 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       {:ok, data} = MRF.describe()
 
       data
-      |> Map.merge(%{quarantined_instances: quarantined})
+      |> Map.put(
+        :quarantined_instances,
+        Enum.map(quarantined, fn {instance, _reason} -> instance end)
+      )
+      # This is for backwards compatibility. We originally didn't sent
+      # extra info like a reason why an instance was rejected/quarantined/etc.
+      # Because we didn't want to break backwards compatibility it was decided
+      # to add an extra "info" key.
+      |> Map.put(:quarantined_instances_info, %{
+        "quarantined_instances" =>
+          quarantined
+          |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
+          |> Map.new()
+      })
     else
       %{}
     end

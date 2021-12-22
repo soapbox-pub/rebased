@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier do
@@ -32,18 +32,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def fix_object(object, options \\ []) do
     object
-    |> strip_internal_fields
-    |> fix_actor
-    |> fix_url
-    |> fix_attachments
-    |> fix_context
+    |> strip_internal_fields()
+    |> fix_actor()
+    |> fix_url()
+    |> fix_attachments()
+    |> fix_context()
     |> fix_in_reply_to(options)
-    |> fix_emoji
-    |> fix_tag
-    |> fix_content_map
-    |> fix_addressing
-    |> fix_summary
-    |> fix_type(options)
+    |> fix_emoji()
+    |> fix_tag()
+    |> fix_content_map()
+    |> fix_addressing()
+    |> fix_summary()
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -72,46 +71,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_explicit_addressing(
-        %{"to" => to, "cc" => cc} = object,
-        explicit_mentions,
-        follower_collection
-      ) do
-    explicit_to = Enum.filter(to, fn x -> x in explicit_mentions end)
+  # if directMessage flag is set to true, leave the addressing alone
+  def fix_explicit_addressing(%{"directMessage" => true} = object, _follower_collection),
+    do: object
 
+  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, follower_collection) do
+    explicit_mentions =
+      Utils.determine_explicit_mentions(object) ++
+        [Pleroma.Constants.as_public(), follower_collection]
+
+    explicit_to = Enum.filter(to, fn x -> x in explicit_mentions end)
     explicit_cc = Enum.filter(to, fn x -> x not in explicit_mentions end)
 
     final_cc =
       (cc ++ explicit_cc)
+      |> Enum.filter(& &1)
       |> Enum.reject(fn x -> String.ends_with?(x, "/followers") and x != follower_collection end)
       |> Enum.uniq()
 
     object
     |> Map.put("to", explicit_to)
     |> Map.put("cc", final_cc)
-  end
-
-  def fix_explicit_addressing(object, _explicit_mentions, _followers_collection), do: object
-
-  # if directMessage flag is set to true, leave the addressing alone
-  def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
-
-  def fix_explicit_addressing(object) do
-    explicit_mentions = Utils.determine_explicit_mentions(object)
-
-    %User{follower_address: follower_collection} =
-      object
-      |> Containment.get_actor()
-      |> User.get_cached_by_ap_id()
-
-    explicit_mentions =
-      explicit_mentions ++
-        [
-          Pleroma.Constants.as_public(),
-          follower_collection
-        ]
-
-    fix_explicit_addressing(object, explicit_mentions, follower_collection)
   end
 
   # if as:Public is addressed, then make sure the followers collection is also addressed
@@ -137,19 +117,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_implicit_addressing(object, _), do: object
-
   def fix_addressing(object) do
-    {:ok, %User{} = user} = User.get_or_fetch_by_ap_id(object["actor"])
-    followers_collection = User.ap_followers(user)
+    {:ok, %User{follower_address: follower_collection}} =
+      object
+      |> Containment.get_actor()
+      |> User.get_or_fetch_by_ap_id()
 
     object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
-    |> fix_explicit_addressing()
-    |> fix_implicit_addressing(followers_collection)
+    |> fix_explicit_addressing(follower_collection)
+    |> fix_implicit_addressing(follower_collection)
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -223,10 +203,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && MIME.valid?(url["mediaType"]) -> url["mediaType"]
-            MIME.valid?(data["mediaType"]) -> data["mediaType"]
-            MIME.valid?(data["mimeType"]) -> data["mimeType"]
-            true -> nil
+            is_map(url) && MIME.extensions(url["mediaType"]) != [] ->
+              url["mediaType"]
+
+            is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] ->
+              data["mediaType"]
+
+            is_bitstring(data["mimeType"]) && MIME.extensions(data["mimeType"]) != [] ->
+              data["mimeType"]
+
+            true ->
+              nil
           end
 
         href =
@@ -244,6 +231,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
               "type" => Map.get(url || %{}, "type", "Link")
             }
             |> Maps.put_if_present("mediaType", media_type)
+            |> Maps.put_if_present("width", (url || %{})["width"] || data["width"])
+            |> Maps.put_if_present("height", (url || %{})["height"] || data["height"])
 
           %{
             "url" => [attachment_url],
@@ -251,6 +240,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           }
           |> Maps.put_if_present("mediaType", media_type)
           |> Maps.put_if_present("name", data["name"])
+          |> Maps.put_if_present("blurhash", data["blurhash"])
         else
           nil
         end
@@ -313,18 +303,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags =
       tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
-      |> Enum.map(fn data -> String.slice(data["name"], 1..-1) end)
+      |> Enum.map(fn
+        %{"name" => "#" <> hashtag} -> String.downcase(hashtag)
+        %{"name" => hashtag} -> String.downcase(hashtag)
+      end)
 
     Map.put(object, "tag", tag ++ tags)
   end
 
-  def fix_tag(%{"tag" => %{"type" => "Hashtag", "name" => hashtag} = tag} = object) do
-    combined = [tag, String.slice(hashtag, 1..-1)]
-
-    Map.put(object, "tag", combined)
+  def fix_tag(%{"tag" => %{} = tag} = object) do
+    object
+    |> Map.put("tag", [tag])
+    |> fix_tag
   end
-
-  def fix_tag(%{"tag" => %{} = tag} = object), do: Map.put(object, "tag", [tag])
 
   def fix_tag(object), do: object
 
@@ -338,19 +329,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
-  def fix_type(object, options \\ [])
+  defp fix_type(%{"type" => "Note", "inReplyTo" => reply_id, "name" => _} = object, options)
+       when is_binary(reply_id) do
+    options = Keyword.put(options, :fetch, true)
 
-  def fix_type(%{"inReplyTo" => reply_id, "name" => _} = object, options)
-      when is_binary(reply_id) do
-    with true <- Federator.allowed_thread_distance?(options[:depth]),
-         {:ok, %{data: %{"type" => "Question"} = _} = _} <- get_obj_helper(reply_id, options) do
+    with %Object{data: %{"type" => "Question"}} <- Object.normalize(reply_id, options) do
       Map.put(object, "type", "Answer")
     else
       _ -> object
     end
   end
 
-  def fix_type(object, _), do: object
+  defp fix_type(object, _options), do: object
 
   # Reduce the object list to find the reported user.
   defp get_reported(objects) do
@@ -361,29 +351,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         _ -> {:cont, nil}
       end
     end)
-  end
-
-  # Compatibility wrapper for Mastodon votes
-  defp handle_create(%{"object" => %{"type" => "Answer"}} = data, _user) do
-    handle_incoming(data)
-  end
-
-  defp handle_create(%{"object" => object} = data, user) do
-    %{
-      to: data["to"],
-      object: object,
-      actor: user,
-      context: object["context"],
-      local: false,
-      published: data["published"],
-      additional:
-        Map.take(data, [
-          "cc",
-          "directMessage",
-          "id"
-        ])
-    }
-    |> ActivityPub.create()
   end
 
   def handle_incoming(data, options \\ [])
@@ -416,44 +383,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # length of https:// = 8, should validate better, but good enough for now.
   def handle_incoming(%{"id" => id}, _options) when is_binary(id) and byte_size(id) < 8,
     do: :error
-
-  # TODO: validate those with a Ecto scheme
-  # - tags
-  # - emoji
-  def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
-        options
-      )
-      when objtype in ~w{Note Page} do
-    actor = Containment.get_actor(data)
-
-    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor) do
-      data =
-        data
-        |> Map.put("object", fix_object(object, options))
-        |> Map.put("actor", actor)
-        |> fix_addressing()
-
-      with {:ok, created_activity} <- handle_create(data, user) do
-        reply_depth = (options[:depth] || 0) + 1
-
-        if Federator.allowed_thread_distance?(reply_depth) do
-          for reply_id <- replies(object) do
-            Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
-              "id" => reply_id,
-              "depth" => reply_depth
-            })
-          end
-        end
-
-        {:ok, created_activity}
-      end
-    else
-      %Activity{} = activity -> {:ok, activity}
-      _e -> :error
-    end
-  end
 
   def handle_incoming(
         %{"type" => "Listen", "object" => %{"type" => "Audio"} = object} = data,
@@ -516,14 +445,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(
         %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
-        _options
+        options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article} do
-    data = Map.put(data, "object", strip_internal_fields(data["object"]))
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note Page} do
+    fetch_options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
+
+    object =
+      data["object"]
+      |> strip_internal_fields()
+      |> fix_type(fetch_options)
+      |> fix_in_reply_to(fetch_options)
+
+    data = Map.put(data, "object", object)
+    options = Keyword.put(options, :local, false)
 
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          nil <- Activity.get_create_by_object_ap_id(obj_id),
-         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, options) do
       {:ok, activity}
     else
       %Activity{} = activity -> {:ok, activity}
@@ -532,7 +470,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => type} = data, _options)
-      when type in ~w{Like EmojiReact Announce} do
+      when type in ~w{Like EmojiReact Announce Add Remove} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -562,7 +500,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
-      {:error, {:validate_object, _}} = e ->
+      {:error, {:validate, _}} = e ->
         # Check if we have a create activity for this
         with {:ok, object_id} <- ObjectValidators.ObjectID.cast(data["object"]),
              %Activity{data: %{"actor" => actor}} <-
@@ -649,7 +587,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do
-    case Object.normalize(id, true, options) do
+    options = Keyword.put(options, :fetch, true)
+
+    case Object.normalize(id, options) do
       %Object{} = object -> {:ok, object}
       _ -> nil
     end
@@ -668,7 +608,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              "actor" => attributed_to,
              "object" => data
            }) do
-      {:ok, Object.normalize(activity)}
+      {:ok, Object.normalize(activity, fetch: false)}
     else
       _ -> get_obj_helper(object_id)
     end
@@ -736,7 +676,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # Prepares the object of an outgoing create activity.
   def prepare_object(object) do
     object
-    |> set_sensitive
     |> add_hashtags
     |> add_mention_tags
     |> add_emoji_tags
@@ -759,7 +698,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when activity_type in ["Create", "Listen"] do
     object =
       object_id
-      |> Object.normalize()
+      |> Object.normalize(fetch: false)
       |> Map.get(:data)
       |> prepare_object
 
@@ -775,7 +714,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def prepare_outgoing(%{"type" => "Announce", "actor" => ap_id, "object" => object_id} = data) do
     object =
       object_id
-      |> Object.normalize()
+      |> Object.normalize(fetch: false)
 
     data =
       if Visibility.is_private?(object) && object.data["actor"] == ap_id do
@@ -915,7 +854,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp build_emoji_tag({name, url}) do
     %{
-      "icon" => %{"url" => url, "type" => "Image"},
+      "icon" => %{"url" => "#{URI.encode(url)}", "type" => "Image"},
       "name" => ":" <> name <> ":",
       "type" => "Emoji",
       "updated" => "1970-01-01T00:00:00Z",
@@ -925,15 +864,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_conversation(object) do
     Map.put(object, "conversation", object["context"])
-  end
-
-  def set_sensitive(%{"sensitive" => true} = object) do
-    object
-  end
-
-  def set_sensitive(object) do
-    tags = object["tag"] || []
-    Map.put(object, "sensitive", "nsfw" in tags)
   end
 
   def set_type(%{"type" => "Answer"} = object) do
@@ -955,7 +885,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object
       |> Map.get("attachment", [])
       |> Enum.map(fn data ->
-        [%{"mediaType" => media_type, "href" => href} | _] = data["url"]
+        [%{"mediaType" => media_type, "href" => href} = url | _] = data["url"]
 
         %{
           "url" => href,
@@ -963,6 +893,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "name" => data["name"],
           "type" => "Document"
         }
+        |> Maps.put_if_present("width", url["width"])
+        |> Maps.put_if_present("height", url["height"])
+        |> Maps.put_if_present("blurhash", data["blurhash"])
       end)
 
     Map.put(object, "attachment", attachments)
@@ -1004,8 +937,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def upgrade_user_from_ap_id(ap_id) do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id, force_http: true),
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          {:ok, user} <- update_user(user, data) do
+      {:ok, _pid} = Task.start(fn -> ActivityPub.pinned_fetch_task(user) end)
       TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}
     else

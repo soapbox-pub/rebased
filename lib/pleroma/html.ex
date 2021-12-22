@@ -1,10 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTML do
   # Scrubbers are compiled on boot so they can be configured in OTP releases
   #  @on_load :compile_scrubbers
+
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   def compile_scrubbers do
     dir = Path.join(:code.priv_dir(:pleroma), "scrubbers")
@@ -47,31 +49,6 @@ defmodule Pleroma.HTML do
   def filter_tags(html), do: filter_tags(html, nil)
   def strip_tags(html), do: filter_tags(html, FastSanitize.Sanitizer.StripTags)
 
-  def get_cached_scrubbed_html_for_activity(
-        content,
-        scrubbers,
-        activity,
-        key \\ "",
-        callback \\ fn x -> x end
-      ) do
-    key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
-
-    Cachex.fetch!(:scrubber_cache, key, fn _key ->
-      object = Pleroma.Object.normalize(activity)
-      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false, callback)
-    end)
-  end
-
-  def get_cached_stripped_html_for_activity(content, activity, key) do
-    get_cached_scrubbed_html_for_activity(
-      content,
-      FastSanitize.Sanitizer.StripTags,
-      activity,
-      key,
-      &HtmlEntities.decode/1
-    )
-  end
-
   def ensure_scrubbed_html(
         content,
         scrubbers,
@@ -90,22 +67,12 @@ defmodule Pleroma.HTML do
     end
   end
 
-  defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
-    generate_scrubber_signature([scrubber])
-  end
-
-  defp generate_scrubber_signature(scrubbers) do
-    Enum.reduce(scrubbers, "", fn scrubber, signature ->
-      "#{signature}#{to_string(scrubber)}"
-    end)
-  end
-
   def extract_first_external_url_from_object(%{data: %{"content" => content}} = object)
       when is_binary(content) do
     unless object.data["fake"] do
       key = "URL|#{object.id}"
 
-      Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      @cachex.fetch!(:scrubber_cache, key, fn _key ->
         {:commit, {:ok, extract_first_external_url(content)}}
       end)
     else

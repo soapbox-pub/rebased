@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   use Ecto.Schema
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -14,14 +14,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
-    field(:object, ObjectValidators.ObjectID)
-    field(:actor, ObjectValidators.ObjectID)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
+
     field(:context, :string)
     field(:content, :string)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
   end
 
   def cast_and_validate(data) do
@@ -31,6 +33,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   end
 
   def cast_data(data) do
+    data =
+      data
+      |> fix()
+
     %__MODULE__{}
     |> changeset(data)
   end
@@ -38,28 +44,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   def changeset(struct, data) do
     struct
     |> cast(data, __schema__(:fields))
-    |> fix_after_cast()
   end
 
-  def fix_after_cast(cng) do
-    cng
-    |> fix_context()
-  end
+  defp fix(data) do
+    data =
+      data
+      |> CommonFixes.fix_actor()
+      |> CommonFixes.fix_activity_addressing()
 
-  def fix_context(cng) do
-    object = get_field(cng, :object)
-
-    with nil <- get_field(cng, :context),
-         %Object{data: %{"context" => context}} <- Object.get_cached_by_ap_id(object) do
-      cng
-      |> put_change(:context, context)
+    with %Object{} = object <- Object.normalize(data["object"]) do
+      data
+      |> CommonFixes.fix_activity_context(object)
+      |> CommonFixes.fix_object_action_recipients(object)
     else
-      _ ->
-        cng
+      _ -> data
     end
   end
 
-  def validate_emoji(cng) do
+  defp validate_emoji(cng) do
     content = get_field(cng, :content)
 
     if Pleroma.Emoji.is_unicode_emoji?(content) do
@@ -70,7 +72,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
     end
   end
 
-  def validate_data(data_cng) do
+  defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["EmojiReact"])
     |> validate_required([:id, :type, :object, :actor, :context, :to, :cc, :content])

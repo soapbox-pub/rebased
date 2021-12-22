@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
+  # TODO: Should not need Cachex
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
@@ -13,6 +14,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result = json_response_and_validate_schema(conn, 200)
 
     email = Pleroma.Config.get([:instance, :email])
+    thumbnail = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :instance_thumbnail])
+    background = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :background_image])
+
     # Note: not checking for "max_toot_chars" since it's optional
     assert %{
              "uri" => _,
@@ -24,7 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
                "streaming_api" => _
              },
              "stats" => _,
-             "thumbnail" => _,
+             "thumbnail" => from_config_thumbnail,
              "languages" => _,
              "registrations" => _,
              "approval_required" => _,
@@ -33,8 +37,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "avatar_upload_limit" => _,
              "background_upload_limit" => _,
              "banner_upload_limit" => _,
-             "background_image" => _,
-             "chat_limit" => _,
+             "background_image" => from_config_background,
+             "shout_limit" => _,
              "description_limit" => _
            } = result
 
@@ -43,15 +47,18 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["metadata"]["federation"]
     assert result["pleroma"]["metadata"]["fields_limits"]
     assert result["pleroma"]["vapid_public_key"]
+    assert result["pleroma"]["stats"]["mau"] == 0
 
     assert email == from_config_email
+    assert thumbnail == from_config_thumbnail
+    assert background == from_config_background
   end
 
   test "get instance stats", %{conn: conn} do
     user = insert(:user, %{local: true})
 
     user2 = insert(:user, %{local: true})
-    {:ok, _user2} = User.deactivate(user2, !user2.deactivated)
+    {:ok, _user2} = User.set_activation(user2, false)
 
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})

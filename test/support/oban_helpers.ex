@@ -1,11 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Tests.ObanHelpers do
   @moduledoc """
   Oban test helpers.
   """
+
+  require Ecto.Query
 
   alias Pleroma.Repo
 
@@ -15,6 +17,7 @@ defmodule Pleroma.Tests.ObanHelpers do
 
   def perform_all do
     Oban.Job
+    |> Ecto.Query.where(state: "available")
     |> Repo.all()
     |> perform()
   end

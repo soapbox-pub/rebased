@@ -1,15 +1,15 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun.ConnectionPool.Reclaimer do
   use GenServer, restart: :temporary
 
-  @registry Pleroma.Gun.ConnectionPool
+  defp registry, do: Pleroma.Gun.ConnectionPool
 
   def start_monitor do
     pid =
-      case :gen_server.start(__MODULE__, [], name: {:via, Registry, {@registry, "reclaimer"}}) do
+      case :gen_server.start(__MODULE__, [], name: {:via, Registry, {registry(), "reclaimer"}}) do
         {:ok, pid} ->
           pid
 
@@ -46,7 +46,7 @@ defmodule Pleroma.Gun.ConnectionPool.Reclaimer do
     #   {worker_pid, crf, last_reference} end)
     unused_conns =
       Registry.select(
-        @registry,
+        registry(),
         [
           {{:_, :"$1", {:_, :"$2", :"$3", :"$4"}}, [{:==, :"$2", []}], [{{:"$1", :"$3", :"$4"}}]}
         ]

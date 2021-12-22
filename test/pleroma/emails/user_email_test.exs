@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.UserEmailTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Emails.UserEmail
   alias Pleroma.Web.Endpoint
@@ -44,5 +44,16 @@ defmodule Pleroma.Emails.UserEmailTest do
 
     assert email.html_body =~
              Router.Helpers.confirm_email_url(Endpoint, :confirm_email, user.id, "conf-token")
+  end
+
+  test "build approval pending email" do
+    config = Pleroma.Config.get(:instance)
+    user = insert(:user)
+    email = UserEmail.approval_pending_email(user)
+
+    assert email.from == {config[:name], config[:notify_email]}
+    assert email.to == [{user.name, user.email}]
+    assert email.subject == "Your account is awaiting approval"
+    assert email.html_body =~ "Awaiting Approval"
   end
 end

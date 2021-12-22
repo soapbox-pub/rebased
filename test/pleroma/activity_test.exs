@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ActivityTest do
@@ -25,7 +25,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns activities by it's objects AP ids" do
     activity = insert(:note_activity)
-    object_data = Object.normalize(activity).data
+    object_data = Object.normalize(activity, fetch: false).data
 
     [found_activity] = Activity.get_all_create_by_object_ap_id(object_data["id"])
 
@@ -34,7 +34,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns the activity that created an object" do
     activity = insert(:note_activity)
-    object_data = Object.normalize(activity).data
+    object_data = Object.normalize(activity, fetch: false).data
 
     found_activity = Activity.get_create_by_object_ap_id(object_data["id"])
 
@@ -123,7 +123,8 @@ defmodule Pleroma.ActivityTest do
           "type" => "Note",
           "content" => "find me!",
           "id" => "http://mastodon.example.org/users/admin/objects/1",
-          "attributedTo" => "http://mastodon.example.org/users/admin"
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         },
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
@@ -132,6 +133,7 @@ defmodule Pleroma.ActivityTest do
       {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "更新情報"})
       {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
       {:ok, remote_activity} = ObanHelpers.perform(job)
+      remote_activity = Activity.get_by_id_with_object(remote_activity.id)
 
       %{
         japanese_activity: japanese_activity,
@@ -168,7 +170,7 @@ defmodule Pleroma.ActivityTest do
 
     test "find only local statuses for unauthenticated users  when `limit_to_local_content` is `:all`",
          %{local_activity: local_activity} do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
       assert [^local_activity] = Activity.search(nil, "find me")
     end
 
@@ -177,7 +179,7 @@ defmodule Pleroma.ActivityTest do
            local_activity: local_activity,
            remote_activity: remote_activity
          } do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       activities = Enum.sort_by(Activity.search(nil, "find me"), & &1.id)
 
@@ -195,6 +197,13 @@ defmodule Pleroma.ActivityTest do
       |> Enum.sort(&(&1.id < &2.id))
 
     assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
+  end
+
+  test "get_by_id_with_user_actor/1" do
+    user = insert(:user)
+    activity = insert(:note_activity, note: insert(:note, user: user))
+
+    assert Activity.get_by_id_with_user_actor(activity.id).user_actor == user
   end
 
   test "get_by_id_with_object/1" do
@@ -230,5 +239,43 @@ defmodule Pleroma.ActivityTest do
       |> Enum.sort(&(&1.id < &2.id))
 
     assert [%Activity{id: ^id1}, %Activity{id: ^id2}] = activities
+  end
+
+  test "get_by_object_ap_id_with_object/1" do
+    user = insert(:user)
+    another = insert(:user)
+
+    {:ok, %{id: id, object: %{data: %{"id" => obj_id}}}} =
+      Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
+
+    Pleroma.Web.CommonAPI.favorite(another, id)
+
+    assert obj_id
+           |> Pleroma.Activity.Queries.by_object_id()
+           |> Repo.aggregate(:count, :id) == 2
+
+    assert %{id: ^id} = Activity.get_by_object_ap_id_with_object(obj_id)
+  end
+
+  test "add_by_params_query/3" do
+    user = insert(:user)
+
+    note = insert(:note_activity, user: user)
+
+    insert(:add_activity, user: user, note: note)
+    insert(:add_activity, user: user, note: note)
+    insert(:add_activity, user: user)
+
+    assert Repo.aggregate(Activity, :count, :id) == 4
+
+    add_query =
+      Activity.add_by_params_query(note.data["object"], user.ap_id, user.featured_address)
+
+    assert Repo.aggregate(add_query, :count, :id) == 2
+
+    Repo.delete_all(add_query)
+    assert Repo.aggregate(add_query, :count, :id) == 0
+
+    assert Repo.aggregate(Activity, :count, :id) == 2
   end
 end

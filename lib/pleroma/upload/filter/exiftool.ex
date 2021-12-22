@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.Exiftool do
@@ -11,7 +11,8 @@ defmodule Pleroma.Upload.Filter.Exiftool do
 
   @spec filter(Pleroma.Upload.t()) :: {:ok, any()} | {:error, String.t()}
 
-  # webp is not compatible with exiftool at this time
+  # Formats not compatible with exiftool at this time
+  def filter(%Pleroma.Upload{content_type: "image/heic"}), do: {:ok, :noop}
   def filter(%Pleroma.Upload{content_type: "image/webp"}), do: {:ok, :noop}
 
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
@@ -21,8 +22,8 @@ defmodule Pleroma.Upload.Filter.Exiftool do
         {error, 1} -> {:error, error}
       end
     rescue
-      _e in ErlangError ->
-        {:error, "exiftool command not found"}
+      e in ErlangError ->
+        {:error, "#{__MODULE__}: #{inspect(e)}"}
     end
   end
 

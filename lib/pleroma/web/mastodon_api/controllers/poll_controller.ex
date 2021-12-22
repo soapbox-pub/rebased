@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.PollController do
@@ -25,6 +25,8 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action == :vote)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PollOperation
+
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   @doc "GET /api/v1/polls/:id"
   def show(%{assigns: %{user: user}} = conn, %{id: id}) do
@@ -55,7 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   defp get_cached_vote_or_vote(user, object, choices) do
     idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
 
-    Cachex.fetch!(:idempotency_cache, idempotency_key, fn ->
+    @cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
       case CommonAPI.vote(user, object, choices) do
         {:error, _message} = res -> {:ignore, res}
         res -> {:commit, res}

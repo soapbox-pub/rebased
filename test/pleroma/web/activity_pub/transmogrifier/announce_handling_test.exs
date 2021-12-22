@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
   end
 
   test "it works for incoming announces with actor being inlined (kroeg)" do
-    data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Poison.decode!()
+    data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Jason.decode!()
 
     _user = insert(:user, local: false, ap_id: data["actor"]["id"])
     other_user = insert(:user)
@@ -55,12 +55,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
   test "it works for incoming announces, fetching the announced object" do
     data =
       File.read!("test/fixtures/mastodon-announce.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", "http://mastodon.example.org/users/admin/statuses/99541947525187367")
 
     Tesla.Mock.mock(fn
       %{method: :get} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/mastodon-note-object.json")}
+        %Tesla.Env{
+          status: 200,
+          body: File.read!("test/fixtures/mastodon-note-object.json"),
+          headers: HttpRequestMock.activitypub_object_headers()
+        }
     end)
 
     _user = insert(:user, local: false, ap_id: data["actor"])
@@ -86,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
 
     data =
       File.read!("test/fixtures/mastodon-announce.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.put("object", activity.data["object"])
 
     _user = insert(:user, local: false, ap_id: data["actor"])
@@ -109,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
   test "it works for incoming announces with an inlined activity" do
     data =
       File.read!("test/fixtures/mastodon-announce-private.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
 
     _user =
       insert(:user,
@@ -126,7 +130,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     assert data["id"] ==
              "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
 
-    object = Object.normalize(data["object"])
+    object = Object.normalize(data["object"], fetch: false)
 
     assert object.data["id"] == "http://mastodon.example.org/@admin/99541947525187368"
     assert object.data["content"] == "this is a private toot"
@@ -140,33 +144,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
 
     data =
       File.read!("test/fixtures/bogus-mastodon-announce.json")
-      |> Poison.decode!()
+      |> Jason.decode!()
 
     _user = insert(:user, local: false, ap_id: data["actor"])
 
     assert {:error, _e} = Transmogrifier.handle_incoming(data)
-  end
-
-  test "it does not clobber the addressing on announce activities" do
-    user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
-
-    data =
-      File.read!("test/fixtures/mastodon-announce.json")
-      |> Poison.decode!()
-      |> Map.put("object", Object.normalize(activity).data["id"])
-      |> Map.put("to", ["http://mastodon.example.org/users/admin/followers"])
-      |> Map.put("cc", [])
-
-    _user =
-      insert(:user,
-        local: false,
-        ap_id: data["actor"],
-        follower_address: "http://mastodon.example.org/users/admin/followers"
-      )
-
-    {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-    assert data["to"] == ["http://mastodon.example.org/users/admin/followers"]
   end
 end

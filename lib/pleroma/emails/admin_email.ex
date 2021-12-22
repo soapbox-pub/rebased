@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.AdminEmail do
@@ -16,10 +16,6 @@ defmodule Pleroma.Emails.AdminEmail do
 
   defp instance_notify_email do
     Keyword.get(instance_config(), :notify_email, instance_config()[:email])
-  end
-
-  defp user_url(user) do
-    Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, user.id)
   end
 
   def test_email(mail_to \\ nil) do
@@ -52,6 +48,9 @@ defmodule Pleroma.Emails.AdminEmail do
               status_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, id)
               "<li><a href=\"#{status_url}\">#{status_url}</li>"
 
+            %{"id" => id} when is_binary(id) ->
+              "<li><a href=\"#{id}\">#{id}</li>"
+
             id when is_binary(id) ->
               "<li><a href=\"#{id}\">#{id}</li>"
           end)
@@ -69,12 +68,12 @@ defmodule Pleroma.Emails.AdminEmail do
       end
 
     html_body = """
-    <p>Reported by: <a href="#{user_url(reporter)}">#{reporter.nickname}</a></p>
-    <p>Reported Account: <a href="#{user_url(account)}">#{account.nickname}</a></p>
+    <p>Reported by: <a href="#{reporter.ap_id}">#{reporter.nickname}</a></p>
+    <p>Reported Account: <a href="#{account.ap_id}">#{account.nickname}</a></p>
     #{comment_html}
     #{statuses_html}
     <p>
-    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
+    <a href="#{Pleroma.Web.Endpoint.url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
     """
 
     new()
@@ -86,9 +85,9 @@ defmodule Pleroma.Emails.AdminEmail do
 
   def new_unapproved_registration(to, account) do
     html_body = """
-    <p>New account for review: <a href="#{user_url(account)}">@#{account.nickname}</a></p>
+    <p>New account for review: <a href="#{account.ap_id}">@#{account.nickname}</a></p>
     <blockquote>#{HTML.strip_tags(account.registration_reason)}</blockquote>
-    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/users/#{account.id}/">Visit AdminFE</a>
+    <a href="#{Pleroma.Web.Endpoint.url()}/pleroma/admin/#/users/#{account.id}/">Visit AdminFE</a>
     """
 
     new()

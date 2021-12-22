@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.InstanceTest do
-  use ExUnit.Case
-
-  @release_env_file "./test/pleroma.test.env"
+  # Modifies the Application Environment, has to stay synchronous.
+  use Pleroma.DataCase
 
   setup do
     File.mkdir_p!(tmp_path())
@@ -17,17 +16,17 @@ defmodule Mix.Tasks.Pleroma.InstanceTest do
       if File.exists?(static_dir) do
         File.rm_rf(Path.join(static_dir, "robots.txt"))
       end
-
-      if File.exists?(@release_env_file), do: File.rm_rf(@release_env_file)
-
-      Pleroma.Config.put([:instance, :static_dir], static_dir)
     end)
+
+    # Is being modified by the mix task.
+    clear_config([:instance, :static_dir])
 
     :ok
   end
 
+  @uuid Ecto.UUID.generate()
   defp tmp_path do
-    "/tmp/generated_files/"
+    "/tmp/generated_files/#{@uuid}/"
   end
 
   test "running gen" do
@@ -73,9 +72,7 @@ defmodule Mix.Tasks.Pleroma.InstanceTest do
         "--dedupe-uploads",
         "n",
         "--anonymize-uploads",
-        "n",
-        "--release-env-file",
-        @release_env_file
+        "n"
       ])
     end
 
@@ -94,12 +91,9 @@ defmodule Mix.Tasks.Pleroma.InstanceTest do
     assert generated_config =~ "password: \"dbpass\""
     assert generated_config =~ "configurable_from_database: true"
     assert generated_config =~ "http: [ip: {127, 0, 0, 1}, port: 4000]"
-    assert generated_config =~ "filters: [Pleroma.Upload.Filter.ExifTool]"
+    assert generated_config =~ "filters: [Pleroma.Upload.Filter.Exiftool]"
     assert File.read!(tmp_path() <> "setup.psql") == generated_setup_psql()
     assert File.exists?(Path.expand("./test/instance/static/robots.txt"))
-    assert File.exists?(@release_env_file)
-
-    assert File.read!(@release_env_file) =~ ~r/^RELEASE_COOKIE=.*/
   end
 
   defp generated_setup_psql do

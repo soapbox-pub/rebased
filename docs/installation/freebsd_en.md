@@ -1,8 +1,10 @@
-# Installing on FreeBSD 
+# Installing on FreeBSD
 
 This document was written for FreeBSD 12.1, but should be work on future releases.
 
-## Required software 
+{! backend/installation/generic_dependencies.include !}
+
+## Installing software used in this guide
 
 This assumes the target system has `pkg(8)`.
 
@@ -26,7 +28,7 @@ Setup the required services to automatically start at boot, using `sysrc(8)`.
 # service postgresql start
 ```
 
-### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md))
+### Install media / graphics packages (optional, see [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md))
 
 ```shell
 # pkg install imagemagick ffmpeg p5-Image-ExifTool
@@ -54,7 +56,7 @@ Configure Pleroma. Note that you need a domain name at this point:
 ```
 $ cd /home/pleroma/pleroma
 $ mix deps.get # Enter "y" when asked to install Hex
-$ mix pleroma.instance gen # You will be asked a few questions here.
+$ MIX_ENV=prod mix pleroma.instance gen # You will be asked a few questions here.
 $ cp config/generated_config.exs config/prod.secret.exs
 ```
 
@@ -213,4 +215,4 @@ incorrect timestamps. You should have ntpd running.
 
 ## Questions
 
-Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat) via Matrix or **#pleroma** on **libera.chat** via IRC.

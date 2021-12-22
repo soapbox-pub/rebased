@@ -54,7 +54,7 @@ sudo apt update
 sudo apt install elixir erlang-dev erlang-nox
 ```
 
-### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](docs/installation/optional/media_graphics_packages.md)
+### オプションパッケージ: [`docs/installation/optional/media_graphics_packages.md`](../installation/optional/media_graphics_packages.md)
 
 ```shell
 sudo apt install imagemagick ffmpeg libimage-exiftool-perl
@@ -89,7 +89,7 @@ sudo -Hu pleroma mix deps.get
 
 * コンフィギュレーションを生成します。
 ```
-sudo -Hu pleroma mix pleroma.instance gen
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen
 ```
     * rebar3をインストールしてもよいか聞かれたら、yesを入力してください。
     * このときにpleromaの一部がコンパイルされるため、この処理には時間がかかります。
@@ -98,12 +98,12 @@ sudo -Hu pleroma mix pleroma.instance gen
 
 * コンフィギュレーションを確認して、もし問題なければ、ファイル名を変更してください。
 ```
-mv config/{generated_config.exs,prod.secret.exs}
+sudo -Hu pleroma mv config/{generated_config.exs,prod.secret.exs}
 ```
 
 * 先程のコマンドで、すでに `config/setup_db.psql` というファイルが作られています。このファイルをもとに、データベースを作成します。
 ```
-sudo -Hu pleroma mix pleroma.instance gen
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.instance gen
 ```
 
 * そして、データベースのマイグレーションを実行します。
@@ -191,5 +191,5 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 
 インストールについて質問がある、もしくは、うまくいかないときは、以下のところで質問できます。
 
-* [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org)
-* **Freenode** の **#pleroma** IRCチャンネル
+* [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat)
+* **libera.chat** の **#pleroma** IRCチャンネル

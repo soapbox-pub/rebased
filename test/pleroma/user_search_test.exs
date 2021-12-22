@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserSearchTest do
@@ -18,7 +18,7 @@ defmodule Pleroma.UserSearchTest do
     setup do: clear_config([:instance, :limit_to_local_content])
 
     test "returns a resolved user as the first result" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
       user = insert(:user, %{nickname: "no_relation", ap_id: "https://lain.com/users/lain"})
       _user = insert(:user, %{nickname: "com_user"})
 
@@ -65,12 +65,13 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
-    test "excludes users when discoverable is false" do
+    # Note: as in Mastodon, `is_discoverable` doesn't anyhow relate to user searchability
+    test "includes non-discoverable users in results" do
       insert(:user, %{nickname: "john 3000", is_discoverable: false})
       insert(:user, %{nickname: "john 3001"})
 
       users = User.search("john")
-      assert Enum.count(users) == 1
+      assert Enum.count(users) == 2
     end
 
     test "excludes service actors from results" do
@@ -150,8 +151,8 @@ defmodule Pleroma.UserSearchTest do
       follower = insert(:user, %{name: "Doe"})
       friend = insert(:user, %{name: "Doe"})
 
-      {:ok, follower} = User.follow(follower, u1)
-      {:ok, u1} = User.follow(u1, friend)
+      {:ok, follower, u1} = User.follow(follower, u1)
+      {:ok, u1, friend} = User.follow(u1, friend)
 
       assert [friend.id, follower.id, u2.id] --
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
@@ -164,9 +165,9 @@ defmodule Pleroma.UserSearchTest do
       following_jimi = insert(:user, %{name: "Lizz Wright"})
       follower_lizz = insert(:user, %{name: "Jimi"})
 
-      {:ok, lizz} = User.follow(lizz, following_lizz)
-      {:ok, _jimi} = User.follow(jimi, following_jimi)
-      {:ok, _follower_lizz} = User.follow(follower_lizz, lizz)
+      {:ok, lizz, following_lizz} = User.follow(lizz, following_lizz)
+      {:ok, _jimi, _following_jimi} = User.follow(jimi, following_jimi)
+      {:ok, _follower_lizz, _lizz} = User.follow(follower_lizz, lizz)
 
       assert Enum.map(User.search("jimi", following: true, for_user: lizz), & &1.id) == [
                following_lizz.id
@@ -198,7 +199,7 @@ defmodule Pleroma.UserSearchTest do
     end
 
     test "find only local users for authenticated users when `limit_to_local_content` is `:all`" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
 
       %{id: id} = insert(:user, %{name: "lain"})
       insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
@@ -208,7 +209,7 @@ defmodule Pleroma.UserSearchTest do
     end
 
     test "find all users for unauthenticated users when `limit_to_local_content` is `false`" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       u1 = insert(:user, %{name: "lain"})
       u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})

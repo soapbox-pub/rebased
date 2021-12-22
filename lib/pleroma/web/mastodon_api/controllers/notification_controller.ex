@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationController do
@@ -50,6 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     favourite
     move
     pleroma:emoji_reaction
+    poll
   }
   def index(%{assigns: %{user: user}} = conn, params) do
     params =

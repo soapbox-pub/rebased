@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -79,10 +78,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def object(conn, _) do
+  def object(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)} do
+         user <- Map.get(assigns, :user, nil),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
       conn
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
@@ -90,8 +90,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: object)
     else
-      {:public?, false} ->
-        {:error, :not_found}
+      {:visible?, false} -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
 
@@ -105,10 +105,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def activity(conn, _params) do
+  def activity(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(activity)} do
+         {_, true} <- {:local?, activity.local},
+         user <- Map.get(assigns, :user, nil),
+         {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)} do
       conn
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
@@ -116,13 +118,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(ObjectView)
       |> render("object.json", object: activity)
     else
-      {:public?, false} -> {:error, :not_found}
+      {:visible?, false} -> {:error, :not_found}
+      {:local?, false} -> {:error, :not_found}
       nil -> {:error, :not_found}
     end
   end
 
   defp maybe_set_tracking_data(conn, %Activity{data: %{"type" => "Create"}} = activity) do
-    object_id = Object.normalize(activity).id
+    object_id = Object.normalize(activity, fetch: false).id
     assign(conn, :tracking_fun_data, object_id)
   end
 
@@ -280,13 +283,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
+  def inbox(%{assigns: %{valid_signature: false}} = conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json("Invalid HTTP Signature")
+  end
+
   # POST /relay/inbox -or- POST /internal/fetch/inbox
-  def inbox(conn, params) do
-    if params["type"] == "Create" && FederatingPlug.federating?() do
+  def inbox(conn, %{"type" => "Create"} = params) do
+    if FederatingPlug.federating?() do
       post_inbox_relayed_create(conn, params)
     else
-      post_inbox_fallback(conn, params)
+      conn
+      |> put_status(:bad_request)
+      |> json("Not federating")
     end
+  end
+
+  def inbox(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json("error, missing HTTP Signature")
   end
 
   defp post_inbox_relayed_create(conn, params) do
@@ -297,23 +314,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     Fetcher.fetch_object_from_id(params["object"]["id"])
 
     json(conn, "ok")
-  end
-
-  defp post_inbox_fallback(conn, params) do
-    headers = Enum.into(conn.req_headers, %{})
-
-    if headers["signature"] && params["actor"] &&
-         String.contains?(headers["signature"], params["actor"]) do
-      Logger.debug(
-        "Signature validation error for: #{params["actor"]}, make sure you are forwarding the HTTP Host header!"
-      )
-
-      Logger.debug(inspect(conn.req_headers))
-    end
-
-    conn
-    |> put_status(:bad_request)
-    |> json(dgettext("errors", "error"))
   end
 
   defp represent_service_actor(%User{} = user, conn) do
@@ -399,83 +399,90 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  defp handle_user_activity(
-         %User{} = user,
-         %{"type" => "Create", "object" => %{"type" => "Note"} = object} = params
-       ) do
-    content = if is_binary(object["content"]), do: object["content"], else: ""
-    name = if is_binary(object["name"]), do: object["name"], else: ""
-    summary = if is_binary(object["summary"]), do: object["summary"], else: ""
-    length = String.length(content <> name <> summary)
+  defp fix_user_message(%User{ap_id: actor}, %{"type" => "Create", "object" => object} = activity)
+       when is_map(object) do
+    length =
+      [object["content"], object["summary"], object["name"]]
+      |> Enum.filter(&is_binary(&1))
+      |> Enum.join("")
+      |> String.length()
 
-    if length > Pleroma.Config.get([:instance, :limit]) do
-      {:error, dgettext("errors", "Note is over the character limit")}
-    else
+    limit = Pleroma.Config.get([:instance, :limit])
+
+    if length < limit do
       object =
         object
-        |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", user.ap_id)
-        |> Transmogrifier.fix_object()
+        |> Transmogrifier.strip_internal_fields()
+        |> Map.put("attributedTo", actor)
+        |> Map.put("actor", actor)
+        |> Map.put("id", Utils.generate_object_id())
 
-      ActivityPub.create(%{
-        to: params["to"],
-        actor: user,
-        context: object["context"],
-        object: object,
-        additional: Map.take(params, ["cc"])
-      })
-    end
-  end
-
-  defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"]),
-         true <- user.is_moderator || user.ap_id == object.data["actor"],
-         {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
-         {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
-      {:ok, delete}
+      {:ok, Map.put(activity, "object", object)}
     else
-      _ -> {:error, dgettext("errors", "Can't delete object")}
+      {:error,
+       dgettext(
+         "errors",
+         "Character limit (%{limit} characters) exceeded, contains %{length} characters",
+         limit: limit,
+         length: length
+       )}
     end
   end
 
-  defp handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
-    with %Object{} = object <- Object.normalize(params["object"]),
-         {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
-         {_, {:ok, %Activity{} = activity, _meta}} <-
-           {:common_pipeline,
-            Pipeline.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
+  defp fix_user_message(
+         %User{ap_id: actor} = user,
+         %{"type" => "Delete", "object" => object} = activity
+       ) do
+    with {_, %Object{data: object_data}} <- {:normalize, Object.normalize(object, fetch: false)},
+         {_, true} <- {:permission, user.is_moderator || actor == object_data["actor"]} do
       {:ok, activity}
     else
-      _ -> {:error, dgettext("errors", "Can't like object")}
+      {:normalize, _} ->
+        {:error, "No such object found"}
+
+      {:permission, _} ->
+        {:forbidden, "You can't delete this object"}
     end
   end
 
-  defp handle_user_activity(_, _) do
-    {:error, dgettext("errors", "Unhandled activity type")}
+  defp fix_user_message(%User{}, activity) do
+    {:ok, activity}
   end
 
   def update_outbox(
-        %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
+        %{assigns: %{user: %User{nickname: nickname, ap_id: actor} = user}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    actor = user.ap_id
-
     params =
       params
-      |> Map.drop(["id"])
+      |> Map.drop(["nickname"])
+      |> Map.put("id", Utils.generate_activity_id())
       |> Map.put("actor", actor)
-      |> Transmogrifier.fix_addressing()
 
-    with {:ok, %Activity{} = activity} <- handle_user_activity(user, params) do
+    with {:ok, params} <- fix_user_message(user, params),
+         {:ok, activity, _} <- Pipeline.common_pipeline(params, local: true),
+         %Activity{data: activity_data} <- Activity.normalize(activity) do
       conn
       |> put_status(:created)
-      |> put_resp_header("location", activity.data["id"])
-      |> json(activity.data)
+      |> put_resp_header("location", activity_data["id"])
+      |> json(activity_data)
     else
+      {:forbidden, message} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(message)
+
       {:error, message} ->
         conn
         |> put_status(:bad_request)
         |> json(message)
+
+      e ->
+        Logger.warn(fn -> "AP C2S: #{inspect(e)}" end)
+
+        conn
+        |> put_status(:bad_request)
+        |> json("Bad Request")
     end
   end
 
@@ -525,19 +532,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     {new_user, for_user}
   end
 
-  @doc """
-  Endpoint based on <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
-
-  Parameters:
-  - (required) `file`: data of the media
-  - (optionnal) `description`: description of the media, intended for accessibility
-
-  Response:
-  - HTTP Code: 201 Created
-  - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
-
-  Note: Will not point to a URL with a `Location` header because no standalone Activity has been created.
-  """
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
            ActivityPub.upload(
@@ -550,6 +544,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       conn
       |> put_status(:created)
       |> json(object.data)
+    end
+  end
+
+  def pinned(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("featured.json", %{user: user}))
     end
   end
 end

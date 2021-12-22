@@ -1,18 +1,25 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.UserEmail do
   @moduledoc "User emails"
-
-  use Phoenix.Swoosh, view: Pleroma.Web.EmailView, layout: {Pleroma.Web.LayoutView, :email}
 
   alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
+  import Swoosh.Email
+  import Phoenix.Swoosh, except: [render_body: 3]
   import Pleroma.Config.Helpers, only: [instance_name: 0, sender: 0]
+
+  def render_body(email, template, assigns \\ %{}) do
+    email
+    |> put_new_layout({Pleroma.Web.LayoutView, :email})
+    |> put_new_view(Pleroma.Web.EmailView)
+    |> Phoenix.Swoosh.render_body(template, assigns)
+  end
 
   defp recipient(email, nil), do: email
   defp recipient(email, name), do: {name, email}
@@ -81,15 +88,42 @@ defmodule Pleroma.Emails.UserEmail do
       )
 
     html_body = """
-    <h3>Welcome to #{instance_name()}!</h3>
+    <h3>Thank you for registering on #{instance_name()}</h3>
     <p>Email confirmation is required to activate the account.</p>
-    <p>Click the following link to proceed: <a href="#{confirmation_url}">activate your account</a>.</p>
+    <p>Please click the following link to <a href="#{confirmation_url}">activate your account</a>.</p>
     """
 
     new()
     |> to(recipient(user))
     |> from(sender())
     |> subject("#{instance_name()} account confirmation")
+    |> html_body(html_body)
+  end
+
+  def approval_pending_email(user) do
+    html_body = """
+    <h3>Awaiting Approval</h3>
+    <p>Your account at #{instance_name()} is being reviewed by staff. You will receive another email once your account is approved.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Your account is awaiting approval")
+    |> html_body(html_body)
+  end
+
+  def successful_registration_email(user) do
+    html_body = """
+    <h3>Hello @#{user.nickname},</h3>
+    <p>Your account at #{instance_name()} has been registered successfully.</p>
+    <p>No further action is required to activate your account.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Account registered on #{instance_name()}")
     |> html_body(html_body)
   end
 
@@ -106,7 +140,7 @@ defmodule Pleroma.Emails.UserEmail do
       notifications
       |> Enum.filter(&(&1.activity.data["type"] == "Create"))
       |> Enum.map(fn notification ->
-        object = Pleroma.Object.normalize(notification.activity)
+        object = Pleroma.Object.normalize(notification.activity, fetch: false)
 
         if not is_nil(object) do
           object = update_in(object.data["content"], &format_links/1)
@@ -129,7 +163,7 @@ defmodule Pleroma.Emails.UserEmail do
         if not is_nil(from) do
           %{
             data: notification,
-            object: Pleroma.Object.normalize(notification.activity),
+            object: Pleroma.Object.normalize(notification.activity, fetch: false),
             from: User.get_by_ap_id(notification.activity.actor)
           }
         end
@@ -151,7 +185,7 @@ defmodule Pleroma.Emails.UserEmail do
 
       logo_path =
         if is_nil(logo) do
-          Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
+          Path.join(:code.priv_dir(:pleroma), "static/static/logo.svg")
         else
           Path.join(Config.get([:instance, :static_dir]), logo)
         end
@@ -162,7 +196,7 @@ defmodule Pleroma.Emails.UserEmail do
       |> subject("Your digest from #{instance_name()}")
       |> put_layout(false)
       |> render_body("digest.html", html_data)
-      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.png", type: :inline))
+      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.svg", type: :inline))
     end
   end
 
@@ -188,5 +222,31 @@ defmodule Pleroma.Emails.UserEmail do
       |> Base.encode64()
 
     Router.Helpers.subscription_url(Endpoint, :unsubscribe, token)
+  end
+
+  def backup_is_ready_email(backup, admin_user_id \\ nil) do
+    %{user: user} = Pleroma.Repo.preload(backup, :user)
+    download_url = Pleroma.Web.PleromaAPI.BackupView.download_url(backup)
+
+    html_body =
+      if is_nil(admin_user_id) do
+        """
+        <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
+        <p><a href="#{download_url}">#{download_url}</a></p>
+        """
+      else
+        admin = Pleroma.Repo.get(User, admin_user_id)
+
+        """
+        <p>Admin @#{admin.nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
+        <p><a href="#{download_url}">#{download_url}</a></p>
+        """
+      end
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("Your account archive is ready")
+    |> html_body(html_body)
   end
 end

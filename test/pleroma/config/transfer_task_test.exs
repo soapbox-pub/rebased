@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.TransferTaskTest do
@@ -82,6 +82,7 @@ defmodule Pleroma.Config.TransferTaskTest do
       on_exit(fn -> Restarter.Pleroma.refresh() end)
     end
 
+    @tag :erratic
     test "don't restart if no reboot time settings were changed" do
       clear_config(:emoji)
       insert(:config, key: :emoji, value: [groups: [a: 1, b: 2]])
@@ -92,23 +93,26 @@ defmodule Pleroma.Config.TransferTaskTest do
              )
     end
 
+    @tag :erratic
     test "on reboot time key" do
-      clear_config(:chat)
-      insert(:config, key: :chat, value: [enabled: false])
+      clear_config(:shout)
+      insert(:config, key: :shout, value: [enabled: false])
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
+    @tag :erratic
     test "on reboot time subkey" do
       clear_config(Pleroma.Captcha)
       insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
+    @tag :erratic
     test "don't restart pleroma on reboot time key and subkey if there is false flag" do
-      clear_config(:chat)
+      clear_config(:shout)
       clear_config(Pleroma.Captcha)
 
-      insert(:config, key: :chat, value: [enabled: false])
+      insert(:config, key: :shout, value: [enabled: false])
       insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
 
       refute String.contains?(

@@ -1,11 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.Loader do
+  # These modules are only being used as keys here (for equality check),
+  # so it's okay to use `Module.concat/1` to have the compiler ignore them.
   @reject_keys [
-    Pleroma.Repo,
-    Pleroma.Web.Endpoint,
+    Module.concat(["Pleroma.Repo"]),
+    Module.concat(["Pleroma.Web.Endpoint"]),
     :env,
     :configurable_from_database,
     :database,

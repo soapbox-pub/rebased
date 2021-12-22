@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
         "type" => "Create"
       }
 
-      Pleroma.Config.put([:mrf_rejectnonpublic, :allow_followersonly], true)
+      clear_config([:mrf_rejectnonpublic, :allow_followersonly], true)
       assert {:ok, _message} = RejectNonPublic.filter(message)
     end
 
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
         "type" => "Create"
       }
 
-      Pleroma.Config.put([:mrf_rejectnonpublic, :allow_followersonly], false)
+      clear_config([:mrf_rejectnonpublic, :allow_followersonly], false)
       assert {:reject, _} = RejectNonPublic.filter(message)
     end
   end
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
         "type" => "Create"
       }
 
-      Pleroma.Config.put([:mrf_rejectnonpublic, :allow_direct], true)
+      clear_config([:mrf_rejectnonpublic, :allow_direct], true)
       assert {:ok, _message} = RejectNonPublic.filter(message)
     end
 
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
         "type" => "Create"
       }
 
-      Pleroma.Config.put([:mrf_rejectnonpublic, :allow_direct], false)
+      clear_config([:mrf_rejectnonpublic, :allow_direct], false)
       assert {:reject, _} = RejectNonPublic.filter(message)
     end
   end

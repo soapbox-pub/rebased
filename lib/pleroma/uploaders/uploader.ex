@@ -1,9 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.Uploader do
   import Pleroma.Web.Gettext
+
+  @mix_env Mix.env()
 
   @moduledoc """
   Defines the contract to put and get an uploaded file to any backend.
@@ -33,7 +35,7 @@ defmodule Pleroma.Uploaders.Uploader do
 
   """
   @type file_spec :: {:file | :url, String.t()}
-  @callback put_file(Pleroma.Upload.t()) ::
+  @callback put_file(upload :: struct()) ::
               :ok | {:ok, file_spec()} | {:error, String.t()} | :wait_callback
 
   @callback delete_file(file :: String.t()) :: :ok | {:error, String.t()}
@@ -44,7 +46,7 @@ defmodule Pleroma.Uploaders.Uploader do
               | {:error, Plug.Conn.t(), String.t()}
   @optional_callbacks http_callback: 2
 
-  @spec put_file(module(), Pleroma.Upload.t()) :: {:ok, file_spec()} | {:error, String.t()}
+  @spec put_file(module(), upload :: struct()) :: {:ok, file_spec()} | {:error, String.t()}
   def put_file(uploader, upload) do
     case uploader.put_file(upload) do
       :ok -> {:ok, {:file, upload.path}}
@@ -74,7 +76,7 @@ defmodule Pleroma.Uploaders.Uploader do
   end
 
   defp callback_timeout do
-    case Mix.env() do
+    case @mix_env do
       :test -> 1_000
       _ -> 30_000
     end

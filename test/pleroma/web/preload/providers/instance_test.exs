@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Preload.Providers.InstanceTest do
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
     "/api/pleroma/frontend_configurations" => fe_configs
   } do
     assert %{
-             pleroma_fe: %{background: "/images/city.jpg", logo: "/static/logo.png"}
+             pleroma_fe: %{background: "/images/city.jpg", logo: "/static/logo.svg"}
            } = fe_configs
   end
 end

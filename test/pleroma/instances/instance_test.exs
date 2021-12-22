@@ -1,10 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Instances.InstanceTest do
+  alias Pleroma.Instances
   alias Pleroma.Instances.Instance
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
 
@@ -148,5 +151,42 @@ defmodule Pleroma.Instances.InstanceTest do
                         )
              end) =~ "Instance.scrape_favicon(\"https://no-favicon.example.org/\") error: "
     end
+
+    test "Doesn't scrapes unreachable instances" do
+      instance = insert(:instance, unreachable_since: Instances.reachability_datetime_threshold())
+      url = "https://" <> instance.host
+
+      assert capture_log(fn -> assert nil == Instance.get_or_update_favicon(URI.parse(url)) end) =~
+               "Instance.scrape_favicon(\"#{url}\") ignored unreachable host"
+    end
+  end
+
+  test "delete_users_and_activities/1 deletes remote instance users and activities" do
+    [mario, luigi, _peach, wario] =
+      users = [
+        insert(:user, nickname: "mario@mushroom.kingdom", name: "Mario"),
+        insert(:user, nickname: "luigi@mushroom.kingdom", name: "Luigi"),
+        insert(:user, nickname: "peach@mushroom.kingdom", name: "Peach"),
+        insert(:user, nickname: "wario@greedville.biz", name: "Wario")
+      ]
+
+    {:ok, post1} = CommonAPI.post(mario, %{status: "letsa go!"})
+    {:ok, post2} = CommonAPI.post(luigi, %{status: "itsa me... luigi"})
+    {:ok, post3} = CommonAPI.post(wario, %{status: "WHA-HA-HA!"})
+
+    {:ok, job} = Instance.delete_users_and_activities("mushroom.kingdom")
+    :ok = ObanHelpers.perform(job)
+
+    [mario, luigi, peach, wario] = Repo.reload(users)
+
+    refute mario.is_active
+    refute luigi.is_active
+    refute peach.is_active
+    refute peach.name == "Peach"
+
+    assert wario.is_active
+    assert wario.name == "Wario"
+
+    assert [nil, nil, %{}] = Repo.reload([post1, post2, post3])
   end
 end

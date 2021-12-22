@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
 
     {:ok, chat_message_creation} = CommonAPI.post_chat_message(user, recipient, "hello")
 
-    chat_message = Object.normalize(chat_message_creation, false)
+    chat_message = Object.normalize(chat_message_creation, fetch: false)
 
     {:ok, chat} = Chat.get_or_create(user.id, recipient.ap_id)
 

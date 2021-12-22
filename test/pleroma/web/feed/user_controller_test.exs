@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.UserControllerTest do
@@ -8,20 +8,20 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   import Pleroma.Factory
   import SweetXml
 
-  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Feed.FeedView
 
-  setup do: clear_config([:instance, :federating], true)
+  setup do: clear_config([:static_fe, :enabled], false)
 
   describe "feed" do
     setup do: clear_config([:feed])
 
-    test "gets an atom feed", %{conn: conn} do
-      Config.put(
+    setup do
+      clear_config(
         [:feed, :post_title],
-        %{max_length: 10, omission: "..."}
+        %{max_length: 15, omission: "..."}
       )
 
       activity = insert(:note_activity)
@@ -29,7 +29,8 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
       note =
         insert(:note,
           data: %{
-            "content" => "This is :moominmamma: note ",
+            "content" => "This & this is :moominmamma: note ",
+            "source" => "This & this is :moominmamma: note ",
             "attachment" => [
               %{
                 "url" => [
@@ -37,7 +38,9 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
                 ]
               }
             ],
-            "inReplyTo" => activity.data["id"]
+            "inReplyTo" => activity.data["id"],
+            "context" => "2hu & as",
+            "summary" => "2hu & as"
           }
         )
 
@@ -48,14 +51,18 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         insert(:note,
           user: user,
           data: %{
-            "content" => "42 This is :moominmamma: note ",
+            "content" => "42 & This is :moominmamma: note ",
             "inReplyTo" => activity.data["id"]
           }
         )
 
       note_activity2 = insert(:note_activity, note: note2)
-      object = Object.normalize(note_activity)
+      object = Object.normalize(note_activity, fetch: false)
 
+      [user: user, object: object, max_id: note_activity2.id]
+    end
+
+    test "gets an atom feed", %{conn: conn, user: user, object: object, max_id: max_id} do
       resp =
         conn
         |> put_req_header("accept", "application/atom+xml")
@@ -67,13 +74,15 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['42 This...', 'This is...']
-      assert resp =~ object.data["content"]
+      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert resp =~ FeedView.escape(object.data["content"])
+      assert resp =~ FeedView.escape(object.data["summary"])
+      assert resp =~ FeedView.escape(object.data["context"])
 
       resp =
         conn
         |> put_req_header("accept", "application/atom+xml")
-        |> get("/users/#{user.nickname}/feed", %{"max_id" => note_activity2.id})
+        |> get("/users/#{user.nickname}/feed", %{"max_id" => max_id})
         |> response(200)
 
       activity_titles =
@@ -81,47 +90,10 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['This is...']
+      assert activity_titles == ['This &amp; t...']
     end
 
-    test "gets a rss feed", %{conn: conn} do
-      Pleroma.Config.put(
-        [:feed, :post_title],
-        %{max_length: 10, omission: "..."}
-      )
-
-      activity = insert(:note_activity)
-
-      note =
-        insert(:note,
-          data: %{
-            "content" => "This is :moominmamma: note ",
-            "attachment" => [
-              %{
-                "url" => [
-                  %{"mediaType" => "image/png", "href" => "https://pleroma.gov/image.png"}
-                ]
-              }
-            ],
-            "inReplyTo" => activity.data["id"]
-          }
-        )
-
-      note_activity = insert(:note_activity, note: note)
-      user = User.get_cached_by_ap_id(note_activity.data["actor"])
-
-      note2 =
-        insert(:note,
-          user: user,
-          data: %{
-            "content" => "42 This is :moominmamma: note ",
-            "inReplyTo" => activity.data["id"]
-          }
-        )
-
-      note_activity2 = insert(:note_activity, note: note2)
-      object = Object.normalize(note_activity)
-
+    test "gets a rss feed", %{conn: conn, user: user, object: object, max_id: max_id} do
       resp =
         conn
         |> put_req_header("accept", "application/rss+xml")
@@ -133,13 +105,15 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['42 This...', 'This is...']
-      assert resp =~ object.data["content"]
+      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert resp =~ FeedView.escape(object.data["content"])
+      assert resp =~ FeedView.escape(object.data["summary"])
+      assert resp =~ FeedView.escape(object.data["context"])
 
       resp =
         conn
         |> put_req_header("accept", "application/rss+xml")
-        |> get("/users/#{user.nickname}/feed.rss", %{"max_id" => note_activity2.id})
+        |> get("/users/#{user.nickname}/feed.rss", %{"max_id" => max_id})
         |> response(200)
 
       activity_titles =
@@ -147,7 +121,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['This is...']
+      assert activity_titles == ['This &amp; t...']
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do
@@ -192,6 +166,16 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
              |> get(user_feed_path(conn, :feed, user.nickname))
              |> response(404)
     end
+
+    test "does not require authentication on non-federating instances", %{conn: conn} do
+      clear_config([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> put_req_header("accept", "application/rss+xml")
+      |> get("/users/#{user.nickname}/feed.rss")
+      |> response(200)
+    end
   end
 
   # Note: see ActivityPubControllerTest for JSON format tests
@@ -212,13 +196,26 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
                ).resp_body
     end
 
-    test "with html format, it returns error when user is not found", %{conn: conn} do
+    test "with html format, it falls back to frontend when user is remote", %{conn: conn} do
+      user = insert(:user, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      response =
+        conn
+        |> get("/users/#{user.nickname}")
+        |> response(200)
+
+      assert response =~ "</html>"
+    end
+
+    test "with html format, it falls back to frontend when user is not found", %{conn: conn} do
       response =
         conn
         |> get("/users/jimm")
-        |> json_response(404)
+        |> response(200)
 
-      assert response == %{"error" => "Not found"}
+      assert response =~ "</html>"
     end
 
     test "with non-html / non-json format, it redirects to user feed in atom format", %{
@@ -233,7 +230,9 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> get("/users/#{user.nickname}")
 
       assert conn.status == 302
-      assert redirected_to(conn) == "#{Pleroma.Web.base_url()}/users/#{user.nickname}/feed.atom"
+
+      assert redirected_to(conn) ==
+               "#{Pleroma.Web.Endpoint.url()}/users/#{user.nickname}/feed.atom"
     end
 
     test "with non-html / non-json format, it returns error when user is not found", %{conn: conn} do
@@ -251,7 +250,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
     setup do: clear_config([:instance, :public])
 
     test "returns 404 for user feed", %{conn: conn} do
-      Config.put([:instance, :public], false)
+      clear_config([:instance, :public], false)
       user = insert(:user)
 
       {:ok, _} = CommonAPI.post(user, %{status: "test"})

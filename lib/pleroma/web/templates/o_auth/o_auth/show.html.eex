@@ -5,31 +5,54 @@
 <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <% end %>
 
-<h2>OAuth Authorization</h2>
-<%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
+<%= form_for @conn, Routes.o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
 
-<%= if @params["registration"] in ["true", true] do %>
-  <h3>This is the first time you visit! Please enter your Pleroma handle.</h3>
-  <p>Choose carefully! You won't be able to change this later. You will be able to change your display name, though.</p>
-  <div class="input">
-    <%= label f, :nickname, "Pleroma Handle" %>
-    <%= text_input f, :nickname, placeholder: "lain" %>
+<%= if @user do %>
+  <div class="account-header">
+    <div class="account-header__banner" style="background-image: url('<%= Pleroma.User.banner_url(@user) %>')"></div>
+    <div class="account-header__avatar" style="background-image: url('<%= Pleroma.User.avatar_url(@user) %>')"></div>
+    <div class="account-header__meta">
+      <div class="account-header__display-name"><%= @user.name %></div>
+      <div class="account-header__nickname">@<%= @user.nickname %>@<%= Pleroma.User.get_host(@user) %></div>
+    </div>
   </div>
-  <%= hidden_input f, :name, value: @params["name"] %>
-  <%= hidden_input f, :password, value: @params["password"] %>
-  <br>
-<% else %>
-  <div class="input">
-    <%= label f, :name, "Username" %>
-    <%= text_input f, :name %>
-  </div>
-  <div class="input">
-    <%= label f, :password, "Password" %>
-    <%= password_input f, :password %>
-  </div>
-  <%= submit "Log In" %>
-  <%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
 <% end %>
+
+<div class="container__content">
+  <%= if @app do %>
+    <p>Application <strong><%= @app.client_name %></strong> is requesting access to your account.</p>
+    <%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
+  <% end %>
+
+  <%= if @user do %>
+    <div class="actions">
+      <a class="button button--cancel" href="/">Cancel</a>
+      <%= submit "Approve", class: "button--approve" %>
+    </div>
+  <% else %>
+    <%= if @params["registration"] in ["true", true] do %>
+      <h3>This is the first time you visit! Please enter your Pleroma handle.</h3>
+      <p>Choose carefully! You won't be able to change this later. You will be able to change your display name, though.</p>
+      <div class="input">
+        <%= label f, :nickname, "Pleroma Handle" %>
+        <%= text_input f, :nickname, placeholder: "lain" %>
+      </div>
+      <%= hidden_input f, :name, value: @params["name"] %>
+      <%= hidden_input f, :password, value: @params["password"] %>
+      <br>
+    <% else %>
+      <div class="input">
+        <%= label f, :name, "Username" %>
+        <%= text_input f, :name %>
+      </div>
+      <div class="input">
+        <%= label f, :password, "Password" %>
+        <%= password_input f, :password %>
+      </div>
+      <%= submit "Log In" %>
+    <% end %>
+  <% end %>
+</div>
 
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
@@ -38,6 +61,5 @@
 <% end %>
 
 <%= if Pleroma.Config.oauth_consumer_enabled?() do %>
-  <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
+  <%= render @view_module, Pleroma.Web.Auth.WrapperAuthenticator.oauth_consumer_template(), assigns %>
 <% end %>
-

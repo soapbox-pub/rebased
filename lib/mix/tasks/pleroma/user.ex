@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.User do
@@ -51,16 +51,14 @@ defmodule Mix.Tasks.Pleroma.User do
     A user will be created with the following information:
       - nickname: #{nickname}
       - email: #{email}
-      - password: #{
-      if(generated_password?, do: "[generated; a reset link will be created]", else: password)
-    }
+      - password: #{if(generated_password?, do: "[generated; a reset link will be created]", else: password)}
       - name: #{name}
       - bio: #{bio}
       - moderator: #{if(moderator?, do: "true", else: "false")}
       - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
-    proceed? = assume_yes? or shell_yes?("Continue?")
+    proceed? = assume_yes? or shell_prompt("Continue?", "n") in ~w(Yn Y y)
 
     if proceed? do
       start_pleroma()
@@ -74,7 +72,7 @@ defmodule Mix.Tasks.Pleroma.User do
         bio: bio
       }
 
-      changeset = User.register_changeset(%User{}, params, need_confirmation: false)
+      changeset = User.register_changeset(%User{}, params, is_confirmed: true)
       {:ok, _user} = User.register(changeset)
 
       shell_info("User #{nickname} created")
@@ -107,21 +105,6 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["toggle_activated", nickname]) do
-    start_pleroma()
-
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.deactivate(user, !user.deactivated)
-
-      shell_info(
-        "Activation status of #{nickname}: #{if(user.deactivated, do: "de", else: "")}activated"
-      )
-    else
-      _ ->
-        shell_error("No user #{nickname}")
-    end
-  end
-
   def run(["reset_password", nickname]) do
     start_pleroma()
 
@@ -129,15 +112,9 @@ defmodule Mix.Tasks.Pleroma.User do
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
       shell_info("Generated password reset token for #{user.nickname}")
 
-      IO.puts(
-        "URL: #{
-          Pleroma.Web.Router.Helpers.reset_password_url(
-            Pleroma.Web.Endpoint,
-            :reset,
-            token.token
-          )
-        }"
-      )
+      IO.puts("URL: #{Pleroma.Web.Router.Helpers.reset_password_url(Pleroma.Web.Endpoint,
+      :reset,
+      token.token)}")
     else
       _ ->
         shell_error("No local user #{nickname}")
@@ -156,20 +133,41 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["activate", nickname]) do
+    start_pleroma()
+
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         false <- user.is_active do
+      User.set_activation(user, true)
+      :timer.sleep(500)
+
+      shell_info("Successfully activated #{nickname}")
+    else
+      true ->
+        shell_info("User #{nickname} already activated")
+
+      _ ->
+        shell_error("No user #{nickname}")
+    end
+  end
+
   def run(["deactivate", nickname]) do
     start_pleroma()
 
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      shell_info("Deactivating #{user.nickname}")
-      User.deactivate(user)
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         true <- user.is_active do
+      User.set_activation(user, false)
       :timer.sleep(500)
 
       user = User.get_cached_by_id(user.id)
 
       if Enum.empty?(Enum.filter(User.get_friends(user), & &1.local)) do
-        shell_info("Successfully unsubscribed all local followers from #{user.nickname}")
+        shell_info("Successfully deactivated #{nickname} and unsubscribed all local followers")
       end
     else
+      false ->
+        shell_info("User #{nickname} already deactivated")
+
       _ ->
         shell_error("No user #{nickname}")
     end
@@ -213,7 +211,7 @@ defmodule Mix.Tasks.Pleroma.User do
       user =
         case Keyword.get(options, :confirmed) do
           nil -> user
-          value -> set_confirmed(user, value)
+          value -> set_confirmation(user, value)
         end
 
       user =
@@ -315,9 +313,7 @@ defmodule Mix.Tasks.Pleroma.User do
         end
 
       shell_info(
-        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.invite_type} | Used: #{
-          invite.used
-        }#{expire_info}#{using_info}"
+        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.invite_type} | Used: #{invite.used}#{expire_info}#{using_info}"
       )
     end)
   end
@@ -345,13 +341,13 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["toggle_confirmed", nickname]) do
+  def run(["confirm", nickname]) do
     start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.toggle_confirmation(user)
+      {:ok, user} = User.confirm(user)
 
-      message = if user.confirmation_pending, do: "needs", else: "doesn't need"
+      message = if !user.is_confirmed, do: "needs", else: "doesn't need"
 
       shell_info("#{nickname} #{message} confirmation.")
     else
@@ -365,7 +361,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_moderator: false,
       is_admin: false,
       invisible: false
@@ -373,7 +369,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> User.need_confirmation(user, false) end)
+      |> Enum.each(fn user -> User.set_confirmation(user, true) end)
     end)
     |> Stream.run()
   end
@@ -383,7 +379,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Pleroma.User.Query.build(%{
       local: true,
-      deactivated: false,
+      is_active: true,
       is_moderator: false,
       is_admin: false,
       invisible: false
@@ -391,7 +387,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Pleroma.Repo.chunk_stream(500, :batches)
     |> Stream.each(fn users ->
       users
-      |> Enum.each(fn user -> User.need_confirmation(user, true) end)
+      |> Enum.each(fn user -> User.set_confirmation(user, false) end)
     end)
     |> Stream.run()
   end
@@ -418,9 +414,7 @@ defmodule Mix.Tasks.Pleroma.User do
       users
       |> Enum.each(fn user ->
         shell_info(
-          "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
-            user.is_locked
-          }, deactivated: #{user.deactivated}"
+          "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{user.is_locked}, is_active: #{user.is_active}"
         )
       end)
     end)
@@ -454,10 +448,10 @@ defmodule Mix.Tasks.Pleroma.User do
     user
   end
 
-  defp set_confirmed(user, value) do
-    {:ok, user} = User.need_confirmation(user, !value)
+  defp set_confirmation(user, value) do
+    {:ok, user} = User.set_confirmation(user, value)
 
-    shell_info("Confirmation pending status of #{user.nickname}: #{user.confirmation_pending}")
+    shell_info("Confirmation status of #{user.nickname}: #{user.is_confirmed}")
     user
   end
 end

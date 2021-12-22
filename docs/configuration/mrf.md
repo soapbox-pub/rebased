@@ -55,18 +55,18 @@ Servers should be configured as lists.
 
 ### Example
 
-This example will enable `SimplePolicy`, block media from `illegalporn.biz`, mark media as NSFW from `porn.biz` and `porn.business`, reject messages from `spam.com`, remove messages from `spam.university` from the federated timeline and block reports (flags) from `whiny.whiner`:
+This example will enable `SimplePolicy`, block media from `illegalporn.biz`, mark media as NSFW from `porn.biz` and `porn.business`, reject messages from `spam.com`, remove messages from `spam.university` from the federated timeline and block reports (flags) from `whiny.whiner`. We also give a reason why the moderation was done:
 
 ```elixir
 config :pleroma, :mrf,
   policies: [Pleroma.Web.ActivityPub.MRF.SimplePolicy]
 
 config :pleroma, :mrf_simple,
-  media_removal: ["illegalporn.biz"],
-  media_nsfw: ["porn.biz", "porn.business"],
-  reject: ["spam.com"],
-  federated_timeline_removal: ["spam.university"],
-  report_removal: ["whiny.whiner"]
+  media_removal: [{"illegalporn.biz", "Media can contain illegal contant"}],
+  media_nsfw: [{"porn.biz", "unmarked nsfw media"}, {"porn.business", "A lot of unmarked nsfw media"}],
+  reject: [{"spam.com", "They keep spamming our users"}],
+  federated_timeline_removal: [{"spam.university", "Annoying low-quality posts who otherwise fill up TWKN"}],
+  report_removal: [{"whiny.whiner", "Keep spamming us with irrelevant reports"}]
 ```
 
 ### Use with Care
@@ -82,7 +82,7 @@ For example, here is a sample policy module which rewrites all messages to "new 
 ```elixir
 defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
   @moduledoc "MRF policy which rewrites all Notes to have 'new message content'."
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   # Catch messages which contain Note objects with actual data to filter.
   # Capture the object as `object`, the message content as `content` and the
@@ -133,3 +133,26 @@ config :pleroma, :mrf,
 ```
 
 Please note that the Pleroma developers consider custom MRF policy modules to fall under the purview of the AGPL. As such, you are obligated to release the sources to your custom MRF policy modules upon request.
+
+### MRF policies descriptions
+
+If MRF policy depends on config, it can be added into MRF tab to adminFE by adding `config_description/0` method, which returns a map with a specific structure. See existing MRF's like `lib/pleroma/web/activity_pub/mrf/activity_expiration_policy.ex` for examples. Note that more complex inputs, like tuples or maps, may need extra changes in the adminFE and just adding it to `config_description/0` may not be enough to get these inputs working from the adminFE.
+
+Example:
+
+```elixir
+%{
+      key: :mrf_activity_expiration,
+      related_policy: "Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy",
+      label: "MRF Activity Expiration Policy",
+      description: "Adds automatic expiration to all local activities",
+      children: [
+        %{
+          key: :days,
+          type: :integer,
+          description: "Default global expiration time for all local activities (in days)",
+          suggestions: [90, 365]
+        }
+      ]
+    }
+```

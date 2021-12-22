@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Integration.MastodonWebsocketTest do
+  # Needs a streamer, needs to stay synchronous
   use Pleroma.DataCase
 
   import ExUnit.CaptureLog
@@ -49,6 +50,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   test "allows public streams without authentication" do
     assert {:ok, _} = start_socket("?stream=public")
     assert {:ok, _} = start_socket("?stream=public:local")
+    assert {:ok, _} = start_socket("?stream=public:remote&instance=lain.com")
     assert {:ok, _} = start_socket("?stream=hashtag&tag=lain")
   end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
@@ -15,8 +15,8 @@ defmodule Pleroma.Web.AdminAPI.InstanceDocumentController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.InstanceDocumentOperation
 
-  plug(OAuthScopesPlug, %{scopes: ["read"], admin: true} when action == :show)
-  plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action in [:update, :delete])
+  plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action == :show)
+  plug(OAuthScopesPlug, %{scopes: ["admin:write"]} when action in [:update, :delete])
 
   def show(conn, %{name: document_name}) do
     with {:ok, url} <- InstanceDocument.get(document_name),

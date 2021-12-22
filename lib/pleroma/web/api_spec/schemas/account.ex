@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Account do
@@ -40,13 +40,15 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       pleroma: %Schema{
         type: :object,
         properties: %{
+          ap_id: %Schema{type: :string},
+          also_known_as: %Schema{type: :array, items: %Schema{type: :string}},
           allow_following_move: %Schema{
             type: :boolean,
             description: "whether the user allows automatically follow moved following accounts"
           },
           background_image: %Schema{type: :string, nullable: true, format: :uri},
           chat_token: %Schema{type: :string},
-          confirmation_pending: %Schema{
+          is_confirmed: %Schema{
             type: :boolean,
             description:
               "whether the user account is waiting on email confirmation to be activated"
@@ -94,7 +96,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               hide_notification_contents: %Schema{type: :boolean}
             }
           },
-          relationship: AccountRelationship,
+          relationship: %Schema{allOf: [AccountRelationship], nullable: true},
           settings_store: %Schema{
             type: :object,
             description:
@@ -127,7 +129,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               discoverable: %Schema{
                 type: :boolean,
                 description:
-                  "whether the user allows discovery of the account in search results and other services."
+                  "whether the user allows indexing / listing of the account by external services (search engines etc.)."
               },
               no_rich_text: %Schema{
                 type: :boolean,
@@ -164,7 +166,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       "pleroma" => %{
         "allow_following_move" => true,
         "background_image" => nil,
-        "confirmation_pending" => true,
+        "is_confirmed" => false,
         "hide_favorites" => true,
         "hide_followers" => false,
         "hide_followers_count" => false,

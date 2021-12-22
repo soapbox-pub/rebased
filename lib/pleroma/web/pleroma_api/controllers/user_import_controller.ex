@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.UserImportController do
@@ -15,7 +15,7 @@ defmodule Pleroma.Web.PleromaAPI.UserImportController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks)
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action == :mutes)
 
-  plug(OpenApiSpex.Plug.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   defdelegate open_api_operation(action), to: ApiSpec.UserImportOperation
 
   def follow(%{body_params: %{list: %Plug.Upload{path: path}}} = conn, _) do

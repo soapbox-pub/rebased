@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.NotificationController do
@@ -13,8 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.NotificationController do
     Pleroma.Web.Plugs.OAuthScopesPlug,
     %{scopes: ["write:notifications"]} when action == :mark_as_read
   )
-
-  plug(:put_view, Pleroma.Web.MastodonAPI.NotificationView)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaNotificationOperation
 

@@ -3,6 +3,7 @@
 /db
 /deps
 /*.ez
+/test/instance
 /test/uploads
 /.elixir_ls
 /test/fixtures/DSCN0010_tmp.jpg
@@ -27,11 +28,12 @@ erl_crash.dump
 # variables.
 /config/*.secret.exs
 /config/generated_config.exs
+/config/runtime.exs
 /config/*.env
 
 
 # Database setup file, some may forget to delete it
-/config/setup_db.psql
+/config/setup_db*.psql
 
 .DS_Store
 .env
@@ -52,3 +54,7 @@ pleroma.iml
 
 # asdf
 .tool-versions
+
+# Editor temp files
+/*~
+/*#

@@ -1,5 +1,4 @@
-use Mix.Config
-alias Pleroma.Docs.Generator
+import Config
 
 websocket_config = [
   path: "/websocket",
@@ -61,6 +60,12 @@ frontend_options = [
     label: "Build directory",
     type: :string,
     description: "The directory inside the zip file "
+  },
+  %{
+    key: "custom-http-headers",
+    label: "Custom HTTP headers",
+    type: {:list, :string},
+    description: "The custom HTTP headers for the frontend"
   }
 ]
 
@@ -94,7 +99,8 @@ config :pleroma, :config_description, [
         key: :base_url,
         label: "Base URL",
         type: :string,
-        description: "Base URL for the uploads, needed if you use CDN",
+        description:
+          "Base URL for the uploads. Required if you use a CDN or host attachments under a different domain.",
         suggestions: [
           "https://cdn-host.com"
         ]
@@ -102,74 +108,10 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_remote,
         type: :boolean,
-        description:
-          "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected"
-      },
-      %{
-        key: :proxy_opts,
-        label: "Proxy Options",
-        type: :keyword,
-        description: "Options for Pleroma.ReverseProxy",
-        suggestions: [
-          redirect_on_failure: false,
-          max_body_length: 25 * 1_048_576,
-          http: [
-            follow_redirect: true,
-            pool: :media
-          ]
-        ],
-        children: [
-          %{
-            key: :redirect_on_failure,
-            type: :boolean,
-            description:
-              "Redirects the client to the real remote URL if there's any HTTP errors. " <>
-                "Any error during body processing will not be redirected as the response is chunked."
-          },
-          %{
-            key: :max_body_length,
-            type: :integer,
-            description:
-              "Limits the content length to be approximately the " <>
-                "specified length. It is validated with the `content-length` header and also verified when proxying."
-          },
-          %{
-            key: :http,
-            label: "HTTP",
-            type: :keyword,
-            description: "HTTP options",
-            children: [
-              %{
-                key: :adapter,
-                type: :keyword,
-                description: "Adapter specific options",
-                children: [
-                  %{
-                    key: :ssl_options,
-                    type: :keyword,
-                    label: "SSL Options",
-                    description: "SSL options for HTTP adapter",
-                    children: [
-                      %{
-                        key: :versions,
-                        type: {:list, :atom},
-                        description: "List of TLS versions to use",
-                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              %{
-                key: :proxy_url,
-                label: "Proxy URL",
-                type: [:string, :tuple],
-                description: "Proxy URL",
-                suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
-              }
-            ]
-          }
-        ]
+        description: """
+        Proxy requests to the remote uploader.\n
+        Useful if media upload endpoint is not internet accessible.
+        """
       },
       %{
         key: :filename_display_max_length,
@@ -215,17 +157,11 @@ config :pleroma, :config_description, [
         suggestions: ["pleroma"]
       },
       %{
-        key: :public_endpoint,
-        type: :string,
-        description: "S3 endpoint",
-        suggestions: ["https://s3.amazonaws.com"]
-      },
-      %{
         key: :truncated_namespace,
         type: :string,
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
-            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
+            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in Upload base_url."
       },
       %{
         key: :streaming_enabled,
@@ -275,270 +211,220 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :fed_sockets,
-    type: :group,
-    description: "Websocket based federation",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enable FedSockets"
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: Pleroma.Emails.Mailer,
     type: :group,
     description: "Mailer-related settings",
     children: [
       %{
+        key: :enabled,
+        label: "Mailer Enabled",
+        type: :boolean
+      },
+      %{
         key: :adapter,
         type: :module,
         description:
-          "One of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters)," <>
-            " or Swoosh.Adapters.Local for in-memory mailbox",
+          "One of the mail adapters listed in [Swoosh documentation](https://hexdocs.pm/swoosh/Swoosh.html#module-adapters)",
         suggestions: [
+          Swoosh.Adapters.AmazonSES,
+          Swoosh.Adapters.Dyn,
+          Swoosh.Adapters.Gmail,
+          Swoosh.Adapters.Mailgun,
+          Swoosh.Adapters.Mailjet,
+          Swoosh.Adapters.Mandrill,
+          Swoosh.Adapters.Postmark,
           Swoosh.Adapters.SMTP,
           Swoosh.Adapters.Sendgrid,
           Swoosh.Adapters.Sendmail,
-          Swoosh.Adapters.Mandrill,
-          Swoosh.Adapters.Mailgun,
-          Swoosh.Adapters.Mailjet,
-          Swoosh.Adapters.Postmark,
-          Swoosh.Adapters.SparkPost,
-          Swoosh.Adapters.AmazonSES,
-          Swoosh.Adapters.Dyn,
           Swoosh.Adapters.SocketLabs,
-          Swoosh.Adapters.Gmail,
-          Swoosh.Adapters.Local
+          Swoosh.Adapters.SparkPost
         ]
-      },
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Allow/disallow send emails"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :relay,
         type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["smtp.gmail.com"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :username,
-        type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["pleroma"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :password,
-        type: :string,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: ["password"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :ssl,
-        label: "SSL",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :tls,
-        label: "TLS",
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :auth,
-        type: :atom,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [:always, :never, :if_available]
+        description: "Hostname or IP address",
+        suggestions: ["smtp.example.com"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :port,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [1025]
+        description: "SMTP port",
+        suggestions: ["1025"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :username,
+        type: :string,
+        description: "SMTP AUTH username",
+        suggestions: ["user@example.com"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :password,
+        type: :string,
+        description: "SMTP AUTH password",
+        suggestions: ["password"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :ssl,
+        label: "Use SSL",
+        type: :boolean,
+        description: "Use Implicit SSL/TLS. e.g. port 465"
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :tls,
+        label: "STARTTLS Mode",
+        type: {:dropdown, :atom},
+        description: "Explicit TLS (STARTTLS) enforcement mode",
+        suggestions: [:if_available, :always, :never]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SMTP},
+        key: :auth,
+        label: "AUTH Mode",
+        type: {:dropdown, :atom},
+        description: "SMTP AUTH enforcement mode",
+        suggestions: [:if_available, :always, :never]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :retries,
         type: :integer,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [5]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SMTP},
-        key: :no_mx_lookups,
-        label: "No MX lookups",
-        type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
+        description: "SMTP temporary (4xx) error retries",
+        suggestions: [1]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendgrid},
         key: :api_key,
-        label: "API key",
+        label: "SendGrid API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Sendgrid` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :cmd_path,
         type: :string,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
         suggestions: ["/usr/bin/sendmail"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :cmd_args,
         type: :string,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
         suggestions: ["-N delay,failure,success"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :qmail,
-        type: :boolean,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting"
+        label: "Qmail compat mode",
+        type: :boolean
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mandrill},
         key: :api_key,
-        label: "API key",
+        label: "Mandrill API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mandrill` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailgun},
         key: :api_key,
-        label: "API key",
+        label: "Mailgun API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailgun` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailgun},
         key: :domain,
         type: :string,
-        description: "`Swoosh.Adapters.Mailgun` adapter specific setting",
-        suggestions: ["pleroma.com"]
+        suggestions: ["YOUR_DOMAIN_NAME"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailjet},
         key: :api_key,
-        label: "API key",
+        label: "MailJet Public API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailjet` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["MJ_APIKEY_PUBLIC"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mailjet},
         key: :secret,
+        label: "MailJet Private API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Mailjet` adapter specific setting",
-        suggestions: ["my-secret-key"]
+        suggestions: ["MJ_APIKEY_PRIVATE"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Postmark},
         key: :api_key,
-        label: "API key",
+        label: "Postmark API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Postmark` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["X-Postmark-Server-Token"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SparkPost},
         key: :api_key,
-        label: "API key",
+        label: "SparkPost API key",
         type: :string,
-        description: "`Swoosh.Adapters.SparkPost` adapter specific setting",
-        suggestions: ["my-api-key"]
+        suggestions: ["YOUR_API_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SparkPost},
         key: :endpoint,
         type: :string,
-        description: "`Swoosh.Adapters.SparkPost` adapter specific setting",
         suggestions: ["https://api.sparkpost.com/api/v1"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.AmazonSES},
-        key: :region,
-        type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["us-east-1", "us-east-2"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.AmazonSES},
         key: :access_key,
+        label: "AWS Access Key",
         type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["aws-access-key"]
+        suggestions: ["AWS_ACCESS_KEY"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.AmazonSES},
         key: :secret,
+        label: "AWS Secret Key",
         type: :string,
-        description: "`Swoosh.Adapters.AmazonSES` adapter specific setting",
-        suggestions: ["aws-secret-key"]
+        suggestions: ["AWS_SECRET_KEY"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.AmazonSES},
+        key: :region,
+        label: "AWS Region",
+        type: :string,
+        suggestions: ["us-east-1", "us-east-2"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Dyn},
         key: :api_key,
-        label: "API key",
+        label: "Dyn API Key",
         type: :string,
-        description: "`Swoosh.Adapters.Dyn` adapter specific setting",
-        suggestions: ["my-api-key"]
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.SocketLabs},
-        key: :server_id,
-        type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
+        suggestions: ["apikey"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SocketLabs},
         key: :api_key,
-        label: "API key",
+        label: "SocketLabs API Key",
         type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
+        suggestions: ["INJECTION_API_KEY"]
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.SocketLabs},
+        key: :server_id,
+        label: "Server ID",
+        type: :string,
+        suggestions: ["SERVER_ID"]
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Gmail},
         key: :access_token,
+        label: "GMail API Access Token",
         type: :string,
-        description: "`Swoosh.Adapters.Gmail` adapter specific setting"
-      }
-    ]
-  },
-  %{
-    group: :swoosh,
-    type: :group,
-    description: "`Swoosh.Adapters.Local` adapter specific settings",
-    children: [
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :serve_mailbox,
-        type: :boolean,
-        description: "Run the preview server together as part of your app"
-      },
-      %{
-        group: {:subgroup, Swoosh.Adapters.Local},
-        key: :preview_port,
-        type: :integer,
-        description: "The preview server port",
-        suggestions: [4001]
+        suggestions: ["GMAIL_API_ACCESS_TOKEN"]
       }
     ]
   },
@@ -570,6 +456,42 @@ config :pleroma, :config_description, [
           "ssb",
           "xmpp"
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :features,
+    type: :group,
+    description: "Customizable features",
+    children: [
+      %{
+        key: :improved_hashtag_timeline,
+        type: {:dropdown, :atom},
+        description:
+          "Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).",
+        suggestions: [:auto, :enabled, :disabled]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :populate_hashtags_table,
+    type: :group,
+    description: "`populate_hashtags_table` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if hashtags transfer failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
       }
     ]
   },
@@ -618,14 +540,6 @@ config :pleroma, :config_description, [
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
-        suggestions: [
-          5_000
-        ]
-      },
-      %{
-        key: :chat_limit,
-        type: :integer,
-        description: "Character limit of the instance chat messages",
         suggestions: [
           5_000
         ]
@@ -760,7 +674,8 @@ config :pleroma, :config_description, [
       %{
         key: :allow_relay,
         type: :boolean,
-        description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
+        description:
+          "Permits remote instances to subscribe to all public posts of your instance. (Important!) This may increase the visibility of your instance."
       },
       %{
         key: :public,
@@ -772,12 +687,14 @@ config :pleroma, :config_description, [
       },
       %{
         key: :quarantined_instances,
-        type: {:list, :string},
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
         description:
-          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent",
+          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent and the reason for doing so",
         suggestions: [
-          "quarantined.com",
-          "*.quarantined.com"
+          {"quarantined.com", "Reason"},
+          {"*.quarantined.com", "Reason"}
         ]
       },
       %{
@@ -830,6 +747,12 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description:
           "Set to nicknames of (local) users that every new user should automatically follow"
+      },
+      %{
+        key: :autofollowing_nicknames,
+        type: {:list, :string},
+        description:
+          "Set to nicknames of (local) users that automatically follows every newly registered user"
       },
       %{
         key: :attachment_links,
@@ -1241,7 +1164,7 @@ config :pleroma, :config_description, [
     type: :group,
     description:
       "This form can be used to configure a keyword list that keeps the configuration data for any " <>
-        "kind of frontend. By default, settings for pleroma_fe and masto_fe are configured. If you want to " <>
+        "kind of frontend. By default, settings for pleroma_fe are configured. If you want to " <>
         "add your own configuration your settings all fields must be complete.",
     children: [
       %{
@@ -1254,7 +1177,6 @@ config :pleroma, :config_description, [
             alwaysShowSubjectInput: true,
             background: "/static/aurora_borealis.jpg",
             collapseMessageWithSubject: false,
-            disableChat: false,
             greentext: false,
             hideFilteredStatuses: false,
             hideMutedPosts: false,
@@ -1262,7 +1184,7 @@ config :pleroma, :config_description, [
             hideSitename: false,
             hideUserStats: false,
             loginMethod: "password",
-            logo: "/static/logo.png",
+            logo: "/static/logo.svg",
             logoMargin: ".1em",
             logoMask: true,
             minimalScopesMode: false,
@@ -1300,12 +1222,6 @@ config :pleroma, :config_description, [
             type: :boolean,
             description:
               "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :disableChat,
-            label: "PleromaFE Chat",
-            type: :boolean,
-            description: "Disables PleromaFE Chat component"
           },
           %{
             key: :greentext,
@@ -1348,7 +1264,7 @@ config :pleroma, :config_description, [
             key: :logo,
             type: {:string, :image},
             description: "URL of the logo, defaults to Pleroma's logo",
-            suggestions: ["/static/logo.png"]
+            suggestions: ["/static/logo.svg"]
           },
           %{
             key: :logoMargin,
@@ -1448,25 +1364,6 @@ config :pleroma, :config_description, [
             suggestions: ["pleroma-dark"]
           }
         ]
-      },
-      %{
-        key: :masto_fe,
-        label: "Masto FE",
-        type: :map,
-        description: "Settings for Masto FE",
-        suggestions: [
-          %{
-            showInstanceSpecificPanel: true
-          }
-        ],
-        children: [
-          %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
-            type: :boolean,
-            description: "Whenether to show the instance's specific panel"
-          }
-        ]
       }
     ]
   },
@@ -1551,289 +1448,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :mrf,
-    tab: :mrf,
-    label: "MRF",
-    type: :group,
-    description: "General MRF settings",
-    children: [
-      %{
-        key: :policies,
-        type: [:module, {:list, :module}],
-        description:
-          "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-        suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
-      },
-      %{
-        key: :transparency,
-        label: "MRF transparency",
-        type: :boolean,
-        description:
-          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
-      },
-      %{
-        key: :transparency_exclusions,
-        label: "MRF transparency exclusions",
-        type: {:list, :string},
-        description:
-          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
-        suggestions: [
-          "exclusion.com"
-        ]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_simple,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.SimplePolicy",
-    label: "MRF Simple",
-    type: :group,
-    description: "Simple ingress policies",
-    children: [
-      %{
-        key: :media_removal,
-        type: {:list, :string},
-        description: "List of instances to strip media attachments from",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :media_nsfw,
-        label: "Media NSFW",
-        type: {:list, :string},
-        description: "List of instances to tag all media as NSFW (sensitive) from",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :federated_timeline_removal,
-        type: {:list, :string},
-        description:
-          "List of instances to remove from the Federated (aka The Whole Known Network) Timeline",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :reject,
-        type: {:list, :string},
-        description: "List of instances to reject activities from (except deletes)",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :accept,
-        type: {:list, :string},
-        description: "List of instances to only accept activities from (except deletes)",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :followers_only,
-        type: {:list, :string},
-        description: "Force posts from the given instances to be visible by followers only",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :report_removal,
-        type: {:list, :string},
-        description: "List of instances to reject reports from",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :avatar_removal,
-        type: {:list, :string},
-        description: "List of instances to strip avatars from",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :banner_removal,
-        type: {:list, :string},
-        description: "List of instances to strip banners from",
-        suggestions: ["example.com", "*.example.com"]
-      },
-      %{
-        key: :reject_deletes,
-        type: {:list, :string},
-        description: "List of instances to reject deletions from",
-        suggestions: ["example.com", "*.example.com"]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_activity_expiration,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy",
-    label: "MRF Activity Expiration Policy",
-    type: :group,
-    description: "Adds automatic expiration to all local activities",
-    children: [
-      %{
-        key: :days,
-        type: :integer,
-        description: "Default global expiration time for all local activities (in days)",
-        suggestions: [90, 365]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_subchain,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.SubchainPolicy",
-    label: "MRF Subchain",
-    type: :group,
-    description:
-      "This policy processes messages through an alternate pipeline when a given message matches certain criteria." <>
-        " All criteria are configured as a map of regular expressions to lists of policy modules.",
-    children: [
-      %{
-        key: :match_actor,
-        type: {:map, {:list, :string}},
-        description: "Matches a series of regular expressions against the actor field",
-        suggestions: [
-          %{
-            ~r/https:\/\/example.com/s => [Pleroma.Web.ActivityPub.MRF.DropPolicy]
-          }
-        ]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_rejectnonpublic,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.RejectNonPublic",
-    description: "RejectNonPublic drops posts with non-public visibility settings.",
-    label: "MRF Reject Non Public",
-    type: :group,
-    children: [
-      %{
-        key: :allow_followersonly,
-        label: "Allow followers-only",
-        type: :boolean,
-        description: "Whether to allow followers-only posts"
-      },
-      %{
-        key: :allow_direct,
-        type: :boolean,
-        description: "Whether to allow direct messages"
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_hellthread,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.HellthreadPolicy",
-    label: "MRF Hellthread",
-    type: :group,
-    description: "Block messages with excessive user mentions",
-    children: [
-      %{
-        key: :delist_threshold,
-        type: :integer,
-        description:
-          "Number of mentioned users after which the message gets removed from timelines and" <>
-            "disables notifications. Set to 0 to disable.",
-        suggestions: [10]
-      },
-      %{
-        key: :reject_threshold,
-        type: :integer,
-        description:
-          "Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.",
-        suggestions: [20]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_keyword,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.KeywordPolicy",
-    label: "MRF Keyword",
-    type: :group,
-    description: "Reject or Word-Replace messages with a keyword or regex",
-    children: [
-      %{
-        key: :reject,
-        type: {:list, :string},
-        description:
-          "A list of patterns which result in message being rejected. Each pattern can be a string or a regular expression.",
-        suggestions: ["foo", ~r/foo/iu]
-      },
-      %{
-        key: :federated_timeline_removal,
-        type: {:list, :string},
-        description:
-          "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted). Each pattern can be a string or a regular expression.",
-        suggestions: ["foo", ~r/foo/iu]
-      },
-      %{
-        key: :replace,
-        type: {:list, :tuple},
-        description:
-          "A list of tuples containing {pattern, replacement}. Each pattern can be a string or a regular expression.",
-        suggestions: [{"foo", "bar"}, {~r/foo/iu, "bar"}]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_mention,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.MentionPolicy",
-    label: "MRF Mention",
-    type: :group,
-    description: "Block messages which mention a specific user",
-    children: [
-      %{
-        key: :actors,
-        type: {:list, :string},
-        description: "A list of actors for which any post mentioning them will be dropped",
-        suggestions: ["actor1", "actor2"]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_vocabulary,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.VocabularyPolicy",
-    label: "MRF Vocabulary",
-    type: :group,
-    description: "Filter messages which belong to certain activity vocabularies",
-    children: [
-      %{
-        key: :accept,
-        type: {:list, :string},
-        description:
-          "A list of ActivityStreams terms to accept. If empty, all supported messages are accepted.",
-        suggestions: ["Create", "Follow", "Mention", "Announce", "Like"]
-      },
-      %{
-        key: :reject,
-        type: {:list, :string},
-        description:
-          "A list of ActivityStreams terms to reject. If empty, no messages are rejected.",
-        suggestions: ["Create", "Follow", "Mention", "Announce", "Like"]
-      }
-    ]
-  },
-  # %{
-  #   group: :pleroma,
-  #   key: :mrf_user_allowlist,
-  #   tab: :mrf,
-  #   related_policy: "Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy",
-  #   type: :map,
-  #   description:
-  #     "The keys in this section are the domain names that the policy should apply to." <>
-  #       " Each key should be assigned a list of users that should be allowed through by their ActivityPub ID",
-  #     suggestions: [
-  #       %{"example.org" => ["https://example.org/users/admin"]}
-  #     ]
-  #   ]
-  # },
-  %{
-    group: :pleroma,
     key: :media_proxy,
     type: :group,
     description: "Media proxy",
@@ -1841,7 +1455,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables proxying of remote media to the instance's proxy"
+        description: "Enables proxying of remote media via the instance's proxy"
       },
       %{
         key: :base_url,
@@ -1878,80 +1492,42 @@ config :pleroma, :config_description, [
       },
       %{
         key: :proxy_opts,
-        label: "Proxy Options",
+        label: "Advanced MediaProxy Options",
         type: :keyword,
-        description: "Options for Pleroma.ReverseProxy",
+        description: "Internal Pleroma.ReverseProxy settings",
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
-          max_read_duration: 30_000,
-          http: [
-            follow_redirect: true,
-            pool: :media
-          ]
+          max_read_duration: 30_000
         ],
         children: [
           %{
             key: :redirect_on_failure,
             type: :boolean,
-            description:
-              "Redirects the client to the real remote URL if there's any HTTP errors. " <>
-                "Any error during body processing will not be redirected as the response is chunked."
+            description: """
+            Redirects the client to the origin server upon encountering HTTP errors.\n
+            Note that files larger than Max Body Length will trigger an error. (e.g., Peertube videos)\n\n
+            **WARNING:** This setting will allow larger files to be accessed, but exposes the\n
+            IP addresses of your users to the other servers, bypassing the MediaProxy.
+            """
           },
           %{
             key: :max_body_length,
             type: :integer,
             description:
-              "Limits the content length to be approximately the " <>
-                "specified length. It is validated with the `content-length` header and also verified when proxying."
+              "Maximum file size (in bytes) allowed through the Pleroma MediaProxy cache."
           },
           %{
             key: :max_read_duration,
             type: :integer,
-            description: "Timeout (in milliseconds) of GET request to remote URI."
-          },
-          %{
-            key: :http,
-            label: "HTTP",
-            type: :keyword,
-            description: "HTTP options",
-            children: [
-              %{
-                key: :adapter,
-                type: :keyword,
-                description: "Adapter specific options",
-                children: [
-                  %{
-                    key: :ssl_options,
-                    type: :keyword,
-                    label: "SSL Options",
-                    description: "SSL options for HTTP adapter",
-                    children: [
-                      %{
-                        key: :versions,
-                        type: {:list, :atom},
-                        description: "List of TLS version to use",
-                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              %{
-                key: :proxy_url,
-                label: "Proxy URL",
-                type: [:string, :tuple],
-                description: "Proxy URL",
-                suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
-              }
-            ]
+            description: "Timeout (in milliseconds) of GET request to the remote URI."
           }
         ]
       },
       %{
         key: :whitelist,
         type: {:list, :string},
-        description: "List of hosts with scheme to bypass the mediaproxy",
+        description: "List of hosts with scheme to bypass the MediaProxy",
         suggestions: ["http://example.com"]
       }
     ]
@@ -1989,7 +1565,7 @@ config :pleroma, :config_description, [
         key: :min_content_length,
         type: :integer,
         description:
-          "Min content length to perform preview, in bytes. If greater than 0, media smaller in size will be served as is, without thumbnailing."
+          "Min content length (in bytes) to perform preview. Media smaller in size will be served without thumbnailing."
       }
     ]
   },
@@ -2027,13 +1603,21 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Pleroma.Web.MediaProxy.Invalidation.Script,
     type: :group,
-    description: "Script invalidate settings",
+    description: "Invalidation script settings",
     children: [
       %{
         key: :script_path,
         type: :string,
-        description: "Path to shell script. Which will run purge cache.",
+        description: "Path to executable script which will purge cached items.",
         suggestions: ["./installation/nginx-cache-purge.sh.example"]
+      },
+      %{
+        key: :url_format,
+        label: "URL Format",
+        type: :string,
+        description:
+          "Optional URL format preprocessing. Only required for Apache's htcacheclean.",
+        suggestions: [":htcacheclean"]
       }
     ]
   },
@@ -2085,6 +1669,11 @@ config :pleroma, :config_description, [
         key: :outgoing_blocks,
         type: :boolean,
         description: "Whether to federate blocks to other instances"
+      },
+      %{
+        key: :blockers_visible,
+        type: :boolean,
+        description: "Whether a user can see someone who has blocked them"
       },
       %{
         key: :sign_object_fetches,
@@ -2244,14 +1833,8 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Oban,
     type: :group,
-    description: """
-    [Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.
-
-    Note: if you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1),
-      it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`,
-      otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings
-      (see https://github.com/sorentwo/oban/issues/52).
-    """,
+    description:
+      "[Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.",
     children: [
       %{
         key: :log,
@@ -2281,6 +1864,12 @@ config :pleroma, :config_description, [
             type: :integer,
             description: "Activity expiration queue",
             suggestions: [10]
+          },
+          %{
+            key: :backup,
+            type: :integer,
+            description: "Backup queue",
+            suggestions: [1]
           },
           %{
             key: :attachments_cleanup,
@@ -2825,7 +2414,7 @@ config :pleroma, :config_description, [
         key: :token_expires_in,
         type: :integer,
         description: "The lifetime in seconds of the access token",
-        suggestions: [600]
+        suggestions: [2_592_000]
       },
       %{
         key: :issue_new_refresh_token,
@@ -3037,13 +2626,22 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :chat,
+    key: :shout,
     type: :group,
-    description: "Pleroma chat settings",
+    description: "Pleroma shout settings",
     children: [
       %{
         key: :enabled,
-        type: :boolean
+        type: :boolean,
+        description: "Enables the backend Shoutbox chat feature."
+      },
+      %{
+        key: :limit,
+        type: :integer,
+        description: "Shout message character limit.",
+        suggestions: [
+          5_000
+        ]
       }
     ]
   },
@@ -3135,22 +2733,6 @@ config :pleroma, :config_description, [
       %{
         key: :deny_follow_blocked,
         type: :boolean
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf_normalize_markup,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.NormalizeMarkup",
-    label: "MRF Normalize Markup",
-    description: "MRF NormalizeMarkup settings. Scrub configured hypertext markup.",
-    type: :group,
-    children: [
-      %{
-        key: :scrub_policy,
-        type: :module,
-        suggestions: [Pleroma.HTML.Scrubber.Default]
       }
     ]
   },
@@ -3291,7 +2873,7 @@ config :pleroma, :config_description, [
         type: :integer,
         description:
           "Activity pub routes (except question activities). Default: `nil` (no expiration).",
-        suggestions: [30_000, nil]
+        suggestions: [nil]
       },
       %{
         key: :activity_pub_question,
@@ -3345,28 +2927,18 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :mrf_object_age,
+    key: :mrf_follow_bot,
     tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy",
-    label: "MRF Object Age",
+    related_policy: "Pleroma.Web.ActivityPub.MRF.FollowBotPolicy",
+    label: "MRF FollowBot Policy",
     type: :group,
-    description:
-      "Rejects or delists posts based on their timestamp deviance from your server's clock.",
+    description: "Automatically follows newly discovered accounts.",
     children: [
       %{
-        key: :threshold,
-        type: :integer,
-        description: "Required age (in seconds) of a post before actions are taken.",
-        suggestions: [172_800]
-      },
-      %{
-        key: :actions,
-        type: {:list, :atom},
-        description:
-          "A list of actions to apply to the post. `:delist` removes the post from public timelines; " <>
-            "`:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines; " <>
-            "`:reject` rejects the message entirely",
-        suggestions: [:delist, :strip_followers, :reject]
+        key: :follower_nickname,
+        type: :string,
+        description: "The name of the bot account to use for following newly discovered users.",
+        suggestions: ["followbot"]
       }
     ]
   },
@@ -3654,6 +3226,12 @@ config :pleroma, :config_description, [
         type: :string,
         description: "S3 host",
         suggestions: ["s3.eu-central-1.amazonaws.com"]
+      },
+      %{
+        key: :region,
+        type: :string,
+        description: "S3 region (for AWS)",
+        suggestions: ["us-east-1"]
       }
     ]
   },
@@ -3714,6 +3292,111 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Number of majic workers to start.",
         suggestions: [2]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.User.Backup,
+    type: :group,
+    description: "Account Backup",
+    children: [
+      %{
+        key: :purge_after_days,
+        type: :integer,
+        description: "Remove backup achives after N days",
+        suggestions: [30]
+      },
+      %{
+        key: :limit_days,
+        type: :integer,
+        description: "Limit user to export not more often than once per N days",
+        suggestions: [7]
+      }
+    ]
+  },
+  %{
+    group: :prometheus,
+    key: Pleroma.Web.Endpoint.MetricsExporter,
+    type: :group,
+    description: "Prometheus app metrics endpoint configuration",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "[Pleroma extension] Enables app metrics endpoint."
+      },
+      %{
+        key: :ip_whitelist,
+        label: "IP Whitelist",
+        type: [{:list, :string}, {:list, :charlist}, {:list, :tuple}],
+        description: "Restrict access of app metrics endpoint to the specified IP addresses."
+      },
+      %{
+        key: :auth,
+        type: [:boolean, :tuple],
+        description: "Enables HTTP Basic Auth for app metrics endpoint.",
+        suggestion: [false, {:basic, "myusername", "mypassword"}]
+      },
+      %{
+        key: :path,
+        type: :string,
+        description: "App metrics endpoint URI path.",
+        suggestions: ["/api/pleroma/app_metrics"]
+      },
+      %{
+        key: :format,
+        type: :atom,
+        description: "App metrics endpoint output format.",
+        suggestions: [:text, :protobuf]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: ConcurrentLimiter,
+    type: :group,
+    description: "Limits configuration for background tasks.",
+    children: [
+      %{
+        key: Pleroma.Web.RichMedia.Helpers,
+        type: :keyword,
+        description: "Concurrent limits configuration for getting RichMedia for activities.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
+      },
+      %{
+        key: Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
+        type: :keyword,
+        description: "Concurrent limits configuration for MediaProxyWarmingPolicy.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
       }
     ]
   }

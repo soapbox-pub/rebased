@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusController do
@@ -21,15 +21,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(
-    :skip_plug,
-    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show]
-  )
+  plug(:skip_public_check when action in [:index, :show])
 
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
 
@@ -109,7 +107,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = _params) do
+  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = params) do
     limit = 100
 
     activities =
@@ -121,7 +119,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     render(conn, "index.json",
       activities: activities,
       for: user,
-      as: :activity
+      as: :activity,
+      with_muted: Map.get(params, :with_muted, false)
     )
   end
 
@@ -137,7 +136,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         _
       )
       when not is_nil(scheduled_at) do
-    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+    params =
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+      |> put_application(conn)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -161,7 +162,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
-    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+    params =
+      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+      |> put_application(conn)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -189,13 +192,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id"
-  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def show(%{assigns: %{user: user}} = conn, %{id: id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do
       try_render(conn, "show.json",
         activity: activity,
         for: user,
-        with_direct_conversation_id: true
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
       )
     else
       _ -> {:error, :not_found}
@@ -253,6 +257,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def pin(%{assigns: %{user: user}} = conn, %{id: ap_id_or_id}) do
     with {:ok, activity} <- CommonAPI.pin(ap_id_or_id, user) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
+    else
+      {:error, :pinned_statuses_limit_reached} ->
+        {:error, "You have already pinned the maximum number of statuses"}
+
+      {:error, :ownership_error} ->
+        {:error, :unprocessable_entity, "Someone else's status cannot be pinned"}
+
+      {:error, :visibility_error} ->
+        {:error, :unprocessable_entity, "Non-public status cannot be pinned"}
+
+      error ->
+        error
     end
   end
 
@@ -284,9 +300,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/mute"
-  def mute_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
+  def mute_conversation(%{assigns: %{user: user}, body_params: params} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         {:ok, activity} <- CommonAPI.add_mute(user, activity) do
+         {:ok, activity} <- CommonAPI.add_mute(user, activity, params) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end
@@ -316,7 +332,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with true <- Pleroma.Config.get([:instance, :show_reactions]),
          %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
-         %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
+         %Object{data: %{"likes" => likes}} <- Object.normalize(activity, fetch: false) do
       users =
         User
         |> Ecto.Query.where([u], u.ap_id in ^likes)
@@ -337,7 +353,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"announcements" => announces, "id" => ap_id}} <-
-           Object.normalize(activity) do
+           Object.normalize(activity, fetch: false) do
       announces =
         "Announce"
         |> Activity.Queries.by_type()
@@ -412,4 +428,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       as: :activity
     )
   end
+
+  defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
+    if user.disclose_client do
+      %{client_name: client_name, website: website} = Repo.preload(token, :app).app
+      Map.put(params, :generator, %{type: "Application", name: client_name, url: website})
+    else
+      Map.put(params, :generator, nil)
+    end
+  end
+
+  defp put_application(params, _), do: Map.put(params, :generator, nil)
 end

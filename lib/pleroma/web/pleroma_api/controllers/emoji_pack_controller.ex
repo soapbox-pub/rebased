@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
 
   plug(
     Pleroma.Web.Plugs.OAuthScopesPlug,
-    %{scopes: ["write"], admin: true}
+    %{scopes: ["admin:write"]}
     when action in [
            :import_from_filesystem,
            :remote,
@@ -22,11 +22,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
          ]
   )
 
-  @skip_plugs [
-    Pleroma.Web.Plugs.OAuthScopesPlug,
-    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
-  ]
-  plug(:skip_plug, @skip_plugs when action in [:index, :archive, :show])
+  plug(:skip_auth when action in [:index, :archive, :show])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
@@ -71,7 +67,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     with {:ok, pack} <- Pack.show(name: name, page: page, page_size: page_size) do
       json(conn, pack)
     else
-      {:error, :not_found} ->
+      {:error, :enoent} ->
         conn
         |> put_status(:not_found)
         |> json(%{error: "Pack #{name} does not exist"})
@@ -80,6 +76,17 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         conn
         |> put_status(:bad_request)
         |> json(%{error: "pack name cannot be empty"})
+
+      {:error, error} ->
+        error_message =
+          add_posix_error(
+            "Failed to get the contents of the `#{name}` pack.",
+            error
+          )
+
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: error_message})
     end
   end
 
@@ -95,7 +102,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
             "Pack #{name} cannot be downloaded from this instance, either pack sharing was disabled for this pack or some files are missing"
         })
 
-      {:error, :not_found} ->
+      {:error, :enoent} ->
         conn
         |> put_status(:not_found)
         |> json(%{error: "Pack #{name} does not exist"})
@@ -116,10 +123,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> put_status(:internal_server_error)
         |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
 
-      {:error, e} ->
+      {:error, error} ->
         conn
         |> put_status(:internal_server_error)
-        |> json(%{error: e})
+        |> json(%{error: error})
     end
   end
 
@@ -139,12 +146,16 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> put_status(:bad_request)
         |> json(%{error: "pack name cannot be empty"})
 
-      {:error, _} ->
-        render_error(
-          conn,
-          :internal_server_error,
-          "Unexpected error occurred while creating pack."
-        )
+      {:error, error} ->
+        error_message =
+          add_posix_error(
+            "Unexpected error occurred while creating pack.",
+            error
+          )
+
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: error_message})
     end
   end
 
@@ -164,10 +175,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> put_status(:bad_request)
         |> json(%{error: "pack name cannot be empty"})
 
-      {:error, _, _} ->
+      {:error, error, _} ->
+        error_message = add_posix_error("Couldn't delete the `#{name}` pack", error)
+
         conn
         |> put_status(:internal_server_error)
-        |> json(%{error: "Couldn't delete the pack #{name}"})
+        |> json(%{error: error_message})
     end
   end
 
@@ -180,12 +193,16 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> put_status(:bad_request)
         |> json(%{error: "The fallback archive does not have all files specified in pack.json"})
 
-      {:error, _} ->
-        render_error(
-          conn,
-          :internal_server_error,
-          "Unexpected error occurred while updating pack metadata."
-        )
+      {:error, error} ->
+        error_message =
+          add_posix_error(
+            "Unexpected error occurred while updating pack metadata.",
+            error
+          )
+
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: error_message})
     end
   end
 
@@ -203,5 +220,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> put_status(:internal_server_error)
         |> json(%{error: "Error accessing emoji pack directory"})
     end
+  end
+
+  defp add_posix_error(msg, error) do
+    [msg, Pleroma.Utils.posix_error_message(error)]
+    |> Enum.join(" ")
+    |> String.trim()
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.PurgeExpiredActivity do
@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   Worker which purges expired activity.
   """
 
-  use Oban.Worker, queue: :activity_expiration, max_attempts: 1
+  use Oban.Worker, queue: :activity_expiration, max_attempts: 1, unique: [period: :infinity]
 
   import Ecto.Query
 

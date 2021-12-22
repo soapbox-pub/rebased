@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.PleromaMascotOperation do
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaMascotOperation do
   def show_operation do
     %Operation{
       tags: ["Mascot"],
-      summary: "Gets user mascot image",
+      summary: "Retrieve mascot",
       security: [%{"oAuth" => ["read:accounts"]}],
       operationId: "PleromaAPI.MascotController.show",
       responses: %{
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaMascotOperation do
   def update_operation do
     %Operation{
       tags: ["Mascot"],
-      summary: "Set/clear user avatar image",
+      summary: "Set or clear mascot",
       description:
         "Behaves exactly the same as `POST /api/v1/upload`. Can only accept images - any attempt to upload non-image files will be met with `HTTP 415 Unsupported Media Type`.",
       operationId: "PleromaAPI.MascotController.update",

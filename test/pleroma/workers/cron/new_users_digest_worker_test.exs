@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
   import Pleroma.Factory
 
   alias Pleroma.Tests.ObanHelpers
@@ -28,7 +28,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     assert email.html_body =~ user.nickname
     assert email.html_body =~ user2.nickname
     assert email.html_body =~ "cofe"
-    assert email.html_body =~ "#{Pleroma.Web.Endpoint.url()}/static/logo.png"
+    assert email.html_body =~ "#{Pleroma.Web.Endpoint.url()}/static/logo.svg"
   end
 
   test "it doesn't fail when admin has no email" do

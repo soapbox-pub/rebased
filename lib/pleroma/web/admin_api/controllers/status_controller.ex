@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.StatusController do
@@ -15,11 +15,11 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
   require Logger
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(OAuthScopesPlug, %{scopes: ["read:statuses"], admin: true} when action in [:index, :show])
+  plug(OAuthScopesPlug, %{scopes: ["admin:read:statuses"]} when action in [:index, :show])
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"], admin: true} when action in [:update, :delete]
+    %{scopes: ["admin:write:statuses"]} when action in [:update, :delete]
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)

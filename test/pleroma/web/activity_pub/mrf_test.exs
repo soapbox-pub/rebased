@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRFTest do
@@ -63,12 +63,26 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
     end
   end
 
+  describe "instance_list_from_tuples/1" do
+    test "returns a list of instances from a list of {instance, reason} tuples" do
+      list = [{"some.tld", "a reason"}, {"other.tld", "another reason"}]
+      expected = ["some.tld", "other.tld"]
+
+      assert MRF.instance_list_from_tuples(list) == expected
+    end
+  end
+
   describe "describe/0" do
     test "it works as expected with noop policy" do
       clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.NoOpPolicy])
 
       expected = %{
-        mrf_policies: ["NoOpPolicy"],
+        mrf_policies: ["NoOpPolicy", "HashtagPolicy"],
+        mrf_hashtag: %{
+          federated_timeline_removal: [],
+          reject: [],
+          sensitive: ["nsfw"]
+        },
         exclusions: false
       }
 
@@ -79,12 +93,33 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       clear_config([:mrf, :policies], [MRFModuleMock])
 
       expected = %{
-        mrf_policies: ["MRFModuleMock"],
+        mrf_policies: ["MRFModuleMock", "HashtagPolicy"],
         mrf_module_mock: "some config data",
+        mrf_hashtag: %{
+          federated_timeline_removal: [],
+          reject: [],
+          sensitive: ["nsfw"]
+        },
         exclusions: false
       }
 
       {:ok, ^expected} = MRF.describe()
     end
+  end
+
+  test "config_descriptions/0" do
+    descriptions = MRF.config_descriptions()
+
+    good_mrf = Enum.find(descriptions, fn %{key: key} -> key == :good_mrf end)
+
+    assert good_mrf == %{
+             key: :good_mrf,
+             related_policy: "Fixtures.Modules.GoodMRF",
+             label: "Good MRF",
+             description: "Some description",
+             group: :pleroma,
+             tab: :mrf,
+             type: :group
+           }
   end
 end

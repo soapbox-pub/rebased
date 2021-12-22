@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   import Pleroma.Factory
   import Tesla.Mock
 
-  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -55,6 +54,101 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert private_activity.id in status_ids
       refute direct_activity.id in status_ids
     end
+
+    test "muted emotions", %{user: user, conn: conn} do
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/timelines/home")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/timelines/home?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
+
+    test "filtering", %{conn: conn, user: user} do
+      local_user = insert(:user)
+      {:ok, user, local_user} = User.follow(user, local_user)
+      {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Status"})
+      with_media = create_with_media_activity(local_user)
+
+      remote_user = insert(:user, local: false)
+      {:ok, _user, remote_user} = User.follow(user, remote_user)
+      remote_activity = create_remote_activity(remote_user)
+
+      without_filter_ids =
+        conn
+        |> get("/api/v1/timelines/home")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in without_filter_ids
+      assert remote_activity.id in without_filter_ids
+      assert with_media.id in without_filter_ids
+
+      only_local_ids =
+        conn
+        |> get("/api/v1/timelines/home?local=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in only_local_ids
+      refute remote_activity.id in only_local_ids
+      assert with_media.id in only_local_ids
+
+      only_local_media_ids =
+        conn
+        |> get("/api/v1/timelines/home?local=true&only_media=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in only_local_media_ids
+      refute remote_activity.id in only_local_media_ids
+      assert with_media.id in only_local_media_ids
+
+      remote_ids =
+        conn
+        |> get("/api/v1/timelines/home?remote=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in remote_ids
+      assert remote_activity.id in remote_ids
+      refute with_media.id in remote_ids
+
+      assert conn
+             |> get("/api/v1/timelines/home?remote=true&only_media=true")
+             |> json_response_and_validate_schema(200) == []
+
+      assert conn
+             |> get("/api/v1/timelines/home?remote=true&local=true")
+             |> json_response_and_validate_schema(200) == []
+    end
   end
 
   describe "public" do
@@ -63,27 +157,80 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+      with_media = create_with_media_activity(user)
 
-      _activity = insert(:note_activity, local: false)
+      remote = insert(:note_activity, local: false)
 
-      conn = get(conn, "/api/v1/timelines/public?local=False")
+      assert conn
+             |> get("/api/v1/timelines/public?local=False")
+             |> json_response_and_validate_schema(:ok)
+             |> length == 3
 
-      assert length(json_response_and_validate_schema(conn, :ok)) == 2
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=True")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      conn = get(build_conn(), "/api/v1/timelines/public?local=True")
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
 
-      assert [%{"content" => "test"}] = json_response_and_validate_schema(conn, :ok)
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=True")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      conn = get(build_conn(), "/api/v1/timelines/public?local=1")
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
 
-      assert [%{"content" => "test"}] = json_response_and_validate_schema(conn, :ok)
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=True&only_media=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
+
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/public?local=1")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote.id in local_ids
+
+      remote_id = remote.id
+
+      assert [%{"id" => ^remote_id}] =
+               conn
+               |> get("/api/v1/timelines/public?remote=true")
+               |> json_response_and_validate_schema(:ok)
+
+      with_media_id = with_media.id
+
+      assert [%{"id" => ^with_media_id}] =
+               conn
+               |> get("/api/v1/timelines/public?only_media=true")
+               |> json_response_and_validate_schema(:ok)
+
+      assert conn
+             |> get("/api/v1/timelines/public?remote=true&only_media=true")
+             |> json_response_and_validate_schema(:ok) == []
 
       # does not contain repeats
       {:ok, _} = CommonAPI.repeat(activity.id, user)
 
-      conn = get(build_conn(), "/api/v1/timelines/public?local=true")
-
-      assert [_] = json_response_and_validate_schema(conn, :ok)
+      assert [_, _] =
+               conn
+               |> get("/api/v1/timelines/public?local=true")
+               |> json_response_and_validate_schema(:ok)
     end
 
     test "the public timeline includes only public statuses for an authenticated user" do
@@ -101,7 +248,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "doesn't return replies if follower is posting with blocked user" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       [blockee, friend] = insert_list(2, :user)
-      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker, friend} = User.follow(blocker, friend)
       {:ok, _} = User.block(blocker, blockee)
 
       conn = assign(conn, :user, blocker)
@@ -126,11 +273,29 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       [%{"id" => ^reply_from_me}, %{"id" => ^activity_id}] = response
     end
 
+    test "doesn't return posts from users who blocked you when :blockers_visible is disabled" do
+      clear_config([:activitypub, :blockers_visible], false)
+
+      %{conn: conn, user: blockee} = oauth_access(["read:statuses"])
+      blocker = insert(:user)
+      {:ok, _} = User.block(blocker, blockee)
+
+      conn = assign(conn, :user, blockee)
+
+      {:ok, _} = CommonAPI.post(blocker, %{status: "hey!"})
+
+      response =
+        get(conn, "/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert length(response) == 0
+    end
+
     test "doesn't return replies if follow is posting with users from blocked domain" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)
       blockee = insert(:user, ap_id: "https://example.com/users/blocked")
-      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker, friend} = User.follow(blocker, friend)
       {:ok, blocker} = User.block_domain(blocker, "example.com")
 
       conn = assign(conn, :user, blocker)
@@ -147,6 +312,60 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       activities = json_response_and_validate_schema(res_conn, 200)
       [%{"id" => ^activity_id}] = activities
+    end
+
+    test "can be filtered by instance", %{conn: conn} do
+      user = insert(:user, ap_id: "https://lain.com/users/lain")
+      insert(:note_activity, local: false)
+      insert(:note_activity, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      conn = get(conn, "/api/v1/timelines/public?instance=lain.com")
+
+      assert length(json_response_and_validate_schema(conn, :ok)) == 1
+    end
+
+    test "muted emotions", %{conn: conn} do
+      user = insert(:user)
+      token = insert(:oauth_token, user: user, scopes: ["read:statuses"])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, token)
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
     end
   end
 
@@ -247,7 +466,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       user_one = insert(:user)
       user_two = insert(:user)
 
-      {:ok, user_two} = User.follow(user_two, user_one)
+      {:ok, user_two, user_one} = User.follow(user_two, user_one)
 
       {:ok, direct} =
         CommonAPI.post(user_one, %{
@@ -417,6 +636,115 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert id == to_string(activity_one.id)
     end
+
+    test "muted emotions", %{user: user, conn: conn} do
+      user2 = insert(:user)
+      user3 = insert(:user)
+      {:ok, activity} = CommonAPI.post(user2, %{status: "."})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user3, "🎅")
+      User.mute(user, user3)
+
+      {:ok, list} = Pleroma.List.create("name", user)
+      {:ok, list} = Pleroma.List.follow(list, user2)
+
+      result =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
+
+    test "filtering", %{user: user, conn: conn} do
+      {:ok, list} = Pleroma.List.create("name", user)
+
+      local_user = insert(:user)
+      {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Marisa is stupid."})
+      with_media = create_with_media_activity(local_user)
+      {:ok, list} = Pleroma.List.follow(list, local_user)
+
+      remote_user = insert(:user, local: false)
+      remote_activity = create_remote_activity(remote_user)
+      {:ok, list} = Pleroma.List.follow(list, remote_user)
+
+      all_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in all_ids
+      assert with_media.id in all_ids
+      assert remote_activity.id in all_ids
+
+      only_local_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?local=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in only_local_ids
+      assert with_media.id in only_local_ids
+      refute remote_activity.id in only_local_ids
+
+      only_local_media_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?local=true&only_media=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in only_local_media_ids
+      assert with_media.id in only_local_media_ids
+      refute remote_activity.id in only_local_media_ids
+
+      remote_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?remote=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in remote_ids
+      refute with_media.id in remote_ids
+      assert remote_activity.id in remote_ids
+
+      assert conn
+             |> get("/api/v1/timelines/list/#{list.id}?remote=true&only_media=true")
+             |> json_response_and_validate_schema(200) == []
+
+      only_media_ids =
+        conn
+        |> get("/api/v1/timelines/list/#{list.id}?only_media=true")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      refute local_activity.id in only_media_ids
+      assert with_media.id in only_media_ids
+      refute remote_activity.id in only_media_ids
+
+      assert conn
+             |> get("/api/v1/timelines/list/#{list.id}?only_media=true&local=true&remote=true")
+             |> json_response_and_validate_schema(200) == []
+    end
   end
 
   describe "hashtag" do
@@ -427,19 +755,85 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       following = insert(:user)
 
       {:ok, activity} = CommonAPI.post(following, %{status: "test #2hu"})
+      with_media = create_with_media_activity(following)
 
-      nconn = get(conn, "/api/v1/timelines/tag/2hu")
+      remote = insert(:user, local: false)
+      remote_activity = create_remote_activity(remote)
 
-      assert [%{"id" => id}] = json_response_and_validate_schema(nconn, :ok)
+      all_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      assert id == to_string(activity.id)
+      assert activity.id in all_ids
+      assert with_media.id in all_ids
+      assert remote_activity.id in all_ids
 
       # works for different capitalization too
-      nconn = get(conn, "/api/v1/timelines/tag/2HU")
+      all_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2HU")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
 
-      assert [%{"id" => id}] = json_response_and_validate_schema(nconn, :ok)
+      assert activity.id in all_ids
+      assert with_media.id in all_ids
+      assert remote_activity.id in all_ids
 
-      assert id == to_string(activity.id)
+      local_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?local=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      assert activity.id in local_ids
+      assert with_media.id in local_ids
+      refute remote_activity.id in local_ids
+
+      remote_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?remote=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in remote_ids
+      refute with_media.id in remote_ids
+      assert remote_activity.id in remote_ids
+
+      media_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_media=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in media_ids
+      assert with_media.id in media_ids
+      refute remote_activity.id in media_ids
+
+      media_local_ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_media=true&local=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in media_local_ids
+      assert with_media.id in media_local_ids
+      refute remote_activity.id in media_local_ids
+
+      ids =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?only_media=true&local=true&remote=true")
+        |> json_response_and_validate_schema(:ok)
+        |> Enum.map(& &1["id"])
+
+      refute activity.id in ids
+      refute with_media.id in ids
+      refute remote_activity.id in ids
+
+      assert conn
+             |> get("/api/v1/timelines/tag/2hu?only_media=true&remote=true")
+             |> json_response_and_validate_schema(:ok) == []
     end
 
     test "multi-hashtag timeline", %{conn: conn} do
@@ -465,6 +859,48 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert [status_none] == json_response_and_validate_schema(all_test, :ok)
     end
+
+    test "muted emotions", %{conn: conn} do
+      user = insert(:user)
+      token = insert(:oauth_token, user: user, scopes: ["read:statuses"])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, token)
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "test #2hu"})
+
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+      User.mute(user, other_user)
+
+      result =
+        conn
+        |> get("/api/v1/timelines/tag/2hu")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => []
+                 }
+               }
+             ] = result
+
+      result =
+        conn
+        |> get("/api/v1/timelines/tag/2hu?with_muted=true")
+        |> json_response_and_validate_schema(200)
+
+      assert [
+               %{
+                 "pleroma" => %{
+                   "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
+                 }
+               }
+             ] = result
+    end
   end
 
   describe "hashtag timeline handling of :restrict_unauthenticated setting" do
@@ -487,10 +923,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       %{conn: auth_conn} = oauth_access(["read:statuses"])
 
       res_conn = get(auth_conn, "#{base_uri}?local=true")
-      assert length(json_response(res_conn, 200)) == 1
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 1
 
       res_conn = get(auth_conn, "#{base_uri}?local=false")
-      assert length(json_response(res_conn, 200)) == 2
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 2
     end
 
     test "with default settings on private instances, returns 403 for unauthenticated users", %{
@@ -504,7 +940,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       for local <- [true, false] do
         res_conn = get(conn, "#{base_uri}?local=#{local}")
 
-        assert json_response(res_conn, :unauthorized) == error_response
+        assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
       end
 
       ensure_authenticated_access(base_uri)
@@ -521,7 +957,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       for local <- [true, false] do
         res_conn = get(conn, "#{base_uri}?local=#{local}")
 
-        assert json_response(res_conn, :unauthorized) == error_response
+        assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
       end
 
       ensure_authenticated_access(base_uri)
@@ -533,10 +969,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       clear_config([:restrict_unauthenticated, :timelines, :federated], true)
 
       res_conn = get(conn, "#{base_uri}?local=true")
-      assert length(json_response(res_conn, 200)) == 1
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 1
 
       res_conn = get(conn, "#{base_uri}?local=false")
-      assert json_response(res_conn, :unauthorized) == error_response
+      assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
 
       ensure_authenticated_access(base_uri)
     end
@@ -548,13 +984,46 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       clear_config([:restrict_unauthenticated, :timelines, :federated], false)
 
       res_conn = get(conn, "#{base_uri}?local=true")
-      assert json_response(res_conn, :unauthorized) == error_response
+      assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
 
       # Note: local activities get delivered as part of federated timeline
       res_conn = get(conn, "#{base_uri}?local=false")
-      assert length(json_response(res_conn, 200)) == 2
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 2
 
       ensure_authenticated_access(base_uri)
     end
+  end
+
+  defp create_remote_activity(user) do
+    obj =
+      insert(:note, %{
+        data: %{
+          "to" => [
+            "https://www.w3.org/ns/activitystreams#Public",
+            User.ap_followers(user)
+          ]
+        },
+        user: user
+      })
+
+    insert(:note_activity, %{
+      note: obj,
+      recipients: [
+        "https://www.w3.org/ns/activitystreams#Public",
+        User.ap_followers(user)
+      ],
+      user: user,
+      local: false
+    })
+  end
+
+  defp create_with_media_activity(user) do
+    obj = insert(:attachment_note, user: user)
+
+    insert(:note_activity, %{
+      note: obj,
+      recipients: ["https://www.w3.org/ns/activitystreams#Public", User.ap_followers(user)],
+      user: user
+    })
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
@@ -10,8 +10,6 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
   import Mock
   import Pleroma.Factory
-
-  setup do: clear_config([:instance, :max_account_fields])
 
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])
@@ -37,8 +35,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{
           "pleroma_settings_store" => %{
-            masto_fe: %{
-              theme: "bla"
+            soapbox_fe: %{
+              themeMode: "bla"
             }
           }
         })
@@ -48,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data["pleroma"]["settings_store"] ==
                %{
                  "pleroma_fe" => %{"theme" => "bla"},
-                 "masto_fe" => %{"theme" => "bla"}
+                 "soapbox_fe" => %{"themeMode" => "bla"}
                }
 
       user = Repo.get(User, user_data["id"])
@@ -62,8 +60,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
           |> assign(:user, user)
           |> patch("/api/v1/accounts/update_credentials", %{
             "pleroma_settings_store" => %{
-              masto_fe: %{
-                theme: "blub"
+              soapbox_fe: %{
+                themeMode: "blub"
               }
             }
           })
@@ -73,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         assert user_data["pleroma"]["settings_store"] ==
                  %{
                    "pleroma_fe" => %{"theme" => "bla"},
-                   "masto_fe" => %{"theme" => "blub"}
+                   "soapbox_fe" => %{"themeMode" => "blub"}
                  }
 
         assert_called(Pleroma.Web.Federator.publish(:_))
@@ -90,9 +88,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data = json_response_and_validate_schema(conn, 200)
 
       assert user_data["note"] ==
-               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{
-                 user2.id
-               }" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{user2.id}" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
 
       assert user_data["source"]["note"] == raw_bio
 
@@ -218,6 +214,25 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       update_activity = Repo.one(Pleroma.Activity)
       assert update_activity.data["type"] == "Update"
       assert update_activity.data["object"]["name"] == "markorepairs"
+    end
+
+    test "updates the user's AKAs", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["https://mushroom.kingdom/users/mario"]
+        })
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["pleroma"]["also_known_as"] == ["https://mushroom.kingdom/users/mario"]
+    end
+
+    test "doesn't update non-url akas", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["aReallyCoolGuy"]
+        })
+
+      assert json_response_and_validate_schema(conn, 403)
     end
 
     test "updates the user's avatar", %{user: user, conn: conn} do
@@ -446,7 +461,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response_and_validate_schema(403)
 
-      Pleroma.Config.put([:instance, :max_account_fields], 1)
+      clear_config([:instance, :max_account_fields], 1)
 
       fields = [
         %{"name" => "foo", "value" => "bar"},

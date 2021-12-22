@@ -1,9 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -12,7 +13,6 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
-  alias Pleroma.Web.FedSockets
 
   require Logger
   require Pleroma.Constants
@@ -84,13 +84,13 @@ defmodule Pleroma.Object.Fetcher do
     with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
          {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
          {_, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
-         {_, nil} <- {:normalize, Object.normalize(data, false)},
+         {_, nil} <- {:normalize, Object.normalize(data, fetch: false)},
          params <- prepare_activity_params(data),
          {_, :ok} <- {:containment, Containment.contain_origin(id, params)},
          {_, {:ok, activity}} <-
            {:transmogrifier, Transmogrifier.handle_incoming(params, options)},
          {_, _data, %Object{} = object} <-
-           {:object, data, Object.normalize(activity, false)} do
+           {:object, data, Object.normalize(activity, fetch: false)} do
       {:ok, object}
     else
       {:allowed_depth, false} ->
@@ -100,6 +100,9 @@ defmodule Pleroma.Object.Fetcher do
         {:error, "Object containment failed."}
 
       {:transmogrifier, {:error, {:reject, e}}} ->
+        {:reject, e}
+
+      {:transmogrifier, {:reject, e}} ->
         {:reject, e}
 
       {:transmogrifier, _} = e ->
@@ -125,12 +128,14 @@ defmodule Pleroma.Object.Fetcher do
   defp prepare_activity_params(data) do
     %{
       "type" => "Create",
-      "to" => data["to"] || [],
-      "cc" => data["cc"] || [],
       # Should we seriously keep this attributedTo thing?
       "actor" => data["actor"] || data["attributedTo"],
       "object" => data
     }
+    |> Maps.put_if_present("to", data["to"])
+    |> Maps.put_if_present("cc", data["cc"])
+    |> Maps.put_if_present("bto", data["bto"])
+    |> Maps.put_if_present("bcc", data["bcc"])
   end
 
   def fetch_object_from_id!(id, options \\ []) do
@@ -183,16 +188,16 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(prm, opts \\ [])
+  def fetch_and_contain_remote_object_from_id(id)
 
-  def fetch_and_contain_remote_object_from_id(%{"id" => id}, opts),
-    do: fetch_and_contain_remote_object_from_id(id, opts)
+  def fetch_and_contain_remote_object_from_id(%{"id" => id}),
+    do: fetch_and_contain_remote_object_from_id(id)
 
-  def fetch_and_contain_remote_object_from_id(id, opts) when is_binary(id) do
+  def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
     Logger.debug("Fetching object #{id} via AP")
 
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
-         {:ok, body} <- get_object(id, opts),
+         {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
       {:ok, data}
@@ -208,22 +213,10 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(_id, _opts),
+  def fetch_and_contain_remote_object_from_id(_id),
     do: {:error, "id must be a string"}
 
-  defp get_object(id, opts) do
-    with false <- Keyword.get(opts, :force_http, false),
-         {:ok, fedsocket} <- FedSockets.get_or_create_fed_socket(id) do
-      Logger.debug("fetching via fedsocket - #{inspect(id)}")
-      FedSockets.fetch(fedsocket, id)
-    else
-      _other ->
-        Logger.debug("fetching via http - #{inspect(id)}")
-        get_object_http(id)
-    end
-  end
-
-  defp get_object_http(id) do
+  defp get_object(id) do
     date = Pleroma.Signature.signed_date()
 
     headers =
@@ -232,8 +225,24 @@ defmodule Pleroma.Object.Fetcher do
       |> sign_fetch(id, date)
 
     case HTTP.get(id, headers) do
-      {:ok, %{body: body, status: code}} when code in 200..299 ->
-        {:ok, body}
+      {:ok, %{body: body, status: code, headers: headers}} when code in 200..299 ->
+        case List.keyfind(headers, "content-type", 0) do
+          {_, content_type} ->
+            case Plug.Conn.Utils.media_type(content_type) do
+              {:ok, "application", "activity+json", _} ->
+                {:ok, body}
+
+              {:ok, "application", "ld+json",
+               %{"profile" => "https://www.w3.org/ns/activitystreams"}} ->
+                {:ok, body}
+
+              _ ->
+                {:error, {:content_type, content_type}}
+            end
+
+          _ ->
+            {:error, {:content_type, nil}}
+        end
 
       {:ok, %{status: code}} when code in [404, 410] ->
         {:error, "Object has been deleted"}

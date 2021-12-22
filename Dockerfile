@@ -4,7 +4,7 @@ COPY . .
 
 ENV MIX_ENV=prod
 
-RUN apk add git gcc g++ musl-dev make cmake &&\
+RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
 	echo "import Mix.Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
@@ -12,7 +12,7 @@ RUN apk add git gcc g++ musl-dev make cmake &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine:3.11
+FROM alpine:3.14
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -31,9 +31,8 @@ LABEL maintainer="ops@pleroma.social" \
 ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
-RUN echo "https://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
-	apk update &&\
-	apk add exiftool imagemagick ncurses postgresql-client &&\
+RUN apk update &&\
+	apk add exiftool ffmpeg imagemagick libmagic ncurses postgresql-client &&\
 	adduser --system --shell /bin/false --home ${HOME} pleroma &&\
 	mkdir -p ${DATA}/uploads &&\
 	mkdir -p ${DATA}/static &&\

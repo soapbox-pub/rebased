@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.BBS.Handler do
@@ -19,9 +19,7 @@ defmodule Pleroma.BBS.Handler do
   def on_connect(username, ip, port, method) do
     Logger.debug(fn ->
       """
-      Incoming SSH shell #{inspect(self())} requested for #{username} from #{inspect(ip)}:#{
-        inspect(port)
-      } using #{inspect(method)}
+      Incoming SSH shell #{inspect(self())} requested for #{username} from #{inspect(ip)}:#{inspect(port)} using #{inspect(method)}
       """
     end)
   end

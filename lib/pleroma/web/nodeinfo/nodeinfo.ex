@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
@@ -35,7 +35,9 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
       openRegistrations: Config.get([:instance, :registrations_open]),
       usage: %{
         users: %{
-          total: Map.get(stats, :user_count, 0)
+          total: Map.get(stats, :user_count, 0),
+          activeMonth: Pleroma.User.active_user_count(30),
+          activeHalfyear: Pleroma.User.active_user_count(180)
         },
         localPosts: Map.get(stats, :status_count, 0)
       },

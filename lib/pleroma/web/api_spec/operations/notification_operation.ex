@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.NotificationOperation do
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   def index_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Get all notifications",
+      summary: "Retrieve a list of notifications",
       description:
         "Notifications concerning the user. This API returns Link headers containing links to the next/previous page. However, the links can also be constructed dynamically using query params and `id` values.",
       operationId: "NotificationController.index",
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   def show_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Get a single notification",
+      summary: "Retrieve a notification",
       description: "View information about a notification with a given ID.",
       operationId: "NotificationController.show",
       security: [%{"oAuth" => ["read:notifications"]}],
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   def dismiss_operation do
     %Operation{
       tags: ["Notifications"],
-      summary: "Dismiss a single notification",
+      summary: "Dismiss a notification",
       description: "Clear a single notification from the server.",
       operationId: "NotificationController.dismiss",
       parameters: [id_param()],
@@ -193,8 +193,10 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "mention",
         "pleroma:emoji_reaction",
         "pleroma:chat_mention",
+        "pleroma:report",
         "move",
-        "follow_request"
+        "follow_request",
+        "poll"
       ],
       description: """
       The type of event that resulted in the notification.
@@ -206,6 +208,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `poll` - A poll you have voted in or created has ended
       - `move` - Someone moved their account
       - `pleroma:emoji_reaction` - Someone reacted with emoji to your status
+      - `pleroma:chat_mention` - Someone mentioned you in a chat message
+      - `pleroma:report` - Someone was reported
       """
     }
   end
