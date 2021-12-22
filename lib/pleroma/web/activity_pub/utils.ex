@@ -712,9 +712,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   defp build_flag_object(%{statuses: statuses}) do
     Enum.map(statuses || [], &build_flag_object/1)
+    |> Enum.reject(&is_nil/1)
   end
 
-  defp build_flag_object(%Activity{data: %{"id" => id}, object: %{data: data}}) do
+  defp build_flag_object(%Activity{data: %{"id" => id, "type" => "Create"}, object: %{data: data}}) do
     activity_actor = User.get_by_ap_id(data["actor"])
 
     %{
@@ -730,28 +731,26 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
   end
 
-  defp build_flag_object(act) when is_map(act) or is_binary(act) do
-    id =
-      case act do
-        %Activity{} = act -> act.data["id"]
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
-      end
+  defp build_flag_object(%{data: %{"id" => id}}), do: build_flag_object(id)
+  defp build_flag_object(%{"id" => id}), do: build_flag_object(id)
 
-    case Activity.get_by_ap_id_with_object(id) do
-      %Activity{} = activity ->
+  defp build_flag_object(ap_id) when is_binary(ap_id) do
+    case Activity.get_by_ap_id_with_object(ap_id) do
+      %Activity{data: %{"type" => "Create"}} = activity ->
         build_flag_object(activity)
 
-      nil ->
-        if activity = Activity.get_by_object_ap_id_with_object(id) do
-          build_flag_object(activity)
-        else
-          %{"id" => id, "deleted" => true}
+      _ ->
+        case Activity.get_by_object_ap_id_with_object(ap_id) do
+          %Activity{data: %{"type" => "Create"}} = activity ->
+            build_flag_object(activity)
+
+          _ ->
+            %{"id" => ap_id, "deleted" => true}
         end
     end
   end
 
-  defp build_flag_object(_), do: []
+  defp build_flag_object(_), do: nil
 
   #### Report-related helpers
   def get_reports(params, page, page_size) do
