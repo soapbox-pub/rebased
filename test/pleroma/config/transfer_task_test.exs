@@ -82,6 +82,7 @@ defmodule Pleroma.Config.TransferTaskTest do
       on_exit(fn -> Restarter.Pleroma.refresh() end)
     end
 
+    @tag :erratic
     test "don't restart if no reboot time settings were changed" do
       clear_config(:emoji)
       insert(:config, key: :emoji, value: [groups: [a: 1, b: 2]])
@@ -92,18 +93,21 @@ defmodule Pleroma.Config.TransferTaskTest do
              )
     end
 
+    @tag :erratic
     test "on reboot time key" do
       clear_config(:shout)
       insert(:config, key: :shout, value: [enabled: false])
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
+    @tag :erratic
     test "on reboot time subkey" do
       clear_config(Pleroma.Captcha)
       insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
+    @tag :erratic
     test "don't restart pleroma on reboot time key and subkey if there is false flag" do
       clear_config(:shout)
       clear_config(Pleroma.Captcha)
