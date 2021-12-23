@@ -8,7 +8,7 @@ defmodule Pleroma.Mixfile do
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
-      elixirc_options: [warnings_as_errors: warnings_as_errors(Mix.env())],
+      elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -91,8 +91,7 @@ defmodule Pleroma.Mixfile do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  defp warnings_as_errors(:prod), do: false
-  defp warnings_as_errors(_), do: true
+  defp warnings_as_errors, do: System.get_env("CI") == "true"
 
   # Specifies OAuth dependencies.
   defp oauth_deps do
