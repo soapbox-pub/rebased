@@ -1718,6 +1718,38 @@ defmodule Pleroma.UserTest do
     assert user.banner == %{}
   end
 
+  describe "set_suggestion" do
+    test "suggests a user" do
+      user = insert(:user, is_suggested: false)
+      refute user.is_suggested
+      {:ok, user} = User.set_suggestion(user, true)
+      assert user.is_suggested
+    end
+
+    test "suggests a list of users" do
+      unsuggested_users = [
+        insert(:user, is_suggested: false),
+        insert(:user, is_suggested: false),
+        insert(:user, is_suggested: false)
+      ]
+
+      {:ok, users} = User.set_suggestion(unsuggested_users, true)
+
+      assert Enum.count(users) == 3
+
+      Enum.each(users, fn user ->
+        assert user.is_suggested
+      end)
+    end
+
+    test "unsuggests a user" do
+      user = insert(:user, is_suggested: true)
+      assert user.is_suggested
+      {:ok, user} = User.set_suggestion(user, false)
+      refute user.is_suggested
+    end
+  end
+
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
@@ -2410,13 +2442,16 @@ defmodule Pleroma.UserTest do
   test "active_user_count/1" do
     insert(:user)
     insert(:user, %{local: false})
-    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -5)})
-    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -3)})
     insert(:user, %{last_active_at: NaiveDateTime.utc_now()})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), days: -15)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), weeks: -6)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), months: -7)})
+    insert(:user, %{last_active_at: Timex.shift(NaiveDateTime.utc_now(), years: -2)})
 
     assert User.active_user_count() == 2
-    assert User.active_user_count(6) == 3
-    assert User.active_user_count(1) == 1
+    assert User.active_user_count(180) == 3
+    assert User.active_user_count(365) == 4
+    assert User.active_user_count(1000) == 5
   end
 
   describe "pins" do

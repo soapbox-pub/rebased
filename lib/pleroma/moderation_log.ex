@@ -341,6 +341,26 @@ defmodule Pleroma.ModerationLog do
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
+          "action" => "add_suggestion",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} added suggested users: #{users_to_nicknames_string(users)}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "remove_suggestion",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} removed suggested users: #{users_to_nicknames_string(users)}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
           "nicknames" => nicknames,
           "tags" => tags,
           "action" => "tag"

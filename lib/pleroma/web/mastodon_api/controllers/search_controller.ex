@@ -17,6 +17,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   require Logger
 
+  @search_limit 40
+
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   # Note: Mastodon doesn't allow unauthenticated access (requires read:accounts / read:search)
@@ -77,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     [
       resolve: params[:resolve],
       following: params[:following],
-      limit: params[:limit],
+      limit: min(params[:limit], @search_limit),
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),

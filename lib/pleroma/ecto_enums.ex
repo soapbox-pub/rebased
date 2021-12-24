@@ -9,7 +9,8 @@ defenum(Pleroma.UserRelationship.Type,
   mute: 2,
   reblog_mute: 3,
   notification_mute: 4,
-  inverse_subscription: 5
+  inverse_subscription: 5,
+  suggestion_dismiss: 6
 )
 
 defenum(Pleroma.FollowingRelationship.State,
