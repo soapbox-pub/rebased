@@ -171,9 +171,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
 
   defp failed_objects_query do
     from(o in Object)
-    |> join(:inner, [o], dmf in DataMigrationFailedId,
-      on: dmf.record_id == o.id
-    )
+    |> join(:inner, [o], dmf in DataMigrationFailedId, on: dmf.record_id == o.id)
     |> where([_o, dmf], dmf.data_migration_id == ^data_migration_id())
     |> order_by([o], asc: o.id)
   end
