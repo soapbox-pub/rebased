@@ -15,6 +15,14 @@ defmodule Pleroma.Repo.Migrations.ChangeObjectIdToFlake do
     add primary key (id)
     """)
 
+    # Update data_migration_failed_ids
+    execute("""
+    alter table data_migration_failed_ids
+    drop constraint data_migration_failed_ids_pkey cascade,
+    alter column record_id set data type uuid using cast( lpad( to_hex(record_id), 32, '0') as uuid),
+    add primary key (data_migration_id, record_id)
+    """)
+
     # Update chat message foreign key
     execute("""
     alter table chat_message_references
