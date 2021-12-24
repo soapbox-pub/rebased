@@ -48,6 +48,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
     refute RateLimiter.disabled?(build_conn())
   end
 
+  @tag :erratic
   test "it restricts based on config values" do
     limiter_name = :test_plug_opts
     scale = 80
@@ -137,6 +138,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
   end
 
   describe "unauthenticated users" do
+    @tag :erratic
     test "are restricted based on remote IP" do
       limiter_name = :test_unauthenticated
       clear_config([:rate_limit, limiter_name], [{1000, 5}, {1, 10}])
@@ -174,6 +176,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
       :ok
     end
 
+    @tag :erratic
     test "can have limits separate from unauthenticated connections" do
       limiter_name = :test_authenticated1
 
@@ -199,6 +202,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
       assert conn.halted
     end
 
+    @tag :erratic
     test "different users are counted independently" do
       limiter_name = :test_authenticated2
       clear_config([:rate_limit, limiter_name], [{1, 10}, {1000, 5}])

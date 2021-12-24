@@ -269,6 +269,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         ap_id: user.ap_id,
         also_known_as: user.also_known_as,
         is_confirmed: user.is_confirmed,
+        is_suggested: user.is_suggested,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,
         hide_follows_count: user.hide_follows_count,
