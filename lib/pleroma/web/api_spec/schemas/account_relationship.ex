@@ -24,7 +24,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
       muting_notifications: %Schema{type: :boolean},
       requested: %Schema{type: :boolean},
       showing_reblogs: %Schema{type: :boolean},
-      subscribing: %Schema{type: :boolean}
+      subscribing: %Schema{type: :boolean},
+      notifying: %Schema{type: :boolean}
     },
     example: %{
       "blocked_by" => false,
@@ -38,7 +39,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
       "muting_notifications" => false,
       "requested" => false,
       "showing_reblogs" => true,
-      "subscribing" => false
+      "subscribing" => false,
+      "notifying" => false
     }
   })
 end

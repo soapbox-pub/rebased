@@ -226,6 +226,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
                 type: :boolean,
                 description: "Receive this account's reblogs in home timeline? Defaults to true.",
                 default: true
+              },
+              notify: %Schema{
+                type: :boolean,
+                description:
+                  "Receive notifications for all statuses posted by the account? Defaults to false.",
+                default: false
               }
             }
           },
@@ -688,6 +694,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "requested" => false,
           "domain_blocking" => false,
           "subscribing" => false,
+          "notifying" => false,
           "endorsed" => true
         },
         %{
@@ -702,6 +709,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "requested" => true,
           "domain_blocking" => false,
           "subscribing" => false,
+          "notifying" => false,
           "endorsed" => false
         },
         %{
@@ -716,6 +724,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "requested" => false,
           "domain_blocking" => true,
           "subscribing" => true,
+          "notifying" => true,
           "endorsed" => false
         }
       ]
