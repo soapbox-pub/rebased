@@ -274,7 +274,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       requested: false,
       domain_blocking: false,
       showing_reblogs: true,
-      endorsed: false
+      endorsed: false,
+      note: ""
     }
 
     test "represent a relationship for the following and followed user" do

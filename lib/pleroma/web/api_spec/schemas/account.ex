@@ -194,6 +194,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           "id" => "9tKi3esbG7OQgZ2920",
           "muting" => false,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => false,
           "showing_reblogs" => true,
           "subscribing" => false,
