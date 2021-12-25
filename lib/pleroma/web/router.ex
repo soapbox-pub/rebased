@@ -151,6 +151,7 @@ defmodule Pleroma.Web.Router do
     get("/emoji", UtilController, :emoji)
     get("/captcha", UtilController, :captcha)
     get("/healthcheck", UtilController, :healthcheck)
+    post("/remote_interaction", UtilController, :remote_interaction)
   end
 
   scope "/api/v1/pleroma", Pleroma.Web do

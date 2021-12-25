@@ -62,6 +62,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def remote_interaction(%{body_params: %{ap_id: ap_id, profile: profile}} = conn, _params) do
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile) do
+      conn
+      |> json(%{url: String.replace(template, "{uri}", ap_id)})
+    else
+      _e -> json(conn, %{error: "Couldn't find user"})
+    end
+  end
+
   def frontend_configurations(conn, _params) do
     render(conn, "frontend_configurations.json")
   end
