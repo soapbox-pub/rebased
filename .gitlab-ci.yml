@@ -93,6 +93,27 @@ unit-testing:
     - mix ecto.migrate
     - mix coveralls --preload-modules
 
+unit-testing-erratic:
+  stage: test
+  retry: 2
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
+  cache: &testing_cache_policy
+    <<: *global_cache_policy
+    policy: pull
+
+  services:
+  - name: postgres:13
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix test --only=erratic
+
 # Removed to fix CI issue. In this early state it wasn't adding much value anyway.
 # TODO Fix and reinstate federated testing
 # federated-testing:
