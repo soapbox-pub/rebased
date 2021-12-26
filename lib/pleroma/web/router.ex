@@ -199,7 +199,6 @@ defmodule Pleroma.Web.Router do
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
 
-    get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
     get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
     patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
