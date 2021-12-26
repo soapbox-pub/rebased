@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
+- Handle Reject for already-accepted Follows properly
+- Display OpenGraph data on alternative notice routes.
 
 ### Removed
 
@@ -65,6 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Attachment dimensions and blurhashes are federated when available.
 - Mastodon API: support `poll` notification.
 - Pinned posts federation
+- AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
 
 ### Fixed
 - Don't crash so hard when email settings are invalid.

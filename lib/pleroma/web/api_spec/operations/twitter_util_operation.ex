@@ -191,6 +191,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       parameters: [
         Operation.parameter(:password, :query, :string, "Password")
       ],
+      requestBody: request_body("Parameters", delete_account_request(), required: false),
       responses: %{
         200 =>
           Operation.response("Success", "application/json", %Schema{
@@ -235,6 +236,50 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
       operationId: "UtilController.remote_subscribe",
       parameters: [],
       responses: %{200 => Operation.response("Web Page", "test/html", %Schema{type: :string})}
+    }
+  end
+
+  def remote_interaction_operation do
+    %Operation{
+      tags: ["Accounts"],
+      summary: "Remote interaction",
+      operationId: "UtilController.remote_interaction",
+      requestBody: request_body("Parameters", remote_interaction_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Remote interaction URL", "application/json", %Schema{type: :object})
+      }
+    }
+  end
+
+  defp remote_interaction_request do
+    %Schema{
+      title: "RemoteInteractionRequest",
+      description: "POST body for remote interaction",
+      type: :object,
+      required: [:ap_id, :profile],
+      properties: %{
+        ap_id: %Schema{type: :string, description: "Profile or status ActivityPub ID"},
+        profile: %Schema{type: :string, description: "Remote profile webfinger"}
+      }
+    }
+  end
+
+  defp delete_account_request do
+    %Schema{
+      title: "AccountDeleteRequest",
+      description: "POST body for deleting one's own account",
+      type: :object,
+      properties: %{
+        password: %Schema{
+          type: :string,
+          description: "The user's own password for confirmation.",
+          format: :password
+        }
+      },
+      example: %{
+        "password" => "prettyp0ony1313"
+      }
     }
   end
 end

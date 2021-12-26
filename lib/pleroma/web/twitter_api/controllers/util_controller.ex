@@ -62,6 +62,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def remote_interaction(%{body_params: %{ap_id: ap_id, profile: profile}} = conn, _params) do
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile) do
+      conn
+      |> json(%{url: String.replace(template, "{uri}", ap_id)})
+    else
+      _e -> json(conn, %{error: "Couldn't find user"})
+    end
+  end
+
   def frontend_configurations(conn, _params) do
     render(conn, "frontend_configurations.json")
   end
@@ -123,8 +132,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def delete_account(%{assigns: %{user: user}} = conn, params) do
-    password = params[:password] || ""
+  def delete_account(%{assigns: %{user: user}, body_params: body_params} = conn, params) do
+    # This endpoint can accept a query param or JSON body for backwards-compatibility.
+    # Submitting a JSON body is recommended, so passwords don't end up in server logs.
+    password = body_params[:password] || params[:password] || ""
 
     case CommonAPI.Utils.confirm_current_password(user, password) do
       {:ok, user} ->

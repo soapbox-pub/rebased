@@ -282,9 +282,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             "id" => "9toJCsKN7SmSf3aj5c",
             "muting" => false,
             "muting_notifications" => false,
+            "note" => "",
             "requested" => false,
             "showing_reblogs" => true,
-            "subscribing" => false
+            "subscribing" => false,
+            "notifying" => false
           },
           "skip_thread_containment" => false,
           "tags" => []

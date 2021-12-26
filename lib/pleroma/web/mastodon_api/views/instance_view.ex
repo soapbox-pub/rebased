@@ -59,6 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "mastodon_api",
       "mastodon_api_streaming",
       "polls",
+      "v2_suggestions",
       "pleroma_explicit_addressing",
       "shareable_emoji_packs",
       "multifetch",
@@ -83,7 +84,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
-      "pleroma_chat_messages"
+      "pleroma_chat_messages",
+      if Config.get([:instance, :show_reactions]) do
+        "exposable_reactions"
+      end,
+      if Config.get([:instance, :profile_directory]) do
+        "profile_directory"
+      end
     ]
     |> Enum.filter(& &1)
   end

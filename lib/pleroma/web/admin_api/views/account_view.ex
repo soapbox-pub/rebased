@@ -80,6 +80,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "tags" => user.tags || [],
       "is_confirmed" => user.is_confirmed,
       "is_approved" => user.is_approved,
+      "is_suggested" => user.is_suggested,
       "url" => user.uri || user.ap_id,
       "registration_reason" => user.registration_reason,
       "actor_type" => user.actor_type,
