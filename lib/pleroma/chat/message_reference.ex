@@ -20,7 +20,7 @@ defmodule Pleroma.Chat.MessageReference do
   @primary_key {:id, FlakeId.Ecto.Type, autogenerate: true}
 
   schema "chat_message_references" do
-    belongs_to(:object, Object)
+    belongs_to(:object, Object, type: FlakeId.Ecto.CompatType)
     belongs_to(:chat, Chat, type: FlakeId.Ecto.CompatType)
 
     field(:unread, :boolean, default: true)

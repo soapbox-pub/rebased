@@ -52,7 +52,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
 
       field(:context, :string)
       # short identifier for PleromaFE to group statuses by context
-      field(:context_id, :integer)
+      field(:context_id, :string)
 
       field(:sensitive, :boolean, default: false)
       field(:replies_count, :integer, default: 0)

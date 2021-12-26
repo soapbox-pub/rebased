@@ -15,7 +15,7 @@ defmodule Pleroma.Delivery do
 
   schema "deliveries" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
-    belongs_to(:object, Object)
+    belongs_to(:object, Object, type: FlakeId.Ecto.CompatType)
   end
 
   def changeset(delivery, params \\ %{}) do

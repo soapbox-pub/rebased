@@ -10,13 +10,14 @@ defmodule Pleroma.Hashtag do
 
   alias Ecto.Multi
   alias Pleroma.Hashtag
+  alias Pleroma.HashtagObject
   alias Pleroma.Object
   alias Pleroma.Repo
 
   schema "hashtags" do
     field(:name, :string)
 
-    many_to_many(:objects, Object, join_through: "hashtags_objects", on_replace: :delete)
+    many_to_many(:objects, Object, join_through: HashtagObject, on_replace: :delete)
 
     timestamps()
   end
@@ -80,7 +81,7 @@ defmodule Pleroma.Hashtag do
 
   def unlink(%Object{id: object_id}) do
     with {_, hashtag_ids} <-
-           from(hto in "hashtags_objects",
+           from(hto in HashtagObject,
              where: hto.object_id == ^object_id,
              select: hto.hashtag_id
            )

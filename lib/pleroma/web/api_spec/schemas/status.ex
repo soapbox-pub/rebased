@@ -143,7 +143,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
           },
           conversation_id: %Schema{
-            type: :integer,
+            type: :string,
             description: "The ID of the AP context the status is associated with (if any)"
           },
           direct_conversation_id: %Schema{
@@ -319,7 +319,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       "pinned" => false,
       "pleroma" => %{
         "content" => %{"text/plain" => "foobar"},
-        "conversation_id" => 345_972,
+        "conversation_id" => "AEXFhY7X4zd8hZK8oK",
         "direct_conversation_id" => nil,
         "emoji_reactions" => [],
         "expires_at" => nil,
