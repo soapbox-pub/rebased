@@ -87,6 +87,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "pleroma_chat_messages",
       if Config.get([:instance, :show_reactions]) do
         "exposable_reactions"
+      end,
+      if Config.get([:instance, :profile_directory]) do
+        "profile_directory"
       end
     ]
     |> Enum.filter(& &1)

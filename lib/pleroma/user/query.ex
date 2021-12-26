@@ -47,6 +47,7 @@ defmodule Pleroma.User.Query do
             is_admin: boolean(),
             is_moderator: boolean(),
             is_suggested: boolean(),
+            is_discoverable: boolean(),
             super_users: boolean(),
             invisible: boolean(),
             internal: boolean(),
@@ -170,6 +171,10 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:is_suggested, bool}, query) do
     where(query, [u], u.is_suggested == ^bool)
+  end
+
+  defp compose_query({:is_discoverable, bool}, query) do
+    where(query, [u], u.is_discoverable == ^bool)
   end
 
   defp compose_query({:followers, %User{id: id}}, query) do
