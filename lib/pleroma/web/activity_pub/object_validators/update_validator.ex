@@ -13,11 +13,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+      end
+    end
+
     field(:actor, ObjectValidators.ObjectID)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
     # In this case, we save the full object in this activity instead of just a
     # reference, so we can always see what was actually changed by this.
     field(:object, :map)

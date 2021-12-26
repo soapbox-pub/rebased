@@ -38,9 +38,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
         end
       else
         Logger.debug(
-          "MRF.StealEmojiPolicy: :#{shortcode}: at #{url} (#{byte_size(response.body)} B) over size limit (#{
-            size_limit
-          } B)"
+          "MRF.StealEmojiPolicy: :#{shortcode}: at #{url} (#{byte_size(response.body)} B) over size limit (#{size_limit} B)"
         )
 
         nil

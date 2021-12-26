@@ -709,9 +709,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => ^follower2_id}, %{"id" => ^follower1_id}] =
                conn
                |> get(
-                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{
-                   follower3_id
-                 }"
+                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{follower3_id}"
                )
                |> json_response_and_validate_schema(200)
 
@@ -922,6 +920,27 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                conn
                |> get("/api/v1/timelines/home")
                |> json_response_and_validate_schema(200)
+    end
+
+    test "following with subscription and unsubscribing" do
+      %{conn: conn} = oauth_access(["follow"])
+      followed = insert(:user)
+
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: true})
+
+      assert %{"id" => _id, "subscribing" => true} =
+               json_response_and_validate_schema(ret_conn, 200)
+
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: false})
+
+      assert %{"id" => _id, "subscribing" => false} =
+               json_response_and_validate_schema(ret_conn, 200)
     end
 
     test "following / unfollowing errors", %{user: user, conn: conn} do
@@ -1792,5 +1811,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert [%{"id" => ^id2}] = result
+  end
+
+  test "create a note on a user" do
+    %{conn: conn} = oauth_access(["write:accounts", "read:follows"])
+    other_user = insert(:user)
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/accounts/#{other_user.id}/note", %{
+      "comment" => "Example note"
+    })
+
+    assert [%{"note" => "Example note"}] =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> get("/api/v1/accounts/relationships?id=#{other_user.id}")
+             |> json_response_and_validate_schema(200)
   end
 end

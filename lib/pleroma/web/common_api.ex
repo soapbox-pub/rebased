@@ -487,9 +487,7 @@ defmodule Pleroma.Web.CommonAPI do
     else
       {what, result} = error ->
         Logger.warn(
-          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{
-            activity_id
-          }"
+          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
         {:error, error}

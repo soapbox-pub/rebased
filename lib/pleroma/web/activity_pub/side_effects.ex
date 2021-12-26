@@ -199,8 +199,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
+      {:ok, _user} = ActivityPub.update_last_status_at_if_public(user, object)
 
-      if in_reply_to = object.data["inReplyTo"] && object.data["type"] != "Answer" do
+      if in_reply_to = object.data["type"] != "Answer" && object.data["inReplyTo"] do
         Object.increase_replies_count(in_reply_to)
       end
 
@@ -444,7 +445,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_object_creation(%{"type" => objtype} = object, _activity, meta)
-      when objtype in ~w[Audio Video Question Event Article Note Page] do
+      when objtype in ~w[Audio Video Event Article Note Page] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end

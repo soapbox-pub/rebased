@@ -9,7 +9,7 @@
 * GNU make
 * CMake
 
-## Optionnal dependencies
+## Optional dependencies
 
 * ImageMagick
 * FFmpeg

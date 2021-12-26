@@ -124,7 +124,6 @@ defmodule Pleroma.User do
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
-    field(:mastofe_settings, :map, default: nil)
     field(:uri, ObjectValidators.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
@@ -151,6 +150,7 @@ defmodule Pleroma.User do
     field(:accepts_email_list, :boolean, default: false)
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
+    field(:last_status_at, :naive_datetime)
 
     embeds_one(
       :notification_settings,
@@ -1734,7 +1734,6 @@ defmodule Pleroma.User do
       ap_enabled: false,
       is_moderator: false,
       is_admin: false,
-      mastofe_settings: nil,
       mascot: nil,
       emoji: %{},
       pleroma_settings_store: %{},
@@ -2270,7 +2269,7 @@ defmodule Pleroma.User do
   def change_email(user, email) do
     user
     |> cast(%{email: email}, [:email])
-    |> validate_required([:email])
+    |> maybe_validate_required_email(false)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
     |> update_and_set_cache()
@@ -2350,13 +2349,6 @@ defmodule Pleroma.User do
     user
     |> cast(%{mascot: url}, [:mascot])
     |> validate_required([:mascot])
-    |> update_and_set_cache()
-  end
-
-  def mastodon_settings_update(user, settings) do
-    user
-    |> cast(%{mastofe_settings: settings}, [:mastofe_settings])
-    |> validate_required([:mastofe_settings])
     |> update_and_set_cache()
   end
 
@@ -2505,12 +2497,24 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def active_user_count(weeks \\ 4) do
-    active_after = Timex.shift(NaiveDateTime.utc_now(), weeks: -weeks)
+  def active_user_count(days \\ 30) do
+    active_after = Timex.shift(NaiveDateTime.utc_now(), days: -days)
 
     __MODULE__
     |> where([u], u.last_active_at >= ^active_after)
     |> where([u], u.local == true)
     |> Repo.aggregate(:count)
+  end
+
+  def update_last_status_at(user) do
+    User
+    |> where(id: ^user.id)
+    |> update([u], set: [last_status_at: fragment("NOW()")])
+    |> select([u], u)
+    |> Repo.update_all([])
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 end

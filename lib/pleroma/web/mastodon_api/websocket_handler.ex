@@ -49,9 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def websocket_init(state) do
     Logger.debug(
-      "#{__MODULE__} accepted websocket connection for user #{
-        (state.user || %{id: "anonymous"}).id
-      }, topic #{state.topic}"
+      "#{__MODULE__} accepted websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic}"
     )
 
     Streamer.add_socket(state.topic, state.user)
@@ -106,9 +104,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def terminate(reason, _req, state) do
     Logger.debug(
-      "#{__MODULE__} terminating websocket connection for user #{
-        (state.user || %{id: "anonymous"}).id
-      }, topic #{state.topic || "?"}: #{inspect(reason)}"
+      "#{__MODULE__} terminating websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic || "?"}: #{inspect(reason)}"
     )
 
     Streamer.remove_socket(state.topic)

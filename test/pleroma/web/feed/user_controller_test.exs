@@ -196,13 +196,26 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
                ).resp_body
     end
 
-    test "with html format, it returns error when user is not found", %{conn: conn} do
+    test "with html format, it falls back to frontend when user is remote", %{conn: conn} do
+      user = insert(:user, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      response =
+        conn
+        |> get("/users/#{user.nickname}")
+        |> response(200)
+
+      assert response =~ "</html>"
+    end
+
+    test "with html format, it falls back to frontend when user is not found", %{conn: conn} do
       response =
         conn
         |> get("/users/jimm")
-        |> json_response(404)
+        |> response(200)
 
-      assert response == %{"error" => "Not found"}
+      assert response =~ "</html>"
     end
 
     test "with non-html / non-json format, it redirects to user feed in atom format", %{

@@ -1313,9 +1313,7 @@ defmodule HttpRequestMock do
 
   def get(url, query, body, headers) do
     {:error,
-     "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{
-       inspect(headers)
-     }"}
+     "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
   end
 
   # POST Requests
@@ -1381,9 +1379,7 @@ defmodule HttpRequestMock do
 
   def post(url, query, body, headers) do
     {:error,
-     "Mock response not implemented for POST #{inspect(url)}, #{query}, #{inspect(body)}, #{
-       inspect(headers)
-     }"}
+     "Mock response not implemented for POST #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
   end
 
   # Most of the rich media mocks are missing HEAD requests, so we just return 404.
@@ -1398,8 +1394,6 @@ defmodule HttpRequestMock do
 
   def head(url, query, body, headers) do
     {:error,
-     "Mock response not implemented for HEAD #{inspect(url)}, #{query}, #{inspect(body)}, #{
-       inspect(headers)
-     }"}
+     "Mock response not implemented for HEAD #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
   end
 end

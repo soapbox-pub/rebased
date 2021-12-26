@@ -29,9 +29,7 @@ defmodule Pleroma.Telemetry.Logger do
         _
       ) do
     Logger.debug(fn ->
-      "Connection pool is exhausted (reached #{max_connections} connections). Starting idle connection cleanup to reclaim as much as #{
-        reclaim_max
-      } connections"
+      "Connection pool is exhausted (reached #{max_connections} connections). Starting idle connection cleanup to reclaim as much as #{reclaim_max} connections"
     end)
   end
 
@@ -73,9 +71,7 @@ defmodule Pleroma.Telemetry.Logger do
         _
       ) do
     Logger.warn(fn ->
-      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{
-        inspect(reason)
-      }"
+      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{inspect(reason)}"
     end)
   end
 
