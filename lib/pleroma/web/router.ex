@@ -650,6 +650,11 @@ defmodule Pleroma.Web.Router do
     get("/activities/:uuid", OStatus.OStatusController, :activity)
     get("/notice/:id", OStatus.OStatusController, :notice)
 
+    # Notice compatibility routes for other frontends
+    get("/@:nickname/:id", OStatus.OStatusController, :notice)
+    get("/@:nickname/posts/:id", OStatus.OStatusController, :notice)
+    get("/:nickname/status/:id", OStatus.OStatusController, :notice)
+
     # Mastodon compatibility routes
     get("/users/:nickname/statuses/:id", OStatus.OStatusController, :object)
     get("/users/:nickname/statuses/:id/activity", OStatus.OStatusController, :activity)
