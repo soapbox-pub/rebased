@@ -1,4 +1,4 @@
-image: elixir:1.9.4
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
   POSTGRES_DB: pleroma_test
@@ -26,12 +26,7 @@ stages:
 before_script:
   - echo $MIX_ENV
   - rm -rf _build/*/lib/pleroma
-  - apt-get update && apt-get install -y cmake
-  - mix local.hex --force
-  - mix local.rebar --force
   - mix deps.get
-  - apt-get -qq update
-  - apt-get install -y libmagic-dev
 
 after_script:
   - rm -rf _build/*/lib/pleroma
@@ -88,7 +83,6 @@ unit-testing:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
-    - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
     - mix ecto.create
     - mix ecto.migrate
     - mix coveralls --preload-modules
@@ -146,7 +140,6 @@ unit-testing-rum:
     <<: *global_variables
     RUM_ENABLED: "true"
   script:
-    - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
     - mix ecto.create
     - mix ecto.migrate
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
