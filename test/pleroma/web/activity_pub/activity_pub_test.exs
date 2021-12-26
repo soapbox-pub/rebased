@@ -776,6 +776,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
   end
 
+  test "doesn't return activities from deactivated users" do
+    _user = insert(:user)
+    deactivated = insert(:user)
+    active = insert(:user)
+    {:ok, activity_one} = CommonAPI.post(deactivated, %{status: "hey!"})
+    {:ok, activity_two} = CommonAPI.post(active, %{status: "yay!"})
+    {:ok, _updated_user} = User.set_activation(deactivated, false)
+
+    activities = ActivityPub.fetch_activities([], %{})
+
+    refute Enum.member?(activities, activity_one)
+    assert Enum.member?(activities, activity_two)
+  end
+
+  test "always see your own posts even when they address people you block" do
+    user = insert(:user)
+    blockee = insert(:user)
+
+    {:ok, _} = User.block(user, blockee)
+    {:ok, activity} = CommonAPI.post(user, %{status: "hey! @#{blockee.nickname}"})
+
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user})
+
+    assert Enum.member?(activities, activity)
+  end
+
   test "doesn't return transitive interactions concerning blocked users" do
     blocker = insert(:user)
     blockee = insert(:user)
@@ -873,6 +899,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
 
     refute repeat_activity in activities
+  end
+
+  test "see your own posts even when they adress actors from blocked domains" do
+    user = insert(:user)
+
+    domain = "dogwhistle.zone"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+
+    {:ok, user} = User.block_domain(user, domain)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "hey! @#{domain_user.nickname}"})
+
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user})
+
+    assert Enum.member?(activities, activity)
   end
 
   test "does return activities from followed users on blocked domains" do

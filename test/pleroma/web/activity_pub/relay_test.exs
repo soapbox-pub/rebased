@@ -148,7 +148,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert {:ok, %Activity{} = activity} = Relay.publish(note)
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
-      assert activity.data["to"] == [service_actor.follower_address]
+      assert service_actor.follower_address in activity.data["to"]
       assert called(Pleroma.Web.Federator.publish(activity))
     end
 

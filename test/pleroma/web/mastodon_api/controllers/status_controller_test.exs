@@ -14,7 +14,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.ScheduledActivityWorker
 
   import Pleroma.Factory
 
@@ -81,6 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "sensitive" => 0
         })
 
+      # Idempotency plug response means detection fail
       assert %{"id" => second_id} = json_response(conn_two, 200)
       assert id == second_id
 
@@ -703,11 +706,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert {:ok, %{id: activity_id}} =
-               perform_job(Pleroma.Workers.ScheduledActivityWorker, %{
+               perform_job(ScheduledActivityWorker, %{
                  activity_id: scheduled_id
                })
 
-      assert Repo.all(Oban.Job) == []
+      refute_enqueued(worker: ScheduledActivityWorker)
 
       object =
         Activity
@@ -1558,7 +1561,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       |> assign(:token, insert(:oauth_token, user: user3, scopes: ["read:statuses"]))
       |> get("api/v1/timelines/home")
 
-    [reblogged_activity] = json_response(conn3, 200)
+    [reblogged_activity] = json_response_and_validate_schema(conn3, 200)
 
     assert reblogged_activity["reblog"]["in_reply_to_id"] == replied_to.id
 
@@ -1909,10 +1912,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "visibility" => "local"
       })
 
-    local = Pleroma.Constants.as_local_public()
+    local = Utils.as_local_public()
 
     assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
-             json_response(conn_one, 200)
+             json_response_and_validate_schema(conn_one, 200)
 
     assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
   end

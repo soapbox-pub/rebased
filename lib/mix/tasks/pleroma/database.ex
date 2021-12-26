@@ -96,6 +96,15 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
     |> Repo.delete_all(timeout: :infinity)
 
+    prune_hashtags_query = """
+    DELETE FROM hashtags AS ht
+    WHERE NOT EXISTS (
+      SELECT 1 FROM hashtags_objects hto
+      WHERE ht.id = hto.hashtag_id)
+    """
+
+    Repo.query(prune_hashtags_query)
+
     if Keyword.get(options, :vacuum) do
       Maintenance.vacuum("full")
     end
@@ -200,7 +209,9 @@ defmodule Mix.Tasks.Pleroma.Database do
           new.fts_content := to_tsvector(new.data->>'content');
           RETURN new;
           END
-          $$ LANGUAGE plpgsql"
+          $$ LANGUAGE plpgsql",
+          [],
+          timeout: :infinity
         )
 
         shell_info("Refresh RUM index")
@@ -210,7 +221,9 @@ defmodule Mix.Tasks.Pleroma.Database do
 
         Ecto.Adapters.SQL.query!(
           Pleroma.Repo,
-          "CREATE INDEX objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); "
+          "CREATE INDEX CONCURRENTLY objects_fts ON objects USING gin(to_tsvector('#{tsconfig}', data->>'content')); ",
+          [],
+          timeout: :infinity
         )
       end
 

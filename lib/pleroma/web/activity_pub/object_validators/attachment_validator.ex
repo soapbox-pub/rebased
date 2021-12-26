@@ -20,6 +20,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       field(:type, :string)
       field(:href, ObjectValidators.Uri)
       field(:mediaType, :string, default: "application/octet-stream")
+      field(:width, :integer)
+      field(:height, :integer)
     end
   end
 
@@ -51,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
     data = fix_media_type(data)
 
     struct
-    |> cast(data, [:type, :href, :mediaType])
+    |> cast(data, [:type, :href, :mediaType, :width, :height])
     |> validate_inclusion(:type, ["Link"])
     |> validate_required([:type, :href, :mediaType])
   end
@@ -59,19 +61,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   def fix_media_type(data) do
     data = Map.put_new(data, "mediaType", data["mimeType"])
 
-    if MIME.valid?(data["mediaType"]) do
+    if is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] do
       data
     else
       Map.put(data, "mediaType", "application/octet-stream")
     end
   end
 
-  defp handle_href(href, mediaType) do
+  defp handle_href(href, mediaType, data) do
     [
       %{
         "href" => href,
         "type" => "Link",
-        "mediaType" => mediaType
+        "mediaType" => mediaType,
+        "width" => data["width"],
+        "height" => data["height"]
       }
     ]
   end
@@ -79,10 +83,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   defp fix_url(data) do
     cond do
       is_binary(data["url"]) ->
-        Map.put(data, "url", handle_href(data["url"], data["mediaType"]))
+        Map.put(data, "url", handle_href(data["url"], data["mediaType"], data))
 
       is_binary(data["href"]) and data["url"] == nil ->
-        Map.put(data, "url", handle_href(data["href"], data["mediaType"]))
+        Map.put(data, "url", handle_href(data["href"], data["mediaType"], data))
 
       true ->
         data

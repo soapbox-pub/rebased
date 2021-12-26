@@ -14,20 +14,12 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  plug(
-    :skip_plug,
-    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug]
-    when action in [:create, :verify_credentials]
-  )
+  plug(:skip_auth when action in [:create, :verify_credentials])
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-
-  @local_mastodon_name "Mastodon-Local"
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AppOperation
 
@@ -41,7 +33,6 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
       |> Map.put(:scopes, scopes)
 
     with cs <- App.register_changeset(%App{}, app_attrs),
-         false <- cs.changes[:client_name] == @local_mastodon_name,
          {:ok, app} <- Repo.insert(cs) do
       render(conn, "show.json", app: app)
     end

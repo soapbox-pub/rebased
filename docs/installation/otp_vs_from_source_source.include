@@ -1,0 +1,3 @@
+{! backend/installation/otp_vs_from_source.include !}
+
+This guide covers a from-source installation. To install using OTP releases, please check out [the OTP guide](./otp_en.md).

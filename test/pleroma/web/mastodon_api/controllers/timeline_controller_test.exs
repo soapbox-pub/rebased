@@ -273,6 +273,24 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       [%{"id" => ^reply_from_me}, %{"id" => ^activity_id}] = response
     end
 
+    test "doesn't return posts from users who blocked you when :blockers_visible is disabled" do
+      clear_config([:activitypub, :blockers_visible], false)
+
+      %{conn: conn, user: blockee} = oauth_access(["read:statuses"])
+      blocker = insert(:user)
+      {:ok, _} = User.block(blocker, blockee)
+
+      conn = assign(conn, :user, blockee)
+
+      {:ok, _} = CommonAPI.post(blocker, %{status: "hey!"})
+
+      response =
+        get(conn, "/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert length(response) == 0
+    end
+
     test "doesn't return replies if follow is posting with users from blocked domain" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)
@@ -905,10 +923,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       %{conn: auth_conn} = oauth_access(["read:statuses"])
 
       res_conn = get(auth_conn, "#{base_uri}?local=true")
-      assert length(json_response(res_conn, 200)) == 1
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 1
 
       res_conn = get(auth_conn, "#{base_uri}?local=false")
-      assert length(json_response(res_conn, 200)) == 2
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 2
     end
 
     test "with default settings on private instances, returns 403 for unauthenticated users", %{
@@ -922,7 +940,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       for local <- [true, false] do
         res_conn = get(conn, "#{base_uri}?local=#{local}")
 
-        assert json_response(res_conn, :unauthorized) == error_response
+        assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
       end
 
       ensure_authenticated_access(base_uri)
@@ -939,7 +957,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       for local <- [true, false] do
         res_conn = get(conn, "#{base_uri}?local=#{local}")
 
-        assert json_response(res_conn, :unauthorized) == error_response
+        assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
       end
 
       ensure_authenticated_access(base_uri)
@@ -951,10 +969,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       clear_config([:restrict_unauthenticated, :timelines, :federated], true)
 
       res_conn = get(conn, "#{base_uri}?local=true")
-      assert length(json_response(res_conn, 200)) == 1
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 1
 
       res_conn = get(conn, "#{base_uri}?local=false")
-      assert json_response(res_conn, :unauthorized) == error_response
+      assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
 
       ensure_authenticated_access(base_uri)
     end
@@ -966,11 +984,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       clear_config([:restrict_unauthenticated, :timelines, :federated], false)
 
       res_conn = get(conn, "#{base_uri}?local=true")
-      assert json_response(res_conn, :unauthorized) == error_response
+      assert json_response_and_validate_schema(res_conn, :unauthorized) == error_response
 
       # Note: local activities get delivered as part of federated timeline
       res_conn = get(conn, "#{base_uri}?local=false")
-      assert length(json_response(res_conn, 200)) == 2
+      assert length(json_response_and_validate_schema(res_conn, 200)) == 2
 
       ensure_authenticated_access(base_uri)
     end

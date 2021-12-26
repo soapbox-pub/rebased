@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   require Pleroma.Constants
 
@@ -125,6 +126,37 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      |> Pleroma.Maps.put_if_present("context", context), []}
   end
 
+  @spec note(ActivityDraft.t()) :: {:ok, map(), keyword()}
+  def note(%ActivityDraft{} = draft) do
+    data =
+      %{
+        "type" => "Note",
+        "to" => draft.to,
+        "cc" => draft.cc,
+        "content" => draft.content_html,
+        "summary" => draft.summary,
+        "sensitive" => draft.sensitive,
+        "context" => draft.context,
+        "attachment" => draft.attachments,
+        "actor" => draft.user.ap_id,
+        "tag" => Keyword.values(draft.tags) |> Enum.uniq()
+      }
+      |> add_in_reply_to(draft.in_reply_to)
+      |> Map.merge(draft.extra)
+
+    {:ok, data, []}
+  end
+
+  defp add_in_reply_to(object, nil), do: object
+
+  defp add_in_reply_to(object, in_reply_to) do
+    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
+      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+    else
+      _ -> object
+    end
+  end
+
   def chat_message(actor, recipient, content, opts \\ []) do
     basic = %{
       "id" => Utils.generate_object_id(),
@@ -223,7 +255,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
           [actor.follower_address]
 
         public? and Visibility.is_local_public?(object) ->
-          [actor.follower_address, object.data["actor"], Pleroma.Constants.as_local_public()]
+          [actor.follower_address, object.data["actor"], Utils.as_local_public()]
 
         public? ->
           [actor.follower_address, object.data["actor"], Pleroma.Constants.as_public()]

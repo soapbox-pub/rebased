@@ -129,6 +129,19 @@ defmodule Pleroma.NotificationTest do
     end
   end
 
+  test "create_poll_notifications/1" do
+    [user1, user2, user3, _, _] = insert_list(5, :user)
+    question = insert(:question, user: user1)
+    activity = insert(:question_activity, question: question)
+
+    {:ok, _, _} = CommonAPI.vote(user2, question, [0])
+    {:ok, _, _} = CommonAPI.vote(user3, question, [1])
+
+    {:ok, notifications} = Notification.create_poll_notifications(activity)
+
+    assert [user2.id, user3.id, user1.id] == Enum.map(notifications, & &1.user_id)
+  end
+
   describe "CommonApi.post/2 notification-related functionality" do
     test_with_mock "creates but does NOT send notification to blocker user",
                    Push,
@@ -624,6 +637,8 @@ defmodule Pleroma.NotificationTest do
         "actor" => user.ap_id,
         "object" => %{
           "type" => "Note",
+          "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "content" => "message with a Mention tag, but no explicit tagging",
           "tag" => [
             %{
@@ -655,6 +670,9 @@ defmodule Pleroma.NotificationTest do
         "actor" => user.ap_id,
         "object" => %{
           "type" => "Note",
+          "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [other_user.ap_id],
           "content" => "hi everyone",
           "attributedTo" => user.ap_id
         }
@@ -951,6 +969,7 @@ defmodule Pleroma.NotificationTest do
         "cc" => [],
         "object" => %{
           "type" => "Note",
+          "id" => remote_user.ap_id <> "/objects/test",
           "content" => "Hello!",
           "tag" => [
             %{

@@ -40,17 +40,30 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidationTest do
       assert LikeValidator.cast_and_validate(valid_like).valid?
     end
 
-    test "sets the 'to' field to the object actor if no recipients are given", %{
+    test "Add object actor from 'to' field if it doesn't owns the like", %{valid_like: valid_like} do
+      user = insert(:user)
+
+      object_actor = valid_like["actor"]
+
+      valid_like =
+        valid_like
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("to", [])
+
+      {:ok, object, _meta} = ObjectValidator.validate(valid_like, [])
+      assert object_actor in object["to"]
+    end
+
+    test "Removes object actor from 'to' field if it owns the like", %{
       valid_like: valid_like,
       user: user
     } do
-      without_recipients =
+      valid_like =
         valid_like
-        |> Map.delete("to")
+        |> Map.put("to", [user.ap_id])
 
-      {:ok, object, _meta} = ObjectValidator.validate(without_recipients, [])
-
-      assert object["to"] == [user.ap_id]
+      {:ok, object, _meta} = ObjectValidator.validate(valid_like, [])
+      refute user.ap_id in object["to"]
     end
 
     test "sets the context field to the context of the object if no context is given", %{
@@ -64,16 +77,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidationTest do
       {:ok, object, _meta} = ObjectValidator.validate(without_context, [])
 
       assert object["context"] == post_activity.data["context"]
-    end
-
-    test "it errors when the actor is missing or not known", %{valid_like: valid_like} do
-      without_actor = Map.delete(valid_like, "actor")
-
-      refute LikeValidator.cast_and_validate(without_actor).valid?
-
-      with_invalid_actor = Map.put(valid_like, "actor", "invalidactor")
-
-      refute LikeValidator.cast_and_validate(with_invalid_actor).valid?
     end
 
     test "it errors when the object is missing or not known", %{valid_like: valid_like} do

@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   @moduledoc "Reject or Word-Replace messages with a keyword or regex"
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   defp string_matches?(string, _) when not is_binary(string) do
     false
   end
@@ -159,6 +159,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
         %{
           key: :replace,
           type: {:list, :tuple},
+          key_placeholder: "instance",
+          value_placeholder: "reason",
           description: """
             **Pattern**: a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
 

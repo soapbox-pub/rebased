@@ -41,7 +41,7 @@
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
-use Mix.Config
+import Config
 
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
@@ -139,6 +139,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
+  live_view: [signing_salt: "U5ELgdEwTD3n1+D5s0rY0AMg8/y1STxZ3Zvsl3bWh+oBcGrYdil0rXqPMRd3Glcq"],
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
   pubsub_server: Pleroma.PubSub,
@@ -190,7 +191,6 @@ config :pleroma, :instance,
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
   description_limit: 5_000,
-  chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
   avatar_upload_limit: 2_000_000,
@@ -322,9 +322,6 @@ config :pleroma, :frontend_configurations,
     subjectLineBehavior: "email",
     theme: "pleroma-dark",
     webPushNotifications: false
-  },
-  masto_fe: %{
-    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :assets,
@@ -353,6 +350,7 @@ config :pleroma, :manifest,
 config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
+  blockers_visible: true,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
@@ -457,9 +455,11 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :pleroma, :chat, enabled: true
+config :pleroma, :shout,
+  enabled: true,
+  limit: 5_000
 
-config :phoenix, :format_encoders, json: Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
 
 config :phoenix, :json_library, Jason
 
@@ -559,6 +559,7 @@ config :pleroma, Oban,
     mailer: 10,
     transmogrifier: 20,
     scheduled_activities: 10,
+    poll_notifications: 10,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,

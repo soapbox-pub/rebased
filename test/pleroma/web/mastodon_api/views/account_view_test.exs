@@ -83,6 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        is_suggested: false,
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
@@ -183,6 +184,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        is_suggested: false,
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
@@ -268,10 +270,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       muting: false,
       muting_notifications: false,
       subscribing: false,
+      notifying: false,
       requested: false,
       domain_blocking: false,
       showing_reblogs: true,
-      endorsed: false
+      endorsed: false,
+      note: ""
     }
 
     test "represent a relationship for the following and followed user" do
@@ -293,6 +297,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
             muting: true,
             muting_notifications: true,
             subscribing: true,
+            notifying: true,
             showing_reblogs: false,
             id: to_string(other_user.id)
           }
@@ -468,6 +473,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                %{user: user, for: user}
              )[:pleroma][:unread_notifications_count] == 7
     end
+
+    test "shows email only to the account owner" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: other_user}
+             )[:pleroma][:email] == nil
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: user}
+             )[:pleroma][:email] == user.email
+    end
   end
 
   describe "follow requests counter" do
@@ -562,12 +584,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       |> Enum.all?(fn
         {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
-          String.starts_with?(url, Pleroma.Web.base_url())
+          String.starts_with?(url, Pleroma.Web.Endpoint.url())
 
         {:emojis, emojis} ->
           Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
-            String.starts_with?(url, Pleroma.Web.base_url()) &&
-              String.starts_with?(static_url, Pleroma.Web.base_url())
+            String.starts_with?(url, Pleroma.Web.Endpoint.url()) &&
+              String.starts_with?(static_url, Pleroma.Web.Endpoint.url())
           end)
 
         _ ->

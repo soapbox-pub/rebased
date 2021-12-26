@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   alias Pleroma.Config
 
   @moduledoc "Accept-list of users from specified instances"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   defp filter_by_list(object, []), do: {:ok, object}
 
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   def describe do
     mrf_user_allowlist =
       Config.get([:mrf_user_allowlist], [])
-      |> Enum.into(%{}, fn {k, v} -> {k, length(v)} end)
+      |> Map.new(fn {k, v} -> {k, length(v)} end)
 
     {:ok, %{mrf_user_allowlist: mrf_user_allowlist}}
   end

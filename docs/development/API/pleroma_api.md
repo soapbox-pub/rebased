@@ -159,10 +159,12 @@ See [Admin-API](admin_api.md)
   "muting": false,
   "muting_notifications": false,
   "subscribing": true,
+  "notifying": true,
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 
@@ -183,10 +185,12 @@ See [Admin-API](admin_api.md)
   "muting": false,
   "muting_notifications": false,
   "subscribing": false,
+  "notifying": false,
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 
@@ -300,7 +304,7 @@ See [Admin-API](admin_api.md)
 * Note: Behaves exactly the same as `POST /api/v1/upload`.
   Can only accept images - any attempt to upload non-image files will be met with `HTTP 415 Unsupported Media Type`.
 
-## `/api/v1/pleroma/notification_settings`
+## `/api/pleroma/notification_settings`
 ### Updates user notification settings
 * Method `PUT`
 * Authentication: required

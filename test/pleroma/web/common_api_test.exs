@@ -18,6 +18,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.PollWorker
 
   import Pleroma.Factory
   import Mock
@@ -48,6 +49,12 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert object.data["type"] == "Question"
       assert object.data["oneOf"] |> length() == 2
+
+      assert_enqueued(
+        worker: PollWorker,
+        args: %{op: "poll_end", activity_id: activity.id},
+        scheduled_at: NaiveDateTime.from_iso8601!(object.data["closed"])
+      )
     end
   end
 
@@ -202,9 +209,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] ==
-               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{
-                 other_user.id
-               }\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
+               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
     end
 
     test "it posts a chat message" do
@@ -519,7 +524,7 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(user, %{status: "hey :blank:"})
 
       assert %{"blank" => url} = Object.normalize(activity).data["emoji"]
-      assert url == "#{Pleroma.Web.base_url()}/emoji/blank.png"
+      assert url == "#{Pleroma.Web.Endpoint.url()}/emoji/blank.png"
     end
 
     test "it copies emoji from the subject of the parent post" do
@@ -539,8 +544,8 @@ defmodule Pleroma.Web.CommonAPITest do
           spoiler_text: ":joker_smile:"
         })
 
-      assert Object.normalize(reply_activity).data["emoji"][":joker_smile:"]
-      refute Object.normalize(reply_activity).data["emoji"][":joker_disapprove:"]
+      assert Object.normalize(reply_activity).data["emoji"]["joker_smile"]
+      refute Object.normalize(reply_activity).data["emoji"]["joker_disapprove"]
     end
 
     test "deactivated users can't post" do

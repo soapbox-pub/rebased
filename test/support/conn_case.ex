@@ -102,9 +102,7 @@ defmodule Pleroma.Web.ConnCase do
               end)
 
             flunk(
-              "Response does not conform to schema of #{op_id} operation: #{
-                Enum.join(errors, "\n")
-              }\n#{inspect(json)}"
+              "Response does not conform to schema of #{op_id} operation: #{Enum.join(errors, "\n")}\n#{inspect(json)}"
             )
         end
       end

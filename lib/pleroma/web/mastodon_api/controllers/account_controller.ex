@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   import Pleroma.Web.ControllerHelper,
     only: [
       add_link_headers: 2,
-      truthy_param?: 1,
       assign_account_by_id: 2,
       embed_relationships?: 1,
       json_response: 3
@@ -16,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   alias Pleroma.Maps
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -25,16 +25,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.OAuthController
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.Utils.Params
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_plug, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :create)
+  plug(:skip_auth when action == :create)
 
-  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:show, :statuses])
+  plug(:skip_public_check when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
@@ -54,7 +54,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     when action in [:verify_credentials, :endorsements, :identity_proofs]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    when action in [:update_credentials, :note]
+  )
 
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :lists)
 
@@ -80,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
   @relationship_actions [:follow, :unfollow]
-  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
+  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock note)a
 
   plug(
     RateLimiter,
@@ -188,7 +192,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->
-        Maps.put_if_present(acc, key, params[key], &{:ok, truthy_param?(&1)})
+        Maps.put_if_present(acc, key, params[key], &{:ok, Params.truthy_param?(&1)})
       end)
       |> Maps.put_if_present(:name, params[:display_name])
       |> Maps.put_if_present(:bio, params[:note])
@@ -433,6 +437,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/note"
+  def note(
+        %{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn,
+        _params
+      ) do
+    with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
+      render(conn, "relationship.json", user: noter, target: target)
     end
   end
 

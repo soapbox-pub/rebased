@@ -1,5 +1,9 @@
 # Installing on Linux using OTP releases
 
+{! backend/installation/otp_vs_from_source.include !}
+
+This guide covers a installation using an OTP release. To install Pleroma from source, please check out the corresponding guide for your distro.
+
 ## Pre-requisites
 * A machine running Linux with GNU (e.g. Debian, Ubuntu) or musl (e.g. Alpine) libc and `x86_64`, `aarch64` or `armv7l` CPU, you have root access to. If you are not sure if it's compatible see [Detecting flavour section](#detecting-flavour) below
 * A (sub)domain pointed to the machine
@@ -31,7 +35,7 @@ Other than things bundled in the OTP release Pleroma depends on:
 
 === "Alpine"
     ```
-    echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
+    awk 'NR==2' /etc/apk/repositories | sed 's/main/community/' | tee -a /etc/apk/repositories
     apk update
     apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot file-dev
     ```
@@ -50,7 +54,6 @@ Per [`docs/installation/optional/media_graphics_packages.md`](optional/media_gra
 
 === "Alpine"
     ```
-    echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
     apk update
     apk add imagemagick ffmpeg exiftool
     ```
@@ -232,7 +235,7 @@ At this point if you open your (sub)domain in a browser you should see a 502 err
 
 If everything worked, you should see Pleroma-FE when visiting your domain. If that didn't happen, try reviewing the installation steps, starting Pleroma in the foreground and seeing if there are any errrors.
 
-Still doesn't work? Feel free to contact us on [#pleroma on freenode](https://irc.pleroma.social) or via matrix at <https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org>, you can also [file an issue on our Gitlab](https://git.pleroma.social/pleroma/pleroma-support/issues/new)
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat) via Matrix or **#pleroma** on **libera.chat** via IRC, you can also [file an issue on our Gitlab](https://git.pleroma.social/pleroma/pleroma-support/issues/new).
 
 ## Post installation
 
@@ -301,4 +304,4 @@ This will create an account withe the username of 'joeuser' with the email addre
 
 ## Questions
 
-Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:libera.chat](https://matrix.to/#/#pleroma:libera.chat) via Matrix or **#pleroma** on **libera.chat** via IRC, you can also [file an issue on our Gitlab](https://git.pleroma.social/pleroma/pleroma-support/issues/new).

@@ -292,7 +292,8 @@ defmodule Pleroma.Activity do
     get_in_reply_to_activity_from_object(Object.normalize(activity, fetch: false))
   end
 
-  def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])
+  def normalize(%Activity{data: %{"id" => ap_id}}), do: get_by_ap_id_with_object(ap_id)
+  def normalize(%{"id" => ap_id}), do: get_by_ap_id_with_object(ap_id)
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
 
@@ -301,7 +302,7 @@ defmodule Pleroma.Activity do
     |> Queries.by_object_id()
     |> Queries.exclude_type("Delete")
     |> select([u], u)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: :infinity)
     |> elem(1)
     |> Enum.find(fn
       %{data: %{"type" => "Create", "object" => ap_id}} when is_binary(ap_id) -> ap_id == id
@@ -313,13 +314,15 @@ defmodule Pleroma.Activity do
 
   def delete_all_by_object_ap_id(_), do: nil
 
-  defp purge_web_resp_cache(%Activity{} = activity) do
-    %{path: path} = URI.parse(activity.data["id"])
-    @cachex.del(:web_resp_cache, path)
+  defp purge_web_resp_cache(%Activity{data: %{"id" => id}} = activity) when is_binary(id) do
+    with %{path: path} <- URI.parse(id) do
+      @cachex.del(:web_resp_cache, path)
+    end
+
     activity
   end
 
-  defp purge_web_resp_cache(nil), do: nil
+  defp purge_web_resp_cache(activity), do: activity
 
   def follow_accepted?(
         %Activity{data: %{"type" => "Follow", "object" => followed_ap_id}} = activity
@@ -359,11 +362,9 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
-    deactivated_users =
-      from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
-      |> Repo.all()
+    deactivated_users_query = from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
 
-    Activity.Queries.exclude_authors(query, deactivated_users)
+    from(activity in query, where: activity.actor not in subquery(deactivated_users_query))
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search

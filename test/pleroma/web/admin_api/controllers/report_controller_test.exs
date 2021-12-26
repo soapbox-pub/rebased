@@ -204,9 +204,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
                "@#{admin.nickname} updated report ##{id} (on user @#{activity.user_actor.nickname}) with 'resolved' state"
 
       assert ModerationLog.get_log_entry_message(second_log_entry) ==
-               "@#{admin.nickname} updated report ##{second_report_id} (on user @#{
-                 second_activity.user_actor.nickname
-               }) with 'closed' state"
+               "@#{admin.nickname} updated report ##{second_report_id} (on user @#{second_activity.user_actor.nickname}) with 'closed' state"
     end
   end
 
@@ -305,7 +303,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         |> get("/api/pleroma/admin/reports")
 
       assert json_response(conn, :forbidden) ==
-               %{"error" => "User is not an admin."}
+               %{"error" => "User is not a staff member."}
     end
 
     test "returns 403 when requested by anonymous" do

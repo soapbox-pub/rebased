@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
   @moduledoc "Filter messages which belong to certain activity vocabularies"
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
   def filter(%{"type" => "Undo", "object" => child_message} = message) do
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
 
   @impl true
   def describe,
-    do: {:ok, %{mrf_vocabulary: Pleroma.Config.get(:mrf_vocabulary) |> Enum.into(%{})}}
+    do: {:ok, %{mrf_vocabulary: Pleroma.Config.get(:mrf_vocabulary) |> Map.new()}}
 
   @impl true
   def config_description do

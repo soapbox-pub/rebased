@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
@@ -159,8 +160,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert modified["@context"] ==
-               Pleroma.Web.ActivityPub.Utils.make_json_ld_header()["@context"]
+      assert modified["@context"] == Utils.make_json_ld_header()["@context"]
 
       assert modified["object"]["conversation"] == modified["context"]
     end
@@ -446,7 +446,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           end)
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
       assert Enum.all?(explicitly_mentioned_actors, &(&1 in fixed_object["to"]))
       refute "https://social.beepboop.ga/users/dirb" in fixed_object["to"]
       assert "https://social.beepboop.ga/users/dirb" in fixed_object["cc"]
@@ -459,7 +459,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "cc" => []
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
       assert user.follower_address in fixed_object["to"]
       refute user.follower_address in fixed_object["cc"]
     end
@@ -473,7 +473,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "cc" => [user.follower_address, recipient.follower_address]
       }
 
-      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      fixed_object = Transmogrifier.fix_explicit_addressing(object, user.follower_address)
 
       assert user.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["cc"]
@@ -522,6 +522,46 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                Transmogrifier.get_obj_helper(
                  "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
                )
+    end
+  end
+
+  describe "fix_attachments/1" do
+    test "puts dimensions into attachment url field" do
+      object = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => "https://media.example.tld/1.jpg",
+            "width" => 880,
+            "height" => 960,
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      expected = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => [
+              %{
+                "type" => "Link",
+                "mediaType" => "image/jpeg",
+                "href" => "https://media.example.tld/1.jpg",
+                "width" => 880,
+                "height" => 960
+              }
+            ],
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_attachments(object) == expected
     end
   end
 end

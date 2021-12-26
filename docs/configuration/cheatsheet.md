@@ -8,9 +8,10 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
-## :chat
+## :shout
 
-* `enabled` - Enables the backend chat. Defaults to `true`.
+* `enabled` - Enables the backend Shoutbox chat feature. Defaults to `true`.
+* `limit` - Shout character limit. Defaults to `5_000`
 
 ## :instance
 * `name`: The instance’s name.
@@ -19,7 +20,6 @@ To add configuration to your config file, you can copy it from the base config. 
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
 * `description_limit`: The character limit for image descriptions.
-* `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
 * `avatar_upload_limit`: File size limit of user’s profile avatars.
@@ -37,9 +37,9 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federating`: Enable federation with other instances.
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
-* `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
+* `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
-* `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
+* `quarantined_instances`: ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -135,15 +135,16 @@ To add configuration to your config file, you can copy it from the base config. 
     Configuring MRF policies is not enough for them to take effect. You have to enable them by specifying their module in `policies` under [:mrf](#mrf) section.
 
 #### :mrf_simple
-* `media_removal`: List of instances to remove media from.
-* `media_nsfw`: List of instances to put media as NSFW(sensitive) from.
-* `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
-* `reject`: List of instances to reject any activities from.
-* `accept`: List of instances to accept any activities from.
-* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
-* `report_removal`: List of instances to reject reports from.
-* `avatar_removal`: List of instances to strip avatars from.
-* `banner_removal`: List of instances to strip banners from.
+* `media_removal`: List of instances to strip media attachments from and the reason for doing so.
+* `media_nsfw`: List of instances to tag all media as NSFW (sensitive) from and the reason for doing so.
+* `federated_timeline_removal`: List of instances to remove from the Federated Timeline (aka The Whole Known Network) and the reason for doing so.
+* `reject`: List of instances to reject activities (except deletes) from and the reason for doing so.
+* `accept`: List of instances to only accept activities (except deletes) from and the reason for doing so.
+* `followers_only`: Force posts from the given instances to be visible by followers only and the reason for doing so.
+* `report_removal`: List of instances to reject reports from and the reason for doing so.
+* `avatar_removal`: List of instances to strip avatars from and the reason for doing so.
+* `banner_removal`: List of instances to strip banners from and the reason for doing so.
+* `reject_deletes`: List of instances to reject deletions from and the reason for doing so.
 
 #### :mrf_subchain
 This policy processes messages through an alternate pipeline when a given message matches certain criteria.
@@ -229,6 +230,7 @@ Notes:
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
+* `blockers_visible`: Whether a user can see the posts of users who blocked them
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
@@ -246,7 +248,7 @@ Notes:
 
 ### :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
 Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
@@ -257,10 +259,7 @@ config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     theme: "pleroma-dark",
     # ... see /priv/static/static/config.json for the available keys.
-},
-  masto_fe: %{
-    showInstanceSpecificPanel: true
-  }
+}
 ```
 
 These settings **need to be complete**, they will override the defaults.

@@ -8,6 +8,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   alias Pleroma.User
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MediaProxy
 
@@ -79,9 +80,11 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "tags" => user.tags || [],
       "is_confirmed" => user.is_confirmed,
       "is_approved" => user.is_approved,
+      "is_suggested" => user.is_suggested,
       "url" => user.uri || user.ap_id,
       "registration_reason" => user.registration_reason,
-      "actor_type" => user.actor_type
+      "actor_type" => user.actor_type,
+      "created_at" => CommonAPI.Utils.to_masto_date(user.inserted_at)
     }
   end
 

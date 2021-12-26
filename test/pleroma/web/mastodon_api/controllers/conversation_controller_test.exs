@@ -214,7 +214,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     res_conn = get(conn, "/api/v1/statuses/#{direct.id}/context")
 
-    assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
+    assert %{"ancestors" => [], "descendants" => []} ==
+             json_response_and_validate_schema(res_conn, 200)
   end
 
   test "Removes a conversation", %{user: user_one, conn: conn} do

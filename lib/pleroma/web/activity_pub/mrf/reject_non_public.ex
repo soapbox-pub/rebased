@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   alias Pleroma.Config
   alias Pleroma.User
 
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   require Pleroma.Constants
 
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
 
   @impl true
   def describe,
-    do: {:ok, %{mrf_rejectnonpublic: Config.get(:mrf_rejectnonpublic) |> Enum.into(%{})}}
+    do: {:ok, %{mrf_rejectnonpublic: Config.get(:mrf_rejectnonpublic) |> Map.new()}}
 
   @impl true
   def config_description do

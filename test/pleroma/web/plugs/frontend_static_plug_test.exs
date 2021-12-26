@@ -96,15 +96,15 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "internal",
       ".well-known",
       "nodeinfo",
-      "web",
+      "manifest.json",
       "auth",
-      "embed",
       "proxy",
+      "phoenix",
       "test",
       "user_exists",
       "check_password"
     ]
 
-    assert expected_routes == Pleroma.Web.get_api_routes()
+    assert expected_routes == Pleroma.Web.Router.get_api_routes()
   end
 end

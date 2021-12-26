@@ -72,5 +72,70 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
 
       assert attachment.mediaType == "image/jpeg"
     end
+
+    test "it handles image dimensions" do
+      attachment = %{
+        "url" => [
+          %{
+            "type" => "Link",
+            "mediaType" => "image/jpeg",
+            "href" => "https://example.com/images/1.jpg",
+            "width" => 200,
+            "height" => 100
+          }
+        ],
+        "type" => "Document",
+        "name" => nil,
+        "mediaType" => "image/jpeg"
+      }
+
+      {:ok, attachment} =
+        AttachmentValidator.cast_and_validate(attachment)
+        |> Ecto.Changeset.apply_action(:insert)
+
+      assert [
+               %{
+                 href: "https://example.com/images/1.jpg",
+                 type: "Link",
+                 mediaType: "image/jpeg",
+                 width: 200,
+                 height: 100
+               }
+             ] = attachment.url
+
+      assert attachment.mediaType == "image/jpeg"
+    end
+
+    test "it transforms image dimentions to our internal format" do
+      attachment = %{
+        "type" => "Document",
+        "name" => "Hello world",
+        "url" => "https://media.example.tld/1.jpg",
+        "width" => 880,
+        "height" => 960,
+        "mediaType" => "image/jpeg",
+        "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+      }
+
+      expected = %AttachmentValidator{
+        type: "Document",
+        name: "Hello world",
+        mediaType: "image/jpeg",
+        blurhash: "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of",
+        url: [
+          %AttachmentValidator.UrlObjectValidator{
+            type: "Link",
+            mediaType: "image/jpeg",
+            href: "https://media.example.tld/1.jpg",
+            width: 880,
+            height: 960
+          }
+        ]
+      }
+
+      {:ok, ^expected} =
+        AttachmentValidator.cast_and_validate(attachment)
+        |> Ecto.Changeset.apply_action(:insert)
+    end
   end
 end

@@ -51,9 +51,7 @@ defmodule Mix.Tasks.Pleroma.User do
     A user will be created with the following information:
       - nickname: #{nickname}
       - email: #{email}
-      - password: #{
-      if(generated_password?, do: "[generated; a reset link will be created]", else: password)
-    }
+      - password: #{if(generated_password?, do: "[generated; a reset link will be created]", else: password)}
       - name: #{name}
       - bio: #{bio}
       - moderator: #{if(moderator?, do: "true", else: "false")}
@@ -114,15 +112,9 @@ defmodule Mix.Tasks.Pleroma.User do
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
       shell_info("Generated password reset token for #{user.nickname}")
 
-      IO.puts(
-        "URL: #{
-          Pleroma.Web.Router.Helpers.reset_password_url(
-            Pleroma.Web.Endpoint,
-            :reset,
-            token.token
-          )
-        }"
-      )
+      IO.puts("URL: #{Pleroma.Web.Router.Helpers.reset_password_url(Pleroma.Web.Endpoint,
+      :reset,
+      token.token)}")
     else
       _ ->
         shell_error("No local user #{nickname}")
@@ -321,9 +313,7 @@ defmodule Mix.Tasks.Pleroma.User do
         end
 
       shell_info(
-        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.invite_type} | Used: #{
-          invite.used
-        }#{expire_info}#{using_info}"
+        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.invite_type} | Used: #{invite.used}#{expire_info}#{using_info}"
       )
     end)
   end
@@ -424,9 +414,7 @@ defmodule Mix.Tasks.Pleroma.User do
       users
       |> Enum.each(fn user ->
         shell_info(
-          "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
-            user.is_locked
-          }, is_active: #{user.is_active}"
+          "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{user.is_locked}, is_active: #{user.is_active}"
         )
       end)
     end)

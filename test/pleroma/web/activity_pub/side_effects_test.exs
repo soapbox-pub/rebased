@@ -88,6 +88,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert User.blocks?(user, blocked)
     end
 
+    test "it updates following relationship", %{user: user, blocked: blocked, block: block} do
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute Pleroma.FollowingRelationship.get(user, blocked)
+      assert User.get_follow_state(user, blocked) == nil
+      assert User.get_follow_state(blocked, user) == nil
+      assert User.get_follow_state(user, blocked, nil) == nil
+      assert User.get_follow_state(blocked, user, nil) == nil
+    end
+
     test "it blocks but does not unfollow if the relevant setting is set", %{
       user: user,
       blocked: blocked,
@@ -154,6 +164,30 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     test "creates a notification", %{emoji_react: emoji_react, poster: poster} do
       {:ok, emoji_react, _} = SideEffects.handle(emoji_react)
       assert Repo.get_by(Notification, user_id: poster.id, activity_id: emoji_react.id)
+    end
+  end
+
+  describe "Question objects" do
+    setup do
+      user = insert(:user)
+      question = build(:question, user: user)
+      question_activity = build(:question_activity, question: question)
+      activity_data = Map.put(question_activity.data, "object", question.data["id"])
+      meta = [object_data: question.data, local: false]
+
+      {:ok, activity, meta} = ActivityPub.persist(activity_data, meta)
+
+      %{activity: activity, meta: meta}
+    end
+
+    test "enqueues the poll end", %{activity: activity, meta: meta} do
+      {:ok, activity, meta} = SideEffects.handle(activity, meta)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PollWorker,
+        args: %{op: "poll_end", activity_id: activity.id},
+        scheduled_at: NaiveDateTime.from_iso8601!(meta[:object_data]["closed"])
+      )
     end
   end
 
@@ -516,6 +550,76 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
         assert called(Pleroma.Web.Push.send(:_))
       end
+    end
+  end
+
+  describe "removing a follower" do
+    setup do
+      user = insert(:user)
+      followed = insert(:user)
+
+      {:ok, _, _, follow_activity} = CommonAPI.follow(user, followed)
+
+      {:ok, reject_data, []} = Builder.reject(followed, follow_activity)
+      {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: true)
+
+      %{user: user, followed: followed, reject: reject}
+    end
+
+    test "", %{user: user, followed: followed, reject: reject} do
+      assert User.following?(user, followed)
+      assert Pleroma.FollowingRelationship.get(user, followed)
+
+      {:ok, _, _} = SideEffects.handle(reject)
+
+      refute User.following?(user, followed)
+      refute Pleroma.FollowingRelationship.get(user, followed)
+      assert User.get_follow_state(user, followed) == nil
+      assert User.get_follow_state(user, followed, nil) == nil
+    end
+  end
+
+  describe "removing a follower from remote" do
+    setup do
+      user = insert(:user)
+      followed = insert(:user, local: false)
+
+      # Mock a local-to-remote follow
+      {:ok, follow_data, []} = Builder.follow(user, followed)
+
+      follow_data =
+        follow_data
+        |> Map.put("state", "accept")
+
+      {:ok, follow, _meta} = ActivityPub.persist(follow_data, local: true)
+      {:ok, _, _} = SideEffects.handle(follow)
+
+      # Mock a remote-to-local accept
+      {:ok, accept_data, _} = Builder.accept(followed, follow)
+      {:ok, accept, _} = ActivityPub.persist(accept_data, local: false)
+      {:ok, _, _} = SideEffects.handle(accept)
+
+      # Mock a remote-to-local reject
+      {:ok, reject_data, []} = Builder.reject(followed, follow)
+      {:ok, reject, _meta} = ActivityPub.persist(reject_data, local: false)
+
+      %{user: user, followed: followed, reject: reject}
+    end
+
+    test "", %{user: user, followed: followed, reject: reject} do
+      assert User.following?(user, followed)
+      assert Pleroma.FollowingRelationship.get(user, followed)
+
+      {:ok, _, _} = SideEffects.handle(reject)
+
+      refute User.following?(user, followed)
+      refute Pleroma.FollowingRelationship.get(user, followed)
+
+      assert Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, followed).data["state"] ==
+               "reject"
+
+      assert User.get_follow_state(user, followed) == nil
+      assert User.get_follow_state(user, followed, nil) == nil
     end
   end
 end

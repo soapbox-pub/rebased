@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.ArticleNoteValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
@@ -102,7 +102,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = create_activity,
         meta
       )
-      when objtype in ~w[Question Answer Audio Video Event Article] do
+      when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
     with {:ok, object_data} <- cast_and_apply(object),
          meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
          {:ok, create_activity} <-
@@ -115,14 +115,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def validate(%{"type" => type} = object, meta)
-      when type in ~w[Event Question Audio Video Article] do
+      when type in ~w[Event Question Audio Video Article Note Page] do
     validator =
       case type do
         "Event" -> EventValidator
         "Question" -> QuestionValidator
         "Audio" -> AudioVideoValidator
         "Video" -> AudioVideoValidator
-        "Article" -> ArticleNoteValidator
+        "Article" -> ArticleNotePageValidator
+        "Note" -> ArticleNotePageValidator
+        "Page" -> ArticleNotePageValidator
       end
 
     with {:ok, object} <-
@@ -174,6 +176,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(o, m), do: {:error, {:validator_not_set, {o, m}}}
+
   def cast_and_apply(%{"type" => "ChatMessage"} = object) do
     ChatMessageValidator.cast_and_apply(object)
   end
@@ -194,8 +198,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     EventValidator.cast_and_apply(object)
   end
 
-  def cast_and_apply(%{"type" => "Article"} = object) do
-    ArticleNoteValidator.cast_and_apply(object)
+  def cast_and_apply(%{"type" => type} = object) when type in ~w[Article Note Page] do
+    ArticleNotePageValidator.cast_and_apply(object)
   end
 
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
@@ -209,6 +213,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def stringify_keys(object) when is_map(object) do
     object
+    |> Enum.filter(fn {_, v} -> v != nil end)
     |> Map.new(fn {key, val} -> {to_string(key), stringify_keys(val)} end)
   end
 

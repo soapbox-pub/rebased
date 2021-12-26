@@ -42,6 +42,20 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
 
       refute Enum.any?(response, fn frontend -> frontend["installed"] == true end)
     end
+
+    test "it lists available frontends when no frontend folder was created yet", %{conn: conn} do
+      File.rm_rf(@dir)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/frontends")
+        |> json_response_and_validate_schema(:ok)
+
+      assert Enum.map(response, & &1["name"]) ==
+               Enum.map(Config.get([:frontends, :available]), fn {_, map} -> map["name"] end)
+
+      refute Enum.any?(response, fn frontend -> frontend["installed"] == true end)
+    end
   end
 
   describe "POST /api/pleroma/admin/frontends/install" do

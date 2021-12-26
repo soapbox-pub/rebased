@@ -9,7 +9,6 @@ defmodule Pleroma.Tests.AuthTestController do
   use Pleroma.Web, :controller
 
   alias Pleroma.User
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   # Serves only with proper OAuth token (:api and :authenticated_api)
@@ -47,10 +46,7 @@ defmodule Pleroma.Tests.AuthTestController do
   # Via :authenticated_api, serves if token is present and has requested scopes
   #
   # Suggested use: as :fallback_oauth_check but open with nil :user for :api on private instances
-  plug(
-    :skip_plug,
-    EnsurePublicOrAuthenticatedPlug when action == :fallback_oauth_skip_publicity_check
-  )
+  plug(:skip_public_check when action == :fallback_oauth_skip_publicity_check)
 
   plug(
     OAuthScopesPlug,
@@ -62,11 +58,7 @@ defmodule Pleroma.Tests.AuthTestController do
   # Via :authenticated_api, serves if :user is set (regardless of token presence and its scopes)
   #
   # Suggested use: making an :api endpoint always accessible (e.g. email confirmation endpoint)
-  plug(
-    :skip_plug,
-    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug]
-    when action == :skip_oauth_skip_publicity_check
-  )
+  plug(:skip_auth when action == :skip_oauth_skip_publicity_check)
 
   # Via :authenticated_api, always fails with 403 (endpoint is insecure)
   # Via :api, drops :user if present and serves if public (private instance rejects on no user)
