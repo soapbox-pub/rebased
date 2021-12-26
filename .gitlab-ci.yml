@@ -154,6 +154,10 @@ lint:
       - "**/*.exs"
       - "mix.lock"
   cache: *testing_cache_policy
+  before_script:
+    - mix local.hex --force
+    - mix local.rebar --force
+    - mix deps.get
   script:
     - mix format --check-formatted
 
@@ -177,8 +181,13 @@ cycles:
       - "**/*.exs"
       - "mix.lock"
   cache: {}
-  script:
+  before_script:
+    - mix local.hex --force
+    - mix local.rebar --force
     - mix deps.get
+    - apt-get update
+    - apt-get install cmake libmagic-dev -y
+  script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
