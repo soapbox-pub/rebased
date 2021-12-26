@@ -383,12 +383,6 @@ Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer feat
 
 - `GET /api/v1/endorsements`: Returns an empty array, `[]`
 
-### Profile directory
-
-*Added in Mastodon 3.0.0*
-
-- `GET /api/v1/directory`: Returns HTTP 404
-
 ### Featured tags
 
 *Added in Mastodon 3.0.0*

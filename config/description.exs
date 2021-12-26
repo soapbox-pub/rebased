@@ -936,6 +936,11 @@ config :pleroma, :config_description, [
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
+      },
+      %{
+        key: :profile_directory,
+        type: :boolean,
+        description: "Enable profile directory."
       }
     ]
   },
