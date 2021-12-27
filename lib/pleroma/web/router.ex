@@ -266,9 +266,6 @@ defmodule Pleroma.Web.Router do
     post("/users/revoke_invite", InviteController, :revoke)
     post("/users/email_invite", InviteController, :email)
 
-    patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
-    get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
-
     get("/users", UserController, :index)
     get("/users/:nickname", UserController, :show)
 
