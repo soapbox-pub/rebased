@@ -855,7 +855,11 @@ config :pleroma, ConcurrentLimiter, [
 ]
 
 config :pleroma, :telemetry,
-  slow_queries_logging: [exclude_sources: [nil, "oban_jobs"], min_duration: 500_000]
+  slow_queries_logging: [
+    enabled: false,
+    min_duration: 500_000,
+    exclude_sources: [nil, "oban_jobs"]
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

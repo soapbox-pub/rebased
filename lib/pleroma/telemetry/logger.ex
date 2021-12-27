@@ -106,7 +106,9 @@ defmodule Pleroma.Telemetry.Logger do
       ) do
     logging_config = Pleroma.Config.get([:telemetry, :slow_queries_logging], [])
 
-    if logging_config[:min_duration] && query_time > logging_config[:min_duration] and
+    if logging_config[:enabled] &&
+         logging_config[:min_duration] &&
+         query_time > logging_config[:min_duration] and
          (is_nil(logging_config[:exclude_sources]) or
             source not in logging_config[:exclude_sources]) do
       log_slow_query(measurements, metadata, config)
