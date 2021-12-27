@@ -238,7 +238,7 @@ defmodule Pleroma.Web.Router do
     delete("/users", UserController, :delete)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
-    patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)    
+    patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
 
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
     get("/users/:nickname/chats", AdminAPIController, :list_user_chats)

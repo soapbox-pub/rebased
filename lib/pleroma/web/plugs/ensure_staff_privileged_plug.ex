@@ -10,8 +10,8 @@ defmodule Pleroma.Web.Plugs.EnsureStaffPrivilegedPlug do
   import Pleroma.Web.TranslationHelpers
   import Plug.Conn
 
-  alias Pleroma.User
   alias Pleroma.Config
+  alias Pleroma.User
 
   def init(options) do
     options
