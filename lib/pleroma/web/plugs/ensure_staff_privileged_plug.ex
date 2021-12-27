@@ -4,9 +4,8 @@
 
 defmodule Pleroma.Web.Plugs.EnsureStaffPrivilegedPlug do
   @moduledoc """
-  Ensures if staff are privileged enough to do certain tasks
+  Ensures staff are privileged enough to do certain tasks.
   """
-
   import Pleroma.Web.TranslationHelpers
   import Plug.Conn
 
@@ -19,7 +18,7 @@ defmodule Pleroma.Web.Plugs.EnsureStaffPrivilegedPlug do
 
   def call(%{assigns: %{user: %User{is_admin: true}}} = conn, _), do: conn
 
-  def call(conn, _) do
+  def call(%{assigns: %{user: %User{is_moderator: true}}} = conn, _) do
     if Config.get!([:instance, :privileged_staff]) do
       conn
     else
@@ -27,5 +26,11 @@ defmodule Pleroma.Web.Plugs.EnsureStaffPrivilegedPlug do
       |> render_error(:forbidden, "User is not an admin.")
       |> halt()
     end
+  end
+
+  def call(conn, _) do
+    conn
+    |> render_error(:forbidden, "User is not a staff member.")
+    |> halt()
   end
 end
