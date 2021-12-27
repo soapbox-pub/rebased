@@ -23,3 +23,6 @@ config :pleroma, :dangerzone, override_repo_pool_size: true
 config :pleroma, Pleroma.Repo,
   pool_size: 40,
   timeout: 30_000
+
+# Allow privileged staff
+config :pleroma, :instance, privileged_staff: true
