@@ -10,7 +10,9 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
 
   use Pleroma.Web, :controller
 
+  alias Pleroma.Maps
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
@@ -26,17 +28,22 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   @doc "POST /api/v1/apps"
   def create(%{body_params: params} = conn, _params) do
     scopes = Scopes.fetch_scopes(params, ["read"])
+    user_id = get_user_id(conn)
 
     app_attrs =
       params
       |> Map.take([:client_name, :redirect_uris, :website])
       |> Map.put(:scopes, scopes)
+      |> Maps.put_if_present(:user_id, user_id)
 
     with cs <- App.register_changeset(%App{}, app_attrs),
          {:ok, app} <- Repo.insert(cs) do
       render(conn, "show.json", app: app)
     end
   end
+
+  defp get_user_id(%{assigns: %{user: %User{id: user_id}}}), do: user_id
+  defp get_user_id(_conn), do: nil
 
   @doc """
   GET /api/v1/apps/verify_credentials
