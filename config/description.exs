@@ -936,6 +936,17 @@ config :pleroma, :config_description, [
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
+      },
+      %{
+        key: :profile_directory,
+        type: :boolean,
+        description: "Enable profile directory."
+      },
+      %{
+        key: :privileged_staff,
+        type: :boolean,
+        description:
+          "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       }
     ]
   },

@@ -446,7 +446,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Activity.Queries.by_type()
     |> Activity.Queries.by_actor(actor)
     |> Activity.Queries.by_object_id(object)
-    |> where(fragment("data->>'state' = 'pending'"))
+    |> where(fragment("data->>'state' = 'pending'") or fragment("data->>'state' = 'accept'"))
     |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
     |> Repo.update_all([])
 

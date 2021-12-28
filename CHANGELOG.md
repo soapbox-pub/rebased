@@ -14,9 +14,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow users to remove their emails if instance does not need email to register
 
 ### Added
+- `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
+- Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
+- AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
+- AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
+- Handle Reject for already-accepted Follows properly
+- Display OpenGraph data on alternative notice routes.
 
 ### Removed
 

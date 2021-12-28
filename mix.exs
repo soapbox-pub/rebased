@@ -8,7 +8,7 @@ defmodule Pleroma.Mixfile do
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
-      elixirc_options: [warnings_as_errors: warnings_as_errors(Mix.env())],
+      elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -79,6 +79,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :quack,
         :fast_sanitize,
+        :os_mon,
         :ssl
       ],
       included_applications: [:ex_syslogger]
@@ -86,12 +87,11 @@ defmodule Pleroma.Mixfile do
   end
 
   # Specifies which paths to compile per environment.
-  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks", "priv/scrubbers"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  defp warnings_as_errors(:prod), do: false
-  defp warnings_as_errors(_), do: true
+  defp warnings_as_errors, do: System.get_env("CI") == "true"
 
   # Specifies OAuth dependencies.
   defp oauth_deps do
@@ -129,7 +129,7 @@ defmodule Pleroma.Mixfile do
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
       {:html_entities, "~> 0.5", override: true},
-      {:phoenix_html, "~> 2.14"},
+      {:phoenix_html, "~> 3.1", override: true},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
@@ -137,6 +137,7 @@ defmodule Pleroma.Mixfile do
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
+      {:finch, "~> 0.10.0"},
       {:jason, "~> 1.2"},
       {:mogrify, "~> 0.9.1"},
       {:ex_aws, "~> 2.1.6"},
@@ -192,11 +193,11 @@ defmodule Pleroma.Mixfile do
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
-      {:majic,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/majic.git",
-       ref: "289cda1b6d0d70ccb2ba508a2b0bd24638db2880"},
+      {:majic, "~> 1.0"},
       {:eblurhash, "~> 1.1.0"},
       {:open_api_spex, "~> 3.10"},
+      {:phoenix_live_dashboard, "~> 0.6.2"},
+      {:ecto_psql_extras, "~> 0.6"},
 
       # indirect dependency version override
       {:plug, "~> 1.10.4", override: true},
@@ -208,7 +209,7 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
-      {:hackney, "~> 1.17.0", override: true},
+      {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()

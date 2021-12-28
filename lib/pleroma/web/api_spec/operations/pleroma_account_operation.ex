@@ -69,7 +69,16 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
       summary: "Endorsements",
       description: "Returns endorsed accounts",
       operationId: "PleromaAPI.AccountController.endorsements",
-      parameters: [id_param() | pagination_params()],
+      parameters:
+        [
+          Operation.parameter(
+            :shuffle,
+            :query,
+            :boolean,
+            "Show endorsed accounts in random order"
+          ),
+          id_param()
+        ] ++ pagination_params(),
       security: [%{"oAuth" => ["read:account"]}],
       responses: %{
         200 =>

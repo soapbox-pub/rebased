@@ -213,6 +213,20 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert refresh_record(follow_activity).data["state"] == "accept"
       assert refresh_record(follow_activity_two).data["state"] == "accept"
     end
+
+    test "also updates the state of accepted follows" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+
+      {:ok, follow_activity_two} =
+        Utils.update_follow_state_for_all(follow_activity_two, "reject")
+
+      assert refresh_record(follow_activity).data["state"] == "reject"
+      assert refresh_record(follow_activity_two).data["state"] == "reject"
+    end
   end
 
   describe "update_follow_state/2" do

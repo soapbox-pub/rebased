@@ -25,5 +25,6 @@ defmodule Pleroma.ReverseProxy.Client.Wrapper do
 
   defp client(Tesla.Adapter.Hackney), do: Pleroma.ReverseProxy.Client.Hackney
   defp client(Tesla.Adapter.Gun), do: Pleroma.ReverseProxy.Client.Tesla
+  defp client({Tesla.Adapter.Finch, _}), do: Pleroma.ReverseProxy.Client.Hackney
   defp client(_), do: Pleroma.Config.get!(Pleroma.ReverseProxy.Client)
 end

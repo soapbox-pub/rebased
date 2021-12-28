@@ -152,6 +152,8 @@ defmodule Pleroma.User do
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
     field(:pinned_objects, :map, default: %{})
+    field(:is_suggested, :boolean, default: false)
+    field(:last_status_at, :naive_datetime)
 
     embeds_one(
       :notification_settings,
@@ -1709,6 +1711,22 @@ defmodule Pleroma.User do
 
   def confirm(%User{} = user), do: {:ok, user}
 
+  def set_suggestion(users, is_suggested) when is_list(users) do
+    Repo.transaction(fn ->
+      Enum.map(users, fn user ->
+        with {:ok, user} <- set_suggestion(user, is_suggested), do: user
+      end)
+    end)
+  end
+
+  def set_suggestion(%User{is_suggested: is_suggested} = user, is_suggested), do: {:ok, user}
+
+  def set_suggestion(%User{} = user, is_suggested) when is_boolean(is_suggested) do
+    user
+    |> change(is_suggested: is_suggested)
+    |> update_and_set_cache()
+  end
+
   def update_notification_settings(%User{} = user, settings) do
     user
     |> cast(%{notification_settings: settings}, [])
@@ -2507,12 +2525,24 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def active_user_count(weeks \\ 4) do
-    active_after = Timex.shift(NaiveDateTime.utc_now(), weeks: -weeks)
+  def active_user_count(days \\ 30) do
+    active_after = Timex.shift(NaiveDateTime.utc_now(), days: -days)
 
     __MODULE__
     |> where([u], u.last_active_at >= ^active_after)
     |> where([u], u.local == true)
     |> Repo.aggregate(:count)
+  end
+
+  def update_last_status_at(user) do
+    User
+    |> where(id: ^user.id)
+    |> update([u], set: [last_status_at: fragment("NOW()")])
+    |> select([u], u)
+    |> Repo.update_all([])
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 end

@@ -45,7 +45,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           features: features(),
           federation: federation(),
           fields_limits: fields_limits(),
-          post_formats: Config.get([:instance, :allowed_post_formats])
+          post_formats: Config.get([:instance, :allowed_post_formats]),
+          privileged_staff: Config.get([:instance, :privileged_staff])
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
@@ -59,6 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "mastodon_api",
       "mastodon_api_streaming",
       "polls",
+      "v2_suggestions",
       "pleroma_explicit_addressing",
       "shareable_emoji_packs",
       "multifetch",
@@ -83,7 +85,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
-      "pleroma_chat_messages"
+      "pleroma_chat_messages",
+      if Config.get([:instance, :show_reactions]) do
+        "exposable_reactions"
+      end,
+      if Config.get([:instance, :profile_directory]) do
+        "profile_directory"
+      end
     ]
     |> Enum.filter(& &1)
   end

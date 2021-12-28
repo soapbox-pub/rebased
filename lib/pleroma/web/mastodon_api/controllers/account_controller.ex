@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   alias Pleroma.Maps
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -55,7 +56,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"]} when action in [:update_credentials, :endorse, :unendorse]
+    %{scopes: ["write:accounts"]}
+    when action in [:update_credentials, :note, :endorse, :unendorse]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :lists)
@@ -82,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
   @relationship_actions [:follow, :unfollow]
-  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock endorse unendorse)a
+  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock endorse unendorse endorse unendorse)a
 
   plug(
     RateLimiter,
@@ -435,6 +437,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/note"
+  def note(
+        %{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn,
+        _params
+      ) do
+    with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
+      render(conn, "relationship.json", user: noter, target: target)
     end
   end
 
