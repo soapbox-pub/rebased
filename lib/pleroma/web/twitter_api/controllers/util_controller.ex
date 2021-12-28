@@ -17,8 +17,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate when action != :remote_subscribe and action != :show_subscribe_form)
-  plug(Pleroma.Web.Plugs.FederatingPlug when action == :remote_subscribe when action == :show_subscribe_form)
+  plug(
+    Pleroma.Web.ApiSpec.CastAndValidate
+    when action != :remote_subscribe and action != :show_subscribe_form
+  )
+
+  plug(
+    Pleroma.Web.Plugs.FederatingPlug
+    when action == :remote_subscribe
+    when action == :show_subscribe_form
+  )
 
   plug(
     OAuthScopesPlug,
