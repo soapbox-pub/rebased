@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   require Logger
 
+  alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
@@ -59,6 +60,27 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def remote_subscribe(conn, %{"status_id" => id, "profile" => _}) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         %User{} = user <- User.get_cached_by_ap_id(activity.actor),
+         avatar = User.avatar_url(user) do
+      conn
+      |> render("status_interact.html", %{
+        status_id: id,
+        nickname: user.nickname,
+        avatar: avatar,
+        error: false
+      })
+    else
+      _e ->
+        render(conn, "status_interact.html", %{
+          status_id: id,
+          avatar: nil,
+          error: "Could not find status"
+        })
+    end
+  end
+
   def remote_subscribe(conn, %{"user" => %{"nickname" => nick, "profile" => profile}}) do
     with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile),
          %User{ap_id: ap_id} <- User.get_cached_by_nickname(nick) do
@@ -68,6 +90,31 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       _e ->
         render(conn, "subscribe.html", %{
           nickname: nick,
+          avatar: nil,
+          error: "Something went wrong."
+        })
+    end
+  end
+
+  def remote_subscribe(conn, %{"status" => %{"status_id" => id, "profile" => profile}}) do
+    get_ap_id = fn activity ->
+      object = Pleroma.Object.normalize(activity, fetch: false)
+
+      case object do
+        %{data: %{"id" => ap_id}} -> {:ok, ap_id}
+        _ -> {:no_ap_id, nil}
+      end
+    end
+
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile),
+         %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, ap_id} <- get_ap_id.(activity) do
+      conn
+      |> Phoenix.Controller.redirect(external: String.replace(template, "{uri}", ap_id))
+    else
+      _e ->
+        render(conn, "status_interact.html", %{
+          status_id: id,
           avatar: nil,
           error: "Something went wrong."
         })

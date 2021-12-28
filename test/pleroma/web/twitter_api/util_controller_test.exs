@@ -233,6 +233,70 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
+  describe "POST /main/ostatus - remote_subscribe/2 - with statuses" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "renders subscribe form", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+
+      assert is_binary(status_id)
+
+      response =
+        conn
+        |> post("/main/ostatus", %{"status_id" => status_id, "profile" => ""})
+        |> response(:ok)
+
+      refute response =~ "Could not find status"
+      assert response =~ "Interacting with"
+    end
+
+    test "renders subscribe form with error when status not found", %{conn: conn} do
+      response =
+        conn
+        |> post("/main/ostatus", %{"status_id" => "somerandomid", "profile" => ""})
+        |> response(:ok)
+
+      assert response =~ "Could not find status"
+      refute response =~ "Interacting with"
+    end
+
+    test "it redirect to webfinger url", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+      status_ap_id = status.data["object"]
+
+      assert is_binary(status_id)
+      assert is_binary(status_ap_id)
+
+      user2 = insert(:user, ap_id: "shp@social.heldscal.la")
+
+      conn =
+        conn
+        |> post("/main/ostatus", %{
+          "status" => %{"status_id" => status_id, "profile" => user2.ap_id}
+        })
+
+      assert redirected_to(conn) ==
+               "https://social.heldscal.la/main/ostatussub?profile=#{status_ap_id}"
+    end
+
+    test "it renders form with error when status not found", %{conn: conn} do
+      user2 = insert(:user, ap_id: "shp@social.heldscal.la")
+
+      response =
+        conn
+        |> post("/main/ostatus", %{
+          "status" => %{"status_id" => "somerandomid", "profile" => user2.ap_id}
+        })
+        |> response(:ok)
+
+      assert response =~ "Something went wrong."
+    end
+  end
+
   test "it returns new captcha", %{conn: conn} do
     with_mock Pleroma.Captcha,
       new: fn -> "test_captcha" end do
