@@ -17,8 +17,6 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
 
-  require Logger
-
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   plug(:skip_auth when action in [:create, :verify_credentials])
