@@ -28,15 +28,9 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AppOperation
 
   @doc "POST /api/v1/apps"
-  def create(%{assigns: %{user: user}, body_params: params} = conn, _params) do
+  def create(%{body_params: params} = conn, _params) do
     scopes = Scopes.fetch_scopes(params, ["read"])
-
-    user_id =
-      with %User{id: id} <- user do
-        id
-      else
-        _ -> nil
-      end
+    user_id = get_user_id(conn)
 
     app_attrs =
       params
@@ -49,6 +43,9 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
       render(conn, "show.json", app: app)
     end
   end
+
+  defp get_user_id(%{assigns: %{user: %User{id: user_id}}}), do: user_id
+  defp get_user_id(_conn), do: nil
 
   @doc """
   GET /api/v1/apps/verify_credentials
