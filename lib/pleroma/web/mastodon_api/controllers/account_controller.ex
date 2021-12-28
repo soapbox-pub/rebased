@@ -493,11 +493,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/accounts/lookup"
-  def lookup(%{assigns: %{user: for_user}} = conn, %{acct: nickname} = _params) do
+  def lookup(conn, %{acct: nickname} = _params) do
     with %User{} = user <- User.get_by_nickname(nickname) do
       render(conn, "show.json",
         user: user,
-        for: for_user
+        skip_visibility_check: true
       )
     else
       error -> user_visibility_error(conn, error)
