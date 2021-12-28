@@ -61,6 +61,11 @@ defmodule Pleroma.Application do
 
     adapter = Application.get_env(:tesla, :adapter)
 
+    if match?({Tesla.Adapter.Finch, _}, adapter) do
+      Logger.info("Starting Finch")
+      Finch.start_link(name: MyFinch)
+    end
+
     if adapter == Tesla.Adapter.Gun do
       if version = Pleroma.OTPVersion.version() do
         [major, minor] =

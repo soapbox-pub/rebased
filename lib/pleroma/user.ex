@@ -149,6 +149,7 @@ defmodule Pleroma.User do
     field(:disclose_client, :boolean, default: true)
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
+    field(:last_status_at, :naive_datetime)
 
     embeds_one(
       :notification_settings,
@@ -2498,5 +2499,17 @@ defmodule Pleroma.User do
     |> where([u], u.last_active_at >= ^active_after)
     |> where([u], u.local == true)
     |> Repo.aggregate(:count)
+  end
+
+  def update_last_status_at(user) do
+    User
+    |> where(id: ^user.id)
+    |> update([u], set: [last_status_at: fragment("NOW()")])
+    |> select([u], u)
+    |> Repo.update_all([])
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 end

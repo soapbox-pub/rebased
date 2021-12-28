@@ -239,6 +239,32 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def remote_interaction_operation do
+    %Operation{
+      tags: ["Accounts"],
+      summary: "Remote interaction",
+      operationId: "UtilController.remote_interaction",
+      requestBody: request_body("Parameters", remote_interaction_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Remote interaction URL", "application/json", %Schema{type: :object})
+      }
+    }
+  end
+
+  defp remote_interaction_request do
+    %Schema{
+      title: "RemoteInteractionRequest",
+      description: "POST body for remote interaction",
+      type: :object,
+      required: [:ap_id, :profile],
+      properties: %{
+        ap_id: %Schema{type: :string, description: "Profile or status ActivityPub ID"},
+        profile: %Schema{type: :string, description: "Remote profile webfinger"}
+      }
+    }
+  end
+
   defp delete_account_request do
     %Schema{
       title: "AccountDeleteRequest",
