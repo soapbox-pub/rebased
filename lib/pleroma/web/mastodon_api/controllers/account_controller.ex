@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   alias Pleroma.Maps
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -31,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action == :create)
+  plug(:skip_auth when action in [:create, :lookup])
 
   plug(:skip_public_check when action in [:show, :statuses])
 
@@ -53,7 +54,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     when action in [:verify_credentials, :endorsements, :identity_proofs]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    when action in [:update_credentials, :note]
+  )
 
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :lists)
 
@@ -79,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
   @relationship_actions [:follow, :unfollow]
-  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
+  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock note)a
 
   plug(
     RateLimiter,
@@ -435,6 +440,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     end
   end
 
+  @doc "POST /api/v1/accounts/:id/note"
+  def note(
+        %{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn,
+        _params
+      ) do
+    with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
+      render(conn, "relationship.json", user: noter, target: target)
+    end
+  end
+
   @doc "POST /api/v1/follows"
   def follow_by_uri(%{body_params: %{uri: uri}} = conn, _) do
     case User.get_cached_by_nickname(uri) do
@@ -475,6 +490,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     conn
     |> add_link_headers(users)
     |> render("index.json", users: users, for: user, as: :user)
+  end
+
+  @doc "GET /api/v1/accounts/lookup"
+  def lookup(conn, %{acct: nickname} = _params) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      render(conn, "show.json",
+        user: user,
+        skip_visibility_check: true
+      )
+    else
+      error -> user_visibility_error(conn, error)
+    end
   end
 
   @doc "GET /api/v1/endorsements"

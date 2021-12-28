@@ -199,6 +199,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
       {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
+      {:ok, _user} = ActivityPub.update_last_status_at_if_public(user, object)
 
       if in_reply_to = object.data["type"] != "Answer" && object.data["inReplyTo"] do
         Object.increase_replies_count(in_reply_to)

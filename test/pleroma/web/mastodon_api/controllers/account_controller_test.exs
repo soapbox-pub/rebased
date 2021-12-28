@@ -922,6 +922,27 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> json_response_and_validate_schema(200)
     end
 
+    test "following with subscription and unsubscribing" do
+      %{conn: conn} = oauth_access(["follow"])
+      followed = insert(:user)
+
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: true})
+
+      assert %{"id" => _id, "subscribing" => true} =
+               json_response_and_validate_schema(ret_conn, 200)
+
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: false})
+
+      assert %{"id" => _id, "subscribing" => false} =
+               json_response_and_validate_schema(ret_conn, 200)
+    end
+
     test "following / unfollowing errors", %{user: user, conn: conn} do
       # self follow
       conn_res = post(conn, "/api/v1/accounts/#{user.id}/follow")
@@ -1775,5 +1796,46 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert [%{"id" => ^id2}] = result
+  end
+
+  test "account lookup", %{conn: conn} do
+    %{nickname: acct} = insert(:user, %{nickname: "nickname"})
+    %{nickname: acct_two} = insert(:user, %{nickname: "nickname@notlocaldoma.in"})
+
+    result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=#{acct}")
+      |> json_response_and_validate_schema(200)
+
+    assert %{"acct" => ^acct} = result
+
+    result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=#{acct_two}")
+      |> json_response_and_validate_schema(200)
+
+    assert %{"acct" => ^acct_two} = result
+
+    _result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=unexisting_nickname")
+      |> json_response_and_validate_schema(404)
+  end
+
+  test "create a note on a user" do
+    %{conn: conn} = oauth_access(["write:accounts", "read:follows"])
+    other_user = insert(:user)
+
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post("/api/v1/accounts/#{other_user.id}/note", %{
+      "comment" => "Example note"
+    })
+
+    assert [%{"note" => "Example note"}] =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> get("/api/v1/accounts/relationships?id=#{other_user.id}")
+             |> json_response_and_validate_schema(200)
   end
 end

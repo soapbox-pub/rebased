@@ -159,10 +159,12 @@ See [Admin-API](admin_api.md)
   "muting": false,
   "muting_notifications": false,
   "subscribing": true,
+  "notifying": true,
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 
@@ -183,10 +185,12 @@ See [Admin-API](admin_api.md)
   "muting": false,
   "muting_notifications": false,
   "subscribing": false,
+  "notifying": false,
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 

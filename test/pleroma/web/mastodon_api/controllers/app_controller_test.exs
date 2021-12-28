@@ -35,6 +35,33 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
   end
 
   test "creates an oauth app", %{conn: conn} do
+    app_attrs = build(:oauth_app)
+
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/apps", %{
+        client_name: app_attrs.client_name,
+        redirect_uris: app_attrs.redirect_uris
+      })
+
+    [app] = Repo.all(App)
+
+    expected = %{
+      "name" => app.client_name,
+      "website" => app.website,
+      "client_id" => app.client_id,
+      "client_secret" => app.client_secret,
+      "id" => app.id |> to_string(),
+      "redirect_uri" => app.redirect_uris,
+      "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
+    }
+
+    assert expected == json_response_and_validate_schema(conn, 200)
+    assert app.user_id == nil
+  end
+
+  test "creates an oauth app with a user", %{conn: conn} do
     user = insert(:user)
     app_attrs = build(:oauth_app)
 
@@ -60,5 +87,6 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
     }
 
     assert expected == json_response_and_validate_schema(conn, 200)
+    assert app.user_id == user.id
   end
 end
