@@ -6,7 +6,7 @@
     <%= @status_id %>
   </div>
   <%= form_for @conn, Routes.util_path(@conn, :remote_subscribe), [as: "status"], fn f -> %>
-  <%= hidden_input f, :status, value: @status_id %>
+  <%= hidden_input f, :status_id, value: @status_id %>
   <%= text_input f, :profile, placeholder: "Your account ID, e.g. lain@quitter.se" %>
   <%= submit "Interact" %>
   <% end %>
