@@ -297,6 +297,38 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
+  describe "GET /main/ostatus - show_subscribe_form/2" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "it works with users", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> get("/main/ostatus", %{"nickname" => user.nickname})
+        |> response(:ok)
+
+      refute response =~ "Could not find user"
+      assert response =~ "Remotely follow #{user.nickname}"
+    end
+
+    test "it works with statuses", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+
+      assert is_binary(status_id)
+
+      response =
+        conn
+        |> get("/main/ostatus", %{"status_id" => status_id})
+        |> response(:ok)
+
+      refute response =~ "Could not find status"
+      assert response =~ "Interacting with"
+    end
+  end
+
   test "it returns new captcha", %{conn: conn} do
     with_mock Pleroma.Captcha,
       new: fn -> "test_captcha" end do
