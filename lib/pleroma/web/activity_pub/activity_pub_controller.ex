@@ -283,13 +283,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
+  def inbox(%{assigns: %{valid_signature: false}} = conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json("Invalid HTTP Signature")
+  end
+
   # POST /relay/inbox -or- POST /internal/fetch/inbox
-  def inbox(conn, params) do
-    if params["type"] == "Create" && FederatingPlug.federating?() do
+  def inbox(conn, %{"type" => "Create"} = params) do
+    if FederatingPlug.federating?() do
       post_inbox_relayed_create(conn, params)
     else
-      post_inbox_fallback(conn, params)
+      conn
+      |> put_status(:bad_request)
+      |> json("Not federating")
     end
+  end
+
+  def inbox(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json("error, missing HTTP Signature")
   end
 
   defp post_inbox_relayed_create(conn, params) do
@@ -300,23 +314,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     Fetcher.fetch_object_from_id(params["object"]["id"])
 
     json(conn, "ok")
-  end
-
-  defp post_inbox_fallback(conn, params) do
-    headers = Enum.into(conn.req_headers, %{})
-
-    if headers["signature"] && params["actor"] &&
-         String.contains?(headers["signature"], params["actor"]) do
-      Logger.debug(
-        "Signature validation error for: #{params["actor"]}, make sure you are forwarding the HTTP Host header!"
-      )
-
-      Logger.debug(inspect(conn.req_headers))
-    end
-
-    conn
-    |> put_status(:bad_request)
-    |> json(dgettext("errors", "error"))
   end
 
   defp represent_service_actor(%User{} = user, conn) do

@@ -151,13 +151,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 3
 
       expected_text =
-        ~s(<span class="h-card"><a class="u-url mention" data-user="#{gsimg.id}" href="#{
-          gsimg.ap_id
-        }" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a class="u-url mention" data-user="#{
-          archaeme.id
-        }" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a class="u-url mention" data-user="#{
-          archaeme_remote.id
-        }" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{gsimg.id}" href="#{gsimg.ap_id}" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a class="u-url mention" data-user="#{archaeme.id}" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a class="u-url mention" data-user="#{archaeme_remote.id}" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
 
       assert expected_text == text
     end
@@ -172,9 +166,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        ~s(<span class="h-card"><a class="u-url mention" data-user="#{mike.id}" href="#{
-          mike.ap_id
-        }" rel="ugc">@<span>mike</span></a></span> test)
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{mike.id}" href="#{mike.ap_id}" rel="ugc">@<span>mike</span></a></span> test)
 
       assert expected_text == text
     end
@@ -210,13 +202,7 @@ defmodule Pleroma.FormatterTest do
       assert mentions == [{"@#{user.nickname}", user}, {"@#{other_user.nickname}", other_user}]
 
       assert expected_text ==
-               ~s(<span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="#{
-                 user.ap_id
-               }" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
-                 other_user.id
-               }" href="#{other_user.ap_id}" rel="ugc">@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class="h-card"><a class="u-url mention" data-user="#{
-                 third_user.id
-               }" href="#{third_user.ap_id}" rel="ugc">@<span>#{third_user.nickname}</span></a></span>)
+               ~s(<span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="#{user.ap_id}" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{other_user.id}" href="#{other_user.ap_id}" rel="ugc">@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class="h-card"><a class="u-url mention" data-user="#{third_user.id}" href="#{third_user.ap_id}" rel="ugc">@<span>#{third_user.nickname}</span></a></span>)
     end
 
     test "given the 'safe_mention' option, it will still work without any mention" do

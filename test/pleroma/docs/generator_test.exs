@@ -23,7 +23,7 @@ defmodule Pleroma.Docs.GeneratorTest do
           key: :filters,
           type: {:list, :module},
           description: "",
-          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF.Policy}
         },
         %{
           key: Pleroma.Upload,

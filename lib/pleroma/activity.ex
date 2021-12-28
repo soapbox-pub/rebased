@@ -302,7 +302,7 @@ defmodule Pleroma.Activity do
     |> Queries.by_object_id()
     |> Queries.exclude_type("Delete")
     |> select([u], u)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: :infinity)
     |> elem(1)
     |> Enum.find(fn
       %{data: %{"type" => "Create", "object" => ap_id}} when is_binary(ap_id) -> ap_id == id
@@ -362,11 +362,9 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
-    deactivated_users =
-      from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
-      |> Repo.all()
+    deactivated_users_query = from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
 
-    Activity.Queries.exclude_authors(query, deactivated_users)
+    from(activity in query, where: activity.actor not in subquery(deactivated_users_query))
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search

@@ -11,9 +11,23 @@ defmodule Pleroma.Web.TwitterAPI.PasswordController do
 
   require Logger
 
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   alias Pleroma.PasswordResetToken
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+
+  plug(Pleroma.Web.Plugs.RateLimiter, [name: :request] when action == :request)
+
+  @doc "POST /auth/password"
+  def request(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    TwitterAPI.password_reset(nickname_or_email)
+
+    json_response(conn, :no_content, "")
+  end
 
   def reset(conn, %{"token" => token}) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),

@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           type: [:module, {:list, :module}],
           description:
             "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF.Policy}
         },
         %{
           key: :transparency,
@@ -157,9 +157,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           [description | acc]
         else
           Logger.warn(
-            "#{policy} config description doesn't have one or all required keys #{
-              inspect(@required_description_keys)
-            }"
+            "#{policy} config description doesn't have one or all required keys #{inspect(@required_description_keys)}"
           )
 
           acc

@@ -230,6 +230,7 @@ Notes:
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
+* `blockers_visible`: Whether a user can see the posts of users who blocked them
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
@@ -247,7 +248,7 @@ Notes:
 
 ### :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
 Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
@@ -258,10 +259,7 @@ config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     theme: "pleroma-dark",
     # ... see /priv/static/static/config.json for the available keys.
-},
-  masto_fe: %{
-    showInstanceSpecificPanel: true
-  }
+}
 ```
 
 These settings **need to be complete**, they will override the defaults.

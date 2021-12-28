@@ -81,6 +81,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
   end
 
+  def update_last_status_at_if_public(actor, object) do
+    if is_public?(object), do: User.update_last_status_at(actor), else: {:ok, actor}
+  end
+
   defp increase_replies_count_if_reply(%{
          "object" => %{"inReplyTo" => reply_ap_id} = object,
          "type" => "Create"
@@ -288,6 +292,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- increase_replies_count_if_reply(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
+         {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
          :ok <- maybe_federate(activity) do
@@ -441,6 +446,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
     |> restrict_blocked(opts)
+    |> restrict_blockers_visibility(opts)
     |> restrict_recipients(recipients, opts[:user])
     |> restrict_filtered(opts)
     |> where(
@@ -1028,7 +1034,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(
       [activity, object: o] in query,
+      # You don't block the author
       where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
+
+      # You don't block any recipients, and didn't author the post
       where:
         fragment(
           "((not (? && ?)) or ? = ?)",
@@ -1037,12 +1046,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.actor,
           ^user.ap_id
         ),
+
+      # You don't block the domain of any recipients, and didn't author the post
       where:
         fragment(
-          "recipients_contain_blocked_domains(?, ?) = false",
+          "(recipients_contain_blocked_domains(?, ?) = false) or ? = ?",
           activity.recipients,
-          ^domain_blocks
+          ^domain_blocks,
+          activity.actor,
+          ^user.ap_id
         ),
+
+      # It's not a boost of a user you block
       where:
         fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
@@ -1050,6 +1065,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocked_ap_ids
         ),
+
+      # You don't block the author's domain, and also don't follow the author
       where:
         fragment(
           "(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)",
@@ -1058,6 +1075,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.actor,
           ^following_ap_ids
         ),
+
+      # Same as above, but checks the Object
       where:
         fragment(
           "(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)",
@@ -1070,6 +1089,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_blocked(query, _), do: query
+
+  defp restrict_blockers_visibility(query, %{blocking_user: %User{} = user}) do
+    if Config.get([:activitypub, :blockers_visible]) == true do
+      query
+    else
+      blocker_ap_ids = User.incoming_relationships_ungrouped_ap_ids(user, [:block])
+
+      from(
+        activity in query,
+        # The author doesn't block you
+        where: fragment("not (? = ANY(?))", activity.actor, ^blocker_ap_ids),
+
+        # It's not a boost of a user that blocks you
+        where:
+          fragment(
+            "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
+            activity.data,
+            activity.data,
+            ^blocker_ap_ids
+          )
+      )
+    end
+  end
+
+  defp restrict_blockers_visibility(query, _), do: query
 
   defp restrict_unlisted(query, %{restrict_unlisted: true}) do
     from(
@@ -1297,6 +1341,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_state(opts)
       |> restrict_favorited_by(opts)
       |> restrict_blocked(restrict_blocked_opts)
+      |> restrict_blockers_visibility(opts)
       |> restrict_muted(restrict_muted_opts)
       |> restrict_filtered(opts)
       |> restrict_media(opts)
@@ -1597,9 +1642,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          %User{} = old_user <- User.get_by_nickname(nickname),
          {_, false} <- {:ap_id_comparison, data[:ap_id] == old_user.ap_id} do
       Logger.info(
-        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{
-          data[:ap_id]
-        }, renaming."
+        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{data[:ap_id]}, renaming."
       )
 
       old_user

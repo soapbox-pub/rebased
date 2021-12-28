@@ -139,6 +139,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
+  live_view: [signing_salt: "U5ELgdEwTD3n1+D5s0rY0AMg8/y1STxZ3Zvsl3bWh+oBcGrYdil0rXqPMRd3Glcq"],
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
   pubsub_server: Pleroma.PubSub,
@@ -148,6 +149,8 @@ config :pleroma, Pleroma.Web.Endpoint,
   ]
 
 # Configures Elixir's Logger
+config :logger, truncate: 65536
+
 config :logger, :console,
   level: :debug,
   format: "\n$time $metadata[$level] $message\n",
@@ -253,7 +256,9 @@ config :pleroma, :instance,
     ]
   ],
   show_reactions: true,
-  password_reset_token_validity: 60 * 60 * 24
+  password_reset_token_validity: 60 * 60 * 24,
+  profile_directory: true,
+  privileged_staff: false
 
 config :pleroma, :welcome,
   direct_message: [
@@ -321,9 +326,6 @@ config :pleroma, :frontend_configurations,
     subjectLineBehavior: "email",
     theme: "pleroma-dark",
     webPushNotifications: false
-  },
-  masto_fe: %{
-    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :assets,
@@ -352,6 +354,7 @@ config :pleroma, :manifest,
 config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
+  blockers_visible: true,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
@@ -852,6 +855,13 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
+
+config :pleroma, :telemetry,
+  slow_queries_logging: [
+    enabled: false,
+    min_duration: 500_000,
+    exclude_sources: [nil, "oban_jobs"]
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

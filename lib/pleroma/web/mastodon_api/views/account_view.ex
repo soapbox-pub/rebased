@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -101,6 +102,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         User.following?(target, reading_user)
       end
 
+    subscribing =
+      UserRelationship.exists?(
+        user_relationships,
+        :inverse_subscription,
+        target,
+        reading_user,
+        &User.subscribed_to?(&2, &1)
+      )
+
     # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
@@ -138,14 +148,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           target,
           &User.muted_notifications?(&1, &2)
         ),
-      subscribing:
-        UserRelationship.exists?(
-          user_relationships,
-          :inverse_subscription,
-          target,
-          reading_user,
-          &User.subscribed_to?(&2, &1)
-        ),
+      subscribing: subscribing,
+      notifying: subscribing,
       requested: follow_state == :follow_pending,
       domain_blocking: User.blocks_domain?(reading_user, target),
       showing_reblogs:
@@ -156,7 +160,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           target,
           &User.muting_reblogs?(&1, &2)
         ),
-      endorsed: false
+      endorsed: false,
+      note:
+        UserNote.show(
+          reading_user,
+          target
+        )
     }
   end
 
@@ -261,6 +270,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           actor_type: user.actor_type
         }
       },
+      last_status_at: user.last_status_at,
 
       # Pleroma extensions
       # Note: it's insecure to output :email but fully-qualified nickname may serve as safe stub
@@ -269,6 +279,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         ap_id: user.ap_id,
         also_known_as: user.also_known_as,
         is_confirmed: user.is_confirmed,
+        is_suggested: user.is_suggested,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,
         hide_follows_count: user.hide_follows_count,

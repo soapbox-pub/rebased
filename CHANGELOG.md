@@ -6,19 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Removed
+
+- MastoFE
+
 ### Changed
+- Allow users to remove their emails if instance does not need email to register
 
 ### Added
+- `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
+- Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
+- AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
+- AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
+- Handle Reject for already-accepted Follows properly
+- Display OpenGraph data on alternative notice routes.
 
 ### Removed
 
-## Unreleased-patch
-- Mastodon API: Activity Search fallbacks on status fetching after a DB Timeout/Error
+## 2.4.1 - 2021-08-29
 
-## 2.4.0 - 2021-08-xx
+### Changed
+- Make `mix pleroma.database set_text_search_config` run concurrently and indefinitely
+
+### Added
+- AdminAPI: Missing configuration description for StealEmojiPolicy
+
+### Fixed
+- MastodonAPI: Stream out Create activities
+- MRF ObjectAgePolicy: Fix pattern matching on "published"
+- TwitterAPI: Make `change_password` and `change_email` require params on body instead of query
+- Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
+- AdminAPI: Fix rendering reports containing a `nil` object
+- Mastodon API: Activity Search fallbacks on status fetching after a DB Timeout/Error
+- Mastodon API: Fix crash in Streamer related to reblogging
+- AdminAPI: List available frontends when `static/frontends` folder is missing
+- Make activity search properly use language-aware GIN indexes
+- AdminAPI: Fix suggestions for MRF Policies
+
+## 2.4.0 - 2021-08-08
 
 ### Changed
 
@@ -37,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
 - Return OAuth token `id` (primary key) in POST `/oauth/token`.
 - AdminAPI: return `created_at` date with users.
+- AdminAPI: add DELETE `/api/v1/pleroma/admin/instances/:instance` to delete all content from a remote instance.
 - `AnalyzeMetadata` upload filter for extracting image/video attachment dimensions and generating blurhashes for images. Blurhashes for videos are not generated at this time.
 - Attachment dimensions and blurhashes are federated when available.
 - Mastodon API: support `poll` notification.
@@ -47,6 +76,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Checking activated Upload Filters for required commands.
 - Remote users can no longer reappear after being deleted.
 - Deactivated users may now be deleted.
+- Deleting an activity with a lot of likes/boosts no longer causes a database timeout.
 - Mix task `pleroma.database prune_objects`
 - Fixed rendering of JSON errors on ActivityPub endpoints.
 - Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
@@ -111,6 +141,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support pagination of blocks and mutes.
 - Account backup.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
+- `[:activitypub, :blockers_visible]` config to control visibility of blockers.
 - Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
 - The site title is now injected as a `title` tag like preloads or metadata.
 - Password reset tokens now are not accepted after a certain age.

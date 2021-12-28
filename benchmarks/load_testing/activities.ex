@@ -394,7 +394,7 @@ defmodule Pleroma.LoadTesting.Activities do
 
   defp other_data(actor, content) do
     %{host: host} = URI.parse(actor.ap_id)
-    datetime = DateTime.utc_now()
+    datetime = DateTime.utc_now() |> to_string()
     context_id = "https://#{host}/contexts/#{UUID.generate()}"
     activity_id = "https://#{host}/activities/#{UUID.generate()}"
     object_id = "https://#{host}/objects/#{UUID.generate()}"

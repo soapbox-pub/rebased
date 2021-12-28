@@ -57,9 +57,7 @@ defmodule Pleroma.Gun.Conn do
     else
       error ->
         Logger.warn(
-          "Opening proxied connection to #{compose_uri_log(uri)} failed with error #{
-            inspect(error)
-          }"
+          "Opening proxied connection to #{compose_uri_log(uri)} failed with error #{inspect(error)}"
         )
 
         error
@@ -93,9 +91,7 @@ defmodule Pleroma.Gun.Conn do
     else
       error ->
         Logger.warn(
-          "Opening socks proxied connection to #{compose_uri_log(uri)} failed with error #{
-            inspect(error)
-          }"
+          "Opening socks proxied connection to #{compose_uri_log(uri)} failed with error #{inspect(error)}"
         )
 
         error
