@@ -585,6 +585,8 @@ defmodule Pleroma.Web.Router do
     get("/accounts/search", SearchController, :account_search)
     get("/search", SearchController, :search)
 
+    get("/accounts/lookup", AccountController, :lookup)
+
     get("/accounts/:id/statuses", AccountController, :statuses)
     get("/accounts/:id/followers", AccountController, :followers)
     get("/accounts/:id/following", AccountController, :following)

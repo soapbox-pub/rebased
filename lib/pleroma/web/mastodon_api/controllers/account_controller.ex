@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action == :create)
+  plug(:skip_auth when action in [:create, :lookup])
 
   plug(:skip_public_check when action in [:show, :statuses])
 
@@ -490,6 +490,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     conn
     |> add_link_headers(users)
     |> render("index.json", users: users, for: user, as: :user)
+  end
+
+  @doc "GET /api/v1/accounts/lookup"
+  def lookup(conn, %{acct: nickname} = _params) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      render(conn, "show.json",
+        user: user,
+        skip_visibility_check: true
+      )
+    else
+      error -> user_visibility_error(conn, error)
+    end
   end
 
   @doc "GET /api/v1/endorsements"
