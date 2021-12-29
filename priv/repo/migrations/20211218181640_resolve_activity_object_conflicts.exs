@@ -6,7 +6,7 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
   use Ecto.Migration
 
   alias Pleroma.Object
-  alias Pleroma.Migrators.Support.ObjectId
+  alias Pleroma.MigrationHelper.ObjectId
   alias Pleroma.Repo
 
   import Ecto.Query

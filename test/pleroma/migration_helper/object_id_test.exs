@@ -2,9 +2,9 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Migrators.Support.ObjectIdTest do
+defmodule Pleroma.MigrationHelper.ObjectIdTest do
   use Pleroma.DataCase, async: true
-  alias Pleroma.Migrators.Support.ObjectId
+  alias Pleroma.MigrationHelper.ObjectId
 
   test "shift_id/2" do
     id = "AEma8DXGjGtUDO6Qeu"
