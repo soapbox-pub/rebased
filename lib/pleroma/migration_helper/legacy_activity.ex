@@ -96,8 +96,8 @@ defmodule Pleroma.MigrationHelper.LegacyActivity do
   """
   @spec create_by_object_ap_id(String.t() | [String.t()]) :: Ecto.Queryable.t()
   def create_by_object_ap_id(ap_id) do
-    ap_id
-    |> Queries.by_object_id()
+    Activity
+    |> Queries.by_object_id(ap_id)
     |> Queries.by_type("Create")
   end
 end
