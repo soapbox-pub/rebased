@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.TwitterAPI.UtilView do
   use Pleroma.Web, :view
   import Phoenix.HTML.Form
+  import Phoenix.HTML.Link
   alias Pleroma.Config
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Gettext

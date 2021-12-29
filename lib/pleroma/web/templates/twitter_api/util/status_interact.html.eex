@@ -1,10 +1,7 @@
 <%= if @error do %>
   <h2>Error: <%= @error %></h2>
 <% else %>
-  <h2>Interacting with <%= @nickname %></h2>
-  <div>
-    <%= @status_id %>
-  </div>
+  <h2>Interacting with <%= @nickname %>'s <%= link("status", to: @status_link) %></h2>
   <%= form_for @conn, Routes.util_path(@conn, :remote_subscribe), [as: "status"], fn f -> %>
   <%= hidden_input f, :status_id, value: @status_id %>
   <%= text_input f, :profile, placeholder: "Your account ID, e.g. lain@quitter.se" %>
