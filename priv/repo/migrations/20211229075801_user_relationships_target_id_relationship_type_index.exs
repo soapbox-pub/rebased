@@ -2,8 +2,6 @@ defmodule Pleroma.Repo.Migrations.UserRelationshipsTargetIdRelationshipTypeIndex
   use Ecto.Migration
 
   def change do
-    create_if_not_exists(
-      index(:user_relationships, [:target_id, :relationship_type])
-    )
+    create_if_not_exists(index(:user_relationships, [:target_id, :relationship_type]))
   end
 end
