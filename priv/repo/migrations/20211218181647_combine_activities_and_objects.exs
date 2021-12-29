@@ -1,4 +1,4 @@
-defmodule Pleroma.Repo.Migrations.AddActivityFieldsToObjects do
+defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
   use Ecto.Migration
 
   @function_name "update_status_visibility_counter_cache"
