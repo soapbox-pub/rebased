@@ -12,13 +12,21 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
   import Ecto.Query
 
   def up do
-    Object
-    |> join(:inner, [o], a in "activities", on: a.id == o.id)
+    activity_conflict_query()
     |> Repo.stream()
-    |> Stream.each(fn object ->
-      # TODO
-      :error
-    end)
+    |> Stream.each(&update_object/1)
+    |> Stream.run()
+  end
+
+  # Get only objects with a conflicting activity ID.
+  defp activity_conflict_query() do
+    join(Object, :inner, [o], a in "activities", on: a.id == o.id)
+  end
+
+  # Update the object and its relations with a newly-generated ID.
+  defp update_object(object) do
+    new_id = ObjectId.flake_from_time(object.inserted_at)
+    ObjectId.change_id(object, new_id)
   end
 
   def down do
