@@ -1,8 +1,8 @@
 defmodule Pleroma.Repo.Migrations.MigrateOldBookmarks do
   use Ecto.Migration
   import Ecto.Query
-  alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.MigrationHelper.LegacyActivity
   alias Pleroma.Repo
 
   def up do
@@ -18,7 +18,7 @@ defmodule Pleroma.Repo.Migrations.MigrateOldBookmarks do
       Enum.each(bookmarks, fn ap_id ->
         activity =
           ap_id
-          |> Activity.create_by_object_ap_id()
+          |> LegacyActivity.create_by_object_ap_id()
           |> Repo.one()
 
         unless is_nil(activity), do: {:ok, _} = Bookmark.create(user_id, activity.id)

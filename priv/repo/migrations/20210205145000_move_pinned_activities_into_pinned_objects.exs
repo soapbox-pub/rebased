@@ -3,6 +3,7 @@ defmodule Pleroma.Repo.Migrations.MovePinnedActivitiesIntoPinnedObjects do
 
   import Ecto.Query
 
+  alias Pleroma.MigrationHelper.LegacyActivity
   alias Pleroma.Repo
   alias Pleroma.User
 
@@ -11,7 +12,7 @@ defmodule Pleroma.Repo.Migrations.MovePinnedActivitiesIntoPinnedObjects do
     |> select([u], {u.id, fragment("?.pinned_activities", u)})
     |> Repo.stream()
     |> Stream.each(fn {user_id, pinned_activities_ids} ->
-      pinned_activities = Pleroma.Activity.all_by_ids_with_object(pinned_activities_ids)
+      pinned_activities = LegacyActivity.all_by_ids_with_object(pinned_activities_ids)
 
       pins =
         Map.new(pinned_activities, fn %{object: %{data: %{"id" => object_id}}} ->
