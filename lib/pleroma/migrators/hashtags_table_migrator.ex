@@ -58,7 +58,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
             data_migration_id: data_migration_id,
             record_id: failed_id
           }
-          |> Repo.insert()
+          |> Repo.insert(on_conflict: :nothing)
       end
 
       record_ids = object_ids -- failed_ids
