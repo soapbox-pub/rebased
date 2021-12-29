@@ -11,4 +11,11 @@ defmodule Pleroma.Migrators.Support.ObjectIdTest do
     assert ObjectId.shift_id(id, 1) == "AEma8DXGjGtUDO6Qev"
     assert ObjectId.shift_id(id, -1) == "AEma8DXGjGtUDO6Qet"
   end
+
+  test "flake_from_time/1" do
+    now = NaiveDateTime.utc_now()
+    id = ObjectId.flake_from_time(now)
+
+    assert FlakeId.flake_id?(id)
+  end
 end

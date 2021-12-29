@@ -46,4 +46,27 @@ defmodule Pleroma.Migrators.Support.ObjectId do
     |> FlakeId.from_integer()
     |> FlakeId.to_string()
   end
+
+  @doc "Generate a FlakeId from a datetime."
+  @spec flake_from_time(NaiveDateTime.t()) :: flake_id :: String.t()
+  def flake_from_time(%NaiveDateTime{} = dt) do
+    dt
+    |> build_worker()
+    |> FlakeId.Worker.gen_flake()
+    |> FlakeId.to_string()
+  end
+
+  # Build a one-off FlakeId worker.
+  defp build_worker(%NaiveDateTime{} = dt) do
+    %FlakeId.Worker{
+      node: FlakeId.Worker.worker_id(),
+      time: get_timestamp(dt, :millisecond)
+    }
+  end
+
+  # Convert a NaiveDateTime into a Unix timestamp.
+  @epoch ~N[1970-01-01 00:00:00]
+  defp get_timestamp(%NaiveDateTime{} = dt, unit) do
+    NaiveDateTime.diff(dt, @epoch, unit)
+  end
 end
