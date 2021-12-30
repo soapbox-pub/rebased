@@ -400,6 +400,26 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def lookup_operation do
+    %Operation{
+      tags: ["Account lookup"],
+      summary: "Find a user by nickname",
+      operationId: "AccountController.lookup",
+      parameters: [
+        Operation.parameter(
+          :acct,
+          :query,
+          :string,
+          "User nickname"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", Account),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def endorsements_operation do
     %Operation{
       tags: ["Retrieve account information"],
