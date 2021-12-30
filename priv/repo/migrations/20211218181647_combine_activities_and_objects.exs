@@ -5,12 +5,14 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
   @trigger_name "status_visibility_counter_cache_trigger"
 
   def up do
+    # Add missing fields to objects table
     alter table(:objects) do
       add(:local, :boolean)
       add(:actor, :string)
       add(:recipients, {:array, :string})
     end
 
+    # Add missing indexes to objects
     create_if_not_exists(index(:objects, [:local]))
     create_if_not_exists(index(:objects, [:actor, "id DESC NULLS LAST"]))
     create_if_not_exists(index(:objects, [:recipients], using: :gin))
@@ -23,8 +25,15 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
       index(:objects, ["(data->'cc')"], name: :activities_cc_index, using: :gin)
     )
 
+    # Some obscure Fediverse backends (WordPress, Juick) send a Create and a Note
+    # with the exact same ActivityPub ID. This violates the spec and doesn't
+    # work in the new system. WordPress devs were notified.
+    execute(
+      "DELETE FROM activities USING objects WHERE activities.data->>'id' = objects.data->>'id'"
+    )
+
     # Copy all activities into the newly formatted objects table
-    execute("INSERT INTO objects (SELECT * FROM activities) ON CONFLICT DO NOTHING")
+    execute("INSERT INTO objects (SELECT * FROM activities)")
 
     # Update notifications foreign key
     execute("alter table notifications drop constraint notifications_activity_id_fkey")
