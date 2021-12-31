@@ -5,11 +5,15 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
   @trigger_name "status_visibility_counter_cache_trigger"
 
   def up do
+    # Lock both tables to avoid a running server meddling with our transaction
+    execute("LOCK TABLE activities")
+    execute("LOCK TABLE users")
+
     # Add missing fields to objects table
     alter table(:objects) do
       add(:local, :boolean, null: false, default: true)
       add(:actor, :string)
-      add(:recipients, {:array, :string}, default: []))
+      add(:recipients, {:array, :string}, default: [])
     end
 
     # Add missing indexes to objects
@@ -17,13 +21,15 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
     create_if_not_exists(index(:objects, [:actor, "id DESC NULLS LAST"]))
     create_if_not_exists(index(:objects, [:recipients], using: :gin))
 
-    create_if_not_exists(
-      index(:objects, ["(data->'to')"], name: :objects_to_index, using: :gin)
-    )
-
-    create_if_not_exists(
-      index(:objects, ["(data->'cc')"], name: :objects_cc_index, using: :gin)
-    )
+    # Intentionally omit these. According to LiveDashboard they're not used:
+    #
+    # create_if_not_exists(
+    #   index(:objects, ["(data->'to')"], name: :objects_to_index, using: :gin)
+    # )
+    #
+    # create_if_not_exists(
+    #   index(:objects, ["(data->'cc')"], name: :objects_cc_index, using: :gin)
+    # )
 
     create_if_not_exists(
       index(:objects, ["(data->>'actor')", "inserted_at desc"], name: :objects_actor_index)
