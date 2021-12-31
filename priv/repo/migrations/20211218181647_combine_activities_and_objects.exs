@@ -7,9 +7,9 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
   def up do
     # Add missing fields to objects table
     alter table(:objects) do
-      add(:local, :boolean)
+      add(:local, :boolean, null: false, default: true)
       add(:actor, :string)
-      add(:recipients, {:array, :string})
+      add(:recipients, {:array, :string}, default: []))
     end
 
     # Add missing indexes to objects
@@ -18,11 +18,15 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
     create_if_not_exists(index(:objects, [:recipients], using: :gin))
 
     create_if_not_exists(
-      index(:objects, ["(data->'to')"], name: :activities_to_index, using: :gin)
+      index(:objects, ["(data->'to')"], name: :objects_to_index, using: :gin)
     )
 
     create_if_not_exists(
-      index(:objects, ["(data->'cc')"], name: :activities_cc_index, using: :gin)
+      index(:objects, ["(data->'cc')"], name: :objects_cc_index, using: :gin)
+    )
+
+    create_if_not_exists(
+      index(:objects, ["(data->>'actor')", "inserted_at desc"], name: :objects_actor_index)
     )
 
     # Some obscure Fediverse backends (WordPress, Juick) send a Create and a Note
