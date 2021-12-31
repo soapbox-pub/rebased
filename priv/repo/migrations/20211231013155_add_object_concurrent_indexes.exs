@@ -29,5 +29,12 @@ defmodule Pleroma.Repo.Migrations.AddObjectConcurrentIndexes do
         where: "data->>'type' = 'Create'"
       )
     )
+
+    create_if_not_exists(
+      index(:objects, ["(coalesce(data->'object'->>'id', data->>'object'))"],
+        name: :objects_create_objects_index,
+        concurrently: true
+      )
+    )
   end
 end
