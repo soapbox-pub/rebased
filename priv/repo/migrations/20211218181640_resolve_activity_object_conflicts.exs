@@ -18,10 +18,18 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
     execute("LOCK TABLE deliveries")
     execute("LOCK TABLE hashtags_objects")
 
+    # Temporarily disable triggers (and by consequence, fkey constraints)
+    # https://stackoverflow.com/a/18709987
+    Repo.query!("SET session_replication_role = replica")
+
+    # Update conflicting objects
     activity_conflict_query()
     |> Repo.stream()
     |> Stream.each(&update_object!/1)
     |> Stream.run()
+
+    # Re-enable triggers
+    Repo.query!("SET session_replication_role = DEFAULT")
   end
 
   # Get only objects with a conflicting activity ID.
