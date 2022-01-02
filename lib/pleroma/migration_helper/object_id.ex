@@ -19,11 +19,12 @@ defmodule Pleroma.MigrationHelper.ObjectId do
   @doc "Change an object's ID including all references."
   def change_id(%Object{id: old_id} = object, new_id) do
     Repo.transaction(fn ->
-      with {:ok, object} <- Repo.update(change(object, id: new_id)),
+      with {:ok, _} <- Repo.query("SET CONSTRAINTS ALL DEFERRED"),
            {:ok, _} <- update_object_fk(MessageReference, old_id, new_id),
            {:ok, _} <- update_object_fk(Delivery, old_id, new_id),
            {:ok, _} <- update_object_fk(HashtagObject, old_id, new_id),
-           {:ok, _} <- update_object_fk(DataMigrationFailedId, old_id, new_id, :record_id) do
+           {:ok, _} <- update_object_fk(DataMigrationFailedId, old_id, new_id, :record_id),
+           {:ok, object} <- Repo.update(change(object, id: new_id)) do
         {:ok, object}
       end
     end)

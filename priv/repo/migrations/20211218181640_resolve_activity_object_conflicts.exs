@@ -18,11 +18,6 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
     execute("LOCK TABLE deliveries")
     execute("LOCK TABLE hashtags_objects")
 
-    # Temporarily disable fkey constraints
-    disable_constraint("chat_message_references", "chat_message_references_object_id_fkey")
-    disable_constraint("deliveries", "deliveries_object_id_fkey")
-    disable_constraint("hashtags_objects", "hashtags_objects_object_id_fkey")
-
     activity_conflict_query()
     |> Repo.stream()
     |> Stream.each(&update_object/1)
@@ -42,10 +37,5 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
 
   def down do
     :ok
-  end
-
-  # https://stackoverflow.com/a/48335239
-  defp disable_constraint(table, constraint) do
-    execute("ALTER TABLE #{table} ALTER CONSTRAINT #{constraint} DEFERRABLE INITIALLY DEFERRED")
   end
 end
