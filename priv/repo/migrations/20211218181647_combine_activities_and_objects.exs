@@ -7,7 +7,7 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
   def up do
     # Lock both tables to avoid a running server meddling with our transaction
     execute("LOCK TABLE activities")
-    execute("LOCK TABLE users")
+    execute("LOCK TABLE objects")
 
     # Add missing fields to objects table
     alter table(:objects) do
