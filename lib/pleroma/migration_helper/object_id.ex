@@ -19,14 +19,24 @@ defmodule Pleroma.MigrationHelper.ObjectId do
   @doc "Change an object's ID including all references."
   def change_id(%Object{id: old_id} = object, new_id) do
     Repo.transaction(fn ->
-      with {:ok, _} <- Repo.query("SET CONSTRAINTS ALL DEFERRED"),
-           {:ok, _} <- update_object_fk(MessageReference, old_id, new_id),
-           {:ok, _} <- update_object_fk(Delivery, old_id, new_id),
-           {:ok, _} <- update_object_fk(HashtagObject, old_id, new_id),
-           {:ok, _} <- update_object_fk(DataMigrationFailedId, old_id, new_id, :record_id),
-           {:ok, object} <- Repo.update(change(object, id: new_id)) do
-        {:ok, object}
-      end
+      # Temporarily disable triggers (and by consequence, fkey constraints)
+      # https://stackoverflow.com/a/18709987
+      Repo.query!("SET session_replication_role = replica")
+
+      # Update foreign keys
+      update_object_fk(MessageReference, old_id, new_id)
+      update_object_fk(Delivery, old_id, new_id)
+      update_object_fk(HashtagObject, old_id, new_id)
+      update_object_fk(DataMigrationFailedId, old_id, new_id, :record_id)
+
+      # Update the object
+      object = Repo.update!(change(object, id: new_id))
+
+      # Re-enable triggers
+      Repo.query!("SET session_replication_role = DEFAULT")
+
+      # Return the object
+      object
     end)
   end
 

@@ -20,7 +20,7 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
 
     activity_conflict_query()
     |> Repo.stream()
-    |> Stream.each(&update_object/1)
+    |> Stream.each(&update_object!/1)
     |> Stream.run()
   end
 
@@ -30,9 +30,9 @@ defmodule Pleroma.Repo.Migrations.ResolveActivityObjectConflicts do
   end
 
   # Update the object and its relations with a newly-generated ID.
-  defp update_object(object) do
+  defp update_object!(object) do
     new_id = ObjectId.flake_from_time(object.inserted_at)
-    ObjectId.change_id(object, new_id)
+    {:ok, %Object{}} = ObjectId.change_id(object, new_id)
   end
 
   def down do
