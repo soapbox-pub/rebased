@@ -6,7 +6,6 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
   use Pleroma.DataCase, async: true
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -22,26 +21,6 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
     end)
 
     :ok
-  end
-
-  describe "running remove_embedded_objects" do
-    test "it replaces objects with references" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
-      new_data = Map.put(activity.data, "object", activity.object.data)
-
-      {:ok, activity} =
-        activity
-        |> Activity.change(%{data: new_data})
-        |> Repo.update()
-
-      assert is_map(activity.data["object"])
-
-      Mix.Tasks.Pleroma.Database.run(["remove_embedded_objects"])
-
-      activity = Activity.get_by_id_with_object(activity.id)
-      assert is_binary(activity.data["object"])
-    end
   end
 
   describe "prune_objects" do

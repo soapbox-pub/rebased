@@ -5,23 +5,6 @@
 !!! danger
     These mix tasks can take a long time to complete. Many of them were written to address specific database issues that happened because of bugs in migrations or other specific scenarios. Do not run these tasks "just in case" if everything is fine your instance.
 
-## Replace embedded objects with their references
-
-Replaces embedded objects with references to them in the `objects` table. Only needs to be ran once if the instance was created before Pleroma 1.0.5. The reason why this is not a migration is because it could significantly increase the database size after being ran, however after this `VACUUM FULL` will be able to reclaim about 20% (really depends on what is in the database, your mileage may vary) of the db size before the migration.
-
-=== "OTP"
-
-    ```sh
-    ./bin/pleroma_ctl database remove_embedded_objects [option ...]
-    ```
-
-=== "From Source"
-
-    ```sh
-    mix pleroma.database remove_embedded_objects [option ...]
-    ```
-
-
 ### Options
 - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
 
@@ -144,7 +127,7 @@ but should only be run if necessary. **It is safe to cancel this.**
 
 ## Change Text Search Configuration
 
-Change `default_text_search_config` for database and (if necessary) text_search_config used in index, then rebuild index (it may take time). 
+Change `default_text_search_config` for database and (if necessary) text_search_config used in index, then rebuild index (it may take time).
 
 === "OTP"
 

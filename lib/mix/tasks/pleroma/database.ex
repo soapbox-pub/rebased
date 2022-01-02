@@ -20,29 +20,6 @@ defmodule Mix.Tasks.Pleroma.Database do
   @shortdoc "A collection of database related tasks"
   @moduledoc File.read!("docs/administration/CLI_tasks/database.md")
 
-  def run(["remove_embedded_objects" | args]) do
-    {options, [], []} =
-      OptionParser.parse(
-        args,
-        strict: [
-          vacuum: :boolean
-        ]
-      )
-
-    start_pleroma()
-    Logger.info("Removing embedded objects")
-
-    Repo.query!(
-      "update objects set data = safe_jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
-      [],
-      timeout: :infinity
-    )
-
-    if Keyword.get(options, :vacuum) do
-      Maintenance.vacuum("full")
-    end
-  end
-
   def run(["bump_all_conversations"]) do
     start_pleroma()
     Conversation.bump_for_all_activities()
