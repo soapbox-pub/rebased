@@ -34,7 +34,7 @@ defmodule Pleroma.Repo.Migrations.ChangeObjectIdToFlake do
     execute("""
     alter table deliveries
     alter column object_id set data type uuid using cast( lpad( to_hex(object_id), 32, '0') as uuid),
-    add constraint deliveries_object_id_fkey foreign key (object_id) references objects(id)
+    add constraint deliveries_object_id_fkey foreign key (object_id) references objects(id) on delete cascade
     """)
 
     # Update hashtag many-to-many foreign key
