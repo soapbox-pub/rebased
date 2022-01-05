@@ -36,16 +36,6 @@ defmodule Pleroma.MigrationHelper.ObjectId do
     |> Repo.update_all(set: [{field, new_id}])
   end
 
-  @doc "Shift a FlakeId by N places."
-  def shift_id(flake_id, n) when is_integer(n) do
-    flake_id
-    |> FlakeId.from_string()
-    |> FlakeId.to_integer()
-    |> Kernel.+(n)
-    |> FlakeId.from_integer()
-    |> FlakeId.to_string()
-  end
-
   @doc "Generate a FlakeId from a datetime."
   @spec flake_from_time(NaiveDateTime.t()) :: flake_id :: String.t()
   def flake_from_time(%NaiveDateTime{} = dt) do
