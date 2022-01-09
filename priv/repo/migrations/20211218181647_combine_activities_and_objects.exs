@@ -44,7 +44,7 @@ defmodule Pleroma.Repo.Migrations.CombineActivitiesAndObjects do
 
     # Copy all activities into the newly formatted objects table
     execute(
-      "INSERT INTO objects (id, data, local, actor, recipients, inserted_at, updated_at) SELECT id, data, local, actor, recipients, inserted_at, updated_at FROM activities"
+      "INSERT INTO objects (id, data, local, actor, recipients, inserted_at, updated_at) SELECT id, data, local, actor, recipients, inserted_at, updated_at FROM activities ON CONFLICT DO NOTHING"
     )
 
     # Update notifications foreign key
