@@ -1036,7 +1036,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     from(
       [activity, object: o] in query,
       # You don't block the author
-      where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
+      where: fragment("not (? && ?)", [activity.actor], ^blocked_ap_ids),
 
       # You don't block any recipients, and didn't author the post
       where:
@@ -1100,7 +1100,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       from(
         activity in query,
         # The author doesn't block you
-        where: fragment("not (? = ANY(?))", activity.actor, ^blocker_ap_ids),
+        where: fragment("not (? && ?)", [activity.actor], ^blocker_ap_ids),
 
         # It's not a boost of a user that blocks you
         where:
