@@ -138,7 +138,7 @@ defmodule Pleroma.Notification do
     blocked_ap_ids = opts[:blocked_users_ap_ids] || User.blocked_users_ap_ids(user)
 
     query
-    |> where([n, a], a.actor not in ^blocked_ap_ids)
+    |> where([n, a], fragment("not (? && ?)", [a.actor], ^blocked_ap_ids))
     |> FollowingRelationship.keep_following_or_not_domain_blocked(user)
   end
 
@@ -149,7 +149,7 @@ defmodule Pleroma.Notification do
       blocker_ap_ids = User.incoming_relationships_ungrouped_ap_ids(user, [:block])
 
       query
-      |> where([n, a], a.actor not in ^blocker_ap_ids)
+      |> where([n, a], fragment("not (? && ?)", [a.actor], ^blocker_ap_ids))
     end
   end
 
