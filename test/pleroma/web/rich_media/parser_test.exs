@@ -133,13 +133,13 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert Parser.parse("http://example.com/oembed") ==
              {:ok,
               %{
-                "author_name" => "‮‭‬bees‬",
+                "author_name" => "\u202E\u202D\u202Cbees\u202C",
                 "author_url" => "https://www.flickr.com/photos/bees/",
                 "cache_age" => 3600,
                 "flickr_type" => "photo",
                 "height" => "768",
                 "html" =>
-                  "<a data-flickr-embed=\"true\" href=\"https://www.flickr.com/photos/bees/2362225867/\" title=\"Bacon Lollys by ‮‭‬bees‬, on Flickr\"><img src=\"https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg\" width=\"1024\" height=\"768\" alt=\"Bacon Lollys\"></a><script async src=\"https://embedr.flickr.com/assets/client-code.js\" charset=\"utf-8\"></script>",
+                  "<a data-flickr-embed=\"true\" href=\"https://www.flickr.com/photos/bees/2362225867/\" title=\"Bacon Lollys by \u202E\u202D\u202Cbees\u202C, on Flickr\"><img src=\"https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg\" width=\"1024\" height=\"768\" alt=\"Bacon Lollys\"></a><script async src=\"https://embedr.flickr.com/assets/client-code.js\" charset=\"utf-8\"></script>",
                 "license" => "All Rights Reserved",
                 "license_id" => 0,
                 "provider_name" => "Flickr",

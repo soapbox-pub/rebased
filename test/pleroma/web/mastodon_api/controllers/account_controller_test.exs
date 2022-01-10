@@ -1798,6 +1798,30 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     assert [%{"id" => ^id2}] = result
   end
 
+  test "account lookup", %{conn: conn} do
+    %{nickname: acct} = insert(:user, %{nickname: "nickname"})
+    %{nickname: acct_two} = insert(:user, %{nickname: "nickname@notlocaldoma.in"})
+
+    result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=#{acct}")
+      |> json_response_and_validate_schema(200)
+
+    assert %{"acct" => ^acct} = result
+
+    result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=#{acct_two}")
+      |> json_response_and_validate_schema(200)
+
+    assert %{"acct" => ^acct_two} = result
+
+    _result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=unexisting_nickname")
+      |> json_response_and_validate_schema(404)
+  end
+
   test "create a note on a user" do
     %{conn: conn} = oauth_access(["write:accounts", "read:follows"])
     other_user = insert(:user)
