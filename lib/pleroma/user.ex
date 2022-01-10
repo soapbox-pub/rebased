@@ -82,7 +82,7 @@ defmodule Pleroma.User do
     endorsement: [
       endorser_endorsements: :endorsed_users,
       endorsee_endorsements: :endorser_users
-    ],
+    ]
   ]
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
@@ -1522,10 +1522,20 @@ defmodule Pleroma.User do
   end
 
   def endorse(%User{} = endorser, %User{} = target) do
-    if not following?(endorser, target) do
-      {:error, "Could not endorse: You are not following #{target.nickname}"}
-    else
-      UserRelationship.create_endorsement(endorser, target)
+    with max_endorsed_users <- Pleroma.Config.get([:instance, :max_endorsed_users], 0),
+         endorsed_users <-
+           User.endorsed_users_relation(endorser)
+           |> Pleroma.Repo.all() do
+      cond do
+        Enum.count(endorsed_users) >= max_endorsed_users ->
+          {:error, "You have already pinned the maximum number of users"}
+
+        not following?(endorser, target) ->
+          {:error, "Could not endorse: You are not following #{target.nickname}"}
+
+        true ->
+          UserRelationship.create_endorsement(endorser, target)
+      end
     end
   end
 

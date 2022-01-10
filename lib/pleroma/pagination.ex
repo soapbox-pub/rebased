@@ -94,8 +94,7 @@ defmodule Pleroma.Pagination do
       offset: :integer,
       limit: :integer,
       skip_extra_order: :boolean,
-      skip_order: :boolean,
-      shuffle: :boolean,
+      skip_order: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
@@ -112,10 +111,6 @@ defmodule Pleroma.Pagination do
 
   defp restrict(query, :max_id, %{max_id: max_id}, table_binding) do
     where(query, [{q, table_position(query, table_binding)}], q.id < ^max_id)
-  end
-
-  defp restrict(query, :order, %{shuffle: true}, _) do
-    order_by(query, [u], fragment("RANDOM()"))
   end
 
   defp restrict(query, :order, %{skip_order: true}, _), do: query

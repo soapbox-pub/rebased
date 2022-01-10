@@ -117,7 +117,8 @@ defmodule Pleroma.Web.CommonAPI do
   def unfollow(follower, unfollowed) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
-         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed) do
+         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed),
+         {:ok, _endorsement} <- User.unendorse(follower, unfollowed) do
       {:ok, follower}
     end
   end

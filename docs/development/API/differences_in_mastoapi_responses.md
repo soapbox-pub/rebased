@@ -377,12 +377,6 @@ Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer feat
 
 - `GET /api/v1/identity_proofs`: Returns an empty array, `[]`
 
-### Endorsements
-
-*Added in Mastodon 2.5.0*
-
-- `GET /api/v1/endorsements`: Returns an empty array, `[]`
-
 ### Featured tags
 
 *Added in Mastodon 3.0.0*

@@ -53,7 +53,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 
-  plug(:assign_account_by_id when action in [:favourites, :endorsements, :subscribe, :unsubscribe])
+  plug(
+    :assign_account_by_id
+    when action in [:favourites, :endorsements, :subscribe, :unsubscribe]
+  )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
 
@@ -106,7 +109,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     users =
       user
       |> User.endorsed_users_relation(_restrict_deactivated = true)
-      |> fetch_paginated_endorsements(params)
+      |> Pleroma.Repo.all()
 
     conn
     |> add_link_headers(users)
@@ -116,16 +119,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
       as: :user,
       embed_relationships: embed_relationships?(params)
     )
-  end
-
-  defp fetch_paginated_endorsements(user, %{shuffle: true} = params) do
-    user
-    |> Pleroma.Pagination.fetch_paginated(Map.put(params, :shuffle, true))
-  end
-
-  defp fetch_paginated_endorsements(user, params) do
-    user
-    |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
   end
 
   @doc "POST /api/v1/pleroma/accounts/:id/subscribe"

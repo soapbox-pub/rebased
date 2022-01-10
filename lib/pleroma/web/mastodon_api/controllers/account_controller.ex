@@ -84,7 +84,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
   @relationship_actions [:follow, :unfollow]
-  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock endorse unendorse endorse unendorse)a
+  @needs_account ~W(
+    followers following lists follow unfollow mute unmute block unblock note endorse unendorse
+  )a
 
   plug(
     RateLimiter,
@@ -450,16 +452,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     end
   end
 
-  @doc "POST /api/v1/accounts/:id/mute"
+  @doc "POST /api/v1/accounts/:id/pin"
   def endorse(%{assigns: %{user: endorser, account: endorsed}} = conn, _params) do
     with {:ok, _user_relationships} <- User.endorse(endorser, endorsed) do
       render(conn, "relationship.json", user: endorser, target: endorsed)
     else
-      {:error, message} -> json_response(conn, :forbidden, %{error: message})
+      {:error, message} -> json_response(conn, :bad_request, %{error: message})
     end
   end
 
-  @doc "POST /api/v1/accounts/:id/unmute"
+  @doc "POST /api/v1/accounts/:id/unpin"
   def unendorse(%{assigns: %{user: endorser, account: endorsed}} = conn, _params) do
     with {:ok, _user_relationships} <- User.unendorse(endorser, endorsed) do
       render(conn, "relationship.json", user: endorser, target: endorsed)
