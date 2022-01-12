@@ -112,7 +112,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
       |> Pleroma.Repo.all()
 
     conn
-    |> add_link_headers(users)
     |> render("index.json",
       for: for_user,
       users: users,

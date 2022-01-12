@@ -1525,9 +1525,9 @@ defmodule Pleroma.User do
     with max_endorsed_users <- Pleroma.Config.get([:instance, :max_endorsed_users], 0),
          endorsed_users <-
            User.endorsed_users_relation(endorser)
-           |> Pleroma.Repo.all() do
+           |> Repo.aggregate(:count, :id) do
       cond do
-        Enum.count(endorsed_users) >= max_endorsed_users ->
+        endorsed_users >= max_endorsed_users ->
           {:error, "You have already pinned the maximum number of users"}
 
         not following?(endorser, target) ->

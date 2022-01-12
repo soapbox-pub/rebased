@@ -529,10 +529,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     users =
       user
       |> User.endorsed_users_relation(_restrict_deactivated = true)
-      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+      |> Pleroma.Repo.all()
 
     conn
-    |> add_link_headers(users)
     |> render("index.json",
       users: users,
       for: user,
