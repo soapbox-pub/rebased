@@ -78,6 +78,10 @@ defmodule Pleroma.User do
     inverse_subscription: [
       subscribee_subscriptions: :subscriber_users,
       subscriber_subscriptions: :subscribee_users
+    ],
+    endorsement: [
+      endorser_endorsements: :endorsed_users,
+      endorsee_endorsements: :endorser_users
     ]
   ]
 
@@ -170,25 +174,25 @@ defmodule Pleroma.User do
            {incoming_relation, incoming_relation_source}
          ]} <- @user_relationships_config do
       # Definitions of `has_many` relations: :blocker_blocks, :muter_mutes, :reblog_muter_mutes,
-      #   :notification_muter_mutes, :subscribee_subscriptions
+      #   :notification_muter_mutes, :subscribee_subscriptions, :endorser_endorsements
       has_many(outgoing_relation, UserRelationship,
         foreign_key: :source_id,
         where: [relationship_type: relationship_type]
       )
 
       # Definitions of `has_many` relations: :blockee_blocks, :mutee_mutes, :reblog_mutee_mutes,
-      #   :notification_mutee_mutes, :subscriber_subscriptions
+      #   :notification_mutee_mutes, :subscriber_subscriptions, :endorsee_endorsements
       has_many(incoming_relation, UserRelationship,
         foreign_key: :target_id,
         where: [relationship_type: relationship_type]
       )
 
       # Definitions of `has_many` relations: :blocked_users, :muted_users, :reblog_muted_users,
-      #   :notification_muted_users, :subscriber_users
+      #   :notification_muted_users, :subscriber_users, :endorsed_users
       has_many(outgoing_relation_target, through: [outgoing_relation, :target])
 
       # Definitions of `has_many` relations: :blocker_users, :muter_users, :reblog_muter_users,
-      #   :notification_muter_users, :subscribee_users
+      #   :notification_muter_users, :subscribee_users, :endorser_users
       has_many(incoming_relation_source, through: [incoming_relation, :source])
     end
 
@@ -216,7 +220,7 @@ defmodule Pleroma.User do
         @user_relationships_config do
     # `def blocked_users_relation/2`, `def muted_users_relation/2`,
     #   `def reblog_muted_users_relation/2`, `def notification_muted_users/2`,
-    #   `def subscriber_users/2`
+    #   `def subscriber_users/2`, `def endorsed_users_relation/2`
     def unquote(:"#{outgoing_relation_target}_relation")(user, restrict_deactivated? \\ false) do
       target_users_query = assoc(user, unquote(outgoing_relation_target))
 
@@ -229,7 +233,7 @@ defmodule Pleroma.User do
     end
 
     # `def blocked_users/2`, `def muted_users/2`, `def reblog_muted_users/2`,
-    #   `def notification_muted_users/2`, `def subscriber_users/2`
+    #   `def notification_muted_users/2`, `def subscriber_users/2`, `def endorsed_users/2`
     def unquote(outgoing_relation_target)(user, restrict_deactivated? \\ false) do
       __MODULE__
       |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
@@ -240,7 +244,8 @@ defmodule Pleroma.User do
     end
 
     # `def blocked_users_ap_ids/2`, `def muted_users_ap_ids/2`, `def reblog_muted_users_ap_ids/2`,
-    #   `def notification_muted_users_ap_ids/2`, `def subscriber_users_ap_ids/2`
+    #   `def notification_muted_users_ap_ids/2`, `def subscriber_users_ap_ids/2`,
+    #   `def endorsed_users_ap_ids/2`
     def unquote(:"#{outgoing_relation_target}_ap_ids")(user, restrict_deactivated? \\ false) do
       __MODULE__
       |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
@@ -1516,6 +1521,40 @@ defmodule Pleroma.User do
     unblock(blocker, get_cached_by_ap_id(ap_id))
   end
 
+  def endorse(%User{} = endorser, %User{} = target) do
+    with max_endorsed_users <- Pleroma.Config.get([:instance, :max_endorsed_users], 0),
+         endorsed_users <-
+           User.endorsed_users_relation(endorser)
+           |> Repo.aggregate(:count, :id) do
+      cond do
+        endorsed_users >= max_endorsed_users ->
+          {:error, "You have already pinned the maximum number of users"}
+
+        not following?(endorser, target) ->
+          {:error, "Could not endorse: You are not following #{target.nickname}"}
+
+        true ->
+          UserRelationship.create_endorsement(endorser, target)
+      end
+    end
+  end
+
+  def endorse(%User{} = endorser, %{ap_id: ap_id}) do
+    with %User{} = endorsed <- get_cached_by_ap_id(ap_id) do
+      endorse(endorser, endorsed)
+    end
+  end
+
+  def unendorse(%User{} = unendorser, %User{} = target) do
+    UserRelationship.delete_endorsement(unendorser, target)
+  end
+
+  def unendorse(%User{} = unendorser, %{ap_id: ap_id}) do
+    with %User{} = user <- get_cached_by_ap_id(ap_id) do
+      unendorse(unendorser, user)
+    end
+  end
+
   def mutes?(nil, _), do: false
   def mutes?(%User{} = user, %User{} = target), do: mutes_user?(user, target)
 
@@ -1559,6 +1598,10 @@ defmodule Pleroma.User do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
       subscribed_to?(user, target)
     end
+  end
+
+  def endorses?(%User{} = user, %User{} = target) do
+    UserRelationship.endorsement_exists?(user, target)
   end
 
   @doc """

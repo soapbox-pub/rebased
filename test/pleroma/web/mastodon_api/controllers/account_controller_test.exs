@@ -1838,4 +1838,66 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
              |> get("/api/v1/accounts/relationships?id=#{other_user.id}")
              |> json_response_and_validate_schema(200)
   end
+
+  describe "account endorsements" do
+    setup do: oauth_access(["read:accounts", "write:accounts", "write:follows"])
+
+    setup do: clear_config([:instance, :max_endorsed_users], 1)
+
+    test "pin account", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+
+      CommonAPI.follow(user, other_user1)
+
+      assert %{"id" => ^id1, "endorsed" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{id1}/pin")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^id1}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/endorsements")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "unpin account", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+
+      CommonAPI.follow(user, other_user1)
+      User.endorse(user, other_user1)
+
+      assert %{"id" => ^id1, "endorsed" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{id1}/unpin")
+               |> json_response_and_validate_schema(200)
+
+      assert [] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/endorsements")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "max pinned accounts", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user)
+
+      CommonAPI.follow(user, other_user1)
+      CommonAPI.follow(user, other_user2)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/accounts/#{id1}/pin")
+      |> json_response_and_validate_schema(200)
+
+      assert %{"error" => "You have already pinned the maximum number of users"} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/accounts/#{id2}/pin")
+               |> json_response_and_validate_schema(400)
+    end
+  end
 end

@@ -334,6 +334,42 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def endorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Endorse",
+      operationId: "AccountController.endorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Addds the given account to endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 =>
+          Operation.response("Bad Request", "application/json", %Schema{
+            allOf: [ApiError],
+            title: "Unprocessable Entity",
+            example: %{
+              "error" => "You have already pinned the maximum number of users"
+            }
+          })
+      }
+    }
+  end
+
+  def unendorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Unendorse",
+      operationId: "AccountController.unendorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Removes the given account from endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def note_operation do
     %Operation{
       tags: ["Account actions"],
@@ -425,10 +461,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       tags: ["Retrieve account information"],
       summary: "Endorsements",
       operationId: "AccountController.endorsements",
-      description: "Not implemented",
+      description: "Returns endorsed accounts",
       security: [%{"oAuth" => ["read:accounts"]}],
       responses: %{
-        200 => empty_array_response()
+        200 => Operation.response("Array of Accounts", "application/json", array_of_accounts())
       }
     }
   end

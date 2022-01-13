@@ -440,6 +440,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:api)
       get("/accounts/:id/favourites", AccountController, :favourites)
+      get("/accounts/:id/endorsements", AccountController, :endorsements)
     end
 
     scope [] do
@@ -486,6 +487,8 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", AccountController, :mute)
     post("/accounts/:id/unmute", AccountController, :unmute)
     post("/accounts/:id/note", AccountController, :note)
+    post("/accounts/:id/pin", AccountController, :endorse)
+    post("/accounts/:id/unpin", AccountController, :unendorse)
 
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)

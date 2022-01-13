@@ -2498,4 +2498,39 @@ defmodule Pleroma.UserTest do
     %{object: %{data: %{"id" => object_id}}} = Activity.get_by_id_with_object(id)
     object_id
   end
+
+  describe "account endorsements" do
+    test "it pins people" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+
+      {:ok, _user_relationship} = User.endorse(user, pinned_user)
+
+      assert User.endorses?(user, pinned_user)
+    end
+
+    test "it unpins users" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
+      {:ok, _user_relationship} = User.endorse(user, pinned_user)
+      {:ok, _user_pin} = User.unendorse(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+    end
+
+    test "it doesn't pin users you do not follow" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      assert {:error, _message} = User.endorse(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+    end
+  end
 end

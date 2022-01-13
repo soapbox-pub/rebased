@@ -160,11 +160,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           target,
           &User.muting_reblogs?(&1, &2)
         ),
-      endorsed: false,
       note:
         UserNote.show(
           reading_user,
           target
+        ),
+      endorsed:
+        UserRelationship.exists?(
+          user_relationships,
+          :endorsement,
+          target,
+          reading_user,
+          &User.endorses?(&2, &1)
         )
     }
   end
