@@ -39,7 +39,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
-      blockers_visible: Config.get([:activitypub, :blockers_visible]),
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
@@ -68,6 +67,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
+      if Config.get([:activitypub, :blockers_visible]) do
+        "blockers_visible"
+      end,
       if Config.get([:media_proxy, :enabled]) do
         "media_proxy"
       end,
