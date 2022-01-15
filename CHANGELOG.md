@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Handle Reject for already-accepted Follows properly
 - Display OpenGraph data on alternative notice routes.
 - Fix replies count for remote replies
+- Fixed hashtags disappearing from the end of lines when Markdown is enabled
 - ChatAPI: Add link headers
 - Limited number of search results to 40 to prevent DoS attacks
 - ActivityPub: fixed federation of attachment dimensions
