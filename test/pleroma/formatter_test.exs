@@ -318,7 +318,7 @@ defmodule Pleroma.FormatterTest do
       text = "<p>This is a #test</p>"
 
       expected_tags = [
-        {"#test", "test"},
+        {"#test", "test"}
       ]
 
       assert {_text, [], ^expected_tags} = Formatter.linkify(text)
@@ -331,7 +331,7 @@ defmodule Pleroma.FormatterTest do
         {"#tag1", "tag1"},
         {"#tag2", "tag2"},
         {"#tag3", "tag3"},
-        {"#tag4", "tag4"},
+        {"#tag4", "tag4"}
       ]
 
       assert {_text, [], ^expected_tags} = Formatter.linkify(text)
@@ -341,14 +341,15 @@ defmodule Pleroma.FormatterTest do
       text = "<p>This is a</p><p>#test</p>"
 
       expected_tags = [
-        {"#test", "test"},
+        {"#test", "test"}
       ]
 
       assert {_text, [], ^expected_tags} = Formatter.linkify(text)
     end
 
     test "parses mulitple tags on mulitple lines in html" do
-      text = "<p>testing...</p><p>#tag1 #tag2 #tag3 #tag4</p><p>paragraph</p><p>#tag5 #tag6 #tag7 #tag8</p>"
+      text =
+        "<p>testing...</p><p>#tag1 #tag2 #tag3 #tag4</p><p>paragraph</p><p>#tag5 #tag6 #tag7 #tag8</p>"
 
       expected_tags = [
         {"#tag1", "tag1"},
@@ -358,7 +359,7 @@ defmodule Pleroma.FormatterTest do
         {"#tag5", "tag5"},
         {"#tag6", "tag6"},
         {"#tag7", "tag7"},
-        {"#tag8", "tag8"},
+        {"#tag8", "tag8"}
       ]
 
       assert {_text, [], ^expected_tags} = Formatter.linkify(text)
