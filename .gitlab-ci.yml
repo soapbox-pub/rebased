@@ -90,6 +90,7 @@ unit-testing:
 unit-testing-erratic:
   stage: test
   retry: 2
+  allow_failure: true
   only:
     changes:
       - "**/*.ex"
