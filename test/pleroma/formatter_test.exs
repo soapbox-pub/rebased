@@ -294,7 +294,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        ~s(<p>Hello</p><p><span class="h-card"><a class="u-url mention" data-user="#{lain.id}" href="#{lain.ap_id}" rel="ugc">@<span>lain</span></a></p></span>)
+        ~s(<p>Hello</p><p><span class="h-card"><a class="u-url mention" data-user="#{lain.id}" href="#{lain.ap_id}" rel="ugc">@<span>lain</span></a></span></p>)
 
       assert expected_text == text
     end
