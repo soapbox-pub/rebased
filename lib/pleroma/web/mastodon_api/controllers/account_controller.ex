@@ -57,7 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:accounts"]}
-    when action in [:update_credentials, :note]
+    when action in [:update_credentials, :note, :endorse, :unendorse]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :lists)
@@ -84,7 +84,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
   @relationship_actions [:follow, :unfollow]
-  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock note)a
+  @needs_account ~W(
+    followers following lists follow unfollow mute unmute block unblock note endorse unendorse
+  )a
 
   plug(
     RateLimiter,
@@ -450,6 +452,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     end
   end
 
+  @doc "POST /api/v1/accounts/:id/pin"
+  def endorse(%{assigns: %{user: endorser, account: endorsed}} = conn, _params) do
+    with {:ok, _user_relationships} <- User.endorse(endorser, endorsed) do
+      render(conn, "relationship.json", user: endorser, target: endorsed)
+    else
+      {:error, message} -> json_response(conn, :bad_request, %{error: message})
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/unpin"
+  def unendorse(%{assigns: %{user: endorser, account: endorsed}} = conn, _params) do
+    with {:ok, _user_relationships} <- User.unendorse(endorser, endorsed) do
+      render(conn, "relationship.json", user: endorser, target: endorsed)
+    else
+      {:error, message} -> json_response(conn, :forbidden, %{error: message})
+    end
+  end
+
   @doc "POST /api/v1/follows"
   def follow_by_uri(%{body_params: %{uri: uri}} = conn, _) do
     case User.get_cached_by_nickname(uri) do
@@ -505,7 +525,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/endorsements"
-  def endorsements(conn, params), do: MastodonAPIController.empty_array(conn, params)
+  def endorsements(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.endorsed_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Repo.all()
+
+    conn
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
+  end
 
   @doc "GET /api/v1/identity_proofs"
   def identity_proofs(conn, params), do: MastodonAPIController.empty_array(conn, params)

@@ -258,7 +258,8 @@ config :pleroma, :instance,
   show_reactions: true,
   password_reset_token_validity: 60 * 60 * 24,
   profile_directory: true,
-  privileged_staff: false
+  privileged_staff: false,
+  max_endorsed_users: 20
 
 config :pleroma, :welcome,
   direct_message: [

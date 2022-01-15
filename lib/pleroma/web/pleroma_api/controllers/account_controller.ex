@@ -6,7 +6,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
+    only: [
+      json_response: 3,
+      add_link_headers: 2,
+      embed_relationships?: 1,
+      assign_account_by_id: 2
+    ]
 
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -40,9 +45,18 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     %{scopes: ["read:favourites"], fallback: :proceed_unauthenticated} when action == :favourites
   )
 
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
+    when action == :endorsements
+  )
+
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 
-  plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
+  plug(
+    :assign_account_by_id
+    when action in [:favourites, :endorsements, :subscribe, :unsubscribe]
+  )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
 
@@ -87,6 +101,22 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
       activities: activities,
       for: for_user,
       as: :activity
+    )
+  end
+
+  @doc "GET /api/v1/pleroma/accounts/:id/endorsements"
+  def endorsements(%{assigns: %{user: for_user, account: user}} = conn, params) do
+    users =
+      user
+      |> User.endorsed_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Repo.all()
+
+    conn
+    |> render("index.json",
+      for: for_user,
+      users: users,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
     )
   end
 
