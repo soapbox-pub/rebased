@@ -5,15 +5,49 @@ defmodule Pleroma.Repo.Migrations.ChangeObjectIdToFlake do
   """
   use Ecto.Migration
 
+  @delete_duplicate_ap_id_objects_query """
+  DELETE FROM objects
+  WHERE id IN (
+    SELECT
+        id
+    FROM (
+        SELECT
+            id,
+            row_number() OVER w as rnum
+        FROM objects
+        WHERE data->>'id' IS NOT NULL
+        WINDOW w AS (
+            PARTITION BY data->>'id'
+            ORDER BY id
+        )
+    ) t
+  WHERE t.rnum > 1)
+  """
+
+  @convert_objects_int_ids_to_flake_ids_query """
+  alter table objects
+  drop constraint objects_pkey cascade,
+  alter column id drop default,
+  alter column id set data type uuid using cast( lpad( to_hex(id), 32, '0') as uuid),
+  add primary key (id)
+  """
+
   def up do
     # Switch object IDs to FlakeIds
-    execute("""
-    alter table objects
-    drop constraint objects_pkey cascade,
-    alter column id drop default,
-    alter column id set data type uuid using cast( lpad( to_hex(id), 32, '0') as uuid),
-    add primary key (id)
-    """)
+    execute(fn ->
+      try do
+        repo().query!(@convert_objects_int_ids_to_flake_ids_query)
+      rescue
+        e in Postgrex.Error ->
+          # Handling of error 23505, "unique_violation": https://git.pleroma.social/pleroma/pleroma/-/issues/2771
+          with %{postgres: %{pg_code: "23505"}} <- e do
+            repo().query!(@delete_duplicate_ap_id_objects_query)
+            repo().query!(@convert_objects_int_ids_to_flake_ids_query)
+          else
+            _ -> raise e
+          end
+      end
+    end)
 
     # Update data_migration_failed_ids
     execute("""
