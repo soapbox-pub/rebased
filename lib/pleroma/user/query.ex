@@ -59,7 +59,9 @@ defmodule Pleroma.User.Query do
             order_by: term(),
             select: term(),
             limit: pos_integer(),
-            actor_types: [String.t()]
+            actor_types: [String.t()],
+            birth_day: pos_integer(),
+            birth_month: pos_integer()
           }
           | map()
 
@@ -228,6 +230,18 @@ defmodule Pleroma.User.Query do
     query
     |> where([u], not is_nil(u.nickname))
     |> where([u], not like(u.nickname, "internal.%"))
+  end
+
+  defp compose_query({:birth_day, day}, query) do
+    query
+    |> where([u], not is_nil(u.birth_date))
+    |> where([u], fragment("date_part('day', ?)", u.birth_date) == ^day)
+  end
+
+  defp compose_query({:birth_month, month}, query) do
+    query
+    |> where([u], not is_nil(u.birth_date))
+    |> where([u], fragment("date_part('month', ?)", u.birth_date) == ^month)
   end
 
   defp compose_query(_unsupported_param, query), do: query

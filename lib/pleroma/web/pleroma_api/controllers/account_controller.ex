@@ -51,6 +51,11 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     when action == :endorsements
   )
 
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]} when action == :birthdays
+  )
+
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 
   plug(
@@ -136,5 +141,19 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
     end
+  end
+
+  @doc "GET /api/v1/pleroma/birthday_reminders"
+  def birthdays(%{assigns: %{user: %User{} = user}} = conn, %{day: day, month: month} = _params) do
+    birthdays =
+      User.Query.build(%{friends: user, deactivated: false, birth_day: day, birth_month: month})
+      |> Pleroma.Repo.all()
+
+      conn
+      |> render("index.json",
+        for: user,
+        users: birthdays,
+        as: :user
+      )
   end
 end

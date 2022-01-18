@@ -154,6 +154,9 @@ defmodule Pleroma.User do
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
     field(:last_status_at, :naive_datetime)
+    field(:birth_date, :date)
+    field(:hide_birth_date, :boolean, default: false)
+
 
     embeds_one(
       :notification_settings,
@@ -470,7 +473,8 @@ defmodule Pleroma.User do
         :actor_type,
         :also_known_as,
         :accepts_chat_messages,
-        :pinned_objects
+        :pinned_objects,
+        :birth_date
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -531,9 +535,11 @@ defmodule Pleroma.User do
         :is_discoverable,
         :actor_type,
         :accepts_chat_messages,
-        :disclose_client
+        :disclose_client,
+        :birth_date
       ]
     )
+    |> validate_min_age()
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
@@ -738,7 +744,8 @@ defmodule Pleroma.User do
       :password_confirmation,
       :emoji,
       :accepts_chat_messages,
-      :registration_reason
+      :registration_reason,
+      :birth_date
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -760,6 +767,8 @@ defmodule Pleroma.User do
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_length(:registration_reason, max: reason_limit)
     |> maybe_validate_required_email(opts[:external])
+    |> maybe_validate_required_birth_date
+    |> validate_min_age()
     |> put_password_hash
     |> put_ap_id()
     |> unique_constraint(:ap_id)
@@ -774,6 +783,26 @@ defmodule Pleroma.User do
     else
       changeset
     end
+  end
+
+  defp maybe_validate_required_birth_date(changeset) do
+    if Config.get([:instance, :birth_date_required]) do
+      validate_required(changeset, [:birth_date])
+    else
+      changeset
+    end
+  end
+
+  defp validate_min_age(changeset) do
+    changeset
+    |> validate_change(:birth_date, fn :birth_date, birth_date ->
+      valid? =
+        Date.utc_today()
+        |> Date.diff(birth_date) >=
+        Config.get([:instance, :birth_date_min_age])
+
+      if valid?, do: [], else: [birth_date: "Invalid birth date"]
+    end)
   end
 
   defp put_ap_id(changeset) do

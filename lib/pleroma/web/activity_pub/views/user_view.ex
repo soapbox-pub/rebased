@@ -92,6 +92,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         %{}
       end
 
+    birth_date =
+      if !user.hide_birth_date,
+        do: user.birth_date,
+        else: nil
+
     %{
       "id" => user.ap_id,
       "type" => user.actor_type,
@@ -116,7 +121,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       # Note: key name is indeed "discoverable" (not an error)
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities,
-      "alsoKnownAs" => user.also_known_as
+      "alsoKnownAs" => user.also_known_as,
+      "vcard:bday" => birth_date
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
