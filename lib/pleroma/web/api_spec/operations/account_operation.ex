@@ -549,7 +549,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "User's birth date",
           format: :date
-        },
+        }
       },
       example: %{
         "username" => "cofe",

@@ -966,7 +966,8 @@ config :pleroma, :config_description, [
       %{
         key: :birth_date_min_age,
         type: :integer,
-        description: "Min age for users to create account. Only makes sense if birth date is required."
+        description:
+          "Min age for users to create account. Only makes sense if birth date is required."
       }
     ]
   },

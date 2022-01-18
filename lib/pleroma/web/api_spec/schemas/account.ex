@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             description: "whether the user allows automatically follow moved following accounts"
           },
           background_image: %Schema{type: :string, nullable: true, format: :uri},
-          birth_date: %Schema{type: :string, format: :date},
+          birth_date: %Schema{type: :string, nullable: true, format: :date},
           chat_token: %Schema{type: :string},
           is_confirmed: %Schema{
             type: :boolean,

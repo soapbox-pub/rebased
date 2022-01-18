@@ -157,7 +157,6 @@ defmodule Pleroma.User do
     field(:birth_date, :date)
     field(:hide_birth_date, :boolean, default: false)
 
-
     embeds_one(
       :notification_settings,
       Pleroma.User.NotificationSetting,
@@ -799,7 +798,7 @@ defmodule Pleroma.User do
       valid? =
         Date.utc_today()
         |> Date.diff(birth_date) >=
-        Config.get([:instance, :birth_date_min_age])
+          Config.get([:instance, :birth_date_min_age])
 
       if valid?, do: [], else: [birth_date: "Invalid birth date"]
     end)

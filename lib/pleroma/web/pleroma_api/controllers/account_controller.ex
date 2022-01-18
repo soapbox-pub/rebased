@@ -149,11 +149,11 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
       User.Query.build(%{friends: user, deactivated: false, birth_day: day, birth_month: month})
       |> Pleroma.Repo.all()
 
-      conn
-      |> render("index.json",
-        for: user,
-        users: birthdays,
-        as: :user
-      )
+    conn
+    |> render("index.json",
+      for: user,
+      users: birthdays,
+      as: :user
+    )
   end
 end
