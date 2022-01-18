@@ -535,7 +535,8 @@ defmodule Pleroma.User do
         :actor_type,
         :accepts_chat_messages,
         :disclose_client,
-        :birth_date
+        :birth_date,
+        :hide_birth_date
       ]
     )
     |> validate_min_age()
@@ -2582,5 +2583,14 @@ defmodule Pleroma.User do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
     end
+  end
+
+  def get_friends_birthdays_query(%User{} = user, day, month) do
+    User.Query.build(%{
+      friends: user,
+      deactivated: false,
+      birth_day: day,
+      birth_month: month
+    })
   end
 end

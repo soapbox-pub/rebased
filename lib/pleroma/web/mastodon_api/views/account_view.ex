@@ -249,11 +249,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         nil
       end
 
-    birth_date =
-      if !user.hide_birth_date or opts[:for] == user,
-        do: user.birth_date,
-        else: nil
-
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -303,7 +298,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
         favicon: favicon,
-        birth_date: birth_date
+        birth_date: user.birth_date,
+        hide_birth_date: user.hide_birth_date
       }
     }
     |> maybe_put_role(user, opts[:for])
@@ -317,6 +313,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
+    |> maybe_hide_birth_date(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -437,6 +434,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_email_address(data, _, _), do: data
+
+  defp maybe_hide_birth_date(data, %User{id: user_id}, %User{id: user_id}) do
+    data
+  end
+
+  defp maybe_hide_birth_date(data, %User{hide_birth_date: true}, _) do
+    data
+    |> Kernel.pop_in([:pleroma, :birth_date])
+    |> Kernel.pop_in([:pleroma, :hide_birth_date])
+    |> elem(1)
+  end
+
+  defp maybe_hide_birth_date(data, _, _) do
+    data
+    |> Kernel.pop_in([:pleroma, :hide_birth_date])
+    |> elem(1)
+  end
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

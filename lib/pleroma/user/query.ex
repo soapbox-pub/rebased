@@ -234,12 +234,14 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:birth_day, day}, query) do
     query
+    |> where([u], u.hide_birth_date == false)
     |> where([u], not is_nil(u.birth_date))
     |> where([u], fragment("date_part('day', ?)", u.birth_date) == ^day)
   end
 
   defp compose_query({:birth_month, month}, query) do
     query
+    |> where([u], u.hide_birth_date == false)
     |> where([u], not is_nil(u.birth_date))
     |> where([u], fragment("date_part('month', ?)", u.birth_date) == ^month)
   end
