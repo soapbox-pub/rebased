@@ -1501,6 +1501,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         nil
       end
 
+    birth_date =
+      if data["vcard:bday"] do
+        case Date.from_iso8601(data["vcard:bday"]) do
+          {:ok, date} -> date
+          {:error, _} -> nil
+        end
+      else
+        nil
+      end
+
     user_data = %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
@@ -1524,7 +1534,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
       pinned_objects: pinned_objects,
-      birth_date: data["vcard:bday"]
+      birth_date: birth_date
     }
 
     # nickname can be nil because of virtual actors
