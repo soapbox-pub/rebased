@@ -442,6 +442,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_hide_birth_date(data, %User{hide_birth_date: true}, _) do
     data
     |> Kernel.pop_in([:pleroma, :birth_date])
+    |> elem(1)
     |> Kernel.pop_in([:pleroma, :hide_birth_date])
     |> elem(1)
   end
