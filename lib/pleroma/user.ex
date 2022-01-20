@@ -1055,6 +1055,10 @@ defmodule Pleroma.User do
     Repo.get_by(User, ap_id: ap_id)
   end
 
+  def get_by_uri(uri) do
+    Repo.get_by(User, uri: uri)
+  end
+
   def get_all_by_ap_id(ap_ids) do
     from(u in __MODULE__,
       where: u.ap_id in ^ap_ids
