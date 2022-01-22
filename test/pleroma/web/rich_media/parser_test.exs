@@ -161,7 +161,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
         "thumbnail_width" => 150,
         "title" => "Bacon Lollys",
         "type" => "photo",
-        "url" => "http://example.com/oembed",
+        "url" => "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg",
         "version" => "1.0",
         "web_page" => "https://www.flickr.com/photos/bees/2362225867/",
         "web_page_short_url" => "https://flic.kr/p/4AK2sc",
