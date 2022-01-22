@@ -35,7 +35,7 @@
       <p>Choose carefully! You won't be able to change this later. You will be able to change your display name, though.</p>
       <div class="input">
         <%= label f, :nickname, "Pleroma Handle" %>
-        <%= text_input f, :nickname, placeholder: "lain" %>
+        <%= text_input f, :nickname, placeholder: "lain", autocomplete: "username" %>
       </div>
       <%= hidden_input f, :name, value: @params["name"] %>
       <%= hidden_input f, :password, value: @params["password"] %>

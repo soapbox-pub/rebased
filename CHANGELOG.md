@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
 - Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
+- `ForceMentionsInPostContent` MRF policy
 - AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
 - AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 - PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
@@ -34,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Handle Reject for already-accepted Follows properly
 - Display OpenGraph data on alternative notice routes.
 - Fix replies count for remote replies
+- Fixed hashtags disappearing from the end of lines when Markdown is enabled
 - ChatAPI: Add link headers
 - Limited number of search results to 40 to prevent DoS attacks
 - ActivityPub: fixed federation of attachment dimensions
@@ -44,6 +46,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed account deletion API
 
 ### Removed
+
+## 2.4.2 - 2022-01-10
+
+### Fixed
+- Federation issues caused by HTTP pool checkout timeouts
+- Compatibility with Elixir 1.13
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## 2.4.1 - 2021-08-29
 

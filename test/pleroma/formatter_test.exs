@@ -270,6 +270,34 @@ defmodule Pleroma.FormatterTest do
 
       assert {^expected_text, ^expected_mentions, []} = Formatter.linkify(text)
     end
+
+    test "correctly parses mentions in html" do
+      text = "<p>@lain hello</p>"
+      lain = insert(:user, %{nickname: "lain"})
+
+      {text, mentions, []} = Formatter.linkify(text)
+
+      assert length(mentions) == 1
+
+      expected_text =
+        ~s(<p><span class="h-card"><a class="u-url mention" data-user="#{lain.id}" href="#{lain.ap_id}" rel="ugc">@<span>lain</span></a></span> hello</p>)
+
+      assert expected_text == text
+    end
+
+    test "correctly parses mentions on the last line of html" do
+      text = "<p>Hello</p><p>@lain</p>"
+      lain = insert(:user, %{nickname: "lain"})
+
+      {text, mentions, []} = Formatter.linkify(text)
+
+      assert length(mentions) == 1
+
+      expected_text =
+        ~s(<p>Hello</p><p><span class="h-card"><a class="u-url mention" data-user="#{lain.id}" href="#{lain.ap_id}" rel="ugc">@<span>lain</span></a></span></p>)
+
+      assert expected_text == text
+    end
   end
 
   describe ".parse_tags" do
@@ -281,6 +309,57 @@ defmodule Pleroma.FormatterTest do
         {"#working", "working"},
         {"#は", "は"},
         {"#漢字", "漢字"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses tags in html" do
+      text = "<p>This is a #test</p>"
+
+      expected_tags = [
+        {"#test", "test"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses mulitple tags in html" do
+      text = "<p>#tag1 #tag2 #tag3 #tag4</p>"
+
+      expected_tags = [
+        {"#tag1", "tag1"},
+        {"#tag2", "tag2"},
+        {"#tag3", "tag3"},
+        {"#tag4", "tag4"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses tags on the last line of html" do
+      text = "<p>This is a</p><p>#test</p>"
+
+      expected_tags = [
+        {"#test", "test"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses mulitple tags on mulitple lines in html" do
+      text =
+        "<p>testing...</p><p>#tag1 #tag2 #tag3 #tag4</p><p>paragraph</p><p>#tag5 #tag6 #tag7 #tag8</p>"
+
+      expected_tags = [
+        {"#tag1", "tag1"},
+        {"#tag2", "tag2"},
+        {"#tag3", "tag3"},
+        {"#tag4", "tag4"},
+        {"#tag5", "tag5"},
+        {"#tag6", "tag6"},
+        {"#tag7", "tag7"},
+        {"#tag8", "tag8"}
       ]
 
       assert {_text, [], ^expected_tags} = Formatter.linkify(text)

@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
@@ -402,15 +404,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => id_one}, %{"id" => id_two}] = resp
       assert id_one == to_string(private_activity.id)
       assert id_two == to_string(activity.id)
-    end
-
-    test "unimplemented pinned statuses feature", %{conn: conn} do
-      note = insert(:note_activity)
-      user = User.get_cached_by_ap_id(note.data["actor"])
-
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?pinned=true")
-
-      assert json_response_and_validate_schema(conn, 200) == []
     end
 
     test "gets an users media, excludes reblogs", %{conn: conn} do
@@ -1036,6 +1029,35 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
                |> json_response_and_validate_schema(200)
     end
+  end
+
+  test "view pinned private statuses" do
+    user = insert(:user)
+    reader = insert(:user)
+
+    # Create a private status and pin it
+    {:ok, %{id: activity_id} = activity} =
+      CommonAPI.post(user, %{status: "psst", visibility: "private"})
+
+    %{data: %{"id" => object_ap_id}} = Object.normalize(activity)
+    {:ok, _} = User.add_pinned_object_id(user, object_ap_id)
+
+    %{conn: conn} = oauth_access(["read:statuses"], user: reader)
+
+    # A non-follower can't see the pinned status
+    assert [] ==
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+             |> json_response_and_validate_schema(200)
+
+    # Follow the user, then the pinned status can be seen
+    CommonAPI.follow(reader, user)
+    ObanHelpers.perform_all()
+
+    assert [%{"id" => ^activity_id, "pinned" => true}] =
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+             |> json_response_and_validate_schema(200)
   end
 
   test "blocking / unblocking a user" do
