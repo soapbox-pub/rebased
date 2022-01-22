@@ -961,13 +961,13 @@ config :pleroma, :config_description, [
       %{
         key: :birthday_required,
         type: :boolean,
-        description: "Require users to provide birth day."
+        description: "Require users to enter their birthday."
       },
       %{
         key: :birthday_min_age,
         type: :integer,
         description:
-          "Min age for users to create account. Only makes sense if birth date is required."
+          "Minimum required age for users to create account. Only used if birthday is required."
       }
     ]
   },
