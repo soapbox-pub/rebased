@@ -9,6 +9,7 @@ defmodule Pleroma.User.EmailListTest do
 
   import Pleroma.Factory
 
+  @tag :erratic
   test "generate_csv/1 with :subscribers" do
     user1 = insert(:user, accepts_email_list: true)
     user2 = insert(:user, accepts_email_list: true)
@@ -25,6 +26,7 @@ defmodule Pleroma.User.EmailListTest do
     assert EmailList.generate_csv(:subscribers) == expected
   end
 
+  @tag :erratic
   test "generate_csv/1 with :unsubscribers" do
     user1 = insert(:user, accepts_email_list: false)
     user2 = insert(:user, accepts_email_list: false)
@@ -40,6 +42,7 @@ defmodule Pleroma.User.EmailListTest do
     assert EmailList.generate_csv(:unsubscribers) == expected
   end
 
+  @tag :erratic
   test "generate_csv/1 with :combined" do
     user1 = insert(:user, accepts_email_list: true, is_active: false)
     user2 = insert(:user, accepts_email_list: true)
