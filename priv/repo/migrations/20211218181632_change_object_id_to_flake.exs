@@ -33,6 +33,13 @@ defmodule Pleroma.Repo.Migrations.ChangeObjectIdToFlake do
   """
 
   def up do
+    # Lock tables to avoid a running server meddling with our transaction
+    execute("LOCK TABLE objects")
+    execute("LOCK TABLE data_migration_failed_ids")
+    execute("LOCK TABLE chat_message_references")
+    execute("LOCK TABLE deliveries")
+    execute("LOCK TABLE hashtags_objects")
+
     # Switch object IDs to FlakeIds
     execute(fn ->
       try do
