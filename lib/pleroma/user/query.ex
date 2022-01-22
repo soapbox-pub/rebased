@@ -60,8 +60,8 @@ defmodule Pleroma.User.Query do
             select: term(),
             limit: pos_integer(),
             actor_types: [String.t()],
-            birth_day: pos_integer(),
-            birth_month: pos_integer()
+            birthday_day: pos_integer(),
+            birthday_month: pos_integer()
           }
           | map()
 
@@ -232,18 +232,18 @@ defmodule Pleroma.User.Query do
     |> where([u], not like(u.nickname, "internal.%"))
   end
 
-  defp compose_query({:birth_day, day}, query) do
+  defp compose_query({:birthday_day, day}, query) do
     query
-    |> where([u], u.hide_birth_date == false)
-    |> where([u], not is_nil(u.birth_date))
-    |> where([u], fragment("date_part('day', ?)", u.birth_date) == ^day)
+    |> where([u], u.hide_birthday == false)
+    |> where([u], not is_nil(u.birthday))
+    |> where([u], fragment("date_part('day', ?)", u.birthday) == ^day)
   end
 
-  defp compose_query({:birth_month, month}, query) do
+  defp compose_query({:birthday_month, month}, query) do
     query
-    |> where([u], u.hide_birth_date == false)
-    |> where([u], not is_nil(u.birth_date))
-    |> where([u], fragment("date_part('month', ?)", u.birth_date) == ^month)
+    |> where([u], u.hide_birthday == false)
+    |> where([u], not is_nil(u.birthday))
+    |> where([u], fragment("date_part('month', ?)", u.birthday) == ^month)
   end
 
   defp compose_query(_unsupported_param, query), do: query

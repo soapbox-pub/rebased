@@ -92,9 +92,9 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         %{}
       end
 
-    birth_date =
-      if !user.hide_birth_date,
-        do: user.birth_date,
+    birthday =
+      if !user.hide_birthday,
+        do: user.birthday,
         else: nil
 
     %{
@@ -122,7 +122,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities,
       "alsoKnownAs" => user.also_known_as,
-      "vcard:bday" => birth_date
+      "vcard:bday" => birthday
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))

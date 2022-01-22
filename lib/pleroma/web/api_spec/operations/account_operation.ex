@@ -544,10 +544,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "Invite token required when the registrations aren't public"
         },
-        birth_date: %Schema{
+        birthday: %Schema{
           type: :string,
           nullable: true,
-          description: "User's birth date",
+          description: "User's birthday",
           format: :date
         }
       },
@@ -727,16 +727,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
         actor_type: ActorType,
-        birth_date: %Schema{
+        birthday: %Schema{
           type: :string,
           nullable: true,
-          description: "User's birth date",
+          description: "User's birthday",
           format: :date
         },
-        hide_birth_date: %Schema{
+        hide_birthday: %Schema{
           allOf: [BooleanLike],
           nullable: true,
-          description: "User's birth date will be hidden"
+          description: "User's birthday will be hidden"
         }
       },
       example: %{
@@ -758,8 +758,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         also_known_as: ["https://foo.bar/users/foo"],
         discoverable: false,
         actor_type: "Person",
-        hide_birth_date: true,
-        birth_date: "2001-02-12"
+        hide_birthday: true,
+        birthday: "2001-02-12"
       }
     }
   end

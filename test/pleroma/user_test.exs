@@ -755,7 +755,7 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "user registration, with :birth_date_required and :birth_date_min_age" do
+  describe "user registration, with :birthday_required and :birthday_min_age" do
     @full_user_data %{
       bio: "A guy",
       name: "my name",
@@ -766,17 +766,17 @@ defmodule Pleroma.UserTest do
     }
 
     setup do
-      clear_config([:instance, :birth_date_required], true)
-      clear_config([:instance, :birth_date_min_age], 18 * 365)
+      clear_config([:instance, :birthday_required], true)
+      clear_config([:instance, :birthday_min_age], 18 * 365)
     end
 
     test "it passes when correct birth date is provided" do
       today = Date.utc_today()
-      birth_date = Date.add(today, -19 * 365)
+      birthday = Date.add(today, -19 * 365)
 
       params =
         @full_user_data
-        |> Map.put(:birth_date, birth_date)
+        |> Map.put(:birthday, birthday)
 
       changeset = User.register_changeset(%User{}, params)
 
@@ -791,11 +791,11 @@ defmodule Pleroma.UserTest do
 
     test "it fails when provided invalid birth date" do
       today = Date.utc_today()
-      birth_date = Date.add(today, -17 * 365)
+      birthday = Date.add(today, -17 * 365)
 
       params =
         @full_user_data
-        |> Map.put(:birth_date, birth_date)
+        |> Map.put(:birthday, birthday)
 
       changeset = User.register_changeset(%User{}, params)
 

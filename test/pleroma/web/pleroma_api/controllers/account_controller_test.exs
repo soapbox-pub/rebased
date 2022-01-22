@@ -312,12 +312,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       %{id: id1} =
         user1 =
         insert(:user, %{
-          birth_date: "2001-02-12"
+          birthday: "2001-02-12"
         })
 
       user2 =
         insert(:user, %{
-          birth_date: "2001-02-14"
+          birthday: "2001-02-14"
         })
 
       user3 = insert(:user)
@@ -337,15 +337,15 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       user1 =
         insert(:user, %{
-          birth_date: "2001-02-12",
-          hide_birth_date: true
+          birthday: "2001-02-12",
+          hide_birthday: true
         })
 
       %{id: id2} =
         user2 =
         insert(:user, %{
-          birth_date: "2001-02-12",
-          hide_birth_date: false
+          birthday: "2001-02-12",
+          hide_birthday: false
         })
 
       CommonAPI.follow(user, user1)

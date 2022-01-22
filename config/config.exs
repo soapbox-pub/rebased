@@ -260,8 +260,8 @@ config :pleroma, :instance,
   profile_directory: true,
   privileged_staff: false,
   max_endorsed_users: 20,
-  birth_date_required: false,
-  birth_date_min_age: 0
+  birthday_required: false,
+  birthday_min_age: 0
 
 config :pleroma, :welcome,
   direct_message: [

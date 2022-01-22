@@ -1501,8 +1501,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         nil
       end
 
-    birth_date =
-      if data["vcard:bday"] do
+    birthday =
+      if is_binary(data["vcard:bday"]) do
         case Date.from_iso8601(data["vcard:bday"]) do
           {:ok, date} -> date
           {:error, _} -> nil
@@ -1534,7 +1534,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
       pinned_objects: pinned_objects,
-      birth_date: birth_date
+      birthday: birthday
     }
 
     # nickname can be nil because of virtual actors

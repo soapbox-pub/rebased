@@ -1588,8 +1588,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
   describe "create account with required birth date" do
     setup %{conn: conn} do
-      clear_config([:instance, :birth_date_required], true)
-      clear_config([:instance, :birth_date_min_age], 18 * 365)
+      clear_config([:instance, :birthday_required], true)
+      clear_config([:instance, :birthday_min_age], 18 * 365)
 
       app_token = insert(:oauth_token, user: nil)
 
@@ -1602,7 +1602,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "creates an account if provided valid birth date", %{conn: conn} do
-      birth_date =
+      birthday =
         Date.utc_today()
         |> Date.add(-19 * 365)
         |> Date.to_string()
@@ -1612,7 +1612,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         email: "mkljczk@example.org",
         password: "dupa.8",
         agreement: true,
-        birth_date: birth_date
+        birthday: birthday
       }
 
       res =
@@ -1635,7 +1635,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> post("/api/v1/accounts", params)
 
       assert json_response_and_validate_schema(res, 400) == %{
-               "error" => "{\"birth_date\":[\"can't be blank\"]}"
+               "error" => "{\"birthday\":[\"can't be blank\"]}"
              }
     end
   end
