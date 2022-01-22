@@ -330,7 +330,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     if result == :ok do
       Notification.create_notifications(object)
 
-      Pleroma.Search.remove_from_index(deleted_object)
+      # Only remove from index when deleting actual objects, not users or anything else
+      with %Pleroma.Object{} <- deleted_object do
+        Pleroma.Search.remove_from_index(deleted_object)
+      end
 
       {:ok, object, meta}
     else
