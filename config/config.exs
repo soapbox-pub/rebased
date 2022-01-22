@@ -572,7 +572,7 @@ config :pleroma, Oban,
     attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5,
-    search_indexing: 1
+    search_indexing: 10
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -583,7 +583,8 @@ config :pleroma, Oban,
 config :pleroma, :workers,
   retries: [
     federator_incoming: 5,
-    federator_outgoing: 5
+    federator_outgoing: 5,
+    search_indexing: 2
   ]
 
 config :pleroma, Pleroma.Formatter,
