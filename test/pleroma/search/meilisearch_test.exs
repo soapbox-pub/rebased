@@ -6,6 +6,7 @@ defmodule Pleroma.Search.MeilisearchTest do
   require Pleroma.Constants
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -13,6 +14,7 @@ defmodule Pleroma.Search.MeilisearchTest do
 
   alias Pleroma.Search.Meilisearch
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.SearchIndexingWorker
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -27,7 +29,8 @@ defmodule Pleroma.Search.MeilisearchTest do
         {Meilisearch, [:passthrough],
          [
            add_to_index: fn a -> passthrough([a]) end,
-           remove_from_index: fn a -> passthrough([a]) end
+           remove_from_index: fn a -> passthrough([a]) end,
+           meili_put: fn u, a -> passthrough([u, a]) end
          ]}
       ],
       context,
@@ -38,7 +41,7 @@ defmodule Pleroma.Search.MeilisearchTest do
       user = insert(:user)
 
       mock_global(fn
-        %{method: :post, url: "http://127.0.0.1:7700/indexes/objects/documents", body: body} ->
+        %{method: :put, url: "http://127.0.0.1:7700/indexes/objects/documents", body: body} ->
           assert match?(
                    [%{"content" => "guys i just don&#39;t wanna leave the swamp"}],
                    Jason.decode!(body)
@@ -53,6 +56,15 @@ defmodule Pleroma.Search.MeilisearchTest do
           visibility: "public"
         })
 
+      args = %{"op" => "add_to_index", "activity" => activity.id}
+
+      assert_enqueued(
+        worker: SearchIndexingWorker,
+        args: args
+      )
+
+      assert :ok = perform_job(SearchIndexingWorker, args)
+
       assert_called(Meilisearch.add_to_index(activity))
     end
 
@@ -60,26 +72,25 @@ defmodule Pleroma.Search.MeilisearchTest do
       user = insert(:user)
 
       Enum.each(["unlisted", "private", "direct"], fn visiblity ->
-        {:ok, _} =
+        {:ok, activity} =
           CommonAPI.post(user, %{
             status: "guys i just don't wanna leave the swamp",
             visibility: visiblity
           })
+
+        Meilisearch.add_to_index(activity)
+        assert_not_called(Meilisearch.meili_put(:_))
       end)
 
       history = call_history(Meilisearch)
       assert Enum.count(history) == 3
-
-      Enum.each(history, fn {_, _, return} ->
-        assert is_nil(return)
-      end)
     end
 
     test "deletes posts from index when deleted locally" do
       user = insert(:user)
 
       mock_global(fn
-        %{method: :post, url: "http://127.0.0.1:7700/indexes/objects/documents", body: body} ->
+        %{method: :put, url: "http://127.0.0.1:7700/indexes/objects/documents", body: body} ->
           assert match?(
                    [%{"content" => "guys i just don&#39;t wanna leave the swamp"}],
                    Jason.decode!(body)
@@ -98,9 +109,15 @@ defmodule Pleroma.Search.MeilisearchTest do
           visibility: "public"
         })
 
-      assert_called(Meilisearch.add_to_index(activity))
+      args = %{"op" => "add_to_index", "activity" => activity.id}
+      assert_enqueued(worker: SearchIndexingWorker, args: args)
+      assert :ok = perform_job(SearchIndexingWorker, args)
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
+
+      delete_args = %{"op" => "remove_from_index", "object" => activity.object.id}
+      assert_enqueued(worker: SearchIndexingWorker, args: delete_args)
+      assert :ok = perform_job(SearchIndexingWorker, delete_args)
 
       assert_called(Meilisearch.remove_from_index(:_))
     end
