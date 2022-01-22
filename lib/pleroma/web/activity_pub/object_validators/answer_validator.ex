@@ -15,12 +15,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
   @derive Jason.Encoder
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
-    field(:bto, ObjectValidators.Recipients, default: [])
-    field(:bcc, ObjectValidators.Recipients, default: [])
-    field(:type, :string)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+      end
+    end
+
     field(:name, :string)
     field(:inReplyTo, ObjectValidators.ObjectID)
     field(:attributedTo, ObjectValidators.ObjectID)

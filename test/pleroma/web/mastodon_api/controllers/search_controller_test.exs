@@ -125,13 +125,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       results =
         conn
         |> get(
-          "/api/v2/search?#{
-            URI.encode_query(%{
-              q:
-                "https://www.washingtonpost.com/sports/2020/06/10/" <>
-                  "nascar-ban-display-confederate-flag-all-events-properties/"
-            })
-          }"
+          "/api/v2/search?#{URI.encode_query(%{q: "https://www.washingtonpost.com/sports/2020/06/10/" <> "nascar-ban-display-confederate-flag-all-events-properties/"})}"
         )
         |> json_response_and_validate_schema(200)
 
@@ -156,9 +150,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       results =
         conn
         |> get(
-          "/api/v2/search?#{
-            URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})
-          }"
+          "/api/v2/search?#{URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})}"
         )
         |> json_response_and_validate_schema(200)
 

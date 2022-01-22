@@ -1,4 +1,4 @@
-image: elixir:1.9.4
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
   POSTGRES_DB: pleroma_test
@@ -26,12 +26,7 @@ stages:
 before_script:
   - echo $MIX_ENV
   - rm -rf _build/*/lib/pleroma
-  - apt-get update && apt-get install -y cmake
-  - mix local.hex --force
-  - mix local.rebar --force
   - mix deps.get
-  - apt-get -qq update
-  - apt-get install -y libmagic-dev
 
 after_script:
   - rm -rf _build/*/lib/pleroma
@@ -79,7 +74,6 @@ unit-testing:
       - "**/*.ex"
       - "**/*.exs"
       - "mix.lock"
-  # retry: 2
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
@@ -89,10 +83,31 @@ unit-testing:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
-    - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
     - mix ecto.create
     - mix ecto.migrate
     - mix coveralls --preload-modules
+
+unit-testing-erratic:
+  stage: test
+  retry: 2
+  allow_failure: true
+  only:
+    changes:
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
+  cache: &testing_cache_policy
+    <<: *global_cache_policy
+    policy: pull
+
+  services:
+  - name: postgres:13
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix test --only=erratic
 
 # Removed to fix CI issue. In this early state it wasn't adding much value anyway.
 # TODO Fix and reinstate federated testing
@@ -117,7 +132,6 @@ unit-testing:
 #       - "**/*.ex"
 #       - "**/*.exs"
 #       - "mix.lock"
-#   retry: 2
 #   cache: *testing_cache_policy
 #   services:
 #   - name: minibikini/postgres-with-rum:12
@@ -127,13 +141,13 @@ unit-testing:
 #     <<: *global_variables
 #     RUM_ENABLED: "true"
 #   script:
-#     - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
 #     - mix ecto.create
 #     - mix ecto.migrate
 #     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
 #     - mix test --preload-modules
 
 lint:
+  image: elixir:1.12
   stage: test
   only:
     changes:
@@ -141,6 +155,10 @@ lint:
       - "**/*.exs"
       - "mix.lock"
   cache: *testing_cache_policy
+  before_script:
+    - mix local.hex --force
+    - mix local.rebar --force
+    - mix deps.get
   script:
     - mix format --check-formatted
 
@@ -164,8 +182,13 @@ cycles:
       - "**/*.exs"
       - "mix.lock"
   cache: {}
-  script:
+  before_script:
+    - mix local.hex --force
+    - mix local.rebar --force
     - mix deps.get
+    - apt-get update
+    - apt-get install cmake libmagic-dev -y
+  script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
@@ -243,7 +266,7 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:1.10.3
+  image: elixir:1.10.4
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -281,7 +304,7 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.10.3-alpine
+  image: elixir:1.10.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
@@ -297,7 +320,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.3
+  image: arm32v7/elixir:1.10.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -309,7 +332,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.3-alpine
+  image: arm32v7/elixir:1.10.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -321,7 +344,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.3
+  image: arm64v8/elixir:1.10.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -333,7 +356,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.3-alpine
+  image: arm64v8/elixir:1.10.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -351,8 +374,8 @@ docker:
     IMAGE_TAG_SLUG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
     IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
     IMAGE_TAG_LATEST_STABLE: $CI_REGISTRY_IMAGE:latest-stable
-    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.4.1/buildx-v0.4.1.linux-amd64
-    DOCKER_BUILDX_HASH: 71a7d01439aa8c165a25b59c44d3f016fddbd98b
+    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.6.3/buildx-v0.6.3.linux-amd64
+    DOCKER_BUILDX_HASH: 980e6b9655f971991fbbb5fd6cd19f1672386195
   before_script: &before-docker
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $IMAGE_TAG_SLUG || true

@@ -99,15 +99,16 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Tags do
       |> Enum.map(&String.downcase(&1))
 
     _activities =
-      params
-      |> Map.put(:type, "Create")
-      |> Map.put(:local_only, local_only)
-      |> Map.put(:blocking_user, user)
-      |> Map.put(:muting_user, user)
-      |> Map.put(:user, user)
-      |> Map.put(:tag, tags)
-      |> Map.put(:tag_all, tag_all)
-      |> Map.put(:tag_reject, tag_reject)
+      %{
+        type: "Create",
+        local_only: local_only,
+        blocking_user: user,
+        muting_user: user,
+        user: user,
+        tag: tags,
+        tag_all: tag_all,
+        tag_reject: tag_reject,
+      }
       |> Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities()
   end
 end

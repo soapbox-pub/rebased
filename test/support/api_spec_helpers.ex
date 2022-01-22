@@ -29,9 +29,7 @@ defmodule Pleroma.Tests.ApiSpecHelpers do
           end)
 
         flunk(
-          "Value does not conform to schema #{schema.title}: #{Enum.join(errors, "\n")}\n#{
-            inspect(value)
-          }"
+          "Value does not conform to schema #{schema.title}: #{Enum.join(errors, "\n")}\n#{inspect(value)}"
         )
     end
   end

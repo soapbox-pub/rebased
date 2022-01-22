@@ -687,12 +687,14 @@ config :pleroma, :config_description, [
       },
       %{
         key: :quarantined_instances,
-        type: {:list, :string},
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
         description:
-          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent",
+          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent and the reason for doing so",
         suggestions: [
-          "quarantined.com",
-          "*.quarantined.com"
+          {"quarantined.com", "Reason"},
+          {"*.quarantined.com", "Reason"}
         ]
       },
       %{
@@ -734,6 +736,16 @@ config :pleroma, :config_description, [
         key: :max_pinned_statuses,
         type: :integer,
         description: "The maximum number of pinned statuses. 0 will disable the feature.",
+        suggestions: [
+          0,
+          1,
+          3
+        ]
+      },
+      %{
+        key: :max_endorsed_users,
+        type: :integer,
+        description: "The maximum number of recommended accounts. 0 will disable the feature.",
         suggestions: [
           0,
           1,
@@ -934,6 +946,17 @@ config :pleroma, :config_description, [
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
+      },
+      %{
+        key: :profile_directory,
+        type: :boolean,
+        description: "Enable profile directory."
+      },
+      %{
+        key: :privileged_staff,
+        type: :boolean,
+        description:
+          "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       }
     ]
   },
@@ -1162,7 +1185,7 @@ config :pleroma, :config_description, [
     type: :group,
     description:
       "This form can be used to configure a keyword list that keeps the configuration data for any " <>
-        "kind of frontend. By default, settings for pleroma_fe and masto_fe are configured. If you want to " <>
+        "kind of frontend. By default, settings for pleroma_fe are configured. If you want to " <>
         "add your own configuration your settings all fields must be complete.",
     children: [
       %{
@@ -1360,25 +1383,6 @@ config :pleroma, :config_description, [
             type: :string,
             description: "Which theme to use. Available themes are defined in styles.json",
             suggestions: ["pleroma-dark"]
-          }
-        ]
-      },
-      %{
-        key: :masto_fe,
-        label: "Masto FE",
-        type: :map,
-        description: "Settings for Masto FE",
-        suggestions: [
-          %{
-            showInstanceSpecificPanel: true
-          }
-        ],
-        children: [
-          %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
-            type: :boolean,
-            description: "Whenether to show the instance's specific panel"
           }
         ]
       }

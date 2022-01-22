@@ -209,9 +209,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] ==
-               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{
-                 other_user.id
-               }\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
+               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
     end
 
     test "it posts a chat message" do
@@ -1207,6 +1205,18 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, follower} = CommonAPI.unfollow(follower, followed)
 
       refute User.subscribed_to?(follower, followed)
+    end
+
+    test "also unpins a user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, _endorsement} = User.endorse(follower, followed)
+
+      assert User.endorses?(follower, followed)
+
+      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+
+      refute User.endorses?(follower, followed)
     end
 
     test "cancels a pending follow for a local user" do

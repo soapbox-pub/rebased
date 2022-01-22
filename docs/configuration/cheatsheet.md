@@ -39,7 +39,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Permits remote instances to subscribe to all public posts of your instance. This may increase the visibility of your instance.
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
-* `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
+* `quarantined_instances`: ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
@@ -125,6 +125,8 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.Workers.PurgeExpiredActivity` to be enabled for processing the scheduled delections.
     * `Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy`: Makes all bot posts to disappear from public timelines.
     * `Pleroma.Web.ActivityPub.MRF.FollowBotPolicy`: Automatically follows newly discovered users from the specified bot account. Local accounts, locked accounts, and users with "#nobot" in their bio are respected and excluded from being followed.
+    * `Pleroma.Web.ActivityPub.MRF.KeywordPolicy`: Rejects or removes from the federated timeline or replaces keywords. (See [`:mrf_keyword`](#mrf_keyword)).
+    * `Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent`: Forces every mentioned user to be reflected in the post content.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -135,15 +137,16 @@ To add configuration to your config file, you can copy it from the base config. 
     Configuring MRF policies is not enough for them to take effect. You have to enable them by specifying their module in `policies` under [:mrf](#mrf) section.
 
 #### :mrf_simple
-* `media_removal`: List of instances to remove media from.
-* `media_nsfw`: List of instances to put media as NSFW(sensitive) from.
-* `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
-* `reject`: List of instances to reject any activities from.
-* `accept`: List of instances to accept any activities from.
-* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
-* `report_removal`: List of instances to reject reports from.
-* `avatar_removal`: List of instances to strip avatars from.
-* `banner_removal`: List of instances to strip banners from.
+* `media_removal`: List of instances to strip media attachments from and the reason for doing so.
+* `media_nsfw`: List of instances to tag all media as NSFW (sensitive) from and the reason for doing so.
+* `federated_timeline_removal`: List of instances to remove from the Federated Timeline (aka The Whole Known Network) and the reason for doing so.
+* `reject`: List of instances to reject activities (except deletes) from and the reason for doing so.
+* `accept`: List of instances to only accept activities (except deletes) from and the reason for doing so.
+* `followers_only`: Force posts from the given instances to be visible by followers only and the reason for doing so.
+* `report_removal`: List of instances to reject reports from and the reason for doing so.
+* `avatar_removal`: List of instances to strip avatars from and the reason for doing so.
+* `banner_removal`: List of instances to strip banners from and the reason for doing so.
+* `reject_deletes`: List of instances to reject deletions from and the reason for doing so.
 
 #### :mrf_subchain
 This policy processes messages through an alternate pipeline when a given message matches certain criteria.
@@ -247,7 +250,7 @@ Notes:
 
 ### :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured. You can find the documentation for `pleroma_fe` configuration into [Pleroma-FE configuration and customization for instance administrators](/frontend/CONFIGURATION/#options).
 
 Frontends can access these settings at `/api/v1/pleroma/frontend_configurations`
 
@@ -258,10 +261,7 @@ config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     theme: "pleroma-dark",
     # ... see /priv/static/static/config.json for the available keys.
-},
-  masto_fe: %{
-    showInstanceSpecificPanel: true
-  }
+}
 ```
 
 These settings **need to be complete**, they will override the defaults.

@@ -14,9 +14,7 @@ defmodule Pleroma.Repo.Migrations.FillRecipientsInActivities do
         max = min + 10_000
 
         execute("""
-        update activities set recipients = array(select jsonb_array_elements_text(data->'to')) where id > #{
-          min
-        } and id <= #{max};
+        update activities set recipients = array(select jsonb_array_elements_text(data->'to')) where id > #{min} and id <= #{max};
         """)
         |> IO.inspect()
       end)

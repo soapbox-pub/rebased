@@ -49,6 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       assert filter.hide == true
     end
 
+    @tag :erratic
     test "a filter with expires_in", %{conn: conn, user: user} do
       in_seconds = 600
 

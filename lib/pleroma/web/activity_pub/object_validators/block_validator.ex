@@ -5,20 +5,21 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator do
   use Ecto.Schema
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   import Ecto.Changeset
-  import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   @primary_key false
+  @derive Jason.Encoder
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
-    field(:actor, ObjectValidators.ObjectID)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
-    field(:object, ObjectValidators.ObjectID)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
   end
 
   def cast_data(data) do
@@ -30,8 +31,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Block"])
-    |> validate_actor_presence()
-    |> validate_actor_presence(field_name: :object)
+    |> CommonValidations.validate_actor_presence()
+    |> CommonValidations.validate_actor_presence(field_name: :object)
   end
 
   def cast_and_validate(data) do

@@ -117,7 +117,8 @@ defmodule Pleroma.Web.CommonAPI do
   def unfollow(follower, unfollowed) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
-         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed) do
+         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed),
+         {:ok, _endorsement} <- User.unendorse(follower, unfollowed) do
       {:ok, follower}
     end
   end
@@ -487,9 +488,7 @@ defmodule Pleroma.Web.CommonAPI do
     else
       {what, result} = error ->
         Logger.warn(
-          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{
-            activity_id
-          }"
+          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
         {:error, error}

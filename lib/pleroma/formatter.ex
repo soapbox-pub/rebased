@@ -34,30 +34,32 @@ defmodule Pleroma.Formatter do
 
   def mention_handler("@" <> nickname, buffer, opts, acc) do
     case User.get_cached_by_nickname(nickname) do
-      %User{id: id} = user ->
-        user_url = user.uri || user.ap_id
-        nickname_text = get_nickname_text(nickname, opts)
-
-        link =
-          Phoenix.HTML.Tag.content_tag(
-            :span,
-            Phoenix.HTML.Tag.content_tag(
-              :a,
-              ["@", Phoenix.HTML.Tag.content_tag(:span, nickname_text)],
-              "data-user": id,
-              class: "u-url mention",
-              href: user_url,
-              rel: "ugc"
-            ),
-            class: "h-card"
-          )
-          |> Phoenix.HTML.safe_to_string()
-
-        {link, %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
+      %User{} = user ->
+        {mention_from_user(user, opts),
+         %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
 
       _ ->
         {buffer, acc}
     end
+  end
+
+  def mention_from_user(%User{id: id} = user, opts \\ %{mentions_format: :full}) do
+    user_url = user.uri || user.ap_id
+    nickname_text = get_nickname_text(user.nickname, opts)
+
+    Phoenix.HTML.Tag.content_tag(
+      :span,
+      Phoenix.HTML.Tag.content_tag(
+        :a,
+        ["@", Phoenix.HTML.Tag.content_tag(:span, nickname_text)],
+        "data-user": id,
+        class: "u-url mention",
+        href: user_url,
+        rel: "ugc"
+      ),
+      class: "h-card"
+    )
+    |> Phoenix.HTML.safe_to_string()
   end
 
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do

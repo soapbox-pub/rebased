@@ -149,6 +149,8 @@ config :pleroma, Pleroma.Web.Endpoint,
   ]
 
 # Configures Elixir's Logger
+config :logger, truncate: 65536
+
 config :logger, :console,
   level: :debug,
   format: "\n$time $metadata[$level] $message\n",
@@ -254,7 +256,10 @@ config :pleroma, :instance,
     ]
   ],
   show_reactions: true,
-  password_reset_token_validity: 60 * 60 * 24
+  password_reset_token_validity: 60 * 60 * 24,
+  profile_directory: true,
+  privileged_staff: false,
+  max_endorsed_users: 20
 
 config :pleroma, :welcome,
   direct_message: [
@@ -322,9 +327,6 @@ config :pleroma, :frontend_configurations,
     subjectLineBehavior: "email",
     theme: "pleroma-dark",
     webPushNotifications: false
-  },
-  masto_fe: %{
-    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :assets,
@@ -862,6 +864,13 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
+
+config :pleroma, :telemetry,
+  slow_queries_logging: [
+    enabled: false,
+    min_duration: 500_000,
+    exclude_sources: [nil, "oban_jobs"]
+  ]
 
 import_config "soapbox.exs"
 

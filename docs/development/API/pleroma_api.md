@@ -37,7 +37,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 ```
 * Note: Same data as Mastodon API’s `/api/v1/custom_emojis` but in a different format
 
-## `/api/v1/pleroma/follow_import`
+## `/api/pleroma/follow_import`
 ### Imports your follows, for example from a Mastodon CSV file.
 * Method: `POST`
 * Authentication: required
@@ -46,7 +46,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * Response: HTTP 200 on success, 500 on error
 * Note: Users that can't be followed are silently skipped.
 
-## `/api/v1/pleroma/blocks_import`
+## `/api/pleroma/blocks_import`
 ### Imports your blocks.
 * Method: `POST`
 * Authentication: required
@@ -54,7 +54,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
     * `list`: STRING or FILE containing a whitespace-separated list of accounts to block
 * Response: HTTP 200 on success, 500 on error
 
-## `/api/v1/pleroma/mutes_import`
+## `/api/pleroma/mutes_import`
 ### Imports your mutes.
 * Method: `POST`
 * Authentication: required
@@ -70,7 +70,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * Response: Provider specific JSON, the only guaranteed parameter is `type`
 * Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint", "seconds_valid": 300}`
 
-## `/api/v1/pleroma/delete_account`
+## `/api/pleroma/delete_account`
 ### Delete an account
 * Method `POST`
 * Authentication: required
@@ -79,7 +79,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * Response: JSON. Returns `{"status": "success"}` if the deletion was successful, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/v1/pleroma/disable_account`
+## `/api/pleroma/disable_account`
 ### Disable an account
 * Method `POST`
 * Authentication: required
@@ -88,21 +88,22 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * Response: JSON. Returns `{"status": "success"}` if the account was successfully disabled, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/v1/pleroma/accounts/mfa`
+## `/api/pleroma/accounts/mfa`
 #### Gets current MFA settings
 * method: `GET`
 * Authentication: required
 * OAuth scope: `read:security`
-* Response: JSON. Returns `{"enabled": "false", "totp": false }`
+* Response: JSON. Returns `{"settings": {"enabled": "false", "totp": false }}`
+* Note: `enabled` is whether multi-factor auth is enabled for the user in general, while `totp` is one type of MFA.
 
-## `/api/v1/pleroma/accounts/mfa/setup/totp`
+## `/api/pleroma/accounts/mfa/setup/totp`
 #### Pre-setup the MFA/TOTP method
 * method: `GET`
 * Authentication: required
 * OAuth scope: `write:security`
 * Response: JSON. Returns `{"key": [secret_key], "provisioning_uri": "[qr code uri]"  }` when successful, otherwise returns HTTP 422 `{"error": "error_msg"}`
 
-## `/api/v1/pleroma/accounts/mfa/confirm/totp`
+## `/api/pleroma/accounts/mfa/confirm/totp`
 #### Confirms & enables MFA/TOTP support for user account.
 * method: `POST`
 * Authentication: required
@@ -113,7 +114,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * Response: JSON. Returns `{}` if the enable was successful, HTTP 422 `{"error": "[error message]"}` otherwise
 
 
-## `/api/v1/pleroma/accounts/mfa/totp`
+## `/api/pleroma/accounts/mfa/totp`
 ####  Disables MFA/TOTP method for user account.
 * method: `DELETE`
 * Authentication: required
@@ -123,7 +124,7 @@ The `/api/v1/pleroma/*` path is backwards compatible with `/api/pleroma/*` (`/ap
 * Response: JSON. Returns `{}` if the disable was successful, HTTP 422 `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/v1/pleroma/accounts/mfa/backup_codes`
+## `/api/pleroma/accounts/mfa/backup_codes`
 ####  Generstes backup codes MFA for user account.
 * method: `GET`
 * Authentication: required
@@ -159,10 +160,12 @@ See [Admin-API](admin_api.md)
   "muting": false,
   "muting_notifications": false,
   "subscribing": true,
+  "notifying": true,
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 
@@ -183,10 +186,12 @@ See [Admin-API](admin_api.md)
   "muting": false,
   "muting_notifications": false,
   "subscribing": false,
+  "notifying": false,
   "requested": false,
   "domain_blocking": false,
   "showing_reblogs": true,
-  "endorsed": false
+  "endorsed": false,
+  "note": ""
 }
 ```
 
@@ -327,7 +332,7 @@ See [Admin-API](admin_api.md)
 }
 ```
 
-## `/api/v1/pleroma/change_email`
+## `/api/pleroma/change_email`
 ### Change account email
 * Method `POST`
 * Authentication: required
@@ -655,3 +660,38 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
     "url": "https://example.com/media/backups/archive-foobar-20200910T161803-QUhx6VYDRQ2wfV0SdA2Pfj_2CLM_ATUlw-D5l5TJf4Q.zip"
 }]
 ```
+
+## `GET /api/oauth_tokens`
+### Retrieve a list of active sessions for the user
+* Method: `GET`
+* Authentication: required
+* Params: none
+* Response: JSON
+* Example response:
+
+```json
+[
+  {
+    "app_name": "Pleroma FE",
+    "id": 9275,
+    "valid_until": "2121-11-24T15:51:08.234234"
+  },
+  {
+    "app_name": "Patron",
+    "id": 8805,
+    "valid_until": "2121-10-26T18:09:59.857150"
+  },
+  {
+    "app_name": "Soapbox FE",
+    "id": 9727,
+    "valid_until": "2121-12-25T16:52:39.692877"
+  }
+]
+```
+
+## `DELETE /api/oauth_tokens/:id`
+### Revoke a user session by its ID
+* Method: `DELETE`
+* Authentication: required
+* Params: none
+* Response: HTTP 200 on success, 500 on error

@@ -526,7 +526,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "fix_attachments/1" do
-    test "transforms dimensions into a url" do
+    test "puts dimensions into attachment url field" do
       object = %{
         "attachment" => [
           %{

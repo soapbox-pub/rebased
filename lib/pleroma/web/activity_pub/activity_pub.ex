@@ -81,6 +81,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
   end
 
+  def update_last_status_at_if_public(actor, object) do
+    if is_public?(object), do: User.update_last_status_at(actor), else: {:ok, actor}
+  end
+
   defp increase_replies_count_if_reply(%{
          "object" => %{"inReplyTo" => reply_ap_id} = object,
          "type" => "Create"
@@ -288,6 +292,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- increase_replies_count_if_reply(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
+         {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
          :ok <- maybe_federate(activity) do
@@ -1639,9 +1644,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          %User{} = old_user <- User.get_by_nickname(nickname),
          {_, false} <- {:ap_id_comparison, data[:ap_id] == old_user.ap_id} do
       Logger.info(
-        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{
-          data[:ap_id]
-        }, renaming."
+        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{data[:ap_id]}, renaming."
       )
 
       old_user
@@ -1663,7 +1666,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "orderedItems" => objects
       })
       when type in ["OrderedCollection", "Collection"] do
-    Map.new(objects, fn %{"id" => object_ap_id} -> {object_ap_id, NaiveDateTime.utc_now()} end)
+    Map.new(objects, fn
+      %{"id" => object_ap_id} -> {object_ap_id, NaiveDateTime.utc_now()}
+      object_ap_id when is_binary(object_ap_id) -> {object_ap_id, NaiveDateTime.utc_now()}
+    end)
   end
 
   def fetch_and_prepare_featured_from_ap_id(nil) do

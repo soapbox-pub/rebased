@@ -286,9 +286,7 @@ defmodule Mix.Tasks.Pleroma.Config do
         file = File.open!(tmp_config_path)
 
         shell_info(
-          "Saving database configuration settings to #{tmp_config_path}. Copy it to the #{
-            Path.dirname(config_path)
-          } manually."
+          "Saving database configuration settings to #{tmp_config_path}. Copy it to the #{Path.dirname(config_path)} manually."
         )
 
         write_config(file, tmp_config_path, opts)
