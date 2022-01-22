@@ -12,11 +12,11 @@
 
 <div class="input">
   <%= label f, :nickname, "Nickname" %>
-  <%= text_input f, :nickname, value: @nickname %>
+  <%= text_input f, :nickname, value: @nickname, autocomplete: "username" %>
 </div>
 <div class="input">
   <%= label f, :email, "Email" %>
-  <%= text_input f, :email, value: @email %>
+  <%= text_input f, :email, value: @email, autocomplete: "email" %>
 </div>
 
 <%= submit "Proceed as new user", name: "op", value: "register" %>
@@ -25,11 +25,11 @@
 
 <div class="input">
   <%= label f, :name, "Name or email" %>
-  <%= text_input f, :name %>
+  <%= text_input f, :name, autocomplete: "username" %>
 </div>
 <div class="input">
   <%= label f, :password, "Password" %>
-  <%= password_input f, :password %>
+  <%= password_input f, :password, autocomplete: "password" %>
 </div>
 
 <%= submit "Proceed as existing user", name: "op", value: "connect" %>
