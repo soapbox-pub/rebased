@@ -70,6 +70,13 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
 
       assert MRF.instance_list_from_tuples(list) == expected
     end
+
+    test "it handles legacy config" do
+      list = [{"some.tld", "a reason"}, "other.tld"]
+      expected = ["some.tld", "other.tld"]
+
+      assert MRF.instance_list_from_tuples(list) == expected
+    end
   end
 
   describe "describe/0" do
