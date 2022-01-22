@@ -71,19 +71,23 @@ defmodule Pleroma.Search.MeilisearchTest do
     test "doesn't index posts that are not public" do
       user = insert(:user)
 
-      Enum.each(["unlisted", "private", "direct"], fn visiblity ->
+      Enum.each(["private", "direct"], fn visibility ->
         {:ok, activity} =
           CommonAPI.post(user, %{
             status: "guys i just don't wanna leave the swamp",
-            visibility: visiblity
+            visibility: visibility
           })
 
-        Meilisearch.add_to_index(activity)
+        args = %{"op" => "add_to_index", "activity" => activity.id}
+
+        assert_enqueued(worker: SearchIndexingWorker, args: args)
+        assert :ok = perform_job(SearchIndexingWorker, args)
+
         assert_not_called(Meilisearch.meili_put(:_))
       end)
 
       history = call_history(Meilisearch)
-      assert Enum.count(history) == 3
+      assert Enum.count(history) == 2
     end
 
     test "deletes posts from index when deleted locally" do
