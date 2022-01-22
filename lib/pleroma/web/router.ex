@@ -399,6 +399,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
 
+    get("/apps", AppController, :index)
     get("/statuses/:id/reactions/:emoji", EmojiReactionController, :index)
     get("/statuses/:id/reactions", EmojiReactionController, :index)
   end
@@ -443,6 +444,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:api)
       get("/accounts/:id/favourites", AccountController, :favourites)
+      get("/accounts/:id/endorsements", AccountController, :endorsements)
     end
 
     scope [] do
@@ -489,6 +491,8 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", AccountController, :mute)
     post("/accounts/:id/unmute", AccountController, :unmute)
     post("/accounts/:id/note", AccountController, :note)
+    post("/accounts/:id/pin", AccountController, :endorse)
+    post("/accounts/:id/unpin", AccountController, :unendorse)
 
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
@@ -587,6 +591,8 @@ defmodule Pleroma.Web.Router do
 
     get("/accounts/search", SearchController, :account_search)
     get("/search", SearchController, :search)
+
+    get("/accounts/lookup", AccountController, :lookup)
 
     get("/accounts/:id/statuses", AccountController, :statuses)
     get("/accounts/:id/followers", AccountController, :followers)

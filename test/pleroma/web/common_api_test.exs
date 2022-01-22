@@ -1207,6 +1207,18 @@ defmodule Pleroma.Web.CommonAPITest do
       refute User.subscribed_to?(follower, followed)
     end
 
+    test "also unpins a user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, _endorsement} = User.endorse(follower, followed)
+
+      assert User.endorses?(follower, followed)
+
+      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+
+      refute User.endorses?(follower, followed)
+    end
+
     test "cancels a pending follow for a local user" do
       follower = insert(:user)
       followed = insert(:user, is_locked: true)

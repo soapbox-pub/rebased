@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
@@ -402,15 +404,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => id_one}, %{"id" => id_two}] = resp
       assert id_one == to_string(private_activity.id)
       assert id_two == to_string(activity.id)
-    end
-
-    test "unimplemented pinned statuses feature", %{conn: conn} do
-      note = insert(:note_activity)
-      user = User.get_cached_by_ap_id(note.data["actor"])
-
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?pinned=true")
-
-      assert json_response_and_validate_schema(conn, 200) == []
     end
 
     test "gets an users media, excludes reblogs", %{conn: conn} do
@@ -1036,6 +1029,35 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
                |> json_response_and_validate_schema(200)
     end
+  end
+
+  test "view pinned private statuses" do
+    user = insert(:user)
+    reader = insert(:user)
+
+    # Create a private status and pin it
+    {:ok, %{id: activity_id} = activity} =
+      CommonAPI.post(user, %{status: "psst", visibility: "private"})
+
+    %{data: %{"id" => object_ap_id}} = Object.normalize(activity)
+    {:ok, _} = User.add_pinned_object_id(user, object_ap_id)
+
+    %{conn: conn} = oauth_access(["read:statuses"], user: reader)
+
+    # A non-follower can't see the pinned status
+    assert [] ==
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+             |> json_response_and_validate_schema(200)
+
+    # Follow the user, then the pinned status can be seen
+    CommonAPI.follow(reader, user)
+    ObanHelpers.perform_all()
+
+    assert [%{"id" => ^activity_id, "pinned" => true}] =
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+             |> json_response_and_validate_schema(200)
   end
 
   test "blocking / unblocking a user" do
@@ -1813,6 +1835,30 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     assert [%{"id" => ^id2}] = result
   end
 
+  test "account lookup", %{conn: conn} do
+    %{nickname: acct} = insert(:user, %{nickname: "nickname"})
+    %{nickname: acct_two} = insert(:user, %{nickname: "nickname@notlocaldoma.in"})
+
+    result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=#{acct}")
+      |> json_response_and_validate_schema(200)
+
+    assert %{"acct" => ^acct} = result
+
+    result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=#{acct_two}")
+      |> json_response_and_validate_schema(200)
+
+    assert %{"acct" => ^acct_two} = result
+
+    _result =
+      conn
+      |> get("/api/v1/accounts/lookup?acct=unexisting_nickname")
+      |> json_response_and_validate_schema(404)
+  end
+
   test "create a note on a user" do
     %{conn: conn} = oauth_access(["write:accounts", "read:follows"])
     other_user = insert(:user)
@@ -1828,5 +1874,67 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
              |> put_req_header("content-type", "application/json")
              |> get("/api/v1/accounts/relationships?id=#{other_user.id}")
              |> json_response_and_validate_schema(200)
+  end
+
+  describe "account endorsements" do
+    setup do: oauth_access(["read:accounts", "write:accounts", "write:follows"])
+
+    setup do: clear_config([:instance, :max_endorsed_users], 1)
+
+    test "pin account", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+
+      CommonAPI.follow(user, other_user1)
+
+      assert %{"id" => ^id1, "endorsed" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{id1}/pin")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^id1}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/endorsements")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "unpin account", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+
+      CommonAPI.follow(user, other_user1)
+      User.endorse(user, other_user1)
+
+      assert %{"id" => ^id1, "endorsed" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{id1}/unpin")
+               |> json_response_and_validate_schema(200)
+
+      assert [] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/endorsements")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "max pinned accounts", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user)
+
+      CommonAPI.follow(user, other_user1)
+      CommonAPI.follow(user, other_user2)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/accounts/#{id1}/pin")
+      |> json_response_and_validate_schema(200)
+
+      assert %{"error" => "You have already pinned the maximum number of users"} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/accounts/#{id2}/pin")
+               |> json_response_and_validate_schema(400)
+    end
   end
 end

@@ -743,6 +743,16 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :max_endorsed_users,
+        type: :integer,
+        description: "The maximum number of recommended accounts. 0 will disable the feature.",
+        suggestions: [
+          0,
+          1,
+          3
+        ]
+      },
+      %{
         key: :autofollowed_nicknames,
         type: {:list, :string},
         description:
