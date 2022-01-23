@@ -2084,6 +2084,17 @@ defmodule Pleroma.UserTest do
       assert user.ap_id in ap_ids
       assert user_two.ap_id in ap_ids
     end
+
+    test "it returns a list of AP ids in the same order" do
+      user = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
+
+      ap_ids =
+        User.get_ap_ids_by_nicknames([user.nickname, user_three.nickname, user_two.nickname])
+
+      assert [user.ap_id, user_three.ap_id, user_two.ap_id] == ap_ids
+    end
   end
 
   describe "sync followers count" do

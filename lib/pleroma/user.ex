@@ -2279,6 +2279,7 @@ defmodule Pleroma.User do
   def get_ap_ids_by_nicknames(nicknames) do
     from(u in User,
       where: u.nickname in ^nicknames,
+      order_by: fragment("array_position(?, ?)", ^nicknames, u.nickname),
       select: u.ap_id
     )
     |> Repo.all()
