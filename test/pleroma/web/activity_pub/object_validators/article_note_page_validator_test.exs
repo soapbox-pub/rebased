@@ -32,4 +32,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
       %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
     end
   end
+
+  test "Fedibird quote post" do
+    insert(:user, ap_id: "https://fedibird.com/users/noellabo")
+
+    data = File.read!("test/fixtures/quote_post/fedibird_quote_post.json") |> Jason.decode!()
+    chg = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert chg.valid?
+    assert chg.changes.quoteUrl == "https://misskey.io/notes/8vsn2izjwh"
+  end
+
+  test "Misskey quote post" do
+    insert(:user, ap_id: "https://misskey.io/users/7rkrarq81i")
+
+    data = File.read!("test/fixtures/quote_post/misskey_quote_post.json") |> Jason.decode!()
+    chg = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert chg.valid?
+    assert chg.changes.quoteUrl == "https://misskey.io/notes/8vs6wxufd0"
+  end
 end
