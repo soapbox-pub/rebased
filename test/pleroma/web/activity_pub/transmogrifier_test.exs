@@ -372,6 +372,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                }
              } = prepared["object"]
     end
+
+    test "it prepares a quote post" do
+      user = insert(:user)
+
+      {:ok, quoted_post} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "hey", quote_id: quoted_post.id})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(quote_post.data)
+
+      quoted_post = Object.normalize(quoted_post)
+      assert modified["object"]["quoteUrl"] == quoted_post.data["id"]
+    end
   end
 
   describe "actor rewriting" do
