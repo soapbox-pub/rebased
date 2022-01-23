@@ -11,6 +11,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Web.CommonAPI.Utils
 
   import Pleroma.Web.Gettext
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   defstruct valid?: true,
             errors: [],
@@ -129,13 +130,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp in_reply_to(draft), do: draft
 
-  defp quote_post(%{params: %{quote_id: ""}} = draft), do: draft
+  defp quote_post(%{params: %{quote_id: id}} = draft) when not_empty_string(id) do
+    case Activity.get_by_id(id) do
+      %Activity{actor: actor_ap_id} = activity when not_empty_string(actor_ap_id) ->
+        %__MODULE__{draft | quote_post: activity, mentions: [actor_ap_id]}
 
-  defp quote_post(%{params: %{quote_id: id}} = draft) when is_binary(id) do
-    with %Activity{actor: actor_ap_id} = activity <- Activity.get_by_id(id) do
-      %__MODULE__{draft | quote_post: activity, mentions: [actor_ap_id]}
-    else
-      _ -> draft
+      %Activity{} = activity ->
+        %__MODULE__{draft | quote_post: activity}
+
+      _ ->
+        draft
     end
   end
 

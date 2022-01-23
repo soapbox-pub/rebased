@@ -716,7 +716,9 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
 
       {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
-      {:ok, quote_post} = CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id, to: []})
+
+      {:ok, quote_post} =
+        CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id, to: []})
 
       assert Object.normalize(quote_post).data["to"] == [Pleroma.Constants.as_public()]
     end
