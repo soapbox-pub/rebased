@@ -167,6 +167,37 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_in_reply_to(object, _options), do: object
 
+  def fix_quote_url(object, options \\ [])
+
+  def fix_quote_url(%{"quoteUrl" => quote_url} = object, options)
+      when not is_nil(quote_url) do
+    with {:ok, quoted_object} <- get_obj_helper(quote_url, options),
+         %Activity{} <- Activity.get_create_by_object_ap_id(quoted_object.data["id"]) do
+      Map.put(object, "quoteUrl", quoted_object.data["id"])
+    else
+      e ->
+        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+        object
+    end
+  end
+
+  # Fix for Fedibird
+  # https://github.com/fedibird/mastodon/issues/9
+  def fix_quote_url(%{"quoteURL" => quote_url} = object, options) do
+    object
+    |> Map.put("quoteUrl", quote_url)
+    |> fix_quote_url(options)
+  end
+
+  # Misskey fallback
+  def fix_quote_url(%{"_misskey_quote" => quote_url} = object, options) do
+    object
+    |> Map.put("quoteUrl", quote_url)
+    |> fix_quote_url(options)
+  end
+
+  def fix_quote_url(object, _options), do: object
+
   defp prepare_in_reply_to(in_reply_to) do
     cond do
       is_bitstring(in_reply_to) ->
@@ -455,6 +486,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> strip_internal_fields()
       |> fix_type(fetch_options)
       |> fix_in_reply_to(fetch_options)
+      |> fix_quote_url(fetch_options)
 
     data = Map.put(data, "object", object)
     options = Keyword.put(options, :local, false)
