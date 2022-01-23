@@ -707,6 +707,18 @@ defmodule Pleroma.Web.CommonAPITest do
       quote_post = Object.normalize(quote_post)
 
       assert quote_post.data["quoteUrl"] == quoted.data["id"]
+
+      # The OP is mentioned
+      assert quoted.data["actor"] in quote_post.data["to"]
+    end
+
+    test "quote posting with explicit addressing doesn't mention the OP" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id, to: []})
+
+      assert Object.normalize(quote_post).data["to"] == [Pleroma.Constants.as_public()]
     end
   end
 

@@ -132,11 +132,11 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp quote_post(%{params: %{quote_id: ""}} = draft), do: draft
 
   defp quote_post(%{params: %{quote_id: id}} = draft) when is_binary(id) do
-    %__MODULE__{draft | quote_post: Activity.get_by_id(id)}
-  end
-
-  defp quote_post(%{params: %{quote_id: %Activity{} = quote_post}} = draft) do
-    %__MODULE__{draft | quote_post: quote_post}
+    with %Activity{actor: actor_ap_id} = activity <- Activity.get_by_id(id) do
+      %__MODULE__{draft | quote_post: activity, mentions: [actor_ap_id]}
+    else
+      _ -> draft
+    end
   end
 
   defp quote_post(draft), do: draft
@@ -173,12 +173,15 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     end
   end
 
-  defp content(draft) do
+  defp content(%{mentions: mentions} = draft) do
     {content_html, mentioned_users, tags} = Utils.make_content_html(draft)
 
+    mentioned_ap_ids =
+      Enum.map(mentioned_users, fn {_, mentioned_user} -> mentioned_user.ap_id end)
+
     mentions =
-      mentioned_users
-      |> Enum.map(fn {_, mentioned_user} -> mentioned_user.ap_id end)
+      mentions
+      |> Kernel.++(mentioned_ap_ids)
       |> Utils.get_addressed_users(draft.params[:to])
 
     %__MODULE__{draft | content_html: content_html, mentions: mentions, tags: tags}
