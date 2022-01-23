@@ -107,6 +107,28 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
     end
+
+    test "it accepts quote posts" do
+      insert(:user, ap_id: "https://misskey.io/users/7rkrarq81i")
+
+      object = File.read!("test/fixtures/quote_post/misskey_quote_post.json") |> Jason.decode!()
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "actor" => "https://misskey.io/users/7rkrarq81i",
+        "object" => object
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      # Object was created in the database
+      object = Object.normalize(activity)
+      assert object.data["quoteUrl"] == "https://misskey.io/notes/8vs6wxufd0"
+
+      # It fetched the quoted post
+      assert Object.normalize("https://misskey.io/notes/8vs6wxufd0")
+    end
   end
 
   describe "prepare outgoing" do
@@ -300,6 +322,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       url = prepared["object"]["tag"] |> List.first() |> Map.get("icon") |> Map.get("url")
 
       assert url == "http://localhost:4001/emoji/dino%20walking.gif"
+    end
+
+    test "it prepares a quote post" do
+      user = insert(:user)
+
+      {:ok, quoted_post} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "hey", quote_id: quoted_post.id})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(quote_post.data)
+
+      quoted_post = Object.normalize(quoted_post)
+      assert modified["object"]["quoteUrl"] == quoted_post.data["id"]
     end
   end
 

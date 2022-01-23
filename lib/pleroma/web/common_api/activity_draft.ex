@@ -11,6 +11,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Web.CommonAPI.Utils
 
   import Pleroma.Web.Gettext
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   defstruct valid?: true,
             errors: [],
@@ -22,6 +23,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             attachments: [],
             in_reply_to: nil,
             in_reply_to_conversation: nil,
+            quote_post: nil,
             visibility: nil,
             expires_at: nil,
             extra: nil,
@@ -53,6 +55,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> poll()
     |> with_valid(&in_reply_to/1)
     |> with_valid(&in_reply_to_conversation/1)
+    |> with_valid(&quote_post/1)
     |> with_valid(&visibility/1)
     |> content()
     |> with_valid(&to_and_cc/1)
@@ -127,6 +130,21 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp in_reply_to(draft), do: draft
 
+  defp quote_post(%{params: %{quote_id: id}} = draft) when not_empty_string(id) do
+    case Activity.get_by_id(id) do
+      %Activity{actor: actor_ap_id} = activity when not_empty_string(actor_ap_id) ->
+        %__MODULE__{draft | quote_post: activity, mentions: [actor_ap_id]}
+
+      %Activity{} = activity ->
+        %__MODULE__{draft | quote_post: activity}
+
+      _ ->
+        draft
+    end
+  end
+
+  defp quote_post(draft), do: draft
+
   defp in_reply_to_conversation(draft) do
     in_reply_to_conversation = Participation.get(draft.params[:in_reply_to_conversation_id])
     %__MODULE__{draft | in_reply_to_conversation: in_reply_to_conversation}
@@ -159,12 +177,15 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     end
   end
 
-  defp content(draft) do
+  defp content(%{mentions: mentions} = draft) do
     {content_html, mentioned_users, tags} = Utils.make_content_html(draft)
 
+    mentioned_ap_ids =
+      Enum.map(mentioned_users, fn {_, mentioned_user} -> mentioned_user.ap_id end)
+
     mentions =
-      mentioned_users
-      |> Enum.map(fn {_, mentioned_user} -> mentioned_user.ap_id end)
+      mentions
+      |> Kernel.++(mentioned_ap_ids)
       |> Utils.get_addressed_users(draft.params[:to])
 
     %__MODULE__{draft | content_html: content_html, mentions: mentions, tags: tags}

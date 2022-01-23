@@ -44,5 +44,34 @@ defmodule Pleroma.Web.ActivityPub.BuilderTest do
 
       assert {:ok, ^expected, []} = Builder.note(draft)
     end
+
+    test "quote post" do
+      user = insert(:user)
+      note = insert(:note)
+
+      draft = %ActivityDraft{
+        user: user,
+        context: "2hu",
+        content_html: "<h1>This is :moominmamma: note</h1>",
+        quote_post: note,
+        extra: %{}
+      }
+
+      expected = %{
+        "actor" => user.ap_id,
+        "attachment" => [],
+        "content" => "<h1>This is :moominmamma: note</h1>",
+        "context" => "2hu",
+        "sensitive" => false,
+        "type" => "Note",
+        "quoteUrl" => note.data["id"],
+        "cc" => [],
+        "summary" => nil,
+        "tag" => [],
+        "to" => []
+      }
+
+      assert {:ok, ^expected, []} = Builder.note(draft)
+    end
   end
 end

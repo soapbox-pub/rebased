@@ -177,6 +177,17 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description: "The `acct` property of User entity for replied user (if any)"
           },
+          quote: %Schema{
+            allOf: [%OpenApiSpex.Reference{"$ref": "#/components/schemas/Status"}],
+            nullable: true,
+            description: "Quoted status (if any)"
+          },
+          quote_url: %Schema{
+            type: :string,
+            format: :uri,
+            nullable: true,
+            description: "URL of the quoted status"
+          },
           local: %Schema{
             type: :boolean,
             description: "`true` if the post was made on the local instance"

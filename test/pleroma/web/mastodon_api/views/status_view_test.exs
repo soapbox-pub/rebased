@@ -281,6 +281,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
+        quote: nil,
+        quote_url: nil,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
@@ -375,6 +377,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     [status] = StatusView.render("index.json", %{activities: [activity], as: :activity})
 
     assert status.in_reply_to_id == to_string(note.id)
+  end
+
+  test "a quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, quoted_quote_post} = CommonAPI.post(user, %{status: "yo", quote_id: quote_post.id})
+
+    status = StatusView.render("show.json", %{activity: quoted_quote_post})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+    assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
+
+    # Quotes don't go more than one level deep
+    refute status.pleroma.quote.pleroma.quote
+    assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
+
+    # In an index
+    [status] = StatusView.render("index.json", %{activities: [quoted_quote_post], as: :activity})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
   end
 
   test "contains mentions" do
