@@ -127,7 +127,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "posting a quote post", %{conn: conn} do
       user = insert(:user)
 
-      {:ok, %{id: activity_id}} = CommonAPI.post(user, %{status: "yolo"})
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(user, %{status: "yolo"})
+      %{data: %{"id" => quote_url}} = Object.normalize(activity)
 
       conn =
         conn
@@ -137,8 +138,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "quote_id" => activity_id
         })
 
-      assert %{"id" => id, "pleroma" => %{"quote" => %{"id" => ^activity_id}}} =
-               json_response_and_validate_schema(conn, 200)
+      assert %{
+               "id" => id,
+               "pleroma" => %{"quote" => %{"id" => ^activity_id}, "quote_url" => ^quote_url}
+             } = json_response_and_validate_schema(conn, 200)
 
       assert Activity.get_by_id(id)
     end
