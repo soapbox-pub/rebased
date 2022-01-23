@@ -316,7 +316,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     quote_post =
       if quote_activity do
-        quote_rendering_opts = Map.put(opts, :activity, quote_activity)
+        quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
         render("show.json", quote_rendering_opts)
       else
         nil
@@ -431,6 +431,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         quote: quote_post,
+        quote_url: object.data["quoteUrl"],
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
         expires_at: expires_at,
@@ -664,6 +665,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     else
       nil
     end
+  end
+
+  def get_quote(_activity, %{show_quote: false}) do
+    nil
   end
 
   def get_quote(activity, %{quoted_activities: quoted_activities}) do
