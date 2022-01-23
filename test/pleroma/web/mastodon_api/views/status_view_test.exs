@@ -281,6 +281,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
+        quote: nil,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,

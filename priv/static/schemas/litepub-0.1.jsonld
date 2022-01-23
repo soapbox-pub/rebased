@@ -26,6 +26,7 @@
                 "@id": "litepub:listMessage",
                 "@type": "@id"
             },
+            "quoteUrl": "as:quoteUrl",
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
                 "@type": "@id"

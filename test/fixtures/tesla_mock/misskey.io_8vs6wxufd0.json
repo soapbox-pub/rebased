@@ -1,0 +1,44 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "quoteUrl": "as:quoteUrl",
+      "toot": "http://joinmastodon.org/ns#",
+      "Emoji": "toot:Emoji",
+      "featured": "toot:featured",
+      "discoverable": "toot:discoverable",
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "misskey": "https://misskey.io/ns#",
+      "_misskey_content": "misskey:_misskey_content",
+      "_misskey_quote": "misskey:_misskey_quote",
+      "_misskey_reaction": "misskey:_misskey_reaction",
+      "_misskey_votes": "misskey:_misskey_votes",
+      "_misskey_talk": "misskey:_misskey_talk",
+      "isCat": "misskey:isCat",
+      "vcard": "http://www.w3.org/2006/vcard/ns#"
+    }
+  ],
+  "id": "https://misskey.io/notes/8vs6wxufd0",
+  "type": "Note",
+  "attributedTo": "https://misskey.io/users/83ssedkv53",
+  "summary": null,
+  "content": "<p><span>Fantiaこれできないように過去のやつは従量課金だった気がする</span></p>",
+  "_misskey_content": "Fantiaこれできないように過去のやつは従量課金だった気がする",
+  "published": "2022-01-21T16:37:12.663Z",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "cc": [
+    "https://misskey.io/users/83ssedkv53/followers"
+  ],
+  "inReplyTo": null,
+  "attachment": [],
+  "sensitive": false,
+  "tag": []
+}
