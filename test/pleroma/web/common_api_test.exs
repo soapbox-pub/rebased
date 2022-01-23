@@ -697,7 +697,7 @@ defmodule Pleroma.Web.CommonAPITest do
       )
     end
 
-    test "it allows allows quote posting" do
+    test "it allows quote posting" do
       user = insert(:user)
 
       {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
