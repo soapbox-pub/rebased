@@ -312,6 +312,83 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert %{data: %{"id" => ^object_url}} = Object.get_by_ap_id(object_url)
     end
+
+    test "fetches user featured collection without embedded object" do
+      ap_id = "https://example.com/users/lain"
+
+      featured_url = "https://example.com/users/lain/collections/featured"
+
+      user_data =
+        "test/fixtures/users_mock/user.json"
+        |> File.read!()
+        |> String.replace("{{nickname}}", "lain")
+        |> Jason.decode!()
+        |> Map.put("featured", featured_url)
+        |> Jason.encode!()
+
+      object_id = Ecto.UUID.generate()
+
+      featured_data =
+        "test/fixtures/mastodon/collections/external_featured.json"
+        |> File.read!()
+        |> String.replace("{{domain}}", "example.com")
+        |> String.replace("{{nickname}}", "lain")
+        |> String.replace("{{object_id}}", object_id)
+
+      object_url = "https://example.com/objects/#{object_id}"
+
+      object_data =
+        "test/fixtures/statuses/note.json"
+        |> File.read!()
+        |> String.replace("{{object_id}}", object_id)
+        |> String.replace("{{nickname}}", "lain")
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^ap_id
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: user_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{
+          method: :get,
+          url: ^featured_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: featured_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      Tesla.Mock.mock_global(fn
+        %{
+          method: :get,
+          url: ^object_url
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: object_data,
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(ap_id)
+      Process.sleep(50)
+
+      assert user.featured_address == featured_url
+      assert Map.has_key?(user.pinned_objects, object_url)
+
+      in_db = Pleroma.User.get_by_ap_id(ap_id)
+      assert in_db.featured_address == featured_url
+      assert Map.has_key?(user.pinned_objects, object_url)
+
+      assert %{data: %{"id" => ^object_url}} = Object.get_by_ap_id(object_url)
+    end
   end
 
   test "it fetches the appropriate tag-restricted posts" do

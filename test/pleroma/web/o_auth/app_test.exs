@@ -41,4 +41,16 @@ defmodule Pleroma.Web.OAuth.AppTest do
       assert error.type == :unique
     end
   end
+
+  test "get_user_apps/1" do
+    user = insert(:user)
+
+    apps = [
+      insert(:oauth_app, user_id: user.id),
+      insert(:oauth_app, user_id: user.id),
+      insert(:oauth_app, user_id: user.id)
+    ]
+
+    assert App.get_user_apps(user) == apps
+  end
 end

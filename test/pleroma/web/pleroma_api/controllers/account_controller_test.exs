@@ -279,4 +279,29 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert %{"error" => "Record not found"} = json_response_and_validate_schema(conn, 404)
     end
   end
+
+  describe "account endorsements" do
+    test "returns a list of pinned accounts", %{conn: conn} do
+      %{id: id1} = user1 = insert(:user)
+      %{id: id2} = user2 = insert(:user)
+      %{id: id3} = user3 = insert(:user)
+
+      CommonAPI.follow(user1, user2)
+      CommonAPI.follow(user1, user3)
+
+      User.endorse(user1, user2)
+      User.endorse(user1, user3)
+
+      [%{"id" => ^id2}, %{"id" => ^id3}] =
+        conn
+        |> get("/api/v1/pleroma/accounts/#{id1}/endorsements")
+        |> json_response_and_validate_schema(200)
+    end
+
+    test "returns 404 error when specified user is not exist", %{conn: conn} do
+      conn = get(conn, "/api/v1/pleroma/accounts/test/endorsements")
+
+      assert json_response_and_validate_schema(conn, 404) == %{"error" => "Record not found"}
+    end
+  end
 end
