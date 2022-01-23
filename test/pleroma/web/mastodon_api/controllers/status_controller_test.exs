@@ -124,6 +124,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       )
     end
 
+    test "posting a quote post", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, %{id: activity_id}} = CommonAPI.post(user, %{status: "yolo"})
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "indeed",
+          "quote_id" => activity_id
+        })
+
+      assert %{"id" => id, "pleroma" => %{"quote" => %{"id" => ^activity_id}}} =
+               json_response_and_validate_schema(conn, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
