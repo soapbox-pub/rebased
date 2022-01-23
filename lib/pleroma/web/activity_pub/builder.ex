@@ -142,6 +142,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
         "tag" => Keyword.values(draft.tags) |> Enum.uniq()
       }
       |> add_in_reply_to(draft.in_reply_to)
+      |> add_quote(draft.quote_post)
       |> Map.merge(draft.extra)
 
     {:ok, data, []}
@@ -152,6 +153,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   defp add_in_reply_to(object, in_reply_to) do
     with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
       Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+    else
+      _ -> object
+    end
+  end
+
+  defp add_quote(object, nil), do: object
+
+  defp add_quote(object, quote_post) do
+    with %Object{} = quote_object <- Object.normalize(quote_post, fetch: false) do
+      Map.put(object, "quoteUrl", quote_object.data["id"])
     else
       _ -> object
     end
