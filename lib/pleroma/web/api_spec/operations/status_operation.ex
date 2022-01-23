@@ -529,7 +529,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           nullable: true,
           allOf: [FlakeID],
           description: "ID of the status being quoted, if any"
-        },
+        }
       },
       example: %{
         "status" => "What time is it?",
