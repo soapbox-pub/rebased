@@ -143,7 +143,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     end
   end
 
-  @doc "GET /api/v1/pleroma/birthday_reminders"
+  @doc "GET /api/v1/pleroma/birthdays"
   def birthdays(%{assigns: %{user: %User{} = user}} = conn, %{day: day, month: month} = _params) do
     birthdays =
       User.get_friends_birthdays_query(user, day, month)

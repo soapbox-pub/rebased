@@ -1511,6 +1511,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         nil
       end
 
+    show_birthday = !!birthday
+
     user_data = %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
@@ -1534,7 +1536,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
       pinned_objects: pinned_objects,
-      birthday: birthday
+      birthday: birthday,
+      show_birthday: show_birthday
     }
 
     # nickname can be nil because of virtual actors

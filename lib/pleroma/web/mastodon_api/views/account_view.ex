@@ -298,8 +298,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
         favicon: favicon,
-        birthday: user.birthday,
-        hide_birthday: user.hide_birthday
+        birthday: user.birthday
       }
     }
     |> maybe_put_role(user, opts[:for])
@@ -313,7 +312,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
-    |> maybe_hide_birthday(user, opts[:for])
+    |> maybe_show_birthday(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -347,6 +346,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> Kernel.put_in([:source, :privacy], user.default_scope)
     |> Kernel.put_in([:source, :pleroma, :show_role], user.show_role)
     |> Kernel.put_in([:source, :pleroma, :no_rich_text], user.no_rich_text)
+    |> Kernel.put_in([:source, :pleroma, :show_birthday], user.show_birthday)
   end
 
   defp maybe_put_settings(data, _, _, _), do: data
@@ -435,22 +435,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_email_address(data, _, _), do: data
 
-  defp maybe_hide_birthday(data, %User{id: user_id}, %User{id: user_id}) do
+  defp maybe_show_birthday(data, %User{id: user_id} = user, %User{id: user_id}) do
     data
+    |> Kernel.put_in([:pleroma, :birthday], user.birthday)
   end
 
-  defp maybe_hide_birthday(data, %User{hide_birthday: true}, _) do
+  defp maybe_show_birthday(data, %User{show_birthday: true} = user, _) do
     data
-    |> Kernel.pop_in([:pleroma, :birthday])
-    |> elem(1)
-    |> Kernel.pop_in([:pleroma, :hide_birthday])
-    |> elem(1)
+    |> Kernel.put_in([:pleroma, :birthday], user.birthday)
   end
 
-  defp maybe_hide_birthday(data, _, _) do
+  defp maybe_show_birthday(data, _, _) do
     data
-    |> Kernel.pop_in([:pleroma, :hide_birthday])
-    |> elem(1)
   end
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href

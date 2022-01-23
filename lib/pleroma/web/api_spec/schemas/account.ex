@@ -54,7 +54,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             description:
               "whether the user account is waiting on email confirmation to be activated"
           },
-          hide_birthday: %Schema{type: :boolean, nullable: true},
+          show_birthday: %Schema{type: :boolean, nullable: true},
           hide_favorites: %Schema{type: :boolean},
           hide_followers_count: %Schema{
             type: :boolean,

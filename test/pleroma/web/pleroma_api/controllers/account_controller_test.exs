@@ -312,12 +312,14 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       %{id: id1} =
         user1 =
         insert(:user, %{
-          birthday: "2001-02-12"
+          birthday: "2001-02-12",
+          show_birthday: true
         })
 
       user2 =
         insert(:user, %{
-          birthday: "2001-02-14"
+          birthday: "2001-02-14",
+          show_birthday: true
         })
 
       user3 = insert(:user)
@@ -328,7 +330,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       [%{"id" => ^id1}] =
         conn
-        |> get("/api/v1/pleroma/birthday_reminders?day=12&month=2")
+        |> get("/api/v1/pleroma/birthdays?day=12&month=2")
         |> json_response_and_validate_schema(:ok)
     end
 
@@ -338,14 +340,14 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       user1 =
         insert(:user, %{
           birthday: "2001-02-12",
-          hide_birthday: true
+          show_birthday: false
         })
 
       %{id: id2} =
         user2 =
         insert(:user, %{
           birthday: "2001-02-12",
-          hide_birthday: false
+          show_birthday: true
         })
 
       CommonAPI.follow(user, user1)
@@ -353,7 +355,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       [%{"id" => ^id2}] =
         conn
-        |> get("/api/v1/pleroma/birthday_reminders?day=12&month=2")
+        |> get("/api/v1/pleroma/birthdays?day=12&month=2")
         |> json_response_and_validate_schema(:ok)
     end
   end

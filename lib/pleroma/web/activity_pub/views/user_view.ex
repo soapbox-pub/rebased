@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       end
 
     birthday =
-      if !user.hide_birthday,
+      if user.show_birthday,
         do: user.birthday,
         else: nil
 

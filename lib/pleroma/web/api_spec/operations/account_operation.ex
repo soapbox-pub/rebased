@@ -733,10 +733,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "User's birthday",
           format: :date
         },
-        hide_birthday: %Schema{
+        show_birthday: %Schema{
           allOf: [BooleanLike],
           nullable: true,
-          description: "User's birthday will be hidden"
+          description: "User's birthday will be visible"
         }
       },
       example: %{
@@ -758,7 +758,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         also_known_as: ["https://foo.bar/users/foo"],
         discoverable: false,
         actor_type: "Person",
-        hide_birthday: true,
+        show_birthday: false,
         birthday: "2001-02-12"
       }
     }
