@@ -22,6 +22,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             attachments: [],
             in_reply_to: nil,
             in_reply_to_conversation: nil,
+            quote_post: nil,
             visibility: nil,
             expires_at: nil,
             extra: nil,
@@ -53,6 +54,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> poll()
     |> with_valid(&in_reply_to/1)
     |> with_valid(&in_reply_to_conversation/1)
+    |> with_valid(&quote_post/1)
     |> with_valid(&visibility/1)
     |> content()
     |> with_valid(&to_and_cc/1)
@@ -126,6 +128,18 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp in_reply_to(draft), do: draft
+
+  defp quote_post(%{params: %{quote_id: ""}} = draft), do: draft
+
+  defp quote_post(%{params: %{quote_id: id}} = draft) when is_binary(id) do
+    %__MODULE__{draft | quote_post: Activity.get_by_id(id)}
+  end
+
+  defp quote_post(%{params: %{quote_id: %Activity{} = quote_post}} = draft) do
+    %__MODULE__{draft | quote_post: quote_post}
+  end
+
+  defp quote_post(draft), do: draft
 
   defp in_reply_to_conversation(draft) do
     in_reply_to_conversation = Participation.get(draft.params[:in_reply_to_conversation_id])
