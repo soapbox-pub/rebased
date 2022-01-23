@@ -57,6 +57,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
+  defp get_quoted_activities([]), do: %{}
+
+  defp get_quoted_activities(activities) do
+    activities
+    |> Enum.map(fn
+      %{data: %{"type" => "Create"}} = activity ->
+        object = Object.normalize(activity, fetch: false)
+        object && object.data["quoteUrl"] != "" && object.data["quoteUrl"]
+
+      _ ->
+        nil
+    end)
+    |> Enum.filter(& &1)
+    |> Activity.create_by_object_ap_id_with_object()
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn activity, acc ->
+      object = Object.normalize(activity, fetch: false)
+      if object, do: Map.put(acc, object.data["id"], activity), else: acc
+    end)
+  end
+
   # DEPRECATED This field seems to be a left-over from the StatusNet era.
   # If your application uses `pleroma.conversation_id`: this field is deprecated.
   # It is currently stubbed instead by doing a CRC32 of the context, and
@@ -97,6 +118,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # length(activities_with_links) * timeout
     fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
+    quoted_activities = get_quoted_activities(activities)
 
     parent_activities =
       activities
@@ -129,6 +151,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
+      |> Map.put(:quoted_activities, quoted_activities)
       |> Map.put(:parent_activities, parent_activities)
       |> Map.put(:relationships, relationships_opt)
 
@@ -277,7 +300,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     reply_to = get_reply_to(activity, opts)
-
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
 
     history_len =
@@ -289,6 +311,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # See render("history.json", ...) for more details
     # Here the implicit index of the current content is 0
     chrono_order = history_len - 1
+
+    quote_activity = get_quote(activity, opts)
 
     content =
       object
@@ -398,6 +422,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         conversation_id: get_context_id(activity),
         context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
+        quote_id: quote_activity && to_string(quote_activity.id),
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
         expires_at: expires_at,
@@ -628,6 +653,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
+    else
+      nil
+    end
+  end
+
+  def get_quote(activity, %{quoted_activities: quoted_activities}) do
+    object = Object.normalize(activity, fetch: false)
+    quoted_activities[object.data["quoteUrl"]]
+  end
+
+  def get_quote(%{data: %{"object" => _object}} = activity, _) do
+    object = Object.normalize(activity, fetch: false)
+
+    if object.data["quoteUrl"] && object.data["quoteUrl"] != "" do
+      Activity.get_create_by_object_ap_id(object.data["quoteUrl"])
     else
       nil
     end
