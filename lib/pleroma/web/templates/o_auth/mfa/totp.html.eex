@@ -10,7 +10,7 @@
 <%= form_for @conn, Routes.mfa_verify_path(@conn, :verify), [as: "mfa"], fn f -> %>
 <div class="input">
   <%= label f, :code, "Authentication code" %>
-  <%= text_input f, :code, [autocomplete: false, autocorrect: "off", autocapitalize: "off", autofocus: true, pattern: "[0-9]*", spellcheck: false] %>
+  <%= text_input f, :code, [autocomplete: "one-time-code", autocorrect: "off", autocapitalize: "off", autofocus: true, pattern: "[0-9]*", spellcheck: false] %>
   <%= hidden_input f, :mfa_token, value: @mfa_token %>
   <%= hidden_input f, :state, value: @state %>
   <%= hidden_input f, :redirect_uri, value: @redirect_uri %>

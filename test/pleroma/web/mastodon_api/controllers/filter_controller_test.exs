@@ -49,7 +49,6 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       assert filter.hide == true
     end
 
-    @tag :erratic
     test "a filter with expires_in", %{conn: conn, user: user} do
       in_seconds = 600
 
@@ -65,12 +64,13 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
       assert response["irreversible"] == false
 
-      expires_at =
+      expected_expiration =
         NaiveDateTime.utc_now()
         |> NaiveDateTime.add(in_seconds)
-        |> Pleroma.Web.CommonAPI.Utils.to_masto_date()
 
-      assert response["expires_at"] == expires_at
+      {:ok, actual_expiration} = NaiveDateTime.from_iso8601(response["expires_at"])
+
+      assert abs(NaiveDateTime.diff(expected_expiration, actual_expiration)) <= 5
 
       filter = Filter.get(response["id"], user)
 
