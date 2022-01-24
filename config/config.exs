@@ -421,6 +421,8 @@ config :pleroma, :mrf_nsfw_api,
 
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
+config :pleroma, :mrf_inline_quote, prefix: "RT"
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
