@@ -414,6 +414,8 @@ config :pleroma, :mrf_object_age,
 
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
+config :pleroma, :mrf_inline_quote, prefix: "RT"
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
