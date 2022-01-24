@@ -12,16 +12,10 @@ defmodule Pleroma.Telemetry.Logger do
     [:pleroma, :connection_pool, :reclaim, :stop],
     [:pleroma, :connection_pool, :provision_failure],
     [:pleroma, :connection_pool, :client, :dead],
-    [:pleroma, :connection_pool, :client, :add],
-    [:pleroma, :repo, :query]
+    [:pleroma, :connection_pool, :client, :add]
   ]
   def attach do
-    :telemetry.attach_many(
-      "pleroma-logger",
-      @events,
-      &Pleroma.Telemetry.Logger.handle_event/4,
-      []
-    )
+    :telemetry.attach_many("pleroma-logger", @events, &handle_event/4, [])
   end
 
   # Passing anonymous functions instead of strings to logger is intentional,
@@ -93,64 +87,4 @@ defmodule Pleroma.Telemetry.Logger do
   end
 
   def handle_event([:pleroma, :connection_pool, :client, :add], _, _, _), do: :ok
-
-  def handle_event(
-        [:pleroma, :repo, :query] = _name,
-        %{query_time: query_time} = measurements,
-        %{source: source} = metadata,
-        config
-      ) do
-    logging_config = Pleroma.Config.get([:telemetry, :slow_queries_logging], [])
-
-    if logging_config[:enabled] &&
-         logging_config[:min_duration] &&
-         query_time > logging_config[:min_duration] and
-         (is_nil(logging_config[:exclude_sources]) or
-            source not in logging_config[:exclude_sources]) do
-      log_slow_query(measurements, metadata, config)
-    else
-      :ok
-    end
-  end
-
-  defp log_slow_query(
-         %{query_time: query_time} = _measurements,
-         %{source: _source, query: query, params: query_params, repo: repo} = _metadata,
-         _config
-       ) do
-    sql_explain =
-      with {:ok, %{rows: explain_result_rows}} <-
-             repo.query("EXPLAIN " <> query, query_params, log: false) do
-        Enum.map_join(explain_result_rows, "\n", & &1)
-      end
-
-    {:current_stacktrace, stacktrace} = Process.info(self(), :current_stacktrace)
-
-    pleroma_stacktrace =
-      Enum.filter(stacktrace, fn
-        {__MODULE__, _, _, _} ->
-          false
-
-        {mod, _, _, _} ->
-          mod
-          |> to_string()
-          |> String.starts_with?("Elixir.Pleroma.")
-      end)
-
-    Logger.warn(fn ->
-      """
-      Slow query!
-
-      Total time: #{round(query_time / 1_000)} ms
-
-      #{query}
-
-      #{inspect(query_params, limit: :infinity)}
-
-      #{sql_explain}
-
-      #{Exception.format_stacktrace(pleroma_stacktrace)}
-      """
-    end)
-  end
 end
