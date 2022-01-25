@@ -41,13 +41,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
     mention_users =
       to
-      |> Enum.map(fn ap_id_or_uri ->
-        case User.get_or_fetch_by_ap_id(ap_id_or_uri) do
-          {:ok, user} -> {ap_id_or_uri, user}
-          _ -> {ap_id_or_uri, User.get_by_uri(ap_id_or_uri)}
-        end
-      end)
-      |> Enum.reject(fn {_, user} -> user == nil end)
+      |> Enum.map(& {&1, User.get_cached_by_ap_id(&1)})
+      |> Enum.reject(fn {_, user} -> is_nil(user) end)
       |> Enum.into(%{})
 
     explicitly_mentioned_uris = extract_mention_uris_from_content(content)
