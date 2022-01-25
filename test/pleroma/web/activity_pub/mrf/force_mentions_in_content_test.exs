@@ -85,4 +85,28 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
     assert filtered ==
              "<span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{luigi.id}\" href=\"#{luigi.ap_id}\" rel=\"ugc\">@<span>luigi</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{mario.id}\" href=\"#{mario.ap_id}\" rel=\"ugc\">@<span>mario</span></a></span> </span>WHA-HA!"
   end
+
+  test "don't mention self" do
+    mario = insert(:user, nickname: "mario")
+
+    {:ok, post} = CommonAPI.post(mario, %{status: "Mama mia"})
+
+    activity = %{
+      "type" => "Create",
+      "actor" => mario.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "actor" => mario.ap_id,
+        "content" => "I'ma tired...",
+        "to" => [
+          mario.ap_id,
+          Constants.as_public()
+        ],
+        "inReplyTo" => Object.normalize(post).data["id"]
+      }
+    }
+
+    {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
+    assert filtered == "I'ma tired..."
+  end
 end
