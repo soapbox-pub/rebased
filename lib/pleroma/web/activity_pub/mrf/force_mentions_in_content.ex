@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
+  require Pleroma.Constants
+
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.User
@@ -58,6 +60,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
   defp sort_replied_user(users, _), do: users
 
+  # Drop constants and the actor's own AP ID
+  defp clean_recipients(recipients, object) do
+    Enum.reject(recipients, fn ap_id ->
+      ap_id in [
+        object["object"]["actor"],
+        Pleroma.Constants.as_public(),
+        Pleroma.Web.ActivityPub.Utils.as_local_public()
+      ]
+    end)
+  end
+
   @impl true
   def filter(%{"type" => "Create", "object" => %{"type" => "Note", "to" => to}} = object)
       when is_list(to) do
@@ -69,6 +82,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
     mention_users =
       to
+      |> clean_recipients(object)
       |> Enum.map(&User.get_cached_by_ap_id/1)
       |> Enum.reject(&is_nil/1)
       |> sort_replied_user(replied_to_user)
