@@ -548,6 +548,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           description:
             "Whether the user opts-in to receiving news and marketing updates from site admins."
+        },
+        birthday: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User's birthday",
+          format: :date
         }
       },
       example: %{
@@ -730,6 +736,17 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           description:
             "Whether the user opts-in to receiving news and marketing updates from site admins."
+        },
+        birthday: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User's birthday",
+          format: :date
+        },
+        show_birthday: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "User's birthday will be visible"
         }
       },
       example: %{
@@ -750,7 +767,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         allow_following_move: false,
         also_known_as: ["https://foo.bar/users/foo"],
         discoverable: false,
-        actor_type: "Person"
+        actor_type: "Person",
+        show_birthday: false,
+        birthday: "2001-02-12"
       }
     }
   end

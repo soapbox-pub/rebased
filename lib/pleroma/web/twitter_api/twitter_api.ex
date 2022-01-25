@@ -20,6 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       |> Map.put(:name, Map.get(params, :fullname, params[:username]))
       |> Map.put(:password_confirmation, params[:password])
       |> Map.put(:registration_reason, params[:reason])
+      |> Map.put(:birthday, params[:birthday])
 
     if Pleroma.Config.get([:instance, :registrations_open]) do
       create_user(params, opts)
