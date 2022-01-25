@@ -957,6 +957,17 @@ config :pleroma, :config_description, [
         type: :boolean,
         description:
           "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+      },
+      %{
+        key: :birthday_required,
+        type: :boolean,
+        description: "Require users to enter their birthday."
+      },
+      %{
+        key: :birthday_min_age,
+        type: :integer,
+        description:
+          "Minimum required age for users to create account. Only used if birthday is required."
       }
     ]
   },

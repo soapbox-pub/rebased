@@ -448,6 +448,8 @@ defmodule Pleroma.Web.Router do
 
       post("/accounts/:id/subscribe", AccountController, :subscribe)
       post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
+
+      get("/birthdays", AccountController, :birthdays)
     end
 
     post("/accounts/confirmation_resend", AccountController, :confirmation_resend)

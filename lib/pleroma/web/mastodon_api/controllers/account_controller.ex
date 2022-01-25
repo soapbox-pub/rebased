@@ -191,7 +191,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :skip_thread_containment,
         :allow_following_move,
         :also_known_as,
-        :accepts_chat_messages
+        :accepts_chat_messages,
+        :show_birthday
       ]
       |> Enum.reduce(%{}, fn key, acc ->
         Maps.put_if_present(acc, key, params[key], &{:ok, Params.truthy_param?(&1)})
@@ -219,6 +220,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:is_locked, params[:locked])
       # Note: param name is indeed :discoverable (not an error)
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
+      |> Maps.put_if_present(:birthday, params[:birthday])
 
     # What happens here:
     #

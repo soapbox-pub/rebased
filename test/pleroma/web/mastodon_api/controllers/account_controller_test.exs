@@ -1608,6 +1608,60 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
   end
 
+  describe "create account with required birth date" do
+    setup %{conn: conn} do
+      clear_config([:instance, :birthday_required], true)
+      clear_config([:instance, :birthday_min_age], 18 * 365)
+
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "multipart/form-data")
+
+      [conn: conn]
+    end
+
+    test "creates an account if provided valid birth date", %{conn: conn} do
+      birthday =
+        Date.utc_today()
+        |> Date.add(-19 * 365)
+        |> Date.to_string()
+
+      params = %{
+        username: "mkljczk",
+        email: "mkljczk@example.org",
+        password: "dupa.8",
+        agreement: true,
+        birthday: birthday
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 200)
+    end
+
+    test "returns an error if missing birth date", %{conn: conn} do
+      params = %{
+        username: "mkljczk",
+        email: "mkljczk@example.org",
+        password: "dupa.8",
+        agreement: true
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 400) == %{
+               "error" => "{\"birthday\":[\"can't be blank\"]}"
+             }
+    end
+  end
+
   describe "GET /api/v1/accounts/:id/lists - account_lists" do
     test "returns lists to which the account belongs" do
       %{user: user, conn: conn} = oauth_access(["read:lists"])
