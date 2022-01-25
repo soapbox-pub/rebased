@@ -257,7 +257,9 @@ config :pleroma, :instance,
   password_reset_token_validity: 60 * 60 * 24,
   profile_directory: true,
   privileged_staff: false,
-  max_endorsed_users: 20
+  max_endorsed_users: 20,
+  birthday_required: false,
+  birthday_min_age: 0
 
 config :pleroma, :welcome,
   direct_message: [
