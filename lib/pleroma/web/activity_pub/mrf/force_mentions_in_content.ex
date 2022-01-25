@@ -41,13 +41,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
     mention_users =
       to
-      |> Enum.map(fn ap_id_or_uri ->
-        case User.get_or_fetch_by_ap_id(ap_id_or_uri) do
-          {:ok, user} -> {ap_id_or_uri, user}
-          _ -> {ap_id_or_uri, User.get_by_uri(ap_id_or_uri)}
-        end
-      end)
-      |> Enum.reject(fn {_, user} -> user == nil end)
+      |> Enum.map(&{&1, User.get_cached_by_ap_id(&1)})
+      |> Enum.reject(fn {_, user} -> is_nil(user) end)
       |> Enum.into(%{})
 
     explicitly_mentioned_uris = extract_mention_uris_from_content(content)
@@ -55,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
     added_mentions =
       Enum.reduce(mention_users, "", fn {uri, user}, acc ->
         unless uri in explicitly_mentioned_uris do
-          acc <> Formatter.mention_from_user(user)
+          acc <> Formatter.mention_from_user(user, %{mentions_format: :compact}) <> " "
         else
           acc
         end
@@ -63,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
     content =
       if added_mentions != "",
-        do: "<span class=\"recipients-inline\">#{added_mentions} </span>" <> content,
+        do: "<span class=\"recipients-inline\">#{added_mentions}</span>" <> content,
         else: content
 
     {:ok, put_in(object["object"]["content"], content)}
