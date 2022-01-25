@@ -79,7 +79,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
         background_image: "https://example.com/images/asuka_hospital.png",
-        birthday: nil,
         favicon: nil,
         is_confirmed: true,
         tags: [],
@@ -182,7 +181,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         ap_id: user.ap_id,
         also_known_as: [],
         background_image: nil,
-        birthday: nil,
         favicon: nil,
         is_confirmed: true,
         tags: [],
@@ -493,6 +491,40 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                "show.json",
                %{user: user, for: user}
              )[:pleroma][:email] == user.email
+    end
+  end
+
+  describe "hiding birthday" do
+    test "doesn't show birthday if hidden" do
+      user =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: false
+        })
+
+      other_user = insert(:user)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: other_user}
+             )[:birthday] == nil
+    end
+
+    test "shows hidden birthday to the account owner" do
+      user =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: false
+        })
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: user}
+             )[:birthday] == nil
     end
   end
 
