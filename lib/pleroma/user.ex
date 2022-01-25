@@ -154,6 +154,8 @@ defmodule Pleroma.User do
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
     field(:last_status_at, :naive_datetime)
+    field(:birthday, :date)
+    field(:show_birthday, :boolean, default: false)
 
     embeds_one(
       :notification_settings,
@@ -470,7 +472,9 @@ defmodule Pleroma.User do
         :actor_type,
         :also_known_as,
         :accepts_chat_messages,
-        :pinned_objects
+        :pinned_objects,
+        :birthday,
+        :show_birthday
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -531,9 +535,12 @@ defmodule Pleroma.User do
         :is_discoverable,
         :actor_type,
         :accepts_chat_messages,
-        :disclose_client
+        :disclose_client,
+        :birthday,
+        :show_birthday
       ]
     )
+    |> validate_min_age()
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
@@ -738,7 +745,8 @@ defmodule Pleroma.User do
       :password_confirmation,
       :emoji,
       :accepts_chat_messages,
-      :registration_reason
+      :registration_reason,
+      :birthday
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -760,6 +768,8 @@ defmodule Pleroma.User do
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_length(:registration_reason, max: reason_limit)
     |> maybe_validate_required_email(opts[:external])
+    |> maybe_validate_required_birthday
+    |> validate_min_age()
     |> put_password_hash
     |> put_ap_id()
     |> unique_constraint(:ap_id)
@@ -774,6 +784,26 @@ defmodule Pleroma.User do
     else
       changeset
     end
+  end
+
+  defp maybe_validate_required_birthday(changeset) do
+    if Config.get([:instance, :birthday_required]) do
+      validate_required(changeset, [:birthday])
+    else
+      changeset
+    end
+  end
+
+  defp validate_min_age(changeset) do
+    changeset
+    |> validate_change(:birthday, fn :birthday, birthday ->
+      valid? =
+        Date.utc_today()
+        |> Date.diff(birthday) >=
+          Config.get([:instance, :birthday_min_age])
+
+      if valid?, do: [], else: [birthday: "Invalid age"]
+    end)
   end
 
   defp put_ap_id(changeset) do
@@ -2559,5 +2589,14 @@ defmodule Pleroma.User do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
     end
+  end
+
+  def get_friends_birthdays_query(%User{} = user, day, month) do
+    User.Query.build(%{
+      friends: user,
+      deactivated: false,
+      birthday_day: day,
+      birthday_month: month
+    })
   end
 end

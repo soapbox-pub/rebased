@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
   alias Pleroma.Formatter
+  alias Pleroma.Object
   alias Pleroma.User
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
@@ -34,31 +35,50 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
     do_extract(tree, [])
   end
 
+  defp get_replied_to_user(%{"inReplyTo" => in_reply_to}) do
+    case Object.normalize(in_reply_to, fetch: false) do
+      %Object{data: %{"actor" => actor}} -> User.get_cached_by_ap_id(actor)
+      _ -> nil
+    end
+  end
+
+  defp get_replied_to_user(_object), do: nil
+
+  # Ensure the replied-to user is sorted to the left
+  defp sort_replied_user([%User{id: user_id} | _] = users, %User{id: user_id}), do: users
+
+  defp sort_replied_user(users, %User{id: user_id} = user) do
+    if Enum.find(users, fn u -> u.id == user_id end) do
+      users = Enum.reject(users, fn u -> u.id == user_id end)
+      [user | users]
+    else
+      users
+    end
+  end
+
+  defp sort_replied_user(users, _), do: users
+
   @impl true
-  def filter(%{"type" => "Create", "object" => %{"type" => "Note", "tag" => tag}} = object) do
+  def filter(%{"type" => "Create", "object" => %{"type" => "Note", "to" => to}} = object)
+      when is_list(to) do
     # image-only posts from pleroma apparently reach this MRF without the content field
     content = object["object"]["content"] || ""
 
+    # Get the replied-to user for sorting
+    replied_to_user = get_replied_to_user(object["object"])
+
     mention_users =
-      tag
-      |> Enum.filter(fn tag -> tag["type"] == "Mention" end)
-      |> Enum.map(& &1["href"])
+      to
+      |> Enum.map(&User.get_cached_by_ap_id/1)
       |> Enum.reject(&is_nil/1)
-      |> Enum.map(fn ap_id_or_uri ->
-        case User.get_or_fetch_by_ap_id(ap_id_or_uri) do
-          {:ok, user} -> {ap_id_or_uri, user}
-          _ -> {ap_id_or_uri, User.get_by_uri(ap_id_or_uri)}
-        end
-      end)
-      |> Enum.reject(fn {_, user} -> user == nil end)
-      |> Enum.into(%{})
+      |> sort_replied_user(replied_to_user)
 
     explicitly_mentioned_uris = extract_mention_uris_from_content(content)
 
     added_mentions =
-      Enum.reduce(mention_users, "", fn {uri, user}, acc ->
+      Enum.reduce(mention_users, "", fn %User{ap_id: uri} = user, acc ->
         unless uri in explicitly_mentioned_uris do
-          acc <> Formatter.mention_from_user(user)
+          acc <> Formatter.mention_from_user(user, %{mentions_format: :compact}) <> " "
         else
           acc
         end
@@ -66,7 +86,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
     content =
       if added_mentions != "",
-        do: added_mentions <> " " <> content,
+        do: "<span class=\"recipients-inline\">#{added_mentions}</span>" <> content,
         else: content
 
     {:ok, put_in(object["object"]["content"], content)}
