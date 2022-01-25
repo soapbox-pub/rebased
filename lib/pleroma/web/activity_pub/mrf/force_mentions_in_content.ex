@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
     content =
       if added_mentions != "",
-        do: added_mentions <> " " <> content,
+        do: "<span class=\"recipients-inline\">#{added_mentions} </span>" <> content,
         else: content
 
     {:ok, put_in(object["object"]["content"], content)}
