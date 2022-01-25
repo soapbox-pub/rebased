@@ -35,15 +35,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
   end
 
   @impl true
-  def filter(%{"type" => "Create", "object" => %{"type" => "Note", "tag" => tag}} = object) do
+  def filter(%{"type" => "Create", "object" => %{"type" => "Note", "to" => to}} = object) do
     # image-only posts from pleroma apparently reach this MRF without the content field
     content = object["object"]["content"] || ""
 
     mention_users =
-      tag
-      |> Enum.filter(fn tag -> tag["type"] == "Mention" end)
-      |> Enum.map(& &1["href"])
-      |> Enum.reject(&is_nil/1)
+      to
       |> Enum.map(fn ap_id_or_uri ->
         case User.get_or_fetch_by_ap_id(ap_id_or_uri) do
           {:ok, user} -> {ap_id_or_uri, user}
