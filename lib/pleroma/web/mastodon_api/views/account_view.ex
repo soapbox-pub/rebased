@@ -297,8 +297,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         skip_thread_containment: user.skip_thread_containment,
         background_image: image_url(user.background) |> MediaProxy.url(),
         accepts_chat_messages: user.accepts_chat_messages,
-        favicon: favicon,
-        birthday: user.birthday
+        favicon: favicon
       }
     }
     |> maybe_put_role(user, opts[:for])
