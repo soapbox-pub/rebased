@@ -287,7 +287,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     quote_activity = get_quote(activity, opts)
 
     quote_post =
-      if quote_activity do
+      if visible_for_user?(quote_activity, opts[:for]) do
         quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
         render("show.json", quote_rendering_opts)
       else

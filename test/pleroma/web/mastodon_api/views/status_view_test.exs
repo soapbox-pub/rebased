@@ -400,6 +400,47 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.pleroma.quote.id == to_string(quote_post.id)
   end
 
+  test "quoted private post" do
+    user = insert(:user)
+
+    # Insert a private post
+    private = insert(:followers_only_note_activity, user: user)
+    private_object = Object.normalize(private)
+
+    # Create a public post quoting the private post
+    quote_private =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_private})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == private_object.data["id"]
+
+    # After following the user, the quote is rendered
+    follower = insert(:user)
+    CommonAPI.follow(follower, user)
+
+    status = StatusView.render("show.json", %{activity: quote_private, for: follower})
+    assert status.pleroma.quote.id == to_string(private.id)
+  end
+
+  test "quoted direct message" do
+    # Insert a direct message
+    direct = insert(:direct_note_activity)
+    direct_object = Object.normalize(direct)
+
+    # Create a public post quoting the direct message
+    quote_direct =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => direct_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_direct})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == direct_object.data["id"]
+  end
+
   test "contains mentions" do
     user = insert(:user)
     mentioned = insert(:user)
