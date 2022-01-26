@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
 
@@ -57,6 +58,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> with_valid(&in_reply_to_conversation/1)
     |> with_valid(&quote_post/1)
     |> with_valid(&visibility/1)
+    |> with_valid(&quoting_visibility/1)
     |> content()
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
@@ -131,7 +133,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp in_reply_to(draft), do: draft
 
   defp quote_post(%{params: %{quote_id: id}} = draft) when not_empty_string(id) do
-    case Activity.get_by_id(id) do
+    case Activity.get_by_id_with_object(id) do
       %Activity{actor: actor_ap_id} = activity when not_empty_string(actor_ap_id) ->
         %__MODULE__{draft | quote_post: activity, mentions: [actor_ap_id]}
 
@@ -159,6 +161,17 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         %__MODULE__{draft | visibility: visibility}
     end
   end
+
+  defp quoting_visibility(%{quote_post: %Activity{}} = draft) do
+    with %Object{} = object <- Object.normalize(draft.quote_post, fetch: false),
+         visibility when visibility in ~w(public unlisted) <- Visibility.get_visibility(object) do
+      draft
+    else
+      _ -> add_error(draft, dgettext("errors", "Cannot quote private message"))
+    end
+  end
+
+  defp quoting_visibility(draft), do: draft
 
   defp expires_at(draft) do
     case CommonAPI.check_expiry_date(draft.params[:expires_in]) do

@@ -722,6 +722,20 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert Object.normalize(quote_post).data["to"] == [Pleroma.Constants.as_public()]
     end
+
+    test "quote posting visibility" do
+      user = insert(:user)
+
+      {:ok, direct} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
+      {:ok, private} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, unlisted} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, public} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: direct.id})
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: private.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
+    end
   end
 
   describe "reactions" do

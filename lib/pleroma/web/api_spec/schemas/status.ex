@@ -188,6 +188,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description: "URL of the quoted status"
           },
+          quote_visible: %Schema{
+            type: :boolean,
+            description: "`true` if the quoted post is visible to the user"
+          },
           local: %Schema{
             type: :boolean,
             description: "`true` if the post was made on the local instance"
