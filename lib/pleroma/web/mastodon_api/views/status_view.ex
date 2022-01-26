@@ -402,6 +402,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         quote: quote_post,
         quote_url: object.data["quoteUrl"],
+        quote_visible: visible_for_user?(quote_activity, opts[:for]),
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
         expires_at: expires_at,

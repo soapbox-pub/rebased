@@ -282,6 +282,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         in_reply_to_account_acct: nil,
         quote: nil,
         quote_url: nil,
+        quote_visible: false,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
@@ -416,6 +417,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     # The quote isn't rendered
     refute status.pleroma.quote
     assert status.pleroma.quote_url == private_object.data["id"]
+    refute status.pleroma.quote_visible
 
     # After following the user, the quote is rendered
     follower = insert(:user)
@@ -423,6 +425,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("show.json", %{activity: quote_private, for: follower})
     assert status.pleroma.quote.id == to_string(private.id)
+    assert status.pleroma.quote_visible
   end
 
   test "quoted direct message" do
@@ -439,6 +442,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     # The quote isn't rendered
     refute status.pleroma.quote
     assert status.pleroma.quote_url == direct_object.data["id"]
+    refute status.pleroma.quote_visible
   end
 
   test "contains mentions" do
