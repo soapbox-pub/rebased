@@ -72,8 +72,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
   end
 
   @impl true
-  def filter(%{"type" => "Create", "object" => %{"type" => "Note", "to" => to}} = object)
-      when is_list(to) do
+  def filter(
+        %{
+          "type" => "Create",
+          "object" => %{"type" => "Note", "to" => to, "inReplyTo" => in_reply_to}
+        } = object
+      )
+      when is_list(to) and is_binary(in_reply_to) do
     # image-only posts from pleroma apparently reach this MRF without the content field
     content = object["object"]["content"] || ""
 
