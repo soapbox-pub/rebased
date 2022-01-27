@@ -109,4 +109,29 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
     {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
     assert filtered == "I'ma tired..."
   end
+
+  test "don't mention in top-level posts" do
+    mario = insert(:user, nickname: "mario")
+    luigi = insert(:user, nickname: "luigi")
+
+    {:ok, post} = CommonAPI.post(mario, %{status: "Letsa go"})
+
+    activity = %{
+      "type" => "Create",
+      "actor" => mario.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "actor" => mario.ap_id,
+        "content" => "Mama mia!",
+        "to" => [
+          luigi.ap_id,
+          Constants.as_public()
+        ],
+        "quoteUrl" => Object.normalize(post).data["id"]
+      }
+    }
+
+    {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
+    assert filtered == "Mama mia!"
+  end
 end
