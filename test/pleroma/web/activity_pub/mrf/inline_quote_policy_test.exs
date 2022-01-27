@@ -14,6 +14,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicyTest do
       "actor" => "https://gleasonator.com/users/alex",
       "object" => %{
         "type" => "Note",
+        "content" => "Nice post",
+        "quoteUrl" => quote_url
+      }
+    }
+
+    {:ok, %{"object" => %{"content" => filtered}}} = InlineQuotePolicy.filter(activity)
+
+    assert filtered ==
+             "Nice post<span class=\"quote-inline\"><br><br>RT: <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span>"
+  end
+
+  test "doesn't add line breaks to markdown posts" do
+    quote_url = "https://gleasonator.com/objects/1234"
+
+    activity = %{
+      "type" => "Create",
+      "actor" => "https://gleasonator.com/users/alex",
+      "object" => %{
+        "type" => "Note",
         "content" => "<p>Nice post</p>",
         "quoteUrl" => quote_url
       }
@@ -22,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicyTest do
     {:ok, %{"object" => %{"content" => filtered}}} = InlineQuotePolicy.filter(activity)
 
     assert filtered ==
-             "<p>Nice post</p><span class=\"quote-inline\"><br><br>RT: <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span>"
+             "<p>Nice post</p><span class=\"quote-inline\">RT: <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span>"
   end
 
   test "ignores Misskey quote posts" do
