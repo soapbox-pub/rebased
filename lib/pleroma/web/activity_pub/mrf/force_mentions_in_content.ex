@@ -103,10 +103,23 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
         end
       end)
 
-    content =
+    recipients_inline =
       if added_mentions != "",
-        do: "<span class=\"recipients-inline\">#{added_mentions}</span>" <> content,
-        else: content
+        do: "<span class=\"recipients-inline\">#{added_mentions}</span>",
+        else: ""
+
+    content =
+      cond do
+        # For Markdown posts, insert the mentions inside the first <p> tag
+        recipients_inline != "" && String.starts_with?(content, "<p>") ->
+          "<p>" <> recipients_inline <> String.trim_leading(content, "<p>")
+
+        recipients_inline != "" ->
+          recipients_inline <> content
+
+        true ->
+          content
+      end
 
     {:ok, put_in(object["object"]["content"], content)}
   end

@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
     {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
 
     assert filtered ==
-             "<span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{dielan.id}\" href=\"https://shitposter.club/users/dielan\" rel=\"ugc\">@<span>dielan</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{coolboymew.id}\" href=\"https://shitposter.club/users/coolboymew\" rel=\"ugc\">@<span>coolboymew</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{fence.id}\" href=\"https://xyzzy.link/users/fence\" rel=\"ugc\">@<span>fence</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{hakui.id}\" href=\"https://tuusin.misono-ya.info/users/hakui\" rel=\"ugc\">@<span>hakui</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{lain.id}\" href=\"https://lain.com/users/lain\" rel=\"ugc\">@<span>lain</span></a></span> </span><p>Haha yeah, you can control who you reply to.</p>"
+             "<p><span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{dielan.id}\" href=\"https://shitposter.club/users/dielan\" rel=\"ugc\">@<span>dielan</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{coolboymew.id}\" href=\"https://shitposter.club/users/coolboymew\" rel=\"ugc\">@<span>coolboymew</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{fence.id}\" href=\"https://xyzzy.link/users/fence\" rel=\"ugc\">@<span>fence</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{hakui.id}\" href=\"https://tuusin.misono-ya.info/users/hakui\" rel=\"ugc\">@<span>hakui</span></a></span> <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{lain.id}\" href=\"https://lain.com/users/lain\" rel=\"ugc\">@<span>lain</span></a></span> </span>Haha yeah, you can control who you reply to.</p>"
   end
 
   test "the replied-to user is sorted to the left" do
@@ -133,5 +133,32 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
 
     {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
     assert filtered == "Mama mia!"
+  end
+
+  test "with markdown formatting" do
+    mario = insert(:user, nickname: "mario")
+    luigi = insert(:user, nickname: "luigi")
+
+    {:ok, post} = CommonAPI.post(luigi, %{status: "Mama mia"})
+
+    activity = %{
+      "type" => "Create",
+      "actor" => mario.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "actor" => mario.ap_id,
+        "content" => "<p>I'ma tired...</p>",
+        "to" => [
+          luigi.ap_id,
+          Constants.as_public()
+        ],
+        "inReplyTo" => Object.normalize(post).data["id"]
+      }
+    }
+
+    {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
+
+    assert filtered ==
+             "<p><span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{luigi.id}\" href=\"#{luigi.ap_id}\" rel=\"ugc\">@<span>luigi</span></a></span> </span>I'ma tired...</p>"
   end
 end
