@@ -67,7 +67,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
 
   defp fix_quote_url(%{"quoteUrl" => _quote_url} = data), do: data
 
-  # Fix for Fedibird
+  # Fedibird
+  # https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  defp fix_quote_url(%{"quoteUri" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  # Old Fedibird (bug)
   # https://github.com/fedibird/mastodon/issues/9
   defp fix_quote_url(%{"quoteURL" => quote_url} = data) do
     Map.put(data, "quoteUrl", quote_url)

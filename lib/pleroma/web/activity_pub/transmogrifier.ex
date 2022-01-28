@@ -181,7 +181,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  # Fix for Fedibird
+  # Fedibird
+  # https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  def fix_quote_url(%{"quoteUri" => quote_url} = object, options) do
+    object
+    |> Map.put("quoteUrl", quote_url)
+    |> fix_quote_url(options)
+  end
+
+  # Old Fedibird (bug)
   # https://github.com/fedibird/mastodon/issues/9
   def fix_quote_url(%{"quoteURL" => quote_url} = object, options) do
     object
@@ -661,6 +669,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_reply_to_uri(obj), do: obj
 
+  def set_quote_url(%{"quoteUrl" => quote_url} = object) when is_binary(quote_url) do
+    Map.merge(object, %{
+      # Fedibird quote
+      "quoteUri" => quote_url,
+      # Misskey quote
+      "_misskey_quote" => quote_url
+    })
+  end
+
+  def set_quote_url(obj), do: obj
+
   @doc """
   Serialized Mastodon-compatible `replies` collection containing _self-replies_.
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
@@ -715,6 +734,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_quote_url
     |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags
