@@ -18,6 +18,7 @@
             "schema": "http://schema.org#",
             "toot": "http://joinmastodon.org/ns#",
             "misskey": "https://misskey-hub.net/ns#",
+            "fedibird": "http://fedibird.com/ns#",
             "value": "schema:value",
             "sensitive": "as:sensitive",
             "litepub": "http://litepub.social/ns#",
@@ -28,6 +29,7 @@
                 "@type": "@id"
             },
             "quoteUrl": "as:quoteUrl",
+            "quoteUri": "fedibird:quoteUri",
             "_misskey_quote": "misskey:_misskey_quote",
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
