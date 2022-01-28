@@ -661,6 +661,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_reply_to_uri(obj), do: obj
 
+  # Misskey quotes
+  # Despite being underscored, it's potentially more reliable for interop.
+  def set_quote_url(%{"quoteUrl" => quote_url} = object) when is_binary(quote_url) do
+    Map.put(object, "_misskey_quote", quote_url)
+  end
+
+  def set_quote_url(obj), do: obj
+
   @doc """
   Serialized Mastodon-compatible `replies` collection containing _self-replies_.
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
@@ -715,6 +723,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_quote_url
     |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags
