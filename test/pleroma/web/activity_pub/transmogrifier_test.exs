@@ -336,7 +336,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"]["quoteUrl"] == quote_id
       assert modified["object"]["quoteUri"] == quote_id
-      assert modified["object"]["_misskey_quote"] == quote_id
     end
   end
 
