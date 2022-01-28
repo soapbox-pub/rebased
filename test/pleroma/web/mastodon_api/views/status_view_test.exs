@@ -446,6 +446,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     refute status.pleroma.quote_visible
   end
 
+  test "repost of quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, repost} = CommonAPI.repeat(quote_post.id, user)
+
+    [status] = StatusView.render("index.json", %{activities: [repost], as: :activity})
+
+    assert status.reblog.pleroma.quote.id == to_string(post.id)
+  end
+
   test "contains mentions" do
     user = insert(:user)
     mentioned = insert(:user)

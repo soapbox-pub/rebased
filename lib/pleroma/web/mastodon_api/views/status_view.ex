@@ -514,13 +514,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def get_quote(_activity, %{show_quote: false}) do
-    nil
-  end
+  def get_quote(_activity, %{show_quote: false}), do: nil
 
   def get_quote(activity, %{quoted_activities: quoted_activities}) do
     object = Object.normalize(activity, fetch: false)
-    quoted_activities[object.data["quoteUrl"]]
+
+    with nil <- quoted_activities[object.data["quoteUrl"]] do
+      # For when a quote post is inside an Announce
+      Activity.get_create_by_object_ap_id_with_object(object.data["quoteUrl"])
+    end
   end
 
   def get_quote(%{data: %{"object" => _object}} = activity, _) do
