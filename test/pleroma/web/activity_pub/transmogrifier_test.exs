@@ -332,8 +332,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(quote_post.data)
 
-      quoted_post = Object.normalize(quoted_post)
-      assert modified["object"]["quoteUrl"] == quoted_post.data["id"]
+      %{data: %{"id" => quote_id}} = Object.normalize(quoted_post)
+
+      assert modified["object"]["quoteUrl"] == quote_id
+      assert modified["object"]["quoteUri"] == quote_id
+      assert modified["object"]["_misskey_quote"] == quote_id
     end
   end
 
