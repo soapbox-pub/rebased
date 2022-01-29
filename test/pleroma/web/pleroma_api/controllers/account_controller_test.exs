@@ -133,7 +133,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
         |> json_response_and_validate_schema(200)
 
-      assert length(response) == 0
+      assert Enum.empty? response
     end
 
     test "does not return others' favorited DM when user is not one of recipients", %{

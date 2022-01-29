@@ -288,7 +288,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
         get(conn, "/api/v1/timelines/public")
         |> json_response_and_validate_schema(200)
 
-      assert length(response) == 0
+      assert Enum.empty? response
     end
 
     test "doesn't return replies if follow is posting with users from blocked domain" do

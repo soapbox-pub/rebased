@@ -207,7 +207,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
       [config_dir, psql_dir, static_dir, uploads_dir]
       |> Enum.reject(&File.exists?/1)
-      |> Enum.map(&File.mkdir_p!/1)
+      |> Enum.each(&File.mkdir_p!/1)
 
       shell_info("Writing config to #{config_path}.")
 

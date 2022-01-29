@@ -320,7 +320,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
           |> get(unquote(tested_endpoint))
           |> json_response_and_validate_schema(200)
 
-        assert length(result) == 0
+        assert Enum.empty? result
       end
 
       test "it does not return chats with users you blocked", %{conn: conn, user: user} do
@@ -342,7 +342,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
           |> get(unquote(tested_endpoint))
           |> json_response_and_validate_schema(200)
 
-        assert length(result) == 0
+        assert Enum.empty? result
       end
 
       test "it does not return chats with users you muted", %{conn: conn, user: user} do
@@ -364,7 +364,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
           |> get(unquote(tested_endpoint))
           |> json_response_and_validate_schema(200)
 
-        assert length(result) == 0
+        assert Enum.empty? result
 
         result =
           conn
