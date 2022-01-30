@@ -10,10 +10,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy do
     "<span class=\"quote-inline\"><br/><br/>#{prefix}: <a href=\"#{url}\">#{url}</a></span>"
   end
 
+  defp has_inline_quote?(content, quote_url) do
+    cond do
+      # Does the quote URL exist in the content?
+      content =~ quote_url -> true
+      # Does the content already have a .quote-inline span?
+      content =~ "<span class=\"quote-inline\">" -> true
+      # No inline quote found
+      true -> false
+    end
+  end
+
   defp filter_object(%{"quoteUrl" => quote_url} = object) do
     content = object["content"] || ""
 
-    if content =~ quote_url do
+    if has_inline_quote?(content, quote_url) do
       object
     else
       prefix = Pleroma.Config.get([:mrf_inline_quote, :prefix])
