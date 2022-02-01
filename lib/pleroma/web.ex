@@ -56,7 +56,10 @@ defmodule Pleroma.Web do
               plug_module.skip_plug(conn)
             rescue
               UndefinedFunctionError ->
-                reraise("`#{plug_module}` is not skippable. Append `use Pleroma.Web, :plug` to its code.", __STACKTRACE__)
+                reraise(
+                  "`#{plug_module}` is not skippable. Append `use Pleroma.Web, :plug` to its code.",
+                  __STACKTRACE__
+                )
             end
           end
         )
