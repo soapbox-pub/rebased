@@ -93,8 +93,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       end
 
     birthday =
-      if user.show_birthday,
-        do: user.birthday,
+      if user.show_birthday && user.birthday,
+        do: Date.to_iso8601(user.birthday),
         else: nil
 
     %{
