@@ -72,4 +72,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicyTest do
     {:ok, filtered} = InlineQuotePolicy.filter(activity)
     assert filtered == activity
   end
+
+  test "skips objects which already have an .inline-quote span" do
+    object =
+      File.read!("test/fixtures/quote_post/fedibird_quote_mismatched.json") |> Jason.decode!()
+
+    # Normally the ObjectValidator will fix this before it reaches MRF
+    object = Map.put(object, "quoteUrl", object["quoteUri"])
+
+    activity = %{
+      "type" => "Create",
+      "actor" => "https://fedibird.com/users/noellabo",
+      "object" => object
+    }
+
+    {:ok, filtered} = InlineQuotePolicy.filter(activity)
+    assert filtered == activity
+  end
 end
