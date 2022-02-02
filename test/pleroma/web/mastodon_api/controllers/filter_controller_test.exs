@@ -177,6 +177,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       assert response["whole_word"] == true
     end
 
+    @tag :erratic
     test "with adding expires_at", %{conn: conn, user: user} do
       filter = insert(:filter, user: user)
       in_seconds = 600
