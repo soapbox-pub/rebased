@@ -130,7 +130,7 @@ defmodule Pleroma.ReverseProxyTest do
       assert capture_log(fn ->
                ReverseProxy.call(conn, "/stream-bytes/50", max_body_length: 30)
              end) =~
-               "[warn] Elixir.Pleroma.ReverseProxy request to /stream-bytes/50 failed while reading/chunking: :body_too_large"
+               "Elixir.Pleroma.ReverseProxy request to /stream-bytes/50 failed while reading/chunking: :body_too_large"
     end
   end
 
