@@ -129,6 +129,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       # It fetched the quoted post
       assert Object.normalize("https://misskey.io/notes/8vs6wxufd0")
     end
+
+    test "a reply with mismatched context is rejected" do
+      insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+
+      note_activity =
+        "test/fixtures/roadhouse-create-activity.json"
+        |> File.read!()
+        |> Jason.decode!()
+
+      assert {:error, _} = Transmogrifier.handle_incoming(note_activity)
+    end
   end
 
   describe "prepare outgoing" do

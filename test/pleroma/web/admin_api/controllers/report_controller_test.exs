@@ -355,6 +355,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
              } = note
     end
 
+    @tag :erratic
     test "it returns reports with notes", %{conn: conn, admin: admin} do
       conn = get(conn, "/api/pleroma/admin/reports")
 
