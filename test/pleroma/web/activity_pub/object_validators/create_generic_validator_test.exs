@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidatorTest do
 
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator
+  alias Pleroma.Web.ActivityPub.Utils
 
   import Pleroma.Factory
 
@@ -23,5 +24,36 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidatorTest do
     meta = [object_data: ObjectValidator.stringify_keys(object_data)]
 
     %{valid?: true} = CreateGenericValidator.cast_and_validate(note_activity, meta)
+  end
+
+  test "a Create/Note with mismatched context is invalid" do
+    user = insert(:user)
+
+    note = %{
+      "id" => Utils.generate_object_id(),
+      "type" => "Note",
+      "actor" => user.ap_id,
+      "to" => [user.follower_address],
+      "cc" => [],
+      "content" => "Hello world",
+      "context" => Utils.generate_context_id()
+    }
+
+    note_activity = %{
+      "id" => Utils.generate_activity_id(),
+      "type" => "Create",
+      "actor" => note["actor"],
+      "to" => note["to"],
+      "cc" => note["cc"],
+      "object" => note,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "context" => Utils.generate_context_id()
+    }
+
+    # Build metadata
+    {:ok, object_data} = ObjectValidator.cast_and_apply(note_activity["object"])
+    meta = [object_data: ObjectValidator.stringify_keys(object_data)]
+
+    %{valid?: false} = CreateGenericValidator.cast_and_validate(note_activity, meta)
   end
 end

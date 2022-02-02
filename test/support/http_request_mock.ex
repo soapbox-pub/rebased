@@ -1311,6 +1311,36 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://gleasonator.com/objects/102eb097-a18b-4cd5-abfc-f952efcb70bb", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/gleasonator-AG3RzWfwEKKrY63qj2.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://gleasonator.com/users/macgirvin", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/macgirvin@gleasonator.com.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://gleasonator.com/users/macgirvin/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "gleasonator.com")
+         |> String.replace("{{nickname}}", "macgirvin"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
