@@ -107,6 +107,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
     end
+
+    test "a reply with mismatched context is rejected" do
+      insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+
+      note_activity =
+        "test/fixtures/roadhouse-create-activity.json"
+        |> File.read!()
+        |> Jason.decode!()
+
+      assert {:error, _} = Transmogrifier.handle_incoming(note_activity)
+    end
   end
 
   describe "prepare outgoing" do

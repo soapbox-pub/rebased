@@ -32,4 +32,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
       %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
     end
   end
+
+  test "a Note from Roadhouse validates" do
+    insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+
+    %{"object" => note} =
+      "test/fixtures/roadhouse-create-activity.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
 end
