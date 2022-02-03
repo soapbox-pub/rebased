@@ -769,6 +769,54 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "user registration, with :birthday_required and :birthday_min_age" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+
+    setup do
+      clear_config([:instance, :birthday_required], true)
+      clear_config([:instance, :birthday_min_age], 18 * 365)
+    end
+
+    test "it passes when correct birth date is provided" do
+      today = Date.utc_today()
+      birthday = Date.add(today, -19 * 365)
+
+      params =
+        @full_user_data
+        |> Map.put(:birthday, birthday)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      assert changeset.valid?
+    end
+
+    test "it fails when birth date is not provided" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+
+      refute changeset.valid?
+    end
+
+    test "it fails when provided invalid birth date" do
+      today = Date.utc_today()
+      birthday = Date.add(today, -17 * 365)
+
+      params =
+        @full_user_data
+        |> Map.put(:birthday, birthday)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+  end
+
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)
@@ -2097,6 +2145,17 @@ defmodule Pleroma.UserTest do
       assert length(ap_ids) == 2
       assert user.ap_id in ap_ids
       assert user_two.ap_id in ap_ids
+    end
+
+    test "it returns a list of AP ids in the same order" do
+      user = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
+
+      ap_ids =
+        User.get_ap_ids_by_nicknames([user.nickname, user_three.nickname, user_two.nickname])
+
+      assert [user.ap_id, user_three.ap_id, user_two.ap_id] == ap_ids
     end
   end
 

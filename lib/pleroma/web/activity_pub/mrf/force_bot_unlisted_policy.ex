@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
   require Pleroma.Constants
 
   defp check_by_actor_type(user), do: user.actor_type in ["Application", "Service"]
-  defp check_by_nickname(user), do: Regex.match?(~r/bot@|ebooks@/i, user.nickname)
+  defp check_by_nickname(user), do: Regex.match?(~r/.bot@|ebooks@/i, user.nickname)
 
   defp check_if_bot(user), do: check_by_actor_type(user) or check_by_nickname(user)
 

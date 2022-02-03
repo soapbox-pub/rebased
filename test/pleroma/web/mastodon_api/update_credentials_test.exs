@@ -370,6 +370,26 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
              ]
     end
 
+    test "updates birth date", %{conn: conn} do
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "birthday" => "2001-02-12"
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["pleroma"]["birthday"] == "2001-02-12"
+    end
+
+    test "updates the user's show_birthday status", %{conn: conn} do
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "show_birthday" => true
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["source"]["pleroma"]["show_birthday"] == true
+    end
+
     test "emojis in fields labels", %{conn: conn} do
       fields = [
         %{"name" => ":firefox:", "value" => "is best 2hu"},

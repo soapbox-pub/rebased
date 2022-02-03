@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
 - Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
+- `ForceMentionsInPostContent` MRF policy
 - AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
 - AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 - PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
@@ -25,12 +26,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Ability to log slow Ecto queries by configuring `:pleroma, :telemetry, :slow_queries_logging`
 - Added Phoenix LiveDashboard at `/phoenix/live_dashboard`
 - Added `/manifest.json` for progressive web apps.
+- MastoAPI: Support for `birthday` and `show_birthday` field in `/api/v1/accounts/update_credentials`.
+- Configuration: Add `birthday_required` and `birthday_min_age` settings to provide a way to require users to enter their birth date.
+- PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
 - Handle Reject for already-accepted Follows properly
 - Display OpenGraph data on alternative notice routes.
 - Fix replies count for remote replies
+- Fixed hashtags disappearing from the end of lines when Markdown is enabled
 - ChatAPI: Add link headers
 - Limited number of search results to 40 to prevent DoS attacks
 - ActivityPub: fixed federation of attachment dimensions

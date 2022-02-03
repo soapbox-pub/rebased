@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
@@ -402,15 +404,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => id_one}, %{"id" => id_two}] = resp
       assert id_one == to_string(private_activity.id)
       assert id_two == to_string(activity.id)
-    end
-
-    test "unimplemented pinned statuses feature", %{conn: conn} do
-      note = insert(:note_activity)
-      user = User.get_cached_by_ap_id(note.data["actor"])
-
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?pinned=true")
-
-      assert json_response_and_validate_schema(conn, 200) == []
     end
 
     test "gets an users media, excludes reblogs", %{conn: conn} do
@@ -1038,6 +1031,35 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
   end
 
+  test "view pinned private statuses" do
+    user = insert(:user)
+    reader = insert(:user)
+
+    # Create a private status and pin it
+    {:ok, %{id: activity_id} = activity} =
+      CommonAPI.post(user, %{status: "psst", visibility: "private"})
+
+    %{data: %{"id" => object_ap_id}} = Object.normalize(activity)
+    {:ok, _} = User.add_pinned_object_id(user, object_ap_id)
+
+    %{conn: conn} = oauth_access(["read:statuses"], user: reader)
+
+    # A non-follower can't see the pinned status
+    assert [] ==
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+             |> json_response_and_validate_schema(200)
+
+    # Follow the user, then the pinned status can be seen
+    CommonAPI.follow(reader, user)
+    ObanHelpers.perform_all()
+
+    assert [%{"id" => ^activity_id, "pinned" => true}] =
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+             |> json_response_and_validate_schema(200)
+  end
+
   test "blocking / unblocking a user" do
     %{conn: conn} = oauth_access(["follow"])
     other_user = insert(:user)
@@ -1583,6 +1605,60 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                conn
                |> post("/api/v1/accounts", params)
                |> json_response_and_validate_schema(:bad_request)
+    end
+  end
+
+  describe "create account with required birth date" do
+    setup %{conn: conn} do
+      clear_config([:instance, :birthday_required], true)
+      clear_config([:instance, :birthday_min_age], 18 * 365)
+
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "multipart/form-data")
+
+      [conn: conn]
+    end
+
+    test "creates an account if provided valid birth date", %{conn: conn} do
+      birthday =
+        Date.utc_today()
+        |> Date.add(-19 * 365)
+        |> Date.to_string()
+
+      params = %{
+        username: "mkljczk",
+        email: "mkljczk@example.org",
+        password: "dupa.8",
+        agreement: true,
+        birthday: birthday
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 200)
+    end
+
+    test "returns an error if missing birth date", %{conn: conn} do
+      params = %{
+        username: "mkljczk",
+        email: "mkljczk@example.org",
+        password: "dupa.8",
+        agreement: true
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 400) == %{
+               "error" => "{\"birthday\":[\"can't be blank\"]}"
+             }
     end
   end
 

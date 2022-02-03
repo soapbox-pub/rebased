@@ -1502,6 +1502,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         nil
       end
 
+    birthday =
+      if is_binary(data["vcard:bday"]) do
+        case Date.from_iso8601(data["vcard:bday"]) do
+          {:ok, date} -> date
+          {:error, _} -> nil
+        end
+      else
+        nil
+      end
+
+    show_birthday = !!birthday
+
     user_data = %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
@@ -1524,7 +1536,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       inbox: data["inbox"],
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
-      pinned_objects: pinned_objects
+      pinned_objects: pinned_objects,
+      birthday: birthday,
+      show_birthday: show_birthday
     }
 
     # nickname can be nil because of virtual actors
@@ -1665,7 +1679,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "orderedItems" => objects
       })
       when type in ["OrderedCollection", "Collection"] do
-    Map.new(objects, fn %{"id" => object_ap_id} -> {object_ap_id, NaiveDateTime.utc_now()} end)
+    Map.new(objects, fn
+      %{"id" => object_ap_id} -> {object_ap_id, NaiveDateTime.utc_now()}
+      object_ap_id when is_binary(object_ap_id) -> {object_ap_id, NaiveDateTime.utc_now()}
+    end)
   end
 
   def fetch_and_prepare_featured_from_ap_id(nil) do

@@ -660,3 +660,38 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
     "url": "https://example.com/media/backups/archive-foobar-20200910T161803-QUhx6VYDRQ2wfV0SdA2Pfj_2CLM_ATUlw-D5l5TJf4Q.zip"
 }]
 ```
+
+## `GET /api/oauth_tokens`
+### Retrieve a list of active sessions for the user
+* Method: `GET`
+* Authentication: required
+* Params: none
+* Response: JSON
+* Example response:
+
+```json
+[
+  {
+    "app_name": "Pleroma FE",
+    "id": 9275,
+    "valid_until": "2121-11-24T15:51:08.234234"
+  },
+  {
+    "app_name": "Patron",
+    "id": 8805,
+    "valid_until": "2121-10-26T18:09:59.857150"
+  },
+  {
+    "app_name": "Soapbox FE",
+    "id": 9727,
+    "valid_until": "2121-12-25T16:52:39.692877"
+  }
+]
+```
+
+## `DELETE /api/oauth_tokens/:id`
+### Revoke a user session by its ID
+* Method: `DELETE`
+* Authentication: required
+* Params: none
+* Response: HTTP 200 on success, 500 on error

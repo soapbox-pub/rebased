@@ -1,0 +1,14 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://{{domain}}/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "id": "https://{{domain}}/users/{{nickname}}/collections/featured",
+  "orderedItems": [
+    "https://{{domain}}/objects/{{object_id}}"
+  ],
+  "type": "OrderedCollection"
+}

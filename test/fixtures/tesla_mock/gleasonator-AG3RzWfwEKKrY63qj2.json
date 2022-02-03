@@ -1,0 +1,35 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://gleasonator.com/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "actor": "https://gleasonator.com/users/macgirvin",
+  "attachment": [],
+  "attributedTo": "https://gleasonator.com/users/macgirvin",
+  "cc": [
+    "https://gleasonator.com/users/macgirvin/followers"
+  ],
+  "content": "<span class=\"h-card\"><a class=\"u-url mention\" data-user=\"9v5bmRalQvjOy0ECcC\" href=\"https://gleasonator.com/users/alex\" rel=\"ugc\">@<span>alex</span></a></span> Any idea why my posts are failing? I sent an Accept/Follow from <a href=\"http://macgirvin.com\" rel=\"ugc\">macgirvin.com</a> at 2022-02-02T04:06:01Z and it vanished into space. As do all my comments to you. <br><br>2022-02-02T04:06:01Z:LOG_INFO:d5c4aa7f6a:Queue.php:435:deliver: deliver: queue post returned 200 from <a href=\"https://gleasonator.com/users/macgirvin/inbox\" rel=\"ugc\">https://gleasonator.com/users/macgirvin/inbox</a><br><br>It&#39;s OK if I&#39;m blocked, but if that&#39;s the case, I shouldn&#39;t be able to send a follow to that address should I?",
+  "context": "https://gleasonator.com/contexts/b7f01f94-bc92-4d89-a085-0ffc211b0e42",
+  "conversation": "https://gleasonator.com/contexts/b7f01f94-bc92-4d89-a085-0ffc211b0e42",
+  "id": "https://gleasonator.com/objects/102eb097-a18b-4cd5-abfc-f952efcb70bb",
+  "published": "2022-02-02T04:14:10.965833Z",
+  "sensitive": false,
+  "source": "@alex Any idea why my posts are failing? I sent an Accept/Follow from macgirvin.com at 2022-02-02T04:06:01Z and it vanished into space. As do all my comments to you. \n\n2022-02-02T04:06:01Z:LOG_INFO:d5c4aa7f6a:Queue.php:435:deliver: deliver: queue post returned 200 from https://gleasonator.com/users/macgirvin/inbox\n\nIt's OK if I'm blocked, but if that's the case, I shouldn't be able to send a follow to that address should I?",
+  "summary": "",
+  "tag": [
+    {
+      "href": "https://gleasonator.com/users/alex",
+      "name": "@alex",
+      "type": "Mention"
+    }
+  ],
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public",
+    "https://gleasonator.com/users/alex"
+  ],
+  "type": "Note"
+}

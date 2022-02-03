@@ -1,0 +1,79 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://gleasonator.com/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "actor": "https://gleasonator.com/users/alex",
+  "attachment": [
+    {
+      "blurhash": "b15#-6_3~l%eDkNraAM#HYMf",
+      "height": 2147,
+      "mediaType": "image/png",
+      "name": "",
+      "type": "Document",
+      "url": "https://media.gleasonator.com/2df1c9cc26c35028db65848143971da0c5a6e04dbd423b194bb018b6c601db9b.png",
+      "width": 966
+    },
+    {
+      "blurhash": "b168EX~q~W-;DiM{VtIUD%Io",
+      "height": 2147,
+      "mediaType": "image/png",
+      "name": "",
+      "type": "Document",
+      "url": "https://media.gleasonator.com/22b42b4cddc1aecc7e2d3dc20bcdd66d5c4e44c2bef119de948e95a587e36b66.png",
+      "width": 966
+    }
+  ],
+  "attributedTo": "https://gleasonator.com/users/alex",
+  "cc": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "content": "<p>Haha yeah, you can control who you reply to.</p>",
+  "context": "https://gleasonator.com/contexts/ba6c8bd9-ac4d-479e-9bd9-5bf570068ae7",
+  "conversation": "https://gleasonator.com/contexts/ba6c8bd9-ac4d-479e-9bd9-5bf570068ae7",
+  "id": "https://gleasonator.com/objects/02af65fe-04f8-46bc-9b1e-31dfe76eaffd",
+  "inReplyTo": "https://shitposter.club/objects/c686d811-4368-48e1-ba11-82c129f93165",
+  "published": "2022-01-19T03:37:35.976545Z",
+  "sensitive": false,
+  "source": "Haha yeah, you can control who you reply to.",
+  "summary": "",
+  "tag": [
+    {
+      "href": "https://lain.com/users/lain",
+      "name": "@lain@lain.com",
+      "type": "Mention"
+    },
+    {
+      "href": "https://shitposter.club/users/coolboymew",
+      "name": "@coolboymew@shitposter.club",
+      "type": "Mention"
+    },
+    {
+      "href": "https://shitposter.club/users/dielan",
+      "name": "@dielan@shitposter.club",
+      "type": "Mention"
+    },
+    {
+      "href": "https://tuusin.misono-ya.info/users/hakui",
+      "name": "@hakui@tuusin.misono-ya.info",
+      "type": "Mention"
+    },
+    {
+      "href": "https://xyzzy.link/users/fence",
+      "name": "@fence@xyzzy.link",
+      "type": "Mention"
+    }
+  ],
+  "to": [
+    "https://shitposter.club/users/dielan",
+    "https://gleasonator.com/users/alex/followers",
+    "https://shitposter.club/users/coolboymew",
+    "https://xyzzy.link/users/fence",
+    "https://tuusin.misono-ya.info/users/hakui",
+    "https://lain.com/users/lain"
+  ],
+  "type": "Note"
+}
