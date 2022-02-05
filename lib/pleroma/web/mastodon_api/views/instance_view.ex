@@ -39,6 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
+      rules: rules(),
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
@@ -140,5 +141,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       name_length: Config.get([:instance, :account_field_name_length]),
       value_length: Config.get([:instance, :account_field_value_length])
     }
+  end
+
+  def rules do
+    Pleroma.Rule.query()
+    |> Pleroma.Repo.all()
+    |> Enum.map(&%{id: &1.id, text: &1.text})
   end
 end
