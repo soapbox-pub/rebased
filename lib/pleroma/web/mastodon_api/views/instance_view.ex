@@ -60,6 +60,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
+  def render("rules.json", _) do
+    rules()
+  end
+
   def features do
     [
       "pleroma_api",

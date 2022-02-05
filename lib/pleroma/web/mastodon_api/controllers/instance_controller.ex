@@ -20,4 +20,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
   def peers(conn, _params) do
     json(conn, Pleroma.Stats.get_peers())
   end
+
+  @doc "GET /api/v1/instance/rules"
+  def rules(conn, _params) do
+    render(conn, "rules.json")
+  end
 end
