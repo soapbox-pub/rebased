@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
   def index_operation do
     %Operation{
       tags: ["Instance rule managment"],
-      summary: "Retrieve a list of instance rules",
+      summary: "Retrieve list of instance rules",
       operationId: "AdminAPI.RuleController.index",
       security: [%{"oAuth" => ["admin:read"]}],
       responses: %{
