@@ -683,6 +683,32 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, _activity} = CommonAPI.post(user, %{status: "12345"})
     end
 
+    test "it validates media attachment limits are correctly enforced" do
+      clear_config([:instance, :max_media_attachments], 4)
+
+      user = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      assert {:error, "Too many attachments"} =
+               CommonAPI.post(user, %{
+                 status: "",
+                 media_ids: List.duplicate(upload.id, 5)
+               })
+
+      assert {:ok, _activity} =
+               CommonAPI.post(user, %{
+                 status: "",
+                 media_ids: [upload.id]
+               })
+    end
+
     test "it can handle activities that expire" do
       user = insert(:user)
 
