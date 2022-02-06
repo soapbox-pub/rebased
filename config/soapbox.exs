@@ -26,3 +26,6 @@ config :pleroma, Pleroma.Repo,
 
 # Allow privileged staff
 config :pleroma, :instance, privileged_staff: true
+
+# Sane default media attachment limit
+config :pleroma, :instance, max_media_attachments: 20
