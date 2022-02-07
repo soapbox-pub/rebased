@@ -14,8 +14,6 @@ defmodule Pleroma.Web.AdminAPI.RuleController do
       json_response: 3
     ]
 
-  require Logger
-
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
