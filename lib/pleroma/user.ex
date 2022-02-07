@@ -1741,6 +1741,12 @@ defmodule Pleroma.User do
 
   def approve(%User{} = user), do: {:ok, user}
 
+  def reject(%User{is_approved: false} = user) do
+    delete(user)
+  end
+
+  def reject(%User{} = _user), do: {:error, "User is approved"}
+
   def confirm(users) when is_list(users) do
     Repo.transaction(fn ->
       Enum.map(users, fn user ->
@@ -2353,7 +2359,7 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  # Internal function; public one is `deactivate/2`
+  # Internal function; public one is `set_activation/2`
   defp set_activation_status(user, status) do
     user
     |> cast(%{is_active: status}, [:is_active])

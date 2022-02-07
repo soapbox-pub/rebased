@@ -294,6 +294,22 @@ defmodule Pleroma.Web.Router do
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
+  # Mastodon AdminAPI: admins and mods (staff) can perform these actions
+  scope "/api/v1/admin", Pleroma.Web.MastodonAPI.Admin do
+    pipe_through([:admin_api, :require_privileged_staff])
+
+    get("/accounts", AccountController, :index)
+    get("/accounts/:id", AccountController, :show)
+    delete("/accounts/:id", AccountController, :delete)
+    post("/accounts/:id/action", AccountController, :account_action)
+    post("/accounts/:id/enable", AccountController, :enable)
+    # post("/accounts/:id/unsensitive", AccountController, :unsensitive)
+    # post("/accounts/:id/unsilence", AccountController, :unsilence)
+    # post("/accounts/:id/unsuspend", AccountController, :unsuspend)
+    post("/accounts/:id/approve", AccountController, :approve)
+    post("/accounts/:id/reject", AccountController, :reject)
+  end
+
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
       pipe_through(:admin_api)

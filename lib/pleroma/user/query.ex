@@ -61,7 +61,8 @@ defmodule Pleroma.User.Query do
             limit: pos_integer(),
             actor_types: [String.t()],
             birthday_day: pos_integer(),
-            birthday_month: pos_integer()
+            birthday_month: pos_integer(),
+            staff: boolean()
           }
           | map()
 
@@ -143,6 +144,10 @@ defmodule Pleroma.User.Query do
   defp compose_query({:local, _}, query), do: location_query(query, true)
 
   defp compose_query({:external, _}, query), do: location_query(query, false)
+
+  defp compose_query({:active, false}, query) do
+    where(query, [u], u.is_active == false or u.is_approved == false or u.is_confirmed == false)
+  end
 
   defp compose_query({:active, _}, query) do
     where(query, [u], u.is_active == true)
@@ -248,6 +253,22 @@ defmodule Pleroma.User.Query do
     |> where([u], u.show_birthday == true)
     |> where([u], not is_nil(u.birthday))
     |> where([u], fragment("date_part('month', ?)", u.birthday) == ^month)
+  end
+
+  # defp compose_query({:sensitized, true}, query) do
+  #   where(query, [u], "mrf_tag:media-force-nsfw" in u.tags)
+  # end
+
+  # defp compose_query({:sensitized, false}, query) do
+  #   where(query, [u], "mrf_tag:media-force-nsfw" not in u.tags)
+  # end
+
+  defp compose_query({:staff, true}, query) do
+    where(query, [u], u.is_admin == true or u.is_moderator == true)
+  end
+
+  defp compose_query({:staff, false}, query) do
+    where(query, [u], u.is_admin == false and u.is_moderator == false)
   end
 
   defp compose_query(_unsupported_param, query), do: query
