@@ -41,3 +41,6 @@ config :pleroma, :instance, privileged_staff: true
 config :pleroma, :mrf_hellthread,
   delist_threshold: 15,
   reject_threshold: 100
+
+# Sane default media attachment limit
+config :pleroma, :instance, max_media_attachments: 20

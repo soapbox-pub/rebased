@@ -1,0 +1,41 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://gleasonator.com/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "alsoKnownAs": [],
+  "attachment": [],
+  "capabilities": {
+    "acceptsChatMessages": true
+  },
+  "discoverable": false,
+  "endpoints": {
+    "oauthAuthorizationEndpoint": "https://gleasonator.com/oauth/authorize",
+    "oauthRegistrationEndpoint": "https://gleasonator.com/api/v1/apps",
+    "oauthTokenEndpoint": "https://gleasonator.com/oauth/token",
+    "sharedInbox": "https://gleasonator.com/inbox",
+    "uploadMedia": "https://gleasonator.com/api/ap/upload_media"
+  },
+  "featured": "https://gleasonator.com/users/macgirvin/collections/featured",
+  "followers": "https://gleasonator.com/users/macgirvin/followers",
+  "following": "https://gleasonator.com/users/macgirvin/following",
+  "id": "https://gleasonator.com/users/macgirvin",
+  "inbox": "https://gleasonator.com/users/macgirvin/inbox",
+  "manuallyApprovesFollowers": false,
+  "name": "macgirvin",
+  "outbox": "https://gleasonator.com/users/macgirvin/outbox",
+  "preferredUsername": "macgirvin",
+  "publicKey": {
+    "id": "https://gleasonator.com/users/macgirvin#main-key",
+    "owner": "https://gleasonator.com/users/macgirvin",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0AUMgsQu87tLwoJjZfZu\nsj7NV0qt/THdK8aw4Ha2GZfNkwrep99AZ8gmCI+rr+N5vyETAARzG5/Qzr5bNTUx\nsc1fxFemhhi6sxzAv4qZ5AgvWQ4YPFWizSp5ZY1jpPHLOeF2IftMf8CwVI82PtD0\n7m7T6iUYA4vfvMp9LxVrzQA+CAtpsQxAejTGCt37yM9T2mEWqfmJQQHRIQ4brKBL\nI82sNbzk1cbTwCfH7vRNS/l1ND+vaUGGkDKtpRl56BLmt4picYL0avc+8oO7ebpc\n/zUoS8OOi+mpEzjv7TBrSirYEIGvIh3TKHWSPrpHpQTqj9xBQBy+AxXTWahQEO2M\ndQIDAQAB\n-----END PUBLIC KEY-----\n\n"
+  },
+  "summary": "",
+  "tag": [],
+  "type": "Person",
+  "url": "https://gleasonator.com/users/macgirvin",
+  "vcard:bday": null
+}

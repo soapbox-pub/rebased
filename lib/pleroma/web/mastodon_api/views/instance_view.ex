@@ -31,6 +31,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       approval_required: Keyword.get(instance, :account_approval_required),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
+      max_media_attachments: Keyword.get(instance, :max_media_attachments),
       poll_limits: Keyword.get(instance, :poll_limits),
       upload_limit: Keyword.get(instance, :upload_limit),
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
