@@ -62,4 +62,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     assert cng.valid?
     assert cng.changes.quoteUrl == "https://misskey.io/notes/8vs6wxufd0"
   end
+
+  test "a Note from Roadhouse validates" do
+    insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+
+    %{"object" => note} =
+      "test/fixtures/roadhouse-create-activity.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
 end

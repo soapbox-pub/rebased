@@ -492,4 +492,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       {:error, dgettext("errors", "The status is over the character limit")}
     end
   end
+
+  def validate_attachments_count([] = _attachments) do
+    :ok
+  end
+
+  def validate_attachments_count(attachments) do
+    limit = Config.get([:instance, :max_media_attachments])
+    count = length(attachments)
+
+    if count <= limit do
+      :ok
+    else
+      {:error, dgettext("errors", "Too many attachments")}
+    end
+  end
 end
