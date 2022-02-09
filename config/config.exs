@@ -259,7 +259,8 @@ config :pleroma, :instance,
   privileged_staff: false,
   max_endorsed_users: 20,
   birthday_required: false,
-  birthday_min_age: 0
+  birthday_min_age: 0,
+  max_media_attachments: 1_000
 
 config :pleroma, :welcome,
   direct_message: [

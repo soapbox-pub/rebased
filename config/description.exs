@@ -553,6 +553,14 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :max_media_attachments,
+        type: :integer,
+        description: "Maximum number of post media attachments",
+        suggestions: [
+          1_000_000
+        ]
+      },
+      %{
         key: :upload_limit,
         type: :integer,
         description: "File size limit of uploads (except for avatar, background, banner)",
