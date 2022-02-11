@@ -138,9 +138,10 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountTestController do
     test "do not allow rejecting already accepted accounts", %{conn: conn} do
       %{id: id} = user = insert(:user, is_approved: true)
 
-      assert %{"error" => "User is approved"} == conn
-      |> post("/api/v1/admin/accounts/#{id}/reject")
-      |> json_response_and_validate_schema(400)
+      assert %{"error" => "User is approved"} ==
+               conn
+               |> post("/api/v1/admin/accounts/#{id}/reject")
+               |> json_response_and_validate_schema(400)
 
       user = Repo.reload!(user)
 

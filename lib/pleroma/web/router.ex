@@ -313,6 +313,11 @@ defmodule Pleroma.Web.Router do
     # post("/accounts/:id/unsuspend", AccountController, :unsuspend)
     post("/accounts/:id/approve", AccountController, :approve)
     post("/accounts/:id/reject", AccountController, :reject)
+
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+    post("/reports/:id/resolve", ReportController, :resolve)
+    post("/reports/:id/reopen", ReportController, :reopen)
   end
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do

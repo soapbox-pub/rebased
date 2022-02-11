@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "View accounts by criteria",
-      operationId: "Admin.AccountController.index",
+      operationId: "MastodonAdmin.AccountController.index",
       description: "View accounts matching certain criteria for filtering, up to 100 at a time.",
       security: [%{"oAuth" => ["admin:read:accounts"]}],
       parameters:
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "View a specific account",
-      operationId: "Admin.AccountController.show",
+      operationId: "MastodonAdmin.AccountController.show",
       description: "View admin-level information about the given account.",
       security: [%{"oAuth" => ["admin:read:accounts"]}],
       parameters: [
@@ -115,7 +115,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Perform an action against an account",
-      operationId: "Admin.AccountController.account_action",
+      operationId: "MastodonAdmin.AccountController.account_action",
       description:
         "Perform an action against an account and log this action in the moderation history.",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
@@ -147,7 +147,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Delete a specific account",
-      operationId: "Admin.AccountController.delete",
+      operationId: "MastodonAdmin.AccountController.delete",
       description: "Delete the given account.",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
       parameters: [
@@ -165,7 +165,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Re-enable account",
-      operationId: "Admin.AccountController.enable",
+      operationId: "MastodonAdmin.AccountController.enable",
       description: "Re-enable a local account whose login is currently disabled.",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
       parameters: [
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Unsensitive account",
-      operationId: "Admin.AccountController.unsensitive",
+      operationId: "MastodonAdmin.AccountController.unsensitive",
       description: "Unsensitive a currently sensitized account.",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
       parameters: [
@@ -201,7 +201,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Unsilence account",
-      operationId: "Admin.AccountController.unsilence",
+      operationId: "MastodonAdmin.AccountController.unsilence",
       description: "Unsilence a currently silenced account.",
       parameters: [
         Operation.parameter(:id, :path, :string, "ID of the account")
@@ -218,7 +218,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Unsuspend account",
-      operationId: "Admin.AccountController.unsuspend",
+      operationId: "MastodonAdmin.AccountController.unsuspend",
       description: "Unsuspend a currently suspended account.",
       parameters: [
         Operation.parameter(:id, :path, :string, "ID of the account")
@@ -235,7 +235,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Approve pending account",
-      operationId: "Admin.AccountController.approve",
+      operationId: "MastodonAdmin.AccountController.approve",
       description: "Approve the given local account if it is currently pending approval.",
       parameters: [
         Operation.parameter(:id, :path, :string, "ID of the account")
@@ -252,7 +252,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     %Operation{
       tags: ["User administration"],
       summary: "Reject pending account",
-      operationId: "Admin.AccountController.reject",
+      operationId: "MastodonAdmin.AccountController.reject",
       description: "Reject the given local account if it is currently pending approval.",
       parameters: [
         Operation.parameter(:id, :path, :string, "ID of the account")
@@ -266,7 +266,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
     }
   end
 
-  defp account do
+  def account do
     %Schema{
       title: "AdminAccount",
       description: "Admin-level information about a given account.",
