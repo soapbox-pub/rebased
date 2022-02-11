@@ -40,6 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
+      rules: render(__MODULE__, "rules.json"),
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
@@ -57,6 +58,19 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       soapbox: %{
         version: Soapbox.version()
       }
+    }
+  end
+
+  def render("rules.json", _) do
+    Pleroma.Rule.query()
+    |> Pleroma.Repo.all()
+    |> render_many(__MODULE__, "rule.json", as: :rule)
+  end
+
+  def render("rule.json", %{rule: rule}) do
+    %{
+      id: rule.id,
+      text: rule.text
     }
   end
 

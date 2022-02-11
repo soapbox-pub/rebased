@@ -233,6 +233,11 @@ defmodule Pleroma.Web.Router do
     get("/email_list/subscribers.csv", EmailListController, :subscribers)
     get("/email_list/unsubscribers.csv", EmailListController, :unsubscribers)
     get("/email_list/combined.csv", EmailListController, :combined)
+
+    get("/rules", RuleController, :index)
+    post("/rules", RuleController, :create)
+    patch("/rules/:id", RuleController, :update)
+    delete("/rules/:id", RuleController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if enabled by config)
@@ -621,6 +626,7 @@ defmodule Pleroma.Web.Router do
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
+    get("/instance/rules", InstanceController, :rules)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)
