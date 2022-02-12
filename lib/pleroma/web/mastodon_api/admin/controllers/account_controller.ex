@@ -12,11 +12,13 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
       json_response: 3
     ]
 
+  alias Pleroma.Activity
   alias Pleroma.ModerationLog
   alias Pleroma.Pagination
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   @filter_params ~W(
@@ -38,9 +40,6 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
            :delete,
            :enable,
            :account_action,
-           #  :unsensitive,
-           #  :unsilence,
-           #  :unsuspend,
            :approve,
            :reject
          ]
@@ -53,9 +52,6 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
            :delete,
            :enable,
            :account_action,
-           #  :unsensitive,
-           #  :unsilence,
-           #  :unsuspend,
            :approve,
            :reject
          ]
@@ -80,10 +76,13 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
   end
 
   def account_action(
-        %{assigns: %{user: admin, account: user}, body_params: %{type: type}} = conn,
+        %{assigns: %{user: admin, account: user}, body_params: %{type: type} = body_params} =
+          conn,
         _params
       ) do
     {:ok, _user} = handle_account_action(user, admin, type)
+
+    resolve_report(admin, body_params)
 
     json_response(conn, :no_content, "")
   end
@@ -158,17 +157,12 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
     %{}
     |> maybe_filter_local(params)
     |> maybe_filter_external(params)
-    # by_domain
     |> maybe_filter_active(params)
     |> maybe_filter_needing_approval(params)
     |> maybe_filter_deactivated(params)
-    # |> maybe_filter_sensitized(params)
-    # silenced
-    # suspended
     |> maybe_filter_nickname(params)
     |> maybe_filter_name(params)
     |> maybe_filter_email(params)
-    # ip
     |> maybe_filter_staff(params)
   end
 
@@ -193,11 +187,6 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
   defp maybe_filter_deactivated(criteria, %{disabled: deactivated} = _params),
     do: Map.put(criteria, :deactivated, deactivated)
 
-  # defp maybe_filter_sensitized(criteria, %{sensitized: sensitized} = _params) do
-  #   criteria
-  #   |> Map.put(:sensitized, sensitized)
-  # end
-
   defp maybe_filter_nickname(criteria, %{username: nickname} = _params),
     do: Map.put(criteria, :nickname, nickname)
 
@@ -212,5 +201,20 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountController do
 
   for filter_param <- @filter_params do
     defp unquote(:"maybe_filter_#{filter_param}")(criteria, _params), do: criteria
+  end
+
+  defp resolve_report(admin, %{report_id: id}) do
+    with {:ok, activity} <- CommonAPI.update_report_state(id, "resolved"),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_update",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor
+      })
+    end
+  end
+
+  defp resolve_report(_admin, _params) do
   end
 end

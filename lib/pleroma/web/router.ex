@@ -308,9 +308,6 @@ defmodule Pleroma.Web.Router do
     delete("/accounts/:id", AccountController, :delete)
     post("/accounts/:id/action", AccountController, :account_action)
     post("/accounts/:id/enable", AccountController, :enable)
-    # post("/accounts/:id/unsensitive", AccountController, :unsensitive)
-    # post("/accounts/:id/unsilence", AccountController, :unsilence)
-    # post("/accounts/:id/unsuspend", AccountController, :unsuspend)
     post("/accounts/:id/approve", AccountController, :approve)
     post("/accounts/:id/reject", AccountController, :reject)
 

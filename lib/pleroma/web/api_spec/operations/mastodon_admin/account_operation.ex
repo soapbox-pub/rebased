@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
       tags: ["User administration"],
       summary: "View accounts by criteria",
       operationId: "MastodonAdmin.AccountController.index",
-      description: "View accounts matching certain criteria for filtering, up to 100 at a time.",
+      description: "View accounts matching certain criteria for filtering, up to 40 at a time.",
       security: [%{"oAuth" => ["admin:read:accounts"]}],
       parameters:
         [
@@ -131,6 +131,11 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
               type: %Schema{
                 type: :string,
                 enum: ["none", "disable", "sensitive", "silence", "suspend"]
+              },
+              report_id: %Schema{
+                type: :string,
+                nullable: true,
+                description: "ID of an associated report that caused this action to be taken"
               }
             }
           },
@@ -168,58 +173,6 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.AccountOperation do
       operationId: "MastodonAdmin.AccountController.enable",
       description: "Re-enable a local account whose login is currently disabled.",
       security: [%{"oAuth" => ["admin:write:accounts"]}],
-      parameters: [
-        Operation.parameter(:id, :path, :string, "ID of the account")
-      ],
-      responses: %{
-        200 => Operation.response("Account", "application/json", account()),
-        401 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError)
-      }
-    }
-  end
-
-  def unsensitive_operation do
-    %Operation{
-      tags: ["User administration"],
-      summary: "Unsensitive account",
-      operationId: "MastodonAdmin.AccountController.unsensitive",
-      description: "Unsensitive a currently sensitized account.",
-      security: [%{"oAuth" => ["admin:write:accounts"]}],
-      parameters: [
-        Operation.parameter(:id, :path, :string, "ID of the account")
-      ],
-      responses: %{
-        200 => Operation.response("Account", "application/json", account()),
-        401 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError)
-      }
-    }
-  end
-
-  def unsilence_operation do
-    %Operation{
-      tags: ["User administration"],
-      summary: "Unsilence account",
-      operationId: "MastodonAdmin.AccountController.unsilence",
-      description: "Unsilence a currently silenced account.",
-      parameters: [
-        Operation.parameter(:id, :path, :string, "ID of the account")
-      ],
-      responses: %{
-        200 => Operation.response("Account", "application/json", account()),
-        401 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError)
-      }
-    }
-  end
-
-  def unsuspend_operation do
-    %Operation{
-      tags: ["User administration"],
-      summary: "Unsuspend account",
-      operationId: "MastodonAdmin.AccountController.unsuspend",
-      description: "Unsuspend a currently suspended account.",
       parameters: [
         Operation.parameter(:id, :path, :string, "ID of the account")
       ],

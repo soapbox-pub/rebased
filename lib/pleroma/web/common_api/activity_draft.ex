@@ -220,10 +220,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp sensitive(draft) do
-    sensitive =
-      draft.params[:sensitive] ||
-        (Map.has_key?(draft.user, :sensitized_at) && !!draft.user.sensitized_at)
-
+    sensitive = draft.params[:sensitive]
     %__MODULE__{draft | sensitive: sensitive}
   end
 

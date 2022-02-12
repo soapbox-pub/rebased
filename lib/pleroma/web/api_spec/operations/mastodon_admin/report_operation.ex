@@ -111,7 +111,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
         id: FlakeID,
         action_taken: %Schema{type: :boolean},
         category: %Schema{type: :string},
-        comment: %Schema{type: :string},
+        comment: %Schema{type: :string, nullable: true},
         created_at: %Schema{type: :string, format: "date-time"},
         updated_at: %Schema{type: :string, format: "date-time"},
         account: AccountOperation.account(),

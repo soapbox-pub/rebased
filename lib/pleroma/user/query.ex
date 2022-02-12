@@ -172,6 +172,10 @@ defmodule Pleroma.User.Query do
     where(query, [u], u.is_confirmed != ^bool)
   end
 
+  defp compose_query({:need_approval, false}, query) do
+    where(query, [u], u.is_approved == true)
+  end
+
   defp compose_query({:need_approval, _}, query) do
     where(query, [u], u.is_approved == false)
   end
@@ -255,20 +259,12 @@ defmodule Pleroma.User.Query do
     |> where([u], fragment("date_part('month', ?)", u.birthday) == ^month)
   end
 
-  # defp compose_query({:sensitized, true}, query) do
-  #   where(query, [u], "mrf_tag:media-force-nsfw" in u.tags)
-  # end
-
-  # defp compose_query({:sensitized, false}, query) do
-  #   where(query, [u], "mrf_tag:media-force-nsfw" not in u.tags)
-  # end
-
-  defp compose_query({:staff, true}, query) do
-    where(query, [u], u.is_admin == true or u.is_moderator == true)
-  end
-
   defp compose_query({:staff, false}, query) do
     where(query, [u], u.is_admin == false and u.is_moderator == false)
+  end
+
+  defp compose_query({:staff, _}, query) do
+    where(query, [u], u.is_admin == true or u.is_moderator == true)
   end
 
   defp compose_query(_unsupported_param, query), do: query

@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportController do
     ]
 
   alias Pleroma.Activity
+  alias Pleroma.ModerationLog
   alias Pleroma.Pagination
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -37,8 +38,6 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportController do
       |> restrict_state(params)
       |> restrict_actor(params)
 
-    # |> restrict_target(params)
-
     reports =
       ActivityPub.fetch_activities_query([], opts)
       |> Pagination.fetch_paginated(params)
@@ -56,17 +55,33 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportController do
     end
   end
 
-  def resolve(conn, %{id: id}) do
-    with {:ok, report} <- CommonAPI.update_report_state(id, "resolved") do
-      render(conn, "show.json", Report.extract_report_info(report))
+  def resolve(%{assigns: %{user: admin}} = conn, %{id: id}) do
+    with {:ok, activity} <- CommonAPI.update_report_state(id, "resolved"),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_update",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor
+      })
+
+      render(conn, "show.json", Report.extract_report_info(activity))
     else
       {:error, error} ->
         json_response(conn, :bad_request, %{error: error})
     end
   end
 
-  def reopen(conn, %{id: id}) do
-    with {:ok, report} <- CommonAPI.update_report_state(id, "open") do
+  def reopen(%{assigns: %{user: admin}} = conn, %{id: id}) do
+    with {:ok, activity} <- CommonAPI.update_report_state(id, "open"),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_update",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor
+      })
+
       render(conn, "show.json", Report.extract_report_info(report))
     else
       {:error, error} ->
@@ -89,14 +104,4 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportController do
   end
 
   defp restrict_actor(opts, _params), do: opts
-
-  # defp restrict_target(opts, %{target_account_id: target}) do
-  #   with %User{id: id} <- User.get_by_ap_id(target) do
-  #     Map.put(opts, :user_actor_id, id)
-  #   else
-  #     _ -> Map.put(opts, :user_actor_id, target)
-  #   end
-  # end
-
-  # defp restrict_target(opts, _params), do: opts
 end

@@ -6,20 +6,15 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
   use Pleroma.Web, :view
 
   alias Pleroma.HTML
-  alias Pleroma.User
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MastodonAPI.Admin.AccountView
-  alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{reports: reports}) do
     reports
     |> Enum.map(&Report.extract_report_info/1)
     |> Enum.map(&render(__MODULE__, "show.json", &1))
-
-    # |> render_many(__MODULE__, "show.json", as: :report)
   end
 
   def render("show.json", %{

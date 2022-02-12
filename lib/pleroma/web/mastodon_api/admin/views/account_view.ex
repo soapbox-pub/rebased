@@ -26,15 +26,14 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountView do
       ip: nil,
       role: role(user),
       confirmed: user.is_confirmed,
-      # Enum.member?(user.tags || [], "mrf_tag:media-force-nsfw"),
       sensitized: nil,
-      silenced: nil,
       suspened: nil,
+      silenced: nil,
       disabled: !user.is_active,
       approved: user.is_approved,
       locale: nil,
       invite_request: nil,
-      # ips: nil,
+      ips: nil,
       account: account
     }
   end

@@ -236,7 +236,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     announcement_count = object.data["announcement_count"] || 0
 
     hashtags = Object.hashtags(object)
-
     sensitive = object.data["sensitive"] || Enum.member?(hashtags, "nsfw")
 
     tags = Object.tags(object)

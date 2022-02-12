@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.MastodonAPI.Admin.AccountTestController do
+defmodule Pleroma.Web.MastodonAPI.Admin.AccountControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountTestController do
 
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -90,6 +91,29 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountTestController do
       user = Repo.reload!(user)
 
       assert %{is_active: false} = user
+    end
+
+    test "perform action with assigned report", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+
+      {:ok, %{id: report_id} = report} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id
+        })
+
+      %{id: id} = insert(:user)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/admin/accounts/#{id}/action", %{
+        "type" => "none",
+        "report_id" => report_id
+      })
+      |> json_response_and_validate_schema(204)
+
+      report = Repo.reload!(report)
+
+      assert %{data: %{"state" => "resolved"}} = report
     end
   end
 
