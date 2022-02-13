@@ -1,0 +1,58 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://{{domain}}/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ],
+  "alsoKnownAs": [],
+  "attachment": [],
+  "capabilities": {
+    "acceptsChatMessages": true
+  },
+  "discoverable": true,
+  "endpoints": {
+    "oauthAuthorizationEndpoint": "https://{{domain}}/oauth/authorize",
+    "oauthRegistrationEndpoint": "https://{{domain}}/api/v1/apps",
+    "oauthTokenEndpoint": "https://{{domain}}/oauth/token",
+    "sharedInbox": "https://{{domain}}/inbox",
+    "uploadMedia": "https://{{domain}}/api/ap/upload_media"
+  },
+  "followers": "https://{{domain}}/users/{{nickname}}/followers",
+  "following": "https://{{domain}}/users/{{nickname}}/following",
+  "icon": {
+    "type": "Image",
+    "url": "https://{{domain}}/media/a932a27f158b63c3a97e3a57d5384f714a82249274c6fc66c9eca581b4fd8af2.jpg"
+  },
+  "id": "https://{{domain}}/users/{{nickname}}",
+  "image": {
+    "type": "Image",
+    "url": "https://{{domain}}/media/db15f476d0ad14488db4762b7800479e6ef67b1824f8b9ea5c1fa05b7525c5b7.jpg"
+  },
+  "inbox": "https://{{domain}}/users/{{nickname}}/inbox",
+  "manuallyApprovesFollowers": false,
+  "name": "{{nickname}} :verified:",
+  "outbox": "https://{{domain}}/users/{{nickname}}/outbox",
+  "preferredUsername": "{{nickname}}",
+  "publicKey": {
+    "id": "https://{{domain}}/users/{{nickname}}#main-key",
+    "owner": "https://{{domain}}/users/{{nickname}}",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu4XOAopC4nRIxNlHlt60\n//nCicuedu5wvLGIoQ+KUM2u7/PhLrrTDEqr1A7yQL95S0X8ryYtALgFLI5A54ww\nqjMIbIGAs44lEmDLMEd+XI+XxREE8wdsFpb4QQzWug0DTyqlMouTU25k0tfKh1rF\n4PMJ3uBSjDTAGgFvLNyFWTiVVgChbTNgGOmrEBucRl4NmKzQ69/FIUwENV88oQSU\n3bWvQTEH9rWH1rCLpkmQwdRiWfnhFX/4EUqXukfgoskvenKR8ff3nYhElDqFoE0e\nqUnIW1OZceyl8JewVLcL6m0/wdKeosTsfrcWc8DKfnRYQcBGNoBEq9GrOHDU0q2v\nyQIDAQAB\n-----END PUBLIC KEY-----\n\n"
+  },
+  "summary": "Pleroma BE dev",
+  "tag": [
+    {
+      "icon": {
+        "type": "Image",
+        "url": "https://{{domain}}/emoji/mine/6143373a807b1ae7.png"
+      },
+      "id": "https://{{domain}}/emoji/mine/6143373a807b1ae7.png",
+      "name": ":verified:",
+      "type": "Emoji",
+      "updated": "1970-01-01T00:00:00Z"
+    }
+  ],
+  "type": "Person",
+  "url": "https://{{domain}}/users/{{nickname}}"
+}

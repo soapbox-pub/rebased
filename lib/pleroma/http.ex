@@ -106,5 +106,12 @@ defmodule Pleroma.HTTP do
     [Tesla.Middleware.FollowRedirects, Pleroma.Tesla.Middleware.ConnectionPool]
   end
 
-  defp adapter_middlewares(_), do: []
+  defp adapter_middlewares(_) do
+    if Pleroma.Config.get(:env) == :test do
+      # Emulate redirects in test env, which are handled by adapters in other environments
+      [Tesla.Middleware.FollowRedirects]
+    else
+      []
+    end
+  end
 end

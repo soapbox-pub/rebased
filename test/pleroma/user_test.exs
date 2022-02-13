@@ -849,6 +849,116 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "get_or_fetch/1 remote users with tld, while BE is runned on subdomain" do
+    setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
+
+    test "for mastodon" do
+      Tesla.Mock.mock(fn
+        %{url: "https://example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 302,
+            headers: [{"location", "https://sub.example.com/.well-known/host-meta"}]
+          }
+
+        %{url: "https://sub.example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/masto-host-meta.xml"
+              |> File.read!()
+              |> String.replace("{{domain}}", "sub.example.com")
+          }
+
+        %{url: "https://sub.example.com/.well-known/webfinger?resource=acct:a@example.com"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/masto-webfinger.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{subdomain}}", "sub.example.com"),
+            headers: [{"content-type", "application/jrd+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/masto-user.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "sub.example.com"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "sub.example.com")
+              |> String.replace("{{nickname}}", "a"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      ap_id = "a@example.com"
+      {:ok, fetched_user} = User.get_or_fetch(ap_id)
+
+      assert fetched_user.ap_id == "https://sub.example.com/users/a"
+      assert fetched_user.nickname == "a@example.com"
+    end
+
+    test "for pleroma" do
+      Tesla.Mock.mock(fn
+        %{url: "https://example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 302,
+            headers: [{"location", "https://sub.example.com/.well-known/host-meta"}]
+          }
+
+        %{url: "https://sub.example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/pleroma-host-meta.xml"
+              |> File.read!()
+              |> String.replace("{{domain}}", "sub.example.com")
+          }
+
+        %{url: "https://sub.example.com/.well-known/webfinger?resource=acct:a@example.com"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/pleroma-webfinger.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{subdomain}}", "sub.example.com"),
+            headers: [{"content-type", "application/jrd+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/pleroma-user.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "sub.example.com"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      ap_id = "a@example.com"
+      {:ok, fetched_user} = User.get_or_fetch(ap_id)
+
+      assert fetched_user.ap_id == "https://sub.example.com/users/a"
+      assert fetched_user.nickname == "a@example.com"
+    end
+  end
+
   describe "fetching a user from nickname or trying to build one" do
     test "gets an existing user" do
       user = insert(:user)
