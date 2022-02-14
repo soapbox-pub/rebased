@@ -633,6 +633,12 @@ This filter only strips the GPS and location metadata with Exiftool leaving colo
 
 No specific configuration.
 
+#### Pleroma.Upload.Filter.ExiftoolReadData
+
+This filter only reads metadata with Exiftool so clients can prefill the media description field.
+
+No specific configuration.
+
 #### Pleroma.Upload.Filter.Mogrify
 
 * `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
