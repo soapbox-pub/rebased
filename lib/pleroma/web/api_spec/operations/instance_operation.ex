@@ -141,6 +141,62 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
           type: :string,
           format: :uri,
           description: "The background image for the website"
+        },
+        configuration: %Schema{
+          type: :object,
+          description: "Instance configuration",
+          properties: %{
+            statuses: %Schema{
+              type: :object,
+              description: "A map with poll limits for local statuses",
+              properties: %{
+                max_characters: %Schema{
+                  type: :integer,
+                  description: "Posts character limit (CW/Subject included in the counter)"
+                },
+                max_media_attachments: %Schema{
+                  type: :integer,
+                  description: "Media attachment limit"
+                },
+              }
+            },
+            media_attachments: %Schema{
+              type: :object,
+              description: "A map with poll limits for media attachments",
+              properties: %{
+                image_size_limit: %Schema{
+                  type: :integer,
+                  description: "File size limit of uploaded images"
+                },
+                video_size_limit: %Schema{
+                  type: :integer,
+                  description: "File size limit of uploaded videos"
+                }
+              }
+            },
+            polls: %Schema{
+              type: :object,
+              description: "A map with poll limits for local polls",
+              properties: %{
+                max_options: %Schema{
+                  type: :integer,
+                  description: "Maximum number of options."
+                },
+                max_characters_per_option: %Schema{
+                  type: :integer,
+                  description: "Maximum number of characters per option."
+                },
+                min_expiration: %Schema{
+                  type: :integer,
+                  description: "Minimum expiration time (in seconds)."
+                },
+                max_expiration: %Schema{
+                  type: :integer,
+                  description: "Maximum expiration time (in seconds)."
+                }
+              }
+            }
+          }
         }
       },
       example: %{
