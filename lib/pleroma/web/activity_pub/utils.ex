@@ -803,6 +803,34 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def update_report_state(_, _), do: {:error, "Unsupported state"}
 
+  def assign_report_to_account(%Activity{} = activity, nil = _account) do
+    new_data = Map.delete(activity.data, "assigned_account")
+
+    activity
+    |> Changeset.change(data: new_data)
+    |> Repo.update()
+  end
+
+  def assign_report_to_account(%Activity{} = activity, account) do
+    new_data = Map.put(activity.data, "assigned_account", account)
+
+    activity
+    |> Changeset.change(data: new_data)
+    |> Repo.update()
+  end
+
+  def assign_report_to_account(activity_ids, account) do
+    activities_num = length(activity_ids)
+
+    from(a in Activity, where: a.id in ^activity_ids)
+    |> update(set: [data: fragment("jsonb_set(data, '{assigned_account}', ?)", ^account)])
+    |> Repo.update_all([])
+    |> case do
+      {^activities_num, _} -> :ok
+      _ -> {:error, activity_ids}
+    end
+  end
+
   def strip_report_status_data(activity) do
     [actor | reported_activities] = activity.data["object"]
 

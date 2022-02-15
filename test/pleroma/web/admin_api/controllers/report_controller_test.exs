@@ -292,6 +292,38 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
                |> json_response_and_validate_schema(:ok)
     end
 
+    test "returns reports with specified assigned user", %{conn: conn, admin: admin} do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, _report} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id]
+        })
+
+      {:ok, %{id: second_report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I don't like this user"
+        })
+
+      CommonAPI.assign_report_to_account(second_report_id, admin.id)
+
+      response =
+        conn
+        |> get(report_path(conn, :index, %{assigned_account: admin.id}))
+        |> json_response_and_validate_schema(:ok)
+
+      assert [open_report] = response["reports"]
+
+      assert length(response["reports"]) == 1
+      assert open_report["id"] == second_report_id
+
+      assert response["total"] == 1
+    end
+
     test "returns 403 when requested by a non-admin" do
       user = insert(:user)
       token = insert(:oauth_token, user: user)
@@ -312,6 +344,66 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       assert json_response(conn, :forbidden) == %{
                "error" => "Invalid credentials."
              }
+    end
+  end
+
+  describe "POST /api/pleroma/admin/reports/assign_account" do
+    test "assigns account to report", %{conn: conn, admin: admin} do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          status_ids: [activity.id]
+        })
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/reports/assign_account", %{
+        "reports" => [
+          %{"assigned_account" => admin.id, "id" => report_id}
+        ]
+      })
+      |> json_response_and_validate_schema(:no_content)
+
+      activity = Activity.get_by_id_with_user_actor(report_id)
+      assert activity.data["assigned_account"] == admin.id
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} assigned report ##{report_id} (on user @#{activity.user_actor.nickname}) to user #{admin.nickname}"
+    end
+
+    test "unassigns account from report", %{conn: conn, admin: admin} do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          status_ids: [activity.id]
+        })
+
+      CommonAPI.assign_report_to_account(report_id, admin.id)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/reports/assign_account", %{
+        "reports" => [
+          %{"assigned_account" => nil, "id" => report_id}
+        ]
+      })
+      |> json_response_and_validate_schema(:no_content)
+
+      activity = Activity.get_by_id_with_user_actor(report_id)
+      assert activity.data["assigned_account"] == nil
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} unassigned report ##{report_id} (on user @#{activity.user_actor.nickname}) from a user"
     end
   end
 

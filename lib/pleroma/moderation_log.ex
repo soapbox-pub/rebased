@@ -132,11 +132,18 @@ defmodule Pleroma.ModerationLog do
   end
 
   def insert_log(%{actor: %User{}, action: action, subject: %Activity{} = subject} = attrs)
-      when action in ["report_note_delete", "report_update", "report_note"] do
+      when action in [
+             "report_note_delete",
+             "report_update",
+             "report_note",
+             "report_unassigned",
+             "report_assigned"
+           ] do
     data =
       attrs
       |> prepare_log_data
       |> Pleroma.Maps.put_if_present("text", attrs[:text])
+      |> Pleroma.Maps.put_if_present("assigned_account", attrs[:assigned_account])
       |> Map.merge(%{"subject" => report_to_map(subject)})
 
     insert_log_entry_with_message(%ModerationLog{data: data})
@@ -438,6 +445,35 @@ defmodule Pleroma.ModerationLog do
     "@#{actor_nickname} updated report ##{subject_id}" <>
       subject_actor_nickname(log, " (on user ", ")") <>
       " with '#{state}' state"
+  end
+
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_assigned",
+            "subject" => %{"id" => subject_id, "type" => "report"},
+            "assigned_account" => assigned_account
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} assigned report ##{subject_id}" <>
+      subject_actor_nickname(log, " (on user ", ")") <>
+      " to user #{assigned_account}"
+  end
+
+  def get_log_entry_message(
+        %ModerationLog{
+          data: %{
+            "actor" => %{"nickname" => actor_nickname},
+            "action" => "report_unassigned",
+            "subject" => %{"id" => subject_id, "type" => "report"}
+          }
+        } = log
+      ) do
+    "@#{actor_nickname} unassigned report ##{subject_id}" <>
+      subject_actor_nickname(log, " (on user ", ")") <>
+      " from a user"
   end
 
   def get_log_entry_message(

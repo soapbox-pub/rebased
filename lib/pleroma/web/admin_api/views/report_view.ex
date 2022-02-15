@@ -24,7 +24,13 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
     }
   end
 
-  def render("show.json", %{report: report, user: user, account: account, statuses: statuses}) do
+  def render("show.json", %{
+        report: report,
+        user: user,
+        account: account,
+        statuses: statuses,
+        assigned_account: assigned_account
+      }) do
     created_at = Utils.to_masto_date(report.data["published"])
 
     content =
@@ -32,6 +38,11 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
         HTML.filter_tags(report.data["content"])
       else
         nil
+      end
+
+    assigned_account =
+      if assigned_account do
+        merge_account_views(assigned_account)
       end
 
     %{
@@ -46,7 +57,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
           as: :activity
         }),
       state: report.data["state"],
-      notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes})
+      notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes}),
+      assigned_account: assigned_account
     }
   end
 
