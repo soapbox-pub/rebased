@@ -157,7 +157,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
                 max_media_attachments: %Schema{
                   type: :integer,
                   description: "Media attachment limit"
-                },
+                }
               }
             },
             media_attachments: %Schema{
