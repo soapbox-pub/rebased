@@ -108,4 +108,14 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     assert length(rules) == 3
   end
+
+  test "get instance configuration", %{conn: conn} do
+    clear_config([:instance, :limit], 476)
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert result["configuration"]["statuses"]["max_characters"] == 476
+  end
 end
