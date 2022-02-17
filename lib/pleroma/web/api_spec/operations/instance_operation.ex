@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       summary: "Retrieve list of instance rules",
       operationId: "InstanceController.rules",
       responses: %{
-        200 => Operation.response("Array of domains", "application/json", array_of_rules())
+        200 => Operation.response("Array of rules", "application/json", array_of_rules())
       }
     }
   end
