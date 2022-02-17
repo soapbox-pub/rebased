@@ -1,8 +1,8 @@
-# Soapbox
+# Soapbox BE
 
-![Soapbox](https://soapbox.pub/blog/soapbox-fe-v1.2-release/soapbox-fe-1.2-screenshot.png)
+![Soapbox BE](https://gitlab.com/soapbox-pub/soapbox-be/uploads/288bc05ba65e60970ffddd37d58f7c21/be-1-0-thumb.png)
 
-**Soapbox** is a federated social media server with a focus on user experience.
+**Soapbox BE** is the preferred backend for Soapbox.
 It is based on [Pleroma](https://pleroma.social/).
 
 ## Your social media server
