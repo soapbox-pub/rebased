@@ -21,6 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
         report: report,
         user: account,
         account: target_account,
+        assigned_account: assigned_account,
         statuses: statuses
       }) do
     created_at = Utils.to_masto_date(report.data["published"])
@@ -28,6 +29,13 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
     content =
       unless is_nil(report.data["content"]) do
         HTML.filter_tags(report.data["content"])
+      else
+        nil
+      end
+
+    assigned_account =
+      if assigned_account do
+        AccountView.render("show.json", %{user: assigned_account})
       else
         nil
       end
@@ -41,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
       updated_at: created_at,
       account: AccountView.render("show.json", %{user: account}),
       target_account: AccountView.render("show.json", %{user: target_account}),
-      assigned_account: nil,
+      assigned_account: assigned_account,
       action_taken_by_account: nil,
       statuses:
         StatusView.render("index.json", %{

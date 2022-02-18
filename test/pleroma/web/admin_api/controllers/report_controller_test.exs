@@ -362,7 +362,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       |> put_req_header("content-type", "application/json")
       |> post("/api/pleroma/admin/reports/assign_account", %{
         "reports" => [
-          %{"assigned_account" => admin.id, "id" => report_id}
+          %{"assigned_account" => admin.nickname, "id" => report_id}
         ]
       })
       |> json_response_and_validate_schema(:no_content)

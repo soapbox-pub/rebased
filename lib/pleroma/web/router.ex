@@ -316,6 +316,8 @@ defmodule Pleroma.Web.Router do
     get("/reports/:id", ReportController, :show)
     post("/reports/:id/resolve", ReportController, :resolve)
     post("/reports/:id/reopen", ReportController, :reopen)
+    post("/reports/:id/assign_to_self", ReportController, :assign_to_self)
+    post("/reports/:id/unassign", ReportController, :unassign)
   end
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do

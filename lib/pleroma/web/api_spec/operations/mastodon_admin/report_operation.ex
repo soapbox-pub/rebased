@@ -103,6 +103,42 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
     }
   end
 
+  def assign_to_self_operation do
+    %Operation{
+      tags: ["Report methods"],
+      summary: "Assign report to self",
+      operationId: "MastodonAdmin.ReportController.assign_to_self",
+      description: "Claim the handling of this report to yourself.",
+      security: [%{"oAuth" => ["admin:write:reports"]}],
+      parameters: [
+        Operation.parameter(:id, :path, :string, "ID of the report")
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", report()),
+        400 => Operation.response("Error", "application/json", ApiError),
+        401 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unassign_operation do
+    %Operation{
+      tags: ["Report methods"],
+      summary: "Unassign report",
+      operationId: "MastodonAdmin.ReportController.unassign",
+      description: "Unassign a report so that someone else can claim it.",
+      security: [%{"oAuth" => ["admin:write:reports"]}],
+      parameters: [
+        Operation.parameter(:id, :path, :string, "ID of the report")
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", report()),
+        400 => Operation.response("Error", "application/json", ApiError),
+        401 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   defp report do
     %Schema{
       title: "Report",

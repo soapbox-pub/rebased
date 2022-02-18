@@ -24,7 +24,11 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportController do
 
   plug(OAuthScopesPlug, %{scopes: ["admin:read:reports"]} when action in [:index, :show])
 
-  plug(OAuthScopesPlug, %{scopes: ["admin:write:reports"]} when action in [:resolve, :reopen])
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:write:reports"]}
+    when action in [:resolve, :reopen, :assign_to_self, :unassign]
+  )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation
 
@@ -77,6 +81,41 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportController do
          report <- Activity.get_by_id_with_user_actor(activity.id) do
       ModerationLog.insert_log(%{
         action: "report_update",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor
+      })
+
+      render(conn, "show.json", Report.extract_report_info(report))
+    else
+      {:error, error} ->
+        json_response(conn, :bad_request, %{error: error})
+    end
+  end
+
+  def assign_to_self(%{assigns: %{user: admin}} = conn, %{id: id}) do
+    with {:ok, activity} <- CommonAPI.assign_report_to_account(id, admin.id),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_assigned",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor,
+        assigned_account: admin.nickname
+      })
+
+      render(conn, "show.json", Report.extract_report_info(report))
+    else
+      {:error, error} ->
+        json_response(conn, :bad_request, %{error: error})
+    end
+  end
+
+  def unassign(%{assigns: %{user: admin}} = conn, %{id: id}) do
+    with {:ok, activity} <- CommonAPI.assign_report_to_account(id, nil),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_unassigned",
         actor: admin,
         subject: activity,
         subject_actor: report.user_actor
