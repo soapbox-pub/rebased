@@ -80,7 +80,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     "frame-ancestors 'none'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
-    "manifest-src 'self'"
+    "manifest-src 'self'",
+    "frame-src 'self' https:"
   ]
 
   @csp_start [Enum.join(static_csp_rules, ";") <> ";"]

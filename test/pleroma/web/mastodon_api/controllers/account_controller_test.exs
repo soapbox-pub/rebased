@@ -1166,6 +1166,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert user
       assert user.is_confirmed
       assert user.is_approved
+      refute user.accepts_email_list
     end
 
     test "registers but does not log in with :account_activation_required", %{conn: conn} do
@@ -1395,6 +1396,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> post("/api/v1/accounts", Map.put(valid_params, :email, ""))
 
       assert json_response_and_validate_schema(res, 200)
+    end
+
+    test "registration with accepts_email_list", %{conn: conn, valid_params: valid_params} do
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> Map.put(:remote_ip, {127, 0, 0, 9})
+        |> post("/api/v1/accounts", Map.put(valid_params, :accepts_email_list, true))
+
+      assert json_response_and_validate_schema(res, 200)
+      assert %User{accepts_email_list: true} = Repo.get_by(User, email: "lain@example.org")
     end
 
     test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do

@@ -413,16 +413,26 @@ config :pleroma, :mrf_object_age,
   threshold: 604_800,
   actions: [:delist, :strip_followers]
 
+config :pleroma, :mrf_nsfw_api,
+  url: "http://127.0.0.1:5000/",
+  threshold: 0.7,
+  mark_sensitive: true,
+  unlist: false,
+  reject: false
+
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
+
+config :pleroma, :mrf_inline_quote, prefix: "RT"
 
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
   ignore_tld: ["local", "localdomain", "lan"],
   parsers: [
-    Pleroma.Web.RichMedia.Parsers.TwitterCard,
-    Pleroma.Web.RichMedia.Parsers.OEmbed
+    Pleroma.Web.RichMedia.Parsers.OEmbed,
+    Pleroma.Web.RichMedia.Parsers.TwitterCard
   ],
+  oembed_providers_enabled: true,
   failure_backoff: 60_000,
   ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
 
@@ -758,7 +768,7 @@ config :pleroma, :frontends,
       "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
       "build_url" =>
         "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
-      "ref" => "v1.0.0",
+      "ref" => "develop",
       "build_dir" => "static"
     }
   }
@@ -832,7 +842,11 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: [Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy, Pleroma.Web.ActivityPub.MRF.TagPolicy],
+  policies: [
+    Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
+    Pleroma.Web.ActivityPub.MRF.TagPolicy,
+    Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy
+  ],
   transparency: true,
   transparency_exclusions: []
 
@@ -857,6 +871,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
+
+import_config "soapbox.exs"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

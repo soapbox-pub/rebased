@@ -413,7 +413,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "type" => "Move",
       "actor" => origin.ap_id,
       "object" => origin.ap_id,
-      "target" => target.ap_id
+      "target" => target.ap_id,
+      "to" => [origin.follower_address]
     }
 
     with true <- origin.ap_id in target.also_known_as,
@@ -641,12 +642,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp fetch_activities_for_user(user, reading_user, params) do
+    pinned_object_ids = if user.pinned_objects, do: Map.keys(user.pinned_objects), else: []
+
     params =
       params
       |> Map.put(:type, ["Create", "Announce"])
       |> Map.put(:user, reading_user)
       |> Map.put(:actor_id, user.ap_id)
-      |> Map.put(:pinned_object_ids, Map.keys(user.pinned_objects))
+      |> Map.put(:pinned_object_ids, pinned_object_ids)
 
     params =
       if User.blocks?(reading_user, user) do

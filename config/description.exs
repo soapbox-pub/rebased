@@ -2027,6 +2027,12 @@ config :pleroma, :config_description, [
         description: "Enables RichMedia parsing of URLs"
       },
       %{
+        key: :oembed_providers_enabled,
+        type: :boolean,
+        description:
+          "Embed rich media from a list of known providers. This takes precedence over other parsers."
+      },
+      %{
         key: :ignore_hosts,
         type: {:list, :string},
         description: "List of hosts which will be ignored by the metadata parser",

@@ -229,6 +229,15 @@ defmodule Pleroma.Web.Router do
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
+
+    get("/email_list/subscribers.csv", EmailListController, :subscribers)
+    get("/email_list/unsubscribers.csv", EmailListController, :unsubscribers)
+    get("/email_list/combined.csv", EmailListController, :combined)
+
+    get("/rules", RuleController, :index)
+    post("/rules", RuleController, :create)
+    patch("/rules/:id", RuleController, :update)
+    delete("/rules/:id", RuleController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if enabled by config)
@@ -291,6 +300,24 @@ defmodule Pleroma.Web.Router do
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
+  # Mastodon AdminAPI: admins and mods (staff) can perform these actions
+  scope "/api/v1/admin", Pleroma.Web.MastodonAPI.Admin do
+    pipe_through([:admin_api, :require_privileged_staff])
+
+    get("/accounts", AccountController, :index)
+    get("/accounts/:id", AccountController, :show)
+    delete("/accounts/:id", AccountController, :delete)
+    post("/accounts/:id/action", AccountController, :account_action)
+    post("/accounts/:id/enable", AccountController, :enable)
+    post("/accounts/:id/approve", AccountController, :approve)
+    post("/accounts/:id/reject", AccountController, :reject)
+
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+    post("/reports/:id/resolve", ReportController, :resolve)
+    post("/reports/:id/reopen", ReportController, :reopen)
+  end
+
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
       pipe_through(:admin_api)
@@ -344,6 +371,11 @@ defmodule Pleroma.Web.Router do
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
+    post("/move_account", UtilController, :move_account)
+
+    put("/aliases", UtilController, :add_alias)
+    get("/aliases", UtilController, :list_aliases)
+    delete("/aliases", UtilController, :delete_alias)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do
@@ -602,6 +634,7 @@ defmodule Pleroma.Web.Router do
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
+    get("/instance/rules", InstanceController, :rules)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)

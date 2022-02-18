@@ -125,26 +125,26 @@ unit-testing-erratic:
 #     - epmd -daemon
 #     - mix test --trace --only federated
 
-unit-testing-rum:
-  stage: test
-  only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
-  cache: *testing_cache_policy
-  services:
-  - name: minibikini/postgres-with-rum:12
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  variables:
-    <<: *global_variables
-    RUM_ENABLED: "true"
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-    - mix test --preload-modules
+# unit-testing-rum:
+#   stage: test
+#   only:
+#     changes:
+#       - "**/*.ex"
+#       - "**/*.exs"
+#       - "mix.lock"
+#   cache: *testing_cache_policy
+#   services:
+#   - name: minibikini/postgres-with-rum:12
+#     alias: postgres
+#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+#   variables:
+#     <<: *global_variables
+#     RUM_ENABLED: "true"
+#   script:
+#     - mix ecto.create
+#     - mix ecto.migrate
+#     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
+#     - mix test --preload-modules
 
 lint:
   image: elixir:1.12

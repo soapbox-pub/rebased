@@ -725,6 +725,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://mastodon.social/.well-known/webfinger?resource=acct:not_found@mastodon.social",
+        _,
+        _,
+        [{"accept", "application/xrd+xml,application/jrd+json"}]
+      ) do
+    {:ok, %Tesla.Env{status: 404}}
+  end
+
   def get("http://gs.example.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -1124,6 +1133,57 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://lm.kazv.moe/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/lm.kazv.moe_host_meta")
+     }}
+  end
+
+  def get("https://lm.kazv.moe/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/lm.kazv.moe_host_meta")
+     }}
+  end
+
+  def get(
+        "https://lm.kazv.moe/.well-known/webfinger?resource=acct:mewmew@lm.kazv.moe",
+        _,
+        _,
+        [{"accept", "application/xrd+xml,application/jrd+json"}]
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/https___lm.kazv.moe_users_mewmew.xml"),
+       headers: [{"content-type", "application/xrd+xml"}]
+     }}
+  end
+
+  def get("https://lm.kazv.moe/users/mewmew", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mewmew@lm.kazv.moe.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://lm.kazv.moe/users/mewmew/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "lm.kazv.moe")
+         |> String.replace("{{nickname}}", "mewmew"),
+       headers: [{"content-type", "application/activity+json"}]
+     }}
+  end
+
   def get("https://info.pleroma.site/activity.json", _, _, [
         {"accept", "application/activity+json"}
       ]) do
@@ -1307,6 +1367,24 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/emoji-in-summary.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://misskey.io/users/83ssedkv53", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/aimu@misskey.io.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
        headers: activitypub_object_headers()
      }}
   end

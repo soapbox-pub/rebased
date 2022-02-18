@@ -124,6 +124,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       )
     end
 
+    test "posting a quote post", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(user, %{status: "yolo"})
+      %{data: %{"id" => quote_url}} = Object.normalize(activity)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "indeed",
+          "quote_id" => activity_id
+        })
+
+      assert %{
+               "id" => id,
+               "pleroma" => %{"quote" => %{"id" => ^activity_id}, "quote_url" => ^quote_url}
+             } = json_response_and_validate_schema(conn, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
@@ -1368,16 +1390,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "url" => "https://example.com/ogp",
         "description" =>
           "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-        "pleroma" => %{
-          "opengraph" => %{
-            "image" => "http://ia.media-imdb.com/images/rock.jpg",
-            "title" => "The Rock",
-            "type" => "video.movie",
-            "url" => "https://example.com/ogp",
-            "description" =>
-              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
-          }
-        }
+        "author_name" => "",
+        "author_url" => "",
+        "blurhash" => nil,
+        "embed_url" => "",
+        "height" => 0,
+        "html" => "",
+        "width" => 0
       }
 
       response =
@@ -1417,13 +1436,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                "provider_name" => "example.com",
                "provider_url" => "https://example.com",
                "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
+               "author_name" => "",
+               "author_url" => "",
+               "blurhash" => nil,
+               "embed_url" => "",
+               "height" => 0,
+               "html" => "",
+               "width" => 0
              }
     end
   end

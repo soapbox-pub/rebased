@@ -151,6 +151,7 @@ defmodule Pleroma.User do
     field(:accepts_chat_messages, :boolean, default: nil)
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
+    field(:accepts_email_list, :boolean, default: false)
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
     field(:last_status_at, :naive_datetime)
@@ -536,6 +537,7 @@ defmodule Pleroma.User do
         :actor_type,
         :accepts_chat_messages,
         :disclose_client,
+        :accepts_email_list,
         :birthday,
         :show_birthday
       ]
@@ -701,7 +703,8 @@ defmodule Pleroma.User do
       :name,
       :nickname,
       :email,
-      :accepts_chat_messages
+      :accepts_chat_messages,
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
@@ -746,6 +749,7 @@ defmodule Pleroma.User do
       :emoji,
       :accepts_chat_messages,
       :registration_reason,
+      :accepts_email_list,
       :birthday
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
@@ -1737,6 +1741,12 @@ defmodule Pleroma.User do
 
   def approve(%User{} = user), do: {:ok, user}
 
+  def reject(%User{is_approved: false} = user) do
+    delete(user)
+  end
+
+  def reject(%User{} = _user), do: {:error, "User is approved"}
+
   def confirm(users) when is_list(users) do
     Repo.transaction(fn ->
       Enum.map(users, fn user ->
@@ -1813,7 +1823,8 @@ defmodule Pleroma.User do
       fields: [],
       raw_fields: [],
       is_discoverable: false,
-      also_known_as: []
+      also_known_as: [],
+      accepts_email_list: false
       # id: preserved
       # ap_id: preserved
       # nickname: preserved
@@ -2348,7 +2359,39 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  # Internal function; public one is `deactivate/2`
+  def alias_users(user) do
+    user.also_known_as
+    |> Enum.map(&User.get_cached_by_ap_id/1)
+    |> Enum.filter(fn user -> user != nil end)
+  end
+
+  def add_alias(user, new_alias_user) do
+    current_aliases = user.also_known_as || []
+    new_alias_ap_id = new_alias_user.ap_id
+
+    if new_alias_ap_id in current_aliases do
+      {:ok, user}
+    else
+      user
+      |> cast(%{also_known_as: current_aliases ++ [new_alias_ap_id]}, [:also_known_as])
+      |> update_and_set_cache()
+    end
+  end
+
+  def delete_alias(user, alias_user) do
+    current_aliases = user.also_known_as || []
+    alias_ap_id = alias_user.ap_id
+
+    if alias_ap_id in current_aliases do
+      user
+      |> cast(%{also_known_as: current_aliases -- [alias_ap_id]}, [:also_known_as])
+      |> update_and_set_cache()
+    else
+      {:error, :no_such_alias}
+    end
+  end
+
+  # Internal function; public one is `set_activation/2`
   defp set_activation_status(user, status) do
     user
     |> cast(%{is_active: status}, [:is_active])
