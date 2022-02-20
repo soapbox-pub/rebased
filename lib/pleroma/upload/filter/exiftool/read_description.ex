@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Upload.Filter.ExiftoolReadData do
+defmodule Pleroma.Upload.Filter.Exiftool.ReadDescription do
   @moduledoc """
   Gets the description from the related EXIF tags and provides them in the response if no description is provided yet.
   It will first check ImageDescription, when that's too long or empty, it will check iptc:Caption-Abstract.

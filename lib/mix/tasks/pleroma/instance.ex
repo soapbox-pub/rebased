@@ -35,7 +35,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           listen_ip: :string,
           listen_port: :string,
           strip_uploads: :string,
-          read_uploads_data: :string,
+          read_uploads_description: :string,
           anonymize_uploads: :string,
           dedupe_uploads: :string
         ],
@@ -179,7 +179,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           strip_uploads_default
         ) === "y"
 
-      {read_uploads_data_message, read_uploads_data_default} =
+      {read_uploads_description_message, read_uploads_description_default} =
         if Pleroma.Utils.command_available?("exiftool") do
           {"Do you want to read data from uploaded files so clients can use it to prefill fields like image description? This requires exiftool, it was detected as installed. (y/n)",
            "y"}
@@ -188,12 +188,12 @@ defmodule Mix.Tasks.Pleroma.Instance do
            "n"}
         end
 
-      read_uploads_data =
+      read_uploads_description =
         get_option(
           options,
-          :read_uploads_data,
-          read_uploads_data_message,
-          read_uploads_data_default
+          :read_uploads_description,
+          read_uploads_description_message,
+          read_uploads_description_default
         ) === "y"
 
       anonymize_uploads =
@@ -248,7 +248,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           upload_filters:
             upload_filters(%{
               strip: strip_uploads,
-              read_data: read_uploads_data,
+              read_description: read_uploads_description,
               anonymize: anonymize_uploads,
               dedupe: dedupe_uploads
             })
@@ -323,8 +323,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
       end
 
     enabled_filters =
-      if filters.read_data do
-        enabled_filters ++ [Pleroma.Upload.Filter.ExiftoolReadData]
+      if filters.read_description do
+        enabled_filters ++ [Pleroma.Upload.Filter.Exiftool.ReadDescription]
       else
         enabled_filters
       end

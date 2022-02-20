@@ -633,9 +633,9 @@ This filter only strips the GPS and location metadata with Exiftool leaving colo
 
 No specific configuration.
 
-#### Pleroma.Upload.Filter.ExiftoolReadData
+#### Pleroma.Upload.Filter.Exiftool.ReadDescription
 
-This filter only reads metadata with Exiftool so clients can prefill the media description field.
+This filter reads the ImageDescription and iptc:Caption-Abstract fields with Exiftool so clients can prefill the media description field.
 
 No specific configuration.
 

@@ -2,7 +2,7 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Upload.Filter.ExiftoolReadDataTest do
+defmodule Pleroma.Upload.Filter.Exiftool.ReadDescriptionTest do
   use Pleroma.DataCase, async: true
   alias Pleroma.Upload.Filter
 
@@ -29,7 +29,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolReadDataTest do
       description: "Eight different owls"
     }
 
-    assert Filter.ExiftoolReadData.filter(uploads) ==
+    assert Filter.Exiftool.ReadDescription.filter(uploads) ==
              {:ok, :noop}
   end
 
@@ -46,7 +46,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolReadDataTest do
       description: "Pictures of eight different owls"
     }
 
-    assert Filter.ExiftoolReadData.filter(@uploads) ==
+    assert Filter.Exiftool.ReadDescription.filter(@uploads) ==
              {:ok, :filtered, uploads_after}
   end
 
@@ -67,7 +67,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolReadDataTest do
       description: "Pictures of eight different owls - iptc"
     }
 
-    assert Filter.ExiftoolReadData.filter(upload) ==
+    assert Filter.Exiftool.ReadDescription.filter(upload) ==
              {:ok, :filtered, upload_after}
   end
 
@@ -80,14 +80,14 @@ defmodule Pleroma.Upload.Filter.ExiftoolReadDataTest do
       description: nil
     }
 
-    assert Filter.ExiftoolReadData.filter(uploads) ==
+    assert Filter.Exiftool.ReadDescription.filter(uploads) ==
              {:ok, :filtered, uploads}
   end
 
   test "Return nil when image description from EXIF data exceeds the maximum length" do
     clear_config([:instance, :description_limit], 5)
 
-    assert Filter.ExiftoolReadData.filter(@uploads) ==
+    assert Filter.Exiftool.ReadDescription.filter(@uploads) ==
              {:ok, :filtered, @uploads}
   end
 
@@ -100,7 +100,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolReadDataTest do
       description: nil
     }
 
-    assert Filter.ExiftoolReadData.filter(uploads) ==
+    assert Filter.Exiftool.ReadDescription.filter(uploads) ==
              {:ok, :filtered, uploads}
   end
 end
