@@ -627,7 +627,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 No specific configuration.
 
-#### Pleroma.Upload.Filter.Exiftool
+#### Pleroma.Upload.Filter.Exiftool.StripLocation
 
 This filter only strips the GPS and location metadata with Exiftool leaving color profiles and attributes intact.
 
