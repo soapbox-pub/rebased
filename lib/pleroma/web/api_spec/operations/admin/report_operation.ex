@@ -169,6 +169,16 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
               inserted_at: %Schema{type: :string, format: :"date-time"}
             }
           }
+        },
+        rules: %Schema{
+          type: :array,
+          items: %Schema{
+            type: :object,
+            properties: %{
+              id: %Schema{type: :integer},
+              text: %Schema{type: :string}
+            }
+          }
         }
       }
     }

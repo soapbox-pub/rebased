@@ -29,6 +29,11 @@ defmodule Pleroma.Rule do
     |> order_by(asc: :priority)
   end
 
+  def get(ids) when is_list(ids) do
+    from(r in __MODULE__, where: r.id in ^ids)
+    |> Repo.all()
+  end
+
   def get(id), do: Repo.get(__MODULE__, id)
 
   def create(params) do

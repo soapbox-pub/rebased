@@ -692,14 +692,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Flag-related helpers
   @spec make_flag_data(map(), map()) :: map()
-  def make_flag_data(%{actor: actor, context: context, content: content} = params, additional) do
+  def make_flag_data(
+        %{actor: actor, context: context, content: content} = params,
+        additional
+      ) do
     %{
       "type" => "Flag",
       "actor" => actor.ap_id,
       "content" => content,
       "object" => build_flag_object(params),
       "context" => context,
-      "state" => "open"
+      "state" => "open",
+      "rules" => Map.get(params, :rules, nil)
     }
     |> Map.merge(additional)
   end
