@@ -20,6 +20,43 @@ defmodule Pleroma.Config.DeprecationWarnings do
      "\n* `config :pleroma, :instance, mrf_transparency_exclusions` is now `config :pleroma, :mrf, transparency_exclusions`"}
   ]
 
+  def check_exiftool_filter do
+    filters = Config.get([Pleroma.Upload])[:filters]
+
+    if Pleroma.Upload.Filter.Exiftool in filters do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using Exiftool as a filter instead of Exiftool.StripLocation. This should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool.StripLocation]
+      ```
+      """)
+
+      new_config =
+        filters
+        |> Enum.map(fn
+          Pleroma.Upload.Filter.Exiftool -> Pleroma.Upload.Filter.Exiftool.StripLocation
+          filter -> filter
+        end)
+
+      Config.put([Pleroma.Upload, :filters], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
   def check_simple_policy_tuples do
     has_strings =
       Config.get([:mrf_simple])
@@ -180,7 +217,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
       check_old_chat_shoutbox(),
       check_quarantined_instances_tuples(),
       check_transparency_exclusions_tuples(),
-      check_simple_policy_tuples()
+      check_simple_policy_tuples(),
+      check_exiftool_filter()
     ]
     |> Enum.reduce(:ok, fn
       :ok, :ok -> :ok
