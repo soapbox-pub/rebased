@@ -20,15 +20,18 @@ defmodule Pleroma.Repo.Migrations.UploadFilterExiftoolToExiftoolStripLocation do
       )
 
   defp update_filtername(%{value: value}, from_filtername, to_filtername) do
-    new_filters =
-      value[:filters]
-      |> Enum.map(fn
-        ^from_filtername -> to_filtername
-        filter -> filter
+    new_value =
+      value
+      |> Keyword.update(:filters, [], fn filters ->
+        filters
+        |> Enum.map(fn
+          ^from_filtername -> to_filtername
+          filter -> filter
+        end)
       end)
-
-    new_value = value |> Keyword.update(:filters, [], fn _ -> new_filters end)
 
     ConfigDB.update_or_create(%{group: :pleroma, key: Pleroma.Upload, value: new_value})
   end
+
+  defp update_filtername(_, _, _), do: nil
 end
