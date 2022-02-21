@@ -6,6 +6,8 @@
 defmodule Pleroma.Web.Plugs.SetLocalePlug do
   import Plug.Conn, only: [get_req_header: 2, assign: 3]
 
+  def frontend_language_cookie_name(), do: "userLanguage"
+
   def init(_), do: nil
 
   def call(conn, _) do
@@ -16,8 +18,33 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
 
   defp get_locale_from_header(conn) do
     conn
-    |> extract_accept_language()
+    |> extract_preferred_language()
+    |> normalize_language_codes()
     |> Enum.find(&supported_locale?/1)
+  end
+
+  defp normalize_language_codes(codes) do
+    codes
+    |> Enum.map(fn code -> String.replace(code, "-", "_") end)
+  end
+
+  defp extract_preferred_language(conn) do
+    extract_frontend_language(conn) ++ extract_accept_language(conn)
+  end
+
+  defp extract_frontend_language(conn) do
+    %{req_cookies: cookies} =
+      conn
+      |> Plug.Conn.fetch_cookies()
+
+    case cookies[frontend_language_cookie_name()] do
+      nil ->
+        []
+
+      fe_lang ->
+        [fe_lang]
+        |> ensure_language_fallbacks()
+    end
   end
 
   defp extract_accept_language(conn) do
