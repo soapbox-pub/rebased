@@ -1,0 +1,107 @@
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here as no
+## effect: edit them in PO (.po) files instead.
+msgid ""
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:9
+msgctxt "remote follow authorization button"
+msgid "Authorize"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:2
+msgctxt "remote follow error"
+msgid "Error fetching user"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:4
+msgctxt "remote follow header"
+msgid "Remote follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_mfa.html.eex:8
+msgctxt "placeholder text for auth code entry"
+msgid "Authentication code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:10
+msgctxt "placeholder text for password entry"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:8
+msgctxt "placeholder text for username entry"
+msgid "Username"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:13
+msgctxt "remote follow authorization button for login"
+msgid "Authorize"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_mfa.html.eex:12
+msgctxt "remote follow authorization button for mfa"
+msgid "Authorize"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/followed.html.eex:2
+msgctxt "remote follow error"
+msgid "Error following account"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:4
+msgctxt "remote follow header, need login"
+msgid "Log in to follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_mfa.html.eex:4
+msgctxt "remote follow mfa header"
+msgid "Two-factor authentication"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/followed.html.eex:4
+msgctxt "remote follow success"
+msgid "Account followed!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:7
+msgctxt "placeholder text for account id"
+msgid "Your account ID, e.g. lain@quitter.se"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:8
+msgctxt "remote follow authorization button for following with a remote account"
+msgid "Follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:2
+msgctxt "remote follow error"
+msgid "Error: %{error}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:4
+msgctxt "remote follow header"
+msgid "Remotely follow %{nickname}"
+msgstr ""
