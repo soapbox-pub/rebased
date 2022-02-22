@@ -21,7 +21,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
   ]
 
   def check_exiftool_filter do
-    filters = Config.get([Pleroma.Upload])[:filters]
+    filters = Config.get([Pleroma.Upload]) |> Keyword.get(:filters, [])
 
     if Pleroma.Upload.Filter.Exiftool in filters do
       Logger.warn("""

@@ -51,7 +51,7 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
 
       capture_log(fn -> DeprecationWarnings.warn() end)
 
-      assert Config.get([Pleroma.Upload])[:filters] == expected_config
+      assert Config.get([Pleroma.Upload]) |> Keyword.get(:filters, []) == expected_config
     end
 
     test "doesn't give a warning with correct config" do
