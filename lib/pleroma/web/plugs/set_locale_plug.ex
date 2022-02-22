@@ -6,7 +6,7 @@
 defmodule Pleroma.Web.Plugs.SetLocalePlug do
   import Plug.Conn, only: [get_req_header: 2, assign: 3]
 
-  def frontend_language_cookie_name(), do: "userLanguage"
+  def frontend_language_cookie_name, do: "userLanguage"
 
   def init(_), do: nil
 
