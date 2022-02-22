@@ -51,6 +51,6 @@ defmodule Pleroma.Web.OAuth.AppTest do
       insert(:oauth_app, user_id: user.id)
     ]
 
-    assert App.get_user_apps(user) == apps
+    assert Enum.sort(App.get_user_apps(user)) == Enum.sort(apps)
   end
 end
