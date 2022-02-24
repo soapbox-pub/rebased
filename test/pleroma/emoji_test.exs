@@ -20,6 +20,7 @@ defmodule Pleroma.EmojiTest do
       assert Emoji.is_unicode_emoji?("🤰")
       assert Emoji.is_unicode_emoji?("❤️")
       assert Emoji.is_unicode_emoji?("🏳️‍⚧️")
+      assert Emoji.is_unicode_emoji?("🫵")
 
       # Additionally, we accept regional indicators.
       assert Emoji.is_unicode_emoji?("🇵")
