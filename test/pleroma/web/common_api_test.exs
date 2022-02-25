@@ -722,6 +722,46 @@ defmodule Pleroma.Web.CommonAPITest do
         scheduled_at: expires_at
       )
     end
+
+    test "it allows quote posting" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id})
+
+      quoted = Object.normalize(quoted)
+      quote_post = Object.normalize(quote_post)
+
+      assert quote_post.data["quoteUrl"] == quoted.data["id"]
+
+      # The OP is mentioned
+      assert quoted.data["actor"] in quote_post.data["to"]
+    end
+
+    test "quote posting with explicit addressing doesn't mention the OP" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+
+      {:ok, quote_post} =
+        CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id, to: []})
+
+      assert Object.normalize(quote_post).data["to"] == [Pleroma.Constants.as_public()]
+    end
+
+    test "quote posting visibility" do
+      user = insert(:user)
+
+      {:ok, direct} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
+      {:ok, private} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, unlisted} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, public} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: direct.id})
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: private.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
+    end
   end
 
   describe "reactions" do

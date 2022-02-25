@@ -263,13 +263,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     mrf_simple_excluded =
       Config.get(:mrf_simple)
       |> Enum.map(fn {rule, instances} ->
+        instances = MRF.normalize_instance_list(instances)
         {rule, Enum.reject(instances, fn {host, _} -> host in exclusions end)}
       end)
 
     mrf_simple =
       mrf_simple_excluded
       |> Enum.map(fn {rule, instances} ->
-        {rule, Enum.map(instances, fn {host, _} -> host end)}
+        {rule, MRF.instance_list_from_tuples(instances)}
       end)
       |> Map.new()
 

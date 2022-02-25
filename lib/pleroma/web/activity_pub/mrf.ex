@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF do
   require Logger
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   @behaviour Pleroma.Web.ActivityPub.MRF.PipelineFiltering
 
@@ -104,7 +105,20 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @spec instance_list_from_tuples([{String.t(), String.t()}]) :: [String.t()]
   def instance_list_from_tuples(list) do
-    Enum.map(list, fn {instance, _} -> instance end)
+    Enum.map(list, fn
+      {instance, _} -> instance
+      instance when is_binary(instance) -> instance
+    end)
+  end
+
+  @spec normalize_instance_list(list()) :: [{String.t(), String.t()}]
+  def normalize_instance_list(list) do
+    Enum.map(list, fn
+      {host, reason} when not_empty_string(host) and not_empty_string(reason) -> {host, reason}
+      {host, _reason} when not_empty_string(host) -> {host, ""}
+      host when not_empty_string(host) -> {host, ""}
+      value -> raise "Invalid MRF config: #{inspect(value)}"
+    end)
   end
 
   def describe(policies) do

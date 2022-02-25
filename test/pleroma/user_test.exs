@@ -695,6 +695,16 @@ defmodule Pleroma.UserTest do
 
       assert user.is_confirmed
     end
+
+    test "it sets 'accepts_email_list'" do
+      params = Map.put_new(@full_user_data, :accepts_email_list, true)
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_email_list
+    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -766,6 +776,17 @@ defmodule Pleroma.UserTest do
       changeset = User.register_changeset(%User{}, params)
 
       refute changeset.valid?
+    end
+  end
+
+  describe "update_changeset/2" do
+    test "it sets :accepts_email_list" do
+      changeset =
+        %User{accepts_email_list: false}
+        |> User.update_changeset(%{accepts_email_list: true})
+
+      assert changeset.valid?
+      assert %User{accepts_email_list: true} = Ecto.Changeset.apply_changes(changeset)
     end
   end
 
@@ -2604,6 +2625,82 @@ defmodule Pleroma.UserTest do
       assert {:error, _message} = User.endorse(user, pinned_user)
 
       refute User.endorses?(user, pinned_user)
+    end
+  end
+
+  describe "add_alias/2" do
+    test "should add alias for another user" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user_updated} = user |> User.add_alias(user2)
+
+      assert user_updated.also_known_as |> length() == 1
+      assert user2.ap_id in user_updated.also_known_as
+    end
+
+    test "should add multiple aliases" do
+      user = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+      assert {:ok, user_updated} = user |> User.add_alias(user3)
+
+      assert user_updated.also_known_as |> length() == 2
+      assert user2.ap_id in user_updated.also_known_as
+      assert user3.ap_id in user_updated.also_known_as
+    end
+
+    test "should not add duplicate aliases" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+
+      assert {:ok, user_updated} = user |> User.add_alias(user2)
+
+      assert user_updated.also_known_as |> length() == 1
+      assert user2.ap_id in user_updated.also_known_as
+    end
+  end
+
+  describe "alias_users/1" do
+    test "should get aliases for a user" do
+      user = insert(:user)
+      user2 = insert(:user, also_known_as: [user.ap_id])
+
+      aliases = user2 |> User.alias_users()
+
+      assert aliases |> length() == 1
+
+      alias_user = aliases |> Enum.at(0)
+
+      assert alias_user.ap_id == user.ap_id
+    end
+  end
+
+  describe "delete_alias/2" do
+    test "should delete existing alias" do
+      user = insert(:user)
+      user2 = insert(:user, also_known_as: [user.ap_id])
+
+      assert {:ok, user_updated} = user2 |> User.delete_alias(user)
+
+      assert user_updated.also_known_as == []
+    end
+
+    test "should report error on non-existing alias" do
+      user = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user, also_known_as: [user.ap_id])
+
+      assert {:error, :no_such_alias} = user3 |> User.delete_alias(user2)
+
+      user3_updated = User.get_cached_by_ap_id(user3.ap_id)
+
+      assert user3_updated.also_known_as |> length() == 1
+      assert user.ap_id in user3_updated.also_known_as
     end
   end
 end

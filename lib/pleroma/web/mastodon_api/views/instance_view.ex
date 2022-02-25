@@ -40,6 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
+      rules: render(__MODULE__, "rules.json"),
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
@@ -53,7 +54,24 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+      },
+      configuration: configuration(),
+      soapbox: %{
+        version: Soapbox.version()
       }
+    }
+  end
+
+  def render("rules.json", _) do
+    Pleroma.Rule.query()
+    |> Pleroma.Repo.all()
+    |> render_many(__MODULE__, "rule.json", as: :rule)
+  end
+
+  def render("rule.json", %{rule: rule}) do
+    %{
+      id: rule.id,
+      text: rule.text
     }
   end
 
@@ -68,6 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
+      "quote_posting",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -92,6 +111,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       "pleroma_emoji_reactions",
       "pleroma_chat_messages",
+      "email_list",
       if Config.get([:instance, :show_reactions]) do
         "exposable_reactions"
       end,
@@ -135,6 +155,25 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       max_remote_fields: Config.get([:instance, :max_remote_account_fields]),
       name_length: Config.get([:instance, :account_field_name_length]),
       value_length: Config.get([:instance, :account_field_value_length])
+    }
+  end
+
+  def configuration do
+    %{
+      statuses: %{
+        max_characters: Config.get([:instance, :limit]),
+        max_media_attachments: Config.get([:instance, :max_media_attachments])
+      },
+      media_attachments: %{
+        image_size_limit: Config.get([:instance, :upload_limit]),
+        video_size_limit: Config.get([:instance, :upload_limit])
+      },
+      polls: %{
+        max_options: Config.get([:instance, :poll_limits, :max_options]),
+        max_characters_per_option: Config.get([:instance, :poll_limits, :max_option_chars]),
+        min_expiration: Config.get([:instance, :poll_limits, :min_expiration]),
+        max_expiration: Config.get([:instance, :poll_limits, :max_expiration])
+      }
     }
   end
 end

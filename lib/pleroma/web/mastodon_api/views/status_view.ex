@@ -21,6 +21,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.EmojiReactionController
+  alias Pleroma.Web.RichMedia.Parser.Card
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
@@ -44,6 +46,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       %{data: %{"type" => "Create"}} = activity ->
         object = Object.normalize(activity, fetch: false)
         object && object.data["inReplyTo"] != "" && object.data["inReplyTo"]
+
+      _ ->
+        nil
+    end)
+    |> Enum.filter(& &1)
+    |> Activity.create_by_object_ap_id_with_object()
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn activity, acc ->
+      object = Object.normalize(activity, fetch: false)
+      if object, do: Map.put(acc, object.data["id"], activity), else: acc
+    end)
+  end
+
+  defp get_quoted_activities([]), do: %{}
+
+  defp get_quoted_activities(activities) do
+    activities
+    |> Enum.map(fn
+      %{data: %{"type" => "Create"}} = activity ->
+        object = Object.normalize(activity, fetch: false)
+        object && object.data["quoteUrl"] != "" && object.data["quoteUrl"]
 
       _ ->
         nil
@@ -97,6 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # length(activities_with_links) * timeout
     fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
+    quoted_activities = get_quoted_activities(activities)
 
     parent_activities =
       activities
@@ -129,6 +153,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
+      |> Map.put(:quoted_activities, quoted_activities)
       |> Map.put(:parent_activities, parent_activities)
       |> Map.put(:relationships, relationships_opt)
 
@@ -267,8 +292,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     created_at = Utils.to_masto_date(object.data["published"])
 
     reply_to = get_reply_to(activity, opts)
-
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
+
+    quote_activity = get_quote(activity, opts)
+
+    quote_post =
+      if visible_for_user?(quote_activity, opts[:for]) do
+        quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
+        render("show.json", quote_rendering_opts)
+      else
+        nil
+      end
 
     content =
       object
@@ -291,7 +325,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     summary = object.data["summary"] || ""
 
-    card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
+    card =
+      render("card.json", %{
+        embed: Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      })
 
     url =
       if user.local do
@@ -376,6 +413,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         local: activity.local,
         conversation_id: get_context_id(activity),
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
+        quote: quote_post,
+        quote_url: object.data["quoteUrl"],
+        quote_visible: visible_for_user?(quote_activity, opts[:for]),
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
         expires_at: expires_at,
@@ -392,41 +432,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     nil
   end
 
-  def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
-    page_url_data = URI.parse(page_url)
-
-    page_url_data =
-      if is_binary(rich_media["url"]) do
-        URI.merge(page_url_data, URI.parse(rich_media["url"]))
-      else
-        page_url_data
-      end
-
-    page_url = page_url_data |> to_string
-
-    image_url_data =
-      if is_binary(rich_media["image"]) do
-        URI.parse(rich_media["image"])
-      else
-        nil
-      end
-
-    image_url = build_image_url(image_url_data, page_url_data)
-
-    %{
-      type: "link",
-      provider_name: page_url_data.host,
-      provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
-      url: page_url,
-      image: image_url |> MediaProxy.url(),
-      title: rich_media["title"] || "",
-      description: rich_media["description"] || "",
-      pleroma: %{
-        opengraph: rich_media
-      }
-    }
+  def render("card.json", %{embed: %Embed{} = embed}) do
+    with {:ok, %Card{} = card} <- Card.parse(embed) do
+      Card.to_map(card)
+    else
+      _ -> nil
+    end
   end
 
+  def render("card.json", %{embed: %Card{} = card}), do: Card.to_map(card)
   def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do
@@ -503,6 +517,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
+    else
+      nil
+    end
+  end
+
+  def get_quote(_activity, %{show_quote: false}), do: nil
+
+  def get_quote(activity, %{quoted_activities: quoted_activities}) do
+    object = Object.normalize(activity, fetch: false)
+
+    with nil <- quoted_activities[object.data["quoteUrl"]] do
+      # For when a quote post is inside an Announce
+      Activity.get_create_by_object_ap_id_with_object(object.data["quoteUrl"])
+    end
+  end
+
+  def get_quote(%{data: %{"object" => _object}} = activity, _) do
+    object = Object.normalize(activity, fetch: false)
+
+    if object.data["quoteUrl"] && object.data["quoteUrl"] != "" do
+      Activity.get_create_by_object_ap_id(object.data["quoteUrl"])
     else
       nil
     end
@@ -595,18 +630,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   # Avoid applying URI.merge unless necessary
   # TODO: revert to always attempting URI.merge(image_url_data, page_url_data)
   # when Elixir 1.12 is the minimum supported version
-  @spec build_image_url(struct() | nil, struct()) :: String.t() | nil
-  defp build_image_url(
-         %URI{scheme: image_scheme, host: image_host} = image_url_data,
-         %URI{} = _page_url_data
-       )
-       when not is_nil(image_scheme) and not is_nil(image_host) do
-    image_url_data |> to_string
-  end
-
-  defp build_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
-    URI.merge(page_url_data, image_url_data) |> to_string
-  end
-
-  defp build_image_url(_, _), do: nil
+  # @spec build_image_url(struct() | nil, struct()) :: String.t() | nil
+  # defp build_image_url(
+  #        %URI{scheme: image_scheme, host: image_host} = image_url_data,
+  #        %URI{} = _page_url_data
+  #      )
+  #      when not is_nil(image_scheme) and not is_nil(image_host) do
+  #   image_url_data |> to_string
+  # end
+  #
+  # defp build_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
+  #   URI.merge(page_url_data, image_url_data) |> to_string
+  # end
+  #
+  # defp build_image_url(_, _), do: nil
 end

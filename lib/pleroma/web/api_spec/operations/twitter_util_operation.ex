@@ -214,6 +214,146 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def move_account_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Move account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.move_account",
+      requestBody: request_body("Parameters", move_account_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{status: %Schema{type: :string, example: "success"}}
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp move_account_request do
+    %Schema{
+      title: "MoveAccountRequest",
+      description: "POST body for moving the account",
+      type: :object,
+      required: [:password, :target_account],
+      properties: %{
+        password: %Schema{type: :string, description: "Current password"},
+        target_account: %Schema{
+          type: :string,
+          description: "The nickname of the target account to move to"
+        }
+      }
+    }
+  end
+
+  def list_aliases_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "List account aliases",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      operationId: "UtilController.list_aliases",
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              aliases: %Schema{
+                type: :array,
+                items: %Schema{type: :string},
+                example: ["foo@example.org"]
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def add_alias_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Add an alias to this account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.add_alias",
+      requestBody: request_body("Parameters", add_alias_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              status: %Schema{
+                type: :string,
+                example: "success"
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp add_alias_request do
+    %Schema{
+      title: "AddAliasRequest",
+      description: "PUT body for adding aliases",
+      type: :object,
+      required: [:alias],
+      properties: %{
+        alias: %Schema{
+          type: :string,
+          description: "The nickname of the account to add to aliases"
+        }
+      }
+    }
+  end
+
+  def delete_alias_operation do
+    %Operation{
+      tags: ["Account credentials"],
+      summary: "Delete an alias from this account",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      operationId: "UtilController.delete_alias",
+      requestBody: request_body("Parameters", delete_alias_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response("Success", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              status: %Schema{
+                type: :string,
+                example: "success"
+              }
+            }
+          }),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp delete_alias_request do
+    %Schema{
+      title: "DeleteAliasRequest",
+      description: "PUT body for deleting aliases",
+      type: :object,
+      required: [:alias],
+      properties: %{
+        alias: %Schema{
+          type: :string,
+          description: "The nickname of the account to delete from aliases"
+        }
+      }
+    }
+  end
+
   def healthcheck_operation do
     %Operation{
       tags: ["Accounts"],

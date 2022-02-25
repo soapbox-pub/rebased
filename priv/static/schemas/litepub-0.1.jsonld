@@ -17,6 +17,7 @@
             "ostatus": "http://ostatus.org#",
             "schema": "http://schema.org#",
             "toot": "http://joinmastodon.org/ns#",
+            "fedibird": "http://fedibird.com/ns#",
             "value": "schema:value",
             "sensitive": "as:sensitive",
             "litepub": "http://litepub.social/ns#",
@@ -26,6 +27,8 @@
                 "@id": "litepub:listMessage",
                 "@type": "@id"
             },
+            "quoteUrl": "as:quoteUrl",
+            "quoteUri": "fedibird:quoteUri",
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
                 "@type": "@id"

@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -280,6 +281,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
+        quote: nil,
+        quote_url: nil,
+        quote_visible: false,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
@@ -374,6 +378,84 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     [status] = StatusView.render("index.json", %{activities: [activity], as: :activity})
 
     assert status.in_reply_to_id == to_string(note.id)
+  end
+
+  test "a quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, quoted_quote_post} = CommonAPI.post(user, %{status: "yo", quote_id: quote_post.id})
+
+    status = StatusView.render("show.json", %{activity: quoted_quote_post})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+    assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
+
+    # Quotes don't go more than one level deep
+    refute status.pleroma.quote.pleroma.quote
+    assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
+
+    # In an index
+    [status] = StatusView.render("index.json", %{activities: [quoted_quote_post], as: :activity})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+  end
+
+  test "quoted private post" do
+    user = insert(:user)
+
+    # Insert a private post
+    private = insert(:followers_only_note_activity, user: user)
+    private_object = Object.normalize(private)
+
+    # Create a public post quoting the private post
+    quote_private =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_private})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == private_object.data["id"]
+    refute status.pleroma.quote_visible
+
+    # After following the user, the quote is rendered
+    follower = insert(:user)
+    CommonAPI.follow(follower, user)
+
+    status = StatusView.render("show.json", %{activity: quote_private, for: follower})
+    assert status.pleroma.quote.id == to_string(private.id)
+    assert status.pleroma.quote_visible
+  end
+
+  test "quoted direct message" do
+    # Insert a direct message
+    direct = insert(:direct_note_activity)
+    direct_object = Object.normalize(direct)
+
+    # Create a public post quoting the direct message
+    quote_direct =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => direct_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_direct})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == direct_object.data["id"]
+    refute status.pleroma.quote_visible
+  end
+
+  test "repost of quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, repost} = CommonAPI.repeat(quote_post.id, user)
+
+    [status] = StatusView.render("index.json", %{activities: [repost], as: :activity})
+
+    assert status.reblog.pleroma.quote.id == to_string(post.id)
   end
 
   test "contains mentions" do
@@ -595,56 +677,45 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   describe "rich media cards" do
     test "a rich media card without a site name renders correctly" do
-      page_url = "http://example.com"
-
-      card = %{
-        url: page_url,
-        image: page_url <> "/example.jpg",
-        title: "Example website"
+      embed = %Embed{
+        url: "http://example.com",
+        title: "Example website",
+        meta: %{"twitter:image" => "http://example.com/example.jpg"}
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
     end
 
     test "a rich media card without a site name or image renders correctly" do
-      page_url = "http://example.com"
-
-      card = %{
-        url: page_url,
+      embed = %Embed{
+        url: "http://example.com",
         title: "Example website"
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
     end
 
     test "a rich media card without an image renders correctly" do
-      page_url = "http://example.com"
-
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
-        title: "Example website"
+      embed = %Embed{
+        url: "http://example.com",
+        title: "Example website",
+        meta: %{"twitter:title" => "Example site name"}
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
     end
 
     test "a rich media card with all relevant data renders correctly" do
-      page_url = "http://example.com"
-
-      card = %{
-        url: page_url,
-        site_name: "Example site name",
+      embed = %Embed{
+        url: "http://example.com",
         title: "Example website",
-        image: page_url <> "/example.jpg",
-        description: "Example description"
+        meta: %{
+          "twitter:title" => "Example site name",
+          "twitter:image" => "http://example.com/example.jpg"
+        }
       }
 
-      %{provider_name: "example.com"} =
-        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+      %{"provider_name" => "example.com"} = StatusView.render("card.json", %{embed: embed})
     end
   end
 
