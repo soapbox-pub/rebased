@@ -153,3 +153,10 @@ msgstr ""
 msgctxt "password reset successful message"
 msgid "Password changed!"
 msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/feed/feed/tag.atom.eex:15
+#: lib/pleroma/web/templates/feed/feed/tag.rss.eex:7
+msgctxt "tag feed description"
+msgid "These are public toots tagged with #%{tag}. You can interact with them if you have an account anywhere in the fediverse."
+msgstr ""

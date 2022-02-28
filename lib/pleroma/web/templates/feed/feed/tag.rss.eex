@@ -4,7 +4,7 @@
 
 
     <title>#<%= @tag %></title>
-    <description>These are public toots tagged with #<%= @tag %>. You can interact with them if you have an account anywhere in the fediverse.</description>
+    <description><%= Gettext.dpgettext("static_pages", "tag feed description", "These are public toots tagged with #%{tag}. You can interact with them if you have an account anywhere in the fediverse.", tag: @tag) %></description>
     <link><%= '#{Routes.tag_feed_url(@conn, :feed, @tag)}.rss' %></link>
     <webfeeds:logo><%= feed_logo() %></webfeeds:logo>
     <webfeeds:accentColor>2b90d9</webfeeds:accentColor>
