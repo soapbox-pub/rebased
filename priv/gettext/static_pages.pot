@@ -105,3 +105,51 @@ msgstr ""
 msgctxt "remote follow header"
 msgid "Remotely follow %{nickname}"
 msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset.html.eex:12
+msgctxt "password reset button"
+msgid "Reset"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_failed.html.eex:4
+msgctxt "password reset failed homepage link"
+msgid "Homepage"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_failed.html.eex:1
+msgctxt "password reset failed message"
+msgid "Password reset failed"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset.html.eex:8
+msgctxt "password reset form confirm password prompt"
+msgid "Confirmation"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset.html.eex:4
+msgctxt "password reset form password prompt"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/invalid_token.html.eex:1
+msgctxt "password reset invalid token message"
+msgid "Invalid Token"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_success.html.eex:2
+msgctxt "password reset successful homepage link"
+msgid "Homepage"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_success.html.eex:1
+msgctxt "password reset successful message"
+msgid "Password changed!"
+msgstr ""
