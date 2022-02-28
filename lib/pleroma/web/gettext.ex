@@ -25,4 +25,13 @@ defmodule Pleroma.Web.Gettext do
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
   use Gettext, otp_app: :pleroma
+
+  def language_tag do
+    # Naive implementation: HTML lang attribute uses BCP 47, which
+    # uses - as a separator.
+    # https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/lang
+
+    Gettext.get_locale()
+    |> String.replace("_", "-", global: true)
+  end
 end
