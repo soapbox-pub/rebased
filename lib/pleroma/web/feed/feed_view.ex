@@ -9,8 +9,8 @@ defmodule Pleroma.Web.Feed.FeedView do
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.User
-  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Gettext
+  alias Pleroma.Web.MediaProxy
 
   require Pleroma.Constants
 

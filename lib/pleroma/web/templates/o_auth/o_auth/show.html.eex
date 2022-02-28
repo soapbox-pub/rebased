@@ -20,7 +20,7 @@
 
 <div class="container__content">
   <%= if @app do %>
-    <p><%= raw Gettext.dpgettext("static_pages", "oauth authorize message", "Application <strong>%{client_name}</strong> is requesting access to your account.", client_name: html_escape(@app.client_name)) %></p>
+    <p><%= raw Gettext.dpgettext("static_pages", "oauth authorize message", "Application <strong>%{client_name}</strong> is requesting access to your account.", client_name: safe_to_string(html_escape(@app.client_name))) %></p>
     <%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
   <% end %>
 
