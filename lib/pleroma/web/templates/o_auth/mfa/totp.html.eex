@@ -5,11 +5,11 @@
 <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <% end %>
 
-<h2>Two-factor authentication</h2>
+<h2><%= Gettext.dpgettext("static_pages", "mfa auth page title", "Two-factor authentication") %></h2>
 
 <%= form_for @conn, Routes.mfa_verify_path(@conn, :verify), [as: "mfa"], fn f -> %>
 <div class="input">
-  <%= label f, :code, "Authentication code" %>
+  <%= label f, :code, Gettext.dpgettext("static_pages", "mfa auth code prompt", "Authentication code") %>
   <%= text_input f, :code, [autocomplete: "one-time-code", autocorrect: "off", autocapitalize: "off", autofocus: true, pattern: "[0-9]*", spellcheck: false] %>
   <%= hidden_input f, :mfa_token, value: @mfa_token %>
   <%= hidden_input f, :state, value: @state %>
@@ -17,8 +17,8 @@
   <%= hidden_input f, :challenge_type, value: "totp" %>
 </div>
 
-<%= submit "Verify" %>
+<%= submit Gettext.dpgettext("static_pages", "mfa auth verify code button", "Verify") %>
 <% end %>
 <a href="<%= Routes.mfa_path(@conn, :show, %{challenge_type: "recovery", mfa_token: @mfa_token, state: @state, redirect_uri: @redirect_uri}) %>">
-  Enter a two-factor recovery code
+  <%= Gettext.dpgettext("static_pages", "mfa auth page use recovery code link", "Enter a two-factor recovery code") %>
 </a>

@@ -305,3 +305,51 @@ msgstr ""
 msgctxt "oauth token code message"
 msgid "Token code is <br>%{token}"
 msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:12
+msgctxt "mfa auth code prompt"
+msgid "Authentication code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:8
+msgctxt "mfa auth page title"
+msgid "Two-factor authentication"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:23
+msgctxt "mfa auth page use recovery code link"
+msgid "Enter a two-factor recovery code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:20
+msgctxt "mfa auth verify code button"
+msgid "Verify"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:8
+msgctxt "mfa recover page title"
+msgid "Two-factor recovery"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:12
+msgctxt "mfa recover recovery code prompt"
+msgid "Recovery code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:23
+msgctxt "mfa recover use 2fa code link"
+msgid "Enter a two-factor code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:20
+msgctxt "mfa recover verify recovery code button"
+msgid "Verify"
+msgstr ""
