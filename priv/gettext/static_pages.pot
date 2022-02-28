@@ -160,3 +160,148 @@ msgstr ""
 msgctxt "tag feed description"
 msgid "These are public toots tagged with #%{tag}. You can interact with them if you have an account anywhere in the fediverse."
 msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_token_exists.html.eex:1
+msgctxt "oauth authorization exists page title"
+msgid "Authorization exists"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:32
+msgctxt "oauth authorize approve button"
+msgid "Approve"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:30
+msgctxt "oauth authorize cancel button"
+msgid "Cancel"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:23
+msgctxt "oauth authorize message"
+msgid "Application <strong>%{client_name}</strong> is requesting access to your account."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_authorization_created.html.eex:1
+msgctxt "oauth authorized page title"
+msgid "Successfully authorized"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex:1
+msgctxt "oauth external provider page title"
+msgid "Sign in with external provider"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex:13
+msgctxt "oauth external provider sign in button"
+msgid "Sign in with %{strategy}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:54
+msgctxt "oauth login button"
+msgid "Log In"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:51
+msgctxt "oauth login password prompt"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:47
+msgctxt "oauth login username prompt"
+msgid "Username"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:39
+msgctxt "oauth register nickname prompt"
+msgid "Pleroma Handle"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:37
+msgctxt "oauth register nickname unchangeable warning"
+msgid "Choose carefully! You won't be able to change this later. You will be able to change your display name, though."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:18
+msgctxt "oauth register page email prompt"
+msgid "Email"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:10
+msgctxt "oauth register page fill form prompt"
+msgid "If you'd like to register a new account, please provide the details below."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:35
+msgctxt "oauth register page login button"
+msgid "Proceed as existing user"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:31
+msgctxt "oauth register page login password prompt"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:24
+msgctxt "oauth register page login prompt"
+msgid "Alternatively, sign in to connect to existing account."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:27
+msgctxt "oauth register page login username prompt"
+msgid "Name or email"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:14
+msgctxt "oauth register page nickname prompt"
+msgid "Nickname"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:22
+msgctxt "oauth register page register button"
+msgid "Proceed as new user"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:8
+msgctxt "oauth register page title"
+msgid "Registration Details"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:36
+msgctxt "oauth register page title"
+msgid "This is the first time you visit! Please enter your Pleroma handle."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/_scopes.html.eex:2
+msgctxt "oauth scopes message"
+msgid "The following permissions will be granted"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_authorization_created.html.eex:2
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_token_exists.html.eex:2
+msgctxt "oauth token code message"
+msgid "Token code is <br>%{token}"
+msgstr ""
