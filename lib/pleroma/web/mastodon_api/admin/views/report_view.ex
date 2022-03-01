@@ -6,9 +6,11 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
   use Pleroma.Web, :view
 
   alias Pleroma.HTML
+  alias Pleroma.Rule
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.Admin.AccountView
+  alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{reports: reports}) do
@@ -48,7 +50,17 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
           activities: statuses,
           as: :activity
         }),
-      rules: []
+      rules: rules(Map.get(report.data, "rules", nil))
     }
+  end
+
+  defp rules(nil) do
+    []
+  end
+
+  defp rules(rule_ids) do
+    rule_ids
+    |> Rule.get()
+    |> render_many(InstanceView, "rule.json", as: :rule)
   end
 end

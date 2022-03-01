@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Activity
+  alias Pleroma.Rule
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -42,6 +44,25 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
                "forward" => "false"
              })
              |> json_response_and_validate_schema(200)
+  end
+
+  test "submit a report with rule_ids", %{
+    conn: conn,
+    target_user: target_user
+  } do
+    %{id: rule_id} = Rule.create(%{text: "There are no rules"})
+
+    assert %{"action_taken" => false, "id" => id} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/reports", %{
+               "account_id" => target_user.id,
+               "forward" => "false",
+               "rule_ids" => [rule_id]
+             })
+             |> json_response_and_validate_schema(200)
+
+    assert %Activity{data: %{"rules" => [^rule_id]}} = Activity.get_report(id)
   end
 
   test "account_id is required", %{
