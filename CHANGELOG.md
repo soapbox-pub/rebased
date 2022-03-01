@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
 - Handle Reject for already-accepted Follows properly
+- Display OpenGraph data on alternative notice routes.
 - Fix replies count for remote replies
 - Fixed hashtags disappearing from the end of lines when Markdown is enabled
 - ChatAPI: Add link headers
