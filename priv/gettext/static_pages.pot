@@ -353,3 +353,9 @@ msgstr ""
 msgctxt "mfa recover verify recovery code button"
 msgid "Verify"
 msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/static_fe/static_fe/profile.html.eex:8
+msgctxt "static fe profile page remote follow button"
+msgid "Remote follow"
+msgstr ""
