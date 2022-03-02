@@ -280,7 +280,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           },
           example: %{
             "reports" => [
-              %{"id" => "123", "assigned_account" => "https://pleroma.example/users/pleroma"}
+              %{"id" => "123", "assigned_account" => "pleroma"}
             ]
           }
         }
