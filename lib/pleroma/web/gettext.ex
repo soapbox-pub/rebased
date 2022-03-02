@@ -35,6 +35,14 @@ defmodule Pleroma.Web.Gettext do
     |> String.replace("_", "-", global: true)
   end
 
+  def normalize_locale(locale) do
+    if is_binary(locale) do
+      String.replace(locale, "-", "_")
+    else
+      nil
+    end
+  end
+
   def supports_locale?(locale) do
     Pleroma.Web.Gettext
     |> Gettext.known_locales()

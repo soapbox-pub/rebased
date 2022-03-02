@@ -25,7 +25,7 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
 
   defp normalize_language_codes(codes) do
     codes
-    |> Enum.map(fn code -> String.replace(code, "-", "_") end)
+    |> Enum.map(fn code -> Pleroma.Web.Gettext.normalize_locale(code) end)
   end
 
   defp extract_preferred_language(conn) do
