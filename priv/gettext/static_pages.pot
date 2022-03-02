@@ -409,3 +409,105 @@ msgid "%{count} New Follower"
 msgid_plural "%{count} New Followers"
 msgstr[0] ""
 msgstr[1] ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:349
+msgctxt "account archive email body - admin requested"
+msgid "<p>Admin @%{admin.nickname} requested a full backup of your Pleroma account. It's ready for download:</p>\n<p><a href=\"%{download_url}\">%{download_url}</a></p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:337
+msgctxt "account archive email body - self-requested"
+msgid "<p>You requested a full backup of your Pleroma account. It's ready for download:</p>\n<p><a href=\"%{download_url}\">%{download_url}</a></p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:365
+msgctxt "account archive email subject"
+msgid "Your account archive is ready"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:176
+msgctxt "approval pending email body"
+msgid "<h3>Awaiting Approval</h3>\n<p>Your account at %{instance_name} is being reviewed by staff. You will receive another email once your account is approved.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:190
+msgctxt "approval pending email subject"
+msgid "Your account is awaiting approval"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:148
+msgctxt "confirmation email body"
+msgid "<h3>Thank you for registering on %{instance_name}</h3>\n<p>Email confirmation is required to activate the account.</p>\n<p>Please click the following link to <a href=\"%{confirmation_url}\">activate your account</a>.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:164
+msgctxt "confirmation email subject"
+msgid "%{instance_name} account confirmation"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:294
+msgctxt "digest email subject"
+msgid "Your digest from %{instance_name}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:75
+msgctxt "password reset email body"
+msgid "<h3>Reset your password at %{instance_name}</h3>\n<p>Someone has requested password change for your account at %{instance_name}.</p>\n<p>If it was you, visit the following link to proceed: <a href=\"%{password_reset_url}\">reset password</a>.</p>\n<p>If it was someone else, nothing to worry about: your data is secure and your password has not been changed.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:92
+msgctxt "password reset email subject"
+msgid "Password reset"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:201
+msgctxt "successful registration email body"
+msgid "<h3>Hello @%{nickname},</h3>\n<p>Your account at %{instance_name} has been registered successfully.</p>\n<p>No further action is required to activate your account.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:217
+msgctxt "successful registration email subject"
+msgid "Account registered on %{instance_name}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:111
+msgctxt "user invitation email body"
+msgid "<h3>You are invited to %{instance_name}</h3>\n<p>%{inviter_name} invites you to join %{instance_name}, an instance of Pleroma federated social networking platform.</p>\n<p>Click the following link to register: <a href=\"%{registration_url}\">accept invitation</a>.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:128
+msgctxt "user invitation email subject"
+msgid "Invitation to %{instance_name}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:49
+msgctxt "welcome email html body"
+msgid "Welcome to %{instance_name}!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:40
+msgctxt "welcome email subject"
+msgid "Welcome to %{instance_name}!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:61
+msgctxt "welcome email text body"
+msgid "Welcome to %{instance_name}!"
+msgstr ""

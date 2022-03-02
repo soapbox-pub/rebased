@@ -5,9 +5,12 @@
 defmodule Pleroma.Emails.UserEmail do
   @moduledoc "User emails"
 
+  require Pleroma.Web.Gettext
+
   alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Gettext
   alias Pleroma.Web.Router
 
   import Swoosh.Email
@@ -30,25 +33,64 @@ defmodule Pleroma.Emails.UserEmail do
     new()
     |> to(recipient(user))
     |> from(Map.get(opts, :sender, sender()))
-    |> subject(Map.get(opts, :subject, "Welcome to #{instance_name()}!"))
-    |> html_body(Map.get(opts, :html, "Welcome to #{instance_name()}!"))
-    |> text_body(Map.get(opts, :text, "Welcome to #{instance_name()}!"))
+    |> subject(
+      Map.get(
+        opts,
+        :subject,
+        Gettext.dpgettext("static_pages", "welcome email subject", "Welcome to %{instance_name}!",
+          instance_name: instance_name()
+        )
+      )
+    )
+    |> html_body(
+      Map.get(
+        opts,
+        :html,
+        Gettext.dpgettext(
+          "static_pages",
+          "welcome email html body",
+          "Welcome to %{instance_name}!",
+          instance_name: instance_name()
+        )
+      )
+    )
+    |> text_body(
+      Map.get(
+        opts,
+        :text,
+        Gettext.dpgettext(
+          "static_pages",
+          "welcome email text body",
+          "Welcome to %{instance_name}!",
+          instance_name: instance_name()
+        )
+      )
+    )
   end
 
   def password_reset_email(user, token) when is_binary(token) do
     password_reset_url = Router.Helpers.reset_password_url(Endpoint, :reset, token)
 
-    html_body = """
-    <h3>Reset your password at #{instance_name()}</h3>
-    <p>Someone has requested password change for your account at #{instance_name()}.</p>
-    <p>If it was you, visit the following link to proceed: <a href="#{password_reset_url}">reset password</a>.</p>
-    <p>If it was someone else, nothing to worry about: your data is secure and your password has not been changed.</p>
-    """
+    html_body =
+      Gettext.dpgettext(
+        "static_pages",
+        "password reset email body",
+        """
+        <h3>Reset your password at %{instance_name}</h3>
+        <p>Someone has requested password change for your account at %{instance_name}.</p>
+        <p>If it was you, visit the following link to proceed: <a href="%{password_reset_url}">reset password</a>.</p>
+        <p>If it was someone else, nothing to worry about: your data is secure and your password has not been changed.</p>
+        """,
+        instance_name: instance_name(),
+        password_reset_url: password_reset_url
+      )
 
     new()
     |> to(recipient(user))
     |> from(sender())
-    |> subject("Password reset")
+    |> subject(
+      Gettext.dpgettext("static_pages", "password reset email subject", "Password reset")
+    )
     |> html_body(html_body)
   end
 
@@ -65,16 +107,31 @@ defmodule Pleroma.Emails.UserEmail do
         user_invite_token.token
       )
 
-    html_body = """
-    <h3>You are invited to #{instance_name()}</h3>
-    <p>#{user.name} invites you to join #{instance_name()}, an instance of Pleroma federated social networking platform.</p>
-    <p>Click the following link to register: <a href="#{registration_url}">accept invitation</a>.</p>
-    """
+    html_body =
+      Gettext.dpgettext(
+        "static_pages",
+        "user invitation email body",
+        """
+        <h3>You are invited to %{instance_name}</h3>
+        <p>%{inviter_name} invites you to join %{instance_name}, an instance of Pleroma federated social networking platform.</p>
+        <p>Click the following link to register: <a href="%{registration_url}">accept invitation</a>.</p>
+        """,
+        instance_name: instance_name(),
+        inviter_name: user.name,
+        registration_url: registration_url
+      )
 
     new()
     |> to(recipient(to_email, to_name))
     |> from(sender())
-    |> subject("Invitation to #{instance_name()}")
+    |> subject(
+      Gettext.dpgettext(
+        "static_pages",
+        "user invitation email subject",
+        "Invitation to %{instance_name}",
+        instance_name: instance_name()
+      )
+    )
     |> html_body(html_body)
   end
 
@@ -87,43 +144,83 @@ defmodule Pleroma.Emails.UserEmail do
         to_string(user.confirmation_token)
       )
 
-    html_body = """
-    <h3>Thank you for registering on #{instance_name()}</h3>
-    <p>Email confirmation is required to activate the account.</p>
-    <p>Please click the following link to <a href="#{confirmation_url}">activate your account</a>.</p>
-    """
+    html_body =
+      Gettext.dpgettext(
+        "static_pages",
+        "confirmation email body",
+        """
+        <h3>Thank you for registering on %{instance_name}</h3>
+        <p>Email confirmation is required to activate the account.</p>
+        <p>Please click the following link to <a href="%{confirmation_url}">activate your account</a>.</p>
+        """,
+        instance_name: instance_name(),
+        confirmation_url: confirmation_url
+      )
 
     new()
     |> to(recipient(user))
     |> from(sender())
-    |> subject("#{instance_name()} account confirmation")
+    |> subject(
+      Gettext.dpgettext(
+        "static_pages",
+        "confirmation email subject",
+        "%{instance_name} account confirmation",
+        instance_name: instance_name()
+      )
+    )
     |> html_body(html_body)
   end
 
   def approval_pending_email(user) do
-    html_body = """
-    <h3>Awaiting Approval</h3>
-    <p>Your account at #{instance_name()} is being reviewed by staff. You will receive another email once your account is approved.</p>
-    """
+    html_body =
+      Gettext.dpgettext(
+        "static_pages",
+        "approval pending email body",
+        """
+        <h3>Awaiting Approval</h3>
+        <p>Your account at %{instance_name} is being reviewed by staff. You will receive another email once your account is approved.</p>
+        """,
+        instance_name: instance_name()
+      )
 
     new()
     |> to(recipient(user))
     |> from(sender())
-    |> subject("Your account is awaiting approval")
+    |> subject(
+      Gettext.dpgettext(
+        "static_pages",
+        "approval pending email subject",
+        "Your account is awaiting approval"
+      )
+    )
     |> html_body(html_body)
   end
 
   def successful_registration_email(user) do
-    html_body = """
-    <h3>Hello @#{user.nickname},</h3>
-    <p>Your account at #{instance_name()} has been registered successfully.</p>
-    <p>No further action is required to activate your account.</p>
-    """
+    html_body =
+      Gettext.dpgettext(
+        "static_pages",
+        "successful registration email body",
+        """
+        <h3>Hello @%{nickname},</h3>
+        <p>Your account at %{instance_name} has been registered successfully.</p>
+        <p>No further action is required to activate your account.</p>
+        """,
+        nickname: user.nickname,
+        instance_name: instance_name()
+      )
 
     new()
     |> to(recipient(user))
     |> from(sender())
-    |> subject("Account registered on #{instance_name()}")
+    |> subject(
+      Gettext.dpgettext(
+        "static_pages",
+        "successful registration email subject",
+        "Account registered on %{instance_name}",
+        instance_name: instance_name()
+      )
+    )
     |> html_body(html_body)
   end
 
@@ -193,7 +290,14 @@ defmodule Pleroma.Emails.UserEmail do
       new()
       |> to(recipient(user))
       |> from(sender())
-      |> subject("Your digest from #{instance_name()}")
+      |> subject(
+        Gettext.dpgettext(
+          "static_pages",
+          "digest email subject",
+          "Your digest from %{instance_name}",
+          instance_name: instance_name()
+        )
+      )
       |> put_layout(false)
       |> render_body("digest.html", html_data)
       |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.svg", type: :inline))
@@ -230,23 +334,40 @@ defmodule Pleroma.Emails.UserEmail do
 
     html_body =
       if is_nil(admin_user_id) do
-        """
-        <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
-        <p><a href="#{download_url}">#{download_url}</a></p>
-        """
+        Gettext.dpgettext(
+          "static_pages",
+          "account archive email body - self-requested",
+          """
+          <p>You requested a full backup of your Pleroma account. It's ready for download:</p>
+          <p><a href="%{download_url}">%{download_url}</a></p>
+          """,
+          download_url: download_url
+        )
       else
         admin = Pleroma.Repo.get(User, admin_user_id)
 
-        """
-        <p>Admin @#{admin.nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
-        <p><a href="#{download_url}">#{download_url}</a></p>
-        """
+        Gettext.dpgettext(
+          "static_pages",
+          "account archive email body - admin requested",
+          """
+          <p>Admin @%{admin_nickname} requested a full backup of your Pleroma account. It's ready for download:</p>
+          <p><a href="%{download_url}">%{download_url}</a></p>
+          """,
+          admin_nickname: admin.nickname,
+          download_url: download_url
+        )
       end
 
     new()
     |> to(recipient(user))
     |> from(sender())
-    |> subject("Your account archive is ready")
+    |> subject(
+      Gettext.dpgettext(
+        "static_pages",
+        "account archive email subject",
+        "Your account archive is ready"
+      )
+    )
     |> html_body(html_body)
   end
 end
