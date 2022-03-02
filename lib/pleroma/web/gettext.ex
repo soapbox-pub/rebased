@@ -34,4 +34,26 @@ defmodule Pleroma.Web.Gettext do
     Gettext.get_locale()
     |> String.replace("_", "-", global: true)
   end
+
+  def supports_locale?(locale) do
+    Pleroma.Web.Gettext
+    |> Gettext.known_locales()
+    |> Enum.member?(locale)
+  end
+
+  def locale_or_default(locale) do
+    if supports_locale?(locale) do
+      locale
+    else
+      Gettext.get_locale()
+    end
+  end
+
+  defmacro with_locale_or_default(locale, do: fun) do
+    quote do
+      Gettext.with_locale(Pleroma.Web.Gettext.locale_or_default(unquote(locale)), fn ->
+        unquote(fun)
+      end)
+    end
+  end
 end

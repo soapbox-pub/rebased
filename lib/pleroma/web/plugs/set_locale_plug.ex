@@ -64,9 +64,7 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
   end
 
   defp supported_locale?(locale) do
-    Pleroma.Web.Gettext
-    |> Gettext.known_locales()
-    |> Enum.member?(locale)
+    Pleroma.Web.Gettext.supports_locale?(locale)
   end
 
   defp parse_language_option(string) do

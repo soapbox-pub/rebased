@@ -156,6 +156,7 @@ defmodule Pleroma.User do
     field(:last_status_at, :naive_datetime)
     field(:birthday, :date)
     field(:show_birthday, :boolean, default: false)
+    field(:language, :string)
 
     embeds_one(
       :notification_settings,
