@@ -1,1 +1,1 @@
-<h1>UNSUBSCRIBE FAILURE</h1>
+<h1><%= Gettext.dpgettext("static_pages", "mailer unsubscribe failed message", "UNSUBSCRIBE FAILURE") %></h1>

@@ -359,3 +359,53 @@ msgstr ""
 msgctxt "static fe profile page remote follow button"
 msgid "Remote follow"
 msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:163
+msgctxt "digest email header line"
+msgid "Hey %{nickname}, here is what you've missed!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:544
+msgctxt "digest email receiver address"
+msgid "The email address you are subscribed as is <a href='mailto:%{@user.email}' style='color: %{color};text-decoration: none;'>%{email}</a>. "
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:538
+msgctxt "digest email sending reason"
+msgid "You have received this email because you have signed up to receive digest emails from <b>%{instance}</b> Pleroma instance."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:547
+msgctxt "digest email unsubscribe action"
+msgid "To unsubscribe, please go %{here}."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:547
+msgctxt "digest email unsubscribe action link text"
+msgid "here"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/mailer/subscription/unsubscribe_failure.html.eex:1
+msgctxt "mailer unsubscribe failed message"
+msgid "UNSUBSCRIBE FAILURE"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/mailer/subscription/unsubscribe_success.html.eex:1
+msgctxt "mailer unsubscribe successful message"
+msgid "UNSUBSCRIBE SUCCESSFUL"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:385
+msgctxt "new followers count header"
+msgid "%{count} New Follower"
+msgid_plural "%{count} New Followers"
+msgstr[0] ""
+msgstr[1] ""
