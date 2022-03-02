@@ -12,6 +12,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Rule
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -1248,6 +1249,33 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.assign_report_to_account(report_id, nil)
 
       refute Map.has_key?(activity.data, "assigned_account")
+    end
+
+    test "creates a report with provided rules" do
+      reporter = insert(:user)
+      target_user = insert(:user)
+
+      %{id: rule_id} = Rule.create(%{text: "There are no rules"})
+
+      reporter_ap_id = reporter.ap_id
+      target_ap_id = target_user.ap_id
+
+      report_data = %{
+        account_id: target_user.id,
+        rule_ids: [rule_id]
+      }
+
+      assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
+
+      assert %Activity{
+               actor: ^reporter_ap_id,
+               data: %{
+                 "type" => "Flag",
+                 "object" => [^target_ap_id],
+                 "state" => "open",
+                 "rules" => [^rule_id]
+               }
+             } = flag_activity
     end
   end
 

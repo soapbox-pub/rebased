@@ -226,7 +226,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         meta
         |> add_notifications(notifications)
 
-      ap_streamer().stream_out(activity)
+      # ChatMessages are special, as they get streamed in handle_object_creation/3
+      # TODO: maybe whitelist allowed object types to stream?
+      if object.data["type"] != "ChatMessage" do
+        ap_streamer().stream_out(activity)
+      end
 
       {:ok, activity, meta}
     else

@@ -6,10 +6,12 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   use Pleroma.Web, :view
 
   alias Pleroma.HTML
+  alias Pleroma.Rule
   alias Pleroma.User
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   defdelegate merge_account_views(user), to: AdminAPI.AccountView
@@ -58,7 +60,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
         }),
       state: report.data["state"],
       notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes}),
-      assigned_account: assigned_account
+      assigned_account: assigned_account,
+      rules: rules(Map.get(report.data, "rules", nil))
     }
   end
 
@@ -82,5 +85,15 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       user: merge_account_views(user),
       created_at: Utils.to_masto_date(inserted_at)
     }
+  end
+
+  defp rules(nil) do
+    []
+  end
+
+  defp rules(rule_ids) do
+    rule_ids
+    |> Rule.get()
+    |> render_many(InstanceView, "rule.json", as: :rule)
   end
 end
