@@ -65,6 +65,24 @@ defmodule Pleroma.Web.Gettext do
     end
   end
 
+  def get_locales() do
+    Process.get({Pleroma.Web.Gettext, :locales}, [])
+  end
+
+  def is_locale_list(locales) do
+    Enum.all?(locales, &is_binary/1)
+  end
+
+  def put_locales(locales) do
+    if is_locale_list(locales) do
+      Process.put({Pleroma.Web.Gettext, :locales}, Enum.uniq(locales))
+      Gettext.put_locale(Enum.at(locales, 0, Gettext.get_locale()))
+      :ok
+    else
+      {:error, :not_locale_list}
+    end
+  end
+
   def locale_or_default(locale) do
     if supports_locale?(locale) do
       locale
@@ -73,11 +91,46 @@ defmodule Pleroma.Web.Gettext do
     end
   end
 
-  defmacro with_locale_or_default(locale, do: fun) do
+  def with_locales_func(locales, fun) do
+    prev_locales = Process.get({Pleroma.Web.Gettext, :locales})
+    put_locales(locales)
+
+    try do
+      fun.()
+    after
+      if prev_locales do
+        put_locales(prev_locales)
+      else
+        Process.delete({Pleroma.Web.Gettext, :locales})
+      end
+    end
+  end
+
+  defmacro with_locales(locales, do: fun) do
     quote do
-      Gettext.with_locale(Pleroma.Web.Gettext.locale_or_default(unquote(locale)), fn ->
+      Pleroma.Web.Gettext.with_locales_func(unquote(locales), fn ->
         unquote(fun)
       end)
+    end
+  end
+
+  def to_locale_list(locale) when is_binary(locale) do
+    locale
+    |> String.split(",")
+    |> Enum.filter(&supports_locale?/1)
+  end
+
+  def to_locale_list(_), do: []
+
+  defmacro with_locale_or_default(locale, do: fun) do
+    quote do
+      Pleroma.Web.Gettext.with_locales_func(
+        Pleroma.Web.Gettext.to_locale_list(unquote(locale))
+        |> Enum.concat(Pleroma.Web.Gettext.get_locales()),
+        fn ->
+          unquote(fun)
+        end
+      )
     end
   end
 end

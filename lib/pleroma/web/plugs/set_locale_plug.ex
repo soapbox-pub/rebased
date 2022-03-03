@@ -11,22 +11,27 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
   def init(_), do: nil
 
   def call(conn, _) do
-    locale = get_locale_from_header(conn) || Gettext.get_locale()
-    Gettext.put_locale(locale)
-    assign(conn, :locale, locale)
+    locales = get_locales_from_header(conn)
+    first_locale = Enum.at(locales, 0, Gettext.get_locale())
+
+    Pleroma.Web.Gettext.put_locales(locales)
+
+    conn
+    |> assign(:locale, first_locale)
+    |> assign(:locales, locales)
   end
 
-  defp get_locale_from_header(conn) do
+  defp get_locales_from_header(conn) do
     conn
     |> extract_preferred_language()
     |> normalize_language_codes()
-    |> first_supported()
+    |> all_supported()
   end
 
-  defp first_supported(locales) do
+  defp all_supported(locales) do
     locales
     |> Enum.flat_map(&Pleroma.Web.Gettext.supported_variants_of_locale/1)
-    |> Enum.find(&supported_locale?/1)
+    |> Enum.filter(&supported_locale?/1)
   end
 
   defp normalize_language_codes(codes) do
