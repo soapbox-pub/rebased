@@ -47,6 +47,20 @@ defmodule Pleroma.Web.Plugs.SetLocalePlugTest do
     assert %{locale: "zh_Hans"} == conn.assigns
   end
 
+  test "fallback to some variant of the language if the unqualified language is not supported" do
+    conn =
+      :get
+      |> conn("/cofe")
+      |> Conn.put_req_header(
+        "accept-language",
+        "zh;q=0.9, en;q=0.8, *;q=0.5"
+      )
+      |> SetLocalePlug.call([])
+
+    assert "zh_" <> _ = Gettext.get_locale()
+    assert %{locale: "zh_" <> _} = conn.assigns
+  end
+
   test "use supported locale from cookie" do
     conn =
       :get

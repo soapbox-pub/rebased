@@ -49,6 +49,20 @@ defmodule Pleroma.Web.Gettext do
     |> Enum.member?(locale)
   end
 
+  def variant?(locale), do: String.contains?(locale, "_")
+
+  def supported_variants_of_locale(locale) do
+    cond do
+      variant?(locale) ->
+        [locale]
+      supports_locale?(locale) ->
+        [locale]
+      true ->
+        Gettext.known_locales(Pleroma.Web.Gettext)
+        |> Enum.filter(fn l -> String.starts_with?(l, locale <> "_") end)
+    end
+  end
+
   def locale_or_default(locale) do
     if supports_locale?(locale) do
       locale

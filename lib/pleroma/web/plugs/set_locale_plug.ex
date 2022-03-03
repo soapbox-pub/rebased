@@ -20,6 +20,12 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
     conn
     |> extract_preferred_language()
     |> normalize_language_codes()
+    |> first_supported()
+  end
+
+  defp first_supported(locales) do
+    locales
+    |> Enum.flat_map(&Pleroma.Web.Gettext.supported_variants_of_locale/1)
     |> Enum.find(&supported_locale?/1)
   end
 
