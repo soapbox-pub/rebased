@@ -33,6 +33,20 @@ defmodule Pleroma.Web.Plugs.SetLocalePlugTest do
     assert %{locale: "ru"} == conn.assigns
   end
 
+  test "fallback to the general language if a variant is not supported" do
+    conn =
+      :get
+      |> conn("/cofe")
+      |> Conn.put_req_header(
+        "accept-language",
+        "ru-CA;q=0.9, en;q=0.8, *;q=0.5"
+      )
+      |> SetLocalePlug.call([])
+
+    assert "ru" == Gettext.get_locale()
+    assert %{locale: "ru"} == conn.assigns
+  end
+
   test "use supported locale with specifiers from `accept-language`" do
     conn =
       :get
