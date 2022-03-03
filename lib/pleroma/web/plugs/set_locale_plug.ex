@@ -26,11 +26,12 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
     |> extract_preferred_language()
     |> normalize_language_codes()
     |> all_supported()
+    |> Enum.uniq()
   end
 
   defp all_supported(locales) do
     locales
-    |> Enum.flat_map(&Pleroma.Web.Gettext.supported_variants_of_locale/1)
+    |> Pleroma.Web.Gettext.ensure_fallbacks()
     |> Enum.filter(&supported_locale?/1)
   end
 
@@ -53,8 +54,7 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
         []
 
       fe_lang ->
-        [fe_lang]
-        |> ensure_language_fallbacks()
+        String.split(fe_lang, ",")
     end
   end
 
@@ -67,7 +67,6 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
         |> Enum.sort(&(&1.quality > &2.quality))
         |> Enum.map(& &1.tag)
         |> Enum.reject(&is_nil/1)
-        |> ensure_language_fallbacks()
 
       _ ->
         []
@@ -88,12 +87,5 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
       end
 
     %{tag: captures["tag"], quality: quality}
-  end
-
-  defp ensure_language_fallbacks(tags) do
-    Enum.flat_map(tags, fn tag ->
-      [language | _] = String.split(tag, "-")
-      if Enum.member?(tags, language), do: [tag], else: [tag, language]
-    end)
   end
 end

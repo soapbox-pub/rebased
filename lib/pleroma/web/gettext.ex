@@ -37,7 +37,7 @@ defmodule Pleroma.Web.Gettext do
 
   def normalize_locale(locale) do
     if is_binary(locale) do
-      String.replace(locale, "-", "_")
+      String.replace(locale, "-", "_", global: true)
     else
       nil
     end
@@ -51,13 +51,28 @@ defmodule Pleroma.Web.Gettext do
 
   def variant?(locale), do: String.contains?(locale, "_")
 
-  def supported_variants_of_locale(locale) do
-    cond do
-      variant?(locale) ->
-        [locale]
+  def language_for_variant(locale) do
+    Enum.at(String.split(locale, "_"), 0)
+  end
 
+  def ensure_fallbacks(locales) do
+    locales
+    |> Enum.flat_map(fn locale ->
+      others = other_supported_variants_of_locale(locale)
+        |> Enum.filter(fn l -> not Enum.member?(locales, l) end)
+
+      [locale] ++ others
+    end)
+  end
+
+  def other_supported_variants_of_locale(locale) do
+    cond do
       supports_locale?(locale) ->
-        [locale]
+        []
+
+      variant?(locale) ->
+        lang = language_for_variant(locale)
+        if supports_locale?(lang), do: [lang], else: []
 
       true ->
         Gettext.known_locales(Pleroma.Web.Gettext)
