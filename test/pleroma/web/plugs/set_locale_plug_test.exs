@@ -87,7 +87,9 @@ defmodule Pleroma.Web.Plugs.SetLocalePlugTest do
       |> SetLocalePlug.call([])
 
     assert "zh_Hans" == Gettext.get_locale()
-    assert %{locale: "zh_Hans", locales: ["zh_Hans", "uk", "zh_Hant", "ru", "fr", "en"]} = conn.assigns
+
+    assert %{locale: "zh_Hans", locales: ["zh_Hans", "uk", "zh_Hant", "ru", "fr", "en"]} =
+             conn.assigns
   end
 
   test "fallback to some variant of the language if the unqualified language is not supported" do

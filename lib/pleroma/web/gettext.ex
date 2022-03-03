@@ -58,7 +58,8 @@ defmodule Pleroma.Web.Gettext do
   def ensure_fallbacks(locales) do
     locales
     |> Enum.flat_map(fn locale ->
-      others = other_supported_variants_of_locale(locale)
+      others =
+        other_supported_variants_of_locale(locale)
         |> Enum.filter(fn l -> not Enum.member?(locales, l) end)
 
       [locale] ++ others
@@ -80,7 +81,7 @@ defmodule Pleroma.Web.Gettext do
     end
   end
 
-  def get_locales() do
+  def get_locales do
     Process.get({Pleroma.Web.Gettext, :locales}, [])
   end
 
