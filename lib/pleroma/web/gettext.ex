@@ -118,6 +118,7 @@ defmodule Pleroma.Web.Gettext do
         put_locales(prev_locales)
       else
         Process.delete({Pleroma.Web.Gettext, :locales})
+        Process.delete(Gettext)
       end
     end
   end
@@ -147,6 +148,58 @@ defmodule Pleroma.Web.Gettext do
           unquote(fun)
         end
       )
+    end
+  end
+
+  defp next_locale(locale, list) do
+    index = Enum.find_index(list, fn item -> item == locale end)
+
+    if not is_nil(index) do
+      Enum.at(list, index + 1)
+    else
+      nil
+    end
+  end
+
+  def handle_missing_translation(locale, domain, msgctxt, msgid, bindings) do
+    next = next_locale(locale, get_locales())
+
+    if is_nil(next) do
+      super(locale, domain, msgctxt, msgid, bindings)
+    else
+      {:ok,
+       Gettext.with_locale(next, fn ->
+         Gettext.dpgettext(Pleroma.Web.Gettext, domain, msgctxt, msgid, bindings)
+       end)}
+    end
+  end
+
+  def handle_missing_plural_translation(
+        locale,
+        domain,
+        msgctxt,
+        msgid,
+        msgid_plural,
+        n,
+        bindings
+      ) do
+    next = next_locale(locale, get_locales())
+
+    if is_nil(next) do
+      super(locale, domain, msgctxt, msgid, msgid_plural, n, bindings)
+    else
+      {:ok,
+       Gettext.with_locale(next, fn ->
+         Gettext.dpngettext(
+           Pleroma.Web.Gettext,
+           domain,
+           msgctxt,
+           msgid,
+           msgid_plural,
+           n,
+           bindings
+         )
+       end)}
     end
   end
 end

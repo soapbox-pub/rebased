@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"PO-Revision-Date: 2022-03-01 21:15-0500\n"
+"PO-Revision-Date: 2022-03-06 11:27-0500\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -423,8 +423,8 @@ msgstr ""
 msgctxt "new followers count header"
 msgid "%{count} New Follower"
 msgid_plural "%{count} New Followers"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "xx%{count} New Followerxx"
+msgstr[1] "xx%{count} New Followersxx"
 
 #, elixir-format
 #: lib/pleroma/emails/user_email.ex:356
@@ -466,7 +466,7 @@ msgstr ""
 #: lib/pleroma/emails/user_email.ex:310
 msgctxt "digest email subject"
 msgid "Your digest from %{instance_name}"
-msgstr ""
+msgstr "xxYour digest from %{instance_name}xx"
 
 #, elixir-format
 #: lib/pleroma/emails/user_email.ex:81
