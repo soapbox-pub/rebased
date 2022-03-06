@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # Fix legacy tags set by AdminFE that don't align with TagPolicy MRF
 
 defmodule Pleroma.Repo.Migrations.FixLegacyTags do
