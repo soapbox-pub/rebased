@@ -1136,11 +1136,8 @@ defmodule Pleroma.User do
     |> maybe_remove_report_notifications(was_superuser_before_update)
   end
 
-  defp maybe_remove_report_notifications(
-         {:ok, %Pleroma.User{} = user} = result,
-         was_superuser_before_update
-       ) do
-    if was_superuser_before_update and not User.superuser?(user),
+  defp maybe_remove_report_notifications({:ok, %Pleroma.User{} = user} = result, true) do
+    if not User.superuser?(user),
       do: user |> Notification.destroy_multiple_from_types(["pleroma:report"])
 
     result
