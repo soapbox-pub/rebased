@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.MastodonAPI.AnnouncementController do
   use Pleroma.Web, :controller
 
-  # import Pleroma.Web.ControllerHelper,
-  #   only: [
-  #     json_response: 3
-  #   ]
+  import Pleroma.Web.ControllerHelper,
+    only: [
+      json_response: 3
+    ]
 
   alias Pleroma.Announcement
   alias Pleroma.Web.Plugs.OAuthScopesPlug
@@ -50,8 +50,14 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementController do
   end
 
   @doc "POST /api/v1/announcements/:id/dismiss"
-  def mark_read(_conn, _params) do
-    {:error, :not_found}
+  def mark_read(%{assigns: %{user: user}} = conn, %{id: id} = _params) do
+    with announcement when not is_nil(announcement) <- Announcement.get_by_id(id),
+         {:ok, _} <- Announcement.mark_read_by(announcement, user) do
+      json_response(conn, :ok, %{})
+    else
+      _ ->
+        {:error, :not_found}
+    end
   end
 
   @doc "POST /api/v1/announcements/:id"

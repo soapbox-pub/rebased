@@ -2,11 +2,12 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
+defmodule Pleroma.Web.MastodonAPI.AnnouncementControllerTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
 
+  alias Pleroma.Announcement
   alias Pleroma.AnnouncementReadRelationship
 
   describe "GET /api/v1/announcements" do
@@ -101,6 +102,53 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> json_response_and_validate_schema(:ok)
 
       assert %{"id" => ^id, "read" => true} = response
+    end
+  end
+
+  describe "POST /api/v1/announcements/:id/dismiss" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "it requires auth", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      _response =
+        conn
+        |> assign(:token, nil)
+        |> post("/api/v1/announcements/#{id}/dismiss")
+        |> json_response_and_validate_schema(:forbidden)
+    end
+
+    test "it requires write:accounts oauth scope" do
+      %{id: id} = insert(:announcement)
+
+      %{conn: conn} = oauth_access(["read:accounts"])
+
+      _response =
+        conn
+        |> post("/api/v1/announcements/#{id}/dismiss")
+        |> json_response_and_validate_schema(:forbidden)
+    end
+
+    test "it gives 404 for non-existent announcements", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      _response =
+        conn
+        |> post("/api/v1/announcements/#{id}xxx/dismiss")
+        |> json_response_and_validate_schema(:not_found)
+    end
+
+    test "it marks announcement as read", %{user: user, conn: conn} do
+      %{id: id} = announcement = insert(:announcement)
+
+      refute Announcement.read_by?(announcement, user)
+
+      _response =
+        conn
+        |> post("/api/v1/announcements/#{id}/dismiss")
+        |> json_response_and_validate_schema(:ok)
+
+      assert Announcement.read_by?(announcement, user)
     end
   end
 end

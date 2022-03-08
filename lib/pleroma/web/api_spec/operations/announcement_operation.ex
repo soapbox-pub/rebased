@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ApiSpec.AnnouncementOperation do
         )
       ],
       responses: %{
-        200 => Operation.response("Response", "application/json", Announcement),
+        200 => Operation.response("Response", "application/json", %Schema{type: :object}),
         403 => Operation.response("Forbidden", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
