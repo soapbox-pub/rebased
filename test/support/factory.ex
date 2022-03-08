@@ -628,11 +628,10 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def announcement_factory do
+  def announcement_factory(params \\ %{}, data \\ %{}) do
     %Pleroma.Announcement{
-      data: %{
-        "content" => "test announcement"
-      }
+      data: Map.merge(%{"content" => "test announcement"}, data)
     }
+    |> Map.merge(params)
   end
 end

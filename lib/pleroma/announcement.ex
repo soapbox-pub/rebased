@@ -6,6 +6,7 @@ defmodule Pleroma.Announcement do
   use Ecto.Schema
 
   import Ecto.Changeset, only: [cast: 3, validate_required: 2]
+  import Ecto.Query
 
   alias Pleroma.AnnouncementReadRelationship
   alias Pleroma.Repo
@@ -15,14 +16,34 @@ defmodule Pleroma.Announcement do
 
   schema "announcements" do
     field(:data, :map)
+    field(:starts_at, :naive_datetime)
+    field(:ends_at, :naive_datetime)
 
     timestamps()
   end
 
   def change(struct, params \\ %{}) do
     struct
+    |> validate_params()
     |> cast(params, [:data])
     |> validate_required([:data])
+  end
+
+  defp validate_params(params) do
+    base_struct = %{
+      "content" => "",
+      "all_day" => false
+    }
+
+    merged_data =
+      Map.merge(base_struct, params.data)
+      |> Map.take(["content", "all_day"])
+
+    %{
+      data: merged_data,
+      starts_at: Map.get(params, "starts_at"),
+      ends_at: Map.get(params, "ends_at")
+    }
   end
 
   def add(params) do
@@ -85,5 +106,18 @@ defmodule Pleroma.Announcement do
 
     base
     |> Map.merge(extra_params)
+  end
+
+  # "visible" means:
+  # starts_at < time < ends_at
+  def list_all_visible_when(time) do
+    __MODULE__
+    |> where([a], is_nil(a.starts_at) or a.starts_at < ^time)
+    |> where([a], is_nil(a.ends_at) or a.ends_at > ^time)
+    |> Repo.all()
+  end
+
+  def list_all_visible do
+    list_all_visible_when(NaiveDateTime.utc_now())
   end
 end

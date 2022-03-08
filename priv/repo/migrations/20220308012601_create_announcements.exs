@@ -5,6 +5,8 @@ defmodule Pleroma.Repo.Migrations.CreateAnnouncements do
     create_if_not_exists table(:announcements, primary_key: false) do
       add(:id, :uuid, primary_key: true)
       add(:data, :map)
+      add(:starts_at, :naive_datetime)
+      add(:ends_at, :naive_datetime)
 
       timestamps()
     end
