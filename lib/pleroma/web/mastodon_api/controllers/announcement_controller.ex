@@ -60,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementController do
     end
   end
 
-  @doc "POST /api/v1/announcements/:id"
+  @doc "GET /api/v1/announcements/:id"
   def show(%{assigns: %{user: user}} = conn, %{id: id} = _params) do
     render_announcement_by_id(conn, id, user)
   end
