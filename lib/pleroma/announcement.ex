@@ -7,6 +7,7 @@ defmodule Pleroma.Announcement do
 
   import Ecto.Changeset, only: [cast: 3, validate_required: 2]
 
+  alias Pleroma.AnnouncementReadRelationship
   alias Pleroma.Repo
 
   @type t :: %__MODULE__{}
@@ -49,15 +50,20 @@ defmodule Pleroma.Announcement do
     end
   end
 
-  def read_by?(_announcement, _user) do
-    false
+  def read_by?(announcement, user) do
+    AnnouncementReadRelationship.exists?(user, announcement)
+  end
+
+  def mark_read_by(announcement, user) do
+    AnnouncementReadRelationship.mark_read(user, announcement)
   end
 
   def render_json(announcement, opts \\ []) do
     extra_params =
       case Keyword.fetch(opts, :for) do
-        {:ok, user} ->
+        {:ok, user} when not is_nil(user) ->
           %{read: read_by?(announcement, user)}
+
         _ ->
           %{}
       end
