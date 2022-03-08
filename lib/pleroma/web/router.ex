@@ -229,6 +229,11 @@ defmodule Pleroma.Web.Router do
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
+
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements", AnnouncementController, :create)
+    get("/announcements/:id", AnnouncementController, :show)
+    delete("/announcements/:id", AnnouncementController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if enabled by config)

@@ -627,4 +627,12 @@ defmodule Pleroma.Factory do
       context: ["home"]
     }
   end
+
+  def announcement_factory do
+    %Pleroma.Announcement{
+      data: %{
+        "content" => "test announcement"
+      }
+    }
+  end
 end
