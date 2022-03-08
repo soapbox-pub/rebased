@@ -10,11 +10,6 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementView do
   end
 
   def render("show.json", %{announcement: announcement}) do
-    %{
-      id: announcement.id,
-      content: announcement.data["content"],
-      published_at: announcement.inserted_at,
-      updated_at: announcement.updated_at
-    }
+    Pleroma.Announcement.render_json(announcement)
   end
 end

@@ -48,4 +48,36 @@ defmodule Pleroma.Announcement do
         :error
     end
   end
+
+  def read_by?(_announcement, _user) do
+    false
+  end
+
+  def render_json(announcement, opts \\ []) do
+    extra_params =
+      case Keyword.fetch(opts, :for) do
+        {:ok, user} ->
+          %{read: read_by?(announcement, user)}
+        _ ->
+          %{}
+      end
+
+    base = %{
+      id: announcement.id,
+      content: announcement.data["content"],
+      starts_at: :null,
+      ends_at: :null,
+      all_day: false,
+      published_at: announcement.inserted_at,
+      updated_at: announcement.updated_at,
+      mentions: [],
+      statuses: [],
+      tags: [],
+      emojis: [],
+      reactions: []
+    }
+
+    base
+    |> Map.merge(extra_params)
+  end
 end

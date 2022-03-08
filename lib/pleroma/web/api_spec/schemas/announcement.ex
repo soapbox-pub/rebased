@@ -9,14 +9,27 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Announcement do
   require OpenApiSpex
 
   OpenApiSpex.schema(%{
-    title: "Account",
-    description: "Response schema for an account",
+    title: "Announcement",
+    description: "Response schema for an announcement",
     type: :object,
     properties: %{
       id: FlakeID,
       content: %Schema{type: :string},
+      starts_at: %Schema{
+        oneOf: [%Schema{type: :null}, %Schema{type: :string, format: "date-time"}]
+      },
+      ends_at: %Schema{
+        oneOf: [%Schema{type: :null}, %Schema{type: :string, format: "date-time"}]
+      },
+      all_day: %Schema{type: :boolean},
       published_at: %Schema{type: :string, format: "date-time"},
-      updated_at: %Schema{type: :string, format: "date-time"}
+      updated_at: %Schema{type: :string, format: "date-time"},
+      read: %Schema{type: :boolean},
+      mentions: %Schema{type: :array},
+      statuses: %Schema{type: :array},
+      tags: %Schema{type: :array},
+      emojis: %Schema{type: :array},
+      reactions: %Schema{type: :array}
     }
   })
 end
