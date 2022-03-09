@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementController do
   end
 
   defp all_visible do
-    Announcement.list_all()
+    Announcement.list_all_visible()
   end
 
   @doc "POST /api/v1/announcements/:id/dismiss"

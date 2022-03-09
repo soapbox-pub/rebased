@@ -23,6 +23,30 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementControllerTest do
       refute Map.has_key?(Enum.at(response, 0), "read")
     end
 
+    test "it does not list announcements starting after current time" do
+      time = NaiveDateTime.utc_now() |> NaiveDateTime.add(999999, :second)
+      insert(:announcement, starts_at: time)
+
+      response =
+        build_conn()
+        |> get("/api/v1/announcements")
+        |> json_response_and_validate_schema(:ok)
+
+      assert [] = response
+    end
+
+    test "it does not list announcements ending before current time" do
+      time = NaiveDateTime.utc_now() |> NaiveDateTime.add(-999999, :second)
+      insert(:announcement, ends_at: time)
+
+      response =
+        build_conn()
+        |> get("/api/v1/announcements")
+        |> json_response_and_validate_schema(:ok)
+
+      assert [] = response
+    end
+
     test "when authenticated, also expose read property" do
       %{id: id} = insert(:announcement)
 
