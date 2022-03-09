@@ -637,5 +637,6 @@ defmodule Pleroma.Factory do
       data: Map.merge(%{"content" => "test announcement", "all_day" => false}, data)
     }
     |> Map.merge(params)
+    |> Pleroma.Announcement.add_rendered_properties()
   end
 end

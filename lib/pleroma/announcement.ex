@@ -18,13 +18,14 @@ defmodule Pleroma.Announcement do
     field(:data, :map)
     field(:starts_at, :naive_datetime)
     field(:ends_at, :naive_datetime)
+    field(:rendered, :map)
 
     timestamps()
   end
 
   def change(struct, params \\ %{}) do
     struct
-    |> cast(validate_params(struct, params), [:data, :starts_at, :ends_at])
+    |> cast(validate_params(struct, params), [:data, :starts_at, :ends_at, :rendered])
     |> validate_required([:data])
   end
 
@@ -42,6 +43,21 @@ defmodule Pleroma.Announcement do
 
     params
     |> Map.merge(%{data: merged_data})
+    |> add_rendered_properties()
+  end
+
+  def add_rendered_properties(params) do
+    {content_html, _, _} =
+      Pleroma.Web.CommonAPI.Utils.format_input(params.data["content"], "text/plain",
+        mentions_format: :full
+      )
+
+    rendered = %{
+      "content" => content_html
+    }
+
+    params
+    |> Map.put(:rendered, rendered)
   end
 
   def add(params) do
@@ -100,9 +116,18 @@ defmodule Pleroma.Announcement do
           %{}
       end
 
+    admin_extra_params =
+      case Keyword.fetch(opts, :admin) do
+        {:ok, true} ->
+          %{pleroma: %{raw_content: announcement.data["content"]}}
+
+        _ ->
+          %{}
+      end
+
     base = %{
       id: announcement.id,
-      content: announcement.data["content"],
+      content: announcement.rendered["content"],
       starts_at: announcement.starts_at,
       ends_at: announcement.ends_at,
       all_day: announcement.data["all_day"],
@@ -117,6 +142,7 @@ defmodule Pleroma.Announcement do
 
     base
     |> Map.merge(extra_params)
+    |> Map.merge(admin_extra_params)
   end
 
   # "visible" means:

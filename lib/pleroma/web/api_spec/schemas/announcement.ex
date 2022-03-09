@@ -33,7 +33,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Announcement do
       statuses: %Schema{type: :array},
       tags: %Schema{type: :array},
       emojis: %Schema{type: :array},
-      reactions: %Schema{type: :array}
+      reactions: %Schema{type: :array},
+      pleroma: %Schema{
+        type: :object,
+        properties: %{
+          raw_content: %Schema{type: :string}
+        }
+      }
     }
   })
 end

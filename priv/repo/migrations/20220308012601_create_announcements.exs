@@ -7,6 +7,7 @@ defmodule Pleroma.Repo.Migrations.CreateAnnouncements do
       add(:data, :map)
       add(:starts_at, :naive_datetime)
       add(:ends_at, :naive_datetime)
+      add(:rendered, :map)
 
       timestamps()
     end

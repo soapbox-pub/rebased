@@ -10,6 +10,6 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementView do
   end
 
   def render("show.json", %{announcement: announcement}) do
-    Pleroma.Announcement.render_json(announcement)
+    Pleroma.Announcement.render_json(announcement, admin: true)
   end
 end

@@ -68,4 +68,31 @@ defmodule Pleroma.AnnouncementTest do
       assert [] = Announcement.list_all_visible_when(time)
     end
   end
+
+  describe "announcements formatting" do
+    test "it formats links" do
+      raw = "something on https://pleroma.social ."
+      announcement = insert(:announcement, %{data: %{"content" => raw}})
+
+      assert announcement.rendered["content"] =~ ~r(<a.+?https://pleroma.social)
+      assert announcement.data["content"] == raw
+    end
+
+    test "it formats mentions" do
+      user = insert(:user)
+      raw = "something on @#{user.nickname} ."
+      announcement = insert(:announcement, %{data: %{"content" => raw}})
+
+      assert announcement.rendered["content"] =~ ~r(<a.+?#{user.nickname})
+      assert announcement.data["content"] == raw
+    end
+
+    test "it formats tags" do
+      raw = "something on #mew ."
+      announcement = insert(:announcement, %{data: %{"content" => raw}})
+
+      assert announcement.rendered["content"] =~ ~r(<a.+?#mew)
+      assert announcement.data["content"] == raw
+    end
+  end
 end
