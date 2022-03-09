@@ -24,18 +24,20 @@ defmodule Pleroma.Announcement do
 
   def change(struct, params \\ %{}) do
     struct
-    |> cast(validate_params(params), [:data, :starts_at, :ends_at])
+    |> cast(validate_params(struct, params), [:data, :starts_at, :ends_at])
     |> validate_required([:data])
   end
 
-  defp validate_params(params) do
-    base_struct = %{
-      "content" => "",
-      "all_day" => false
-    }
+  defp validate_params(struct, params) do
+    base_data =
+      %{
+        "content" => "",
+        "all_day" => false
+      }
+      |> Map.merge((struct && struct.data) || %{})
 
     merged_data =
-      Map.merge(base_struct, params.data)
+      Map.merge(base_data, params.data)
       |> Map.take(["content", "all_day"])
 
     params
@@ -46,6 +48,12 @@ defmodule Pleroma.Announcement do
     changeset = change(%__MODULE__{}, params)
 
     Repo.insert(changeset)
+  end
+
+  def update(announcement, params) do
+    changeset = change(announcement, params)
+
+    Repo.update(changeset)
   end
 
   def list_all do

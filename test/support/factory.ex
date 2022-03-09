@@ -628,7 +628,11 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def announcement_factory(params \\ %{}, data \\ %{}) do
+  def announcement_factory(params \\ %{}) do
+    data = Map.get(params, :data, %{})
+
+    {_, params} = Map.pop(params, :data)
+
     %Pleroma.Announcement{
       data: Map.merge(%{"content" => "test announcement", "all_day" => false}, data)
     }

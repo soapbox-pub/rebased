@@ -89,17 +89,54 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
     }
   end
 
+  def change_operation do
+    %Operation{
+      tags: ["Announcement managment"],
+      summary: "Change one announcement",
+      operationId: "AdminAPI.AnnouncementController.change",
+      security: [%{"oAuth" => ["admin:write"]}],
+      parameters: [
+        Operation.parameter(
+          :id,
+          :path,
+          :string,
+          "announcement id"
+        )
+        | admin_api_params()
+      ],
+      requestBody: request_body("Parameters", change_request(), required: true),
+      responses: %{
+        200 => Operation.response("Response", "application/json", Announcement),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp create_or_change_props do
+    %{
+      content: %Schema{type: :string},
+      starts_at: %Schema{type: :string, format: "date-time", nullable: true},
+      ends_at: %Schema{type: :string, format: "date-time", nullable: true},
+      all_day: %Schema{type: :boolean}
+    }
+  end
+
   def create_request do
     %Schema{
       title: "AnnouncementCreateRequest",
       type: :object,
       required: [:content],
-      properties: %{
-        content: %Schema{type: :string},
-        starts_at: %Schema{type: :string, format: "date-time"},
-        ends_at: %Schema{type: :string, format: "date-time"},
-        all_day: %Schema{type: :boolean}
-      }
+      properties: create_or_change_props()
+    }
+  end
+
+  def change_request do
+    %Schema{
+      title: "AnnouncementChangeRequest",
+      type: :object,
+      properties: create_or_change_props()
     }
   end
 

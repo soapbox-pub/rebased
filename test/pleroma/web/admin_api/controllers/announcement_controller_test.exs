@@ -69,10 +69,88 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
 
       _response =
         conn
-        |> get("/api/v1/pleroma/admin/announcements/#{id}xxx")
+        |> delete("/api/v1/pleroma/admin/announcements/#{id}xxx")
         |> json_response_and_validate_schema(:not_found)
 
       assert %{id: ^id} = Pleroma.Announcement.get_by_id(id)
+    end
+  end
+
+  describe "PATCH /api/v1/pleroma/admin/announcements/:id" do
+    test "it returns not found for non-existent id", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      _response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/v1/pleroma/admin/announcements/#{id}xxx", %{})
+        |> json_response_and_validate_schema(:not_found)
+
+      assert %{id: ^id} = Pleroma.Announcement.get_by_id(id)
+    end
+
+    test "it updates a field", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      starts_at = NaiveDateTime.add(now, -10, :second)
+
+      _response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/v1/pleroma/admin/announcements/#{id}", %{
+          starts_at: NaiveDateTime.to_iso8601(starts_at)
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      new = Pleroma.Announcement.get_by_id(id)
+
+      assert NaiveDateTime.compare(new.starts_at, starts_at) == :eq
+    end
+
+    test "it updates a data field", %{conn: conn} do
+      %{id: id} = announcement = insert(:announcement, data: %{"all_day" => true})
+
+      assert announcement.data["all_day"] == true
+
+      new_content = "new content"
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/v1/pleroma/admin/announcements/#{id}", %{
+          content: new_content
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert response["content"] == new_content
+      assert response["all_day"] == true
+
+      new = Pleroma.Announcement.get_by_id(id)
+
+      assert new.data["content"] == new_content
+      assert new.data["all_day"] == true
+    end
+
+    test "it nullifies a nullable field", %{conn: conn} do
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      starts_at = NaiveDateTime.add(now, -10, :second)
+
+      %{id: id} = insert(:announcement, starts_at: starts_at)
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/v1/pleroma/admin/announcements/#{id}", %{
+          starts_at: nil
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert response["starts_at"] == nil
+
+      new = Pleroma.Announcement.get_by_id(id)
+
+      assert new.starts_at == nil
     end
   end
 

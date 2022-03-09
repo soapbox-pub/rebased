@@ -233,6 +233,7 @@ defmodule Pleroma.Web.Router do
     get("/announcements", AnnouncementController, :index)
     post("/announcements", AnnouncementController, :create)
     get("/announcements/:id", AnnouncementController, :show)
+    patch("/announcements/:id", AnnouncementController, :change)
     delete("/announcements/:id", AnnouncementController, :delete)
   end
 
