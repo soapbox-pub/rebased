@@ -61,6 +61,13 @@ defmodule Pleroma.Announcement do
     |> Repo.all()
   end
 
+  def list_paginated(%{limit: limited_number, offset: offset_number}) do
+    __MODULE__
+    |> limit(^limited_number)
+    |> offset(^offset_number)
+    |> Repo.all()
+  end
+
   def get_by_id(id) do
     Repo.get_by(__MODULE__, id: id)
   end

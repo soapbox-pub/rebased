@@ -30,6 +30,54 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
 
       assert [%{"id" => ^id}] = response
     end
+
+    test "it paginates announcements", %{conn: conn} do
+      _announcements = Enum.map(0..20, fn _ -> insert(:announcement) end)
+
+      response =
+        conn
+        |> get("/api/v1/pleroma/admin/announcements")
+        |> json_response_and_validate_schema(:ok)
+
+      assert length(response) == 20
+    end
+
+    test "it paginates announcements with custom params", %{conn: conn} do
+      announcements = Enum.map(0..20, fn _ -> insert(:announcement) end)
+
+      response =
+        conn
+        |> get("/api/v1/pleroma/admin/announcements", limit: 5, offset: 7)
+        |> json_response_and_validate_schema(:ok)
+
+      assert length(response) == 5
+      assert Enum.at(response, 0)["id"] == Enum.at(announcements, 7).id
+    end
+
+    test "it returns empty list with out-of-bounds offset", %{conn: conn} do
+      _announcements = Enum.map(0..20, fn _ -> insert(:announcement) end)
+
+      response =
+        conn
+        |> get("/api/v1/pleroma/admin/announcements", offset: 21)
+        |> json_response_and_validate_schema(:ok)
+
+      assert [] = response
+    end
+
+    test "it rejects invalid pagination params", %{conn: conn} do
+      conn
+      |> get("/api/v1/pleroma/admin/announcements", limit: 0)
+      |> json_response_and_validate_schema(400)
+
+      conn
+      |> get("/api/v1/pleroma/admin/announcements", limit: -1)
+      |> json_response_and_validate_schema(400)
+
+      conn
+      |> get("/api/v1/pleroma/admin/announcements", offset: -1)
+      |> json_response_and_validate_schema(400)
+    end
   end
 
   describe "GET /api/v1/pleroma/admin/announcements/:id" do

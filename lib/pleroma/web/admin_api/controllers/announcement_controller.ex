@@ -16,8 +16,13 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.AnnouncementOperation
 
-  def index(conn, _params) do
-    announcements = Announcement.list_all()
+  defp default_limit, do: 20
+
+  def index(conn, params) do
+    limit = Map.get(params, :limit, default_limit())
+    offset = Map.get(params, :offset, 0)
+
+    announcements = Announcement.list_paginated(%{limit: limit, offset: offset})
 
     render(conn, "index.json", announcements: announcements)
   end

@@ -21,8 +21,24 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
       summary: "Retrieve a list of announcements",
       operationId: "AdminAPI.AnnouncementController.index",
       security: [%{"oAuth" => ["admin:read"]}],
+      parameters: [
+        Operation.parameter(
+          :limit,
+          :query,
+          %Schema{type: :integer, minimum: 1},
+          "the maximum number of announcements to return"
+        ),
+        Operation.parameter(
+          :offset,
+          :query,
+          %Schema{type: :integer, minimum: 0},
+          "the offset of the first announcement to return"
+        )
+        | admin_api_params()
+      ],
       responses: %{
         200 => Operation.response("Response", "application/json", list_of_announcements()),
+        400 => Operation.response("Forbidden", "application/json", ApiError),
         403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
