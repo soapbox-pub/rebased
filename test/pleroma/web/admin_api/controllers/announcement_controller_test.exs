@@ -80,15 +80,29 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
     test "it creates an announcement", %{conn: conn} do
       content = "test post announcement api"
 
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      starts_at = NaiveDateTime.add(now, -10, :second)
+      ends_at = NaiveDateTime.add(now, 10, :second)
+
       response =
         conn
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/pleroma/admin/announcements", %{
-          "content" => content
+          "content" => content,
+          "starts_at" => NaiveDateTime.to_iso8601(starts_at),
+          "ends_at" => NaiveDateTime.to_iso8601(ends_at),
+          "all_day" => true
         })
         |> json_response_and_validate_schema(:ok)
 
-      assert %{"content" => ^content} = response
+      assert %{"content" => ^content, "all_day" => true} = response
+
+      announcement = Pleroma.Announcement.get_by_id(response["id"])
+
+      assert not is_nil(announcement)
+
+      assert NaiveDateTime.compare(announcement.starts_at, starts_at) == :eq
+      assert NaiveDateTime.compare(announcement.ends_at, ends_at) == :eq
     end
   end
 end

@@ -16,10 +16,14 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Announcement do
       id: FlakeID,
       content: %Schema{type: :string},
       starts_at: %Schema{
-        oneOf: [%Schema{type: :null}, %Schema{type: :string, format: "date-time"}]
+        type: :string,
+        format: "date-time",
+        nullable: true
       },
       ends_at: %Schema{
-        oneOf: [%Schema{type: :null}, %Schema{type: :string, format: "date-time"}]
+        type: :string,
+        format: "date-time",
+        nullable: true
       },
       all_day: %Schema{type: :boolean},
       published_at: %Schema{type: :string, format: "date-time"},

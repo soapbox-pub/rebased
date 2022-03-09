@@ -24,8 +24,7 @@ defmodule Pleroma.Announcement do
 
   def change(struct, params \\ %{}) do
     struct
-    |> validate_params()
-    |> cast(params, [:data])
+    |> cast(validate_params(params), [:data, :starts_at, :ends_at])
     |> validate_required([:data])
   end
 
@@ -39,11 +38,8 @@ defmodule Pleroma.Announcement do
       Map.merge(base_struct, params.data)
       |> Map.take(["content", "all_day"])
 
-    %{
-      data: merged_data,
-      starts_at: Map.get(params, "starts_at"),
-      ends_at: Map.get(params, "ends_at")
-    }
+    params
+    |> Map.merge(%{data: merged_data})
   end
 
   def add(params) do
@@ -92,9 +88,9 @@ defmodule Pleroma.Announcement do
     base = %{
       id: announcement.id,
       content: announcement.data["content"],
-      starts_at: :null,
-      ends_at: :null,
-      all_day: false,
+      starts_at: announcement.starts_at,
+      ends_at: announcement.ends_at,
+      all_day: announcement.data["all_day"],
       published_at: announcement.inserted_at,
       updated_at: announcement.updated_at,
       mentions: [],

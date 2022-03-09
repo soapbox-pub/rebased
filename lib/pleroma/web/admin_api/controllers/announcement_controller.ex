@@ -32,12 +32,15 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementController do
     end
   end
 
-  def create(%{body_params: %{content: content}} = conn, _params) do
-    add_params = %{
-      data: %{
-        "content" => content
-      }
-    }
+  def create(%{body_params: params} = conn, _params) do
+    data =
+      %{}
+      |> Pleroma.Maps.put_if_present("content", params, &Map.fetch(&1, :content))
+      |> Pleroma.Maps.put_if_present("all_day", params, &Map.fetch(&1, :all_day))
+
+    add_params =
+      params
+      |> Map.merge(%{data: data})
 
     with {:ok, announcement} <- Announcement.add(add_params) do
       render(conn, "show.json", announcement: announcement)

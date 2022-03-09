@@ -95,7 +95,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.AnnouncementOperation do
       type: :object,
       required: [:content],
       properties: %{
-        content: %Schema{type: :string}
+        content: %Schema{type: :string},
+        starts_at: %Schema{type: :string, format: "date-time"},
+        ends_at: %Schema{type: :string, format: "date-time"},
+        all_day: %Schema{type: :boolean}
       }
     }
   end
