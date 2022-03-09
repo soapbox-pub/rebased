@@ -25,27 +25,6 @@ defmodule Pleroma.Web.ApiSpec.AnnouncementOperation do
     }
   end
 
-  def show_operation do
-    %Operation{
-      tags: ["Announcement"],
-      summary: "Display one announcement",
-      operationId: "MastodonAPI.AnnouncementController.show",
-      parameters: [
-        Operation.parameter(
-          :id,
-          :path,
-          :string,
-          "announcement id"
-        )
-      ],
-      responses: %{
-        200 => Operation.response("Response", "application/json", Announcement),
-        403 => Operation.response("Forbidden", "application/json", ApiError),
-        404 => Operation.response("Not Found", "application/json", ApiError)
-      }
-    }
-  end
-
   def mark_read_operation do
     %Operation{
       tags: ["Announcement"],

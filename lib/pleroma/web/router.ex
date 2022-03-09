@@ -628,7 +628,6 @@ defmodule Pleroma.Web.Router do
     get("/directory", DirectoryController, :index)
 
     get("/announcements", AnnouncementController, :index)
-    get("/announcements/:id", AnnouncementController, :show)
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do

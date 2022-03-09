@@ -59,22 +59,4 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementController do
         {:error, :not_found}
     end
   end
-
-  @doc "GET /api/v1/announcements/:id"
-  def show(%{assigns: %{user: user}} = conn, %{id: id} = _params) do
-    render_announcement_by_id(conn, id, user)
-  end
-
-  def show(conn, %{id: id} = _params) do
-    render_announcement_by_id(conn, id)
-  end
-
-  def render_announcement_by_id(conn, id, user \\ nil) do
-    with announcement when not is_nil(announcement) <- Announcement.get_by_id(id) do
-      render(conn, "show.json", announcement: announcement, user: user)
-    else
-      _ ->
-        {:error, :not_found}
-    end
-  end
 end
