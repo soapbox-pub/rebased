@@ -21,7 +21,8 @@ defmodule Pleroma.Constants do
       "pleroma_internal",
       "generator",
       "assigned_account",
-      "rules"
+      "rules",
+      "content_type"
     ]
   )
 
