@@ -291,7 +291,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         thread_muted: false,
         emoji_reactions: [],
         parent_visible: false,
-        pinned_at: nil
+        pinned_at: nil,
+        content_type: nil
       }
     }
 
