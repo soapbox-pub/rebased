@@ -1549,7 +1549,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       accepts_chat_messages: accepts_chat_messages,
       pinned_objects: pinned_objects,
       birthday: birthday,
-      show_birthday: show_birthday
+      show_birthday: show_birthday,
+      location: data["vcard:Address"] || ""
     }
 
     # nickname can be nil because of virtual actors

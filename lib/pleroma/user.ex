@@ -157,6 +157,7 @@ defmodule Pleroma.User do
     field(:last_status_at, :naive_datetime)
     field(:birthday, :date)
     field(:show_birthday, :boolean, default: false)
+    field(:location, :string)
 
     embeds_one(
       :notification_settings,
@@ -475,7 +476,8 @@ defmodule Pleroma.User do
         :accepts_chat_messages,
         :pinned_objects,
         :birthday,
-        :show_birthday
+        :show_birthday,
+        :location
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -539,7 +541,8 @@ defmodule Pleroma.User do
         :disclose_client,
         :accepts_email_list,
         :birthday,
-        :show_birthday
+        :show_birthday,
+        :location
       ]
     )
     |> validate_min_age()

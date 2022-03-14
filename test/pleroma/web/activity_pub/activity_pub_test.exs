@@ -409,6 +409,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.birthday == ~D[2001-02-12]
     end
+
+    test "fetches user location information from misskey" do
+      user_id = "https://misskey.io/@mkljczk"
+
+      Tesla.Mock.mock(fn
+        %{
+          method: :get,
+          url: ^user_id
+        } ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/birthdays/misskey-user.json"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+
+      assert user.location == "Poland"
+    end
   end
 
   test "it fetches the appropriate tag-restricted posts" do
