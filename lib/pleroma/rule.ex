@@ -27,6 +27,12 @@ defmodule Pleroma.Rule do
   def query do
     Rule
     |> order_by(asc: :priority)
+    |> order_by(asc: :id)
+  end
+
+  def get(ids) when is_list(ids) do
+    from(r in __MODULE__, where: r.id in ^ids)
+    |> Repo.all()
   end
 
   def get(id), do: Repo.get(__MODULE__, id)

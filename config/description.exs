@@ -825,6 +825,14 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :user_location_length,
+        type: :integer,
+        description: "A user location maximum length. Default: 50.",
+        suggestions: [
+          50
+        ]
+      },
+      %{
         key: :skip_thread_containment,
         type: :boolean,
         description: "Skip filtering out broken threads. Default: enabled."

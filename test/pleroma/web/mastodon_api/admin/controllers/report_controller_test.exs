@@ -115,4 +115,38 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportControllerTest do
                |> json_response_and_validate_schema(200)
     end
   end
+
+  describe "POST /api/v1/admin/reports/:id/assign_to_self" do
+    test "assign a report to self", %{conn: conn, admin: %{id: admin_id}} do
+      [reporter, target_user] = insert_pair(:user)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id
+        })
+
+      assert %{"id" => ^report_id, "assigned_account" => %{"id" => ^admin_id}} =
+               conn
+               |> post("/api/v1/admin/reports/#{report_id}/assign_to_self")
+               |> json_response_and_validate_schema(200)
+    end
+  end
+
+  describe "POST /api/v1/admin/reports/:id/unassign" do
+    test "unassign a report", %{conn: conn, admin: %{id: admin_id}} do
+      [reporter, target_user] = insert_pair(:user)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id
+        })
+
+      CommonAPI.assign_report_to_account(report_id, admin_id)
+
+      assert %{"id" => ^report_id, "assigned_account" => nil} =
+               conn
+               |> post("/api/v1/admin/reports/#{report_id}/unassign")
+               |> json_response_and_validate_schema(200)
+    end
+  end
 end

@@ -917,6 +917,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_state(query, _), do: query
 
+  defp restrict_assigned_account(query, %{assigned_account: assigned_account}) do
+    from(activity in query,
+      where: fragment("?->>'assigned_account' = ?", activity.data, ^assigned_account)
+    )
+  end
+
+  defp restrict_assigned_account(query, _), do: query
+
   defp restrict_favorited_by(query, %{favorited_by: ap_id}) do
     from(
       [_activity, object] in query,
@@ -1343,6 +1351,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_actor(opts)
       |> restrict_type(opts)
       |> restrict_state(opts)
+      |> restrict_assigned_account(opts)
       |> restrict_favorited_by(opts)
       |> restrict_blocked(restrict_blocked_opts)
       |> restrict_blockers_visibility(opts)
@@ -1541,7 +1550,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       accepts_chat_messages: accepts_chat_messages,
       pinned_objects: pinned_objects,
       birthday: birthday,
-      show_birthday: show_birthday
+      show_birthday: show_birthday,
+      location: data["vcard:Address"] || ""
     }
 
     # nickname can be nil because of virtual actors

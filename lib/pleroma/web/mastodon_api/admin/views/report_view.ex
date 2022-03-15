@@ -6,9 +6,11 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
   use Pleroma.Web, :view
 
   alias Pleroma.HTML
+  alias Pleroma.Rule
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.Admin.AccountView
+  alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{reports: reports}) do
@@ -21,6 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
         report: report,
         user: account,
         account: target_account,
+        assigned_account: assigned_account,
         statuses: statuses
       }) do
     created_at = Utils.to_masto_date(report.data["published"])
@@ -28,6 +31,13 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
     content =
       unless is_nil(report.data["content"]) do
         HTML.filter_tags(report.data["content"])
+      else
+        nil
+      end
+
+    assigned_account =
+      if assigned_account do
+        AccountView.render("show.json", %{user: assigned_account})
       else
         nil
       end
@@ -41,14 +51,24 @@ defmodule Pleroma.Web.MastodonAPI.Admin.ReportView do
       updated_at: created_at,
       account: AccountView.render("show.json", %{user: account}),
       target_account: AccountView.render("show.json", %{user: target_account}),
-      assigned_account: nil,
+      assigned_account: assigned_account,
       action_taken_by_account: nil,
       statuses:
         StatusView.render("index.json", %{
           activities: statuses,
           as: :activity
         }),
-      rules: []
+      rules: rules(Map.get(report.data, "rules", nil))
     }
+  end
+
+  defp rules(nil) do
+    []
+  end
+
+  defp rules(rule_ids) do
+    rule_ids
+    |> Rule.get()
+    |> render_many(InstanceView, "rule.json", as: :rule)
   end
 end
