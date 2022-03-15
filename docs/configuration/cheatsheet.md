@@ -53,6 +53,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
+* `user_name_length`: A user location maximum length (default: `50`).
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`).

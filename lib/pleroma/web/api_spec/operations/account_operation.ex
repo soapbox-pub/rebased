@@ -747,6 +747,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           nullable: true,
           description: "User's birthday will be visible"
+        },
+        location: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User location"
         }
       },
       example: %{
