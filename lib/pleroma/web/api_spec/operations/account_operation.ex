@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.List
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
@@ -481,6 +482,47 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Not implemented",
       responses: %{
         200 => empty_array_response()
+      }
+    }
+  end
+
+  def familiar_followers_operation do
+    %Operation{
+      tags: ["Retrieve account information"],
+      summary: "Followers you know",
+      operationId: "AccountController.relationships",
+      description: "Returns followers of given account you know.",
+      security: [%{"oAuth" => ["read:follows"]}],
+      parameters: [
+        Operation.parameter(
+          :id,
+          :query,
+          %Schema{
+            oneOf: [%Schema{type: :array, items: %Schema{type: :string}}, %Schema{type: :string}]
+          },
+          "Account IDs",
+          example: "123"
+        )
+      ],
+      responses: %{
+        200 =>
+          Operation.response("Accounts", "application/json", %Schema{
+            title: "ArrayOfAccounts",
+            type: :array,
+            items: %Schema{
+              title: "Account",
+              type: :object,
+              properties: %{
+                id: FlakeID,
+                accounts: %Schema{
+                  title: "ArrayOfAccounts",
+                  type: :array,
+                  items: Account,
+                  example: [Account.schema().example]
+                }
+              }
+            }
+          })
       }
     }
   end

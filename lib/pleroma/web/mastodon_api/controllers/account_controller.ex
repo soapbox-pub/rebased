@@ -72,7 +72,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     %{scopes: ["follow", "write:blocks"]} when action in [:block, :unblock]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:follows"]} when action in [:relationships, :familiar_followers]
+  )
 
   plug(
     OAuthScopesPlug,
@@ -542,6 +545,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       as: :user,
       embed_relationships: embed_relationships?(params)
     )
+  end
+
+  @doc "GET /api/v1/accounts/familiar_followers"
+  def familiar_followers(%{assigns: %{user: user}} = conn, %{id: id}) do
+    users =
+      User.get_all_by_ids(List.wrap(id))
+      |> Enum.map(&%{id: &1.id, accounts: get_familiar_followers(&1, user)})
+
+    conn
+    |> render("familiar_followers.json",
+      for: user,
+      users: users,
+      as: :user
+    )
+  end
+
+  defp get_familiar_followers(%{id: id} = user, %{id: id}) do
+    User.get_familiar_followers(user, user)
+  end
+
+  defp get_familiar_followers(%{hide_followers: true}, _current_user) do
+    []
+  end
+
+  defp get_familiar_followers(user, current_user) do
+    User.get_familiar_followers(user, current_user)
   end
 
   @doc "GET /api/v1/identity_proofs"

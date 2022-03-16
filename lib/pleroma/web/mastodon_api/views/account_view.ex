@@ -193,6 +193,25 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     render_many(targets, AccountView, "relationship.json", render_opts)
   end
 
+  def render("familiar_followers.json", %{users: users} = opts) do
+    opts =
+      opts
+      |> Map.merge(%{as: :user})
+      |> Map.delete(:users)
+
+    users
+    |> render_many(AccountView, "familiar_followers.json", opts)
+  end
+
+  def render("familiar_followers.json", %{user: %{id: id, accounts: accounts}} = opts) do
+    accounts =
+      accounts
+      |> render_many(AccountView, "show.json", opts)
+      |> Enum.filter(&Enum.any?/1)
+
+    %{id: id, accounts: accounts}
+  end
+
   defp do_render("show.json", %{user: user} = opts) do
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
