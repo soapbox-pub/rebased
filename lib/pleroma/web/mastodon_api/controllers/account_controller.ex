@@ -481,9 +481,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     {:error, "Can not unfollow yourself"}
   end
 
-  def remove_from_followers(%{assigns: %{user: follower, account: followed}} = conn, _params) do
-    with {:ok, follower} <- CommonAPI.unfollow(followed, follower) do
+  def remove_from_followers(%{assigns: %{user: followed, account: follower}} = conn, _params) do
+    with {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       render(conn, "relationship.json", user: follower, target: followed)
+    else
+      nil ->
+        render_error(conn, :not_found, "Record not found")
     end
   end
 
