@@ -370,6 +370,22 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def remove_from_followers_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Remove from followers",
+      operationId: "AccountController.remove_from_followers",
+      security: [%{"oAuth" => ["follow", "write:follows"]}],
+      description: "Remove the given account from followers",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def note_operation do
     %Operation{
       tags: ["Account actions"],
