@@ -1,1 +1,0 @@
-{"version":3,"sources":["webpack:///./app/soapbox/features/emoji/emoji_picker.js"],"names":[],"mappings":"0FAAA","file":"js/emoji_picker-7e7b4d7ca5d73328f3ef.chunk.js","sourcesContent":["import Picker from 'emoji-mart/dist-es/components/picker/picker';\nimport Emoji from 'emoji-mart/dist-es/components/emoji/emoji';\n\nexport {\n  Picker,\n  Emoji,\n};\n"],"sourceRoot":""}
