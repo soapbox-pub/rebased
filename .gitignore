@@ -36,8 +36,8 @@ erl_crash.dump
 # Database setup file, some may forget to delete it
 /config/setup_db*.psql
 
-# Whitelist Soapbox FE build
-!/instance/static/frontends/soapbox-fe/vendor/**
+# Whitelist Landing FE
+!/instance/static/frontends/landing-fe/vendor/**
 
 .DS_Store
 .env

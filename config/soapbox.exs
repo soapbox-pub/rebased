@@ -6,8 +6,8 @@ import Config
 # Twitter-like block behavior
 config :pleroma, :activitypub, blockers_visible: false
 
-# Set Soapbox FE as the default frontend
-config :pleroma, :frontends, primary: %{"name" => "soapbox-fe", "ref" => "vendor"}
+# Set the default frontend to an instructions page
+config :pleroma, :frontends, primary: %{"name" => "landing-fe", "ref" => "vendor"}
 
 # Sane default upload filters
 config :pleroma, Pleroma.Upload,
@@ -44,3 +44,9 @@ config :pleroma, :mrf_hellthread,
 
 # Sane default media attachment limit
 config :pleroma, :instance, max_media_attachments: 20
+
+# Use Soapbox branding
+config :pleroma, :instance,
+  name: "Soapbox",
+  description: "Social media owned by you",
+  instance_thumbnail: "/instance/thumbnail.png"
