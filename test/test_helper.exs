@@ -2,6 +2,10 @@
 # Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
+# Enable warnings_as_errors in CI
+# https://github.com/elixir-lang/elixir/issues/3223#issuecomment-757610123
+Code.put_compiler_option(:warnings_as_errors, System.get_env("CI") == "true")
+
 os_exclude = if :os.type() == {:unix, :darwin}, do: [skip_on_mac: true], else: []
 ExUnit.start(exclude: [:federated, :erratic] ++ os_exclude)
 
