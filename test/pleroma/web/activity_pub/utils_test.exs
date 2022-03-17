@@ -564,10 +564,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "assigns report to an account" do
       reporter = insert(:user)
       target_account = insert(:user)
-      %{id: assigned_id} = assigned = insert(:user)
-      context = Utils.generate_context_id()
-
-      target_ap_id = target_account.ap_id
+      %{id: assigned_id} = insert(:user)
 
       {:ok, report} = CommonAPI.report(reporter, %{account_id: target_account.id})
 
