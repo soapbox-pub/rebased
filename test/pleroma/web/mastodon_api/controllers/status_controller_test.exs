@@ -1015,6 +1015,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       refute Activity.get_by_id(activity1.id)
       refute Activity.get_by_id(activity2.id)
     end
+
+    test "deleting a status with attachments returns the original IDs" do
+      %{user: user, conn: conn} = oauth_access(["write:statuses"])
+
+      file = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+      {:ok, activity} = CommonAPI.post(user, %{status: "", media_ids: [upload.id]})
+
+      expected = to_string(upload.id)
+
+      assert %{"media_attachments" => [%{"id" => ^expected}]} =
+               conn
+               |> assign(:user, user)
+               |> delete("/api/v1/statuses/#{activity.id}")
+               |> json_response_and_validate_schema(200)
+    end
   end
 
   describe "reblogging" do

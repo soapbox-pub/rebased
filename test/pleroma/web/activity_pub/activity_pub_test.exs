@@ -1365,6 +1365,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       %{test_file: test_file}
     end
 
+    test "produces an ID", %{test_file: file} do
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["id"] == object.id
+    end
+
     test "sets a description if given", %{test_file: file} do
       {:ok, %Object{} = object} = ActivityPub.upload(file, description: "a cool file")
       assert object.data["name"] == "a cool file"
