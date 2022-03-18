@@ -23,6 +23,30 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementControllerTest do
       refute Map.has_key?(Enum.at(response, 0), "read")
     end
 
+    test "it returns time with utc timezone" do
+      start_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-999_999, :second)
+        |> NaiveDateTime.truncate(:second)
+
+      end_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(999_999, :second)
+        |> NaiveDateTime.truncate(:second)
+
+      %{id: id} = insert(:announcement, %{starts_at: start_time, ends_at: end_time})
+
+      response =
+        build_conn()
+        |> get("/api/v1/announcements")
+        |> json_response_and_validate_schema(:ok)
+
+      assert [%{"id" => ^id}] = [announcement] = response
+
+      assert String.ends_with?(announcement["starts_at"], "Z")
+      assert String.ends_with?(announcement["ends_at"], "Z")
+    end
+
     test "it does not list announcements starting after current time" do
       time = NaiveDateTime.utc_now() |> NaiveDateTime.add(999_999, :second)
       insert(:announcement, starts_at: time)

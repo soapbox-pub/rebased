@@ -156,6 +156,25 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
       assert NaiveDateTime.compare(new.starts_at, starts_at) == :eq
     end
 
+    test "it updates with time with utc timezone", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      now = DateTime.now("Etc/UTC") |> elem(1) |> DateTime.truncate(:second)
+      starts_at = DateTime.add(now, -10, :second)
+
+      _response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/v1/pleroma/admin/announcements/#{id}", %{
+          starts_at: DateTime.to_iso8601(starts_at)
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      new = Pleroma.Announcement.get_by_id(id)
+
+      assert DateTime.compare(new.starts_at, starts_at) == :eq
+    end
+
     test "it updates a data field", %{conn: conn} do
       %{id: id} = announcement = insert(:announcement, data: %{"all_day" => true})
 
@@ -229,6 +248,34 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
 
       assert NaiveDateTime.compare(announcement.starts_at, starts_at) == :eq
       assert NaiveDateTime.compare(announcement.ends_at, ends_at) == :eq
+    end
+
+    test "creating with time with utc timezones", %{conn: conn} do
+      content = "test post announcement api"
+
+      now = DateTime.now("Etc/UTC") |> elem(1) |> DateTime.truncate(:second)
+      starts_at = DateTime.add(now, -10, :second)
+      ends_at = DateTime.add(now, 10, :second)
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/admin/announcements", %{
+          "content" => content,
+          "starts_at" => DateTime.to_iso8601(starts_at),
+          "ends_at" => DateTime.to_iso8601(ends_at),
+          "all_day" => true
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert %{"content" => ^content, "all_day" => true} = response
+
+      announcement = Pleroma.Announcement.get_by_id(response["id"])
+
+      assert not is_nil(announcement)
+
+      assert DateTime.compare(announcement.starts_at, starts_at) == :eq
+      assert DateTime.compare(announcement.ends_at, ends_at) == :eq
     end
   end
 end

@@ -16,11 +16,11 @@ defmodule Pleroma.Announcement do
 
   schema "announcements" do
     field(:data, :map)
-    field(:starts_at, :naive_datetime)
-    field(:ends_at, :naive_datetime)
+    field(:starts_at, :utc_datetime)
+    field(:ends_at, :utc_datetime)
     field(:rendered, :map)
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   def change(struct, params \\ %{}) do
@@ -155,6 +155,6 @@ defmodule Pleroma.Announcement do
   end
 
   def list_all_visible do
-    list_all_visible_when(NaiveDateTime.utc_now())
+    list_all_visible_when(DateTime.now("Etc/UTC") |> elem(1))
   end
 end
