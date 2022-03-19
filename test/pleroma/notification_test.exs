@@ -104,6 +104,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(status)
 
       assert notification.user_id == subscriber.id
+      assert notification.type == "status"
     end
 
     test "does not create a notification for subscribed users if status is a reply" do
