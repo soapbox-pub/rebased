@@ -157,6 +157,7 @@ defmodule Pleroma.User do
     field(:last_status_at, :naive_datetime)
     field(:birthday, :date)
     field(:show_birthday, :boolean, default: false)
+    field(:location, :string)
 
     embeds_one(
       :notification_settings,
@@ -425,6 +426,7 @@ defmodule Pleroma.User do
   def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    location_limit = Config.get([:instance, :user_location_length], 50)
 
     name =
       case params[:name] do
@@ -475,7 +477,8 @@ defmodule Pleroma.User do
         :accepts_chat_messages,
         :pinned_objects,
         :birthday,
-        :show_birthday
+        :show_birthday,
+        :location
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -485,6 +488,7 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
+    |> validate_length(:location, max: location_limit)
     |> validate_fields(true)
     |> validate_non_local()
   end
@@ -503,6 +507,7 @@ defmodule Pleroma.User do
   def update_changeset(struct, params \\ %{}) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    location_limit = Config.get([:instance, :user_location_length], 50)
 
     struct
     |> cast(
@@ -539,13 +544,15 @@ defmodule Pleroma.User do
         :disclose_client,
         :accepts_email_list,
         :birthday,
-        :show_birthday
+        :show_birthday,
+        :location
       ]
     )
     |> validate_min_age()
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:location, max: location_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_inclusion(:actor_type, ["Person", "Service"])
     |> put_fields()

@@ -260,6 +260,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       |> Map.put("emoji", emoji)
       |> Map.put("source", draft.status)
       |> Map.put("generator", draft.params[:generator])
+      |> Map.put("content_type", draft.params[:content_type])
 
     %__MODULE__{draft | object: object}
   end

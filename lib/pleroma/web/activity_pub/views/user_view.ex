@@ -122,7 +122,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities,
       "alsoKnownAs" => user.also_known_as,
-      "vcard:bday" => birthday
+      "vcard:bday" => birthday,
+      "vcard:Address" => user.location
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
