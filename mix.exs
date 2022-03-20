@@ -141,7 +141,7 @@ defmodule Pleroma.Mixfile do
       {:mogrify, "~> 0.7.4"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
-      {:sweet_xml, "~> 0.6.6"},
+      {:sweet_xml, "~> 0.7.2"},
       {:earmark, "1.4.15"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
