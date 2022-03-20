@@ -34,15 +34,22 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   test "refuses invalid requests" do
     capture_log(fn ->
       assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 404}} = start_socket()
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 404}} = start_socket("?stream=ncjdk")
+
+      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 404}} =
+               start_socket("?stream=ncjdk")
+
       Process.sleep(30)
     end)
   end
 
   test "requires authentication and a valid token for protected streams" do
     capture_log(fn ->
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} = start_socket("?stream=user")
+      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
+               start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+
+      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
+               start_socket("?stream=user")
+
       Process.sleep(30)
     end)
   end
@@ -102,7 +109,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} = start_socket("?stream=user")
+        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
+                 start_socket("?stream=user")
+
         Process.sleep(30)
       end)
     end
@@ -111,7 +120,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} = start_socket("?stream=user:notification")
+        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
+                 start_socket("?stream=user:notification")
+
         Process.sleep(30)
       end)
     end

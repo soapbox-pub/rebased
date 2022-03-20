@@ -188,8 +188,8 @@ defmodule Pleroma.Integration.WebsocketClient do
   defp stream_frame(state, frame) do
     with {:ok, websocket, data} <- Mint.WebSocket.encode(state.websocket, frame),
          state = put_in(state.websocket, websocket),
-        {:ok, conn} <- Mint.WebSocket.stream_request_body(state.conn, state.request_ref, data) do
-          {:ok, put_in(state.conn, conn)}
+         {:ok, conn} <- Mint.WebSocket.stream_request_body(state.conn, state.request_ref, data) do
+      {:ok, put_in(state.conn, conn)}
     else
       {:error, %Mint.WebSocket{} = websocket, reason} ->
         {:error, put_in(state.websocket, websocket), reason}
