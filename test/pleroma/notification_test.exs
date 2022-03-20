@@ -520,6 +520,25 @@ defmodule Pleroma.NotificationTest do
     end
   end
 
+  describe "destroy_multiple_from_types/2" do
+    test "clears all notifications of a certain type for a given user" do
+      report_activity = insert(:report_activity)
+      user1 = insert(:user, is_moderator: true, is_admin: true)
+      user2 = insert(:user, is_moderator: true, is_admin: true)
+      {:ok, _} = Notification.create_notifications(report_activity)
+
+      {:ok, _} =
+        CommonAPI.post(user2, %{
+          status: "hey @#{user1.nickname} !"
+        })
+
+      Notification.destroy_multiple_from_types(user1, ["pleroma:report"])
+
+      assert [%Pleroma.Notification{type: "mention"}] = Notification.for_user(user1)
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user2)
+    end
+  end
+
   describe "set_read_up_to()" do
     test "it sets all notifications as read up to a specified notification ID" do
       user = insert(:user)

@@ -5,6 +5,7 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -2209,6 +2210,26 @@ defmodule Pleroma.UserTest do
       assert {:ok, %User{bio: "test-bio"} = user} = User.update_and_set_cache(changeset)
       assert {:ok, user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
+    end
+
+    test "removes report notifs when user isn't superuser any more" do
+      report_activity = insert(:report_activity)
+      user = insert(:user, is_moderator: true, is_admin: true)
+      {:ok, _} = Notification.create_notifications(report_activity)
+
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
+
+      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
+      # is still superuser because still admin
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
+
+      {:ok, user} = user |> User.admin_api_update(%{is_moderator: true, is_admin: false})
+      # is still superuser because still moderator
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
+
+      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
+      # is not a superuser any more
+      assert [] = Notification.for_user(user)
     end
   end
 

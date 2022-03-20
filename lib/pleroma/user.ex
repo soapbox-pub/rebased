@@ -1127,10 +1127,24 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def update_and_set_cache(changeset) do
+  def update_and_set_cache(%{data: %Pleroma.User{} = user} = changeset) do
+    was_superuser_before_update = User.superuser?(user)
+
     with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
       set_cache(user)
     end
+    |> maybe_remove_report_notifications(was_superuser_before_update)
+  end
+
+  defp maybe_remove_report_notifications({:ok, %Pleroma.User{} = user} = result, true) do
+    if not User.superuser?(user),
+      do: user |> Notification.destroy_multiple_from_types(["pleroma:report"])
+
+    result
+  end
+
+  defp maybe_remove_report_notifications(result, _) do
+    result
   end
 
   def get_user_friends_ap_ids(user) do

@@ -341,6 +341,14 @@ defmodule Pleroma.Notification do
     |> Repo.delete_all()
   end
 
+  def destroy_multiple_from_types(%{id: user_id}, types) do
+    from(n in Notification,
+      where: n.user_id == ^user_id,
+      where: n.type in ^types
+    )
+    |> Repo.delete_all()
+  end
+
   def dismiss(%Pleroma.Activity{} = activity) do
     Notification
     |> where([n], n.activity_id == ^activity.id)
