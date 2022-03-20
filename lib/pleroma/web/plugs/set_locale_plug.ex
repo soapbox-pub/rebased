@@ -6,18 +6,56 @@
 defmodule Pleroma.Web.Plugs.SetLocalePlug do
   import Plug.Conn, only: [get_req_header: 2, assign: 3]
 
+  def frontend_language_cookie_name, do: "userLanguage"
+
   def init(_), do: nil
 
   def call(conn, _) do
-    locale = get_locale_from_header(conn) || Gettext.get_locale()
-    Gettext.put_locale(locale)
-    assign(conn, :locale, locale)
+    locales = get_locales_from_header(conn)
+    first_locale = Enum.at(locales, 0, Gettext.get_locale())
+
+    Pleroma.Web.Gettext.put_locales(locales)
+
+    conn
+    |> assign(:locale, first_locale)
+    |> assign(:locales, locales)
   end
 
-  defp get_locale_from_header(conn) do
+  defp get_locales_from_header(conn) do
     conn
-    |> extract_accept_language()
-    |> Enum.find(&supported_locale?/1)
+    |> extract_preferred_language()
+    |> normalize_language_codes()
+    |> all_supported()
+    |> Enum.uniq()
+  end
+
+  defp all_supported(locales) do
+    locales
+    |> Pleroma.Web.Gettext.ensure_fallbacks()
+    |> Enum.filter(&supported_locale?/1)
+  end
+
+  defp normalize_language_codes(codes) do
+    codes
+    |> Enum.map(fn code -> Pleroma.Web.Gettext.normalize_locale(code) end)
+  end
+
+  defp extract_preferred_language(conn) do
+    extract_frontend_language(conn) ++ extract_accept_language(conn)
+  end
+
+  defp extract_frontend_language(conn) do
+    %{req_cookies: cookies} =
+      conn
+      |> Plug.Conn.fetch_cookies()
+
+    case cookies[frontend_language_cookie_name()] do
+      nil ->
+        []
+
+      fe_lang ->
+        String.split(fe_lang, ",")
+    end
   end
 
   defp extract_accept_language(conn) do
@@ -29,7 +67,6 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
         |> Enum.sort(&(&1.quality > &2.quality))
         |> Enum.map(& &1.tag)
         |> Enum.reject(&is_nil/1)
-        |> ensure_language_fallbacks()
 
       _ ->
         []
@@ -37,9 +74,7 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
   end
 
   defp supported_locale?(locale) do
-    Pleroma.Web.Gettext
-    |> Gettext.known_locales()
-    |> Enum.member?(locale)
+    Pleroma.Web.Gettext.supports_locale?(locale)
   end
 
   defp parse_language_option(string) do
@@ -52,12 +87,5 @@ defmodule Pleroma.Web.Plugs.SetLocalePlug do
       end
 
     %{tag: captures["tag"], quality: quality}
-  end
-
-  defp ensure_language_fallbacks(tags) do
-    Enum.flat_map(tags, fn tag ->
-      [language | _] = String.split(tag, "-")
-      if Enum.member?(tags, language), do: [tag], else: [tag, language]
-    end)
   end
 end

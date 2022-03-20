@@ -156,6 +156,7 @@ defmodule Pleroma.User do
     field(:last_status_at, :naive_datetime)
     field(:birthday, :date)
     field(:show_birthday, :boolean, default: false)
+    field(:language, :string)
 
     embeds_one(
       :notification_settings,
@@ -746,7 +747,8 @@ defmodule Pleroma.User do
       :emoji,
       :accepts_chat_messages,
       :registration_reason,
-      :birthday
+      :birthday,
+      :language
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)

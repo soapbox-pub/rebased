@@ -1,0 +1,513 @@
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here as no
+## effect: edit them in PO (.po) files instead.
+msgid ""
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:9
+msgctxt "remote follow authorization button"
+msgid "Authorize"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:2
+msgctxt "remote follow error"
+msgid "Error fetching user"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow.html.eex:4
+msgctxt "remote follow header"
+msgid "Remote follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_mfa.html.eex:8
+msgctxt "placeholder text for auth code entry"
+msgid "Authentication code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:10
+msgctxt "placeholder text for password entry"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:8
+msgctxt "placeholder text for username entry"
+msgid "Username"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:13
+msgctxt "remote follow authorization button for login"
+msgid "Authorize"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_mfa.html.eex:12
+msgctxt "remote follow authorization button for mfa"
+msgid "Authorize"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/followed.html.eex:2
+msgctxt "remote follow error"
+msgid "Error following account"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_login.html.eex:4
+msgctxt "remote follow header, need login"
+msgid "Log in to follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/follow_mfa.html.eex:4
+msgctxt "remote follow mfa header"
+msgid "Two-factor authentication"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/remote_follow/followed.html.eex:4
+msgctxt "remote follow success"
+msgid "Account followed!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:7
+msgctxt "placeholder text for account id"
+msgid "Your account ID, e.g. lain@quitter.se"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:8
+msgctxt "remote follow authorization button for following with a remote account"
+msgid "Follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:2
+msgctxt "remote follow error"
+msgid "Error: %{error}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:4
+msgctxt "remote follow header"
+msgid "Remotely follow %{nickname}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset.html.eex:12
+msgctxt "password reset button"
+msgid "Reset"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_failed.html.eex:4
+msgctxt "password reset failed homepage link"
+msgid "Homepage"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_failed.html.eex:1
+msgctxt "password reset failed message"
+msgid "Password reset failed"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset.html.eex:8
+msgctxt "password reset form confirm password prompt"
+msgid "Confirmation"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset.html.eex:4
+msgctxt "password reset form password prompt"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/invalid_token.html.eex:1
+msgctxt "password reset invalid token message"
+msgid "Invalid Token"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_success.html.eex:2
+msgctxt "password reset successful homepage link"
+msgid "Homepage"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/twitter_api/password/reset_success.html.eex:1
+msgctxt "password reset successful message"
+msgid "Password changed!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/feed/feed/tag.atom.eex:15
+#: lib/pleroma/web/templates/feed/feed/tag.rss.eex:7
+msgctxt "tag feed description"
+msgid "These are public toots tagged with #%{tag}. You can interact with them if you have an account anywhere in the fediverse."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_token_exists.html.eex:1
+msgctxt "oauth authorization exists page title"
+msgid "Authorization exists"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:32
+msgctxt "oauth authorize approve button"
+msgid "Approve"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:30
+msgctxt "oauth authorize cancel button"
+msgid "Cancel"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:23
+msgctxt "oauth authorize message"
+msgid "Application <strong>%{client_name}</strong> is requesting access to your account."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_authorization_created.html.eex:1
+msgctxt "oauth authorized page title"
+msgid "Successfully authorized"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex:1
+msgctxt "oauth external provider page title"
+msgid "Sign in with external provider"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex:13
+msgctxt "oauth external provider sign in button"
+msgid "Sign in with %{strategy}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:54
+msgctxt "oauth login button"
+msgid "Log In"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:51
+msgctxt "oauth login password prompt"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:47
+msgctxt "oauth login username prompt"
+msgid "Username"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:39
+msgctxt "oauth register nickname prompt"
+msgid "Pleroma Handle"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:37
+msgctxt "oauth register nickname unchangeable warning"
+msgid "Choose carefully! You won't be able to change this later. You will be able to change your display name, though."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:18
+msgctxt "oauth register page email prompt"
+msgid "Email"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:10
+msgctxt "oauth register page fill form prompt"
+msgid "If you'd like to register a new account, please provide the details below."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:35
+msgctxt "oauth register page login button"
+msgid "Proceed as existing user"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:31
+msgctxt "oauth register page login password prompt"
+msgid "Password"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:24
+msgctxt "oauth register page login prompt"
+msgid "Alternatively, sign in to connect to existing account."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:27
+msgctxt "oauth register page login username prompt"
+msgid "Name or email"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:14
+msgctxt "oauth register page nickname prompt"
+msgid "Nickname"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:22
+msgctxt "oauth register page register button"
+msgid "Proceed as new user"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/register.html.eex:8
+msgctxt "oauth register page title"
+msgid "Registration Details"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/show.html.eex:36
+msgctxt "oauth register page title"
+msgid "This is the first time you visit! Please enter your Pleroma handle."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/_scopes.html.eex:2
+msgctxt "oauth scopes message"
+msgid "The following permissions will be granted"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_authorization_created.html.eex:2
+#: lib/pleroma/web/templates/o_auth/o_auth/oob_token_exists.html.eex:2
+msgctxt "oauth token code message"
+msgid "Token code is <br>%{token}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:12
+msgctxt "mfa auth code prompt"
+msgid "Authentication code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:8
+msgctxt "mfa auth page title"
+msgid "Two-factor authentication"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:23
+msgctxt "mfa auth page use recovery code link"
+msgid "Enter a two-factor recovery code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/totp.html.eex:20
+msgctxt "mfa auth verify code button"
+msgid "Verify"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:8
+msgctxt "mfa recover page title"
+msgid "Two-factor recovery"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:12
+msgctxt "mfa recover recovery code prompt"
+msgid "Recovery code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:23
+msgctxt "mfa recover use 2fa code link"
+msgid "Enter a two-factor code"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/o_auth/mfa/recovery.html.eex:20
+msgctxt "mfa recover verify recovery code button"
+msgid "Verify"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/static_fe/static_fe/profile.html.eex:8
+msgctxt "static fe profile page remote follow button"
+msgid "Remote follow"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:163
+msgctxt "digest email header line"
+msgid "Hey %{nickname}, here is what you've missed!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:544
+msgctxt "digest email receiver address"
+msgid "The email address you are subscribed as is <a href='mailto:%{@user.email}' style='color: %{color};text-decoration: none;'>%{email}</a>. "
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:538
+msgctxt "digest email sending reason"
+msgid "You have received this email because you have signed up to receive digest emails from <b>%{instance}</b> Pleroma instance."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:547
+msgctxt "digest email unsubscribe action"
+msgid "To unsubscribe, please go %{here}."
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:547
+msgctxt "digest email unsubscribe action link text"
+msgid "here"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/mailer/subscription/unsubscribe_failure.html.eex:1
+msgctxt "mailer unsubscribe failed message"
+msgid "UNSUBSCRIBE FAILURE"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/mailer/subscription/unsubscribe_success.html.eex:1
+msgctxt "mailer unsubscribe successful message"
+msgid "UNSUBSCRIBE SUCCESSFUL"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/web/templates/email/digest.html.eex:385
+msgctxt "new followers count header"
+msgid "%{count} New Follower"
+msgid_plural "%{count} New Followers"
+msgstr[0] ""
+msgstr[1] ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:356
+msgctxt "account archive email body - self-requested"
+msgid "<p>You requested a full backup of your Pleroma account. It's ready for download:</p>\n<p><a href=\"%{download_url}\">%{download_url}</a></p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:384
+msgctxt "account archive email subject"
+msgid "Your account archive is ready"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:188
+msgctxt "approval pending email body"
+msgid "<h3>Awaiting Approval</h3>\n<p>Your account at %{instance_name} is being reviewed by staff. You will receive another email once your account is approved.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:202
+msgctxt "approval pending email subject"
+msgid "Your account is awaiting approval"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:158
+msgctxt "confirmation email body"
+msgid "<h3>Thank you for registering on %{instance_name}</h3>\n<p>Email confirmation is required to activate the account.</p>\n<p>Please click the following link to <a href=\"%{confirmation_url}\">activate your account</a>.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:174
+msgctxt "confirmation email subject"
+msgid "%{instance_name} account confirmation"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:310
+msgctxt "digest email subject"
+msgid "Your digest from %{instance_name}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:81
+msgctxt "password reset email body"
+msgid "<h3>Reset your password at %{instance_name}</h3>\n<p>Someone has requested password change for your account at %{instance_name}.</p>\n<p>If it was you, visit the following link to proceed: <a href=\"%{password_reset_url}\">reset password</a>.</p>\n<p>If it was someone else, nothing to worry about: your data is secure and your password has not been changed.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:98
+msgctxt "password reset email subject"
+msgid "Password reset"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:215
+msgctxt "successful registration email body"
+msgid "<h3>Hello @%{nickname},</h3>\n<p>Your account at %{instance_name} has been registered successfully.</p>\n<p>No further action is required to activate your account.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:231
+msgctxt "successful registration email subject"
+msgid "Account registered on %{instance_name}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:119
+msgctxt "user invitation email body"
+msgid "<h3>You are invited to %{instance_name}</h3>\n<p>%{inviter_name} invites you to join %{instance_name}, an instance of Pleroma federated social networking platform.</p>\n<p>Click the following link to register: <a href=\"%{registration_url}\">accept invitation</a>.</p>\n"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:136
+msgctxt "user invitation email subject"
+msgid "Invitation to %{instance_name}"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:53
+msgctxt "welcome email html body"
+msgid "Welcome to %{instance_name}!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:41
+msgctxt "welcome email subject"
+msgid "Welcome to %{instance_name}!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:65
+msgctxt "welcome email text body"
+msgid "Welcome to %{instance_name}!"
+msgstr ""
+
+#, elixir-format
+#: lib/pleroma/emails/user_email.ex:368
+msgctxt "account archive email body - admin requested"
+msgid "<p>Admin @%{admin_nickname} requested a full backup of your Pleroma account. It's ready for download:</p>\n<p><a href=\"%{download_url}\">%{download_url}</a></p>\n"
+msgstr ""

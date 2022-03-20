@@ -5,34 +5,34 @@
   <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <% end %>
 
-<h2>Registration Details</h2>
+<h2><%= Gettext.dpgettext("static_pages", "oauth register page title", "Registration Details") %></h2>
 
-<p>If you'd like to register a new account, please provide the details below.</p>
+<p><%= Gettext.dpgettext("static_pages", "oauth register page fill form prompt", "If you'd like to register a new account, please provide the details below.") %></p>
 <%= form_for @conn, Routes.o_auth_path(@conn, :register), [as: "authorization"], fn f -> %>
 
 <div class="input">
-  <%= label f, :nickname, "Nickname" %>
+  <%= label f, :nickname, Gettext.dpgettext("static_pages", "oauth register page nickname prompt", "Nickname") %>
   <%= text_input f, :nickname, value: @nickname, autocomplete: "username" %>
 </div>
 <div class="input">
-  <%= label f, :email, "Email" %>
+  <%= label f, :email, Gettext.dpgettext("static_pages", "oauth register page email prompt", "Email") %>
   <%= text_input f, :email, value: @email, autocomplete: "email" %>
 </div>
 
-<%= submit "Proceed as new user", name: "op", value: "register" %>
+<%= submit Gettext.dpgettext("static_pages", "oauth register page register button", "Proceed as new user"), name: "op", value: "register" %>
 
-<p>Alternatively, sign in to connect to existing account.</p>
+<p><%= Gettext.dpgettext("static_pages", "oauth register page login prompt", "Alternatively, sign in to connect to existing account.") %></p>
 
 <div class="input">
-  <%= label f, :name, "Name or email" %>
+  <%= label f, :name, Gettext.dpgettext("static_pages", "oauth register page login username prompt", "Name or email") %>
   <%= text_input f, :name, autocomplete: "username" %>
 </div>
 <div class="input">
-  <%= label f, :password, "Password" %>
+  <%= label f, :password, Gettext.dpgettext("static_pages", "oauth register page login password prompt", "Password") %>
   <%= password_input f, :password, autocomplete: "password" %>
 </div>
 
-<%= submit "Proceed as existing user", name: "op", value: "connect" %>
+<%= submit Gettext.dpgettext("static_pages", "oauth register page login button", "Proceed as existing user"), name: "op", value: "connect" %>
 
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>

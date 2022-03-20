@@ -221,6 +221,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       # Note: param name is indeed :discoverable (not an error)
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
       |> Maps.put_if_present(:birthday, params[:birthday])
+      |> Maps.put_if_present(:language, Pleroma.Web.Gettext.normalize_locale(params[:language]))
 
     # What happens here:
     #

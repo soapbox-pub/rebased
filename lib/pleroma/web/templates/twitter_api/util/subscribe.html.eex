@@ -1,10 +1,10 @@
 <%= if @error do %>
-  <h2>Error: <%= @error %></h2>
+  <h2><%= Gettext.dpgettext("static_pages", "remote follow error", "Error: %{error}", error: @error) %></h2>
 <% else %>
-  <h2>Remotely follow <%= @nickname %></h2>
+  <h2><%= Gettext.dpgettext("static_pages", "remote follow header", "Remotely follow %{nickname}", nickname: @nickname) %></h2>
   <%= form_for @conn, Routes.util_path(@conn, :remote_subscribe), [as: "user"], fn f -> %>
   <%= hidden_input f, :nickname, value: @nickname %>
-  <%= text_input f, :profile, placeholder: "Your account ID, e.g. lain@quitter.se" %>
-  <%= submit "Follow" %>
+  <%= text_input f, :profile, placeholder: Gettext.dpgettext("static_pages", "placeholder text for account id", "Your account ID, e.g. lain@quitter.se") %>
+  <%= submit Gettext.dpgettext("static_pages", "remote follow authorization button for following with a remote account", "Follow") %>
   <% end %>
 <% end %>

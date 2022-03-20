@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.Plugs.SetLocalePlug
 
   import Pleroma.Factory
 
@@ -1659,6 +1660,75 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response_and_validate_schema(res, 400) == %{
                "error" => "{\"birthday\":[\"can't be blank\"]}"
              }
+    end
+  end
+
+  describe "create account with language" do
+    setup %{conn: conn} do
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_cookie(SetLocalePlug.frontend_language_cookie_name(), "zh-Hans")
+        |> SetLocalePlug.call([])
+
+      [conn: conn]
+    end
+
+    test "creates an account with language parameter", %{conn: conn} do
+      params = %{
+        username: "foo",
+        email: "foo@example.org",
+        password: "dupa.8",
+        agreement: true,
+        language: "ru"
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 200)
+
+      assert %{language: "ru"} = Pleroma.User.get_by_nickname("foo")
+    end
+
+    test "language parameter should be normalized", %{conn: conn} do
+      params = %{
+        username: "foo",
+        email: "foo@example.org",
+        password: "dupa.8",
+        agreement: true,
+        language: "ru-RU"
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 200)
+
+      assert %{language: "ru_RU"} = Pleroma.User.get_by_nickname("foo")
+    end
+
+    test "createing an account without language parameter should fallback to cookie/header language",
+         %{conn: conn} do
+      params = %{
+        username: "foo2",
+        email: "foo2@example.org",
+        password: "dupa.8",
+        agreement: true
+      }
+
+      res =
+        conn
+        |> post("/api/v1/accounts", params)
+
+      assert json_response_and_validate_schema(res, 200)
+
+      assert %{language: "zh_Hans"} = Pleroma.User.get_by_nickname("foo2")
     end
   end
 
