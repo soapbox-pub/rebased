@@ -2689,4 +2689,18 @@ defmodule Pleroma.UserTest do
       assert user.ap_id in user3_updated.also_known_as
     end
   end
+
+  describe "get_familiar_followers/3" do
+    test "returns familiar followers for a pair of users" do
+      user1 = insert(:user)
+      %{id: id2} = user2 = insert(:user)
+      user3 = insert(:user)
+      _user4 = insert(:user)
+
+      User.follow(user1, user2)
+      User.follow(user2, user3)
+
+      assert [%{id: ^id2}] = User.get_familiar_followers(user3, user1)
+    end
+  end
 end

@@ -1991,4 +1991,53 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> json_response_and_validate_schema(400)
     end
   end
+
+  describe "familiar followers" do
+    setup do: oauth_access(["read:follows"])
+
+    test "fetch user familiar followers", %{user: user, conn: conn} do
+      other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [%{"id" => ^id1}], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "returns empty array if followers are hidden", %{user: user, conn: conn} do
+      other_user1 = insert(:user, hide_follows: true)
+      %{id: id2} = other_user2 = insert(:user)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "it respects hide_followers", %{user: user, conn: conn} do
+      %{id: id1} = other_user1 = insert(:user)
+      %{id: id2} = other_user2 = insert(:user, hide_followers: true)
+      _ = insert(:user)
+
+      User.follow(user, other_user1)
+      User.follow(other_user1, other_user2)
+
+      assert [%{"accounts" => [], "id" => ^id2}] =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> get("/api/v1/accounts/familiar_followers?id[]=#{id2}")
+               |> json_response_and_validate_schema(200)
+    end
+  end
 end
