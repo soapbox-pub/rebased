@@ -153,7 +153,7 @@ defmodule Pleroma.Search.Meilisearch do
         )
 
       with {:ok, res} <- result,
-           true <- Map.has_key?(res, "updateId") do
+           true <- Map.has_key?(res, "uid") do
         # Do nothing
       else
         _ ->

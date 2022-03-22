@@ -91,7 +91,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
             )
 
           with {:ok, res} <- result do
-            if not Map.has_key?(res, "updateId") do
+            if not Map.has_key?(res, "uid") do
               IO.puts("\nFailed to index: #{inspect(result)}")
             end
           else
