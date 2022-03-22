@@ -47,15 +47,15 @@ you have to get the _private key_, which is actually used for authentication.
 
 === "OTP"
     ```sh
-    ./bin/pleroma_ctl search.meilisearch show-private-key <your master key here>
+    ./bin/pleroma_ctl search.meilisearch show-keys <your master key here>
     ```
 
 === "From Source"
     ```sh
-    mix pleroma.search.meilisearch show-private-key <your master key here>
+    mix pleroma.search.meilisearch show-keys <your master key here>
     ```
 
-This is the key you actually put into your configuration file.
+You will see a "Default Admin API Key", this is the key you actually put into your configuration file.
 
 ### Initial indexing
 

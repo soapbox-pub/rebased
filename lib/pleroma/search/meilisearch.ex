@@ -13,7 +13,7 @@ defmodule Pleroma.Search.Meilisearch do
     private_key = Pleroma.Config.get([Pleroma.Search.Meilisearch, :private_key])
 
     [{"Content-Type", "application/json"}] ++
-      if is_nil(private_key), do: [], else: [{"X-Meili-API-Key", private_key}]
+      if is_nil(private_key), do: [], else: [{"Authorization", "Bearer #{private_key}"}]
   end
 
   def meili_get(path) do

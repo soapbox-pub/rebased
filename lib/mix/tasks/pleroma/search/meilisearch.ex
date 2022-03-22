@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
       )
 
     # The ranking rule syntax was changed but nothing about that is mentioned in the changelog
-    if not Version.match?(meili_version, ">= 0.24.0") do
+    if not Version.match?(meili_version, ">= 0.25.0") do
       raise "Meilisearch <0.24.0 not supported"
     end
 
@@ -112,7 +112,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
     meili_delete!("/indexes/objects/documents")
   end
 
-  def run(["show-private-key", master_key]) do
+  def run(["show-keys", master_key]) do
     start_pleroma()
 
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
@@ -120,15 +120,17 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
     {:ok, result} =
       Pleroma.HTTP.get(
         Path.join(endpoint, "/keys"),
-        [{"X-Meili-API-Key", master_key}]
+        [{"Authorization", "Bearer #{master_key}"}]
       )
 
     decoded = Jason.decode!(result.body)
 
-    if decoded["private"] do
-      IO.puts(decoded["private"])
+    if decoded["results"] do
+      Enum.each(decoded["results"], fn %{"description" => desc, "key" => key} ->
+        IO.puts("#{desc}: #{key}")
+      end)
     else
-      IO.puts("Error fetching the key, check the master key is correct: #{inspect(decoded)}")
+      IO.puts("Error fetching the keys, check the master key is correct: #{inspect(decoded)}")
     end
   end
 
