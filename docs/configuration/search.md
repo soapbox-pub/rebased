@@ -37,8 +37,10 @@ indexes faster when it can process many posts in a single batch.
 
 Information about setting up meilisearch can be found in the
 [official documentation](https://docs.meilisearch.com/learn/getting_started/installation.html).
-You probably want to start it with `MEILI_NO_ANALYTICS=true` and `MEILI_NO_CENTRY=true` environment variables,
-to disable analytics.
+You probably want to start it with `MEILI_NO_ANALYTICS=true` environment variable to disable analytics.
+At least version 0.25.0 is required, but you are strongly adviced to use at least 0.26.0, as it introduces
+the `--enable-auto-batching` option which drastically improves performance. Without this option, the search
+is hardly usable on a somewhat big instance.
 
 ### Private key authentication (optional)
 
