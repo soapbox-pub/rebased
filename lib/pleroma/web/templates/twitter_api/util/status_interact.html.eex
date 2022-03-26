@@ -1,10 +1,10 @@
 <%= if @error do %>
-  <h2>Error: <%= @error %></h2>
+  <h2><%= Gettext.dpgettext("static_pages", "status interact error", "Error: %{error}", error: @error) %></h2>
 <% else %>
-  <h2>Interacting with <%= @nickname %>'s <%= link("status", to: @status_link) %></h2>
+  <h2><%= raw Gettext.dpgettext("static_pages", "status interact header", "Interacting with %{nickname}'s %{status_link}", nickname: safe_to_string(html_escape(@nickname)), status_link: safe_to_string(link(Gettext.dpgettext("static_pages", "status interact header - status link text", "status"), to: @status_link))) %></h2>
   <%= form_for @conn, Routes.util_path(@conn, :remote_subscribe), [as: "status"], fn f -> %>
   <%= hidden_input f, :status_id, value: @status_id %>
-  <%= text_input f, :profile, placeholder: "Your account ID, e.g. lain@quitter.se" %>
-  <%= submit "Interact" %>
+  <%= text_input f, :profile, placeholder: Gettext.dpgettext("static_pages", "placeholder text for account id", "Your account ID, e.g. lain@quitter.se") %>
+  <%= submit Gettext.dpgettext("static_pages", "status interact authorization button", "Interact") %>
   <% end %>
 <% end %>
