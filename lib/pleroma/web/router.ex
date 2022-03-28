@@ -723,6 +723,7 @@ defmodule Pleroma.Web.Router do
 
     # Note: returns user _profile_ for json requests, redirects to user _feed_ for non-json ones
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+    get("/@:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
   end
 
   scope "/", Pleroma.Web do
