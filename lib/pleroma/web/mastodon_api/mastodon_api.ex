@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
@@ -65,11 +65,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     user
     |> Notification.for_user_query(options)
-    |> restrict(:include_types, options)
+    |> restrict(:types, options)
     |> restrict(:exclude_types, options)
     |> restrict(:account_ap_id, options)
     |> Pagination.fetch_paginated(params)
+    |> Enum.filter(&notification_valid?/1)
   end
+
+  # HACK: Filter out notifications with nil object.
+  # This can happen due to the "prune_objects" mix task.
+  defp notification_valid?(%{type: type, activity: %{object: nil}})
+       when type in [
+              "mention",
+              "favourite",
+              "reblog",
+              "poll",
+              "pleroma:emoji_reaction",
+              "pleroma:chat_mention"
+            ],
+       do: false
+
+  defp notification_valid?(_notification), do: true
 
   def get_scheduled_activities(user, params \\ %{}) do
     user
@@ -80,7 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
-      include_types: {:array, :string},
+      types: {:array, :string},
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean,
@@ -92,7 +108,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     changeset.changes
   end
 
-  defp restrict(query, :include_types, %{include_types: mastodon_types = [_ | _]}) do
+  defp restrict(query, :types, %{types: mastodon_types = [_ | _]}) do
     where(query, [n], n.type in ^mastodon_types)
   end
 

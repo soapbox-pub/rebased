@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
@@ -83,6 +83,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
 
       assert Enum.member?(Enum.map(res, & &1.id), notification.id)
       assert Enum.member?(Enum.map(res, & &1.id), notification1.id)
+    end
+
+    test "filters out notifications with deleted objects" do
+      mario = insert(:user, nickname: "mario")
+      luigi = insert(:user, nickname: "luigi")
+
+      # Create activities
+      {:ok, _activity1} = CommonAPI.post(mario, %{status: "hi @luigi"})
+      {:ok, activity2} = CommonAPI.post(mario, %{status: "@luigi hello??"})
+
+      # Sanity check
+      [
+        %{activity: %{object: %{data: %{"source" => "@luigi hello??"}}}},
+        %{activity: %{object: %{data: %{"source" => "hi @luigi"}}}}
+      ] = MastodonAPI.get_notifications(luigi)
+
+      # Delete the OBJECT but not the activity
+      to_delete = Pleroma.Object.normalize(activity2)
+      {:ok, %Pleroma.Object{}} = Pleroma.Repo.delete(to_delete)
+
+      # Activity still exists
+      assert Pleroma.Repo.reload(activity2)
+
+      # It filters out the activity with no object
+      [%{activity: %{object: %{data: %{"source" => "hi @luigi"}}}}] =
+        MastodonAPI.get_notifications(luigi)
     end
   end
 

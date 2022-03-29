@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
@@ -1989,6 +1989,33 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> assign(:user, user)
                |> post("/api/v1/accounts/#{id2}/pin")
                |> json_response_and_validate_schema(400)
+    end
+  end
+
+  describe "remove from followers" do
+    setup do: oauth_access(["follow"])
+
+    test "removing user from followers", %{conn: conn, user: user} do
+      %{id: other_user_id} = other_user = insert(:user)
+
+      CommonAPI.follow(other_user, user)
+
+      assert %{"id" => other_user_id, "followed_by" => false} =
+               conn
+               |> post("/api/v1/accounts/#{other_user_id}/remove_from_followers")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "removing user from followers errors", %{user: user, conn: conn} do
+      # self remove
+      conn_res = post(conn, "/api/v1/accounts/#{user.id}/remove_from_followers")
+
+      assert %{"error" => "Can not unfollow yourself"} =
+               json_response_and_validate_schema(conn_res, 400)
+
+      # remove non existing user
+      conn_res = post(conn, "/api/v1/accounts/doesntexist/remove_from_followers")
+      assert %{"error" => "Record not found"} = json_response_and_validate_schema(conn_res, 404)
     end
   end
 end
