@@ -222,6 +222,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
+  test "renders `nil` if the object is nil" do
+    mario = insert(:user, nickname: "mario")
+
+    # Create activity
+    {:ok, activity} = CommonAPI.post(mario, %{status: "it'sa me!"})
+
+    # Sanity check
+    %{pleroma: %{content: %{"text/plain" => "it'sa me!"}}} =
+      StatusView.render("show.json", %{activity: activity})
+
+    # Delete the OBJECT but not the activity
+    object = Object.normalize(activity)
+    {:ok, %Object{}} = Repo.delete(object)
+
+    # Activity still exists, object doesn't
+    assert activity = Repo.reload(activity)
+    refute Repo.reload(object)
+
+    # StatusView returns `nil` instead of throwing an error
+    assert StatusView.render("show.json", %{activity: activity}) == nil
+  end
+
   test "a note activity" do
     note = insert(:note_activity)
     object_data = Object.normalize(note, fetch: false).data
