@@ -229,6 +229,41 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
   end
 
+  test "list of notifications with deleted objects" do
+    mario = insert(:user, nickname: "mario")
+    luigi = insert(:user, nickname: "luigi")
+
+    %{user: luigi, conn: conn} = oauth_access(["read:notifications"], user: luigi)
+
+    # Create activities
+    {:ok, activity1} = CommonAPI.post(mario, %{status: "hi @luigi"})
+    {:ok, _activity2} = CommonAPI.post(mario, %{status: "@luigi hello??"})
+
+    # Sanity check
+    [
+      %{"status" => %{"pleroma" => %{"content" => %{"text/plain" => "@luigi hello??"}}}},
+      %{"status" => %{"pleroma" => %{"content" => %{"text/plain" => "hi @luigi"}}}}
+    ] =
+      conn
+      |> assign(:user, luigi)
+      |> get("/api/v1/notifications")
+      |> json_response_and_validate_schema(200)
+
+    # Delete the OBJECT but not the activity
+    to_delete = Pleroma.Object.normalize(activity1)
+    {:ok, %Pleroma.Object{}} = Repo.delete(to_delete)
+
+    # Activity still exists
+    assert Repo.reload(activity1)
+
+    # Notifications render, but omit the activity with deleted object
+    [%{"status" => %{"pleroma" => %{"content" => %{"text/plain" => "@luigi hello??"}}}}] =
+      conn
+      |> assign(:user, luigi)
+      |> get("/api/v1/notifications")
+      |> json_response_and_validate_schema(200)
+  end
+
   describe "exclude_visibilities" do
     test "filters notifications for mentions" do
       %{user: user, conn: conn} = oauth_access(["read:notifications"])
