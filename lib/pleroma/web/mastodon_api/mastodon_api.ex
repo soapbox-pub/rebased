@@ -69,23 +69,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     |> restrict(:exclude_types, options)
     |> restrict(:account_ap_id, options)
     |> Pagination.fetch_paginated(params)
-    |> Enum.filter(&notification_valid?/1)
   end
-
-  # HACK: Filter out notifications with nil object.
-  # This can happen due to the "prune_objects" mix task.
-  defp notification_valid?(%{type: type, activity: %{object: nil}})
-       when type in [
-              "mention",
-              "favourite",
-              "reblog",
-              "poll",
-              "pleroma:emoji_reaction",
-              "pleroma:chat_mention"
-            ],
-       do: false
-
-  defp notification_valid?(_notification), do: true
 
   def get_scheduled_activities(user, params \\ %{}) do
     user
