@@ -154,11 +154,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render(
         "show.json",
-        %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
+        %{activity: %{data: %{"type" => "Announce"}, object: %Object{} = object} = activity} =
+          opts
       ) do
     user = CommonAPI.get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
-    object = Object.normalize(activity, fetch: false)
 
     reblogged_parent_activity =
       if opts[:parent_activities] do
@@ -226,9 +226,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
-    object = Object.normalize(activity, fetch: false)
-
+  def render("show.json", %{activity: %{object: %Object{} = object} = activity} = opts) do
     user = CommonAPI.get_user(activity.data["actor"])
     user_follower_address = user.follower_address
 
@@ -419,6 +417,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         content_type: opts[:with_source] && (object.data["content_type"] || "text/plain")
       }
     }
+  end
+
+  # Protect against rendering activity with `nil` object
+  def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    case Object.normalize(activity) do
+      %Object{} = object ->
+        render("show.json", Map.put(opts, :activity, %{activity | object: object}))
+
+      _ ->
+        nil
+    end
   end
 
   def render("show.json", _) do
