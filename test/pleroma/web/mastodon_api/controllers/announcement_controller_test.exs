@@ -11,19 +11,40 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementControllerTest do
   alias Pleroma.AnnouncementReadRelationship
 
   describe "GET /api/v1/announcements" do
-    test "it lists all announcements" do
+    setup do
+      %{conn: conn} = oauth_access([])
+      {:ok, conn: conn}
+    end
+
+    test "it does not allow guests", %{conn: conn} do
+      _response =
+        conn
+        |> assign(:token, nil)
+        |> get("/api/v1/announcements")
+        |> json_response_and_validate_schema(:forbidden)
+    end
+
+    test "it allows users with scopes" do
+      %{conn: conn} = oauth_access(["read:accounts"])
+
+      _response =
+        conn
+        |> get("/api/v1/announcements")
+        |> json_response_and_validate_schema(:ok)
+    end
+
+    test "it lists all announcements", %{conn: conn} do
       %{id: id} = insert(:announcement)
 
       response =
-        build_conn()
+        conn
         |> get("/api/v1/announcements")
         |> json_response_and_validate_schema(:ok)
 
       assert [%{"id" => ^id}] = response
-      refute Map.has_key?(Enum.at(response, 0), "read")
     end
 
-    test "it returns time with utc timezone" do
+    test "it returns time with utc timezone", %{conn: conn} do
       start_time =
         NaiveDateTime.utc_now()
         |> NaiveDateTime.add(-999_999, :second)
@@ -37,7 +58,7 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementControllerTest do
       %{id: id} = insert(:announcement, %{starts_at: start_time, ends_at: end_time})
 
       response =
-        build_conn()
+        conn
         |> get("/api/v1/announcements")
         |> json_response_and_validate_schema(:ok)
 
@@ -47,34 +68,32 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementControllerTest do
       assert String.ends_with?(announcement["ends_at"], "Z")
     end
 
-    test "it does not list announcements starting after current time" do
+    test "it does not list announcements starting after current time", %{conn: conn} do
       time = NaiveDateTime.utc_now() |> NaiveDateTime.add(999_999, :second)
       insert(:announcement, starts_at: time)
 
       response =
-        build_conn()
+        conn
         |> get("/api/v1/announcements")
         |> json_response_and_validate_schema(:ok)
 
       assert [] = response
     end
 
-    test "it does not list announcements ending before current time" do
+    test "it does not list announcements ending before current time", %{conn: conn} do
       time = NaiveDateTime.utc_now() |> NaiveDateTime.add(-999_999, :second)
       insert(:announcement, ends_at: time)
 
       response =
-        build_conn()
+        conn
         |> get("/api/v1/announcements")
         |> json_response_and_validate_schema(:ok)
 
       assert [] = response
     end
 
-    test "when authenticated, also expose read property" do
+    test "when authenticated, also expose read property", %{conn: conn} do
       %{id: id} = insert(:announcement)
-
-      %{conn: conn} = oauth_access(["read:accounts"])
 
       response =
         conn

@@ -582,6 +582,7 @@ defmodule Pleroma.Web.Router do
     get("/timelines/direct", TimelineController, :direct)
     get("/timelines/list/:list_id", TimelineController, :list)
 
+    get("/announcements", AnnouncementController, :index)
     post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
   end
 
@@ -627,8 +628,6 @@ defmodule Pleroma.Web.Router do
     get("/polls/:id", PollController, :show)
 
     get("/directory", DirectoryController, :index)
-
-    get("/announcements", AnnouncementController, :index)
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do

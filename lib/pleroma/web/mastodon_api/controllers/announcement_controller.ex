@@ -15,20 +15,18 @@ defmodule Pleroma.Web.MastodonAPI.AnnouncementController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  # MastodonAPI specs do not have oauth requirements for showing
-  # announcements, but we have "private instance" options. When that
-  # is set, require read:accounts scope, symmetric to write:accounts
-  # for `mark_read`.
+  # Mastodon docs say this only requires a user token, no scopes needed
+  # As the op `|` requires at least one scope to be present, we use `&` here.
   plug(
     OAuthScopesPlug,
-    %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action in [:show, :index]
+    %{scopes: [], op: :&}
+    when action in [:index]
   )
 
   # Same as in MastodonAPI specs
   plug(
     OAuthScopesPlug,
-    %{fallback: :proceed_unauthenticated, scopes: ["write:accounts"]}
+    %{scopes: ["write:accounts"]}
     when action in [:mark_read]
   )
 

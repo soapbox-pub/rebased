@@ -18,6 +18,7 @@ defmodule Pleroma.Web.ApiSpec.AnnouncementOperation do
       tags: ["Announcement"],
       summary: "Retrieve a list of announcements",
       operationId: "MastodonAPI.AnnouncementController.index",
+      security: [%{"oAuth" => []}],
       responses: %{
         200 => Operation.response("Response", "application/json", list_of_announcements()),
         403 => Operation.response("Forbidden", "application/json", ApiError)
