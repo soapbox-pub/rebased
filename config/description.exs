@@ -138,6 +138,30 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: Pleroma.Uploaders.IPFS,
+    type: :group,
+    description: "IPFS uploader-related settings",
+    children: [
+      %{
+        key: :get_gateway_url,
+        type: :string,
+        description: "GET Gateway URL",
+        suggestions: [
+          "get_gateway_url"
+        ]
+      },
+      %{
+        key: :post_gateway_url,
+        type: :string,
+        description: "POST Gateway URL",
+        suggestions: [
+          "post_gateway_url"
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: Pleroma.Uploaders.S3,
     type: :group,
     description: "S3 uploader-related settings",

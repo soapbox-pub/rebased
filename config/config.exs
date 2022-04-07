@@ -82,6 +82,10 @@ config :ex_aws, :s3,
   # region: "us-east-1", # may be required for Amazon AWS
   scheme: "https://"
 
+config :pleroma, Pleroma.Uploaders.IPFS,
+  post_gateway_url: nil,
+  get_gateway_url: nil
+
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   pack_extensions: [".png", ".gif"],
