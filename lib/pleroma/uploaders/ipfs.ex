@@ -13,10 +13,10 @@ defmodule Pleroma.Uploaders.IPFS do
   def get_file(file) do
     b_url = Pleroma.Upload.base_url()
 
-    if String.contains?(b_url, "{CID}") do
-      {:ok, {:url, String.replace(b_url, "{CID}", URI.decode(file))}}
+    if String.contains?(b_url, "<%= cid %>") do
+      {:ok, {:url, EEx.eval_string(b_url, cid: URI.decode(file))}}
     else
-      {:error, "IPFS Get URL doesn't contain '{CID}' placeholder"}
+      {:error, "IPFS Get URL doesn't contain 'cid' placeholder"}
     end
   end
 
@@ -36,7 +36,11 @@ defmodule Pleroma.Uploaders.IPFS do
       {:ok, ret} ->
         case Jason.decode(ret.body) do
           {:ok, ret} ->
-            {:ok, {:file, ret["Hash"]}}
+            if Map.has_key?(ret, "Hash") do
+              {:ok, {:file, ret["Hash"]}}
+            else
+              {:error, "JSON doesn't contain Hash value"}
+            end
 
           error ->
             Logger.error("#{__MODULE__}: #{inspect(error)}")
@@ -45,7 +49,7 @@ defmodule Pleroma.Uploaders.IPFS do
 
       error ->
         Logger.error("#{__MODULE__}: #{inspect(error)}")
-        {:error, "IPFS Gateway Upload failed"}
+        {:error, "IPFS Gateway upload failed"}
     end
   end
 

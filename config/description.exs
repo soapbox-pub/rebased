@@ -147,7 +147,8 @@ config :pleroma, :config_description, [
         type: :string,
         description: "GET Gateway URL",
         suggestions: [
-          "get_gateway_url"
+          "https://ipfs.mydomain.com/<%= cid %>",
+          "https://<%= cid %>.ipfs.mydomain.com/"
         ]
       },
       %{
@@ -155,7 +156,7 @@ config :pleroma, :config_description, [
         type: :string,
         description: "POST Gateway URL",
         suggestions: [
-          "post_gateway_url"
+          "http://localhost:5001/"
         ]
       }
     ]

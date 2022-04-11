@@ -58,10 +58,6 @@ config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
 
-config :pleroma, Pleroma.Uploaders.IPFS,
-  post_gateway_url: nil,
-  get_gateway_url: nil
-
 if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
 else

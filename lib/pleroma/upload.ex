@@ -235,10 +235,8 @@ defmodule Pleroma.Upload do
           ""
         end
 
-    uploader = Config.get([Pleroma.Upload, :uploader])
-
-    if uploader == Pleroma.Uploaders.IPFS && String.contains?(base_url, "{CID}") do
-      String.replace(base_url, "{CID}", path)
+    if String.contains?(base_url, "<%= cid %>") do
+      EEx.eval_string(base_url, cid: path)
     else
       [base_url, path]
       |> Path.join()
