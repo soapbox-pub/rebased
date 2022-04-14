@@ -715,6 +715,18 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :rejected_instances,
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
+        description:
+          "List of ActivityPub instances to reject requests from if authorized_fetch_mode is enabled",
+        suggestions: [
+          {"rejected.com", "Reason"},
+          {"*.rejected.com", "Reason"}
+        ]
+      },
+      %{
         key: :static_dir,
         type: :string,
         description: "Instance static directory",
