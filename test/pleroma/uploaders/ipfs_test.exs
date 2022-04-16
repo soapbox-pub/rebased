@@ -17,7 +17,7 @@ defmodule Pleroma.Uploaders.IPFSTest do
 
     clear_config(
       [Pleroma.Uploaders.IPFS, :get_gateway_url],
-      "https://<%= cid %>.ipfs.mydomain.com"
+      "https://{CID}.ipfs.mydomain.com"
     )
 
     clear_config([Pleroma.Uploaders.IPFS, :post_gateway_url], "http://localhost:5001")
@@ -34,7 +34,7 @@ defmodule Pleroma.Uploaders.IPFSTest do
     test "it returns path to ipfs file with cid as path" do
       clear_config(
         [Pleroma.Uploaders.IPFS, :get_gateway_url],
-        "https://ipfs.mydomain.com/ipfs/<%= cid %>"
+        "https://ipfs.mydomain.com/ipfs/{CID}"
       )
 
       assert IPFS.get_file("testcid") == {

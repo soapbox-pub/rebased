@@ -624,7 +624,7 @@ Example:
 ```elixir
 config :pleroma, Pleroma.Uploaders.IPFS,
   post_gateway_url: "http://localhost:5001",
-  get_gateway_url: "http://<%= cid %>.ipfs.mydomain.com"
+  get_gateway_url: "http://{CID}.ipfs.mydomain.com"
 ```
 
 ### Upload filters

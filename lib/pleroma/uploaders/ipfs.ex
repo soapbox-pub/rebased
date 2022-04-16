@@ -9,12 +9,15 @@ defmodule Pleroma.Uploaders.IPFS do
   alias Pleroma.Config
   alias Tesla.Multipart
 
+  @placeholder "{CID}"
+  def placeholder, do: @placeholder
+
   @impl true
   def get_file(file) do
     b_url = Pleroma.Upload.base_url()
 
-    if String.contains?(b_url, "<%= cid %>") do
-      {:ok, {:url, EEx.eval_string(b_url, cid: URI.decode(file))}}
+    if String.contains?(b_url, @placeholder) do
+      {:ok, {:url, String.replace(b_url, @placeholder, URI.decode(file))}}
     else
       {:error, "IPFS Get URL doesn't contain 'cid' placeholder"}
     end
