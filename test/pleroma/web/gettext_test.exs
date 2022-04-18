@@ -38,6 +38,17 @@ defmodule Pleroma.Web.GettextTest do
       end
     end
 
+    test "putting en locale at the front should not make gettext fallback unexpectedly" do
+      Pleroma.Web.Gettext.with_locales ["en", "en_test"] do
+        assert "Your account is awaiting approval" ==
+                 Pleroma.Web.Gettext.dpgettext(
+                   "static_pages",
+                   "approval pending email subject",
+                   "Your account is awaiting approval"
+                 )
+      end
+    end
+
     test "duplicated locale in list should not result in infinite loops" do
       Pleroma.Web.Gettext.with_locales ["x_unsupported", "x_unsupported", "en_test"] do
         assert "xxYour account is awaiting approvalxx" ==

@@ -161,10 +161,25 @@ defmodule Pleroma.Web.Gettext do
     end
   end
 
+  # We do not yet have a proper English translation. The "English"
+  # version is currently but the fallback msgid. However, this
+  # will not work if the user puts English as the first language,
+  # and at the same time specifies other languages, as gettext will
+  # think the English translation is missing, and call
+  # handle_missing_translation functions. This may result in
+  # text in other languages being shown even if English is preferred
+  # by the user.
+  #
+  # To prevent this, we do not allow fallbacking when the current
+  # locale missing a translation is English.
+  defp should_fallback?(locale) do
+    locale != "en"
+  end
+
   def handle_missing_translation(locale, domain, msgctxt, msgid, bindings) do
     next = next_locale(locale, get_locales())
 
-    if is_nil(next) do
+    if is_nil(next) or not should_fallback?(locale) do
       super(locale, domain, msgctxt, msgid, bindings)
     else
       {:ok,
@@ -185,7 +200,7 @@ defmodule Pleroma.Web.Gettext do
       ) do
     next = next_locale(locale, get_locales())
 
-    if is_nil(next) do
+    if is_nil(next) or not should_fallback?(locale) do
       super(locale, domain, msgctxt, msgid, msgid_plural, n, bindings)
     else
       {:ok,
