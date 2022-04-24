@@ -10,8 +10,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.BlockNotificationPolicy do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  require Logger
-
   defp is_block_or_unblock(%{"type" => "Block", "object" => object}),
     do: {true, "blocked", object}
 
