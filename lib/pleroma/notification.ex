@@ -73,6 +73,7 @@ defmodule Pleroma.Notification do
     pleroma:report
     reblog
     poll
+    status
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -397,11 +398,18 @@ defmodule Pleroma.Notification do
     {enabled_receivers, disabled_receivers} = get_notified_from_activity(activity)
     potential_receivers = enabled_receivers ++ disabled_receivers
 
+    {enabled_subscribers, disabled_subscribers} = get_notified_subscribers_from_activity(activity)
+    potential_subscribers = (enabled_subscribers ++ disabled_subscribers) -- potential_receivers
+
     notifications =
-      Enum.map(potential_receivers, fn user ->
-        do_send = do_send && user in enabled_receivers
-        create_notification(activity, user, do_send: do_send)
-      end)
+      (Enum.map(potential_receivers, fn user ->
+         do_send = do_send && user in enabled_receivers
+         create_notification(activity, user, do_send: do_send)
+       end) ++
+         Enum.map(potential_subscribers, fn user ->
+           do_send = do_send && user in enabled_subscribers
+           create_notification(activity, user, do_send: do_send, type: "status")
+         end))
       |> Enum.reject(&is_nil/1)
 
     {:ok, notifications}
@@ -533,6 +541,27 @@ defmodule Pleroma.Notification do
 
   def get_notified_from_activity(_, _local_only), do: {[], []}
 
+  def get_notified_subscribers_from_activity(activity, local_only \\ true)
+
+  def get_notified_subscribers_from_activity(
+        %Activity{data: %{"type" => "Create"}} = activity,
+        local_only
+      ) do
+    notification_enabled_ap_ids =
+      []
+      |> Utils.maybe_notify_subscribers(activity)
+
+    potential_receivers =
+      User.get_users_from_set(notification_enabled_ap_ids, local_only: local_only)
+
+    notification_enabled_users =
+      Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
+
+    {notification_enabled_users, potential_receivers -- notification_enabled_users}
+  end
+
+  def get_notified_subscribers_from_activity(_, _), do: {[], []}
+
   # For some activities, only notify the author of the object
   def get_potential_receiver_ap_ids(%{data: %{"type" => type, "object" => object_id}})
       when type in ~w{Like Announce EmojiReact} do
@@ -557,7 +586,6 @@ defmodule Pleroma.Notification do
     []
     |> Utils.maybe_notify_to_recipients(activity)
     |> Utils.maybe_notify_mentioned_recipients(activity)
-    |> Utils.maybe_notify_subscribers(activity)
     |> Utils.maybe_notify_followers(activity)
     |> Enum.uniq()
   end
