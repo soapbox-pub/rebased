@@ -183,6 +183,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_title(%{type: type}, mastodon_type) do
     case mastodon_type || type do
       "mention" -> "New Mention"
+      "status" -> "New Status"
       "follow" -> "New Follower"
       "follow_request" -> "New Follow Request"
       "reblog" -> "New Repeat"
