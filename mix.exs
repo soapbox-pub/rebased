@@ -1,6 +1,8 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
 
+  @build_name "soapbox"
+
   def project do
     [
       app: :pleroma,
@@ -281,21 +283,15 @@ defmodule Pleroma.Mixfile do
              !Enum.any?(["master", "HEAD", "release/", "stable"], fn name ->
                String.starts_with?(name, branch_name)
              end) do
-        branch_name =
-          branch_name
-          |> String.trim()
-          |> String.replace(identifier_filter, "-")
-
-        branch_name
+        String.trim(branch_name)
       else
         _ -> ""
       end
 
     build_name =
       cond do
-        name = Application.get_env(:pleroma, :build_name) -> name
         name = System.get_env("PLEROMA_BUILD_NAME") -> name
-        true -> nil
+        true -> @build_name
       end
 
     env_name = if Mix.env() != :prod, do: to_string(Mix.env())
@@ -312,21 +308,23 @@ defmodule Pleroma.Mixfile do
     # and a series of dot separated identifiers
     pre_release =
       [git_pre_release, branch_name]
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.filter(fn string -> string && string != "" end)
       |> Enum.join(".")
       |> (fn
             "" -> nil
-            string -> "-" <> String.replace(string, identifier_filter, "-")
+            string -> "-" <> string
           end).()
 
     # Build metadata, denoted with a plus sign
     build_metadata =
       [build_name, env_name]
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.filter(fn string -> string && string != "" end)
       |> Enum.join(".")
       |> (fn
             "" -> nil
-            string -> "+" <> String.replace(string, identifier_filter, "-")
+            string -> "+" <> string
           end).()
 
     [version, pre_release, build_metadata]
