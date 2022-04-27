@@ -308,8 +308,8 @@ defmodule Pleroma.Mixfile do
     # and a series of dot separated identifiers
     pre_release =
       [git_pre_release, branch_name]
-      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.join(".")
       |> (fn
             "" -> nil
@@ -319,8 +319,8 @@ defmodule Pleroma.Mixfile do
     # Build metadata, denoted with a plus sign
     build_metadata =
       [build_name, env_name]
-      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.join(".")
       |> (fn
             "" -> nil
