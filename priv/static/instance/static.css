@@ -3,26 +3,27 @@
 }
 
 :root {
-  --brand-color: #d8a070;
-  --background-color: #121a24;
-  --foreground-color: #182230;
-  --primary-text-color: #b9b9ba;
-  --muted-text-color: #89898a;
+  --brand-color: #0482d8;
+  --background-color: #f2f2f2;
+  --foreground-color: #fff;
+  --primary-text-color: #111827;
+  --muted-text-color: #868393;
 }
 
 body {
-  background-color: var(--background-color);
+  background: linear-gradient(to right top, #f2f9fd, #fff, #ecfeff);
   font-family: sans-serif;
   color: var(--primary-text-color);
+  min-height: 100vh;
   padding: 0;
   margin: 0;
 }
 
 .instance-header {
-  height: 60px;
-  padding: 10px;
+  height: 48px;
+  padding: 4px;
   background: var(--foreground-color);
-  box-shadow: 0 1px 4px 0px rgba(0, 0, 0, 0.5);
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
 }
 
 .instance-header__content {
@@ -45,12 +46,11 @@ body {
 }
 
 .container {
-  max-width: 400px;
+  width: 100%;
+  padding: 16px;
   background-color: var(--foreground-color);
-  border-radius: 4px;
   overflow: hidden;
-  margin: 35px auto;
-  box-shadow: 0 1px 4px 0px rgba(0, 0, 0, 0.5);
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px
 }
 
 .container__content {
@@ -65,9 +65,22 @@ h1 {
 
 h2 {
   color: var(--primary-text-color);
-  font-weight: normal;
-  font-size: 18px;
-  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+h2:first-child:not(:last-child) {
+  margin: 0 -16px 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+h2 {
+  font-weight: 500;
 }
 
 a {
@@ -75,14 +88,20 @@ a {
   text-decoration: none;
 }
 
+a:hover {
+  text-decoration: underline;
+}
+
 form {
   width: 100%;
 }
 
 .input {
-  color: var(--muted-text-color);
   display: flex;
   flex-direction: column;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 input {
@@ -90,13 +109,17 @@ input {
   padding: 10px;
   margin-top: 5px;
   margin-bottom: 10px;
-  background-color: var(--background-color);
+  background-color: var(--foreground-color);
   color: var(--primary-text-color);
-  border: 0;
-  transition-property: border-bottom;
-  transition-duration: 0.35s;
-  border-bottom: 2px solid #2a384a;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
+}
+
+input:focus {
+  border-color: #6366f1;
+  outline: none;
+  box-shadow: rgb(99, 102, 241) 0px 0px 0px 1px;
 }
 
 .scopes-input {
@@ -104,6 +127,7 @@ input {
   flex-direction: column;
   margin: 1em 0;
   color: var(--muted-text-color);
+  font-size: 12px;
 }
 
 .scopes-input label:first-child {
@@ -162,11 +186,6 @@ input {
   background-color: var(--brand-color);
 }
 
-input:focus {
-  outline: none;
-  border-bottom: 2px solid var(--brand-color);
-}
-
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -180,27 +199,25 @@ input:focus {
 
 a.button,
 button {
-  width: 100%;
-  background-color: #1c2a3a;
-  color: var(--primary-text-color);
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  margin-left: auto;
+  appearance: none;
+  background: #0482d8;
+  color: white;
   border: none;
-  padding: 10px 16px;
-  margin-top: 20px;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-  font-size: 16px;
-  box-shadow: 0px 0px 2px 0px black,
-    0px 1px 0px 0px rgba(255, 255, 255, 0.2) inset,
-    0px -1px 0px 0px rgba(0, 0, 0, 0.2) inset;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 a.button:hover,
 button:hover {
+  background: #0362a2;
   cursor: pointer;
-  box-shadow: 0px 0px 0px 1px var(--brand-color),
-    0px 1px 0px 0px rgba(255, 255, 255, 0.2) inset,
-    0px -1px 0px 0px rgba(0, 0, 0, 0.2) inset;
 }
 
 .alert-danger {
@@ -225,8 +242,10 @@ button:hover {
 }
 
 .account-header__banner {
-  width: 100%;
-  height: 112px;
+  height: 0;
+  width: calc(100% + 32px);
+  margin: -16px;
+  padding-bottom: calc(100% / 3);
   background-size: cover;
   background-position: center;
 }
@@ -237,7 +256,7 @@ button:hover {
   background-size: cover;
   background-position: center;
   margin: -47px 10px 0;
-  border: 6px solid var(--foreground-color);
+  border: 4px solid var(--foreground-color);
   border-radius: 999px;
 }
 
@@ -293,4 +312,36 @@ button:hover {
 }
 .form-row > input {
   flex: 2;
+}
+
+@media (min-width: 581px) {
+  .container {
+    width: 512px;
+    margin: 35px auto;
+    padding: 40px;
+    border-radius: 24px;
+  }
+
+  h2:first-child:not(:last-child) {
+    padding-bottom: 40px;
+    margin: 0 -40px 16px;
+  }
+
+  .account-header__banner {
+    width: calc(100% + 80px);
+    margin: -40px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 672px;
+  }
+}
+
+@media (min-width: 976px) {
+  .instance-header {
+    height: 64px;
+    padding: 12px 0;
+  }
 }
