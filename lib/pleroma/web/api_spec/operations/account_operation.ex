@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.AccountOperation do
@@ -366,6 +366,22 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
+  def remove_from_followers_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Remove from followers",
+      operationId: "AccountController.remove_from_followers",
+      security: [%{"oAuth" => ["follow", "write:follows"]}],
+      description: "Remove the given account from followers",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -747,6 +763,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           nullable: true,
           description: "User's birthday will be visible"
+        },
+        location: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User location"
         }
       },
       example: %{

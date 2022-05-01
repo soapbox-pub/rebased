@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
@@ -395,6 +395,16 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       assert user_data = json_response_and_validate_schema(res, 200)
       assert user_data["source"]["pleroma"]["show_birthday"] == true
+    end
+
+    test "updates location", %{conn: conn} do
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "location" => "Pleroma, Fediverse"
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["pleroma"]["location"] == "Pleroma, Fediverse"
     end
 
     test "emojis in fields labels", %{conn: conn} do

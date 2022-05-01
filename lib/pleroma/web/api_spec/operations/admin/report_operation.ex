@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
@@ -47,6 +47,12 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           :query,
           %Schema{type: :integer, default: 50},
           "Number number of log entries per page"
+        ),
+        Operation.parameter(
+          :assigned_account,
+          :query,
+          %Schema{type: :string},
+          "Filter by assigned account ID"
         )
         | admin_api_params()
       ],
@@ -89,6 +95,22 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       security: [%{"oAuth" => ["admin:write:reports"]}],
       parameters: admin_api_params(),
       requestBody: request_body("Parameters", update_request(), required: true),
+      responses: %{
+        204 => no_content_response(),
+        400 => Operation.response("Bad Request", "application/json", update_400_response()),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
+      }
+    }
+  end
+
+  def assign_account_operation do
+    %Operation{
+      tags: ["Report managment"],
+      summary: "Assign account to specified reports",
+      operationId: "AdminAPI.ReportController.assign_account",
+      security: [%{"oAuth" => ["admin:write:reports"]}],
+      parameters: admin_api_params(),
+      requestBody: request_body("Parameters", assign_account_request(), required: true),
       responses: %{
         204 => no_content_response(),
         400 => Operation.response("Bad Request", "application/json", update_400_response()),
@@ -169,6 +191,19 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
               inserted_at: %Schema{type: :string, format: :"date-time"}
             }
           }
+        },
+        assigned_account:
+          account_admin()
+          |> Map.put(:nullable, true),
+        rules: %Schema{
+          type: :array,
+          items: %Schema{
+            type: :object,
+            properties: %{
+              id: %Schema{type: :integer},
+              text: %Schema{type: :string}
+            }
+          }
         }
       }
     }
@@ -218,6 +253,34 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
             "reports" => [
               %{"id" => "123", "state" => "closed"},
               %{"id" => "1337", "state" => "resolved"}
+            ]
+          }
+        }
+      }
+    }
+  end
+
+  defp assign_account_request do
+    %Schema{
+      type: :object,
+      required: [:reports],
+      properties: %{
+        reports: %Schema{
+          type: :array,
+          items: %Schema{
+            type: :object,
+            properties: %{
+              id: %Schema{allOf: [FlakeID], description: "Required, report ID"},
+              assigned_account: %Schema{
+                type: :string,
+                description: "User nickname",
+                nullable: true
+              }
+            }
+          },
+          example: %{
+            "reports" => [
+              %{"id" => "123", "assigned_account" => "pleroma"}
             ]
           }
         }

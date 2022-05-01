@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.SideEffects do
@@ -226,7 +226,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         meta
         |> add_notifications(notifications)
 
-      ap_streamer().stream_out(activity)
+      # ChatMessages are special, as they get streamed in handle_object_creation/3
+      # TODO: maybe whitelist allowed object types to stream?
+      if object.data["type"] != "ChatMessage" do
+        ap_streamer().stream_out(activity)
+      end
 
       {:ok, activity, meta}
     else

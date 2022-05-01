@@ -1,6 +1,8 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
 
+  @build_name "soapbox"
+
   def project do
     [
       app: :pleroma,
@@ -185,7 +187,7 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:concurrent_limiter, "~> 0.1.1"},
       {:remote_ip,
-       git: "https://git.pleroma.social/pleroma/remote_ip.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
        git: "https://gitlab.com/soapbox-pub/elixir-libraries/elixir-captcha.git",
@@ -281,21 +283,15 @@ defmodule Pleroma.Mixfile do
              !Enum.any?(["master", "HEAD", "release/", "stable"], fn name ->
                String.starts_with?(name, branch_name)
              end) do
-        branch_name =
-          branch_name
-          |> String.trim()
-          |> String.replace(identifier_filter, "-")
-
-        branch_name
+        String.trim(branch_name)
       else
         _ -> ""
       end
 
     build_name =
       cond do
-        name = Application.get_env(:pleroma, :build_name) -> name
         name = System.get_env("PLEROMA_BUILD_NAME") -> name
-        true -> nil
+        true -> @build_name
       end
 
     env_name = if Mix.env() != :prod, do: to_string(Mix.env())
@@ -313,20 +309,22 @@ defmodule Pleroma.Mixfile do
     pre_release =
       [git_pre_release, branch_name]
       |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.join(".")
       |> (fn
             "" -> nil
-            string -> "-" <> String.replace(string, identifier_filter, "-")
+            string -> "-" <> string
           end).()
 
     # Build metadata, denoted with a plus sign
     build_metadata =
       [build_name, env_name]
       |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.join(".")
       |> (fn
             "" -> nil
-            string -> "+" <> String.replace(string, identifier_filter, "-")
+            string -> "+" <> string
           end).()
 
     [version, pre_release, build_metadata]

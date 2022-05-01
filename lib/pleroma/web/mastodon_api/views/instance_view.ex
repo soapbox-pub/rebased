@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceView do
@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       uri: Pleroma.Web.Endpoint.url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
+      short_description: Keyword.get(instance, :short_description),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
@@ -55,6 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       },
+      configuration: configuration(),
       soapbox: %{
         version: Soapbox.version()
       }
@@ -154,6 +156,25 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       max_remote_fields: Config.get([:instance, :max_remote_account_fields]),
       name_length: Config.get([:instance, :account_field_name_length]),
       value_length: Config.get([:instance, :account_field_value_length])
+    }
+  end
+
+  def configuration do
+    %{
+      statuses: %{
+        max_characters: Config.get([:instance, :limit]),
+        max_media_attachments: Config.get([:instance, :max_media_attachments])
+      },
+      media_attachments: %{
+        image_size_limit: Config.get([:instance, :upload_limit]),
+        video_size_limit: Config.get([:instance, :upload_limit])
+      },
+      polls: %{
+        max_options: Config.get([:instance, :poll_limits, :max_options]),
+        max_characters_per_option: Config.get([:instance, :poll_limits, :max_option_chars]),
+        min_expiration: Config.get([:instance, :poll_limits, :min_expiration]),
+        max_expiration: Config.get([:instance, :poll_limits, :max_expiration])
+      }
     }
   end
 end

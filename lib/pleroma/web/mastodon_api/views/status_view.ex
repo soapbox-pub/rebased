@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusView do
@@ -415,7 +415,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
         parent_visible: visible_for_user?(reply_to, opts[:for]),
-        pinned_at: pinned_at
+        pinned_at: pinned_at,
+        content_type: opts[:with_source] && (object.data["content_type"] || "text/plain")
       }
     }
   end

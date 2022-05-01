@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Router do
@@ -284,6 +284,7 @@ defmodule Pleroma.Web.Router do
     get("/reports", ReportController, :index)
     get("/reports/:id", ReportController, :show)
     patch("/reports", ReportController, :update)
+    post("/reports/assign_account", ReportController, :assign_account)
     post("/reports/:id/notes", ReportController, :notes_create)
     delete("/reports/:report_id/notes/:id", ReportController, :notes_delete)
 
@@ -297,6 +298,26 @@ defmodule Pleroma.Web.Router do
     get("/stats", AdminAPIController, :stats)
 
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+  end
+
+  # Mastodon AdminAPI: admins and mods (staff) can perform these actions
+  scope "/api/v1/admin", Pleroma.Web.MastodonAPI.Admin do
+    pipe_through([:admin_api, :require_privileged_staff])
+
+    get("/accounts", AccountController, :index)
+    get("/accounts/:id", AccountController, :show)
+    delete("/accounts/:id", AccountController, :delete)
+    post("/accounts/:id/action", AccountController, :account_action)
+    post("/accounts/:id/enable", AccountController, :enable)
+    post("/accounts/:id/approve", AccountController, :approve)
+    post("/accounts/:id/reject", AccountController, :reject)
+
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+    post("/reports/:id/resolve", ReportController, :resolve)
+    post("/reports/:id/reopen", ReportController, :reopen)
+    post("/reports/:id/assign_to_self", ReportController, :assign_to_self)
+    post("/reports/:id/unassign", ReportController, :unassign)
   end
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -352,6 +373,11 @@ defmodule Pleroma.Web.Router do
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
+    post("/move_account", UtilController, :move_account)
+
+    put("/aliases", UtilController, :add_alias)
+    get("/aliases", UtilController, :list_aliases)
+    delete("/aliases", UtilController, :delete_alias)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do
@@ -500,6 +526,7 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/note", AccountController, :note)
     post("/accounts/:id/pin", AccountController, :endorse)
     post("/accounts/:id/unpin", AccountController, :unendorse)
+    post("/accounts/:id/remove_from_followers", AccountController, :remove_from_followers)
 
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
@@ -696,6 +723,7 @@ defmodule Pleroma.Web.Router do
 
     # Note: returns user _profile_ for json requests, redirects to user _feed_ for non-json ones
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+    get("/@:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
   end
 
   scope "/", Pleroma.Web do

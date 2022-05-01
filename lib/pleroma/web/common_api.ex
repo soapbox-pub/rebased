@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
+  alias Pleroma.Rule
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -505,14 +506,16 @@ defmodule Pleroma.Web.CommonAPI do
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),
          {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),
-         {:ok, statuses} <- get_report_statuses(account, data) do
+         {:ok, statuses} <- get_report_statuses(account, data),
+         rules <- get_report_rules(Map.get(data, :rule_ids, nil)) do
       ActivityPub.flag(%{
         context: Utils.generate_context_id(),
         actor: user,
         account: account,
         statuses: statuses,
         content: content_html,
-        forward: Map.get(data, :forward, false)
+        forward: Map.get(data, :forward, false),
+        rules: rules
       })
     end
   end
@@ -522,6 +525,16 @@ defmodule Pleroma.Web.CommonAPI do
       %User{} = account -> {:ok, account}
       _ -> {:error, dgettext("errors", "Account not found")}
     end
+  end
+
+  defp get_report_rules(nil) do
+    nil
+  end
+
+  defp get_report_rules(rule_ids) do
+    rule_ids
+    |> Rule.get()
+    |> Enum.map(& &1.id)
   end
 
   def update_report_state(activity_ids, state) when is_list(activity_ids) do
@@ -537,6 +550,22 @@ defmodule Pleroma.Web.CommonAPI do
     else
       nil -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not update state")}
+    end
+  end
+
+  def assign_report_to_account(activity_ids, user) when is_list(activity_ids) do
+    case Utils.assign_report_to_account(activity_ids, user) do
+      :ok -> {:ok, activity_ids}
+      _ -> {:error, dgettext("errors", "Could not assign account")}
+    end
+  end
+
+  def assign_report_to_account(activity_id, user) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+      Utils.assign_report_to_account(activity, user)
+    else
+      nil -> {:error, :not_found}
+      _ -> {:error, dgettext("errors", "Could not assign account")}
     end
   end
 

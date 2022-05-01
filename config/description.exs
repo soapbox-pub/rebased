@@ -537,6 +537,15 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :short_description,
+        type: :string,
+        description:
+          "Shorter version of instance description. It can be seen on `/api/v1/instance`",
+        suggestions: [
+          "Cool instance"
+        ]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
@@ -822,6 +831,14 @@ config :pleroma, :config_description, [
         description: "A user name maximum length. Default: 100.",
         suggestions: [
           100
+        ]
+      },
+      %{
+        key: :user_location_length,
+        type: :integer,
+        description: "A user location maximum length. Default: 50.",
+        suggestions: [
+          50
         ]
       },
       %{

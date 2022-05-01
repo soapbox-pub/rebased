@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push.Impl do
@@ -183,6 +183,7 @@ defmodule Pleroma.Web.Push.Impl do
   def format_title(%{type: type}, mastodon_type) do
     case mastodon_type || type do
       "mention" -> "New Mention"
+      "status" -> "New Status"
       "follow" -> "New Follower"
       "follow_request" -> "New Follow Request"
       "reblog" -> "New Repeat"

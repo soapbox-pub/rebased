@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.FollowingRelationship do
@@ -194,12 +194,13 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], f in assoc(r, :follower))
     |> where(following_id: ^origin.id)
     |> where([r, f], f.allow_following_move == true)
+    |> where([r, f], f.local == true)
     |> limit(50)
     |> preload([:follower])
     |> Repo.all()
     |> Enum.map(fn following_relationship ->
-      Repo.delete(following_relationship)
       Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
+      Pleroma.Web.CommonAPI.unfollow(following_relationship.follower, origin)
     end)
     |> case do
       [] ->

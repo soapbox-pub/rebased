@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
@@ -107,5 +107,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     rules = result["rules"]
 
     assert length(rules) == 3
+  end
+
+  test "get instance configuration", %{conn: conn} do
+    clear_config([:instance, :limit], 476)
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert result["configuration"]["statuses"]["max_characters"] == 476
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountController do
@@ -76,16 +76,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["follow", "write:follows"]} when action in [:follow_by_uri, :follow, :unfollow]
+    %{scopes: ["follow", "write:follows"]}
+    when action in [:follow_by_uri, :follow, :unfollow, :remove_from_followers]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
-  @relationship_actions [:follow, :unfollow]
+  @relationship_actions [:follow, :unfollow, :remove_from_followers]
   @needs_account ~W(
-    followers following lists follow unfollow mute unmute block unblock note endorse unendorse
+    followers following lists follow unfollow mute unmute block unblock
+    note endorse unendorse remove_from_followers
   )a
 
   plug(
@@ -222,6 +224,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       # Note: param name is indeed :discoverable (not an error)
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
       |> Maps.put_if_present(:birthday, params[:birthday])
+      |> Maps.put_if_present(:location, params[:location])
 
     # What happens here:
     #
@@ -470,6 +473,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       render(conn, "relationship.json", user: endorser, target: endorsed)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/remove_from_followers"
+  def remove_from_followers(%{assigns: %{user: %{id: id}, account: %{id: id}}}, _params) do
+    {:error, "Can not unfollow yourself"}
+  end
+
+  def remove_from_followers(%{assigns: %{user: followed, account: follower}} = conn, _params) do
+    with {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
+      render(conn, "relationship.json", user: follower, target: followed)
+    else
+      nil ->
+        render_error(conn, :not_found, "Record not found")
     end
   end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
@@ -104,6 +104,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(status)
 
       assert notification.user_id == subscriber.id
+      assert notification.type == "status"
     end
 
     test "does not create a notification for subscribed users if status is a reply" do

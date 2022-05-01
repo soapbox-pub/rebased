@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Constants do
@@ -19,7 +19,10 @@ defmodule Pleroma.Constants do
       "context_id",
       "deleted_activity_id",
       "pleroma_internal",
-      "generator"
+      "generator",
+      "assigned_account",
+      "rules",
+      "content_type"
     ]
   )
 

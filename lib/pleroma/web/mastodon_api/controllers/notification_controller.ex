@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationController do
@@ -51,11 +51,12 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     move
     pleroma:emoji_reaction
     poll
+    status
   }
   def index(%{assigns: %{user: user}} = conn, params) do
     params =
       Map.new(params, fn {k, v} -> {to_string(k), v} end)
-      |> Map.put_new("include_types", @default_notification_types)
+      |> Map.put_new("types", Map.get(params, :include_types, @default_notification_types))
 
     notifications = MastodonAPI.get_notifications(user, params)
 

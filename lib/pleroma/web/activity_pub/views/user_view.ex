@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UserView do
@@ -122,7 +122,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "discoverable" => user.is_discoverable,
       "capabilities" => capabilities,
       "alsoKnownAs" => user.also_known_as,
-      "vcard:bday" => birthday
+      "vcard:bday" => birthday,
+      "vcard:Address" => user.location
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))

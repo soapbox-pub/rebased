@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Account do
@@ -55,6 +55,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               "whether the user account is waiting on email confirmation to be activated"
           },
           show_birthday: %Schema{type: :boolean, nullable: true},
+          location: %Schema{type: :string, nullable: true},
           hide_favorites: %Schema{type: :boolean},
           hide_followers_count: %Schema{
             type: :boolean,

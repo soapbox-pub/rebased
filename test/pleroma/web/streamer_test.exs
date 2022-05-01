@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StreamerTest do
@@ -296,6 +296,15 @@ defmodule Pleroma.Web.StreamerTest do
 
       assert text =~ "hey cirno"
       assert_receive {:text, ^text}
+    end
+
+    test "it does not send 'update' events for chat messages", %{user: user, token: oauth_token} do
+      other_user = insert(:user)
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+
+      refute_receive {:render_with_user, _, _, ^activity}
     end
 
     test "it sends chat message notifications to the 'user:notification' stream", %{

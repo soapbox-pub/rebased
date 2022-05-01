@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
@@ -347,6 +348,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"]["quoteUrl"] == quote_id
       assert modified["object"]["quoteUri"] == quote_id
+    end
+
+    test "it drops attachment IDs" do
+      user = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+      {:ok, activity} = CommonAPI.post(user, %{status: "", media_ids: [upload.id]})
+
+      {:ok, %{"object" => %{"attachment" => [attachment]}}} =
+        Transmogrifier.prepare_outgoing(activity.data)
+
+      refute attachment["id"]
+      assert attachment["type"] == "Document"
     end
   end
 

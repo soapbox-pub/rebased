@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.MRF.FollowBotPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
   alias Pleroma.Config

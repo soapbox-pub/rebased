@@ -43,4 +43,15 @@ defmodule Pleroma.RuleTest do
              Rule.query()
              |> Pleroma.Repo.all()
   end
+
+  test "getting rules by ids" do
+    %{id: id1} = Rule.create(%{text: "Example rule"})
+    %{id: id2} = Rule.create(%{text: "Second rule"})
+    %{id: _id3} = Rule.create(%{text: "Third rule"})
+
+    rules = Rule.get([id1, id2])
+
+    assert Enum.all?(rules, &(&1.id in [id1, id2]))
+    assert length(rules) == 2
+  end
 end

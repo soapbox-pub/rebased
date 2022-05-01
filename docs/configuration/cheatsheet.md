@@ -18,6 +18,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `email`: Email used to reach an Administrator/Moderator of the instance.
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
+* `short_description`: Shorter version of instance description, can be seen on ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
 * `description_limit`: The character limit for image descriptions.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
@@ -53,6 +54,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
+* `user_location_length`: A user location maximum length (default: `50`).
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`).

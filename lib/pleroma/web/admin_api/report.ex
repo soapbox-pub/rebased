@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.Report do
@@ -12,6 +12,11 @@ defmodule Pleroma.Web.AdminAPI.Report do
     user = User.get_cached_by_ap_id(actor)
     account = User.get_cached_by_ap_id(account_ap_id)
 
+    assigned_account =
+      if Map.has_key?(report.data, "assigned_account") do
+        User.get_cached_by_id(report.data["assigned_account"])
+      end
+
     statuses =
       status_ap_ids
       |> Enum.reject(&is_nil(&1))
@@ -20,6 +25,12 @@ defmodule Pleroma.Web.AdminAPI.Report do
         act when is_binary(act) -> Activity.get_by_ap_id_with_object(act)
       end)
 
-    %{report: report, user: user, account: account, statuses: statuses}
+    %{
+      report: report,
+      user: user,
+      account: account,
+      statuses: statuses,
+      assigned_account: assigned_account
+    }
   end
 end
