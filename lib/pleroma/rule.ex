@@ -11,6 +11,8 @@ defmodule Pleroma.Rule do
   alias Pleroma.Repo
   alias Pleroma.Rule
 
+  @primary_key {:id, Pleroma.EctoType.StringId, autogenerate: true}
+
   schema "rules" do
     field(:priority, :integer, default: 0)
     field(:text, :string)
