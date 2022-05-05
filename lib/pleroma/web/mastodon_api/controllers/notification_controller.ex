@@ -52,6 +52,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     pleroma:emoji_reaction
     poll
     status
+    pleroma:thread_subscription
   }
   def index(%{assigns: %{user: user}} = conn, params) do
     params =

@@ -129,6 +129,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "pleroma:report" ->
         put_report(response, activity)
 
+      "pleroma:thread_subscription" ->
+        put_status(response, activity, reading_user, status_render_opts)
+
       type when type in ["follow", "follow_request"] ->
         response
     end

@@ -485,6 +485,9 @@ defmodule Pleroma.Web.Router do
       post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
 
       get("/birthdays", AccountController, :birthdays)
+
+      post("/statuses/:id/subscribe", StatusController, :subscribe_conversation)
+      post("/statuses/:id/unsubscribe", StatusController, :unsubscribe_conversation)
     end
 
     post("/accounts/confirmation_resend", AccountController, :confirmation_resend)

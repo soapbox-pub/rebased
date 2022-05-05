@@ -323,6 +323,40 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
+  def subscribe_conversation_operation do
+    %Operation{
+      tags: ["Status actions"],
+      summary: "Subscribe conversation",
+      security: [%{"oAuth" => ["write:notifications"]}],
+      description:
+        "Receive notifications for new replies in the thread that this status is part of",
+      operationId: "StatusController.subscribe_conversation",
+      parameters: [
+        id_param()
+      ],
+      responses: %{
+        200 => status_response(),
+        400 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unsubscribe_conversation_operation do
+    %Operation{
+      tags: ["Status actions"],
+      summary: "Unsubscribe conversation",
+      security: [%{"oAuth" => ["write:notifications"]}],
+      description:
+        "Stop receiving notifications for new replies in the thread that this status is part of",
+      operationId: "StatusController.unsubscribe_conversation",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        400 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def card_operation do
     %Operation{
       tags: ["Retrieve status information"],

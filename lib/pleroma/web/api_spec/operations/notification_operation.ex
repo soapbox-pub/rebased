@@ -203,7 +203,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "move",
         "follow_request",
         "poll",
-        "status"
+        "status",
+        "pleroma:thread_subscription"
       ],
       description: """
       The type of event that resulted in the notification.
@@ -218,6 +219,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
       - `pleroma:report` - Someone was reported
       - `status` - Someone you are subscribed to created a status
+      - `pleroma:thread_subscription - Someone replied to a status you are subscribed to
       """
     }
   end

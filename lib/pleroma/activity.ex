@@ -13,6 +13,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Repo
   alias Pleroma.ReportNote
   alias Pleroma.ThreadMute
+  alias Pleroma.ThreadSubscription
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -32,6 +33,7 @@ defmodule Pleroma.Activity do
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
     field(:thread_muted?, :boolean, virtual: true)
+    field(:thread_subscribed?, :boolean, virtual: true)
 
     # A field that can be used if you need to join some kind of other
     # id to order / paginate this field by
@@ -136,11 +138,38 @@ defmodule Pleroma.Activity do
       left_join: tm in ThreadMute,
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data),
       as: :thread_mute,
-      select: %Activity{a | thread_muted?: not is_nil(tm.id)}
+      select_merge: %{thread_muted?: not is_nil(tm.id)}
     )
   end
 
   def with_set_thread_muted_field(query, _), do: query
+
+  def with_set_thread_subscribed_field(query, %User{} = user) do
+    from([a] in query,
+      left_join: ts in ThreadSubscription,
+      on: ts.user_id == ^user.id and ts.context == fragment("?->>'context'", a.data),
+      as: :thread_subscription,
+      select_merge: %{thread_subscribed?: not is_nil(ts.id)}
+    )
+  end
+
+  def with_set_thread_subscribed_field(query, _), do: query
+
+  def with_set_thread_fields(query, user, muting_user \\ nil)
+
+  def with_set_thread_fields(query, %User{} = user, %User{} = muting_user) do
+    from([a] in query,
+      left_join: tm in ThreadMute,
+      on: tm.user_id == ^(muting_user || user).id and tm.context == fragment("?->>'context'", a.data),
+      as: :thread_mute,
+      left_join: ts in ThreadSubscription,
+      on: ts.user_id == ^user.id and ts.context == fragment("?->>'context'", a.data),
+      as: :thread_subscription,
+      select_merge: %{thread_muted?: not is_nil(tm.id), thread_subscribed?: not is_nil(ts.id)}
+    )
+  end
+
+  def with_set_thread_fields(query, _, _), do: query
 
   def get_by_ap_id(ap_id) do
     ap_id

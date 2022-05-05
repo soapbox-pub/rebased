@@ -96,6 +96,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     when action in ~w(favourite unfavourite)a
   )
 
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:notifications"]}
+    when action in [:subscribe_conversation, :unsubscribe_conversation]
+  )
+
   plug(RateLimiter, [name: :statuses_actions] when action in @rate_limited_status_actions)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
@@ -311,6 +317,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def unmute_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.remove_mute(user, activity) do
+      try_render(conn, "show.json", activity: activity, for: user, as: :activity)
+    end
+  end
+
+  @doc "POST /api/v1/pleroma/statuses/:id/subscribe"
+  def subscribe_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, activity} <- CommonAPI.add_subscription(user, activity) do
+      try_render(conn, "show.json", activity: activity, for: user, as: :activity)
+    end
+  end
+
+  @doc "POST /api/v1/pleroma/statuses/:id/unsubscribe"
+  def unsubscribe_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, activity} <- CommonAPI.remove_subscription(user, activity) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end

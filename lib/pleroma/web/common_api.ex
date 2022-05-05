@@ -9,6 +9,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Object
   alias Pleroma.Rule
   alias Pleroma.ThreadMute
+  alias Pleroma.ThreadSubscription
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -502,6 +503,40 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def thread_muted?(_, _), do: false
+
+  def add_subscription(user, activity) do
+    with {:ok, _} <- ThreadSubscription.add_subscription(user.id, activity.data["context"]) do
+      {:ok, activity}
+    else
+      {:error, _} -> {:error, dgettext("errors", "conversation is already subscribed")}
+    end
+  end
+
+  def remove_subscription(%User{} = user, %Activity{} = activity) do
+    ThreadSubscription.remove_subscription(user.id, activity.data["context"])
+    {:ok, activity}
+  end
+
+  def remove_subscription(user_id, activity_id) do
+    with {:user, %User{} = user} <- {:user, User.get_by_id(user_id)},
+         {:activity, %Activity{} = activity} <- {:activity, Activity.get_by_id(activity_id)} do
+      remove_subscription(user, activity)
+    else
+      {what, result} = error ->
+        Logger.warn(
+          "CommonAPI.remove_subscription/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
+        )
+
+        {:error, error}
+    end
+  end
+
+  def thread_subscribed?(%User{id: user_id}, %{data: %{"context" => context}})
+      when is_binary(context) do
+    ThreadSubscription.exists?(user_id, context)
+  end
+
+  def thread_subscribed?(_, _), do: false
 
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),

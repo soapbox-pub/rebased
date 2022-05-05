@@ -121,7 +121,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
       |> Activity.with_preloaded_bookmark(reading_user)
-      |> Activity.with_set_thread_muted_field(reading_user)
+      |> Activity.with_set_thread_fields(reading_user)
       |> Repo.all()
 
     relationships_opt =
@@ -169,7 +169,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       else
         Activity.create_by_object_ap_id(object.data["id"])
         |> Activity.with_preloaded_bookmark(opts[:for])
-        |> Activity.with_set_thread_muted_field(opts[:for])
+        |> Activity.with_set_thread_fields(opts[:for])
         |> Repo.one()
       end
 
@@ -276,6 +276,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         is_nil(opts[:for]) -> false
         is_boolean(activity.thread_muted?) -> activity.thread_muted?
         true -> CommonAPI.thread_muted?(opts[:for], activity)
+      end
+
+    thread_subscribed? =
+      cond do
+        is_nil(opts[:for]) -> false
+        is_boolean(activity.thread_subscribed?) -> activity.thread_subscribed?
+        true -> CommonAPI.thread_subscribed?(opts[:for], activity)
       end
 
     attachment_data = object.data["attachment"] || []
@@ -413,6 +420,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         expires_at: expires_at,
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
+        thread_subscribed: thread_subscribed?,
         emoji_reactions: emoji_reactions,
         parent_visible: visible_for_user?(reply_to, opts[:for]),
         pinned_at: pinned_at,
