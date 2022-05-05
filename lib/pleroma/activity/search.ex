@@ -58,7 +58,10 @@ defmodule Pleroma.Activity.Search do
   def maybe_restrict_blocked(query, _), do: query
 
   defp restrict_public(q, user) when not is_nil(user) do
-    intended_recipients = [Pleroma.Constants.as_public(), Pleroma.Web.ActivityPub.Utils.as_local_public()]
+    intended_recipients = [
+      Pleroma.Constants.as_public(),
+      Pleroma.Web.ActivityPub.Utils.as_local_public()
+    ]
 
     from([a, o] in q,
       where: fragment("?->>'type' = 'Create'", a.data),

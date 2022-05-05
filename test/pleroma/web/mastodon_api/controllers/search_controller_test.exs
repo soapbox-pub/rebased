@@ -83,7 +83,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       user = insert(:user)
       %{conn: conn} = oauth_access(["read:search"])
 
-      {:ok, activity} = CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
 
       results =
         conn
@@ -98,7 +99,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       user = insert(:user)
       %{conn: conn} = oauth_access([])
 
-      {:ok, _activity} = CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+      {:ok, _activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
 
       results =
         conn
@@ -111,7 +113,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search local-only status as an anonymous user" do
       user = insert(:user)
 
-      {:ok, _activity} = CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+      {:ok, _activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
 
       results =
         build_conn()
