@@ -84,6 +84,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          user <- Map.get(assigns, :user, nil),
          {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
       conn
+      |> maybe_skip_cache(user)
       |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
       |> put_resp_content_type("application/activity+json")
@@ -112,6 +113,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          user <- Map.get(assigns, :user, nil),
          {_, true} <- {:visible?, Visibility.visible_for_user?(activity, user)} do
       conn
+      |> maybe_skip_cache(user)
       |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
       |> put_resp_content_type("application/activity+json")
@@ -149,6 +151,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       end
 
     assign(conn, :cache_ttl, ttl)
+  end
+
+  def maybe_skip_cache(conn, user) do
+    if user do
+      conn
+      |> assign(:skip_cache, true)
+    else
+      conn
+    end
   end
 
   # GET /relay/following
