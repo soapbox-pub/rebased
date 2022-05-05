@@ -1923,7 +1923,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "other users can read local-only posts" do
       user = insert(:user)
-      %{user: reader, conn: conn} = oauth_access(["read:statuses"])
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
 
       {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
 
@@ -1935,18 +1935,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert received["id"] == activity.id
     end
 
-    test "other users can see local-only posts" do
+    test "anonymous users cannot see local-only posts" do
       user = insert(:user)
-      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
 
       {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
 
-      received =
-        conn
+      _received =
+        build_conn()
         |> get("/api/v1/statuses/#{activity.id}")
-        |> json_response_and_validate_schema(:ok)
-
-      assert received["id"] == activity.id
+        |> json_response_and_validate_schema(:not_found)
     end
   end
 
