@@ -247,6 +247,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(response, 200) == ObjectView.render("object.json", %{object: object})
     end
 
+    test "does not return local-only objects for remote users", %{conn: conn} do
+      user = insert(:user)
+      reader = insert(:user, local: false)
+
+      {:ok, post} =
+        CommonAPI.post(user, %{status: "test @#{reader.nickname}", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      object = Object.normalize(post, fetch: false)
+      uuid = String.split(object.data["id"], "/") |> List.last()
+
+      assert response =
+               conn
+               |> assign(:user, reader)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/objects/#{uuid}")
+
+      json_response(response, 404)
+    end
+
     test "it returns a json representation of the object with accept application/json", %{
       conn: conn
     } do
