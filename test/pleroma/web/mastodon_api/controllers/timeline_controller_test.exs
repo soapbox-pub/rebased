@@ -367,6 +367,47 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                }
              ] = result
     end
+
+    test "should return local-only posts for authenticated users" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, %{id: id}} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^id}] = result
+    end
+
+    test "should not return local-only posts for users without read:statuses" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access([])
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
+    end
+
+    test "should not return local-only posts for anonymous users" do
+      user = insert(:user)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
+    end
   end
 
   defp local_and_remote_activities do

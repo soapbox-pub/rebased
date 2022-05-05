@@ -501,9 +501,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @spec fetch_public_or_unlisted_activities(map(), Pagination.type()) :: [Activity.t()]
   def fetch_public_or_unlisted_activities(opts \\ %{}, pagination \\ :keyset) do
+    includes_local_public = Map.get(opts, :includes_local_public, false)
+
     opts = Map.delete(opts, :user)
 
-    [Constants.as_public()]
+    intended_recipients =
+      if includes_local_public do
+        [Constants.as_public(), as_local_public()]
+      else
+        [Constants.as_public()]
+      end
+
+    intended_recipients
     |> fetch_activities_query(opts)
     |> restrict_unlisted(opts)
     |> fetch_paginated_optimized(opts, pagination)
