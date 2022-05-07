@@ -538,6 +538,17 @@ defmodule Pleroma.Web.CommonAPI do
 
   def thread_subscribed?(_, _), do: false
 
+  def follow_activity(%User{} = user, %Activity{} = activity) do
+    with {:ok, follow_data, _} <- Builder.follow(user, activity),
+         {:ok, follow_activity, _} <- Pipeline.common_pipeline(follow_data, local: true) do
+      if follow_activity.data["state"] == "reject" do
+        {:error, :rejected}
+      else
+        {:ok, follow_activity}
+      end
+    end
+  end
+
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),
          {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),

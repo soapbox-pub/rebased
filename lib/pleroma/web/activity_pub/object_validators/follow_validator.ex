@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator do
     |> validate_inclusion(:type, ["Follow"])
     |> validate_inclusion(:state, ~w{pending reject accept})
     |> validate_actor_presence()
-    |> validate_actor_presence(field_name: :object)
+    |> validate_object_or_user_presence()
   end
 
   def cast_and_validate(data) do

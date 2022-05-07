@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
@@ -42,13 +43,26 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   end
 
   @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
-  def follow(follower, followed) do
+  def follow(follower, %User{} = followed) do
     data = %{
       "id" => Utils.generate_activity_id(),
       "actor" => follower.ap_id,
       "type" => "Follow",
       "object" => followed.ap_id,
       "to" => [followed.ap_id]
+    }
+
+    {:ok, data, []}
+  end
+
+  @spec follow(User.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def follow(follower, %Activity{} = followed_activity) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => follower.ap_id,
+      "type" => "Follow",
+      "object" => followed_activity.data["id"],
+      "to" => [followed_activity.actor]
     }
 
     {:ok, data, []}

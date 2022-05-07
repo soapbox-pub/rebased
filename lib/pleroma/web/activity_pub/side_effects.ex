@@ -101,15 +101,33 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
           data: %{
             "id" => follow_id,
             "type" => "Follow",
-            "object" => followed_user,
+            "object" => followed_object,
             "actor" => following_user
           }
         } = object,
         meta
       ) do
-    with %User{} = follower <- User.get_cached_by_ap_id(following_user),
-         %User{} = followed <- User.get_cached_by_ap_id(followed_user),
-         {_, {:ok, _, _}, _, _} <-
+    meta =
+      with %User{} = follower <- User.get_cached_by_ap_id(following_user),
+           followed <-
+             Object.normalize(followed_object, fetch: false) ||
+               User.get_cached_by_ap_id(followed_object),
+           {:ok, meta} <- handle_follow(object, follower, followed, meta) do
+        meta
+      end
+
+    updated_object = Activity.get_by_ap_id(follow_id)
+
+    {:ok, updated_object, meta}
+  end
+
+  defp handle_follow(
+         object,
+         %User{} = follower,
+         %User{} = followed,
+         meta
+       ) do
+    with {_, {:ok, _, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
       if followed.local && !followed.is_locked do
         {:ok, accept_data, _} = Builder.accept(followed, object)
@@ -130,9 +148,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       meta
       |> add_notifications(notifications)
 
-    updated_object = Activity.get_by_ap_id(follow_id)
+    {:ok, meta}
+  end
 
-    {:ok, updated_object, meta}
+  defp handle_follow(
+         object,
+         %User{} = _follower,
+         %Object{} = followed,
+         meta
+       ) do
+    Utils.add_follower_to_object(object, followed)
+
+    {:ok, meta}
   end
 
   # Tasks this handles:

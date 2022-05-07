@@ -22,7 +22,8 @@ defmodule Pleroma.Constants do
       "generator",
       "assigned_account",
       "rules",
-      "content_type"
+      "content_type",
+      "followers"
     ]
   )
 
