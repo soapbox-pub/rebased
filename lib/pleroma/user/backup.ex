@@ -32,9 +32,7 @@ defmodule Pleroma.User.Backup do
   end
 
   def create(user, admin_id \\ nil) do
-    with :ok <- validate_email_enabled(),
-         :ok <- validate_user_email(user),
-         :ok <- validate_limit(user, admin_id),
+    with :ok <- validate_limit(user, admin_id),
          {:ok, backup} <- user |> new() |> Repo.insert() do
       BackupWorker.process(backup, admin_id)
     end
@@ -85,20 +83,6 @@ defmodule Pleroma.User.Backup do
         :ok
     end
   end
-
-  defp validate_email_enabled do
-    if Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
-      :ok
-    else
-      {:error, dgettext("errors", "Backups require enabled email")}
-    end
-  end
-
-  defp validate_user_email(%User{email: nil}) do
-    {:error, dgettext("errors", "Email is required")}
-  end
-
-  defp validate_user_email(%User{email: email}) when is_binary(email), do: :ok
 
   def get_last(user_id) do
     __MODULE__

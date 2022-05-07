@@ -37,10 +37,7 @@ defmodule Pleroma.Workers.BackupWorker do
            backup_id |> Backup.get() |> Backup.process(),
          {:ok, _job} <- schedule_deletion(backup),
          :ok <- Backup.remove_outdated(backup),
-         {:ok, _} <-
-           backup
-           |> Pleroma.Emails.UserEmail.backup_is_ready_email(admin_user_id)
-           |> Pleroma.Emails.Mailer.deliver() do
+         :ok <- maybe_deliver_email(backup, admin_user_id) do
       {:ok, backup}
     end
   end
@@ -49,6 +46,25 @@ defmodule Pleroma.Workers.BackupWorker do
     case Backup.get(backup_id) do
       %Backup{} = backup -> Backup.delete(backup)
       nil -> :ok
+    end
+  end
+
+  defp has_email?(user) do
+    not is_nil(user.email) and user.email != ""
+  end
+
+  defp maybe_deliver_email(backup, admin_user_id) do
+    has_mailer = Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled])
+    backup = backup |> Pleroma.Repo.preload(:user)
+
+    if has_email?(backup.user) and has_mailer do
+      backup
+      |> Pleroma.Emails.UserEmail.backup_is_ready_email(admin_user_id)
+      |> Pleroma.Emails.Mailer.deliver()
+
+      :ok
+    else
+      :ok
     end
   end
 end
