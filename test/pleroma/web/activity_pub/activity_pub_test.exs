@@ -1652,6 +1652,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     activity = Repo.preload(activity, :bookmark)
     activity = %Activity{activity | thread_muted?: !!activity.thread_muted?}
+    activity = %Activity{activity | thread_subscribed?: !!activity.thread_subscribed?}
 
     assert ActivityPub.fetch_activities([], %{user: user}) == [activity]
   end

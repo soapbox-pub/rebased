@@ -128,6 +128,21 @@ defmodule Pleroma.NotificationTest do
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
     end
+
+    test "it creates a notification for subscribed threads" do
+      note = insert(:note_activity)
+      user = insert(:user)
+      user2 = insert(:user)
+
+      CommonAPI.add_subscription(user, note)
+
+      {:ok, note2} = CommonAPI.post(user2, %{status: "Akariiiin", in_reply_to_status_id: note.id})
+
+      {:ok, [_, notification]} = Notification.create_notifications(note2)
+
+      assert notification.user_id == user.id
+      assert notification.type == "pleroma:thread_subscription"
+    end
   end
 
   test "create_poll_notifications/1" do

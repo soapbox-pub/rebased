@@ -11,6 +11,6 @@ defmodule Pleroma.Repo.Migrations.CreateThreadSubscriptions do
       add(:context, :string, null: false)
     end
 
-    create_if_not_exists(unique_index(:thread_subscriptions, [:user_id, :context]))
+    create_if_not_exists(unique_index(:thread_subscriptions, [:user_id, :context], name: :thread_subscriptions_user_id_context_index))
   end
 end

@@ -21,7 +21,7 @@ defmodule Pleroma.ThreadSubscription do
     subscription
     |> cast(params, [:user_id, :context])
     |> foreign_key_constraint(:user_id)
-    |> unique_constraint(:user_id, name: :unique_index)
+    |> unique_constraint(:user_id, name: :thread_subscriptions_user_id_context_index)
   end
 
   def query(user_id, context) do

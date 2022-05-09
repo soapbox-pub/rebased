@@ -289,6 +289,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
+        thread_subscribed: false,
         emoji_reactions: [],
         parent_visible: false,
         pinned_at: nil,
@@ -343,6 +344,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert status.pleroma.thread_muted == true
+  end
+
+  test "tells if the thread is subscribed" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "test"})
+    status = StatusView.render("show.json", %{activity: activity, for: user})
+
+    assert status.pleroma.thread_subscribed == false
+
+    {:ok, activity} = CommonAPI.add_subscription(user, activity)
+
+    status = StatusView.render("show.json", %{activity: activity, for: user})
+
+    assert status.pleroma.thread_subscribed == true
   end
 
   test "tells if the status is bookmarked" do

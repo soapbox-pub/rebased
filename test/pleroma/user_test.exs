@@ -1477,7 +1477,12 @@ defmodule Pleroma.UserTest do
 
       assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
-      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
+      assert [
+               Map.merge(activity, %{
+                 thread_muted?: CommonAPI.thread_muted?(user2, activity),
+                 thread_subscribed?: CommonAPI.thread_subscribed?(user2, activity)
+               })
+             ] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
                  user: user2
                })
