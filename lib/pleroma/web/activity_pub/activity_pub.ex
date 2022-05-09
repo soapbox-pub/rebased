@@ -613,6 +613,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_thread_visibility(query, %{user: %User{ap_id: ap_id}}, _) do
     local_public = as_local_public()
+
     from(
       a in query,
       where: fragment("thread_visibility(?, (?)->>'id', ?) = true", ^ap_id, a.data, ^local_public)
@@ -703,7 +704,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp user_activities_recipients(%{reading_user: reading_user}) do
     if not is_nil(reading_user) and reading_user.local do
-      [Constants.as_public(), as_local_public(), reading_user.ap_id | User.following(reading_user)]
+      [
+        Constants.as_public(),
+        as_local_public(),
+        reading_user.ap_id | User.following(reading_user)
+      ]
     else
       [Constants.as_public()]
     end

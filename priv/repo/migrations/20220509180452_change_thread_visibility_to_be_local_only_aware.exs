@@ -7,7 +7,10 @@ defmodule Pleroma.Repo.Migrations.ChangeThreadVisibilityToBeLocalOnlyAware do
   end
 
   def down do
-    execute("DROP FUNCTION IF EXISTS thread_visibility(actor varchar, activity_id varchar, local_public varchar)")
+    execute(
+      "DROP FUNCTION IF EXISTS thread_visibility(actor varchar, activity_id varchar, local_public varchar)"
+    )
+
     execute(restore_thread_visibility())
   end
 
