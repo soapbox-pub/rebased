@@ -1318,6 +1318,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert outbox_endpoint == result["id"]
     end
 
+    test "it returns a local note activity when authenticated as local user", %{conn: conn} do
+      user = insert(:user)
+      reader = insert(:user)
+      {:ok, note_activity} = CommonAPI.post(user, %{status: "mew mew", visibility: "local"})
+      ap_id = note_activity.data["id"]
+
+      resp =
+        conn
+        |> assign(:user, reader)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox?page=true")
+        |> json_response(200)
+
+      assert %{"orderedItems" => [%{"id" => ^ap_id}]} = resp
+    end
+
+    test "it does not return a local note activity when unauthenticated", %{conn: conn} do
+      user = insert(:user)
+      {:ok, _note_activity} = CommonAPI.post(user, %{status: "mew mew", visibility: "local"})
+
+      resp =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox?page=true")
+        |> json_response(200)
+
+      assert %{"orderedItems" => []} = resp
+    end
+
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:note_activity)
       note_object = Object.normalize(note_activity, fetch: false)
