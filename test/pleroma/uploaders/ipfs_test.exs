@@ -23,6 +23,16 @@ defmodule Pleroma.Uploaders.IPFSTest do
     clear_config([Pleroma.Uploaders.IPFS, :post_gateway_url], "http://localhost:5001")
   end
 
+  describe "get_final_url" do
+    test "it returns the final url for put_file" do
+      assert IPFS.get_final_url("/api/v0/add") == "http://localhost:5001/api/v0/add"
+    end
+
+    test "it returns the final url for delete_file" do
+      assert IPFS.get_final_url("/api/v0/files/rm") == "http://localhost:5001/api/v0/files/rm"
+    end
+  end
+
   describe "get_file/1" do
     test "it returns path to ipfs file with cid as subdomain" do
       assert IPFS.get_file("testcid") == {
@@ -62,7 +72,8 @@ defmodule Pleroma.Uploaders.IPFSTest do
           {:ok,
            %Tesla.Env{
              status: 200,
-             body: "{\"Hash\":\"bafybeicrh7ltzx52yxcwrvxxckfmwhqdgsb6qym6dxqm2a4ymsakeshwoi\"}"
+             body:
+               "{\"Name\":\"image-tet.jpg\",\"Size\":\"5000\", \"Hash\":\"bafybeicrh7ltzx52yxcwrvxxckfmwhqdgsb6qym6dxqm2a4ymsakeshwoi\"}"
            }}
         end do
         assert IPFS.put_file(file_upload) ==

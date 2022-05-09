@@ -12,6 +12,13 @@ defmodule Pleroma.Uploaders.IPFS do
   @placeholder "{CID}"
   def placeholder, do: @placeholder
 
+  def get_final_url(method) do
+    config = Config.get([__MODULE__])
+    post_base_url = Keyword.get(config, :post_gateway_url)
+
+    Path.join([post_base_url, method])
+  end
+
   @impl true
   def get_file(file) do
     b_url = Pleroma.Upload.base_url()
@@ -25,15 +32,12 @@ defmodule Pleroma.Uploaders.IPFS do
 
   @impl true
   def put_file(%Pleroma.Upload{} = upload) do
-    config = Config.get([__MODULE__])
-    post_base_url = Keyword.get(config, :post_gateway_url)
-
     mp =
       Multipart.new()
       |> Multipart.add_content_type_param("charset=utf-8")
       |> Multipart.add_file(upload.tempfile)
 
-    final_url = Path.join([post_base_url, "/api/v0/add"])
+    final_url = get_final_url("/api/v0/add")
 
     case Pleroma.HTTP.post(final_url, mp, [], params: ["cid-version": "1"]) do
       {:ok, ret} ->
@@ -42,7 +46,7 @@ defmodule Pleroma.Uploaders.IPFS do
             if Map.has_key?(ret, "Hash") do
               {:ok, {:file, ret["Hash"]}}
             else
-              {:error, "JSON doesn't contain Hash value"}
+              {:error, "JSON doesn't contain Hash key"}
             end
 
           error ->
@@ -58,10 +62,7 @@ defmodule Pleroma.Uploaders.IPFS do
 
   @impl true
   def delete_file(file) do
-    config = Config.get([__MODULE__])
-    post_base_url = Keyword.get(config, :post_gateway_url)
-
-    final_url = Path.join([post_base_url, "/api/v0/files/rm"])
+    final_url = get_final_url("/api/v0/files/rm")
 
     case Pleroma.HTTP.post(final_url, "", [], params: [arg: file]) do
       {:ok, %{status_code: 204}} -> :ok
