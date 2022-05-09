@@ -407,6 +407,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert id_two == to_string(activity.id)
     end
 
+    test "gets local-only statuses for authenticated users", %{user: _user, conn: conn} do
+      user_one = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user_one, %{status: "HI!!!", visibility: "local"})
+
+      resp =
+        conn
+        |> get("/api/v1/accounts/#{user_one.id}/statuses")
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => id}] = resp
+      assert id == to_string(activity.id)
+    end
+
     test "gets an users media, excludes reblogs", %{conn: conn} do
       note = insert(:note_activity)
       user = User.get_cached_by_ap_id(note.data["actor"])
