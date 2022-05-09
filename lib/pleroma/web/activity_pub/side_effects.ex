@@ -121,47 +121,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, updated_object, meta}
   end
 
-  defp handle_follow(
-         object,
-         %User{} = follower,
-         %User{} = followed,
-         meta
-       ) do
-    with {_, {:ok, _, _}, _, _} <-
-           {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
-      if followed.local && !followed.is_locked do
-        {:ok, accept_data, _} = Builder.accept(followed, object)
-        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
-      end
-    else
-      {:following, {:error, _}, _follower, followed} ->
-        {:ok, reject_data, _} = Builder.reject(followed, object)
-        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
-
-      _ ->
-        nil
-    end
-
-    {:ok, notifications} = Notification.create_notifications(object, do_send: false)
-
-    meta =
-      meta
-      |> add_notifications(notifications)
-
-    {:ok, meta}
-  end
-
-  defp handle_follow(
-         object,
-         %User{} = _follower,
-         %Object{} = followed,
-         meta
-       ) do
-    Utils.add_follower_to_object(object, followed)
-
-    {:ok, meta}
-  end
-
   # Tasks this handles:
   # - Unfollow and block
   @impl true
@@ -485,6 +444,47 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Nothing to do
   def handle_object_creation(object, _activity, meta) do
     {:ok, object, meta}
+  end
+
+  defp handle_follow(
+         object,
+         %User{} = follower,
+         %User{} = followed,
+         meta
+       ) do
+    with {_, {:ok, _, _}, _, _} <-
+           {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
+      if followed.local && !followed.is_locked do
+        {:ok, accept_data, _} = Builder.accept(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+      end
+    else
+      {:following, {:error, _}, _follower, followed} ->
+        {:ok, reject_data, _} = Builder.reject(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
+
+      _ ->
+        nil
+    end
+
+    {:ok, notifications} = Notification.create_notifications(object, do_send: false)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
+
+    {:ok, meta}
+  end
+
+  defp handle_follow(
+         object,
+         %User{} = _follower,
+         %Object{} = followed,
+         meta
+       ) do
+    Utils.add_follower_to_object(object, followed)
+
+    {:ok, meta}
   end
 
   defp undo_like(nil, object), do: delete_object(object)

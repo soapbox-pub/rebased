@@ -160,7 +160,9 @@ defmodule Pleroma.Activity do
   def with_set_thread_fields(query, %User{} = user, %User{} = muting_user) do
     from([a] in query,
       left_join: tm in ThreadMute,
-      on: tm.user_id == ^(muting_user || user).id and tm.context == fragment("?->>'context'", a.data),
+      on:
+        tm.user_id == ^(muting_user || user).id and
+          tm.context == fragment("?->>'context'", a.data),
       as: :thread_mute,
       left_join: ts in ThreadSubscription,
       on: ts.user_id == ^user.id and ts.context == fragment("?->>'context'", a.data),
