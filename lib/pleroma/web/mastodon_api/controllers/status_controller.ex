@@ -96,12 +96,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     when action in ~w(favourite unfavourite)a
   )
 
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:notifications"]}
-    when action in [:subscribe_conversation, :unsubscribe_conversation]
-  )
-
   plug(RateLimiter, [name: :statuses_actions] when action in @rate_limited_status_actions)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)

@@ -55,14 +55,14 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
-  @spec follow(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def follow(follower, %Activity{} = followed_activity) do
+  @spec follow(User.t(), Object.t()) :: {:ok, map(), keyword()}
+  def follow(follower, %Object{} = object) do
     data = %{
       "id" => Utils.generate_activity_id(),
       "actor" => follower.ap_id,
       "type" => "Follow",
-      "object" => followed_activity.data["id"],
-      "to" => [followed_activity.actor]
+      "object" => object.data["id"],
+      "to" => [object.data["actor"]]
     }
 
     {:ok, data, []}

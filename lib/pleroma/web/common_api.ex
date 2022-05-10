@@ -505,7 +505,8 @@ defmodule Pleroma.Web.CommonAPI do
   def thread_muted?(_, _), do: false
 
   def add_subscription(user, activity) do
-    with {:ok, _} <- ThreadSubscription.add_subscription(user.id, activity.data["context"]) do
+    with {:ok, _} <- ThreadSubscription.add_subscription(user.id, activity.data["context"]),
+         _ <- follow_status(user, activity.id) do
       {:ok, activity}
     else
       {:error, _} -> {:error, dgettext("errors", "conversation is already subscribed")}
@@ -514,6 +515,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def remove_subscription(%User{} = user, %Activity{} = activity) do
     ThreadSubscription.remove_subscription(user.id, activity.data["context"])
+    unfollow_status(user, activity.id)
     {:ok, activity}
   end
 
@@ -538,14 +540,27 @@ defmodule Pleroma.Web.CommonAPI do
 
   def thread_subscribed?(_, _), do: false
 
-  def follow_activity(%User{} = user, %Activity{} = activity) do
-    with {:ok, follow_data, _} <- Builder.follow(user, activity),
+  def follow_status(%User{} = user, id) do
+    with %Activity{object: object} <- Activity.get_by_id_with_object(id),
+         {:ok, follow_data, _} <- Builder.follow(user, object),
          {:ok, follow_activity, _} <- Pipeline.common_pipeline(follow_data, local: true) do
       if follow_activity.data["state"] == "reject" do
         {:error, :rejected}
       else
         {:ok, follow_activity}
       end
+    end
+  end
+
+  def unfollow_status(%User{} = user, id) do
+    with %Activity{object: object} <- Activity.get_by_id_with_object(id),
+         %Activity{} = follow <- Utils.fetch_latest_follow(user, object),
+         {:ok, unfollow_data, _} <- Builder.undo(user, follow),
+         {:ok, unfollow, _} <- Pipeline.common_pipeline(unfollow_data, local: true) do
+      {:ok, unfollow}
+    else
+      {:fetch_block, nil} -> {:error, :not_blocking}
+      e -> e
     end
   end
 

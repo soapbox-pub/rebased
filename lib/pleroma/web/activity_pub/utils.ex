@@ -497,6 +497,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.one()
   end
 
+  def fetch_latest_follow(%User{ap_id: follower_id}, %Object{data: %{"id" => followed_id}}) do
+    "Follow"
+    |> Activity.Queries.by_type()
+    |> where(actor: ^follower_id)
+    # this is to use the index
+    |> Activity.Queries.by_object_id(followed_id)
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> limit(1)
+    |> Repo.one()
+  end
+
   def fetch_latest_undo(%User{ap_id: ap_id}) do
     "Undo"
     |> Activity.Queries.by_type()

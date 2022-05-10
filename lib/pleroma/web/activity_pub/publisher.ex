@@ -138,8 +138,35 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
           []
       end
 
-    Pleroma.Web.Federator.Publisher.remote_users(actor, activity) ++ followers ++ fetchers
+    subscribers =
+      if Pleroma.Constants.as_public() in activity.recipients do
+        get_thread_subscribers(activity.data["object"])
+        |> Enum.map(&User.get_cached_by_ap_id/1)
+        |> Enum.filter(fn user -> user && !user.local end)
+        |> Enum.uniq()
+      else
+        []
+      end
+
+    Pleroma.Web.Federator.Publisher.remote_users(actor, activity) ++
+      followers ++ fetchers ++ subscribers
   end
+
+  defp get_thread_subscribers(ap_id) when is_binary(ap_id),
+    do: get_thread_subscribers(Object.get_by_ap_id(ap_id))
+
+  defp get_thread_subscribers(%{data: %{"subscribers" => subscribers}} = object) do
+    subscribers ++
+      with %Object{data: %{"inReplyTo" => reply}} <- object do
+        get_thread_subscribers(reply)
+      else
+        _ -> []
+      end
+  end
+
+  defp get_thread_subscribers(%{data: %{"inReplyTo" => reply}}), do: get_thread_subscribers(reply)
+
+  defp get_thread_subscribers(_), do: []
 
   defp get_cc_ap_ids(ap_id, recipients) do
     host = Map.get(URI.parse(ap_id), :host)

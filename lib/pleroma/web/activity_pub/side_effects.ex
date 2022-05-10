@@ -528,6 +528,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_undoing(
+        %{data: %{"type" => "Follow", "actor" => _follower, "object" => followed}} = object
+      ) do
+    with %Object{} = followed <- Object.normalize(followed, fetch: false),
+         {:ok, _} <- Utils.remove_follower_from_object(object, followed),
+         {:ok, _} <- Repo.delete(object) do
+      :ok
+    else
+      nil -> :ok
+    end
+  end
+
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 
   @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
