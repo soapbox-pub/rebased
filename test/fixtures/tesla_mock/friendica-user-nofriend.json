@@ -1,0 +1,56 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "vcard": "http://www.w3.org/2006/vcard/ns#",
+      "dfrn": "http://purl.org/macgirvin/dfrn/1.0/",
+      "diaspora": "https://diasporafoundation.org/ns/",
+      "litepub": "http://litepub.social/ns#",
+      "toot": "http://joinmastodon.org/ns#",
+      "schema": "http://schema.org#",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "directMessage": "litepub:directMessage",
+      "discoverable": "toot:discoverable",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value"
+    }
+  ],
+  "id": "https://ica.mkljczk.pl/profile/nofriend",
+  "diaspora:guid": "68a16c11-1262-1103-d40b-806159848009",
+  "type": "Person",
+  "following": "https://ica.mkljczk.pl/following/nofriend",
+  "followers": "https://ica.mkljczk.pl/followers/nofriend",
+  "inbox": "https://ica.mkljczk.pl/inbox/nofriend",
+  "outbox": "https://ica.mkljczk.pl/outbox/nofriend",
+  "preferredUsername": "nofriend",
+  "name": "marcin miko\u0142ajczak",
+  "vcard:hasAddress": {
+    "@type": "vcard:Home",
+    "vcard:country-name": "Poland",
+    "vcard:region": "Lodzkie",
+    "vcard:locality": "Kutno"
+  },
+  "vcard:hasInstantMessage": ["matrix:@mkljczk:mkljczk.pl"],
+  "url": "https://ica.mkljczk.pl/profile/nofriend",
+  "manuallyApprovesFollowers": true,
+  "discoverable": true,
+  "publicKey": {
+    "id": "https://ica.mkljczk.pl/profile/nofriend#main-key",
+    "owner": "https://ica.mkljczk.pl/profile/nofriend",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEArqRcxWhumESUB2m+DTJ7\ntgSbrUonrhS8NTKAip5+JQ7nz5/Zt2LznlkrJALv/YmqcZn5atXWRXBuMKl4FPYF\nql8yYrmrjPp3+wkkgw7iMJyGcem3TedXsk7DgtJD+VPAgVOIQP8MxvUs1epH0ucv\nMyMYCCQuHSbSQ9AyI0SF+UWAiDnh57qu7zBETShPlk4uD3s1GkY5vt1BidoJMo9j\nXFF5Z3qQzS5i+uSMyzoKb3EKw33dl89Cp9sDLOPHxiFCLajA0HJkcYnUzCBMrDO/\nKSFHKCymLrSWecrHXqw/fEfUY90OFTE0Kt9aWNT40o6FJf2LO47FZAlSZewbnlia\n/Z4nufrEOnThDeYxE4P2lLzeLqJMPZg72wIryCYCqfK2E+6z7ywIGCWNz65NAsLN\nDAZvFwzg/H5EnkNG9VbDIDGgMQ4oUwmPKSr0+ooj6nqZduvw6pIKvSmbwRTrk1hr\nw8iYqigiyZrE7JneW4vhhEFihV8Nx9bmuK7/r8uSixJTpDe59njFxeXvUoOMJS1T\n+n5799hfX2/HHwwtP48zqOnKLtQJPPNiOcBp998XdlnQMJcHt3uzLXJsGoCTZKPO\n8ZzaPiPgyYtTrJnCKn5y+JKfw925yMxxKvQCAefDMGusOTpk+Toq1YMIFXmDGICk\nUg7VTyylOXWfHLFZ23mzz4kCAwEAAQ==\n-----END PUBLIC KEY-----\n"
+  },
+  "endpoints": { "sharedInbox": "https://ica.mkljczk.pl/inbox" },
+  "icon": {
+    "type": "Image",
+    "url": "https://ica.mkljczk.pl/photo/profile/nofriend.jpeg?ts=1645282260",
+    "mediaType": "image/jpeg"
+  },
+  "generator": {
+    "type": "Service",
+    "name": "Friendica 'Siberian Iris' 2022.05-dev-1452",
+    "url": "https://ica.mkljczk.pl"
+  }
+}

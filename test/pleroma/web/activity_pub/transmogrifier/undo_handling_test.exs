@@ -12,6 +12,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+  import Mock
+
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "it works for incoming emoji reaction undos" do
     user = insert(:user)
@@ -181,5 +187,30 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     blocker = User.get_cached_by_ap_id(data["actor"])
 
     refute User.blocks?(blocker, user)
+  end
+
+  test "it works for incoming object follows with an existing follow" do
+    object = insert(:note)
+
+    follow_data =
+      File.read!("test/fixtures/friendica-object-follow-activity.json")
+      |> Jason.decode!()
+      |> Map.put("object", object.data["id"])
+
+    {:ok, %Activity{data: follow_data, local: false}} = Transmogrifier.handle_incoming(follow_data)
+
+    data =
+      File.read!("test/fixtures/friendica-object-unfollow-activity.json")
+      |> Jason.decode!()
+      |> Map.put("object", follow_data)
+
+    {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+    assert data["type"] == "Undo"
+    assert data["object"]["type"] == "Follow"
+    assert data["object"]["object"] == object.data["id"]
+    assert data["actor"] == "https://ica.mkljczk.pl/profile/nofriend"
+
+    refute data["actor"] in Object.normalize(follow_data["object"], fetch: false).data["followers"]
   end
 end

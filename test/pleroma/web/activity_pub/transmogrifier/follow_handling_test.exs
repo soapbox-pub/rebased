@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -13,7 +14,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
   import Pleroma.Factory
   import Ecto.Query
-  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -203,6 +203,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
       assert [^pending_follower] = User.get_follow_requests(user)
+    end
+
+    test "it works for object follows" do
+      object = insert(:note)
+
+      data =
+        File.read!("test/fixtures/friendica-object-follow-activity.json")
+        |> Jason.decode!()
+        |> Map.put("object", object.data["id"])
+
+      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "https://ica.mkljczk.pl/profile/nofriend"
+      assert data["type"] == "Follow"
+      assert data["id"] == "https://ica.mkljczk.pl/objects/a85d7459-6062-7ab5-16c3-a84988943159"
+
+      activity = Repo.get(Activity, activity.id)
+      assert data["actor"] in Object.normalize(data["object"], fetch: false).data["followers"]
     end
   end
 end

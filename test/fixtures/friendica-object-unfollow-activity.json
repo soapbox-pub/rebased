@@ -1,0 +1,49 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "vcard": "http://www.w3.org/2006/vcard/ns#",
+      "dfrn": "http://purl.org/macgirvin/dfrn/1.0/",
+      "diaspora": "https://diasporafoundation.org/ns/",
+      "litepub": "http://litepub.social/ns#",
+      "toot": "http://joinmastodon.org/ns#",
+      "featured": { "@id": "toot:featured", "@type": "@id" },
+      "schema": "http://schema.org#",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "directMessage": "litepub:directMessage",
+      "discoverable": "toot:discoverable",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value"
+    }
+  ],
+  "id": "https://ica.mkljczk.pl/objects/a85d7459-6062-7ab5-16c3-a84988943160",
+  "type": "Undo",
+  "object": {
+    "id": "https://ica.mkljczk.pl/objects/a85d7459-6062-7ab5-16c3-a84988943159",
+    "type": "Follow",
+    "object": "https://pleroma.example/objects/68a16c11-1662-1243-b6e0-36f166912937",
+    "actor": "https://ica.mkljczk.pl/profile/nofriend"
+  },
+  "actor": "https://ica.mkljczk.pl/profile/nofriend",
+  "published": "2022-05-10T18:55:18Z",
+  "instrument": {
+    "type": "Service",
+    "name": "Friendica 'Siberian Iris' 2022.05-rc-1460",
+    "url": "https://ica.mkljczk.pl"
+  },
+  "to": [
+    "https://pleroma.example/users/mkljczk",
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "cc": ["https://ica.mkljczk.pl/followers/nofriend"],
+  "signature": {
+    "type": "RsaSignature2017",
+    "nonce": "8a5c0e277ac6e34953994d845db0d193748818e0535f9554ee5c5a2b705849ff",
+    "creator": "https://ica.mkljczk.pl/profile/nofriend#main-key",
+    "created": "2022-05-10T18:55:20Z",
+    "signatureValue": "StTL6cFGSbp0bnxiUDJT/Hn+2z9COsMJ4uTESBD0//K3xM1L5NXSEKzA3UcUhi32Dfubzsz4VIzGHhrsDhuRP7p3gYOGyN68NrqXTNkCyjBH20xA9nORRDcfRDIVmLCJxAfgk8f1DKVNSAmlKVa2e1iY0b0Q1BrYVzo9WifsFvk7/AusQma4nmGSCDlfCxaE/PqC9cc/TzK98Lm6+hHKWjNiYqHthxFLkKgyJIzemgxRGGFONs7pp8pk359q0bh+TA0NVgHFFAOoxUljl1VF/gUEXvPvoJKJK1RAPOm7HFor/m/WUwtcE3Ce0EMZoA+0oVR+22Q+1+QhEGbOxt5W26hgtkg7YWx94KUThNekoD6XPlLI+ayzszhfhpWBs7oSmeEDhUCAEQycU5KJug8nOOW6NurnsmwOXdiAh0vw8VVYH1Pfm77WuaPsZ+JSPVAFnn5wI5G8CZ7kl+ArjkzgquBjT4+2+I3R5TtWBexEjkcTBYI4GCQeyrCQ6L7QDUplNdQCgcdMx0pQlh5RxQekDKvP1OUjaVaLC2wA+vit5O7whoKglZ/CNUNWiuVY8wCA2icwvK2dZUzI3A4Vy8g4CVG0fAYTKBs+ADoABYkcP0hTSHFiJW+wjH3Ngcxc0eYtX3lw3hluqZpOFGph9pfTI8Uhq96s8tshRvzqwoG/HVs="
+  }
+}
