@@ -447,7 +447,6 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
              } = note
     end
 
-    @tag :erratic
     test "it returns reports with notes", %{conn: conn, admin: admin} do
       conn = get(conn, "/api/pleroma/admin/reports")
 
@@ -456,7 +455,8 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       [note, _] = notes
 
       assert note["user"]["nickname"] == admin.nickname
-      assert note["content"] == "this is disgusting!"
+      # We use '=~' because the order of the notes isn't guaranteed
+      assert note["content"] =~ "this is disgusting"
       assert note["created_at"]
       assert response["total"] == 1
     end
