@@ -570,6 +570,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           nullable: true,
           description: "User's birthday",
           format: :date
+        },
+        language: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User's preferred language for emails"
         }
       },
       example: %{

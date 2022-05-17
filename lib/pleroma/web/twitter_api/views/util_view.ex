@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilView do
   import Phoenix.HTML.Form
   alias Pleroma.Config
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Gettext
 
   def status_net_config(instance) do
     """

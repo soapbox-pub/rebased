@@ -241,6 +241,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
+- `language` - user's preferred language for receiving emails (digest, confirmation, etc.)
 
 All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 
@@ -292,6 +293,7 @@ Has these additional parameters (which are the same as in Pleroma-API):
 - `captcha_token`: optional, contains provider-specific captcha token
 - `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
+- `language`: optional, user's preferred language for receiving emails (digest, confirmation, etc.), default to the language set in the `userLanguage` cookies or `Accept-Language` header.
 
 ## Instance
 

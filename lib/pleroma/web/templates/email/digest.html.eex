@@ -160,7 +160,7 @@
 												<div
 													style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;line-height: 14px; color: <%= @styling.header_color %>;">
 													<p style="line-height: 36px; text-align: center; margin: 0;"><span
-															style="font-size: 30px; color: <%= @styling.header_color %>;">Hey <%= @user.nickname %>, here is what you've missed!</span></p>
+															style="font-size: 30px; color: <%= @styling.header_color %>;"><%= Gettext.dpgettext("static_pages", "digest email header line", "Hey %{nickname}, here is what you've missed!", nickname: @user.nickname) %></span></p>
 												</div>
 											</div>
 											<!--[if mso]></td></tr></table><![endif]-->
@@ -382,7 +382,7 @@
 												<div
 													style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 14px; color: <%= @styling.text_color %>;">
 													<p style="font-size: 12px; line-height: 24px; text-align: center; margin: 0;"><span
-															style="font-size: 20px;"><%= length(@followers) %> New Followers</span><span
+															style="font-size: 20px;"><%= Gettext.dpngettext("static_pages", "new followers count header", "%{count} New Follower", "%{count} New Followers", length(@followers), count: length(@followers)) %></span><span
 															style="font-size: 20px; line-height: 24px;"></span></p>
 												</div>
 											</div>
@@ -535,16 +535,16 @@
 												style="color:<%= @styling.text_color %>;font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;line-height:120%;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;">
 												<p
 													style="font-size: 12px; line-height: 16px; text-align: center; color: <%= @styling.text_color %>; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; margin: 0;">
-													<span style="font-size: 14px;">You have received this email because you have signed up to receive digest emails from <b><%= @instance %></b> Pleroma instance.</span></p>
+													<span style="font-size: 14px;"><%= raw Gettext.dpgettext("static_pages", "digest email sending reason", "You have received this email because you have signed up to receive digest emails from <b>%{instance}</b> Pleroma instance.", instance: safe_to_string(html_escape(@instance))) %></span></p>
 												<p
 													style="font-size: 12px; line-height: 14px; text-align: center; color: <%= @styling.text_color %>; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; margin: 0;">
 													 </p>
 												<p
 													style="font-size: 12px; line-height: 16px; text-align: center; color: <%= @styling.text_color %>; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; margin: 0;">
-													<span style="font-size: 14px;">The email address you are subscribed as is <a href="mailto:<%= @user.email %>" style="color: <%= @styling.link_color %>;text-decoration: none;"><%= @user.email %></a>. </span></p>
+													<span style="font-size: 14px;"><%= raw Gettext.dpgettext("static_pages", "digest email receiver address", "The email address you are subscribed as is <a href='mailto:%{@user.email}' style='color: %{color};text-decoration: none;'>%{email}</a>. ", color: safe_to_string(html_escape(@styling.link_color)), email: safe_to_string(html_escape(@user.email))) %></span></p>
 												<p
 													style="font-size: 12px; line-height: 16px; text-align: center; color: <%= @styling.text_color %>; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; margin: 0;">
-													<span style="font-size: 14px;">To unsubscribe, please go <%= link "here", style: "color: #{@styling.link_color};text-decoration: none;", to: @unsubscribe_link %>.</span></p>
+													<span style="font-size: 14px;"><%= raw Gettext.dpgettext("static_pages", "digest email unsubscribe action", "To unsubscribe, please go %{here}.", here: safe_to_string link(Gettext.dpgettext("static_pages", "digest email unsubscribe action link text", "here"), style: "color: #{@styling.link_color};text-decoration: none;", to: @unsubscribe_link)) %></span></p>
 											</div>
 											<!--[if mso]></td></tr></table><![endif]-->
 											<!--[if (!mso)&(!IE)]><!-->
