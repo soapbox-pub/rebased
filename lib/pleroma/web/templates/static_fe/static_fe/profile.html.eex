@@ -5,7 +5,7 @@
     <form class="pull-right collapse" method="POST" action="<%= Helpers.util_path(@conn, :remote_subscribe) %>">
       <input type="hidden" name="nickname" value="<%= @user.nickname %>">
       <input type="hidden" name="profile" value="">
-      <button type="submit" class="collapse">Remote follow</button>
+      <button type="submit" class="collapse"><%= Gettext.dpgettext("static_pages", "static fe profile page remote follow button", "Remote follow") %></button>
     </form>
     <%= raw Formatter.emojify(@user.name, @user.emoji) %> |
     <%= link "@#{@user.nickname}@#{Endpoint.host()}", to: (@user.uri || @user.ap_id) %>

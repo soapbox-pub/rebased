@@ -1,2 +1,6 @@
-<h2>Password reset failed</h2>
-<h3><a href="<%= Pleroma.Web.Endpoint.url() %>">Homepage</a></h3>
+<h2><%= Gettext.dpgettext("static_pages", "password reset failed message", "Password reset failed") %></h2>
+<h3>
+  <a href="<%= Pleroma.Web.Endpoint.url() %>">
+    <%= Gettext.dpgettext("static_pages", "password reset failed homepage link", "Homepage") %>
+  </a>
+</h3>
