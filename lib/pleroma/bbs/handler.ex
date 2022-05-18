@@ -123,7 +123,7 @@ defmodule Pleroma.BBS.Handler do
 
         loop(%{state | counter: state.counter + 1})
 
-      {:error, :interrupted} ->
+      {:input, ^input, {:error, :interrupted}} ->
         IO.puts("Caught Ctrl+C...")
         loop(%{state | counter: state.counter + 1})
 
