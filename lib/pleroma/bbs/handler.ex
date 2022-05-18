@@ -53,6 +53,7 @@ defmodule Pleroma.BBS.Handler do
     IO.puts("home - Show the home timeline")
     IO.puts("p <text> - Post the given text")
     IO.puts("r <id> <text> - Reply to the post with the given id")
+    IO.puts("t <id> - Show a thread from the given id")
     IO.puts("quit - Quit")
 
     state
@@ -68,6 +69,33 @@ defmodule Pleroma.BBS.Handler do
       IO.puts("Replied!")
     else
       _e -> IO.puts("Could not reply...")
+    end
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "t " <> activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+      activities =
+        ActivityPub.fetch_activities_for_context(activity.data["context"], %{
+          blocking_user: user,
+          user: user,
+          exclude_id: activity.id
+        })
+
+      case activities do
+        [] ->
+          activity_id
+          |> Activity.get_by_id()
+          |> puts_activity()
+
+        _ ->
+          activities
+          |> Enum.reverse()
+          |> Enum.each(&puts_activity/1)
+      end
+    else
+      _e -> IO.puts("An error occured when trying to show the thread...")
     end
 
     state
