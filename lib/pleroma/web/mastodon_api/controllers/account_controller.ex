@@ -181,6 +181,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       value -> {:ok, value}
     end
 
+    date_value = fn
+      "" -> {:ok, nil}
+      date -> Date.from_iso8601(date)
+    end
+
     user_params =
       [
         :no_rich_text,
@@ -223,7 +228,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:is_locked, params[:locked])
       # Note: param name is indeed :discoverable (not an error)
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
-      |> Maps.put_if_present(:birthday, params[:birthday])
+      |> Maps.put_if_present(:birthday, params[:birthday], date_value)
       |> Maps.put_if_present(:location, params[:location])
       |> Maps.put_if_present(:language, Pleroma.Web.Gettext.normalize_locale(params[:language]))
 

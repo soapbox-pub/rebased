@@ -387,6 +387,27 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data["pleroma"]["birthday"] == "2001-02-12"
     end
 
+    test "deletes birthday", %{conn: conn, user: user} do
+      assert user.birthday == nil
+
+      user =
+        user
+        |> Ecto.Changeset.change(birthday: ~D[2001-02-12])
+        |> Pleroma.Repo.update!()
+
+      assert user.birthday == ~D[2001-02-12]
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "birthday" => ""
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      refute user_data["pleroma"]["birthday"]
+
+      assert Repo.reload!(user).birthday == nil
+    end
+
     test "updates the user's show_birthday status", %{conn: conn} do
       res =
         patch(conn, "/api/v1/accounts/update_credentials", %{

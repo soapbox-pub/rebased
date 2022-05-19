@@ -761,8 +761,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         birthday: %Schema{
           type: :string,
           nullable: true,
-          description: "User's birthday",
-          format: :date
+          description: "User's birthday"
         },
         show_birthday: %Schema{
           allOf: [BooleanLike],
