@@ -1,4 +1,4 @@
-<h2>Sign in with external provider</h2>
+<h2><%= Gettext.dpgettext("static_pages", "oauth external provider page title", "Sign in with external provider") %></h2>
 
 <%= form_for @conn, Routes.o_auth_path(@conn, :prepare_request), [as: "authorization", method: "get"], fn f -> %>
   <div style="display: none">
@@ -10,6 +10,6 @@
   <%= hidden_input f, :state, value: @state %>
 
     <%= for strategy <- Pleroma.Config.oauth_consumer_strategies() do %>
-      <%= submit "Sign in with #{String.capitalize(strategy)}", name: "provider", value: strategy %>
+      <%= submit Gettext.dpgettext("static_pages", "oauth external provider sign in button", "Sign in with %{strategy}", strategy: String.capitalize(strategy)), name: "provider", value: strategy %>
     <% end %>
 <% end %>

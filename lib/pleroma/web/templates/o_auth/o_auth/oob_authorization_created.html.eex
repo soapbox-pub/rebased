@@ -1,2 +1,2 @@
-<h1>Successfully authorized</h1>
-<h2>Token code is <br><%= @auth.token %></h2>
+<h1><%= Gettext.dpgettext("static_pages", "oauth authorized page title", "Successfully authorized") %></h1>
+<h2><%= raw Gettext.dpgettext("static_pages", "oauth token code message", "Token code is <br>%{token}", token: safe_to_string(html_escape(@auth.token))) %></h2>

@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MastoAPI: Support for `birthday` and `show_birthday` field in `/api/v1/accounts/update_credentials`.
 - Configuration: Add `birthday_required` and `birthday_min_age` settings to provide a way to require users to enter their birth date.
 - PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
+- Make backend-rendered pages translatable. This includes emails. Pages returned as a HTTP response are translated using the language specified in the `userLanguage` cookie, or the `Accept-Language` header. Emails are translated using the `language` field when registering. This language can be changed by `PATCH /api/v1/accounts/update_credentials` with the `language` field.
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
@@ -46,6 +47,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed account deletion API
 
 ### Removed
+
+## 2.4.3 - 2022-05-06
+
+### Security
+- Private `/objects/` and `/activities/` leaking if cached by authenticated user
+- SweetXML library DTD bomb
 
 ## 2.4.2 - 2022-01-10
 
@@ -90,6 +97,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
 - AdminAPI: sort users so the newest are at the top.
 - ActivityPub Client-to-Server(C2S): Limitation on the type of Activity/Object are lifted as they are now passed through ObjectValidators
+- MRF (`AntiFollowbotPolicy`): Bot accounts are now also considered followbots. Users can still allow bots to follow them by first following the bot.
 
 ### Added
 
