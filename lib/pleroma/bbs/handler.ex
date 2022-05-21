@@ -94,6 +94,7 @@ defmodule Pleroma.BBS.Handler do
     IO.puts("r <id> <text> - Reply to the post with the given id")
     IO.puts("t <id> - Show a thread from the given id")
     IO.puts("n - Show notifications")
+    IO.puts("n read - Mark all notifactions as read")
     IO.puts("quit - Quit")
 
     state
@@ -137,6 +138,13 @@ defmodule Pleroma.BBS.Handler do
     else
       _e -> IO.puts("An error occured when trying to show the thread...")
     end
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "n read") do
+    Pleroma.Notification.clear(user)
+    IO.puts("All notifications are marked as read")
 
     state
   end
