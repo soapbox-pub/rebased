@@ -42,9 +42,14 @@ defmodule Pleroma.BBS.Handler do
 
   def puts_activity(activity) do
     status = Pleroma.Web.MastodonAPI.StatusView.render("show.json", %{activity: activity})
+
     IO.puts("-- #{status.id} by #{status.account.display_name} (#{status.account.acct})")
-    IO.puts(status.content |> HTML.strip_tags() |> HtmlEntities.decode())
-    IO.puts("")
+
+    status.content
+    |> String.split("<br/>")
+    |> Enum.map(&HTML.strip_tags/1)
+    |> Enum.map(&HtmlEntities.decode/1)
+    |> Enum.map(&IO.puts/1)
   end
 
   def handle_command(state, "help") do
