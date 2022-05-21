@@ -52,6 +52,40 @@ defmodule Pleroma.BBS.Handler do
     |> Enum.map(&IO.puts/1)
   end
 
+  def puts_notification(activity, user) do
+    notification =
+      Pleroma.Web.MastodonAPI.NotificationView.render("show.json", %{
+        notification: activity,
+        for: user
+      })
+
+    IO.puts(
+      "== (#{notification.type}) #{notification.status.id} by #{notification.account.display_name} (#{notification.account.acct})"
+    )
+
+    notification.status.content
+    |> String.split("<br/>")
+    |> Enum.map(&HTML.strip_tags/1)
+    |> Enum.map(&HtmlEntities.decode/1)
+    |> (fn x ->
+          case x do
+            [content] ->
+              "> " <> content
+
+            [head | _tail] ->
+              # "> " <> hd <> "..."
+              head
+              |> String.to_charlist()
+              |> Enum.take(80)
+              |> List.to_string()
+              |> (fn x -> "> " <> x <> "..." end).()
+          end
+        end).()
+    |> IO.puts()
+
+    IO.puts("")
+  end
+
   def handle_command(state, "help") do
     IO.puts("Available commands:")
     IO.puts("help - This help")
@@ -59,6 +93,7 @@ defmodule Pleroma.BBS.Handler do
     IO.puts("p <text> - Post the given text")
     IO.puts("r <id> <text> - Reply to the post with the given id")
     IO.puts("t <id> - Show a thread from the given id")
+    IO.puts("n - Show notifications")
     IO.puts("quit - Quit")
 
     state
@@ -102,6 +137,14 @@ defmodule Pleroma.BBS.Handler do
     else
       _e -> IO.puts("An error occured when trying to show the thread...")
     end
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "n") do
+    user
+    |> Pleroma.Web.MastodonAPI.MastodonAPI.get_notifications(%{})
+    |> Enum.each(&puts_notification(&1, user))
 
     state
   end
