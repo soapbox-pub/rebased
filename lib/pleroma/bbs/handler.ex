@@ -75,9 +75,7 @@ defmodule Pleroma.BBS.Handler do
             [head | _tail] ->
               # "> " <> hd <> "..."
               head
-              |> String.to_charlist()
-              |> Enum.take(80)
-              |> List.to_string()
+              |> String.slice(1, 80)
               |> (fn x -> "> " <> x <> "..." end).()
           end
         end).()
@@ -136,7 +134,7 @@ defmodule Pleroma.BBS.Handler do
           |> Enum.each(&puts_activity/1)
       end
     else
-      _e -> IO.puts("An error occured when trying to show the thread...")
+      _e -> IO.puts("Could not show this thread...")
     end
 
     state
@@ -144,7 +142,7 @@ defmodule Pleroma.BBS.Handler do
 
   def handle_command(%{user: user} = state, "n read") do
     Pleroma.Notification.clear(user)
-    IO.puts("All notifications are marked as read")
+    IO.puts("All notifications were marked as read")
 
     state
   end
