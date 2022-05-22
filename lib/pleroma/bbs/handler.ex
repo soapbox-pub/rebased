@@ -93,6 +93,7 @@ defmodule Pleroma.BBS.Handler do
     IO.puts("t <id> - Show a thread from the given id")
     IO.puts("n - Show notifications")
     IO.puts("n read - Mark all notifactions as read")
+    IO.puts("f <id> - Favourites the post with the given id")
     IO.puts("quit - Quit")
 
     state
@@ -162,6 +163,19 @@ defmodule Pleroma.BBS.Handler do
       IO.puts("Posted!")
     else
       _e -> IO.puts("Could not post...")
+    end
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "f " <> id) do
+    id = String.trim(id)
+
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, _activity} <- CommonAPI.favorite(user, activity) do
+      IO.puts("Favourited!")
+    else
+      _e -> IO.puts("Could not Favourite...")
     end
 
     state
