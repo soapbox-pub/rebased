@@ -159,8 +159,8 @@ defmodule Pleroma.BBS.Handler do
   def handle_command(%{user: user} = state, "p " <> text) do
     text = String.trim(text)
 
-    with {:ok, _activity} <- CommonAPI.post(user, %{status: text}) do
-      IO.puts("Posted!")
+    with {:ok, activity} <- CommonAPI.post(user, %{status: text}) do
+      IO.puts("Posted! ID: #{activity.id}")
     else
       _e -> IO.puts("Could not post...")
     end
