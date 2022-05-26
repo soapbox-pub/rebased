@@ -17,8 +17,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
 - Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
 - `ForceMentionsInPostContent` MRF policy
-- AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
-- AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 - PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
 - MastoAPI: Add `GET /api/v1/accounts/lookup`
 - MastoAPI: Profile Directory support

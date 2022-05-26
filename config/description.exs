@@ -961,22 +961,16 @@ config :pleroma, :config_description, [
         description: "Enable profile directory."
       },
       %{
-        key: :privileged_staff,
-        type: :boolean,
-        description:
-          "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
-      },
-      %{
         key: :admin_privileges,
         type: {:list, :atom},
-        suggestions: [:user_deletion, :user_credentials],
+        suggestions: [:user_deletion, :user_credentials, :statuses_read],
         description:
           "What extra priviledges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
       %{
         key: :moderator_privileges,
         type: {:list, :atom},
-        suggestions: [:user_deletion, :user_credentials],
+        suggestions: [:user_deletion, :user_credentials, :statuses_read],
         description:
           "What extra priviledges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
