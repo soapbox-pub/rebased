@@ -271,17 +271,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "/api/pleroma/admin/users/:nickname/password_reset", %{conn: conn} do
-    user = insert(:user)
+  describe "/api/pleroma/admin/users/:nickname/password_reset" do
+    test "it returns a password reset link", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:user_credentials])
 
-    conn =
-      conn
-      |> put_req_header("accept", "application/json")
-      |> get("/api/pleroma/admin/users/#{user.nickname}/password_reset")
+      user = insert(:user)
 
-    resp = json_response(conn, 200)
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/api/pleroma/admin/users/#{user.nickname}/password_reset")
 
-    assert Regex.match?(~r/(http:\/\/|https:\/\/)/, resp["link"])
+      resp = json_response(conn, 200)
+
+      assert Regex.match?(~r/(http:\/\/|https:\/\/)/, resp["link"])
+    end
+
+    test "it requires privileged role :user_credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/api/pleroma/admin/users/nickname/password_reset")
+
+      assert json_response(response, :forbidden)
+    end
   end
 
   describe "PUT disable_mfa" do
@@ -714,6 +729,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "changes password and email", %{conn: conn, admin: admin, user: user} do
+      clear_config([:instance, :admin_privileges], [:user_credentials])
+
       assert user.password_reset_pending == false
 
       conn =
@@ -748,6 +765,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         build_conn()
         |> assign(:user, user)
         |> patch("/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+          "password" => "new_password",
+          "email" => "new_email@example.com",
+          "name" => "new_name"
+        })
+
+      assert json_response(conn, :forbidden)
+    end
+
+    test "returns 403 if not privileged with :user_credentials", %{conn: conn, user: user} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
           "password" => "new_password",
           "email" => "new_email@example.com",
           "name" => "new_name"
