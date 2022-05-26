@@ -359,6 +359,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/users/:nickname/statuses" do
     setup do
+      clear_config([:instance, :admin_privileges], [:statuses_read])
+
       user = insert(:user)
 
       insert(:note_activity, user: user)
@@ -373,6 +375,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert %{"total" => 3, "activities" => activities} = json_response(conn, 200)
       assert length(activities) == 3
+    end
+
+    test "it requires privileged role :statuses_read", %{conn: conn, user: user} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
+
+      assert json_response(conn, :forbidden)
     end
 
     test "renders user's statuses with pagination", %{conn: conn, user: user} do
@@ -436,20 +446,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/users/:nickname/chats" do
     setup do
+      clear_config([:instance, :admin_privileges], [:statuses_read])
+
       user = insert(:user)
+
+      %{user: user}
+    end
+
+    test "renders user's chats", %{conn: conn, user: user} do
       recipients = insert_list(3, :user)
 
       Enum.each(recipients, fn recipient ->
         CommonAPI.post_chat_message(user, recipient, "yo")
       end)
 
-      %{user: user}
-    end
-
-    test "renders user's chats", %{conn: conn, user: user} do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
 
       assert json_response(conn, 200) |> length() == 3
+    end
+
+    test "it requires privileged role :statuses_read", %{conn: conn, user: user} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
+
+      assert json_response(conn, :forbidden)
     end
   end
 

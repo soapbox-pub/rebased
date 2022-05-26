@@ -152,6 +152,10 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
   end
 
   describe "GET /api/pleroma/admin/statuses" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:statuses_read])
+    end
+
     test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
       blocked = insert(:user)
       user = insert(:user)
@@ -196,6 +200,14 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
       assert json_response_and_validate_schema(conn, 200) |> length() == 3
+    end
+
+    test "it requires privileged role :statuses_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/statuses")
+
+      assert json_response(conn, :forbidden)
     end
   end
 end

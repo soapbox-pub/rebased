@@ -63,7 +63,10 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "GET /api/pleroma/admin/chats/:id/messages" do
-    setup do: admin_setup()
+    setup do
+      clear_config([:instance, :admin_privileges], [:statuses_read])
+      admin_setup()
+    end
 
     test "it paginates", %{conn: conn} do
       user = insert(:user)
@@ -114,10 +117,21 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
       assert length(result) == 3
     end
+
+    test "it requires privileged role :statuses_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/chats/some_id/messages")
+
+      assert json_response(conn, :forbidden)
+    end
   end
 
   describe "GET /api/pleroma/admin/chats/:id" do
-    setup do: admin_setup()
+    setup do
+      clear_config([:instance, :admin_privileges], [:statuses_read])
+      admin_setup()
+    end
 
     test "it returns a chat", %{conn: conn} do
       user = insert(:user)
@@ -134,6 +148,14 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       assert %{} = result["sender"]
       assert %{} = result["receiver"]
       refute result["account"]
+    end
+
+    test "it requires privileged role :statuses_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/chats/some_id")
+
+      assert json_response(conn, :forbidden)
     end
   end
 
