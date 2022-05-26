@@ -92,17 +92,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PUT /api/pleroma/admin/users/tag" do
     setup %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:user_tag])
+
       user1 = insert(:user, %{tags: ["x"]})
       user2 = insert(:user, %{tags: ["y"]})
       user3 = insert(:user, %{tags: ["unchanged"]})
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> put(
-          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=" <>
-            "#{user2.nickname}&tags[]=foo&tags[]=bar"
-        )
 
       %{conn: conn, user1: user1, user2: user2, user3: user3}
     end
@@ -113,6 +107,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user1: user1,
       user2: user2
     } do
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> put(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=" <>
+            "#{user2.nickname}&tags[]=foo&tags[]=bar"
+        )
+
       assert empty_json_response(conn)
       assert User.get_cached_by_id(user1.id).tags == ["x", "foo", "bar"]
       assert User.get_cached_by_id(user2.id).tags == ["y", "foo", "bar"]
@@ -130,25 +132,42 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} added tags: #{tags} to users: #{users}"
     end
 
-    test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
+    test "it does not modify tags of not specified users", %{
+      conn: conn,
+      user1: user1,
+      user2: user2,
+      user3: user3
+    } do
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> put(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=" <>
+            "#{user2.nickname}&tags[]=foo&tags[]=bar"
+        )
+
       assert empty_json_response(conn)
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
+    end
+
+    test "it requires privileged role :user_tag", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> put("/api/pleroma/admin/users/tag?nicknames[]=nickname&tags[]=foo&tags[]=bar")
+
+      assert json_response(response, :forbidden)
     end
   end
 
   describe "DELETE /api/pleroma/admin/users/tag" do
     setup %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:user_tag])
       user1 = insert(:user, %{tags: ["x"]})
       user2 = insert(:user, %{tags: ["y", "z"]})
       user3 = insert(:user, %{tags: ["unchanged"]})
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> delete(
-          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=" <>
-            "#{user2.nickname}&tags[]=x&tags[]=z"
-        )
 
       %{conn: conn, user1: user1, user2: user2, user3: user3}
     end
@@ -159,6 +178,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user1: user1,
       user2: user2
     } do
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> delete(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=" <>
+            "#{user2.nickname}&tags[]=x&tags[]=z"
+        )
+
       assert empty_json_response(conn)
       assert User.get_cached_by_id(user1.id).tags == []
       assert User.get_cached_by_id(user2.id).tags == ["y"]
@@ -176,9 +203,33 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} removed tags: #{tags} from users: #{users}"
     end
 
-    test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
+    test "it does not modify tags of not specified users", %{
+      conn: conn,
+      user1: user1,
+      user2: user2,
+      user3: user3
+    } do
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> delete(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=" <>
+            "#{user2.nickname}&tags[]=x&tags[]=z"
+        )
+
       assert empty_json_response(conn)
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
+    end
+
+    test "it requires privileged role :user_tag", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> delete("/api/pleroma/admin/users/tag?nicknames[]=nickname&tags[]=foo&tags[]=bar")
+
+      assert json_response(response, :forbidden)
     end
   end
 
