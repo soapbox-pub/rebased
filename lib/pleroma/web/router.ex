@@ -109,6 +109,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.UserIsAdminPlug)
   end
 
+  pipeline :require_privileged_role_user_deletion do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_deletion)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -231,11 +236,16 @@ defmodule Pleroma.Web.Router do
     post("/backups", AdminAPIController, :create_backup)
   end
 
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through([:admin_api, :require_privileged_role_user_deletion])
+
+    delete("/users", UserController, :delete)
+  end
+
   # AdminAPI: admins and mods (staff) can perform these actions (if enabled by config)
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through([:admin_api, :require_privileged_staff])
-
-    delete("/users", UserController, :delete)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)

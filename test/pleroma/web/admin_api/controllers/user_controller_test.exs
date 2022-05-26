@@ -94,6 +94,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   describe "DELETE /api/pleroma/admin/users" do
     test "single user", %{admin: admin, conn: conn} do
       clear_config([:instance, :federating], true)
+      clear_config([:instance, :admin_privileges], [:user_deletion])
 
       user =
         insert(:user,
@@ -149,6 +150,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "multiple users", %{admin: admin, conn: conn} do
+      clear_config([:instance, :admin_privileges], [:user_deletion])
+
       user_one = insert(:user)
       user_two = insert(:user)
 
@@ -167,6 +170,17 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
                "@#{admin.nickname} deleted users: @#{user_one.nickname}, @#{user_two.nickname}"
 
       assert response -- [user_one.nickname, user_two.nickname] == []
+    end
+
+    test "Needs privileged role", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> delete("/api/pleroma/admin/users?nickname=nickname")
+
+      assert json_response(response, :forbidden)
     end
   end
 
