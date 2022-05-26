@@ -125,6 +125,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_tag)
   end
 
+  pipeline :require_privileged_role_user_activation do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_activation)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -282,15 +287,20 @@ defmodule Pleroma.Web.Router do
     delete("/users/tag", AdminAPIController, :untag_users)
   end
 
-  # AdminAPI: admins and mods (staff) can perform these actions
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
+    pipe_through(:require_privileged_role_user_activation)
 
     patch("/users/:nickname/toggle_activation", UserController, :toggle_activation)
     patch("/users/activate", UserController, :activate)
     patch("/users/deactivate", UserController, :deactivate)
-    patch("/users/approve", UserController, :approve)
+  end
 
+  # AdminAPI: admins and mods (staff) can perform these actions
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:admin_api)
+
+    patch("/users/approve", UserController, :approve)
     post("/users/invite_token", InviteController, :create)
     get("/users/invites", InviteController, :index)
     post("/users/revoke_invite", InviteController, :revoke)
