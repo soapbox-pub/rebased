@@ -192,6 +192,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             type: :boolean,
             description: "`true` if the quoted post is visible to the user"
           },
+          quote_count: %Schema{
+            type: :integer,
+            description: "How many statuses quoted this status"
+          },
           local: %Schema{
             type: :boolean,
             description: "`true` if the post was made on the local instance"
@@ -346,7 +350,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "in_reply_to_account_acct" => nil,
         "local" => true,
         "spoiler_text" => %{"text/plain" => ""},
-        "thread_muted" => false
+        "thread_muted" => false,
+        "quote_count" => 0
       },
       "poll" => nil,
       "reblog" => nil,

@@ -97,6 +97,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
+  defp increase_quotes_count_if_quote(%{
+         "object" => %{"quoteUrl" => quote_ap_id} = object,
+         "type" => "Create"
+       }) do
+    if is_public?(object) do
+      Object.increase_quotes_count(quote_ap_id)
+    end
+  end
+
+  defp increase_quotes_count_if_quote(_create_data), do: :noop
+
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Page]
   @impl true
   def persist(%{"type" => type} = object, meta) when type in @object_types do
@@ -291,6 +302,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_quotes_count_if_quote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
