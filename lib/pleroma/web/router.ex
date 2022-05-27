@@ -476,6 +476,8 @@ defmodule Pleroma.Web.Router do
       pipe_through(:api)
       get("/accounts/:id/favourites", AccountController, :favourites)
       get("/accounts/:id/endorsements", AccountController, :endorsements)
+
+      get("/statuses/:id/quotes", StatusController, :quotes)
     end
 
     scope [] do

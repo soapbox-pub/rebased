@@ -1215,6 +1215,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_filtered(query, _), do: query
 
+  defp restrict_quote_url(query, %{quote_url: quote_url}) do
+    IO.inspect(quote_url)
+
+    from([_activity, object] in query,
+      where: fragment("(?)->'quoteUrl' = ?", object.data, ^quote_url)
+    )
+  end
+
+  defp restrict_quote_url(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1378,6 +1388,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
+      |> restrict_quote_url(opts)
       |> Activity.restrict_deactivated_users()
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)
@@ -1793,5 +1804,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_type(%{type: "Create"})
     |> restrict_visibility(%{visibility: "direct"})
     |> order_by([activity], asc: activity.id)
+  end
+
+  def fetch_quotes(%Activity{data: %{"id" => ap_id}} = activity, params) do
   end
 end

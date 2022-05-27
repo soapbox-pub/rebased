@@ -417,7 +417,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         parent_visible: visible_for_user?(reply_to, opts[:for]),
         pinned_at: pinned_at,
         content_type: opts[:with_source] && (object.data["content_type"] || "text/plain"),
-        quote_count: object.data["quotesCount"] || 0,
+        quotes_count: object.data["quotesCount"] || 0
       }
     }
   end
