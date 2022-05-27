@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.ApiSpec.PleromaStatusOperation do
   alias OpenApiSpex.Operation
-  alias Pleroma.Web.ApiSpec.StatusOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.StatusOperation
 
   import Pleroma.Web.ApiSpec.Helpers
 

@@ -1803,7 +1803,4 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_visibility(%{visibility: "direct"})
     |> order_by([activity], asc: activity.id)
   end
-
-  def fetch_quotes(%Activity{data: %{"id" => ap_id}} = activity, params) do
-  end
 end

@@ -13,6 +13,7 @@ defmodule Pleroma.Web.PleromaAPI.StatusController do
   alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
@@ -29,7 +30,8 @@ defmodule Pleroma.Web.PleromaAPI.StatusController do
 
   @doc "GET /api/v1/pleroma/statuses/:id/quotes"
   def quotes(%{assigns: %{user: user}} = conn, %{id: id} = params) do
-    with %Activity{object: object} <- Activity.get_by_id_with_object(id) do
+    with %Activity{object: object} = activity <- Activity.get_by_id_with_object(id),
+         true <- Visibility.visible_for_user?(activity, user) do
       params =
         params
         |> Map.put(:type, "Create")
@@ -56,6 +58,9 @@ defmodule Pleroma.Web.PleromaAPI.StatusController do
         for: user,
         as: :activity
       )
+    else
+      nil -> {:error, :not_found}
+      false -> {:error, :not_found}
     end
   end
 end
