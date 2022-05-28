@@ -38,6 +38,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "with valid `admin_token` query parameter, skips OAuth scopes check" do
+    clear_config([:instance, :admin_privileges], [:user_read])
     clear_config([:admin_token], "password123")
 
     user = insert(:user)
@@ -45,50 +46,6 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     conn = get(build_conn(), "/api/pleroma/admin/users/#{user.nickname}?admin_token=password123")
 
     assert json_response_and_validate_schema(conn, 200)
-  end
-
-  test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
-       %{admin: admin} do
-    user = insert(:user)
-    url = "/api/pleroma/admin/users/#{user.nickname}"
-
-    good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
-    good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
-    good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
-
-    bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
-    bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
-    bad_token3 = nil
-
-    for good_token <- [good_token1, good_token2, good_token3] do
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> assign(:token, good_token)
-        |> get(url)
-
-      assert json_response_and_validate_schema(conn, 200)
-    end
-
-    for good_token <- [good_token1, good_token2, good_token3] do
-      conn =
-        build_conn()
-        |> assign(:user, nil)
-        |> assign(:token, good_token)
-        |> get(url)
-
-      assert json_response(conn, :forbidden)
-    end
-
-    for bad_token <- [bad_token1, bad_token2, bad_token3] do
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> assign(:token, bad_token)
-        |> get(url)
-
-      assert json_response_and_validate_schema(conn, :forbidden)
-    end
   end
 
   describe "DELETE /api/pleroma/admin/users" do
@@ -321,7 +278,19 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
   end
 
-  describe "/api/pleroma/admin/users/:nickname" do
+  describe "GET /api/pleroma/admin/users/:nickname" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:user_read])
+    end
+
+    test "returns 403 if not privileged with :user_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users/user.nickname")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "Show", %{conn: conn} do
       user = insert(:user)
 
@@ -336,6 +305,50 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
 
       assert %{"error" => "Not found"} == json_response_and_validate_schema(conn, 404)
+    end
+
+    test "requires admin:read:accounts or broader scope",
+         %{admin: admin} do
+      user = insert(:user)
+      url = "/api/pleroma/admin/users/#{user.nickname}"
+
+      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
+      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
+
+      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
+      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
+      bad_token3 = nil
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response_and_validate_schema(conn, 200)
+      end
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, nil)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
+      end
+
+      for bad_token <- [bad_token1, bad_token2, bad_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, bad_token)
+          |> get(url)
+
+        assert json_response_and_validate_schema(conn, :forbidden)
+      end
     end
   end
 
@@ -392,6 +405,18 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   describe "GET /api/pleroma/admin/users" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:user_read])
+    end
+
+    test "returns 403 if not privileged with :user_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users?page=1")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "renders users array for the first page", %{conn: conn, admin: admin} do
       user = insert(:user, local: false, tags: ["foo", "bar"])
       user2 = insert(:user, is_approved: false, registration_reason: "I'm a chill dude")

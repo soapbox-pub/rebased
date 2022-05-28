@@ -140,6 +140,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :report_handle)
   end
 
+  pipeline :require_privileged_role_user_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_read)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -328,12 +333,17 @@ defmodule Pleroma.Web.Router do
     delete("/reports/:report_id/notes/:id", ReportController, :notes_delete)
   end
 
-  # AdminAPI: admins and mods (staff) can perform these actions
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
+    pipe_through(:require_privileged_role_user_read)
 
     get("/users", UserController, :index)
     get("/users/:nickname", UserController, :show)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:admin_api)
 
     get("/instances/:instance/statuses", InstanceController, :list_statuses)
     delete("/instances/:instance", InstanceController, :delete)
