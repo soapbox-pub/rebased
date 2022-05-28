@@ -262,7 +262,8 @@ config :pleroma, :instance,
     :statuses_read,
     :user_tag,
     :user_activation,
-    :user_invite
+    :user_invite,
+    :report_handle
   ],
   moderator_privileges: [],
   max_endorsed_users: 20,

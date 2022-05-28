@@ -26,6 +26,20 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   end
 
   describe "GET /api/pleroma/admin/reports/:id" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:report_handle])
+    end
+
+    test "returns 403 if not privileged with :report_handle", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> get("/api/pleroma/admin/reports/report_id")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "returns report by its id", %{conn: conn} do
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
@@ -63,6 +77,8 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "PATCH /api/pleroma/admin/reports" do
     setup do
+      clear_config([:instance, :admin_privileges], [:report_handle])
+
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
 
@@ -84,6 +100,20 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         id: report_id,
         second_report_id: second_report_id
       }
+    end
+
+    test "returns 403 if not privileged with :report_handle", %{conn: conn, id: id, admin: admin} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> assign(:token, insert(:oauth_token, user: admin, scopes: ["admin:write:reports"]))
+        |> put_req_header("content-type", "application/json")
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [%{"state" => "resolved", "id" => id}]
+        })
+
+      assert json_response(conn, :forbidden)
     end
 
     test "requires admin:write:reports scope", %{conn: conn, id: id, admin: admin} do
@@ -209,6 +239,20 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
   end
 
   describe "GET /api/pleroma/admin/reports" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:report_handle])
+    end
+
+    test "returns 403 if not privileged with :report_handle", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> get(report_path(conn, :index))
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "returns empty response when no reports created", %{conn: conn} do
       response =
         conn
@@ -317,6 +361,8 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "POST /api/pleroma/admin/reports/:id/notes" do
     setup %{conn: conn, admin: admin} do
+      clear_config([:instance, :admin_privileges], [:report_handle])
+
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
 
@@ -343,6 +389,22 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         admin_id: admin.id,
         report_id: report_id
       }
+    end
+
+    test "returns 403 if not privileged with :report_handle", %{conn: conn, report_id: report_id} do
+      clear_config([:instance, :admin_privileges], [])
+
+      post_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+          content: "this is disgusting2!"
+        })
+
+      delete_conn = delete(conn, "/api/pleroma/admin/reports/#{report_id}/notes/note.id")
+
+      assert json_response(post_conn, :forbidden)
+      assert json_response(delete_conn, :forbidden)
     end
 
     test "it creates report note", %{admin_id: admin_id, report_id: report_id} do
