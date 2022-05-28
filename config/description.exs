@@ -968,7 +968,8 @@ config :pleroma, :config_description, [
           :user_credentials,
           :statuses_read,
           :user_tag,
-          :user_activation
+          :user_activation,
+          :user_invite
         ],
         description:
           "What extra priviledges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
@@ -981,7 +982,8 @@ config :pleroma, :config_description, [
           :user_credentials,
           :statuses_read,
           :user_tag,
-          :user_activation
+          :user_activation,
+          :user_invite
         ],
         description:
           "What extra priviledges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"

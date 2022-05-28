@@ -825,6 +825,8 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
+    clear_config([:instance, :admin_privileges], [:user_invite])
+
     user_one = insert(:user, is_approved: false)
     user_two = insert(:user, is_approved: false)
 
@@ -843,6 +845,21 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
     assert ModerationLog.get_log_entry_message(log_entry) ==
              "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
+  end
+
+  test "PATCH /api/pleroma/admin/users/approve returns 403 if not privileged with :user_invite",
+       %{conn: conn} do
+    clear_config([:instance, :admin_privileges], [])
+
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/pleroma/admin/users/approve",
+        %{nicknames: ["user_one.nickname", "user_two.nickname"]}
+      )
+
+    assert json_response(conn, :forbidden)
   end
 
   test "PATCH /api/pleroma/admin/users/suggest", %{admin: admin, conn: conn} do
