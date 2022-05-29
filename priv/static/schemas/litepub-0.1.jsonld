@@ -36,7 +36,8 @@
                 "@id": "as:alsoKnownAs",
                 "@type": "@id"
             },
-            "vcard": "http://www.w3.org/2006/vcard/ns#"
+            "vcard": "http://www.w3.org/2006/vcard/ns#",
+            "formerRepresentations": "litepub:formerRepresentations"
         }
     ]
 }

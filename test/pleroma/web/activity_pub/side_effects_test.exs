@@ -153,13 +153,48 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, update_data, []} = Builder.update(user, updated_note)
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
 
-      %{user: user, object_id: note.id, update_data: update_data, update: update}
+      %{user: user, note: note, object_id: note.id, update_data: update_data, update: update}
     end
 
     test "it updates the note", %{object_id: object_id, update: update} do
       {:ok, _, _} = SideEffects.handle(update)
       new_note = Pleroma.Object.get_by_id(object_id)
       assert %{"summary" => "edited summary", "content" => "edited content"} = new_note.data
+    end
+
+    test "it records the original note in formerRepresentations", %{
+      note: note,
+      object_id: object_id,
+      update: update
+    } do
+      {:ok, _, _} = SideEffects.handle(update)
+      %{data: new_note} = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
+
+      assert [Map.drop(note.data, ["id", "formerRepresentations"])] ==
+               new_note["formerRepresentations"]["orderedItems"]
+
+      assert new_note["formerRepresentations"]["totalItems"] == 1
+    end
+
+    test "it puts the original note at the front of formerRepresentations", %{
+      note: note,
+      object_id: object_id,
+      update: update
+    } do
+      {:ok, _, _} = SideEffects.handle(update)
+      %{data: first_edit} = Pleroma.Object.get_by_id(object_id)
+      {:ok, _, _} = SideEffects.handle(update)
+      %{data: new_note} = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
+
+      original_version = Map.drop(note.data, ["id", "formerRepresentations"])
+      first_edit = Map.drop(first_edit, ["id", "formerRepresentations"])
+
+      assert [first_edit, original_version] ==
+               new_note["formerRepresentations"]["orderedItems"]
+
+      assert new_note["formerRepresentations"]["totalItems"] == 2
     end
   end
 
