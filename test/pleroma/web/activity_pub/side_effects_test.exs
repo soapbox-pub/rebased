@@ -140,6 +140,29 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "update notes" do
+    setup do
+      user = insert(:user)
+      note = insert(:note, user: user)
+
+      updated_note =
+        note.data
+        |> Map.put("summary", "edited summary")
+        |> Map.put("content", "edited content")
+
+      {:ok, update_data, []} = Builder.update(user, updated_note)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      %{user: user, object_id: note.id, update_data: update_data, update: update}
+    end
+
+    test "it updates the note", %{object_id: object_id, update: update} do
+      {:ok, _, _} = SideEffects.handle(update)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note.data
+    end
+  end
+
   describe "EmojiReact objects" do
     setup do
       poster = insert(:user)

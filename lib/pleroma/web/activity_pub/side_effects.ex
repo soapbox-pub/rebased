@@ -153,23 +153,25 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   # Tasks this handles:
   # - Update the user
+  # - Update a non-user object (Note, Question, etc.)
   #
   # For a local user, we also get a changeset with the full information, so we
   # can update non-federating, non-activitypub settings as well.
   @impl true
   def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
-    if changeset = Keyword.get(meta, :user_update_changeset) do
-      changeset
-      |> User.update_and_set_cache()
+    updated_object_id = updated_object["id"]
+
+    with {_, true} <- {:has_id, is_binary(updated_object_id)},
+         {_, user} <- {:user, Pleroma.User.get_by_ap_id(updated_object_id)} do
+      if user do
+        handle_update_user(object, meta)
+      else
+        handle_update_object(object, meta)
+      end
     else
-      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
-
-      User.get_by_ap_id(updated_object["id"])
-      |> User.remote_user_changeset(new_user_data)
-      |> User.update_and_set_cache()
+      _ ->
+        {:ok, object, meta}
     end
-
-    {:ok, object, meta}
   end
 
   # Tasks this handles:
@@ -387,6 +389,66 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Nothing to do
   @impl true
   def handle(object, meta) do
+    {:ok, object, meta}
+  end
+
+  defp handle_update_user(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    if changeset = Keyword.get(meta, :user_update_changeset) do
+      changeset
+      |> User.update_and_set_cache()
+    else
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+
+      User.get_by_ap_id(updated_object["id"])
+      |> User.remote_user_changeset(new_user_data)
+      |> User.update_and_set_cache()
+    end
+
+    {:ok, object, meta}
+  end
+
+  @updatable_object_types ["Note", "Question"]
+  # We do not allow poll options to be changed, but the poll description can be.
+  @updatable_fields [
+    "source",
+    "tag",
+    "updated",
+    "emoji",
+    "content",
+    "summary",
+    "sensitive",
+    "attachment",
+    "generator"
+  ]
+  defp handle_update_object(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    orig_object = Object.get_by_ap_id(updated_object["id"])
+    orig_object_data = orig_object.data
+
+    if orig_object_data["type"] in @updatable_object_types do
+      updated_object_data =
+        @updatable_fields
+        |> Enum.reduce(
+          orig_object_data,
+          fn field, acc ->
+            if Map.has_key?(updated_object, field) do
+              Map.put(acc, field, updated_object[field])
+            else
+              Map.drop(acc, [field])
+            end
+          end
+        )
+
+      orig_object
+      |> Object.change(%{data: updated_object_data})
+      |> Object.update_and_set_cache()
+    end
+
     {:ok, object, meta}
   end
 
