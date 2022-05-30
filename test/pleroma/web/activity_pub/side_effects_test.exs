@@ -178,15 +178,24 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
 
     test "it puts the original note at the front of formerRepresentations", %{
+      user: user,
       note: note,
       object_id: object_id,
       update: update
     } do
       {:ok, _, _} = SideEffects.handle(update)
       %{data: first_edit} = Pleroma.Object.get_by_id(object_id)
+
+      second_updated_note =
+        note.data
+        |> Map.put("summary", "edited summary 2")
+        |> Map.put("content", "edited content 2")
+
+      {:ok, second_update_data, []} = Builder.update(user, second_updated_note)
+      {:ok, update, _meta} = ActivityPub.persist(second_update_data, local: true)
       {:ok, _, _} = SideEffects.handle(update)
       %{data: new_note} = Pleroma.Object.get_by_id(object_id)
-      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
+      assert %{"summary" => "edited summary 2", "content" => "edited content 2"} = new_note
 
       original_version = Map.drop(note.data, ["id", "formerRepresentations"])
       first_edit = Map.drop(first_edit, ["id", "formerRepresentations"])
@@ -195,6 +204,59 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
                new_note["formerRepresentations"]["orderedItems"]
 
       assert new_note["formerRepresentations"]["totalItems"] == 2
+    end
+
+    test "it does not prepend to formerRepresentations if no actual changes are made", %{
+      note: note,
+      object_id: object_id,
+      update: update
+    } do
+      {:ok, _, _} = SideEffects.handle(update)
+      %{data: _first_edit} = Pleroma.Object.get_by_id(object_id)
+
+      {:ok, _, _} = SideEffects.handle(update)
+      %{data: new_note} = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
+
+      original_version = Map.drop(note.data, ["id", "formerRepresentations"])
+
+      assert [original_version] ==
+               new_note["formerRepresentations"]["orderedItems"]
+
+      assert new_note["formerRepresentations"]["totalItems"] == 1
+    end
+  end
+
+  describe "update questions" do
+    setup do
+      user = insert(:user)
+      question = insert(:question, user: user)
+
+      %{user: user, data: question.data, id: question.id}
+    end
+
+    test "allows updating choice count without generating edit history", %{
+      user: user,
+      data: data,
+      id: id
+    } do
+      new_choices =
+        data["oneOf"]
+        |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
+
+      updated_question = data |> Map.put("oneOf", new_choices)
+
+      {:ok, update_data, []} = Builder.update(user, updated_question)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      {:ok, _, _} = SideEffects.handle(update)
+
+      %{data: new_question} = Pleroma.Object.get_by_id(id)
+
+      assert [%{"replies" => %{"totalItems" => 5}}, %{"replies" => %{"totalItems" => 5}}] =
+               new_question["oneOf"]
+
+      refute Map.has_key?(new_question, "formerRepresentations")
     end
   end
 

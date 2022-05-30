@@ -443,14 +443,29 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     "attachment",
     "generator"
   ]
-  defp handle_update_object(
-         %{data: %{"type" => "Update", "object" => updated_object}} = object,
-         meta
-       ) do
-    orig_object = Object.get_by_ap_id(updated_object["id"])
-    orig_object_data = orig_object.data
+  defp update_content_fields(orig_object_data, updated_object) do
+    @updatable_fields
+    |> Enum.reduce(
+      %{data: orig_object_data, updated: false},
+      fn field, %{data: data, updated: updated} ->
+        updated = updated or Map.get(updated_object, field) != Map.get(orig_object_data, field)
 
-    if orig_object_data["type"] in @updatable_object_types do
+        data =
+          if Map.has_key?(updated_object, field) do
+            Map.put(data, field, updated_object[field])
+          else
+            Map.drop(data, [field])
+          end
+
+        %{data: data, updated: updated}
+      end
+    )
+  end
+
+  defp maybe_update_history(updated_object, orig_object_data, updated) do
+    if not updated do
+      updated_object
+    else
       # Put edit history
       # Note that we may have got the edit history by first fetching the object
       history = history_for_object(orig_object_data)
@@ -464,19 +479,47 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         |> Map.put("orderedItems", [latest_history_item | history["orderedItems"]])
         |> Map.put("totalItems", history["totalItems"] + 1)
 
+      updated_object
+      |> Map.put("formerRepresentations", new_history)
+    end
+  end
+
+  defp maybe_update_poll(to_be_updated, updated_object) do
+    choice_key = fn data ->
+      if Map.has_key?(data, "anyOf"), do: "anyOf", else: "oneOf"
+    end
+
+    with true <- to_be_updated["type"] == "Question",
+         key <- choice_key.(updated_object),
+         true <- key == choice_key.(to_be_updated),
+         orig_choices <- to_be_updated[key] |> Enum.map(&Map.drop(&1, ["replies"])),
+         new_choices <- updated_object[key] |> Enum.map(&Map.drop(&1, ["replies"])),
+         true <- orig_choices == new_choices do
+      # Choices are the same, but counts are different
+      to_be_updated
+      |> Map.put(key, updated_object[key])
+    else
+      # Choices (or vote type) have changed, do not allow this
+      _ -> to_be_updated
+    end
+  end
+
+  defp handle_update_object(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    orig_object = Object.get_by_ap_id(updated_object["id"])
+    orig_object_data = orig_object.data
+
+    if orig_object_data["type"] in @updatable_object_types do
+      %{data: updated_object_data, updated: updated} =
+        orig_object_data
+        |> update_content_fields(updated_object)
+
       updated_object_data =
-        @updatable_fields
-        |> Enum.reduce(
-          orig_object_data,
-          fn field, acc ->
-            if Map.has_key?(updated_object, field) do
-              Map.put(acc, field, updated_object[field])
-            else
-              Map.drop(acc, [field])
-            end
-          end
-        )
-        |> Map.put("formerRepresentations", new_history)
+        updated_object_data
+        |> maybe_update_history(orig_object_data, updated)
+        |> maybe_update_poll(updated_object)
 
       orig_object
       |> Object.change(%{data: updated_object_data})
