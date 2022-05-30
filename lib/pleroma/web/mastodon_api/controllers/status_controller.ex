@@ -38,7 +38,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :index,
            :show,
            :card,
-           :context
+           :context,
+           :show_history,
+           :show_source
          ]
   )
 
@@ -49,7 +51,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :create,
            :delete,
            :reblog,
-           :unreblog
+           :unreblog,
+           :update
          ]
   )
 
@@ -189,6 +192,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def create(%{assigns: %{user: _user}, body_params: %{media_ids: _} = params} = conn, _) do
     params = Map.put(params, :status, "")
     create(%Plug.Conn{conn | body_params: params}, %{})
+  end
+
+  @doc "GET /api/v1/statuses/:id/history"
+  def show_history(%{assigns: %{user: user}} = conn, %{id: id} = params) do
+    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         true <- Visibility.visible_for_user?(activity, user) do
+      try_render(conn, "history.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
+      )
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc "GET /api/v1/statuses/:id/source"
+  def show_source(%{assigns: %{user: _user}} = _conn, %{id: _id} = _params) do
+  end
+
+  @doc "PUT /api/v1/statuses/:id"
+  def update(%{assigns: %{user: _user}} = _conn, %{id: _id} = _params) do
   end
 
   @doc "GET /api/v1/statuses/:id"

@@ -384,6 +384,71 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     nil
   end
 
+  def render("history.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    object = Object.normalize(activity, fetch: false)
+
+    hashtags = Object.hashtags(object)
+
+    user = CommonAPI.get_user(activity.data["actor"])
+
+    past_history =
+      Object.history_for(object.data)
+      |> Map.get("orderedItems")
+      |> Enum.map(&Map.put(&1, "id", object.data["id"]))
+      |> Enum.map(&%Object{data: &1, id: object.id})
+
+    history = [object | past_history]
+
+    individual_opts =
+      opts
+      |> Map.put(:as, :object)
+      |> Map.put(:user, user)
+      |> Map.put(:hashtags, hashtags)
+
+    render_many(history, StatusView, "history_item.json", individual_opts)
+  end
+
+  def render(
+        "history_item.json",
+        %{activity: activity, user: user, object: object, hashtags: hashtags} = opts
+      ) do
+    sensitive = object.data["sensitive"] || Enum.member?(hashtags, "nsfw")
+
+    attachment_data = object.data["attachment"] || []
+    attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
+
+    created_at = Utils.to_masto_date(object.data["updated"] || object.data["published"])
+
+    content =
+      object
+      |> render_content()
+
+    content_html =
+      content
+      |> Activity.HTML.get_cached_scrubbed_html_for_activity(
+        User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:content"
+      )
+
+    summary = object.data["summary"] || ""
+
+    %{
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: opts[:for]
+        }),
+      content: content_html,
+      sensitive: sensitive,
+      spoiler_text: summary,
+      created_at: created_at,
+      media_attachments: attachments,
+      emojis: build_emojis(object.data["emoji"]),
+      poll: render(PollView, "show.json", object: object, for: opts[:for])
+    }
+  end
+
   def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
     page_url_data = URI.parse(page_url)
 

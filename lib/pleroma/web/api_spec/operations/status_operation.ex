@@ -6,9 +6,13 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
+  alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
@@ -434,6 +438,29 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
+  def show_history_operation do
+    %Operation{
+      tags: ["Retrieve status history"],
+      summary: "Status history",
+      description: "View history of a status",
+      operationId: "StatusController.show_history",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        id_param()
+      ],
+      responses: %{
+        200 => status_history_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def show_source_operation do
+  end
+
+  def update_operation do
+  end
+
   def array_of_statuses do
     %Schema{type: :array, items: Status, example: [Status.schema().example]}
   end
@@ -577,6 +604,61 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   defp status_response do
     Operation.response("Status", "application/json", Status)
+  end
+
+  defp status_history_response do
+    Operation.response(
+      "Status History",
+      "application/json",
+      %Schema{
+        title: "Status history",
+        description: "Response schema for history of a status",
+        type: :array,
+        items: %Schema{
+          type: :object,
+          properties: %{
+            account: %Schema{
+              allOf: [Account],
+              description: "The account that authored this status"
+            },
+            content: %Schema{
+              type: :string,
+              format: :html,
+              description: "HTML-encoded status content"
+            },
+            sensitive: %Schema{
+              type: :boolean,
+              description: "Is this status marked as sensitive content?"
+            },
+            spoiler_text: %Schema{
+              type: :string,
+              description:
+                "Subject or summary line, below which status content is collapsed until expanded"
+            },
+            created_at: %Schema{
+              type: :string,
+              format: "date-time",
+              description: "The date when this status was created"
+            },
+            media_attachments: %Schema{
+              type: :array,
+              items: Attachment,
+              description: "Media that is attached to this status"
+            },
+            emojis: %Schema{
+              type: :array,
+              items: Emoji,
+              description: "Custom emoji to be used when rendering status content"
+            },
+            poll: %Schema{
+              allOf: [Poll],
+              nullable: true,
+              description: "The poll attached to the status"
+            }
+          }
+        }
+      }
+    )
   end
 
   defp context do

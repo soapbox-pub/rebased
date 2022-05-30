@@ -1990,4 +1990,50 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              } = result
     end
   end
+
+  describe "get status history" do
+    setup do
+      oauth_access(["read:statuses"])
+    end
+
+    test "unedited post", %{conn: conn} do
+      activity = insert(:note_activity)
+
+      conn = get(conn, "/api/v1/statuses/#{activity.id}/history")
+
+      assert [_] = json_response_and_validate_schema(conn, 200)
+    end
+
+    test "edited post", %{conn: conn} do
+      note =
+        insert(
+          :note,
+          data: %{
+            "formerRepresentations" => %{
+              "type" => "OrderedCollection",
+              "orderedItems" => [
+                %{
+                  "type" => "Note",
+                  "content" => "mew mew 2",
+                  "summary" => "title 2"
+                },
+                %{
+                  "type" => "Note",
+                  "content" => "mew mew 1",
+                  "summary" => "title 1"
+                }
+              ],
+              "totalItems" => 2
+            }
+          }
+        )
+
+      activity = insert(:note_activity, note: note)
+
+      conn = get(conn, "/api/v1/statuses/#{activity.id}/history")
+
+      assert [_, %{"spoiler_text" => "title 2"}, %{"spoiler_text" => "title 1"}] =
+               json_response_and_validate_schema(conn, 200)
+    end
+  end
 end

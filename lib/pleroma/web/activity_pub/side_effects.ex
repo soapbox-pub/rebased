@@ -410,26 +410,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
-  defp history_for_object(object) do
-    with history <- Map.get(object, "formerRepresentations"),
-         true <- is_map(history),
-         "OrderedCollection" <- Map.get(history, "type"),
-         true <- is_list(Map.get(history, "orderedItems")),
-         true <- is_integer(Map.get(history, "totalItems")) do
-      history
-    else
-      _ -> history_skeleton()
-    end
-  end
-
-  defp history_skeleton do
-    %{
-      "type" => "OrderedCollection",
-      "totalItems" => 0,
-      "orderedItems" => []
-    }
-  end
-
   @updatable_object_types ["Note", "Question"]
   # We do not allow poll options to be changed, but the poll description can be.
   @updatable_fields [
@@ -468,7 +448,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     else
       # Put edit history
       # Note that we may have got the edit history by first fetching the object
-      history = history_for_object(orig_object_data)
+      history = Object.history_for(orig_object_data)
 
       latest_history_item =
         orig_object_data

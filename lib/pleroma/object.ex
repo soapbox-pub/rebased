@@ -425,4 +425,24 @@ defmodule Pleroma.Object do
   end
 
   def object_data_hashtags(_), do: []
+
+  def history_for(object) do
+    with history <- Map.get(object, "formerRepresentations"),
+         true <- is_map(history),
+         "OrderedCollection" <- Map.get(history, "type"),
+         true <- is_list(Map.get(history, "orderedItems")),
+         true <- is_integer(Map.get(history, "totalItems")) do
+      history
+    else
+      _ -> history_skeleton()
+    end
+  end
+
+  defp history_skeleton do
+    %{
+      "type" => "OrderedCollection",
+      "totalItems" => 0,
+      "orderedItems" => []
+    }
+  end
 end
