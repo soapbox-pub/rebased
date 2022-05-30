@@ -449,6 +449,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def render("source.json", %{activity: %{data: %{"object" => _object}} = activity} = _opts) do
+    object = Object.normalize(activity, fetch: false)
+
+    %{
+      id: activity.id,
+      text: Map.get(object.data, "source", ""),
+      spoiler_text: Map.get(object.data, "summary", "")
+    }
+  end
+
   def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
     page_url_data = URI.parse(page_url)
 

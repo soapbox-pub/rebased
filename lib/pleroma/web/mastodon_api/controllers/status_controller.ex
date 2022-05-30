@@ -210,7 +210,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id/source"
-  def show_source(%{assigns: %{user: _user}} = _conn, %{id: _id} = _params) do
+  def show_source(%{assigns: %{user: user}} = conn, %{id: id} = _params) do
+    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         true <- Visibility.visible_for_user?(activity, user) do
+      try_render(conn, "source.json",
+        activity: activity,
+        for: user
+      )
+    else
+      _ -> {:error, :not_found}
+    end
   end
 
   @doc "PUT /api/v1/statuses/:id"

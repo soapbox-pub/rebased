@@ -2036,4 +2036,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                json_response_and_validate_schema(conn, 200)
     end
   end
+
+  describe "get status source" do
+    setup do
+      oauth_access(["read:statuses"])
+    end
+
+    test "it returns the source", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      conn = get(conn, "/api/v1/statuses/#{activity.id}/source")
+
+      id = activity.id
+
+      assert %{"id" => ^id, "text" => "mew mew #abc", "spoiler_text" => "#def"} = json_response_and_validate_schema(conn, 200)
+    end
+  end
 end

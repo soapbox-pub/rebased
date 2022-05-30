@@ -456,6 +456,20 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   end
 
   def show_source_operation do
+    %Operation{
+      tags: ["Retrieve status source"],
+      summary: "Status source",
+      description: "View source of a status",
+      operationId: "StatusController.show_source",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        id_param()
+      ],
+      responses: %{
+        200 => status_source_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
   end
 
   def update_operation do
@@ -655,6 +669,28 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
               nullable: true,
               description: "The poll attached to the status"
             }
+          }
+        }
+      }
+    )
+  end
+
+  defp status_source_response do
+    Operation.response(
+      "Status Source",
+      "application/json",
+      %Schema{
+        type: :object,
+        properties: %{
+          id: FlakeID,
+          text: %Schema{
+            type: :string,
+            description: "Raw source of status content"
+          },
+          spoiler_text: %Schema{
+            type: :string,
+            description:
+            "Subject or summary line, below which status content is collapsed until expanded"
           }
         }
       }
