@@ -52,6 +52,8 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   } do
     %{id: rule_id} = Rule.create(%{text: "There are no rules"})
 
+    rule_id = to_string(rule_id)
+
     assert %{"action_taken" => false, "id" => id} =
              conn
              |> put_req_header("content-type", "application/json")

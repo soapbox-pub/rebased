@@ -176,15 +176,17 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    %{id: id, text: text} = Rule.create(%{text: "Example rule"})
+    %{id: rule_id, text: text} = Rule.create(%{text: "Example rule"})
+
+    rule_id = to_string(rule_id)
 
     {:ok, activity} =
       CommonAPI.report(user, %{
         account_id: other_user.id,
-        rule_ids: [id]
+        rule_ids: [rule_id]
       })
 
-    assert %{rules: [%{id: ^id, text: ^text}]} =
+    assert %{rules: [%{id: ^rule_id, text: ^text}]} =
              ReportView.render("show.json", Report.extract_report_info(activity))
   end
 end
