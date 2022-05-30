@@ -13,7 +13,7 @@ defmodule Pleroma.Web.AdminAPI.RuleView do
 
   def render("show.json", %{rule: rule} = _opts) do
     %{
-      id: rule.id,
+      id: to_string(rule.id),
       priority: rule.priority,
       text: rule.text
     }

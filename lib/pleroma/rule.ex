@@ -39,6 +39,8 @@ defmodule Pleroma.Rule do
 
   def get(id), do: Repo.get(__MODULE__, id)
 
+  def exists?(id), do: not is_nil(get(id))
+
   def create(params) do
     {:ok, rule} =
       %Rule{}
