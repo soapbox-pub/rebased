@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
         rule_ids: %Schema{
           type: :array,
           nullable: true,
-          items: %Schema{type: :number},
+          items: %Schema{type: :string},
           description: "Array of rules"
         }
       },
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
         "status_ids" => ["1337"],
         "comment" => "bad status!",
         "forward" => "false",
-        "rule_ids" => [3]
+        "rule_ids" => ["3"]
       }
     }
   end

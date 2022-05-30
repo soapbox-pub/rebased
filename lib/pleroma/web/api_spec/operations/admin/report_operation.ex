@@ -175,7 +175,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           items: %Schema{
             type: :object,
             properties: %{
-              id: %Schema{type: :integer},
+              id: %Schema{type: :string},
               text: %Schema{type: :string}
             }
           }

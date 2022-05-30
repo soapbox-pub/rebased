@@ -27,6 +27,10 @@ defmodule Pleroma.Web.AdminAPI.RuleControllerTest do
       %{id: id2} = Rule.create(%{text: "Second rule", priority: 2})
       %{id: id3} = Rule.create(%{text: "Third rule", priority: 1})
 
+      id1 = to_string(id1)
+      id2 = to_string(id2)
+      id3 = to_string(id3)
+
       response =
         conn
         |> get("/api/pleroma/admin/rules")

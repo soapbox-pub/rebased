@@ -10,8 +10,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   alias Pleroma.User
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
+  alias Pleroma.Web.AdminAPI.RuleView
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   defdelegate merge_account_views(user), to: AdminAPI.AccountView
@@ -80,8 +80,10 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   end
 
   defp rules(rule_ids) do
-    rule_ids
-    |> Rule.get()
-    |> render_many(InstanceView, "rule.json", as: :rule)
+    rules =
+      rule_ids
+      |> Rule.get()
+
+    render(RuleView, "index.json", rules: rules)
   end
 end

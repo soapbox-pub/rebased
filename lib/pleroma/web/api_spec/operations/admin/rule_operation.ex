@@ -103,10 +103,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.RuleOperation do
     %Schema{
       type: :object,
       properties: %{
-        id: %Schema{type: :integer},
+        id: %Schema{type: :string},
         priority: %Schema{type: :integer},
-        text: %Schema{type: :string},
-        created_at: %Schema{type: :string, format: :"date-time"}
+        text: %Schema{type: :string}
       }
     }
   end

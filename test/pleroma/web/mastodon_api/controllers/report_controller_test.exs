@@ -65,6 +65,23 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
     assert %Activity{data: %{"rules" => [^rule_id]}} = Activity.get_report(id)
   end
 
+  test "rules field is empty if provided wrong rule id", %{
+    conn: conn,
+    target_user: target_user
+  } do
+    assert %{"id" => id} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/reports", %{
+               "account_id" => target_user.id,
+               "forward" => "false",
+               "rule_ids" => ["-1"]
+             })
+             |> json_response_and_validate_schema(200)
+
+    assert %Activity{data: %{"rules" => []}} = Activity.get_report(id)
+  end
+
   test "account_id is required", %{
     conn: conn,
     activity: activity

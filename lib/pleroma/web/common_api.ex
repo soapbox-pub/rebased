@@ -533,8 +533,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp get_report_rules(rule_ids) do
     rule_ids
-    |> Rule.get()
-    |> Enum.map(& &1.id)
+    |> Enum.filter(&Rule.exists?/1)
   end
 
   def update_report_state(activity_ids, state) when is_list(activity_ids) do
