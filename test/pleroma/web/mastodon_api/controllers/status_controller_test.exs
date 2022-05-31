@@ -2051,7 +2051,84 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       id = activity.id
 
-      assert %{"id" => ^id, "text" => "mew mew #abc", "spoiler_text" => "#def"} = json_response_and_validate_schema(conn, 200)
+      assert %{"id" => ^id, "text" => "mew mew #abc", "spoiler_text" => "#def"} =
+               json_response_and_validate_schema(conn, 200)
+    end
+  end
+
+  describe "update status" do
+    setup do
+      oauth_access(["write:statuses"])
+    end
+
+    test "it updates the status", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/v1/statuses/#{activity.id}", %{
+          "status" => "edited",
+          "spoiler_text" => "lol"
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert response["content"] == "edited"
+      assert response["spoiler_text"] == "lol"
+    end
+
+    test "it does not update visibility", %{conn: conn, user: user} do
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "mew mew #abc",
+          spoiler_text: "#def",
+          visibility: "private"
+        })
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/v1/statuses/#{activity.id}", %{
+          "status" => "edited",
+          "spoiler_text" => "lol"
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert response["visibility"] == "private"
+    end
+
+    test "it refuses to update when original post is not by the user", %{conn: conn} do
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/statuses/#{activity.id}", %{
+        "status" => "edited",
+        "spoiler_text" => "lol"
+      })
+      |> json_response_and_validate_schema(:forbidden)
+    end
+
+    test "it returns 404 if the user cannot see the post", %{conn: conn} do
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{
+          status: "mew mew #abc",
+          spoiler_text: "#def",
+          visibility: "private"
+        })
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/statuses/#{activity.id}", %{
+        "status" => "edited",
+        "spoiler_text" => "lol"
+      })
+      |> json_response_and_validate_schema(:not_found)
     end
   end
 end

@@ -223,7 +223,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "PUT /api/v1/statuses/:id"
-  def update(%{assigns: %{user: _user}} = _conn, %{id: _id} = _params) do
+  def update(%{assigns: %{user: user}, body_params: body_params} = conn, %{id: id} = params) do
+    with {_, %Activity{}} = {_, activity} <- {:activity, Activity.get_by_id_with_object(id)},
+         {_, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
+         {_, true} <- {:is_create, activity.data["type"] == "Create"},
+         actor <- Activity.user_actor(activity),
+         {_, true} <- {:own_status, actor.id == user.id},
+         changes <- body_params |> put_application(conn),
+         {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
+         {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
+      try_render(conn, "show.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
+      )
+    else
+      {:own_status, _} -> {:error, :forbidden}
+      {:pipeline, _} -> {:error, :internal_server_error}
+      _ -> {:error, :not_found}
+    end
   end
 
   @doc "GET /api/v1/statuses/:id"

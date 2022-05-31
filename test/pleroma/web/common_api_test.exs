@@ -1541,4 +1541,33 @@ defmodule Pleroma.Web.CommonAPITest do
       end
     end
   end
+
+  describe "update/3" do
+    test "updates a post" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1"})
+
+      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2"})
+
+      updated_object = Object.normalize(updated)
+      assert updated_object.data["content"] == "updated 2"
+      assert Map.get(updated_object.data, "summary", "") == ""
+      assert Map.has_key?(updated_object.data, "updated")
+    end
+
+    test "does not change visibility" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1", visibility: "private"})
+
+      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2"})
+
+      updated_object = Object.normalize(updated)
+      assert updated_object.data["content"] == "updated 2"
+      assert Map.get(updated_object.data, "summary", "") == ""
+      assert Visibility.get_visibility(updated_object) == "private"
+      assert Visibility.get_visibility(updated) == "private"
+    end
+  end
 end

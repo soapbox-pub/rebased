@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.PollWorker
 
+  require Pleroma.Constants
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
@@ -411,20 +412,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   @updatable_object_types ["Note", "Question"]
-  # We do not allow poll options to be changed, but the poll description can be.
-  @updatable_fields [
-    "source",
-    "tag",
-    "updated",
-    "emoji",
-    "content",
-    "summary",
-    "sensitive",
-    "attachment",
-    "generator"
-  ]
   defp update_content_fields(orig_object_data, updated_object) do
-    @updatable_fields
+    Pleroma.Constants.status_updatable_fields()
     |> Enum.reduce(
       %{data: orig_object_data, updated: false},
       fn field, %{data: data, updated: updated} ->
@@ -502,6 +491,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         |> maybe_update_poll(updated_object)
 
       orig_object
+      |> Repo.preload(:hashtags)
       |> Object.change(%{data: updated_object_data})
       |> Object.update_and_set_cache()
     end

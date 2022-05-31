@@ -402,6 +402,42 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def update(user, orig_activity, changes) do
+    with orig_object <- Object.normalize(orig_activity),
+         {:ok, new_object} <- make_update_data(user, orig_object, changes),
+         {:ok, update_data, _} <- Builder.update(user, new_object),
+         {:ok, update, _} <- Pipeline.common_pipeline(update_data, local: true) do
+      {:ok, update}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp make_update_data(user, orig_object, changes) do
+    kept_params = %{
+      visibility: Visibility.get_visibility(orig_object)
+    }
+
+    params = Map.merge(changes, kept_params)
+
+    with {:ok, draft} <- ActivityDraft.create(user, params) do
+      change =
+        Pleroma.Constants.status_updatable_fields()
+        |> Enum.reduce(orig_object.data, fn key, acc ->
+          if Map.has_key?(draft.object, key) do
+            acc |> Map.put(key, Map.get(draft.object, key))
+          else
+            acc |> Map.drop([key])
+          end
+        end)
+        |> Map.put("updated", Utils.make_date())
+
+      {:ok, change}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
   @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def pin(id, %User{} = user) do
     with %Activity{} = activity <- create_activity_by_id(id),

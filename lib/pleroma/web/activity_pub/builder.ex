@@ -218,10 +218,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
-  # Retricted to user updates for now, always public
   @spec update(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def update(actor, object) do
-    to = [Pleroma.Constants.as_public(), actor.follower_address]
+    {to, cc} =
+      if object["type"] in Pleroma.Constants.actor_types() do
+        # User updates, always public
+        {[Pleroma.Constants.as_public(), actor.follower_address], []}
+      else
+        # Status updates, follow the recipients in the object
+        {object["to"] || [], object["cc"] || []}
+      end
 
     {:ok,
      %{
@@ -229,7 +235,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "type" => "Update",
        "actor" => actor.ap_id,
        "object" => object,
-       "to" => to
+       "to" => to,
+       "cc" => cc
      }, []}
   end
 

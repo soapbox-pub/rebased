@@ -473,6 +473,22 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   end
 
   def update_operation do
+    %Operation{
+      tags: ["Update status"],
+      summary: "Update status",
+      description: "Change the content of a status",
+      operationId: "StatusController.update",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      parameters: [
+        id_param()
+      ],
+      requestBody: request_body("Parameters", update_request(), required: true),
+      responses: %{
+        200 => status_response(),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
   end
 
   def array_of_statuses do
@@ -565,6 +581,60 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           type: :string,
           description:
             "Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`."
+        }
+      },
+      example: %{
+        "status" => "What time is it?",
+        "sensitive" => "false",
+        "poll" => %{
+          "options" => ["Cofe", "Adventure"],
+          "expires_in" => 420
+        }
+      }
+    }
+  end
+
+  defp update_request do
+    %Schema{
+      title: "StatusUpdateRequest",
+      type: :object,
+      properties: %{
+        status: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
+        },
+        media_ids: %Schema{
+          nullable: true,
+          type: :array,
+          items: %Schema{type: :string},
+          description: "Array of Attachment ids to be attached as media."
+        },
+        poll: poll_params(),
+        sensitive: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Mark status and attached media as sensitive?"
+        },
+        spoiler_text: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
+        },
+        content_type: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "The MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
+        },
+        to: %Schema{
+          type: :array,
+          nullable: true,
+          items: %Schema{type: :string},
+          description:
+            "A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply"
         }
       },
       example: %{
@@ -690,7 +760,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           spoiler_text: %Schema{
             type: :string,
             description:
-            "Subject or summary line, below which status content is collapsed until expanded"
+              "Subject or summary line, below which status content is collapsed until expanded"
           }
         }
       }
