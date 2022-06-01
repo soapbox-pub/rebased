@@ -431,28 +431,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     )
   end
 
-  defp maybe_update_history(updated_object, orig_object_data, updated) do
-    if not updated do
-      updated_object
-    else
-      # Put edit history
-      # Note that we may have got the edit history by first fetching the object
-      history = Object.history_for(orig_object_data)
-
-      latest_history_item =
-        orig_object_data
-        |> Map.drop(["id", "formerRepresentations"])
-
-      new_history =
-        history
-        |> Map.put("orderedItems", [latest_history_item | history["orderedItems"]])
-        |> Map.put("totalItems", history["totalItems"] + 1)
-
-      updated_object
-      |> Map.put("formerRepresentations", new_history)
-    end
-  end
-
   defp maybe_update_poll(to_be_updated, updated_object) do
     choice_key = fn data ->
       if Map.has_key?(data, "anyOf"), do: "anyOf", else: "oneOf"
@@ -487,7 +465,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
       updated_object_data =
         updated_object_data
-        |> maybe_update_history(orig_object_data, updated)
+        |> Object.maybe_update_history(orig_object_data, updated)
         |> maybe_update_poll(updated_object)
 
       orig_object
