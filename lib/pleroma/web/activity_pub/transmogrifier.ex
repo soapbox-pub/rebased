@@ -902,7 +902,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def strip_internal_fields(object) do
-    Map.drop(object, Pleroma.Constants.object_internal_fields())
+    outer = Map.drop(object, Pleroma.Constants.object_internal_fields())
+
+    case outer do
+      %{"formerRepresentations" => %{"orderedItems" => list}} when is_list(list) ->
+        update_in(
+          outer["formerRepresentations"]["orderedItems"],
+          &Enum.map(
+            &1,
+            fn
+              item when is_map(item) -> Map.drop(item, Pleroma.Constants.object_internal_fields())
+              item -> item
+            end
+          )
+        )
+
+      _ ->
+        outer
+    end
   end
 
   defp strip_internal_tags(%{"tag" => tags} = object) do

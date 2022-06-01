@@ -575,4 +575,58 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Transmogrifier.fix_attachments(object) == expected
     end
   end
+
+  describe "strip_internal_fields/1" do
+    test "it strips internal fields in formerRepresentations" do
+      original = %{
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{"generator" => %{}}
+          ]
+        }
+      }
+
+      stripped = Transmogrifier.strip_internal_fields(original)
+
+      refute Map.has_key?(
+               Enum.at(stripped["formerRepresentations"]["orderedItems"], 0),
+               "generator"
+             )
+    end
+
+    test "it strips internal fields in maybe badly-formed formerRepresentations" do
+      original = %{
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{"generator" => %{}},
+            "https://example.com/1"
+          ]
+        }
+      }
+
+      stripped = Transmogrifier.strip_internal_fields(original)
+
+      refute Map.has_key?(
+               Enum.at(stripped["formerRepresentations"]["orderedItems"], 0),
+               "generator"
+             )
+
+      assert Enum.at(stripped["formerRepresentations"]["orderedItems"], 1) ==
+               "https://example.com/1"
+    end
+
+    test "it ignores if formerRepresentations does not look like an OrderedCollection" do
+      original = %{
+        "formerRepresentations" => %{
+          "items" => [
+            %{"generator" => %{}}
+          ]
+        }
+      }
+
+      stripped = Transmogrifier.strip_internal_fields(original)
+
+      assert Map.has_key?(Enum.at(stripped["formerRepresentations"]["items"], 0), "generator")
+    end
+  end
 end
