@@ -246,6 +246,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       content: HTML.filter_tags(object_data["content"]),
       text: nil,
       created_at: created_at,
+      edited_at: nil,
       reblogs_count: 0,
       replies_count: 0,
       favourites_count: 0,
@@ -707,5 +708,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("show.json", activity: visible, for: poster)
     assert status.pleroma.parent_visible
+  end
+
+  test "it shows edited_at" do
+    poster = insert(:user)
+
+    {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
+
+    status = StatusView.render("show.json", activity: post)
+    refute status.edited_at
+
+    {:ok, _} = CommonAPI.update(poster, post, %{status: "mew mew"})
+    edited = Pleroma.Activity.normalize(post)
+
+    status = StatusView.render("show.json", activity: edited)
+    assert status.edited_at
   end
 end

@@ -258,6 +258,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     created_at = Utils.to_masto_date(object.data["published"])
 
+    edited_at =
+      with %{"updated" => updated} <- object.data,
+           date <- Utils.to_masto_date(updated),
+           true <- date != "" do
+        date
+      else
+        _ ->
+          nil
+      end
+
     reply_to = get_reply_to(activity, opts)
 
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
@@ -346,6 +356,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       content: content_html,
       text: opts[:with_source] && object.data["source"],
       created_at: created_at,
+      edited_at: edited_at,
       reblogs_count: announcement_count,
       replies_count: object.data["repliesCount"] || 0,
       favourites_count: like_count,

@@ -73,6 +73,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         format: "date-time",
         description: "The date when this status was created"
       },
+      edited_at: %Schema{
+        type: :string,
+        format: "date-time",
+        nullable: true,
+        description: "The date when this status was last edited"
+      },
       emojis: %Schema{
         type: :array,
         items: Emoji,
