@@ -761,6 +761,10 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             type: :string,
             description:
               "Subject or summary line, below which status content is collapsed until expanded"
+          },
+          content_type: %Schema{
+            type: :string,
+            description: "The content type of the source"
           }
         }
       }

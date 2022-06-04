@@ -724,4 +724,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: edited)
     assert status.edited_at
   end
+
+  test "with a source object" do
+    note =
+      insert(:note,
+        data: %{"source" => %{"content" => "object source", "mediaType" => "text/markdown"}}
+      )
+
+    activity = insert(:note_activity, note: note)
+
+    status = StatusView.render("show.json", activity: activity, with_source: true)
+    assert status.text == "object source"
+  end
+
+  describe "source.json" do
+    test "with a source object, renders both source and content type" do
+      note =
+        insert(:note,
+          data: %{"source" => %{"content" => "object source", "mediaType" => "text/markdown"}}
+        )
+
+      activity = insert(:note_activity, note: note)
+
+      status = StatusView.render("source.json", activity: activity)
+      assert status.text == "object source"
+      assert status.content_type == "text/markdown"
+    end
+
+    test "with a source string, renders source and put text/plain as the content type" do
+      note = insert(:note, data: %{"source" => "string source"})
+      activity = insert(:note_activity, note: note)
+
+      status = StatusView.render("source.json", activity: activity)
+      assert status.text == "string source"
+      assert status.content_type == "text/plain"
+    end
+  end
 end

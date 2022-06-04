@@ -219,7 +219,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> maybe_add_attachments(draft.attachments, attachment_links)
   end
 
-  defp get_content_type(content_type) do
+  def get_content_type(content_type) do
     if Enum.member?(Config.get([:instance, :allowed_post_formats]), content_type) do
       content_type
     else
