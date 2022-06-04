@@ -456,6 +456,17 @@ defmodule Pleroma.Web.StreamerTest do
       assert_receive {:render_with_user, _, "status_update.json", ^edited}
       refute Streamer.filtered_by_user?(user, edited)
     end
+
+    test "it streams own edits in the 'user' stream", %{user: user, token: oauth_token} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, edited} = CommonAPI.update(user, activity, %{status: "mew mew"})
+      edited = Pleroma.Activity.normalize(edited)
+
+      assert_receive {:render_with_user, _, "status_update.json", ^edited}
+      refute Streamer.filtered_by_user?(user, edited)
+    end
   end
 
   describe "public streams" do
