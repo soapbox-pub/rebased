@@ -586,7 +586,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
-      assert object.data["source"] == post
+      assert object.data["source"]["content"] == post
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -603,7 +603,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity, fetch: false)
 
       assert object.data["content"] == "<p><b>2hu</b></p>"
-      assert object.data["source"] == post
+      assert object.data["source"]["content"] == post
     end
 
     test "it does not allow replies to direct messages that are not direct messages themselves" do
