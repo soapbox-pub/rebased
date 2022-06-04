@@ -144,6 +144,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     setup do
       user = insert(:user)
       note = insert(:note, user: user)
+      _note_activity = insert(:note_activity, note: note)
 
       updated_note =
         note.data
