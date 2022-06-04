@@ -472,6 +472,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       |> Repo.preload(:hashtags)
       |> Object.change(%{data: updated_object_data})
       |> Object.update_and_set_cache()
+
+      if updated do
+        object
+        |> Activity.normalize()
+        |> ActivityPub.notify_and_stream()
+      end
     end
 
     {:ok, object, meta}
