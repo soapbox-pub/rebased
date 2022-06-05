@@ -516,7 +516,16 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
-      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact", "Flag", "Update"] do
+      when type in [
+             "Create",
+             "Like",
+             "Announce",
+             "Follow",
+             "Move",
+             "EmojiReact",
+             "Flag",
+             "Update"
+           ] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
     potential_receivers =
