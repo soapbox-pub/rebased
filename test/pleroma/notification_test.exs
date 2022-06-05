@@ -127,6 +127,28 @@ defmodule Pleroma.NotificationTest do
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
     end
+
+    test "it sends edited notifications to those who repeated a status" do
+      user = insert(:user)
+      repeated_user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          status: "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, _activity_two} = CommonAPI.repeat(activity_one.id, repeated_user)
+
+      {:ok, _edit_activity} =
+        CommonAPI.update(user, activity_one, %{
+          status: "hey @#{other_user.nickname}! mew mew"
+        })
+
+      assert [%{type: "reblog"}] = Notification.for_user(user)
+      assert [%{type: "update"}] = Notification.for_user(repeated_user)
+      assert [%{type: "mention"}] = Notification.for_user(other_user)
+    end
   end
 
   test "create_poll_notifications/1" do
@@ -838,6 +860,30 @@ defmodule Pleroma.NotificationTest do
 
       assert [other_user] == enabled_receivers
       assert [] == disabled_receivers
+    end
+
+    test "it sends edited notifications to those who repeated a status" do
+      user = insert(:user)
+      repeated_user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          status: "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, _activity_two} = CommonAPI.repeat(activity_one.id, repeated_user)
+
+      {:ok, edit_activity} =
+        CommonAPI.update(user, activity_one, %{
+          status: "hey @#{other_user.nickname}! mew mew"
+        })
+
+      {enabled_receivers, _disabled_receivers} =
+        Notification.get_notified_from_activity(edit_activity)
+
+      assert repeated_user in enabled_receivers
+      assert other_user not in enabled_receivers
     end
   end
 

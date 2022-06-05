@@ -385,7 +385,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
-      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag"] do
+      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag", "Update"] do
     do_create_notifications(activity, options)
   end
 
@@ -438,6 +438,9 @@ defmodule Pleroma.Notification do
       "Create" ->
         activity
         |> type_from_activity_object()
+
+      "Update" ->
+        "update"
 
       t ->
         raise "No notification type for activity type #{t}"
@@ -513,7 +516,7 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
-      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact", "Flag"] do
+      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact", "Flag", "Update"] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
     potential_receivers =
@@ -551,6 +554,21 @@ defmodule Pleroma.Notification do
 
   def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
     (User.all_superusers() |> Enum.map(fn user -> user.ap_id end)) -- [actor]
+  end
+
+  # Update activity: notify all who repeated this
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Update", "actor" => actor}} = activity) do
+    with %Object{data: %{"id" => object_id}} <- Object.normalize(activity, fetch: false) do
+      repeaters =
+        Activity.Queries.by_type("Announce")
+        |> Activity.Queries.by_object_id(object_id)
+        |> Activity.with_joined_user_actor()
+        |> where([a, u], u.local)
+        |> select([a, u], u.ap_id)
+        |> Repo.all()
+
+      repeaters -- [actor]
+    end
   end
 
   def get_potential_receiver_ap_ids(activity) do
