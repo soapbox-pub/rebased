@@ -7,7 +7,6 @@ defmodule Pleroma.ReverseProxy.Client.Hackney do
 
   @impl true
   def request(method, url, headers, body, opts \\ []) do
-    opts = Keyword.put(opts, :ssl_options, versions: [:"tlsv1.2", :"tlsv1.1", :tlsv1])
     :hackney.request(method, url, headers, body, opts)
   end
 

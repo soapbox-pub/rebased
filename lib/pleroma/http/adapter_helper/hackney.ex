@@ -24,10 +24,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Hackney do
     |> Pleroma.HTTP.AdapterHelper.maybe_add_proxy(proxy)
   end
 
-  defp add_scheme_opts(opts, %URI{scheme: "https"}) do
-    Keyword.put(opts, :ssl_options, versions: [:"tlsv1.2", :"tlsv1.1", :tlsv1])
-  end
-
   defp add_scheme_opts(opts, _), do: opts
 
   defp maybe_add_with_body(opts) do
