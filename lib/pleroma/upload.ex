@@ -36,6 +36,7 @@ defmodule Pleroma.Upload do
   alias Ecto.UUID
   alias Pleroma.Config
   alias Pleroma.Maps
+  alias Pleroma.Web.ActivityPub.Utils
   require Logger
 
   @type source ::
@@ -88,6 +89,7 @@ defmodule Pleroma.Upload do
          {:ok, url_spec} <- Pleroma.Uploaders.Uploader.put_file(opts.uploader, upload) do
       {:ok,
        %{
+         "id" => Utils.generate_object_id(),
          "type" => opts.activity_type,
          "mediaType" => upload.content_type,
          "url" => [
