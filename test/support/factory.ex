@@ -111,6 +111,18 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def attachment_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data =
+      attachment_data(user.ap_id, nil)
+      |> Map.put("id", Pleroma.Web.ActivityPub.Utils.generate_object_id())
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
   def attachment_note_factory(attrs \\ %{}) do
     user = attrs[:user] || insert(:user)
     {length, attrs} = Map.pop(attrs, :length, 1)

@@ -523,10 +523,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         true -> "unknown"
       end
 
-    <<hash_id::signed-32, _rest::binary>> = :crypto.hash(:md5, href)
+    attachment_id =
+      with {_, ap_id} when is_binary(ap_id) <- {:ap_id, attachment["id"]},
+           {_, %Object{data: _object_data, id: object_id}} <-
+             {:object, Object.get_by_ap_id(ap_id)} do
+        to_string(object_id)
+      else
+        _ ->
+          <<hash_id::signed-32, _rest::binary>> = :crypto.hash(:md5, href)
+          to_string(attachment["id"] || hash_id)
+      end
 
     %{
-      id: to_string(attachment["id"] || hash_id),
+      id: attachment_id,
       url: href,
       remote_url: href,
       preview_url: href_preview,

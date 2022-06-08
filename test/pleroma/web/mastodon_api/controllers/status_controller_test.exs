@@ -2077,6 +2077,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert response["spoiler_text"] == "lol"
     end
 
+    test "it updates the attachments", %{conn: conn, user: user} do
+      attachment = insert(:attachment, user: user)
+      attachment_id = to_string(attachment.id)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/v1/statuses/#{activity.id}", %{
+          "status" => "mew mew #abc",
+          "spoiler_text" => "#def",
+          "media_ids" => [attachment_id]
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^attachment_id}] = response["media_attachments"]
+    end
+
     test "it does not update visibility", %{conn: conn, user: user} do
       {:ok, activity} =
         CommonAPI.post(user, %{
