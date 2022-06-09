@@ -272,6 +272,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
 
+    history_len =
+      1 +
+        (Object.history_for(object.data)
+         |> Map.get("orderedItems")
+         |> length())
+
+    # See render("history.json", ...) for more details
+    # Here the implicit index of the current content is 0
+    chrono_order = history_len - 1
+
     content =
       object
       |> render_content()
@@ -281,14 +291,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     content_plaintext =
       content
       |> Activity.HTML.get_cached_stripped_html_for_activity(
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     summary = object.data["summary"] || ""
@@ -410,9 +420,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     history = [object | past_history]
 
+    history_len = length(history)
+
+    history =
+      Enum.with_index(
+        history,
+        fn object, index ->
+          %{
+            # The history is prepended every time there is a new edit.
+            # In chrono_order, the oldest item is always at 0, and so on.
+            # The chrono_order is an invariant kept between edits.
+            chrono_order: history_len - 1 - index,
+            object: object
+          }
+        end
+      )
+
     individual_opts =
       opts
-      |> Map.put(:as, :object)
+      |> Map.put(:as, :item)
       |> Map.put(:user, user)
       |> Map.put(:hashtags, hashtags)
 
@@ -421,7 +447,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render(
         "history_item.json",
-        %{activity: activity, user: user, object: object, hashtags: hashtags} = opts
+        %{
+          activity: activity,
+          user: user,
+          item: %{object: object, chrono_order: chrono_order},
+          hashtags: hashtags
+        } = opts
       ) do
     sensitive = object.data["sensitive"] || Enum.member?(hashtags, "nsfw")
 
@@ -439,7 +470,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     summary = object.data["summary"] || ""
