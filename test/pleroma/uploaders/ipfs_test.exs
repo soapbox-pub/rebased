@@ -25,11 +25,11 @@ defmodule Pleroma.Uploaders.IPFSTest do
 
   describe "get_final_url" do
     test "it returns the final url for put_file" do
-      assert IPFS.get_final_url("/api/v0/add") == "http://localhost:5001/api/v0/add"
+      assert IPFS.put_file_endpoint() == "http://localhost:5001/api/v0/add"
     end
 
     test "it returns the final url for delete_file" do
-      assert IPFS.get_final_url("/api/v0/files/rm") == "http://localhost:5001/api/v0/files/rm"
+      assert IPFS.delete_file_endpoint() == "http://localhost:5001/api/v0/files/rm"
     end
   end
 
@@ -86,6 +86,26 @@ defmodule Pleroma.Uploaders.IPFSTest do
         assert capture_log(fn ->
                  assert IPFS.put_file(file_upload) == {:error, "IPFS Gateway upload failed"}
                end) =~ "Elixir.Pleroma.Uploaders.IPFS: {:error, \"IPFS Gateway upload failed\"}"
+      end
+    end
+
+    test "returns error if JSON decode fails", %{file_upload: file_upload} do
+      with_mocks([
+        {Pleroma.HTTP, [], [post: fn _, _, _, _ -> {:ok, %Tesla.Env{status: 200, body: ''}} end]},
+        {Jason, [], [decode: fn _ -> {:error, "JSON decode failed"} end]}
+      ]) do
+        assert capture_log(fn ->
+                 assert IPFS.put_file(file_upload) == {:error, "JSON decode failed"}
+               end) =~ "Elixir.Pleroma.Uploaders.IPFS: {:error, \"JSON decode failed\"}"
+      end
+    end
+
+    test "returns error if JSON body doesn't contain Hash key", %{file_upload: file_upload} do
+      with_mocks([
+        {Pleroma.HTTP, [], [post: fn _, _, _, _ -> {:ok, %Tesla.Env{status: 200, body: ''}} end]},
+        {Jason, [], [decode: fn _ -> {:ok, %{}} end]}
+      ]) do
+        assert IPFS.put_file(file_upload) == {:error, "JSON doesn't contain Hash key"}
       end
     end
   end

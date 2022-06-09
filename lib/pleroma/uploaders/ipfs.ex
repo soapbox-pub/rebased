@@ -9,15 +9,23 @@ defmodule Pleroma.Uploaders.IPFS do
   alias Pleroma.Config
   alias Tesla.Multipart
 
-  @placeholder "{CID}"
-  def placeholder, do: @placeholder
-
-  def get_final_url(method) do
+  defp get_final_url(method) do
     config = Config.get([__MODULE__])
     post_base_url = Keyword.get(config, :post_gateway_url)
 
     Path.join([post_base_url, method])
   end
+
+  def put_file_endpoint() do
+    get_final_url("/api/v0/add")
+  end
+
+  def delete_file_endpoint() do
+    get_final_url("/api/v0/files/rm")
+  end
+
+  @placeholder "{CID}"
+  def placeholder, do: @placeholder
 
   @impl true
   def get_file(file) do
@@ -37,9 +45,7 @@ defmodule Pleroma.Uploaders.IPFS do
       |> Multipart.add_content_type_param("charset=utf-8")
       |> Multipart.add_file(upload.tempfile)
 
-    final_url = get_final_url("/api/v0/add")
-
-    case Pleroma.HTTP.post(final_url, mp, [], params: ["cid-version": "1"]) do
+    case Pleroma.HTTP.post(put_file_endpoint(), mp, [], params: ["cid-version": "1"]) do
       {:ok, ret} ->
         case Jason.decode(ret.body) do
           {:ok, ret} ->
@@ -62,9 +68,7 @@ defmodule Pleroma.Uploaders.IPFS do
 
   @impl true
   def delete_file(file) do
-    final_url = get_final_url("/api/v0/files/rm")
-
-    case Pleroma.HTTP.post(final_url, "", [], params: [arg: file]) do
+    case Pleroma.HTTP.post(delete_file_endpoint(), "", [], params: [arg: file]) do
       {:ok, %{status_code: 204}} -> :ok
       error -> {:error, inspect(error)}
     end
