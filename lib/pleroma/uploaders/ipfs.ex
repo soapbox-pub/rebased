@@ -16,11 +16,11 @@ defmodule Pleroma.Uploaders.IPFS do
     Path.join([post_base_url, method])
   end
 
-  def put_file_endpoint() do
+  def put_file_endpoint do
     get_final_url("/api/v0/add")
   end
 
-  def delete_file_endpoint() do
+  def delete_file_endpoint do
     get_final_url("/api/v0/files/rm")
   end
 

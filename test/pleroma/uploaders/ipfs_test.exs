@@ -6,7 +6,6 @@ defmodule Pleroma.Uploaders.IPFSTest do
   use Pleroma.DataCase
 
   alias Pleroma.Uploaders.IPFS
-  alias Tesla.Multipart
 
   import Mock
   import ExUnit.CaptureLog
