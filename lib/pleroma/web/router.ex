@@ -145,6 +145,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_read)
   end
 
+  pipeline :require_privileged_role_status_delete do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :status_delete)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -345,21 +350,26 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname", UserController, :show)
   end
 
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_status_delete)
+
+    put("/statuses/:id", StatusController, :update)
+    delete("/statuses/:id", StatusController, :delete)
+
+    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+  end
+
   # AdminAPI: admins and mods (staff) can perform these actions
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
 
     delete("/instances/:instance", InstanceController, :delete)
 
-    put("/statuses/:id", StatusController, :update)
-    delete("/statuses/:id", StatusController, :delete)
-
     get("/moderation_log", AdminAPIController, :list_log)
 
     post("/reload_emoji", AdminAPIController, :reload_emoji)
     get("/stats", AdminAPIController, :stats)
-
-    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do

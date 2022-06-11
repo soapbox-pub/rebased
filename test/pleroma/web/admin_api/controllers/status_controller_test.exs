@@ -64,6 +64,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
   describe "PUT /api/pleroma/admin/statuses/:id" do
     setup do
+      clear_config([:instance, :admin_privileges], [:status_delete])
       activity = insert(:note_activity)
 
       %{id: activity.id}
@@ -132,10 +133,20 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       assert %{"error" => "test - Invalid value for enum."} =
                json_response_and_validate_schema(conn, :bad_request)
     end
+
+    test "it requires privileged role :status_delete", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> put("/api/pleroma/admin/statuses/some_id", %{})
+             |> json_response(:forbidden)
+    end
   end
 
   describe "DELETE /api/pleroma/admin/statuses/:id" do
     setup do
+      clear_config([:instance, :admin_privileges], [:status_delete])
       activity = insert(:note_activity)
 
       %{id: activity.id}
@@ -158,6 +169,15 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       conn = delete(conn, "/api/pleroma/admin/statuses/test")
 
       assert json_response_and_validate_schema(conn, :not_found) == %{"error" => "Not found"}
+    end
+
+    test "it requires privileged role :status_delete", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> delete("/api/pleroma/admin/statuses/some_id")
+             |> json_response(:forbidden)
     end
   end
 

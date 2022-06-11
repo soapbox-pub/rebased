@@ -264,7 +264,8 @@ config :pleroma, :instance,
     :user_activation,
     :user_invite,
     :report_handle,
-    :user_read
+    :user_read,
+    :status_delete
   ],
   moderator_privileges: [],
   max_endorsed_users: 20,

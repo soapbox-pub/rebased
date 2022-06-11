@@ -27,7 +27,10 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "DELETE /api/pleroma/admin/chats/:id/messages/:message_id" do
-    setup do: admin_setup()
+    setup do
+      clear_config([:instance, :admin_privileges], [:status_delete])
+      admin_setup()
+    end
 
     test "it deletes a message from the chat", %{conn: conn, admin: admin} do
       user = insert(:user)
@@ -59,6 +62,15 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       refute MessageReference.get_by_id(cm_ref.id)
       refute MessageReference.get_by_id(recipient_cm_ref.id)
       assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
+    end
+
+    test "it requires privileged role :status_delete", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> delete("/api/pleroma/admin/chats/some_id/messages/some_ref_id")
+             |> json_response(:forbidden)
     end
   end
 
