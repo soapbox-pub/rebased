@@ -423,18 +423,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     history_len = length(history)
 
     history =
-      Enum.with_index(
-        history,
-        fn object, index ->
-          %{
-            # The history is prepended every time there is a new edit.
-            # In chrono_order, the oldest item is always at 0, and so on.
-            # The chrono_order is an invariant kept between edits.
-            chrono_order: history_len - 1 - index,
-            object: object
-          }
-        end
-      )
+      Enum.zip(history_len..0, history)
+      |> Enum.map(fn {chrono_order, object} ->
+        %{
+          # The history is prepended every time there is a new edit.
+          # In chrono_order, the oldest item is always at 0, and so on.
+          # The chrono_order is an invariant kept between edits.
+          chrono_order: chrono_order,
+          object: object
+        }
+      end)
 
     individual_opts =
       opts
