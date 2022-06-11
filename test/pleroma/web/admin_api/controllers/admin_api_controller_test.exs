@@ -1060,6 +1060,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Repo.aggregate(Pleroma.User.Backup, :count) == 2
     end
   end
+
+  describe "POST /api/v1/pleroma/admin/reload_emoji" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:emoji_management])
+
+      admin = insert(:user, is_admin: true)
+      token = insert(:oauth_admin_token, user: admin)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> assign(:token, token)
+
+      {:ok, %{conn: conn, admin: admin}}
+    end
+
+    test "it requires privileged role :emoji_management", %{conn: conn} do
+      assert conn
+             |> post("/api/v1/pleroma/admin/reload_emoji")
+             |> json_response(200)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> post("/api/v1/pleroma/admin/reload_emoji")
+             |> json_response(:forbidden)
+    end
+  end
 end
 
 # Needed for testing

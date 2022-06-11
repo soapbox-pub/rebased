@@ -150,6 +150,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :status_delete)
   end
 
+  pipeline :require_privileged_role_emoji_management do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :emoji_management)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -360,6 +365,13 @@ defmodule Pleroma.Web.Router do
     delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
   end
 
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_emoji_management)
+
+    post("/reload_emoji", AdminAPIController, :reload_emoji)
+  end
+
   # AdminAPI: admins and mods (staff) can perform these actions
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
@@ -368,13 +380,12 @@ defmodule Pleroma.Web.Router do
 
     get("/moderation_log", AdminAPIController, :list_log)
 
-    post("/reload_emoji", AdminAPIController, :reload_emoji)
     get("/stats", AdminAPIController, :stats)
   end
 
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
-      pipe_through(:admin_api)
+      pipe_through(:require_privileged_role_emoji_management)
 
       post("/", EmojiPackController, :create)
       patch("/", EmojiPackController, :update)
@@ -389,7 +400,7 @@ defmodule Pleroma.Web.Router do
 
     # Modifying packs
     scope "/packs" do
-      pipe_through(:admin_api)
+      pipe_through(:require_privileged_role_emoji_management)
 
       get("/import", EmojiPackController, :import_from_filesystem)
       get("/remote", EmojiPackController, :remote)
