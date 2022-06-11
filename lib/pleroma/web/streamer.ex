@@ -297,12 +297,16 @@ defmodule Pleroma.Web.Streamer do
   defp push_to_socket(_topic, %Activity{data: %{"type" => "Delete"}}), do: :noop
 
   defp push_to_socket(topic, %Activity{data: %{"type" => "Update"}} = item) do
-    anon_render = StreamerView.render("status_update.json", item)
+    create_activity =
+      Pleroma.Activity.get_create_by_object_ap_id(item.object.data["id"])
+      |> Map.put(:object, item.object)
+
+    anon_render = StreamerView.render("status_update.json", create_activity)
 
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, auth?} ->
         if auth? do
-          send(pid, {:render_with_user, StreamerView, "status_update.json", item})
+          send(pid, {:render_with_user, StreamerView, "status_update.json", create_activity})
         else
           send(pid, {:text, anon_render})
         end

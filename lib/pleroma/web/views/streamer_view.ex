@@ -26,8 +26,6 @@ defmodule Pleroma.Web.StreamerView do
   end
 
   def render("status_update.json", %Activity{} = activity, %User{} = user) do
-    activity = Activity.get_create_by_object_ap_id_with_object(activity.object.data["id"])
-
     %{
       event: "status.update",
       payload:
@@ -68,8 +66,6 @@ defmodule Pleroma.Web.StreamerView do
   end
 
   def render("status_update.json", %Activity{} = activity) do
-    activity = Activity.get_create_by_object_ap_id_with_object(activity.object.data["id"])
-
     %{
       event: "status.update",
       payload:
