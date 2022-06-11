@@ -418,13 +418,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.map(&Map.put(&1, "id", object.data["id"]))
       |> Enum.map(&%Object{data: &1, id: object.id})
 
-    history = [object | past_history]
-
-    history_len = length(history)
-
     history =
-      Enum.zip(history_len..0, history)
-      |> Enum.map(fn {chrono_order, object} ->
+      [object | past_history]
+      # Mastodon expects the original to be at the first
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.map(fn {object, chrono_order} ->
         %{
           # The history is prepended every time there is a new edit.
           # In chrono_order, the oldest item is always at 0, and so on.

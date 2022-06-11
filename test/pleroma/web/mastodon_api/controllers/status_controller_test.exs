@@ -2032,7 +2032,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       conn = get(conn, "/api/v1/statuses/#{activity.id}/history")
 
-      assert [_, %{"spoiler_text" => "title 2"}, %{"spoiler_text" => "title 1"}] =
+      assert [%{"spoiler_text" => "title 1"}, %{"spoiler_text" => "title 2"}, _] =
                json_response_and_validate_schema(conn, 200)
     end
   end
