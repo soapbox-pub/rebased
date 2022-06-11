@@ -292,6 +292,10 @@ defmodule Pleroma.Web.Router do
 
     get("/chats/:id", ChatController, :show)
     get("/chats/:id/messages", ChatController, :messages)
+
+    get("/instances/:instance/statuses", InstanceController, :list_statuses)
+
+    get("/statuses/:id", StatusController, :show)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
@@ -345,10 +349,8 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
 
-    get("/instances/:instance/statuses", InstanceController, :list_statuses)
     delete("/instances/:instance", InstanceController, :delete)
 
-    get("/statuses/:id", StatusController, :show)
     put("/statuses/:id", StatusController, :update)
     delete("/statuses/:id", StatusController, :delete)
 

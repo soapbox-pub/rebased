@@ -26,6 +26,10 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
   end
 
   describe "GET /api/pleroma/admin/statuses/:id" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:statuses_read])
+    end
+
     test "not found", %{conn: conn} do
       assert conn
              |> get("/api/pleroma/admin/statuses/not_found")
@@ -49,6 +53,12 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       assert account["nickname"] == actor.nickname
       assert account["is_active"] == actor.is_active
       assert account["is_confirmed"] == actor.is_confirmed
+    end
+
+    test "denies reading activity when not privileged", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn |> get("/api/pleroma/admin/statuses/some_id") |> json_response(:forbidden)
     end
   end
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
@@ -31,6 +31,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
   end
 
   test "GET /instances/:instance/statuses", %{conn: conn} do
+    clear_config([:instance, :admin_privileges], [:statuses_read])
     user = insert(:user, local: false, ap_id: "https://archae.me/users/archaeme")
     user2 = insert(:user, local: false, ap_id: "https://test.com/users/test")
     insert_pair(:note_activity, user: user)
@@ -60,6 +61,10 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
       |> json_response(200)
 
     assert length(activities) == 3
+
+    clear_config([:instance, :admin_privileges], [])
+
+    conn |> get("/api/pleroma/admin/instances/archae.me/statuses") |> json_response(:forbidden)
   end
 
   test "DELETE /instances/:instance", %{conn: conn} do
