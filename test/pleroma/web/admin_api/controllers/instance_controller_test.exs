@@ -68,6 +68,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
   end
 
   test "DELETE /instances/:instance", %{conn: conn} do
+    clear_config([:instance, :admin_privileges], [:instance_delete])
     user = insert(:user, nickname: "lain@lain.com")
     post = insert(:note_activity, user: user)
 
@@ -81,5 +82,12 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
     assert response == "lain.com"
     refute Repo.reload(user).is_active
     refute Repo.reload(post)
+
+    clear_config([:instance, :admin_privileges], [])
+
+    response =
+      conn
+      |> delete("/api/pleroma/admin/instances/lain.com")
+      |> json_response(:forbidden)
   end
 end

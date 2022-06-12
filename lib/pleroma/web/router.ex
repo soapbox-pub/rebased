@@ -155,6 +155,21 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :emoji_management)
   end
 
+  pipeline :require_privileged_role_instance_delete do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :instance_delete)
+  end
+
+  pipeline :require_privileged_role_moderation_log_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :moderation_log_read)
+  end
+
+  pipeline :require_privileged_role_stats_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :stats_read)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -372,13 +387,23 @@ defmodule Pleroma.Web.Router do
     post("/reload_emoji", AdminAPIController, :reload_emoji)
   end
 
-  # AdminAPI: admins and mods (staff) can perform these actions
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
+    pipe_through(:require_privileged_role_instance_delete)
 
     delete("/instances/:instance", InstanceController, :delete)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_moderation_log_read)
 
     get("/moderation_log", AdminAPIController, :list_log)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_stats_read)
 
     get("/stats", AdminAPIController, :stats)
   end

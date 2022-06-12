@@ -558,6 +558,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/moderation_log" do
     setup do
+      clear_config([:instance, :admin_privileges], [:moderation_log_read])
       moderator = insert(:user, is_moderator: true)
 
       %{moderator: moderator}
@@ -762,6 +763,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert get_in(first_entry, ["data", "message"]) ==
                "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
     end
+
+    test "it requires privileged role :moderation_log_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "multipart/form-data")
+             |> get("/api/pleroma/admin/moderation_log")
+             |> json_response(:forbidden)
+    end
   end
 
   test "gets a remote users when [:instance, :limit_to_local_content] is set to :unauthenticated",
@@ -960,6 +970,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "/api/pleroma/admin/stats" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:stats_read])
+    end
+
     test "status visibility count", %{conn: conn} do
       user = insert(:user)
       CommonAPI.post(user, %{visibility: "public", status: "hey"})
@@ -991,6 +1005,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert %{"direct" => 0, "private" => 1, "public" => 0, "unlisted" => 1} =
                response["status_visibility"]
+    end
+
+    test "it requires privileged role :stats_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> get("/api/pleroma/admin/stats", instance: "lain.wired")
+             |> json_response(:forbidden)
     end
   end
 
