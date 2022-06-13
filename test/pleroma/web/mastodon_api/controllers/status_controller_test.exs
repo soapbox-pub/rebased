@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
@@ -968,30 +968,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_by_id(activity.id) == activity
     end
 
-    test "when you're an admin or moderator", %{conn: conn} do
-      activity1 = insert(:note_activity)
-      activity2 = insert(:note_activity)
-      admin = insert(:user, is_admin: true)
+    test "when you're privileged to", %{conn: conn} do
+      clear_config([:instance, :moderator_privileges], [:status_delete])
+      activity = insert(:note_activity)
       moderator = insert(:user, is_moderator: true)
-
-      res_conn =
-        conn
-        |> assign(:user, admin)
-        |> assign(:token, insert(:oauth_token, user: admin, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity1.id}")
-
-      assert %{} = json_response_and_validate_schema(res_conn, 200)
 
       res_conn =
         conn
         |> assign(:user, moderator)
         |> assign(:token, insert(:oauth_token, user: moderator, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity2.id}")
+        |> delete("/api/v1/statuses/#{activity.id}")
 
       assert %{} = json_response_and_validate_schema(res_conn, 200)
 
-      refute Activity.get_by_id(activity1.id)
-      refute Activity.get_by_id(activity2.id)
+      refute Activity.get_by_id(activity.id)
     end
   end
 

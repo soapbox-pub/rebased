@@ -85,9 +85,8 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
 
     clear_config([:instance, :admin_privileges], [])
 
-    response =
-      conn
-      |> delete("/api/pleroma/admin/instances/lain.com")
-      |> json_response(:forbidden)
+    conn
+    |> delete("/api/pleroma/admin/instances/lain.com")
+    |> json_response(:forbidden)
   end
 end
