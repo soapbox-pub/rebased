@@ -13,7 +13,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
@@ -1875,6 +1875,47 @@ defmodule Pleroma.UserTest do
 
       user = insert(:user, local: true, is_confirmed: false, is_approved: false)
       assert User.account_status(user) == :approval_pending
+    end
+  end
+
+  describe "privileged?/1" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:cofe, :suya])
+      clear_config([:instance, :moderator_privileges], [:cofe, :suya])
+    end
+
+    test "returns false for unprivileged users" do
+      user = insert(:user, local: true)
+
+      refute User.privileged?(user, :cofe)
+    end
+
+    test "returns false for remote users" do
+      user = insert(:user, local: false)
+      remote_admin_user = insert(:user, local: false, is_admin: true)
+
+      refute User.privileged?(user, :cofe)
+      refute User.privileged?(remote_admin_user, :cofe)
+    end
+
+    test "returns true for local moderators if, and only if, they are privileged" do
+      user = insert(:user, local: true, is_moderator: true)
+
+      assert User.privileged?(user, :cofe)
+
+      clear_config([:instance, :moderator_privileges], [])
+
+      refute User.privileged?(user, :cofe)
+    end
+
+    test "returns true for local admins if, and only if, they are privileged" do
+      user = insert(:user, local: true, is_admin: true)
+
+      assert User.privileged?(user, :cofe)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      refute User.privileged?(user, :cofe)
     end
   end
 

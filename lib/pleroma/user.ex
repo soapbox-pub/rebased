@@ -353,6 +353,24 @@ defmodule Pleroma.User do
     end
   end
 
+  @spec privileged?(User.t(), atom()) :: boolean()
+  def privileged?(%User{is_admin: false, is_moderator: false}, _), do: false
+
+  def privileged?(
+        %User{local: true, is_admin: is_admin, is_moderator: is_moderator},
+        privilege_tag
+      ),
+      do:
+        privileged_for?(privilege_tag, is_admin, :admin_privileges) or
+          privileged_for?(privilege_tag, is_moderator, :moderator_privileges)
+
+  def privileged?(_, _), do: false
+
+  defp privileged_for?(privilege_tag, true, config_role_key),
+    do: privilege_tag in Config.get([:instance, config_role_key])
+
+  defp privileged_for?(_, _, _), do: false
+
   @spec superuser?(User.t()) :: boolean()
   def superuser?(%User{local: true, is_admin: true}), do: true
   def superuser?(%User{local: true, is_moderator: true}), do: true
