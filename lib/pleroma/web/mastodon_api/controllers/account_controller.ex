@@ -499,7 +499,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       users: users,
       for: user,
       as: :user,
-      embed_relationships: embed_relationships?(params)
+      embed_relationships: embed_relationships?(params),
+      mutes: true
     )
   end
 
