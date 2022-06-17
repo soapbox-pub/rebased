@@ -473,12 +473,7 @@ defmodule Pleroma.UserTest do
               reject_deletes: []
             )
 
-    setup do:
-            clear_config(:mrf,
-              policies: [
-                Pleroma.Web.ActivityPub.MRF.SimplePolicy
-              ]
-            )
+    setup do: clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
 
     test "it sends a welcome chat message when Simple policy applied to local instance" do
       clear_config([:mrf_simple, :media_nsfw], [{"localhost", ""}])
