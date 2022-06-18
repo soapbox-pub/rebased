@@ -326,7 +326,7 @@ defmodule Pleroma.User do
   end
 
   def visible_for(%User{} = user, for_user) do
-    if superuser?(for_user) do
+    if privileged?(for_user, :user_activation) do
       :visible
     else
       visible_account_status(user)
