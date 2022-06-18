@@ -371,11 +371,6 @@ defmodule Pleroma.User do
 
   defp privileged_for?(_, _, _), do: false
 
-  @spec superuser?(User.t()) :: boolean()
-  def superuser?(%User{local: true, is_admin: true}), do: true
-  def superuser?(%User{local: true, is_moderator: true}), do: true
-  def superuser?(_), do: false
-
   @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false

@@ -1918,34 +1918,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "superuser?/1" do
-    test "returns false for unprivileged users" do
-      user = insert(:user, local: true)
-
-      refute User.superuser?(user)
-    end
-
-    test "returns false for remote users" do
-      user = insert(:user, local: false)
-      remote_admin_user = insert(:user, local: false, is_admin: true)
-
-      refute User.superuser?(user)
-      refute User.superuser?(remote_admin_user)
-    end
-
-    test "returns true for local moderators" do
-      user = insert(:user, local: true, is_moderator: true)
-
-      assert User.superuser?(user)
-    end
-
-    test "returns true for local admins" do
-      user = insert(:user, local: true, is_admin: true)
-
-      assert User.superuser?(user)
-    end
-  end
-
   describe "invisible?/1" do
     test "returns true for an invisible user" do
       user = insert(:user, local: true, invisible: true)
