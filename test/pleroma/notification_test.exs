@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   import Pleroma.Factory
   import Mock
@@ -32,20 +32,26 @@ defmodule Pleroma.NotificationTest do
       refute {:ok, [nil]} == Notification.create_notifications(activity)
     end
 
-    test "creates a notification for a report" do
+    test "creates a report notification only for privileged users" do
       reporting_user = insert(:user)
       reported_user = insert(:user)
-      {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+      moderator_user = insert(:user, is_moderator: true)
 
-      {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      clear_config([:instance, :moderator_privileges], [])
+      {:ok, activity1} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      {:ok, []} = Notification.create_notifications(activity1)
 
-      {:ok, [notification]} = Notification.create_notifications(activity)
+      clear_config([:instance, :moderator_privileges], [:report_handle])
+      {:ok, activity2} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      {:ok, [notification]} = Notification.create_notifications(activity2)
 
       assert notification.user_id == moderator_user.id
       assert notification.type == "pleroma:report"
     end
 
-    test "suppresses notification to reporter if reporter is an admin" do
+    test "suppresses notifications for own reports" do
+      clear_config([:instance, :admin_privileges], [:report_handle])
+
       reporting_admin = insert(:user, is_admin: true)
       reported_user = insert(:user)
       other_admin = insert(:user, is_admin: true)

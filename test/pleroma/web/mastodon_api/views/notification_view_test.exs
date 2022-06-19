@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.Activity
   alias Pleroma.Chat
@@ -218,9 +218,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   end
 
   test "Report notification" do
+    clear_config([:instance, :moderator_privileges], [:report_handle])
+
     reporting_user = insert(:user)
     reported_user = insert(:user)
-    {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+    moderator_user = insert(:user, is_moderator: true)
 
     {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
     {:ok, [notification]} = Notification.create_notifications(activity)

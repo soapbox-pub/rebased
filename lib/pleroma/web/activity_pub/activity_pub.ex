@@ -392,11 +392,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- notify_and_stream(activity),
          :ok <-
            maybe_federate(stripped_activity) do
-      User.all_superusers()
+      User.all_users_with_privilege(:report_handle)
       |> Enum.filter(fn user -> user.ap_id != actor end)
       |> Enum.filter(fn user -> not is_nil(user.email) end)
-      |> Enum.each(fn superuser ->
-        superuser
+      |> Enum.each(fn privileged_user ->
+        privileged_user
         |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)
         |> Pleroma.Emails.Mailer.deliver_async()
       end)
