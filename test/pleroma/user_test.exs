@@ -1972,6 +1972,96 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "all_users_with_privilege/1" do
+    setup do
+      %{
+        user: insert(:user, local: true, is_admin: false, is_moderator: false),
+        moderator_user: insert(:user, local: true, is_admin: false, is_moderator: true),
+        admin_user: insert(:user, local: true, is_admin: true, is_moderator: false),
+        admin_moderator_user: insert(:user, local: true, is_admin: true, is_moderator: true),
+        remote_user: insert(:user, local: false, is_admin: true, is_moderator: true),
+        non_active_user:
+          insert(:user, local: true, is_admin: true, is_moderator: true, is_active: false)
+      }
+    end
+
+    test "doesn't return any users when there are no privileged roles", %{
+      user: user,
+      moderator_user: moderator_user,
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user,
+      remote_user: remote_user,
+      non_active_user: non_active_user
+    } do
+      clear_config([:instance, :admin_privileges], [])
+      clear_config([:instance, :moderator_privileges], [])
+
+      refute user in User.all_users_with_privilege(:cofe)
+      refute admin_user in User.all_users_with_privilege(:cofe)
+      refute moderator_user in User.all_users_with_privilege(:cofe)
+      refute admin_moderator_user in User.all_users_with_privilege(:cofe)
+      refute remote_user in User.all_users_with_privilege(:cofe)
+      refute non_active_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns moderator users if they are privileged", %{
+      user: user,
+      moderator_user: moderator_user,
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user,
+      remote_user: remote_user,
+      non_active_user: non_active_user
+    } do
+      clear_config([:instance, :admin_privileges], [])
+      clear_config([:instance, :moderator_privileges], [:cofe])
+
+      refute user in User.all_users_with_privilege(:cofe)
+      refute admin_user in User.all_users_with_privilege(:cofe)
+      assert moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+      refute remote_user in User.all_users_with_privilege(:cofe)
+      refute non_active_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns admin users if they are privileged", %{
+      user: user,
+      moderator_user: moderator_user,
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user,
+      remote_user: remote_user,
+      non_active_user: non_active_user
+    } do
+      clear_config([:instance, :admin_privileges], [:cofe])
+      clear_config([:instance, :moderator_privileges], [])
+
+      refute user in User.all_users_with_privilege(:cofe)
+      assert admin_user in User.all_users_with_privilege(:cofe)
+      refute moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+      refute remote_user in User.all_users_with_privilege(:cofe)
+      refute non_active_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns admin and moderator users if they are both privileged", %{
+      user: user,
+      moderator_user: moderator_user,
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user,
+      remote_user: remote_user,
+      non_active_user: non_active_user
+    } do
+      clear_config([:instance, :admin_privileges], [:cofe])
+      clear_config([:instance, :moderator_privileges], [:cofe])
+
+      refute user in User.all_users_with_privilege(:cofe)
+      assert admin_user in User.all_users_with_privilege(:cofe)
+      assert moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+      refute remote_user in User.all_users_with_privilege(:cofe)
+      refute non_active_user in User.all_users_with_privilege(:cofe)
+    end
+  end
+
   describe "parse_bio/2" do
     test "preserves hosts in user links text" do
       remote_user = insert(:user, local: false, nickname: "nick@domain.com")

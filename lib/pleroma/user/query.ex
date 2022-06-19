@@ -29,6 +29,7 @@ defmodule Pleroma.User.Query do
   import Ecto.Query
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
+  alias Pleroma.Config
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
 
@@ -49,6 +50,7 @@ defmodule Pleroma.User.Query do
             is_suggested: boolean(),
             is_discoverable: boolean(),
             super_users: boolean(),
+            is_privileged: atom(),
             invisible: boolean(),
             internal: boolean(),
             followers: User.t(),
@@ -134,6 +136,43 @@ defmodule Pleroma.User.Query do
       [u],
       u.is_admin or u.is_moderator
     )
+  end
+
+  defp compose_query({:is_privileged, privilege}, query) do
+    moderator_privileged = privilege in Config.get([:instance, :moderator_privileges])
+    admin_privileged = privilege in Config.get([:instance, :admin_privileges])
+
+    query = compose_query({:active, true}, query)
+    query = compose_query({:local, true}, query)
+
+    case {admin_privileged, moderator_privileged} do
+      {false, false} ->
+        where(
+          query,
+          false
+        )
+
+      {true, true} ->
+        where(
+          query,
+          [u],
+          u.is_admin or u.is_moderator
+        )
+
+      {true, false} ->
+        where(
+          query,
+          [u],
+          u.is_admin
+        )
+
+      {false, true} ->
+        where(
+          query,
+          [u],
+          u.is_moderator
+        )
+    end
   end
 
   defp compose_query({:local, _}, query), do: location_query(query, true)

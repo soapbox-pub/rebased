@@ -2205,6 +2205,11 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  @spec all_users_with_privilege(atom()) :: [User.t()]
+  def all_users_with_privilege(privilege) do
+    User.Query.build(%{is_privileged: privilege}) |> Repo.all()
+  end
+
   def muting_reblogs?(%User{} = user, %User{} = target) do
     UserRelationship.reblog_mute_exists?(user, target)
   end
