@@ -1918,6 +1918,44 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "privileges/1" do
+    setup do
+      clear_config([:instance, :moderator_privileges], [:cofe, :only_moderator])
+      clear_config([:instance, :admin_privileges], [:cofe, :only_admin])
+    end
+
+    test "returns empty list for users without roles" do
+      user = insert(:user, local: true)
+
+      assert [] == User.privileges(user)
+    end
+
+    test "returns list of privileges for moderators" do
+      moderator = insert(:user, is_moderator: true, local: true)
+
+      assert [:cofe, :only_moderator] == User.privileges(moderator) |> Enum.sort()
+    end
+
+    test "returns list of privileges for admins" do
+      admin = insert(:user, is_admin: true, local: true)
+
+      assert [:cofe, :only_admin] == User.privileges(admin) |> Enum.sort()
+    end
+
+    test "returns list of unique privileges for users who are both moderator and admin" do
+      moderator_admin = insert(:user, is_moderator: true, is_admin: true, local: true)
+
+      assert [:cofe, :only_admin, :only_moderator] ==
+               User.privileges(moderator_admin) |> Enum.sort()
+    end
+
+    test "returns empty list for remote users" do
+      remote_moderator_admin = insert(:user, is_moderator: true, is_admin: true, local: false)
+
+      assert [] == User.privileges(remote_moderator_admin)
+    end
+  end
+
   describe "invisible?/1" do
     test "returns true for an invisible user" do
       user = insert(:user, local: true, invisible: true)

@@ -371,6 +371,28 @@ defmodule Pleroma.User do
 
   defp privileged_for?(_, _, _), do: false
 
+  @spec privileges(User.t()) :: [atom()]
+  def privileges(%User{local: false}) do
+    []
+  end
+
+  def privileges(%User{is_moderator: false, is_admin: false}) do
+    []
+  end
+
+  def privileges(%User{local: true, is_moderator: true, is_admin: true}) do
+    (Config.get([:instance, :moderator_privileges]) ++ Config.get([:instance, :admin_privileges]))
+    |> Enum.uniq()
+  end
+
+  def privileges(%User{local: true, is_moderator: true, is_admin: false}) do
+    Config.get([:instance, :moderator_privileges])
+  end
+
+  def privileges(%User{local: true, is_moderator: false, is_admin: true}) do
+    Config.get([:instance, :admin_privileges])
+  end
+
   @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false

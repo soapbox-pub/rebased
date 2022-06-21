@@ -84,6 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        privileges: [],
         is_suggested: false,
         hide_favorites: true,
         hide_followers: false,
@@ -97,6 +98,147 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     }
 
     assert expected == AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+  end
+
+  describe "roles and privileges" do
+    setup do
+      clear_config([:instance, :moderator_privileges], [:cofe, :only_moderator])
+      clear_config([:instance, :admin_privileges], [:cofe, :only_admin])
+
+      %{
+        user: insert(:user),
+        moderator: insert(:user, is_moderator: true),
+        admin: insert(:user, is_admin: true),
+        moderator_admin: insert(:user, is_moderator: true, is_admin: true),
+        user_no_show_roles: insert(:user, show_role: false),
+        moderator_admin_no_show_roles:
+          insert(:user, is_moderator: true, is_admin: true, show_role: false)
+      }
+    end
+
+    test "shows roles and privileges when show_role: true", %{
+      user: user,
+      moderator: moderator,
+      admin: admin,
+      moderator_admin: moderator_admin,
+      user_no_show_roles: user_no_show_roles,
+      moderator_admin_no_show_roles: moderator_admin_no_show_roles
+    } do
+      assert %{pleroma: %{is_moderator: false, is_admin: false}} =
+               AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+
+      assert [] ==
+               AccountView.render("show.json", %{user: user, skip_visibility_check: true})[
+                 :pleroma
+               ][:privileges]
+               |> Enum.sort()
+
+      assert %{pleroma: %{is_moderator: true, is_admin: false}} =
+               AccountView.render("show.json", %{user: moderator, skip_visibility_check: true})
+
+      assert [:cofe, :only_moderator] ==
+               AccountView.render("show.json", %{user: moderator, skip_visibility_check: true})[
+                 :pleroma
+               ][:privileges]
+               |> Enum.sort()
+
+      assert %{pleroma: %{is_moderator: false, is_admin: true}} =
+               AccountView.render("show.json", %{user: admin, skip_visibility_check: true})
+
+      assert [:cofe, :only_admin] ==
+               AccountView.render("show.json", %{user: admin, skip_visibility_check: true})[
+                 :pleroma
+               ][:privileges]
+               |> Enum.sort()
+
+      assert %{pleroma: %{is_moderator: true, is_admin: true}} =
+               AccountView.render("show.json", %{
+                 user: moderator_admin,
+                 skip_visibility_check: true
+               })
+
+      assert [:cofe, :only_admin, :only_moderator] ==
+               AccountView.render("show.json", %{
+                 user: moderator_admin,
+                 skip_visibility_check: true
+               })[:pleroma][:privileges]
+               |> Enum.sort()
+
+      refute match?(
+               %{pleroma: %{is_moderator: _}},
+               AccountView.render("show.json", %{
+                 user: user_no_show_roles,
+                 skip_visibility_check: true
+               })
+             )
+
+      refute match?(
+               %{pleroma: %{is_admin: _}},
+               AccountView.render("show.json", %{
+                 user: user_no_show_roles,
+                 skip_visibility_check: true
+               })
+             )
+
+      refute match?(
+               %{pleroma: %{privileges: _}},
+               AccountView.render("show.json", %{
+                 user: user_no_show_roles,
+                 skip_visibility_check: true
+               })
+             )
+
+      refute match?(
+               %{pleroma: %{is_moderator: _}},
+               AccountView.render("show.json", %{
+                 user: moderator_admin_no_show_roles,
+                 skip_visibility_check: true
+               })
+             )
+
+      refute match?(
+               %{pleroma: %{is_admin: _}},
+               AccountView.render("show.json", %{
+                 user: moderator_admin_no_show_roles,
+                 skip_visibility_check: true
+               })
+             )
+
+      refute match?(
+               %{pleroma: %{privileges: _}},
+               AccountView.render("show.json", %{
+                 user: moderator_admin_no_show_roles,
+                 skip_visibility_check: true
+               })
+             )
+    end
+
+    test "shows roles and privileges when viewing own account, even when show_role: false", %{
+      user_no_show_roles: user_no_show_roles,
+      moderator_admin_no_show_roles: moderator_admin_no_show_roles
+    } do
+      assert %{pleroma: %{is_moderator: false, is_admin: false, privileges: []}} =
+               AccountView.render("show.json", %{
+                 user: user_no_show_roles,
+                 skip_visibility_check: true,
+                 for: user_no_show_roles
+               })
+
+      assert %{
+               pleroma: %{
+                 is_moderator: true,
+                 is_admin: true,
+                 privileges: privileges
+               }
+             } =
+               AccountView.render("show.json", %{
+                 user: moderator_admin_no_show_roles,
+                 skip_visibility_check: true,
+                 for: moderator_admin_no_show_roles
+               })
+
+      assert [:cofe, :only_admin, :only_moderator] == privileges |> Enum.sort()
+    end
   end
 
   describe "favicon" do
@@ -186,6 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        privileges: [],
         is_suggested: false,
         hide_favorites: true,
         hide_followers: false,

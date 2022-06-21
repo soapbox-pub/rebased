@@ -369,18 +369,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_chat_token(data, _, _, _), do: data
 
   defp maybe_put_role(data, %User{show_role: true} = user, _) do
-    data
-    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
-    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    put_role(data, user)
   end
 
   defp maybe_put_role(data, %User{id: user_id} = user, %User{id: user_id}) do
-    data
-    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
-    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    put_role(data, user)
   end
 
   defp maybe_put_role(data, _, _), do: data
+
+  defp put_role(data, user) do
+    data
+    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
+    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    |> Kernel.put_in([:pleroma, :privileges], User.privileges(user))
+  end
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
     Kernel.put_in(
