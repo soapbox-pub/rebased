@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -214,8 +214,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
   end
 
-  test "Represent a deactivated user for an admin" do
-    admin = insert(:user, is_admin: true)
+  test "Represent a deactivated user for a privileged user" do
+    clear_config([:instance, :moderator_privileges], [:user_activation])
+
+    admin = insert(:user, is_moderator: true)
     deactivated_user = insert(:user, is_active: false)
     represented = AccountView.render("show.json", %{user: deactivated_user, for: admin})
     assert represented[:pleroma][:deactivated] == true

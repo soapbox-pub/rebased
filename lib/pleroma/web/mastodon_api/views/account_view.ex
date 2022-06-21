@@ -398,11 +398,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_allow_following_move(data, _, _), do: data
 
-  defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
-    Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active)
+  defp maybe_put_activation_status(data, user, user_for) do
+    if User.privileged?(user_for, :user_activation),
+      do: Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active),
+      else: data
   end
-
-  defp maybe_put_activation_status(data, _, _), do: data
 
   defp maybe_put_unread_conversation_count(data, %User{id: user_id} = user, %User{id: user_id}) do
     data
