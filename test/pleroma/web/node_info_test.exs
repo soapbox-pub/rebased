@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.NodeInfoTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -38,6 +38,19 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     assert moderator.ap_id in result["metadata"]["staffAccounts"]
     assert admin.ap_id in result["metadata"]["staffAccounts"]
+  end
+
+  test "nodeinfo shows roles and privileges", %{conn: conn} do
+    clear_config([:instance, :moderator_privileges], [:cofe])
+    clear_config([:instance, :admin_privileges], [:suya, :cofe])
+
+    conn =
+      conn
+      |> get("/nodeinfo/2.1.json")
+
+    assert result = json_response(conn, 200)
+
+    assert %{"admin" => ["suya", "cofe"], "moderator" => ["cofe"]} == result["metadata"]["roles"]
   end
 
   test "nodeinfo shows restricted nicknames", %{conn: conn} do

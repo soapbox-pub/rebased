@@ -49,6 +49,10 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
           enabled: false
         },
         staffAccounts: staff_accounts,
+        roles: %{
+          admin: Config.get([:instance, :admin_privileges]),
+          moderator: Config.get([:instance, :moderator_privileges])
+        },
         federation: federation,
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
