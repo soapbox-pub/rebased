@@ -459,6 +459,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     orig_object = Object.get_by_ap_id(orig_object_ap_id)
     orig_object_data = orig_object.data
 
+    updated_object = meta[:object_data]
+
     if orig_object_data["type"] in @updatable_object_types do
       %{data: updated_object_data, updated: updated} =
         orig_object_data

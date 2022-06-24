@@ -154,21 +154,44 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, update_data, []} = Builder.update(user, updated_note)
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
 
-      %{user: user, note: note, object_id: note.id, update_data: update_data, update: update}
+      %{
+        user: user,
+        note: note,
+        object_id: note.id,
+        update_data: update_data,
+        update: update,
+        updated_note: updated_note
+      }
     end
 
-    test "it updates the note", %{object_id: object_id, update: update} do
-      {:ok, _, _} = SideEffects.handle(update)
+    test "it updates the note", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
       new_note = Pleroma.Object.get_by_id(object_id)
       assert %{"summary" => "edited summary", "content" => "edited content"} = new_note.data
+    end
+
+    test "it updates using object_data", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      updated_note = Map.put(updated_note, "summary", "mew mew")
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert %{"summary" => "mew mew", "content" => "edited content"} = new_note.data
     end
 
     test "it records the original note in formerRepresentations", %{
       note: note,
       object_id: object_id,
-      update: update
+      update: update,
+      updated_note: updated_note
     } do
-      {:ok, _, _} = SideEffects.handle(update)
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
       %{data: new_note} = Pleroma.Object.get_by_id(object_id)
       assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
 
@@ -182,9 +205,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user: user,
       note: note,
       object_id: object_id,
-      update: update
+      update: update,
+      updated_note: updated_note
     } do
-      {:ok, _, _} = SideEffects.handle(update)
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
       %{data: first_edit} = Pleroma.Object.get_by_id(object_id)
 
       second_updated_note =
@@ -194,7 +218,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       {:ok, second_update_data, []} = Builder.update(user, second_updated_note)
       {:ok, update, _meta} = ActivityPub.persist(second_update_data, local: true)
-      {:ok, _, _} = SideEffects.handle(update)
+      {:ok, _, _} = SideEffects.handle(update, object_data: second_updated_note)
       %{data: new_note} = Pleroma.Object.get_by_id(object_id)
       assert %{"summary" => "edited summary 2", "content" => "edited content 2"} = new_note
 
@@ -210,12 +234,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     test "it does not prepend to formerRepresentations if no actual changes are made", %{
       note: note,
       object_id: object_id,
-      update: update
+      update: update,
+      updated_note: updated_note
     } do
-      {:ok, _, _} = SideEffects.handle(update)
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
       %{data: _first_edit} = Pleroma.Object.get_by_id(object_id)
 
-      {:ok, _, _} = SideEffects.handle(update)
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
       %{data: new_note} = Pleroma.Object.get_by_id(object_id)
       assert %{"summary" => "edited summary", "content" => "edited content"} = new_note
 
@@ -250,7 +275,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, update_data, []} = Builder.update(user, updated_question)
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
 
-      {:ok, _, _} = SideEffects.handle(update)
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_question)
 
       %{data: new_question} = Pleroma.Object.get_by_id(id)
 
