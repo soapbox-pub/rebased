@@ -8,6 +8,7 @@ defmodule Pleroma.User do
   import Ecto.Changeset
   import Ecto.Query
   import Ecto, only: [assoc: 2]
+  import Pleroma.Webhook.Notify, only: [trigger_webhooks: 2]
 
   alias Ecto.Multi
   alias Pleroma.Activity
@@ -36,6 +37,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
+  alias Pleroma.Webhook
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -860,6 +862,7 @@ defmodule Pleroma.User do
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
       post_register_action(user)
+      trigger_webhooks(user, :"account.created")
     end
   end
 

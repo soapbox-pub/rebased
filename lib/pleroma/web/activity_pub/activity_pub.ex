@@ -24,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Webhook
   alias Pleroma.Workers.BackgroundWorker
   alias Pleroma.Workers.PollWorker
 
@@ -31,6 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   import Pleroma.Web.ActivityPub.Visibility
+  import Pleroma.Webhook.Notify, only: [trigger_webhooks: 2]
 
   require Logger
   require Pleroma.Constants
@@ -391,6 +393,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
          _ <- notify_and_stream(activity),
+         _ <- trigger_webhooks(activity, :"report.created"),
          :ok <-
            maybe_federate(stripped_activity) do
       User.all_superusers()
