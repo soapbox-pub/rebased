@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
 
   @primary_key false
   embedded_schema do
+    field(:id, :string)
     field(:type, :string)
     field(:mediaType, :string, default: "application/octet-stream")
     field(:name, :string)
@@ -43,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       |> fix_url()
 
     struct
-    |> cast(data, [:type, :mediaType, :name, :blurhash])
+    |> cast(data, [:id, :type, :mediaType, :name, :blurhash])
     |> cast_embed(:url, with: &url_changeset/2)
     |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
     |> validate_required([:type, :mediaType, :url])
