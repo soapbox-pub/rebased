@@ -49,7 +49,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
   defp fix_url(%{"url" => url} = data) when is_map(url), do: Map.put(data, "url", url["href"])
   defp fix_url(data), do: data
 
-  defp fix_tag(%{"tag" => tag} = data) when is_list(tag), do: data
+  defp fix_tag(%{"tag" => tag} = data) when is_list(tag) do
+    Map.put(data, "tag", Enum.filter(tag, &is_map/1))
+  end
+
   defp fix_tag(%{"tag" => tag} = data) when is_map(tag), do: Map.put(data, "tag", [tag])
   defp fix_tag(data), do: Map.drop(data, ["tag"])
 

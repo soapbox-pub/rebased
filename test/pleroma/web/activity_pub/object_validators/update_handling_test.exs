@@ -60,7 +60,40 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateHandlingTest do
 
       {:ok, update, _} = Builder.update(other_user, updated_note)
 
-      assert {:ok, _update, []} = ObjectValidator.validate(update, [])
+      assert {:ok, _update, _} = ObjectValidator.validate(update, [])
+    end
+  end
+
+  describe "update note" do
+    test "converts object into Pleroma's format" do
+      mastodon_tags = [
+        %{
+          "icon" => %{
+            "mediaType" => "image/png",
+            "type" => "Image",
+            "url" => "https://somewhere.org/emoji/url/1.png"
+          },
+          "id" => "https://somewhere.org/emoji/1",
+          "name" => ":some_emoji:",
+          "type" => "Emoji",
+          "updated" => "2021-04-07T11:00:00Z"
+        }
+      ]
+
+      user = insert(:user)
+      note = insert(:note, user: user)
+
+      updated_note =
+        note.data
+        |> Map.put("content", "edited content")
+        |> Map.put("tag", mastodon_tags)
+
+      {:ok, update, _} = Builder.update(user, updated_note)
+
+      assert {:ok, _update, meta} = ObjectValidator.validate(update, [])
+
+      assert %{"emoji" => %{"some_emoji" => "https://somewhere.org/emoji/url/1.png"}} =
+               meta[:object_data]
     end
   end
 end

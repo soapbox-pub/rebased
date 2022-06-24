@@ -141,6 +141,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(
+        %{"type" => "Update", "object" => %{"type" => objtype} = object} = update_activity,
+        meta
+      )
+      when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
+    with {:ok, object_data} <- cast_and_apply(object),
+         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+         {:ok, update_activity} <-
+           update_activity
+           |> UpdateValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      update_activity = stringify_keys(update_activity)
+      {:ok, update_activity, meta}
+    end
+  end
+
   def validate(%{"type" => type} = object, meta)
       when type in ~w[Accept Reject Follow Update Like EmojiReact Announce
       ChatMessage Answer] do

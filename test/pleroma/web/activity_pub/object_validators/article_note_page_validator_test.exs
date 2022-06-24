@@ -31,6 +31,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     test "a basic note validates", %{note: note} do
       %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
     end
+
+    test "a note from factory validates" do
+      note = insert(:note)
+      %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note.data)
+    end
   end
 
   test "a Note from Roadhouse validates" do
