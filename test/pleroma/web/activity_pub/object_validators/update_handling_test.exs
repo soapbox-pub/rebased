@@ -95,5 +95,36 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateHandlingTest do
       assert %{"emoji" => %{"some_emoji" => "https://somewhere.org/emoji/url/1.png"}} =
                meta[:object_data]
     end
+
+    test "returns no object_data in meta for a local Update" do
+      user = insert(:user)
+      note = insert(:note, user: user)
+
+      updated_note =
+        note.data
+        |> Map.put("content", "edited content")
+
+      {:ok, update, _} = Builder.update(user, updated_note)
+
+      assert {:ok, _update, meta} = ObjectValidator.validate(update, local: true)
+      assert is_nil(meta[:object_data])
+    end
+
+    test "returns object_data in meta for a remote Update" do
+      user = insert(:user)
+      note = insert(:note, user: user)
+
+      updated_note =
+        note.data
+        |> Map.put("content", "edited content")
+
+      {:ok, update, _} = Builder.update(user, updated_note)
+
+      assert {:ok, _update, meta} = ObjectValidator.validate(update, local: false)
+      assert meta[:object_data]
+
+      assert {:ok, _update, meta} = ObjectValidator.validate(update, [])
+      assert meta[:object_data]
+    end
   end
 end
