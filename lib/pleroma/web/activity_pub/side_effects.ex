@@ -420,7 +420,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     orig_object = Object.get_by_ap_id(orig_object_ap_id)
     orig_object_data = orig_object.data
 
-    updated_object = meta[:object_data]
+    updated_object =
+      if meta[:local] do
+        # If this is a local Update, we don't process it by transmogrifier,
+        # so we use the embedded object as-is.
+        updated_object
+      else
+        meta[:object_data]
+      end
 
     if orig_object_data["type"] in @updatable_object_types do
       %{

@@ -1569,5 +1569,20 @@ defmodule Pleroma.Web.CommonAPITest do
       assert Visibility.get_visibility(updated_object) == "private"
       assert Visibility.get_visibility(updated) == "private"
     end
+
+    test "updates a post with emoji" do
+      [{emoji1, _}, {emoji2, _} | _] = Pleroma.Emoji.get_all()
+
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1 :#{emoji1}:"})
+
+      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2 :#{emoji2}:"})
+
+      updated_object = Object.normalize(updated)
+      assert updated_object.data["content"] == "updated 2 :#{emoji2}:"
+      assert %{^emoji2 => _} = updated_object.data["emoji"]
+    end
   end
 end
