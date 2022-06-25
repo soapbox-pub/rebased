@@ -50,7 +50,14 @@ defmodule Pleroma.Object.Fetcher do
           Pleroma.Constants.status_updatable_fields()
           |> Enum.any?(fn field -> Map.get(old_data, field) != Map.get(new_data, field) end)
 
-        new_data |> Object.maybe_update_history(old_data, changed?)
+        %{updated_object: updated_object} =
+          new_data
+          |> Object.Updater.maybe_update_history(old_data,
+            updated: changed?,
+            use_history_in_new_object?: false
+          )
+
+        updated_object
       else
         new_data
       end

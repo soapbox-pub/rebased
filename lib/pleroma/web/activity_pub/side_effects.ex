@@ -412,45 +412,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   @updatable_object_types ["Note", "Question"]
-  defp update_content_fields(orig_object_data, updated_object) do
-    Pleroma.Constants.status_updatable_fields()
-    |> Enum.reduce(
-      %{data: orig_object_data, updated: false},
-      fn field, %{data: data, updated: updated} ->
-        updated = updated or Map.get(updated_object, field) != Map.get(orig_object_data, field)
-
-        data =
-          if Map.has_key?(updated_object, field) do
-            Map.put(data, field, updated_object[field])
-          else
-            Map.drop(data, [field])
-          end
-
-        %{data: data, updated: updated}
-      end
-    )
-  end
-
-  defp maybe_update_poll(to_be_updated, updated_object) do
-    choice_key = fn data ->
-      if Map.has_key?(data, "anyOf"), do: "anyOf", else: "oneOf"
-    end
-
-    with true <- to_be_updated["type"] == "Question",
-         key <- choice_key.(updated_object),
-         true <- key == choice_key.(to_be_updated),
-         orig_choices <- to_be_updated[key] |> Enum.map(&Map.drop(&1, ["replies"])),
-         new_choices <- updated_object[key] |> Enum.map(&Map.drop(&1, ["replies"])),
-         true <- orig_choices == new_choices do
-      # Choices are the same, but counts are different
-      to_be_updated
-      |> Map.put(key, updated_object[key])
-    else
-      # Choices (or vote type) have changed, do not allow this
-      _ -> to_be_updated
-    end
-  end
-
   defp handle_update_object(
          %{data: %{"type" => "Update", "object" => updated_object}} = object,
          meta
@@ -462,14 +423,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     updated_object = meta[:object_data]
 
     if orig_object_data["type"] in @updatable_object_types do
-      %{data: updated_object_data, updated: updated} =
-        orig_object_data
-        |> update_content_fields(updated_object)
-
-      updated_object_data =
-        updated_object_data
-        |> Object.maybe_update_history(orig_object_data, updated)
-        |> maybe_update_poll(updated_object)
+      %{
+        updated_data: updated_object_data,
+        updated: updated,
+        used_history_in_new_object?: used_history_in_new_object?
+      } = Object.Updater.make_new_object_data_from_update_object(orig_object_data, updated_object)
 
       changeset =
         orig_object
@@ -481,6 +439,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
            {:ok, _} <- Object.set_cache(new_object),
            # The metadata/utils.ex uses the object id for the cache.
            {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(new_object.id) do
+        if used_history_in_new_object? do
+          with create_activity when not is_nil(create_activity) <-
+                 Pleroma.Activity.get_create_by_object_ap_id(orig_object_ap_id),
+               {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(create_activity.id) do
+            nil
+          else
+            _ -> nil
+          end
+        end
+
         if updated do
           object
           |> Activity.normalize()

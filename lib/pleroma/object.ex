@@ -425,46 +425,4 @@ defmodule Pleroma.Object do
   end
 
   def object_data_hashtags(_), do: []
-
-  def history_for(object) do
-    with history <- Map.get(object, "formerRepresentations"),
-         true <- is_map(history),
-         "OrderedCollection" <- Map.get(history, "type"),
-         true <- is_list(Map.get(history, "orderedItems")),
-         true <- is_integer(Map.get(history, "totalItems")) do
-      history
-    else
-      _ -> history_skeleton()
-    end
-  end
-
-  defp history_skeleton do
-    %{
-      "type" => "OrderedCollection",
-      "totalItems" => 0,
-      "orderedItems" => []
-    }
-  end
-
-  def maybe_update_history(updated_object, orig_object_data, updated) do
-    if not updated do
-      updated_object
-    else
-      # Put edit history
-      # Note that we may have got the edit history by first fetching the object
-      history = Object.history_for(orig_object_data)
-
-      latest_history_item =
-        orig_object_data
-        |> Map.drop(["id", "formerRepresentations"])
-
-      new_history =
-        history
-        |> Map.put("orderedItems", [latest_history_item | history["orderedItems"]])
-        |> Map.put("totalItems", history["totalItems"] + 1)
-
-      updated_object
-      |> Map.put("formerRepresentations", new_history)
-    end
-  end
 end

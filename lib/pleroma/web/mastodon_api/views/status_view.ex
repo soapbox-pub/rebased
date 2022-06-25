@@ -274,7 +274,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     history_len =
       1 +
-        (Object.history_for(object.data)
+        (Object.Updater.history_for(object.data)
          |> Map.get("orderedItems")
          |> length())
 
@@ -413,7 +413,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     user = CommonAPI.get_user(activity.data["actor"])
 
     past_history =
-      Object.history_for(object.data)
+      Object.Updater.history_for(object.data)
       |> Map.get("orderedItems")
       |> Enum.map(&Map.put(&1, "id", object.data["id"]))
       |> Enum.map(&%Object{data: &1, id: object.id})

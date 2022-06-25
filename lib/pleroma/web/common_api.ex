@@ -422,15 +422,7 @@ defmodule Pleroma.Web.CommonAPI do
 
     with {:ok, draft} <- ActivityDraft.create(user, params) do
       change =
-        Pleroma.Constants.status_updatable_fields()
-        |> Enum.reduce(orig_object.data, fn key, acc ->
-          if Map.has_key?(draft.object, key) do
-            acc |> Map.put(key, Map.get(draft.object, key))
-          else
-            acc |> Map.drop([key])
-          end
-        end)
-        |> Map.put("updated", Utils.make_date())
+        Object.Updater.make_update_object_data(orig_object.data, draft.object, Utils.make_date())
 
       {:ok, change}
     else
