@@ -1584,5 +1584,26 @@ defmodule Pleroma.Web.CommonAPITest do
       assert updated_object.data["content"] == "updated 2 :#{emoji2}:"
       assert %{^emoji2 => _} = updated_object.data["emoji"]
     end
+
+    test "updates a post with emoji and federate properly" do
+      [{emoji1, _}, {emoji2, _} | _] = Pleroma.Emoji.get_all()
+
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "foo1", spoiler_text: "title 1 :#{emoji1}:"})
+
+      clear_config([:instance, :federating], true)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn p -> nil end do
+        {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2 :#{emoji2}:"})
+
+        assert updated.data["object"]["content"] == "updated 2 :#{emoji2}:"
+        assert %{^emoji2 => _} = updated.data["object"]["emoji"]
+
+        assert called(Pleroma.Web.Federator.publish(updated))
+      end
+    end
   end
 end

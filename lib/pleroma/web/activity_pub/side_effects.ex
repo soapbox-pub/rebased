@@ -411,7 +411,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
-  @updatable_object_types ["Note", "Question"]
   defp handle_update_object(
          %{data: %{"type" => "Update", "object" => updated_object}} = object,
          meta
@@ -429,7 +428,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         meta[:object_data]
       end
 
-    if orig_object_data["type"] in @updatable_object_types do
+    if orig_object_data["type"] in Pleroma.Constants.updatable_object_types() do
       %{
         updated_data: updated_object_data,
         updated: updated,
