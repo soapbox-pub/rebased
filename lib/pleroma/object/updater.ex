@@ -67,7 +67,7 @@ defmodule Pleroma.Object.Updater do
       # Note that we may have got the edit history by first fetching the object
       {new_history, used_history_in_new_object?} =
         with true <- use_history_in_new_object?,
-             updated_history when not is_nil(updated_history) <- maybe_history(updated_object) do
+             updated_history when not is_nil(updated_history) <- maybe_history(opts[:new_data]) do
           {updated_history, true}
         else
           _ ->
@@ -142,7 +142,11 @@ defmodule Pleroma.Object.Updater do
 
     %{updated_object: updated_data, used_history_in_new_object?: used_history_in_new_object?} =
       updated_data
-      |> maybe_update_history(original_data, updated: updated, use_history_in_new_object?: false)
+      |> maybe_update_history(original_data,
+        updated: updated,
+        use_history_in_new_object?: true,
+        new_data: new_data
+      )
 
     updated_data =
       updated_data
