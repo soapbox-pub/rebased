@@ -52,14 +52,25 @@ defmodule Pleroma.Object.UpdaterTest do
       date = Pleroma.Web.ActivityPub.Utils.make_date()
       update_object_data = Updater.make_update_object_data(original_data, new_data, date)
 
+      history = update_object_data["formerRepresentations"]["orderedItems"]
+
+      update_object_data =
+        update_object_data
+        |> put_in(
+          ["formerRepresentations", "orderedItems"],
+          history ++ [Map.put(original_data, "summary", "additional summary")]
+        )
+        |> put_in(["formerRepresentations", "totalItems"], length(history) + 1)
+
       %{
-        updated_data: _updated_data,
+        updated_data: updated_data,
         updated: updated,
         used_history_in_new_object?: used_history_in_new_object?
       } = Updater.make_new_object_data_from_update_object(original_data, update_object_data)
 
       assert updated
       assert used_history_in_new_object?
+      assert updated_data["formerRepresentations"] == update_object_data["formerRepresentations"]
     end
   end
 end
