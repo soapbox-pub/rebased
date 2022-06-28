@@ -6,6 +6,7 @@ defmodule Pleroma.Uploaders.IPFSTest do
   use Pleroma.DataCase
 
   alias Pleroma.Uploaders.IPFS
+  alias Tesla.Multipart
 
   import Mock
   import ExUnit.CaptureLog
@@ -62,12 +63,17 @@ defmodule Pleroma.Uploaders.IPFSTest do
         tempfile: Path.absname("test/instance_static/add/shortcode.png")
       }
 
-      [file_upload: file_upload]
+      mp =
+        Multipart.new()
+        |> Multipart.add_content_type_param("charset=utf-8")
+        |> Multipart.add_file(file_upload.tempfile)
+
+      [file_upload: file_upload, mp: mp]
     end
 
     test "save file", %{file_upload: file_upload} do
       with_mock Pleroma.HTTP,
-        post: fn _, _, _, _ ->
+        post: fn "http://localhost:5001/api/v0/add", mp, [], params: ["cid-version": "1"] ->
           {:ok,
            %Tesla.Env{
              status: 200,
@@ -81,7 +87,10 @@ defmodule Pleroma.Uploaders.IPFSTest do
     end
 
     test "returns error", %{file_upload: file_upload} do
-      with_mock Pleroma.HTTP, post: fn _, _, _, _ -> {:error, "IPFS Gateway upload failed"} end do
+      with_mock Pleroma.HTTP,
+        post: fn "http://localhost:5001/api/v0/add", mp, [], params: ["cid-version": "1"] ->
+          {:error, "IPFS Gateway upload failed"}
+        end do
         assert capture_log(fn ->
                  assert IPFS.put_file(file_upload) == {:error, "IPFS Gateway upload failed"}
                end) =~ "Elixir.Pleroma.Uploaders.IPFS: {:error, \"IPFS Gateway upload failed\"}"
@@ -89,21 +98,22 @@ defmodule Pleroma.Uploaders.IPFSTest do
     end
 
     test "returns error if JSON decode fails", %{file_upload: file_upload} do
-      with_mocks([
-        {Pleroma.HTTP, [], [post: fn _, _, _, _ -> {:ok, %Tesla.Env{status: 200, body: ''}} end]},
-        {Jason, [], [decode: fn _ -> {:error, "JSON decode failed"} end]}
-      ]) do
+      with_mock Pleroma.HTTP, [],
+        post: fn "http://localhost:5001/api/v0/add", mp, [], params: ["cid-version": "1"] ->
+          {:ok, %Tesla.Env{status: 200, body: 'invalid'}}
+        end do
         assert capture_log(fn ->
                  assert IPFS.put_file(file_upload) == {:error, "JSON decode failed"}
-               end) =~ "Elixir.Pleroma.Uploaders.IPFS: {:error, \"JSON decode failed\"}"
+               end) =~
+                 "Elixir.Pleroma.Uploaders.IPFS: {:error, %Jason.DecodeError{data: \"invalid\", position: 0, token: nil}}"
       end
     end
 
     test "returns error if JSON body doesn't contain Hash key", %{file_upload: file_upload} do
-      with_mocks([
-        {Pleroma.HTTP, [], [post: fn _, _, _, _ -> {:ok, %Tesla.Env{status: 200, body: ''}} end]},
-        {Jason, [], [decode: fn _ -> {:ok, %{}} end]}
-      ]) do
+      with_mock Pleroma.HTTP, [],
+        post: fn "http://localhost:5001/api/v0/add", mp, [], params: ["cid-version": "1"] ->
+          {:ok, %Tesla.Env{status: 200, body: '{"key": "value"}'}}
+        end do
         assert IPFS.put_file(file_upload) == {:error, "JSON doesn't contain Hash key"}
       end
     end
@@ -111,7 +121,9 @@ defmodule Pleroma.Uploaders.IPFSTest do
 
   describe "delete_file/1" do
     test_with_mock "deletes file", Pleroma.HTTP,
-      post: fn _, _, _, _ -> {:ok, %{status_code: 204}} end do
+      post: fn "http://localhost:5001/api/v0/files/rm", "", [], params: [arg: "image.jpg"] ->
+        {:ok, %{status_code: 204}}
+      end do
       assert :ok = IPFS.delete_file("image.jpg")
     end
   end
