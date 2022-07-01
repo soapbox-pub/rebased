@@ -64,6 +64,20 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+* `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
+    * Possible values are:
+      * `:users_delete`
+      * `:users_manage_credentials`
+      * `:messages_read`
+      * `:users_manage_tags`
+      * `:users_manage_activation_state`
+      * `:users_manage_invites`
+      * `:reports_manage_reports`
+      * `:users_read`
+      * `:messages_delete`
+      * `:emoji_manage_emoji`
+* `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
+    * Possible values are the same as for `admin_privileges`
 
 ## :database
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
