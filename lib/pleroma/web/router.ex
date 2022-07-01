@@ -107,52 +107,52 @@ defmodule Pleroma.Web.Router do
 
   pipeline :require_privileged_role_user_deletion do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_deletion)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_delete)
   end
 
   pipeline :require_privileged_role_user_credentials do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_credentials)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_credentials)
   end
 
   pipeline :require_privileged_role_statuses_read do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :statuses_read)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :messages_read)
   end
 
   pipeline :require_privileged_role_user_tag do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_tag)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_tags)
   end
 
   pipeline :require_privileged_role_user_activation do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_activation)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_activation_state)
   end
 
   pipeline :require_privileged_role_user_invite do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_invite)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_invites)
   end
 
   pipeline :require_privileged_role_report_handle do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :report_handle)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :reports_manage_reports)
   end
 
   pipeline :require_privileged_role_user_read do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :user_read)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_read)
   end
 
   pipeline :require_privileged_role_status_delete do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :status_delete)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :messages_delete)
   end
 
   pipeline :require_privileged_role_emoji_management do
     plug(:admin_api)
-    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :emoji_management)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :emoji_manage_emoji)
   end
 
   pipeline :require_privileged_role_instance_delete do

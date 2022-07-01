@@ -92,7 +92,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidationTest do
 
     test "it's only valid if the actor of the object is a privileged local user",
          %{valid_post_delete: valid_post_delete} do
-      clear_config([:instance, :moderator_privileges], [:status_delete])
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
 
       user =
         insert(:user, local: true, is_moderator: true, ap_id: "https://gensokyo.2hu/users/raymoo")

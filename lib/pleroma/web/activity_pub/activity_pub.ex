@@ -392,7 +392,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- notify_and_stream(activity),
          :ok <-
            maybe_federate(stripped_activity) do
-      User.all_users_with_privilege(:report_handle)
+      User.all_users_with_privilege(:reports_manage_reports)
       |> Enum.filter(fn user -> user.ap_id != actor end)
       |> Enum.filter(fn user -> not is_nil(user.email) end)
       |> Enum.each(fn privileged_user ->

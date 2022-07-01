@@ -969,7 +969,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "when you're privileged to", %{conn: conn} do
-      clear_config([:instance, :moderator_privileges], [:status_delete])
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
       activity = insert(:note_activity)
       moderator = insert(:user, is_moderator: true)
 

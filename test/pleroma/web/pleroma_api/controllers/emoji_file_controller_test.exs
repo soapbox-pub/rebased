@@ -30,7 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
 
   describe "POST/PATCH/DELETE /api/pleroma/emoji/packs/files?name=:name" do
     setup do
-      clear_config([:instance, :admin_privileges], [:emoji_management])
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
       pack_file = "#{@emoji_path}/test_pack/pack.json"
       original_content = File.read!(pack_file)
 
@@ -379,7 +379,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
                |> json_response_and_validate_schema(:bad_request)
     end
 
-    test "it requires privileged role :emoji_management", %{admin_conn: admin_conn} do
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: admin_conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert admin_conn

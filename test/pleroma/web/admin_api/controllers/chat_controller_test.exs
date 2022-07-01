@@ -28,7 +28,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
   describe "DELETE /api/pleroma/admin/chats/:id/messages/:message_id" do
     setup do
-      clear_config([:instance, :admin_privileges], [:status_delete])
+      clear_config([:instance, :admin_privileges], [:messages_delete])
       admin_setup()
     end
 
@@ -64,7 +64,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
     end
 
-    test "it requires privileged role :status_delete", %{conn: conn} do
+    test "it requires privileged role :messages_delete", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert conn
@@ -76,7 +76,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
   describe "GET /api/pleroma/admin/chats/:id/messages" do
     setup do
-      clear_config([:instance, :admin_privileges], [:statuses_read])
+      clear_config([:instance, :admin_privileges], [:messages_read])
       admin_setup()
     end
 
@@ -130,7 +130,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       assert length(result) == 3
     end
 
-    test "it requires privileged role :statuses_read", %{conn: conn} do
+    test "it requires privileged role :messages_read", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/chats/some_id/messages")
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
   describe "GET /api/pleroma/admin/chats/:id" do
     setup do
-      clear_config([:instance, :admin_privileges], [:statuses_read])
+      clear_config([:instance, :admin_privileges], [:messages_read])
       admin_setup()
     end
 
@@ -162,7 +162,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       refute result["account"]
     end
 
-    test "it requires privileged role :statuses_read", %{conn: conn} do
+    test "it requires privileged role :messages_read", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/chats/some_id")

@@ -218,7 +218,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   end
 
   test "Report notification" do
-    clear_config([:instance, :moderator_privileges], [:report_handle])
+    clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
 
     reporting_user = insert(:user)
     reported_user = insert(:user)

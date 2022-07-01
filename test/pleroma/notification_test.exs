@@ -41,7 +41,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, activity1} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
       {:ok, []} = Notification.create_notifications(activity1)
 
-      clear_config([:instance, :moderator_privileges], [:report_handle])
+      clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
       {:ok, activity2} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
       {:ok, [notification]} = Notification.create_notifications(activity2)
 
@@ -50,7 +50,7 @@ defmodule Pleroma.NotificationTest do
     end
 
     test "suppresses notifications for own reports" do
-      clear_config([:instance, :admin_privileges], [:report_handle])
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
 
       reporting_admin = insert(:user, is_admin: true)
       reported_user = insert(:user)

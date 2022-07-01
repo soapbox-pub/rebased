@@ -27,10 +27,10 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "GET /api/pleroma/admin/reports/:id" do
     setup do
-      clear_config([:instance, :admin_privileges], [:report_handle])
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
     end
 
-    test "returns 403 if not privileged with :report_handle", %{conn: conn} do
+    test "returns 403 if not privileged with :reports_manage_reports", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn =
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "PATCH /api/pleroma/admin/reports" do
     setup do
-      clear_config([:instance, :admin_privileges], [:report_handle])
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
 
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
@@ -102,7 +102,11 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       }
     end
 
-    test "returns 403 if not privileged with :report_handle", %{conn: conn, id: id, admin: admin} do
+    test "returns 403 if not privileged with :reports_manage_reports", %{
+      conn: conn,
+      id: id,
+      admin: admin
+    } do
       clear_config([:instance, :admin_privileges], [])
 
       conn =
@@ -240,10 +244,10 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "GET /api/pleroma/admin/reports" do
     setup do
-      clear_config([:instance, :admin_privileges], [:report_handle])
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
     end
 
-    test "returns 403 if not privileged with :report_handle", %{conn: conn} do
+    test "returns 403 if not privileged with :reports_manage_reports", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn =
@@ -361,7 +365,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
   describe "POST /api/pleroma/admin/reports/:id/notes" do
     setup %{conn: conn, admin: admin} do
-      clear_config([:instance, :admin_privileges], [:report_handle])
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
 
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
@@ -391,7 +395,10 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       }
     end
 
-    test "returns 403 if not privileged with :report_handle", %{conn: conn, report_id: report_id} do
+    test "returns 403 if not privileged with :reports_manage_reports", %{
+      conn: conn,
+      report_id: report_id
+    } do
       clear_config([:instance, :admin_privileges], [])
 
       post_conn =

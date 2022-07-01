@@ -542,7 +542,8 @@ defmodule Pleroma.Notification do
   end
 
   def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
-    (User.all_users_with_privilege(:report_handle) |> Enum.map(fn user -> user.ap_id end)) --
+    (User.all_users_with_privilege(:reports_manage_reports)
+     |> Enum.map(fn user -> user.ap_id end)) --
       [actor]
   end
 

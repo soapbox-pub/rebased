@@ -26,10 +26,10 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
     setup do
       clear_config([:instance, :registrations_open], false)
       clear_config([:instance, :invites_enabled], true)
-      clear_config([:instance, :admin_privileges], [:user_invite])
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
     end
 
-    test "returns 403 if not privileged with :user_invite", %{conn: conn} do
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn =
@@ -134,7 +134,7 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
     setup do
       clear_config([:instance, :registrations_open])
       clear_config([:instance, :invites_enabled])
-      clear_config([:instance, :admin_privileges], [:user_invite])
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
     end
 
     test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn} do
@@ -178,10 +178,10 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
 
   describe "POST /api/pleroma/admin/users/invite_token" do
     setup do
-      clear_config([:instance, :admin_privileges], [:user_invite])
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
     end
 
-    test "returns 403 if not privileged with :user_invite", %{conn: conn} do
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn =
@@ -257,10 +257,10 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
 
   describe "GET /api/pleroma/admin/users/invites" do
     setup do
-      clear_config([:instance, :admin_privileges], [:user_invite])
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
     end
 
-    test "returns 403 if not privileged with :user_invite", %{conn: conn} do
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/users/invites")
@@ -297,10 +297,10 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
 
   describe "POST /api/pleroma/admin/users/revoke_invite" do
     setup do
-      clear_config([:instance, :admin_privileges], [:user_invite])
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
     end
 
-    test "returns 403 if not privileged with :user_invite", %{conn: conn} do
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn =

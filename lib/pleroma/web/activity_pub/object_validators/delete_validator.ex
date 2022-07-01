@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Delete"])
     |> validate_delete_actor(:actor)
-    |> validate_modification_rights(:status_delete)
+    |> validate_modification_rights(:messages_delete)
     |> validate_object_or_user_presence(allowed_types: @deletable_types)
     |> add_deleted_activity_id()
   end

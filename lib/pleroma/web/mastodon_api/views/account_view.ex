@@ -402,7 +402,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_allow_following_move(data, _, _), do: data
 
   defp maybe_put_activation_status(data, user, user_for) do
-    if User.privileged?(user_for, :user_activation),
+    if User.privileged?(user_for, :users_manage_activation_state),
       do: Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active),
       else: data
   end

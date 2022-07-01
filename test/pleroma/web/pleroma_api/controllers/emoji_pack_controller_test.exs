@@ -100,7 +100,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
   describe "GET /api/pleroma/emoji/packs/remote" do
     setup do
-      clear_config([:instance, :admin_privileges], [:emoji_management])
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
     end
 
     test "shareable instance", %{admin_conn: admin_conn, conn: conn} do
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              }
     end
 
-    test "it requires privileged role :emoji_management", %{admin_conn: admin_conn} do
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: admin_conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert admin_conn
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
   describe "POST /api/pleroma/emoji/packs/download" do
     setup do
-      clear_config([:instance, :admin_privileges], [:emoji_management])
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
     end
 
     test "shared pack from remote and non shared from fallback-src", %{
@@ -361,7 +361,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              }
     end
 
-    test "it requires privileged role :emoji_management", %{admin_conn: conn} do
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert conn
@@ -377,7 +377,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
   describe "PATCH/update /api/pleroma/emoji/pack?name=:name" do
     setup do
-      clear_config([:instance, :admin_privileges], [:emoji_management])
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
       pack_file = "#{@emoji_path}/test_pack/pack.json"
       original_content = File.read!(pack_file)
 
@@ -466,7 +466,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              }
     end
 
-    test "it requires privileged role :emoji_management", %{admin_conn: conn, new_data: new_data} do
+    test "it requires privileged role :emoji_manage_emoji", %{
+      admin_conn: conn,
+      new_data: new_data
+    } do
       clear_config([:instance, :admin_privileges], [])
 
       assert conn
@@ -478,7 +481,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
   describe "POST/DELETE /api/pleroma/emoji/pack?name=:name" do
     setup do
-      clear_config([:instance, :admin_privileges], [:emoji_management])
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
     end
 
     test "returns an error on creates pack when file system not writable", %{
@@ -564,7 +567,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              }
     end
 
-    test "it requires privileged role :emoji_management", %{admin_conn: admin_conn} do
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: admin_conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert admin_conn

@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "with valid `admin_token` query parameter, skips OAuth scopes check" do
-    clear_config([:instance, :admin_privileges], [:user_read])
+    clear_config([:instance, :admin_privileges], [:users_read])
     clear_config([:admin_token], "password123")
 
     user = insert(:user)
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   describe "DELETE /api/pleroma/admin/users" do
     test "single user", %{admin: admin, conn: conn} do
       clear_config([:instance, :federating], true)
-      clear_config([:instance, :admin_privileges], [:user_deletion])
+      clear_config([:instance, :admin_privileges], [:users_delete])
 
       user =
         insert(:user,
@@ -107,7 +107,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "multiple users", %{admin: admin, conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_deletion])
+      clear_config([:instance, :admin_privileges], [:users_delete])
 
       user_one = insert(:user)
       user_two = insert(:user)
@@ -280,10 +280,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
   describe "GET /api/pleroma/admin/users/:nickname" do
     setup do
-      clear_config([:instance, :admin_privileges], [:user_read])
+      clear_config([:instance, :admin_privileges], [:users_read])
     end
 
-    test "returns 403 if not privileged with :user_read", %{conn: conn} do
+    test "returns 403 if not privileged with :users_read", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/users/user.nickname")
@@ -406,10 +406,10 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
   describe "GET /api/pleroma/admin/users" do
     setup do
-      clear_config([:instance, :admin_privileges], [:user_read])
+      clear_config([:instance, :admin_privileges], [:users_read])
     end
 
-    test "returns 403 if not privileged with :user_read", %{conn: conn} do
+    test "returns 403 if not privileged with :users_read", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/users?page=1")
@@ -850,7 +850,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
   end
 
   test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
-    clear_config([:instance, :admin_privileges], [:user_invite])
+    clear_config([:instance, :admin_privileges], [:users_manage_invites])
 
     user_one = insert(:user, is_approved: false)
     user_two = insert(:user, is_approved: false)
@@ -872,7 +872,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
              "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
-  test "PATCH /api/pleroma/admin/users/approve returns 403 if not privileged with :user_invite",
+  test "PATCH /api/pleroma/admin/users/approve returns 403 if not privileged with :users_manage_invites",
        %{conn: conn} do
     clear_config([:instance, :admin_privileges], [])
 
@@ -939,7 +939,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
 
   describe "user activation" do
     test "PATCH /api/pleroma/admin/users/activate", %{admin: admin, conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_activation])
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
 
       user_one = insert(:user, is_active: false)
       user_two = insert(:user, is_active: false)
@@ -962,7 +962,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "PATCH /api/pleroma/admin/users/deactivate", %{admin: admin, conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_activation])
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
 
       user_one = insert(:user, is_active: true)
       user_two = insert(:user, is_active: true)
@@ -985,7 +985,7 @@ defmodule Pleroma.Web.AdminAPI.UserControllerTest do
     end
 
     test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_activation])
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
 
       user = insert(:user)
 

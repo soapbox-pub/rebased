@@ -31,7 +31,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
   end
 
   test "GET /instances/:instance/statuses", %{conn: conn} do
-    clear_config([:instance, :admin_privileges], [:statuses_read])
+    clear_config([:instance, :admin_privileges], [:messages_read])
     user = insert(:user, local: false, ap_id: "https://archae.me/users/archaeme")
     user2 = insert(:user, local: false, ap_id: "https://test.com/users/test")
     insert_pair(:note_activity, user: user)

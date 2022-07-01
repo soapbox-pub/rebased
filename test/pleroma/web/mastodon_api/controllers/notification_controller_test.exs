@@ -74,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
   end
 
   test "by default, does not contain pleroma:report" do
-    clear_config([:instance, :moderator_privileges], [:report_handle])
+    clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
 
     user = insert(:user)
     other_user = insert(:user)
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
   end
 
   test "Pleroma:report is hidden for non-privileged users" do
-    clear_config([:instance, :moderator_privileges], [:report_handle])
+    clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
 
     user = insert(:user)
     other_user = insert(:user)

@@ -332,7 +332,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "it allows privileged users to delete other user's posts" do
-      clear_config([:instance, :moderator_privileges], [:status_delete])
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
       user = insert(:user)
       moderator = insert(:user, is_moderator: true)
 
@@ -357,7 +357,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "privileged users deleting non-local posts won't federate the delete" do
-      clear_config([:instance, :admin_privileges], [:status_delete])
+      clear_config([:instance, :admin_privileges], [:messages_delete])
       # This is the user of the ingested activity
       _user =
         insert(:user,

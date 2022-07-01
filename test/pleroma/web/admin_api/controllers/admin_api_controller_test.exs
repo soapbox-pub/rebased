@@ -92,7 +92,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PUT /api/pleroma/admin/users/tag" do
     setup %{conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_tag])
+      clear_config([:instance, :admin_privileges], [:users_manage_tags])
 
       user1 = insert(:user, %{tags: ["x"]})
       user2 = insert(:user, %{tags: ["y"]})
@@ -150,7 +150,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
 
-    test "it requires privileged role :user_tag", %{conn: conn} do
+    test "it requires privileged role :users_manage_tags", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       response =
@@ -164,7 +164,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "DELETE /api/pleroma/admin/users/tag" do
     setup %{conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_tag])
+      clear_config([:instance, :admin_privileges], [:users_manage_tags])
       user1 = insert(:user, %{tags: ["x"]})
       user2 = insert(:user, %{tags: ["y", "z"]})
       user3 = insert(:user, %{tags: ["unchanged"]})
@@ -221,7 +221,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
 
-    test "it requires privileged role :user_tag", %{conn: conn} do
+    test "it requires privileged role :users_manage_tags", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       response =
@@ -324,7 +324,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/admin/users/:nickname/password_reset" do
     test "it returns a password reset link", %{conn: conn} do
-      clear_config([:instance, :admin_privileges], [:user_credentials])
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
 
       user = insert(:user)
 
@@ -338,7 +338,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Regex.match?(~r/(http:\/\/|https:\/\/)/, resp["link"])
     end
 
-    test "it requires privileged role :user_credentials", %{conn: conn} do
+    test "it requires privileged role :users_manage_credentials", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       response =
@@ -410,7 +410,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/users/:nickname/statuses" do
     setup do
-      clear_config([:instance, :admin_privileges], [:statuses_read])
+      clear_config([:instance, :admin_privileges], [:messages_read])
 
       user = insert(:user)
 
@@ -428,7 +428,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert length(activities) == 3
     end
 
-    test "it requires privileged role :statuses_read", %{conn: conn, user: user} do
+    test "it requires privileged role :messages_read", %{conn: conn, user: user} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
@@ -497,7 +497,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/users/:nickname/chats" do
     setup do
-      clear_config([:instance, :admin_privileges], [:statuses_read])
+      clear_config([:instance, :admin_privileges], [:messages_read])
 
       user = insert(:user)
 
@@ -516,7 +516,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, 200) |> length() == 3
     end
 
-    test "it requires privileged role :statuses_read", %{conn: conn, user: user} do
+    test "it requires privileged role :messages_read", %{conn: conn, user: user} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/chats")
@@ -811,7 +811,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "changes password and email", %{conn: conn, admin: admin, user: user} do
-      clear_config([:instance, :admin_privileges], [:user_credentials])
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
 
       assert user.password_reset_pending == false
 
@@ -855,7 +855,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, :forbidden)
     end
 
-    test "returns 403 if not privileged with :user_credentials", %{conn: conn, user: user} do
+    test "returns 403 if not privileged with :users_manage_credentials", %{conn: conn, user: user} do
       clear_config([:instance, :admin_privileges], [])
 
       conn =
@@ -1085,7 +1085,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "POST /api/v1/pleroma/admin/reload_emoji" do
     setup do
-      clear_config([:instance, :admin_privileges], [:emoji_management])
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
 
       admin = insert(:user, is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
@@ -1098,7 +1098,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       {:ok, %{conn: conn, admin: admin}}
     end
 
-    test "it requires privileged role :emoji_management", %{conn: conn} do
+    test "it requires privileged role :emoji_manage_emoji", %{conn: conn} do
       assert conn
              |> post("/api/v1/pleroma/admin/reload_emoji")
              |> json_response(200)

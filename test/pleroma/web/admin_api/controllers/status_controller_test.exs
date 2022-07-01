@@ -27,7 +27,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
   describe "GET /api/pleroma/admin/statuses/:id" do
     setup do
-      clear_config([:instance, :admin_privileges], [:statuses_read])
+      clear_config([:instance, :admin_privileges], [:messages_read])
     end
 
     test "not found", %{conn: conn} do
@@ -64,7 +64,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
   describe "PUT /api/pleroma/admin/statuses/:id" do
     setup do
-      clear_config([:instance, :admin_privileges], [:status_delete])
+      clear_config([:instance, :admin_privileges], [:messages_delete])
       activity = insert(:note_activity)
 
       %{id: activity.id}
@@ -134,7 +134,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
                json_response_and_validate_schema(conn, :bad_request)
     end
 
-    test "it requires privileged role :status_delete", %{conn: conn} do
+    test "it requires privileged role :messages_delete", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert conn
@@ -146,7 +146,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
   describe "DELETE /api/pleroma/admin/statuses/:id" do
     setup do
-      clear_config([:instance, :admin_privileges], [:status_delete])
+      clear_config([:instance, :admin_privileges], [:messages_delete])
       activity = insert(:note_activity)
 
       %{id: activity.id}
@@ -171,7 +171,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       assert json_response_and_validate_schema(conn, :not_found) == %{"error" => "Not found"}
     end
 
-    test "it requires privileged role :status_delete", %{conn: conn} do
+    test "it requires privileged role :messages_delete", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert conn
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
   describe "GET /api/pleroma/admin/statuses" do
     setup do
-      clear_config([:instance, :admin_privileges], [:statuses_read])
+      clear_config([:instance, :admin_privileges], [:messages_read])
     end
 
     test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
@@ -232,7 +232,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       assert json_response_and_validate_schema(conn, 200) |> length() == 3
     end
 
-    test "it requires privileged role :statuses_read", %{conn: conn} do
+    test "it requires privileged role :messages_read", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       conn = get(conn, "/api/pleroma/admin/statuses")

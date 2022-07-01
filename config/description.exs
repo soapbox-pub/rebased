@@ -964,16 +964,16 @@ config :pleroma, :config_description, [
         key: :admin_privileges,
         type: {:list, :atom},
         suggestions: [
-          :user_deletion,
-          :user_credentials,
-          :statuses_read,
-          :user_tag,
-          :user_activation,
-          :user_invite,
-          :report_handle,
-          :user_read,
-          :status_delete,
-          :emoji_management
+          :users_delete,
+          :users_manage_credentials,
+          :messages_read,
+          :users_manage_tags,
+          :users_manage_activation_state,
+          :users_manage_invites,
+          :reports_manage_reports,
+          :users_read,
+          :messages_delete,
+          :emoji_manage_emoji
         ],
         description:
           "What extra priviledges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
@@ -982,16 +982,16 @@ config :pleroma, :config_description, [
         key: :moderator_privileges,
         type: {:list, :atom},
         suggestions: [
-          :user_deletion,
-          :user_credentials,
-          :statuses_read,
-          :user_tag,
-          :user_activation,
-          :user_invite,
-          :report_handle,
-          :user_read,
-          :status_delete,
-          :emoji_management
+          :users_delete,
+          :users_manage_credentials,
+          :messages_read,
+          :users_manage_tags,
+          :users_manage_activation_state,
+          :users_manage_invites,
+          :reports_manage_reports,
+          :users_read,
+          :messages_delete,
+          :emoji_manage_emoji
         ],
         description:
           "What extra priviledges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"

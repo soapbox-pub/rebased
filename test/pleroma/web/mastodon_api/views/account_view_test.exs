@@ -358,7 +358,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   test "Represent a deactivated user for a privileged user" do
-    clear_config([:instance, :moderator_privileges], [:user_activation])
+    clear_config([:instance, :moderator_privileges], [:users_manage_activation_state])
 
     admin = insert(:user, is_moderator: true)
     deactivated_user = insert(:user, is_active: false)
