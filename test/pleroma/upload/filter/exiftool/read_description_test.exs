@@ -83,6 +83,25 @@ defmodule Pleroma.Upload.Filter.Exiftool.ReadDescriptionTest do
              {:ok, :filtered, @uploads}
   end
 
+  test "Ignores content with only whitespace" do
+    uploads = %Pleroma.Upload{
+      name: "non-existant.jpg",
+      content_type: "image/jpeg",
+      path:
+        Path.absname(
+          "test/fixtures/image_with_imagedescription_and_caption-abstract_whitespaces.jpg"
+        ),
+      tempfile:
+        Path.absname(
+          "test/fixtures/image_with_imagedescription_and_caption-abstract_whitespaces.jpg"
+        ),
+      description: nil
+    }
+
+    assert Filter.Exiftool.ReadDescription.filter(uploads) ==
+             {:ok, :filtered, uploads}
+  end
+
   test "Return nil when image description from EXIF data can't be read" do
     uploads = %Pleroma.Upload{
       name: "non-existant.jpg",
