@@ -24,7 +24,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
-  alias Pleroma.Webhook
   alias Pleroma.Workers.BackgroundWorker
   alias Pleroma.Workers.PollWorker
 

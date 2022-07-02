@@ -14,7 +14,7 @@ defmodule Pleroma.Web.AdminAPI.WebhookController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["admin:write"]}
-    when action in [:update, :create, :enable, :disable, :rotate_secret]
+    when action in [:update, :create, :delete, :enable, :disable, :rotate_secret]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["admin:read"]} when action in [:index, :show])
@@ -40,17 +40,14 @@ defmodule Pleroma.Web.AdminAPI.WebhookController do
   end
 
   def create(%{body_params: params} = conn, _) do
-    with {:ok, webhook} <- Webhook.create(params) do
+    with webhook <- Webhook.create(params) do
       render(conn, "show.json", webhook: webhook)
-      # else
-      #   nil -> {:error, :not_found}
     end
   end
 
   def update(%{body_params: params} = conn, %{id: id}) do
     with %Webhook{} = webhook <- Webhook.get(id),
-         changeset <- Webhook.update(webhook, params),
-         {:ok, webhook} <- Repo.update(changeset) do
+         webhook <- Webhook.update(webhook, params) do
       render(conn, "show.json", webhook: webhook)
     end
   end

@@ -29,7 +29,7 @@ defmodule Pleroma.Webhook.Notify do
     end)
   end
 
-  def report_created(%Webhook{} = webhook, %Activity{} = report) do
+  defp report_created(%Webhook{} = webhook, %Activity{} = report) do
     object =
       View.render(
         Pleroma.Web.MastodonAPI.Admin.ReportView,
@@ -40,7 +40,7 @@ defmodule Pleroma.Webhook.Notify do
     deliver(webhook, object, :"report.created")
   end
 
-  def account_created(%Webhook{} = webhook, %User{} = user) do
+  defp account_created(%Webhook{} = webhook, %User{} = user) do
     object =
       View.render(
         Pleroma.Web.MastodonAPI.Admin.AccountView,

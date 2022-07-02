@@ -16,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Webhook.Notify
 
   import ExUnit.CaptureLog
   import Mock
@@ -1639,6 +1640,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.aggregate(Activity, :count, :id) == 1
       assert Repo.aggregate(Object, :count, :id) == 2
       assert Repo.aggregate(Notification, :count, :id) == 0
+    end
+
+    test_with_mock "triggers webhooks",
+                   %{
+                     reporter: reporter,
+                     context: context,
+                     target_account: target_account,
+                     reported_activity: reported_activity,
+                     content: content
+                   },
+                   Notify,
+                   [:passthrough],
+                   trigger_webhooks: fn _, _ -> nil end do
+      {:ok, activity} =
+        ActivityPub.flag(%{
+          actor: reporter,
+          context: context,
+          account: target_account,
+          statuses: [reported_activity],
+          content: content
+        })
+
+      assert_called(Notify.trigger_webhooks(activity, :"report.created"))
     end
   end
 

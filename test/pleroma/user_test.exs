@@ -12,12 +12,14 @@ defmodule Pleroma.UserTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Webhook.Notify
 
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Mock
   import Swoosh.TestAssertions
 
   setup_all do
@@ -691,6 +693,14 @@ defmodule Pleroma.UserTest do
       {:ok, user} = Repo.insert(changeset)
 
       assert user.accepts_email_list
+    end
+
+    test_with_mock "triggers webhooks", Notify, trigger_webhooks: fn _, _ -> nil end do
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      {:ok, registered_user} = User.register(cng)
+
+      assert_called(Notify.trigger_webhooks(registered_user, :"account.created"))
     end
   end
 
