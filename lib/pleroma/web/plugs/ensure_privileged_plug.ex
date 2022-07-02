@@ -24,10 +24,10 @@ defmodule Pleroma.Web.Plugs.EnsurePrivilegedPlug do
 
   def call(
         %{assigns: %{user: %User{is_admin: is_admin, is_moderator: is_moderator}}} = conn,
-        priviledge
+        privilege
       ) do
-    if (is_admin and priviledge in Config.get([:instance, :admin_privileges])) or
-         (is_moderator and priviledge in Config.get([:instance, :moderator_privileges])) do
+    if (is_admin and privilege in Config.get([:instance, :admin_privileges])) or
+         (is_moderator and privilege in Config.get([:instance, :moderator_privileges])) do
       conn
     else
       conn

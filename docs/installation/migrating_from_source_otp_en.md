@@ -5,7 +5,7 @@
 In this guide we cover how you can migrate from a from source installation to one using OTP releases.
 
 ## Pre-requisites
-You will be running commands as root. If you aren't root already, please elevate your priviledges by executing `sudo su`/`su`.
+You will be running commands as root. If you aren't root already, please elevate your privileges by executing `sudo su`/`su`.
 
 The system needs to have `curl` and `unzip` installed for downloading and unpacking release builds.
 

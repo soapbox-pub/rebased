@@ -976,7 +976,7 @@ config :pleroma, :config_description, [
           :emoji_manage_emoji
         ],
         description:
-          "What extra priviledges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+          "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
       %{
         key: :moderator_privileges,
@@ -994,7 +994,7 @@ config :pleroma, :config_description, [
           :emoji_manage_emoji
         ],
         description:
-          "What extra priviledges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+          "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
       %{
         key: :birthday_required,

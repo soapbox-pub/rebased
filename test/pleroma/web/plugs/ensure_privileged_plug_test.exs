@@ -64,7 +64,7 @@ defmodule Pleroma.Web.Plugs.EnsurePrivilegedPlugTest do
     assert conn.status == 403
   end
 
-  test "accepts for a priviledged role even if other role isn't priviledged" do
+  test "accepts for a privileged role even if other role isn't privileged" do
     clear_config([:instance, :admin_privileges], [:cofe])
     clear_config([:instance, :moderator_privileges], [])
     user = insert(:user, is_admin: true, is_moderator: true)
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.Plugs.EnsurePrivilegedPlugTest do
 
     ret_conn = EnsurePrivilegedPlug.call(conn, :cofe)
 
-    # priviledged through admin role
+    # privileged through admin role
     assert conn == ret_conn
 
     clear_config([:instance, :admin_privileges], [])
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.Plugs.EnsurePrivilegedPlugTest do
 
     ret_conn = EnsurePrivilegedPlug.call(conn, :cofe)
 
-    # priviledged through moderator role
+    # privileged through moderator role
     assert conn == ret_conn
   end
 
