@@ -67,15 +67,25 @@ To add configuration to your config file, you can copy it from the base config. 
 * `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
     * Possible values are:
       * `:users_read`
+        * Allows you to fetch users through the admin api
       * `:users_manage_invites`
+        * Allows you to manage invites. This includes sending, resending, revoking and approving invites
       * `:users_manage_activation_state`
+        * Allows you to activate and deactive accounts. This also allows you to see deactivated users through the Mastodon-API.
       * `:users_manage_tags`
+        * Allows you to set and remove tags for users. This can be useful in combination with MRF policy `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
       * `:users_manage_credentials`
+        * Allows you to trigger a password reset and set new credentials
       * `:users_delete`
+        * Allows you to delete accounts. Note that deleting an account is actually deactivating it and removing all data like posts, profile information, etc.
       * `:messages_read`
+        * Allows you to view messages through the Admin-API, including non-public posts and chats
       * `:messages_delete`
+        * Allows you to delete messages from otehr people
       * `:reports_manage_reports`
+        * Allows you to see and manage reports
       * `:emoji_manage_emoji`
+        * Allows you to manage emoji on your instance
 * `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
     * Possible values are the same as for `admin_privileges`
 
