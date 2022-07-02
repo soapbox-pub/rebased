@@ -68,7 +68,7 @@ defmodule Pleroma.Web.AdminAPI.InstanceControllerTest do
   end
 
   test "DELETE /instances/:instance", %{conn: conn} do
-    clear_config([:instance, :admin_privileges], [:instance_delete])
+    clear_config([:instance, :admin_privileges], [:instances_delete])
     user = insert(:user, nickname: "lain@lain.com")
     post = insert(:note_activity, user: user)
 

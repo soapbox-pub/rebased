@@ -971,7 +971,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/admin/stats" do
     setup do
-      clear_config([:instance, :admin_privileges], [:stats_read])
+      clear_config([:instance, :admin_privileges], [:statistics_read])
     end
 
     test "status visibility count", %{conn: conn} do
@@ -1007,7 +1007,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                response["status_visibility"]
     end
 
-    test "it requires privileged role :stats_read", %{conn: conn} do
+    test "it requires privileged role :statistics_read", %{conn: conn} do
       clear_config([:instance, :admin_privileges], [])
 
       assert conn

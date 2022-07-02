@@ -972,8 +972,11 @@ config :pleroma, :config_description, [
           :users_delete,
           :messages_read,
           :messages_delete,
+          :instances_delete,
           :reports_manage_reports,
-          :emoji_manage_emoji
+          :moderation_log_read,
+          :emoji_manage_emoji,
+          :statistics_read
         ],
         description:
           "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
@@ -990,8 +993,11 @@ config :pleroma, :config_description, [
           :users_delete,
           :messages_read,
           :messages_delete,
+          :instances_delete,
           :reports_manage_reports,
-          :emoji_manage_emoji
+          :moderation_log_read,
+          :emoji_manage_emoji,
+          :statistics_read
         ],
         description:
           "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"

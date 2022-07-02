@@ -82,10 +82,16 @@ To add configuration to your config file, you can copy it from the base config. 
         * Allows you to view messages through the Admin-API, including non-public posts and chats
       * `:messages_delete`
         * Allows you to delete messages from otehr people
+      * `:instances_delete,`
+        * Allows you to delete a whole remote instance from your instance. This will delete all users and messages from that remote instance.
       * `:reports_manage_reports`
         * Allows you to see and manage reports
+      * `:moderation_log_read,`
+        * Allows you to read the entries in the moderation log
       * `:emoji_manage_emoji`
         * Allows you to manage emoji on your instance
+      * `:statistics_read,`
+        * Allows you to see some simple statistics from your instance
 * `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
     * Possible values are the same as for `admin_privileges`
 
