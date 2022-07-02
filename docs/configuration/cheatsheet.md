@@ -66,15 +66,15 @@ To add configuration to your config file, you can copy it from the base config. 
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
 * `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
     * Possible values are:
-      * `:users_delete`
-      * `:users_manage_credentials`
-      * `:messages_read`
-      * `:users_manage_tags`
-      * `:users_manage_activation_state`
-      * `:users_manage_invites`
-      * `:reports_manage_reports`
       * `:users_read`
+      * `:users_manage_invites`
+      * `:users_manage_activation_state`
+      * `:users_manage_tags`
+      * `:users_manage_credentials`
+      * `:users_delete`
+      * `:messages_read`
       * `:messages_delete`
+      * `:reports_manage_reports`
       * `:emoji_manage_emoji`
 * `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
     * Possible values are the same as for `admin_privileges`
