@@ -13,14 +13,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   embedded_schema do
     field(:id, :string)
     field(:type, :string)
-    field(:mediaType, :string, default: "application/octet-stream")
+    field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
     field(:name, :string)
     field(:blurhash, :string)
 
     embeds_many :url, UrlObjectValidator, primary_key: false do
       field(:type, :string)
       field(:href, ObjectValidators.Uri)
-      field(:mediaType, :string, default: "application/octet-stream")
+      field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
       field(:width, :integer)
       field(:height, :integer)
     end
@@ -60,13 +60,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   end
 
   def fix_media_type(data) do
-    data = Map.put_new(data, "mediaType", data["mimeType"])
-
-    if is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] do
-      data
-    else
-      Map.put(data, "mediaType", "application/octet-stream")
-    end
+    Map.put_new(data, "mediaType", data["mimeType"])
   end
 
   defp handle_href(href, mediaType, data) do

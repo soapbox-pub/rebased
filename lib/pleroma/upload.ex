@@ -61,12 +61,23 @@ defmodule Pleroma.Upload do
           width: integer(),
           height: integer(),
           blurhash: String.t(),
+          description: String.t(),
           path: String.t()
         }
-  defstruct [:id, :name, :tempfile, :content_type, :width, :height, :blurhash, :path]
+  defstruct [
+    :id,
+    :name,
+    :tempfile,
+    :content_type,
+    :width,
+    :height,
+    :blurhash,
+    :description,
+    :path
+  ]
 
-  defp get_description(opts, upload) do
-    case {opts[:description], Pleroma.Config.get([Pleroma.Upload, :default_description])} do
+  defp get_description(upload) do
+    case {upload.description, Pleroma.Config.get([Pleroma.Upload, :default_description])} do
       {description, _} when is_binary(description) -> description
       {_, :filename} -> upload.name
       {_, str} when is_binary(str) -> str
@@ -82,7 +93,7 @@ defmodule Pleroma.Upload do
     with {:ok, upload} <- prepare_upload(upload, opts),
          upload = %__MODULE__{upload | path: upload.path || "#{upload.id}/#{upload.name}"},
          {:ok, upload} <- Pleroma.Upload.Filter.filter(opts.filters, upload),
-         description = get_description(opts, upload),
+         description = get_description(upload),
          {_, true} <-
            {:description_limit,
             String.length(description) <= Pleroma.Config.get([:instance, :description_limit])},
@@ -154,7 +165,8 @@ defmodule Pleroma.Upload do
          id: UUID.generate(),
          name: file.filename,
          tempfile: file.path,
-         content_type: file.content_type
+         content_type: file.content_type,
+         description: opts.description
        }}
     end
   end
@@ -174,7 +186,8 @@ defmodule Pleroma.Upload do
          id: UUID.generate(),
          name: hash <> "." <> ext,
          tempfile: tmp_path,
-         content_type: content_type
+         content_type: content_type,
+         description: opts.description
        }}
     end
   end

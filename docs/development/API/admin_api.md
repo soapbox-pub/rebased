@@ -1636,3 +1636,117 @@ Returns the content of the document
   "error": "Could not install frontend"
 }
 ```
+
+## `GET /api/v1/pleroma/admin/announcements`
+
+### List announcements
+
+- Params: `offset`, `limit`
+
+- Response: JSON, list of announcements
+
+```json
+[
+  {
+    "id": "AHDp0GBdRn1EPN5HN2",
+    "content": "some content",
+    "starts_at": null,
+    "ends_at": null,
+    "all_day": false,
+    "published_at": "2022-03-09T02:13:05",
+    "reactions": [],
+    "statuses": [],
+    "tags": [],
+    "emojis": [],
+    "updated_at": "2022-03-09T02:13:05"
+  }
+]
+```
+
+Note that this differs from the Mastodon API variant: Mastodon API only returns *active* announcements, while this returns all.
+
+## `GET /api/v1/pleroma/admin/announcements/:id`
+
+### Display one announcement
+
+- Response: JSON, one announcement
+
+```json
+{
+  "id": "AHDp0GBdRn1EPN5HN2",
+  "content": "some content",
+  "starts_at": null,
+  "ends_at": null,
+  "all_day": false,
+  "published_at": "2022-03-09T02:13:05",
+  "reactions": [],
+  "statuses": [],
+  "tags": [],
+  "emojis": [],
+  "updated_at": "2022-03-09T02:13:05"
+}
+```
+
+## `POST /api/v1/pleroma/admin/announcements`
+
+### Create an announcement
+
+- Params:
+  - `content`: string, required, announcement content
+  - `starts_at`: datetime, optional, default to null, the time when the announcement will become active (displayed to users); if it is null, the announcement will be active immediately
+  - `ends_at`: datetime, optional, default to null, the time when the announcement will become inactive (no longer displayed to users); if it is null, the announcement will be active until an admin deletes it
+  - `all_day`: boolean, optional, default to false, tells the client whether to only display dates for `starts_at` and `ends_at`
+
+- Response: JSON, created announcement
+
+```json
+{
+  "id": "AHDp0GBdRn1EPN5HN2",
+  "content": "some content",
+  "starts_at": null,
+  "ends_at": null,
+  "all_day": false,
+  "published_at": "2022-03-09T02:13:05",
+  "reactions": [],
+  "statuses": [],
+  "tags": [],
+  "emojis": [],
+  "updated_at": "2022-03-09T02:13:05"
+}
+```
+
+## `PATCH /api/v1/pleroma/admin/announcements/:id`
+
+### Change an announcement
+
+- Params: same as `POST /api/v1/pleroma/admin/announcements`, except no param is required.
+
+- Updates the announcement according to params. Missing params are kept as-is.
+
+- Response: JSON, updated announcement
+
+```json
+{
+  "id": "AHDp0GBdRn1EPN5HN2",
+  "content": "some content",
+  "starts_at": null,
+  "ends_at": null,
+  "all_day": false,
+  "published_at": "2022-03-09T02:13:05",
+  "reactions": [],
+  "statuses": [],
+  "tags": [],
+  "emojis": [],
+  "updated_at": "2022-03-09T02:13:05"
+}
+```
+
+## `DELETE /api/v1/pleroma/admin/announcements/:id`
+
+### Delete an announcement
+
+- Response: JSON, empty object
+
+```json
+{}
+```
