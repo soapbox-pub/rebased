@@ -55,12 +55,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
     assert data["id"] == "http://mastodon.example.org/users/admin#reactions/2"
     assert data["object"] == activity.data["object"]
     # heart emoji with added emoji variation sequence
-    assert data["content"] == "❤️"
+    assert data["content"] == "❤\uFE0F"
 
     object = Object.get_by_ap_id(data["object"])
 
     assert object.data["reaction_count"] == 1
-    assert match?([["❤️", _]], object.data["reactions"])
+    assert match?([["❤\uFE0F", _]], object.data["reactions"])
   end
 
   test "it reject invalid emoji reactions" do
