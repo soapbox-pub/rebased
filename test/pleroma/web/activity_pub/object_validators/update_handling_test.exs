@@ -127,4 +127,42 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateHandlingTest do
       assert meta[:object_data]
     end
   end
+
+  describe "update with history" do
+    setup do
+      user = insert(:user)
+      {:ok, activity} = Pleroma.Web.CommonAPI.post(user, %{status: "mew mew :dinosaur:"})
+      {:ok, edit} = Pleroma.Web.CommonAPI.update(user, activity, %{status: "edited :blank:"})
+      {:ok, external_rep} = Pleroma.Web.ActivityPub.Transmogrifier.prepare_outgoing(edit.data)
+      %{external_rep: external_rep}
+    end
+
+    test "edited note", %{external_rep: external_rep} do
+      {:ok, _validate_res, meta} = ObjectValidator.validate(external_rep, [])
+
+      assert %{"formerRepresentations" => %{"orderedItems" => [%{"emoji" => %{"dinosaur" => _}}]}} =
+               meta[:object_data]
+    end
+
+    test "edited note, badly-formed formerRepresentations", %{external_rep: external_rep} do
+      external_rep = put_in(external_rep, ["object", "formerRepresentations"], %{})
+
+      assert {:error, _} = ObjectValidator.validate(external_rep, [])
+    end
+
+    test "edited note, badly-formed history item", %{external_rep: external_rep} do
+      history_item =
+        Enum.at(external_rep["object"]["formerRepresentations"]["orderedItems"], 0)
+        |> Map.put("type", "Foo")
+
+      external_rep =
+        put_in(
+          external_rep,
+          ["object", "formerRepresentations", "orderedItems"],
+          [history_item]
+        )
+
+      assert {:error, _} = ObjectValidator.validate(external_rep, [])
+    end
+  end
 end

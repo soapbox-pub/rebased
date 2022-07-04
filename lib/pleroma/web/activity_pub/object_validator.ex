@@ -152,8 +152,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
       )
       when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
     with {_, false} <- {:local, Access.get(meta, :local, false)},
-         {:ok, object_data} <- cast_and_apply(object),
-         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+         {_, {:ok, object_data, _}} <- {:object_validation, validate(object, meta)},
+         meta = Keyword.put(meta, :object_data, object_data),
          {:ok, update_activity} <-
            update_activity
            |> UpdateValidator.cast_and_validate()
@@ -169,6 +169,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
           object = stringify_keys(object)
           {:ok, object, meta}
         end
+
+      {:object_validation, e} ->
+        e
     end
   end
 
