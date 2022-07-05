@@ -2023,80 +2023,49 @@ defmodule Pleroma.UserTest do
       }
     end
 
-    test "doesn't return any users when there are no privileged roles", %{
-      user: user,
-      moderator_user: moderator_user,
-      admin_user: admin_user,
-      admin_moderator_user: admin_moderator_user,
-      remote_user: remote_user,
-      non_active_user: non_active_user
-    } do
+    test "doesn't return any users when there are no privileged roles" do
       clear_config([:instance, :admin_privileges], [])
       clear_config([:instance, :moderator_privileges], [])
 
-      refute user in User.all_users_with_privilege(:cofe)
-      refute admin_user in User.all_users_with_privilege(:cofe)
-      refute moderator_user in User.all_users_with_privilege(:cofe)
-      refute admin_moderator_user in User.all_users_with_privilege(:cofe)
-      refute remote_user in User.all_users_with_privilege(:cofe)
-      refute non_active_user in User.all_users_with_privilege(:cofe)
+      assert [] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
     end
 
     test "returns moderator users if they are privileged", %{
-      user: user,
       moderator_user: moderator_user,
-      admin_user: admin_user,
-      admin_moderator_user: admin_moderator_user,
-      remote_user: remote_user,
-      non_active_user: non_active_user
+      admin_moderator_user: admin_moderator_user
     } do
       clear_config([:instance, :admin_privileges], [])
       clear_config([:instance, :moderator_privileges], [:cofe])
 
-      refute user in User.all_users_with_privilege(:cofe)
-      refute admin_user in User.all_users_with_privilege(:cofe)
+      assert [_, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
       assert moderator_user in User.all_users_with_privilege(:cofe)
       assert admin_moderator_user in User.all_users_with_privilege(:cofe)
-      refute remote_user in User.all_users_with_privilege(:cofe)
-      refute non_active_user in User.all_users_with_privilege(:cofe)
     end
 
     test "returns admin users if they are privileged", %{
-      user: user,
-      moderator_user: moderator_user,
       admin_user: admin_user,
-      admin_moderator_user: admin_moderator_user,
-      remote_user: remote_user,
-      non_active_user: non_active_user
+      admin_moderator_user: admin_moderator_user
     } do
       clear_config([:instance, :admin_privileges], [:cofe])
       clear_config([:instance, :moderator_privileges], [])
 
-      refute user in User.all_users_with_privilege(:cofe)
+      assert [_, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
       assert admin_user in User.all_users_with_privilege(:cofe)
-      refute moderator_user in User.all_users_with_privilege(:cofe)
       assert admin_moderator_user in User.all_users_with_privilege(:cofe)
-      refute remote_user in User.all_users_with_privilege(:cofe)
-      refute non_active_user in User.all_users_with_privilege(:cofe)
     end
 
     test "returns admin and moderator users if they are both privileged", %{
-      user: user,
       moderator_user: moderator_user,
       admin_user: admin_user,
-      admin_moderator_user: admin_moderator_user,
-      remote_user: remote_user,
-      non_active_user: non_active_user
+      admin_moderator_user: admin_moderator_user
     } do
       clear_config([:instance, :admin_privileges], [:cofe])
       clear_config([:instance, :moderator_privileges], [:cofe])
 
-      refute user in User.all_users_with_privilege(:cofe)
+      assert [_, _, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
       assert admin_user in User.all_users_with_privilege(:cofe)
       assert moderator_user in User.all_users_with_privilege(:cofe)
       assert admin_moderator_user in User.all_users_with_privilege(:cofe)
-      refute remote_user in User.all_users_with_privilege(:cofe)
-      refute non_active_user in User.all_users_with_privilege(:cofe)
     end
   end
 
