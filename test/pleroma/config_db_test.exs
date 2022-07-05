@@ -238,10 +238,11 @@ defmodule Pleroma.ConfigDBTest do
     end
 
     test "ssl options" do
-      assert ConfigDB.to_elixir_types([":tlsv1", ":tlsv1.1", ":tlsv1.2"]) == [
+      assert ConfigDB.to_elixir_types([":tlsv1", ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]) == [
                :tlsv1,
                :"tlsv1.1",
-               :"tlsv1.2"
+               :"tlsv1.2",
+               :"tlsv1.3"
              ]
     end
 

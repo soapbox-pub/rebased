@@ -34,7 +34,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           static_dir: :string,
           listen_ip: :string,
           listen_port: :string,
-          strip_uploads: :string,
+          strip_uploads_location: :string,
+          read_uploads_description: :string,
           anonymize_uploads: :string,
           dedupe_uploads: :string
         ],
@@ -161,7 +162,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
         |> Path.expand()
 
-      {strip_uploads_message, strip_uploads_default} =
+      {strip_uploads_location_message, strip_uploads_location_default} =
         if Pleroma.Utils.command_available?("exiftool") do
           {"Do you want to strip location (GPS) data from uploaded images? This requires exiftool, it was detected as installed. (y/n)",
            "y"}
@@ -170,12 +171,29 @@ defmodule Mix.Tasks.Pleroma.Instance do
            "n"}
         end
 
-      strip_uploads =
+      strip_uploads_location =
         get_option(
           options,
-          :strip_uploads,
-          strip_uploads_message,
-          strip_uploads_default
+          :strip_uploads_location,
+          strip_uploads_location_message,
+          strip_uploads_location_default
+        ) === "y"
+
+      {read_uploads_description_message, read_uploads_description_default} =
+        if Pleroma.Utils.command_available?("exiftool") do
+          {"Do you want to read data from uploaded files so clients can use it to prefill fields like image description? This requires exiftool, it was detected as installed. (y/n)",
+           "y"}
+        else
+          {"Do you want to read data from uploaded files so clients can use it to prefill fields like image description? This requires exiftool, it was detected as not installed, please install it if you answer yes. (y/n)",
+           "n"}
+        end
+
+      read_uploads_description =
+        get_option(
+          options,
+          :read_uploads_description,
+          read_uploads_description_message,
+          read_uploads_description_default
         ) === "y"
 
       anonymize_uploads =
@@ -229,7 +247,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           listen_port: listen_port,
           upload_filters:
             upload_filters(%{
-              strip: strip_uploads,
+              strip_location: strip_uploads_location,
+              read_description: read_uploads_description,
               anonymize: anonymize_uploads,
               dedupe: dedupe_uploads
             })
@@ -297,10 +316,17 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
   defp upload_filters(filters) when is_map(filters) do
     enabled_filters =
-      if filters.strip do
-        [Pleroma.Upload.Filter.Exiftool]
+      if filters.strip_location do
+        [Pleroma.Upload.Filter.Exiftool.StripLocation]
       else
         []
+      end
+
+    enabled_filters =
+      if filters.read_description do
+        enabled_filters ++ [Pleroma.Upload.Filter.Exiftool.ReadDescription]
+      else
+        enabled_filters
       end
 
     enabled_filters =

@@ -2762,7 +2762,7 @@ config :pleroma, :config_description, [
                 key: :versions,
                 type: {:list, :atom},
                 description: "List of TLS version to use",
-                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
+                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]
               }
             ]
           }

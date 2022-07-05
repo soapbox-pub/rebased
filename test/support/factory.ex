@@ -627,4 +627,16 @@ defmodule Pleroma.Factory do
       context: ["home"]
     }
   end
+
+  def announcement_factory(params \\ %{}) do
+    data = Map.get(params, :data, %{})
+
+    {_, params} = Map.pop(params, :data)
+
+    %Pleroma.Announcement{
+      data: Map.merge(%{"content" => "test announcement", "all_day" => false}, data)
+    }
+    |> Map.merge(params)
+    |> Pleroma.Announcement.add_rendered_properties()
+  end
 end

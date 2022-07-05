@@ -27,4 +27,10 @@ defmodule Pleroma.Constants do
     do:
       ~w(index.html robots.txt static static-fe finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc embed.js embed.css)
   )
+
+  # basic regex, just there to weed out potential mistakes
+  # https://datatracker.ietf.org/doc/html/rfc2045#section-5.1
+  const(mime_regex,
+    do: ~r/^[^[:cntrl:] ()<>@,;:\\"\/\[\]?=]+\/[^[:cntrl:] ()<>@,;:\\"\/\[\]?=]+(; .*)?$/
+  )
 end
