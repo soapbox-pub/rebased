@@ -456,4 +456,84 @@ defmodule Pleroma.Object.FetcherTest do
              } = refetched.data
     end
   end
+
+  describe "fetch with history" do
+    setup do
+      object2 = %{
+        "id" => "https://mastodon.social/2",
+        "actor" => "https://mastodon.social/users/emelie",
+        "attributedTo" => "https://mastodon.social/users/emelie",
+        "type" => "Note",
+        "content" => "test 2",
+        "bcc" => [],
+        "bto" => [],
+        "cc" => ["https://mastodon.social/users/emelie/followers"],
+        "to" => [],
+        "summary" => "",
+        "formerRepresentations" => %{
+          "type" => "OrderedCollection",
+          "orderedItems" => [
+            %{
+              "type" => "Note",
+              "content" => "orig 2",
+              "actor" => "https://mastodon.social/users/emelie",
+              "attributedTo" => "https://mastodon.social/users/emelie",
+              "bcc" => [],
+              "bto" => [],
+              "cc" => ["https://mastodon.social/users/emelie/followers"],
+              "to" => [],
+              "summary" => ""
+            }
+          ],
+          "totalItems" => 1
+        }
+      }
+
+      mock(fn
+        %{
+          method: :get,
+          url: "https://mastodon.social/2"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: Jason.encode!(object2)
+          }
+
+        %{
+          method: :get,
+          url: "https://mastodon.social/users/emelie/collections/featured"
+        } ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              Jason.encode!(%{
+                "id" => "https://mastodon.social/users/emelie/collections/featured",
+                "type" => "OrderedCollection",
+                "actor" => "https://mastodon.social/users/emelie",
+                "attributedTo" => "https://mastodon.social/users/emelie",
+                "orderedItems" => [],
+                "totalItems" => 0
+              })
+          }
+
+        env ->
+          apply(HttpRequestMock, :request, [env])
+      end)
+
+      %{object2: object2}
+    end
+
+    test "it gets history", %{object2: object2} do
+      {:ok, object} = Fetcher.fetch_object_from_id(object2["id"])
+
+      assert %{
+               "formerRepresentations" => %{
+                 "type" => "OrderedCollection",
+                 "orderedItems" => [%{}]
+               }
+             } = object.data
+    end
+  end
 end

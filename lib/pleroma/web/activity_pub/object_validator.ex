@@ -103,8 +103,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         meta
       )
       when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
-    with {:ok, object_data} <- cast_and_apply(object),
-         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+    with {:ok, object_data} <- cast_and_apply_and_stringify_with_history(object),
+         meta = Keyword.put(meta, :object_data, object_data),
          {:ok, create_activity} <-
            create_activity
            |> CreateGenericValidator.cast_and_validate(meta)
@@ -211,6 +211,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def validate(o, m), do: {:error, {:validator_not_set, {o, m}}}
+
+  def cast_and_apply_and_stringify_with_history(object) do
+    do_separate_with_history(object, fn object ->
+      with {:ok, object_data} <- cast_and_apply(object),
+           object_data <- object_data |> stringify_keys() do
+        {:ok, object_data}
+      end
+    end)
+  end
 
   def cast_and_apply(%{"type" => "ChatMessage"} = object) do
     ChatMessageValidator.cast_and_apply(object)
