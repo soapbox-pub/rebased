@@ -758,13 +758,26 @@ defmodule Pleroma.User do
       valid? =
         Config.get([User, :email_blacklist])
         |> Enum.all?(fn blacklisted_domain ->
-          !String.ends_with?(email, ["@" <> blacklisted_domain, "." <> blacklisted_domain])
+          blacklisted_domain_downcase = String.downcase(blacklisted_domain)
+
+          !String.ends_with?(String.downcase(email), [
+            "@" <> blacklisted_domain_downcase,
+            "." <> blacklisted_domain_downcase
+          ])
         end)
 
       if valid?, do: [], else: [email: "Invalid email"]
     end)
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_change(:nickname, fn :nickname, nickname ->
+      valid? =
+        Config.get([User, :restricted_nicknames])
+        |> Enum.all?(fn restricted_nickname ->
+          String.downcase(nickname) != String.downcase(restricted_nickname)
+        end)
+
+      if valid?, do: [], else: [nickname: "Invalid nickname"]
+    end)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)

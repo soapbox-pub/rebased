@@ -618,6 +618,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
+      clear_config([User, :restricted_nicknames], ["about"])
       [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
       assert is_bitstring(restricted_name)
@@ -631,11 +632,33 @@ defmodule Pleroma.UserTest do
       refute changeset.valid?
     end
 
+    test "it is case-insensitive when restricting nicknames" do
+      clear_config([User, :restricted_nicknames], ["about"])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
+
+      assert is_bitstring(restricted_name)
+
+      restricted_upcase_name = String.upcase(restricted_name)
+
+      params =
+        @full_user_data
+        |> Map.put(:nickname, restricted_upcase_name)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+
     test "it blocks blacklisted email domains" do
       clear_config([User, :email_blacklist], ["trolling.world"])
 
       # Block with match
       params = Map.put(@full_user_data, :email, "troll@trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Block with case-insensitive match
+      params = Map.put(@full_user_data, :email, "troll@TrOlLing.wOrld")
       changeset = User.register_changeset(%User{}, params)
       refute changeset.valid?
 
