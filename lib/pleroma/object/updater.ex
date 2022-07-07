@@ -10,7 +10,10 @@ defmodule Pleroma.Object.Updater do
     |> Enum.reduce(
       %{data: orig_object_data, updated: false},
       fn field, %{data: data, updated: updated} ->
-        updated = updated or Map.get(updated_object, field) != Map.get(orig_object_data, field)
+        updated =
+          updated or
+            (field != "updated" and
+               Map.get(updated_object, field) != Map.get(orig_object_data, field))
 
         data =
           if Map.has_key?(updated_object, field) do
@@ -136,21 +139,57 @@ defmodule Pleroma.Object.Updater do
   # This calculates the data of the new Object from an Update.
   # new_data's formerRepresentations is considered.
   def make_new_object_data_from_update_object(original_data, new_data) do
-    %{data: updated_data, updated: updated} =
-      original_data
-      |> update_content_fields(new_data)
+    update_is_reasonable =
+      with {_, updated} when not is_nil(updated) <- {:cur_updated, new_data["updated"]},
+           {_, {:ok, updated_time, _}} <- {:cur_updated, DateTime.from_iso8601(updated)},
+           {_, last_updated} when not is_nil(last_updated) <-
+             {:last_updated, original_data["updated"] || original_data["published"]},
+           {_, {:ok, last_updated_time, _}} <-
+             {:last_updated, DateTime.from_iso8601(last_updated)},
+           :gt <- DateTime.compare(updated_time, last_updated_time) do
+        :update_everything
+      else
+        # only allow poll updates
+        {:cur_updated, _} -> :no_content_update
+        :eq -> :no_content_update
+        # allow all updates
+        {:last_updated, _} -> :update_everything
+        # allow no updates
+        _ -> false
+      end
 
-    %{updated_object: updated_data, used_history_in_new_object?: used_history_in_new_object?} =
-      updated_data
-      |> maybe_update_history(original_data,
-        updated: updated,
-        use_history_in_new_object?: true,
-        new_data: new_data
-      )
+    %{
+      updated_object: updated_data,
+      used_history_in_new_object?: used_history_in_new_object?,
+      updated: updated
+    } =
+      if update_is_reasonable == :update_everything do
+        %{data: updated_data, updated: updated} =
+          original_data
+          |> update_content_fields(new_data)
+
+        updated_data
+        |> maybe_update_history(original_data,
+          updated: updated,
+          use_history_in_new_object?: true,
+          new_data: new_data
+        )
+        |> Map.put(:updated, updated)
+      else
+        %{
+          updated_object: original_data,
+          used_history_in_new_object?: false,
+          updated: false
+        }
+      end
 
     updated_data =
-      updated_data
-      |> maybe_update_poll(new_data)
+      if update_is_reasonable != false do
+        updated_data
+        |> maybe_update_poll(new_data)
+      else
+        updated_data
+      end
 
     %{
       updated_data: updated_data,

@@ -142,14 +142,19 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
   describe "update notes" do
     setup do
+      make_time = fn ->
+        Pleroma.Web.ActivityPub.Utils.make_date()
+      end
+
       user = insert(:user)
-      note = insert(:note, user: user)
+      note = insert(:note, user: user, data: %{"published" => make_time.()})
       _note_activity = insert(:note_activity, note: note)
 
       updated_note =
         note.data
         |> Map.put("summary", "edited summary")
         |> Map.put("content", "edited content")
+        |> Map.put("updated", make_time.())
 
       {:ok, update_data, []} = Builder.update(user, updated_note)
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
@@ -170,8 +175,69 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       updated_note: updated_note
     } do
       {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      updated_time = updated_note["updated"]
+
       new_note = Pleroma.Object.get_by_id(object_id)
-      assert %{"summary" => "edited summary", "content" => "edited content"} = new_note.data
+
+      assert %{
+               "summary" => "edited summary",
+               "content" => "edited content",
+               "updated" => ^updated_time
+             } = new_note.data
+    end
+
+    test "it rejects updates with no updated attribute in object", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      old_note = Pleroma.Object.get_by_id(object_id)
+      updated_note = Map.drop(updated_note, ["updated"])
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert old_note.data == new_note.data
+    end
+
+    test "it rejects updates with updated attribute older than what we have in the original object",
+         %{
+           object_id: object_id,
+           update: update,
+           updated_note: updated_note
+         } do
+      old_note = Pleroma.Object.get_by_id(object_id)
+      {:ok, creation_time, _} = DateTime.from_iso8601(old_note.data["published"])
+
+      updated_note =
+        Map.put(updated_note, "updated", DateTime.to_iso8601(DateTime.add(creation_time, -10)))
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert old_note.data == new_note.data
+    end
+
+    test "it rejects updates with updated attribute older than the last Update", %{
+      object_id: object_id,
+      update: update,
+      updated_note: updated_note
+    } do
+      old_note = Pleroma.Object.get_by_id(object_id)
+      {:ok, creation_time, _} = DateTime.from_iso8601(old_note.data["published"])
+
+      updated_note =
+        Map.put(updated_note, "updated", DateTime.to_iso8601(DateTime.add(creation_time, +10)))
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+
+      old_note = Pleroma.Object.get_by_id(object_id)
+      {:ok, update_time, _} = DateTime.from_iso8601(old_note.data["updated"])
+
+      updated_note =
+        Map.put(updated_note, "updated", DateTime.to_iso8601(DateTime.add(update_time, -5)))
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
+
+      new_note = Pleroma.Object.get_by_id(object_id)
+      assert old_note.data == new_note.data
     end
 
     test "it updates using object_data", %{
@@ -215,6 +281,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         note.data
         |> Map.put("summary", "edited summary 2")
         |> Map.put("content", "edited content 2")
+        |> Map.put(
+          "updated",
+          first_edit["updated"]
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.add(10)
+          |> DateTime.to_iso8601()
+        )
 
       {:ok, second_update_data, []} = Builder.update(user, second_updated_note)
       {:ok, update, _meta} = ActivityPub.persist(second_update_data, local: true)
@@ -238,7 +312,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       updated_note: updated_note
     } do
       {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
-      %{data: _first_edit} = Pleroma.Object.get_by_id(object_id)
+      %{data: first_edit} = Pleroma.Object.get_by_id(object_id)
+
+      updated_note =
+        updated_note
+        |> Map.put(
+          "updated",
+          first_edit["updated"]
+          |> DateTime.from_iso8601()
+          |> elem(1)
+          |> DateTime.add(10)
+          |> DateTime.to_iso8601()
+        )
 
       {:ok, _, _} = SideEffects.handle(update, object_data: updated_note)
       %{data: new_note} = Pleroma.Object.get_by_id(object_id)
@@ -270,7 +355,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         data["oneOf"]
         |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
 
-      updated_question = data |> Map.put("oneOf", new_choices)
+      updated_question =
+        data
+        |> Map.put("oneOf", new_choices)
+        |> Map.put("updated", Pleroma.Web.ActivityPub.Utils.make_date())
 
       {:ok, update_data, []} = Builder.update(user, updated_question)
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)

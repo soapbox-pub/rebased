@@ -1596,7 +1596,7 @@ defmodule Pleroma.Web.CommonAPITest do
       clear_config([:instance, :federating], true)
 
       with_mock Pleroma.Web.Federator,
-        publish: fn p -> nil end do
+        publish: fn _p -> nil end do
         {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2 :#{emoji2}:"})
 
         assert updated.data["object"]["content"] == "updated 2 :#{emoji2}:"
