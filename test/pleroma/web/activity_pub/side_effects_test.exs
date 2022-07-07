@@ -341,7 +341,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   describe "update questions" do
     setup do
       user = insert(:user)
-      question = insert(:question, user: user)
+
+      question =
+        insert(:question,
+          user: user,
+          data: %{"published" => Pleroma.Web.ActivityPub.Utils.make_date()}
+        )
 
       %{user: user, data: question.data, id: question.id}
     end
@@ -359,6 +364,59 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         data
         |> Map.put("oneOf", new_choices)
         |> Map.put("updated", Pleroma.Web.ActivityPub.Utils.make_date())
+
+      {:ok, update_data, []} = Builder.update(user, updated_question)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_question)
+
+      %{data: new_question} = Pleroma.Object.get_by_id(id)
+
+      assert [%{"replies" => %{"totalItems" => 5}}, %{"replies" => %{"totalItems" => 5}}] =
+               new_question["oneOf"]
+
+      refute Map.has_key?(new_question, "formerRepresentations")
+    end
+
+    test "allows updating choice count without updated field", %{
+      user: user,
+      data: data,
+      id: id
+    } do
+      new_choices =
+        data["oneOf"]
+        |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
+
+      updated_question =
+        data
+        |> Map.put("oneOf", new_choices)
+
+      {:ok, update_data, []} = Builder.update(user, updated_question)
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      {:ok, _, _} = SideEffects.handle(update, object_data: updated_question)
+
+      %{data: new_question} = Pleroma.Object.get_by_id(id)
+
+      assert [%{"replies" => %{"totalItems" => 5}}, %{"replies" => %{"totalItems" => 5}}] =
+               new_question["oneOf"]
+
+      refute Map.has_key?(new_question, "formerRepresentations")
+    end
+
+    test "allows updating choice count with updated field same as the creation date", %{
+      user: user,
+      data: data,
+      id: id
+    } do
+      new_choices =
+        data["oneOf"]
+        |> Enum.map(fn choice -> put_in(choice, ["replies", "totalItems"], 5) end)
+
+      updated_question =
+        data
+        |> Map.put("oneOf", new_choices)
+        |> Map.put("updated", data["published"])
 
       {:ok, update_data, []} = Builder.update(user, updated_question)
       {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
