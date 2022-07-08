@@ -100,7 +100,7 @@ defmodule Pleroma.Uploaders.IPFSTest do
     test "returns error if JSON decode fails", %{file_upload: file_upload} do
       with_mock Pleroma.HTTP, [],
         post: fn "http://localhost:5001/api/v0/add", mp, [], params: ["cid-version": "1"] ->
-          {:ok, %Tesla.Env{status: 200, body: 'invalid'}}
+          {:ok, %Tesla.Env{status: 200, body: "invalid"}}
         end do
         assert capture_log(fn ->
                  assert IPFS.put_file(file_upload) == {:error, "JSON decode failed"}
@@ -112,7 +112,7 @@ defmodule Pleroma.Uploaders.IPFSTest do
     test "returns error if JSON body doesn't contain Hash key", %{file_upload: file_upload} do
       with_mock Pleroma.HTTP, [],
         post: fn "http://localhost:5001/api/v0/add", mp, [], params: ["cid-version": "1"] ->
-          {:ok, %Tesla.Env{status: 200, body: '{"key": "value"}'}}
+          {:ok, %Tesla.Env{status: 200, body: "{\"key\": \"value\"}"}}
         end do
         assert IPFS.put_file(file_upload) == {:error, "JSON doesn't contain Hash key"}
       end
