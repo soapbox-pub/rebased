@@ -1989,6 +1989,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                conn
                |> post("/api/v1/accounts/#{other_user_id}/remove_from_followers")
                |> json_response_and_validate_schema(200)
+
+      refute User.following?(other_user, user)
     end
 
     test "removing user from followers errors", %{user: user, conn: conn} do
