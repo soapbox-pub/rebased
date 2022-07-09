@@ -415,7 +415,14 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp make_update_data(user, orig_object, changes) do
     kept_params = %{
-      visibility: Visibility.get_visibility(orig_object)
+      visibility: Visibility.get_visibility(orig_object),
+      in_reply_to_id:
+        with replied_id when is_binary(replied_id) <- orig_object.data["inReplyTo"],
+             %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(replied_id) do
+          activity_id
+        else
+          _ -> nil
+        end
     }
 
     params = Map.merge(changes, kept_params)

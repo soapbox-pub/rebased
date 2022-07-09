@@ -1605,5 +1605,47 @@ defmodule Pleroma.Web.CommonAPITest do
         assert called(Pleroma.Web.Federator.publish(updated))
       end
     end
+
+    test "editing a post that copied a remote title with remote emoji should keep that emoji" do
+      remote_emoji_uri = "https://remote.org/emoji.png"
+
+      note =
+        insert(
+          :note,
+          data: %{
+            "summary" => ":remoteemoji:",
+            "emoji" => %{
+              "remoteemoji" => remote_emoji_uri
+            },
+            "tag" => [
+              %{
+                "type" => "Emoji",
+                "name" => "remoteemoji",
+                "icon" => %{"url" => remote_emoji_uri}
+              }
+            ]
+          }
+        )
+
+      note_activity = insert(:note_activity, note: note)
+
+      user = insert(:user)
+
+      {:ok, reply} =
+        CommonAPI.post(user, %{
+          status: "reply",
+          spoiler_text: ":remoteemoji:",
+          in_reply_to_id: note_activity.id
+        })
+
+      assert reply.object.data["emoji"]["remoteemoji"] == remote_emoji_uri
+
+      {:ok, edit} =
+        CommonAPI.update(user, reply, %{status: "reply mew mew", spoiler_text: ":remoteemoji:"})
+
+      edited_note = Pleroma.Object.normalize(edit)
+
+      assert edited_note.data["emoji"]["remoteemoji"] == remote_emoji_uri
+    end
   end
 end
