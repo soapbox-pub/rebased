@@ -621,7 +621,7 @@ defmodule Pleroma.UserTest do
       clear_config([User, :restricted_nicknames], ["about"])
       [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
-      assert is_bitstring(restricted_name)
+      assert is_binary(restricted_name)
 
       params =
         @full_user_data
@@ -636,7 +636,7 @@ defmodule Pleroma.UserTest do
       clear_config([User, :restricted_nicknames], ["about"])
       [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
-      assert is_bitstring(restricted_name)
+      assert is_binary(restricted_name)
 
       restricted_upcase_name = String.upcase(restricted_name)
 
