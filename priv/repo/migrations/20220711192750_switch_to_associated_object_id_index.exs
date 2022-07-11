@@ -24,9 +24,7 @@ defmodule Pleroma.Repo.Migrations.SwitchToAssociatedObjectIdIndex do
 
   def down do
     drop_if_exists(
-      index(:activities, ["associated_object_id(data)"],
-        name: :activities_create_objects_index
-      )
+      index(:activities, ["associated_object_id(data)"], name: :activities_create_objects_index)
     )
 
     create(
