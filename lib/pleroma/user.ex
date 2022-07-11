@@ -771,19 +771,19 @@ defmodule Pleroma.User do
   end
 
   def validate_not_restricted_nickname(changeset, field) do
-    validate_change changeset, field, fn _, value ->
+    validate_change(changeset, field, fn _, value ->
       valid? =
         Config.get([User, :restricted_nicknames])
         |> Enum.all?(fn restricted_nickname ->
-        String.downcase(value) != String.downcase(restricted_nickname)
-      end)
+          String.downcase(value) != String.downcase(restricted_nickname)
+        end)
 
       if valid?, do: [], else: [nickname: "Invalid nickname"]
-    end
+    end)
   end
 
   def validate_email_not_in_blacklisted_domain(changeset, field) do
-    validate_change changeset, field, fn _, value ->
+    validate_change(changeset, field, fn _, value ->
       valid? =
         Config.get([User, :email_blacklist])
         |> Enum.all?(fn blacklisted_domain ->
@@ -794,9 +794,9 @@ defmodule Pleroma.User do
             "." <> blacklisted_domain_downcase
           ])
         end)
-      
+
       if valid?, do: [], else: [email: "Invalid email"]
-    end
+    end)
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
