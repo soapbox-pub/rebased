@@ -140,14 +140,14 @@ unit-testing-rum:
     - mix test --preload-modules
 
 lint:
-  image: elixir:1.12-alpine
+  image: &current_elixir elixir:1.12-alpine
   stage: test
   only:
     changes: *build_changes_policy
   cache: *testing_cache_policy
-  before_script:
+  before_script: &current_bfr_script
     - apk update
-    - apk add cmake file-dev git
+    - apk add build-base cmake file-dev git openssl
     - mix local.hex --force
     - mix local.rebar --force
     - mix deps.get
@@ -163,17 +163,12 @@ analysis:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
+  image: *current_elixir
   stage: test
-  image: elixir:1.11-alpine
   only:
     changes: *build_changes_policy
-  cache: {}
-  before_script:
-    - apk update
-    - apk add cmake file-dev git
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
+  cache: *testing_cache_policy
+  before_script: *current_bfr_script
   script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
@@ -294,7 +289,7 @@ amd64-musl:
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git gcc g++ musl-dev make cmake file-dev
+  - apk add git build-base cmake file-dev openssl
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
