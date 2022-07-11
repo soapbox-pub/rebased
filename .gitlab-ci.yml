@@ -147,7 +147,7 @@ unit-testing-rum:
     - mix test --preload-modules
 
 lint:
-  image: elixir:1.12
+  image: elixir:1.12-alpine
   stage: test
   only:
     changes:
@@ -156,6 +156,8 @@ lint:
       - "mix.lock"
   cache: *testing_cache_policy
   before_script:
+    - apk update
+    - apk add cmake file-dev git
     - mix local.hex --force
     - mix local.rebar --force
     - mix deps.get
@@ -175,7 +177,7 @@ analysis:
 
 cycles:
   stage: test
-  image: elixir:1.11
+  image: elixir:1.11-alpine
   only:
     changes:
       - "**/*.ex"
@@ -183,11 +185,11 @@ cycles:
       - "mix.lock"
   cache: {}
   before_script:
+    - apk update
+    - apk add cmake file-dev git
     - mix local.hex --force
     - mix local.rebar --force
     - mix deps.get
-    - apt-get update
-    - apt-get install cmake libmagic-dev -y
   script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
