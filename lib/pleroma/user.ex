@@ -706,7 +706,7 @@ defmodule Pleroma.User do
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> put_ap_id()
     |> unique_constraint(:ap_id)
@@ -754,17 +754,9 @@ defmodule Pleroma.User do
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
-    |> validate_change(:email, fn :email, email ->
-      valid? =
-        Config.get([User, :email_blacklist])
-        |> Enum.all?(fn blacklisted_domain ->
-          !String.ends_with?(email, ["@" <> blacklisted_domain, "." <> blacklisted_domain])
-        end)
-
-      if valid?, do: [], else: [email: "Invalid email"]
-    end)
+    |> validate_email_not_in_blacklisted_domain(:email)
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
@@ -776,6 +768,35 @@ defmodule Pleroma.User do
     |> put_ap_id()
     |> unique_constraint(:ap_id)
     |> put_following_and_follower_and_featured_address()
+  end
+
+  def validate_not_restricted_nickname(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      valid? =
+        Config.get([User, :restricted_nicknames])
+        |> Enum.all?(fn restricted_nickname ->
+          String.downcase(value) != String.downcase(restricted_nickname)
+        end)
+
+      if valid?, do: [], else: [nickname: "Invalid nickname"]
+    end)
+  end
+
+  def validate_email_not_in_blacklisted_domain(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      valid? =
+        Config.get([User, :email_blacklist])
+        |> Enum.all?(fn blacklisted_domain ->
+          blacklisted_domain_downcase = String.downcase(blacklisted_domain)
+
+          !String.ends_with?(String.downcase(value), [
+            "@" <> blacklisted_domain_downcase,
+            "." <> blacklisted_domain_downcase
+          ])
+        end)
+
+      if valid?, do: [], else: [email: "Invalid email"]
+    end)
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
