@@ -34,7 +34,7 @@ after_script:
 build:
   stage: build
   only:
-    changes:
+    changes: &build_changes_policy
       - ".gitlab-ci.yml"
       - "**/*.ex"
       - "**/*.exs"
@@ -72,11 +72,7 @@ benchmark:
 unit-testing:
   stage: test
   only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
@@ -95,11 +91,7 @@ unit-testing-erratic:
   retry: 2
   allow_failure: true
   only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
@@ -132,11 +124,7 @@ unit-testing-erratic:
 unit-testing-rum:
   stage: test
   only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   services:
   - name: minibikini/postgres-with-rum:12
@@ -155,11 +143,7 @@ lint:
   image: elixir:1.12-alpine
   stage: test
   only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   before_script:
     - apk update
@@ -173,11 +157,7 @@ lint:
 analysis:
   stage: test
   only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
@@ -186,11 +166,7 @@ cycles:
   stage: test
   image: elixir:1.11-alpine
   only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: {}
   before_script:
     - apk update
