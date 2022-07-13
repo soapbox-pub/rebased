@@ -22,10 +22,42 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ConfigOperation
 
+  defp translate_descriptions(descriptions) do
+    Enum.map(descriptions, &translate_item/1)
+  end
+
+  defp translate_string(str) do
+    Gettext.dgettext(Pleroma.Web.Gettext, "config_descriptions", str)
+  end
+
+  defp maybe_put_translated(item, key) do
+    if item[key] do
+      Map.put(item, key, translate_string(item[key]))
+    else
+      item
+    end
+  end
+
+  defp translate_item(item) do
+    item
+    |> maybe_put_translated(:label)
+    |> maybe_put_translated(:description)
+    |> translate_children()
+  end
+
+  defp translate_children(%{children: children} = item) when is_list(children) do
+    item
+    |> Map.put(:children, translate_descriptions(children))
+  end
+
+  defp translate_children(item) do
+    item
+  end
+
   def descriptions(conn, _params) do
     descriptions = Enum.filter(Pleroma.Docs.JSON.compiled_descriptions(), &whitelisted_config?/1)
 
-    json(conn, descriptions)
+    json(conn, translate_descriptions(descriptions))
   end
 
   def show(conn, %{only_db: true}) do
