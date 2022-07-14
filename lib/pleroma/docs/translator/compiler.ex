@@ -17,9 +17,15 @@ defmodule Pleroma.Docs.Translator.Compiler do
         unquote do
           Enum.map(
             strings,
-            fn string ->
+            fn {path, type, string} ->
+              ctxt = msgctxt_for(path, type)
+
               quote do
-                Pleroma.Web.Gettext.dgettext_noop("config_descriptions", unquote(string))
+                Pleroma.Web.Gettext.dpgettext_noop(
+                  "config_descriptions",
+                  unquote(ctxt),
+                  unquote(string)
+                )
               end
             end
           )
@@ -36,7 +42,8 @@ defmodule Pleroma.Docs.Translator.Compiler do
 
   def extract_strings(descriptions) do
     descriptions
-    |> Enum.reduce([], &process_item/2)
+    |> Enum.reduce(%{strings: [], path: []}, &process_item/2)
+    |> Map.get(:strings)
   end
 
   defp process_item(entity, acc) do
@@ -48,28 +55,65 @@ defmodule Pleroma.Docs.Translator.Compiler do
     process_children(entity, current_level)
   end
 
-  defp process_desc(acc, %{description: desc}) do
-    [desc | acc]
+  defp process_desc(acc, %{description: desc} = item) do
+    %{
+      strings: [{acc.path ++ [key_for(item)], "description", desc} | acc.strings],
+      path: acc.path
+    }
   end
 
   defp process_desc(acc, _) do
     acc
   end
 
-  defp process_label(acc, %{label: label}) do
-    [label | acc]
+  defp process_label(acc, %{label: label} = item) do
+    %{
+      strings: [{acc.path ++ [key_for(item)], "label", label} | acc.strings],
+      path: acc.path
+    }
   end
 
   defp process_label(acc, _) do
     acc
   end
 
-  defp process_children(%{children: children}, acc) do
+  defp process_children(%{children: children} = item, acc) do
+    current_level = Map.put(acc, :path, acc.path ++ [key_for(item)])
+
     children
-    |> Enum.reduce(acc, &process_item/2)
+    |> Enum.reduce(current_level, &process_item/2)
+    |> Map.put(:path, acc.path)
   end
 
   defp process_children(_, acc) do
     acc
+  end
+
+  def msgctxt_for(path, type) do
+    "config #{type} at #{Enum.join(path, " > ")}"
+  end
+
+  defp convert_group({_, group}) do
+    group
+  end
+
+  defp convert_group(group) do
+    group
+  end
+
+  def key_for(%{group: group, key: key}) do
+    "#{convert_group(group)}-#{key}"
+  end
+
+  def key_for(%{group: group}) do
+    convert_group(group)
+  end
+
+  def key_for(%{key: key}) do
+    key
+  end
+
+  def key_for(_) do
+    nil
   end
 end
