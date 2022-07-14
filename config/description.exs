@@ -537,6 +537,15 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :short_description,
+        type: :string,
+        description:
+          "Shorter version of instance description. It can be seen on `/api/v1/instance`",
+        suggestions: [
+          "Cool instance"
+        ]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
