@@ -170,6 +170,11 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :statistics_read)
   end
 
+  pipeline :require_privileged_role_announcements_manage_announcements do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :announcements_manage_announcements)
+  end
+
   pipeline :pleroma_html do
     plug(:browser)
     plug(:authenticate)
@@ -289,6 +294,11 @@ defmodule Pleroma.Web.Router do
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_announcements_manage_announcements)
 
     get("/announcements", AnnouncementController, :index)
     post("/announcements", AnnouncementController, :create)

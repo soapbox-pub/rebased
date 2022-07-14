@@ -984,6 +984,7 @@ config :pleroma, :config_description, [
           :instances_delete,
           :reports_manage_reports,
           :moderation_log_read,
+          :announcements_manage_announcements,
           :emoji_manage_emoji,
           :statistics_read
         ],
@@ -1005,6 +1006,7 @@ config :pleroma, :config_description, [
           :instances_delete,
           :reports_manage_reports,
           :moderation_log_read,
+          :announcements_manage_announcements,
           :emoji_manage_emoji,
           :statistics_read
         ],
