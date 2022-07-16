@@ -458,6 +458,13 @@ defmodule Pleroma.Web.Router do
       get("/birthdays", AccountController, :birthdays)
     end
 
+    scope [] do
+      pipe_through(:authenticated_api)
+
+      get("/settings/:app", SettingsController, :show)
+      patch("/settings/:app", SettingsController, :update)
+    end
+
     post("/accounts/confirmation_resend", AccountController, :confirmation_resend)
   end
 
