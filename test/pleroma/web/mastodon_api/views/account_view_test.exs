@@ -646,9 +646,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       mute_expires_at: mute_expires_at
     } = AccountView.render("show.json", %{user: other_user, for: user, mutes: true})
 
-    assert NaiveDateTime.diff(
+    assert DateTime.diff(
              mute_expires_at,
-             NaiveDateTime.utc_now() |> NaiveDateTime.add(24 * 60 * 60)
+             DateTime.utc_now() |> DateTime.add(24 * 60 * 60)
            ) in -3..3
   end
 end

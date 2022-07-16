@@ -18,7 +18,7 @@ defmodule Pleroma.UserRelationship do
     belongs_to(:source, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:target, User, type: FlakeId.Ecto.CompatType)
     field(:relationship_type, Pleroma.UserRelationship.Type)
-    field(:expires_at, :naive_datetime)
+    field(:expires_at, :utc_datetime)
 
     timestamps(updated_at: false)
   end

@@ -1463,8 +1463,8 @@ defmodule Pleroma.User do
 
     expires_at =
       if expires_in > 0 do
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(expires_in)
+        DateTime.utc_now()
+        |> DateTime.add(expires_in)
       else
         nil
       end

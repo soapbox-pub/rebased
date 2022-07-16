@@ -7,7 +7,7 @@ defmodule Pleroma.Repo.Migrations.AddExpiresAtToUserRelationships do
 
   def change do
     alter table(:user_relationships) do
-      add_if_not_exists(:expires_at, :naive_datetime)
+      add_if_not_exists(:expires_at, :utc_datetime)
     end
   end
 end
