@@ -88,6 +88,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
       "quote_posting",
+      "editing",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,

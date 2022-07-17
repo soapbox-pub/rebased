@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.UtilsTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase, async: false
   import Pleroma.Factory
   alias Pleroma.Web.Metadata.Utils
 
@@ -21,6 +21,20 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
         })
 
       assert Utils.scrub_html_and_truncate(note) == "Pleroma's really cool!"
+    end
+
+    test "it does not return old content after editing" do
+      user = insert(:user)
+
+      {:ok, activity} = Pleroma.Web.CommonAPI.post(user, %{status: "mew mew #def"})
+
+      object = Pleroma.Object.normalize(activity)
+      assert Utils.scrub_html_and_truncate(object) == "mew mew #def"
+
+      {:ok, update} = Pleroma.Web.CommonAPI.update(user, activity, %{status: "mew mew #abc"})
+      update = Pleroma.Activity.normalize(update)
+      object = Pleroma.Object.normalize(update)
+      assert Utils.scrub_html_and_truncate(object) == "mew mew #abc"
     end
   end
 
