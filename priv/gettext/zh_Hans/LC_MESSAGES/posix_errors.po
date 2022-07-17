@@ -1,0 +1,153 @@
+## "msgid"s in this file come from POT (.pot) files.
+##
+## Do not add, change, or remove "msgid"s manually here as
+## they're tied to the ones in the corresponding POT file
+## (with the same domain).
+##
+## Use "mix gettext.extract --merge" or "mix gettext.merge"
+## to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: zh_Hans\n"
+"Plural-Forms: nplurals=1\n"
+
+msgid "eperm"
+msgstr ""
+
+msgid "eacces"
+msgstr ""
+
+msgid "eagain"
+msgstr ""
+
+msgid "ebadf"
+msgstr ""
+
+msgid "ebadmsg"
+msgstr ""
+
+msgid "ebusy"
+msgstr ""
+
+msgid "edeadlk"
+msgstr ""
+
+msgid "edeadlock"
+msgstr ""
+
+msgid "edquot"
+msgstr ""
+
+msgid "eexist"
+msgstr ""
+
+msgid "efault"
+msgstr ""
+
+msgid "efbig"
+msgstr ""
+
+msgid "eftype"
+msgstr ""
+
+msgid "eintr"
+msgstr ""
+
+msgid "einval"
+msgstr ""
+
+msgid "eio"
+msgstr ""
+
+msgid "eisdir"
+msgstr ""
+
+msgid "eloop"
+msgstr ""
+
+msgid "emfile"
+msgstr ""
+
+msgid "emlink"
+msgstr ""
+
+msgid "emultihop"
+msgstr ""
+
+msgid "enametoolong"
+msgstr ""
+
+msgid "enfile"
+msgstr ""
+
+msgid "enobufs"
+msgstr ""
+
+msgid "enodev"
+msgstr ""
+
+msgid "enolck"
+msgstr ""
+
+msgid "enolink"
+msgstr ""
+
+msgid "enoent"
+msgstr ""
+
+msgid "enomem"
+msgstr ""
+
+msgid "enospc"
+msgstr ""
+
+msgid "enosr"
+msgstr ""
+
+msgid "enostr"
+msgstr ""
+
+msgid "enosys"
+msgstr ""
+
+msgid "enotblk"
+msgstr ""
+
+msgid "enotdir"
+msgstr ""
+
+msgid "enotsup"
+msgstr ""
+
+msgid "enxio"
+msgstr ""
+
+msgid "eopnotsupp"
+msgstr ""
+
+msgid "eoverflow"
+msgstr ""
+
+msgid "epipe"
+msgstr ""
+
+msgid "erange"
+msgstr ""
+
+msgid "erofs"
+msgstr ""
+
+msgid "espipe"
+msgstr ""
+
+msgid "esrch"
+msgstr ""
+
+msgid "estale"
+msgstr ""
+
+msgid "etxtbsy"
+msgstr ""
+
+msgid "exdev"
+msgstr ""

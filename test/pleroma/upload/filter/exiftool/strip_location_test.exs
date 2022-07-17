@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Upload.Filter.ExiftoolTest do
+defmodule Pleroma.Upload.Filter.Exiftool.StripLocationTest do
   use Pleroma.DataCase, async: true
   alias Pleroma.Upload.Filter
 
@@ -21,7 +21,7 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
       tempfile: Path.absname("test/fixtures/DSCN0010_tmp.jpg")
     }
 
-    assert Filter.Exiftool.filter(upload) == {:ok, :filtered}
+    assert Filter.Exiftool.StripLocation.filter(upload) == {:ok, :filtered}
 
     {exif_original, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010.jpg"])
     {exif_filtered, 0} = System.cmd("exiftool", ["test/fixtures/DSCN0010_tmp.jpg"])
@@ -37,6 +37,6 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
       content_type: "image/webp"
     }
 
-    assert Filter.Exiftool.filter(upload) == {:ok, :noop}
+    assert Filter.Exiftool.StripLocation.filter(upload) == {:ok, :noop}
   end
 end

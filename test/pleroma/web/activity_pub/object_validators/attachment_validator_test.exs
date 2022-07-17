@@ -27,6 +27,46 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
       assert attachment.mediaType == "application/octet-stream"
     end
 
+    test "works with an unknown but valid mime type" do
+      attachment = %{
+        "mediaType" => "x-custom/x-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "x-custom/x-type"
+    end
+
+    test "works with invalid mime types" do
+      attachment = %{
+        "mediaType" => "x-customx-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+
+      attachment = %{
+        "mediaType" => "https://example.org",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+    end
+
     test "it turns mastodon attachments into our attachments" do
       attachment = %{
         "url" =>

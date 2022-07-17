@@ -164,7 +164,8 @@ defmodule Pleroma.ApplicationRequirements do
 
   defp check_system_commands!(:ok) do
     filter_commands_statuses = [
-      check_filter(Pleroma.Upload.Filter.Exiftool, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Exiftool.StripLocation, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Exiftool.ReadDescription, "exiftool"),
       check_filter(Pleroma.Upload.Filter.Mogrify, "mogrify"),
       check_filter(Pleroma.Upload.Filter.Mogrifun, "mogrify"),
       check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "mogrify"),
