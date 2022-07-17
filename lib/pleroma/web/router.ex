@@ -238,6 +238,12 @@ defmodule Pleroma.Web.Router do
     post("/rules", RuleController, :create)
     patch("/rules/:id", RuleController, :update)
     delete("/rules/:id", RuleController, :delete)
+
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements", AnnouncementController, :create)
+    get("/announcements/:id", AnnouncementController, :show)
+    patch("/announcements/:id", AnnouncementController, :change)
+    delete("/announcements/:id", AnnouncementController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if enabled by config)
@@ -611,6 +617,9 @@ defmodule Pleroma.Web.Router do
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
     get("/timelines/list/:list_id", TimelineController, :list)
+
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
