@@ -423,7 +423,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [%{"id" => ^reblog_notification_id}] = json_response_and_validate_schema(conn_res, 200)
   end
 
-  test "filters notifications using include_types" do
+  test "filters notifications using types" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
@@ -438,21 +438,21 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     reblog_notification_id = get_notification_id_by_activity(reblog_activity)
     follow_notification_id = get_notification_id_by_activity(follow_activity)
 
-    conn_res = get(conn, "/api/v1/notifications?include_types[]=follow")
+    conn_res = get(conn, "/api/v1/notifications?types[]=follow")
 
     assert [%{"id" => ^follow_notification_id}] = json_response_and_validate_schema(conn_res, 200)
 
-    conn_res = get(conn, "/api/v1/notifications?include_types[]=mention")
+    conn_res = get(conn, "/api/v1/notifications?types[]=mention")
 
     assert [%{"id" => ^mention_notification_id}] =
              json_response_and_validate_schema(conn_res, 200)
 
-    conn_res = get(conn, "/api/v1/notifications?include_types[]=favourite")
+    conn_res = get(conn, "/api/v1/notifications?types[]=favourite")
 
     assert [%{"id" => ^favorite_notification_id}] =
              json_response_and_validate_schema(conn_res, 200)
 
-    conn_res = get(conn, "/api/v1/notifications?include_types[]=reblog")
+    conn_res = get(conn, "/api/v1/notifications?types[]=reblog")
 
     assert [%{"id" => ^reblog_notification_id}] = json_response_and_validate_schema(conn_res, 200)
 
@@ -460,7 +460,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(result) == 4
 
-    query = params_to_query(%{include_types: ["follow", "mention", "favourite", "reblog"]})
+    query = params_to_query(%{types: ["follow", "mention", "favourite", "reblog"]})
 
     result =
       conn
@@ -468,6 +468,23 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert length(result) == 4
+  end
+
+  test "filtering falls back to include_types" do
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+
+    {:ok, _activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
+    {:ok, _activity} = CommonAPI.favorite(other_user, create_activity.id)
+    {:ok, _activity} = CommonAPI.repeat(create_activity.id, other_user)
+    {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
+
+    follow_notification_id = get_notification_id_by_activity(follow_activity)
+
+    conn_res = get(conn, "/api/v1/notifications?include_types[]=follow")
+
+    assert [%{"id" => ^follow_notification_id}] = json_response_and_validate_schema(conn_res, 200)
   end
 
   test "destroy multiple" do
