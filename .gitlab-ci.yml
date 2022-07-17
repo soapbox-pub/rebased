@@ -34,7 +34,8 @@ after_script:
 build:
   stage: build
   only:
-    changes:
+    changes: &build_changes_policy
+      - ".gitlab-ci.yml"
       - "**/*.ex"
       - "**/*.exs"
       - "mix.lock"
@@ -45,6 +46,7 @@ spec-build:
   stage: test
   only:
     changes:
+      - ".gitlab-ci.yml"
       - "lib/pleroma/web/api_spec/**/*.ex"
       - "lib/pleroma/web/api_spec.ex"
   artifacts:
@@ -59,7 +61,7 @@ benchmark:
   variables:
     MIX_ENV: benchmark
   services:
-  - name: postgres:9.6
+  - name: postgres:9.6-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -70,16 +72,13 @@ benchmark:
 unit-testing:
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
 
   services:
-  - name: postgres:13
+  - name: postgres:13-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -92,16 +91,13 @@ unit-testing-erratic:
   retry: 2
   allow_failure: true
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
 
   services:
-  - name: postgres:13
+  - name: postgres:13-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -128,10 +124,7 @@ unit-testing-erratic:
 unit-testing-rum:
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   services:
   - name: minibikini/postgres-with-rum:12
@@ -147,15 +140,14 @@ unit-testing-rum:
     - mix test --preload-modules
 
 lint:
-  image: elixir:1.12
+  image: &current_elixir elixir:1.12-alpine
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
-  before_script:
+  before_script: &current_bfr_script
+    - apk update
+    - apk add build-base cmake file-dev git openssl
     - mix local.hex --force
     - mix local.rebar --force
     - mix deps.get
@@ -165,29 +157,18 @@ lint:
 analysis:
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
+  image: *current_elixir
   stage: test
-  image: elixir:1.11
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
-  cache: {}
-  before_script:
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
-    - apt-get update
-    - apt-get install cmake libmagic-dev -y
+    changes: *build_changes_policy
+  cache: *testing_cache_policy
+  before_script: *current_bfr_script
   script:
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
@@ -308,7 +289,7 @@ amd64-musl:
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git gcc g++ musl-dev make cmake file-dev
+  - apk add git build-base cmake file-dev openssl
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
