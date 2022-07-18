@@ -88,7 +88,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:reports_manage_reports`
         * Allows you to see and manage reports
       * `:moderation_log_read,`
-        * Allows you to read the entries in the moderation log
+        * Allows admins to read the entries in the moderation log.
       * `:emoji_manage_emoji`
         * Allows you to manage emoji on your instance
       * `:statistics_read,`
