@@ -68,7 +68,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
     * Possible values are:
       * `:users_read`
-        * Allows you to fetch users through the admin api
+        * Allows admins to fetch users through the admin API.
       * `:users_manage_invites`
         * Allows you to manage invites. This includes sending, resending, revoking and approving invites
       * `:users_manage_activation_state`
