@@ -72,7 +72,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:users_manage_invites`
         * Allows you to manage invites. This includes sending, resending, revoking and approving invites
       * `:users_manage_activation_state`
-        * Allows you to activate and deactive accounts. This also allows you to see deactivated users through the Mastodon-API.
+        * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
       * `:users_manage_tags`
         * Allows you to set and remove tags for users. This can be useful in combination with MRF policy `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
       * `:users_manage_credentials`
