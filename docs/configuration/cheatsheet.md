@@ -82,7 +82,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:messages_read`
         * Allows admins to read messages through the admin API, including non-public posts and chats.
       * `:messages_delete`
-        * Allows you to delete messages from otehr people
+        * Allows admins to delete messages from other users.
       * `:instances_delete,`
         * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
       * `:reports_manage_reports`
