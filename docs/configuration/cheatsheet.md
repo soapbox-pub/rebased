@@ -80,7 +80,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:users_delete`
         * Allows admins to delete accounts. Note that deleting an account is actually deactivating it and removing all data like posts, profile information, etc.
       * `:messages_read`
-        * Allows you to view messages through the Admin-API, including non-public posts and chats
+        * Allows admins to read messages through the admin API, including non-public posts and chats.
       * `:messages_delete`
         * Allows you to delete messages from otehr people
       * `:instances_delete,`
