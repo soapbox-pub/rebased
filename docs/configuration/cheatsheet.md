@@ -86,7 +86,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:instances_delete,`
         * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
       * `:reports_manage_reports`
-        * Allows you to see and manage reports
+        * Allows admins to see and manage reports.
       * `:moderation_log_read,`
         * Allows admins to read the entries in the moderation log.
       * `:emoji_manage_emoji`
