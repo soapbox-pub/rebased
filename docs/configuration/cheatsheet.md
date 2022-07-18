@@ -84,7 +84,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:messages_delete`
         * Allows you to delete messages from otehr people
       * `:instances_delete,`
-        * Allows you to delete a whole remote instance from your instance. This will delete all users and messages from that remote instance.
+        * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
       * `:reports_manage_reports`
         * Allows you to see and manage reports
       * `:moderation_log_read,`
