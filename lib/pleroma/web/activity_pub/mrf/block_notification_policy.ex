@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.BlockNotificationPolicy do
   def filter(message) do
     with {true, action, object} <- is_block_or_unblock(message),
          %User{} = actor <- User.get_cached_by_ap_id(message["actor"]),
+         true <- actor.is_active,
          %User{} = recipient <- User.get_cached_by_ap_id(object) do
       bot_user = Pleroma.Config.get([:mrf_block_notification_policy, :user])
 
