@@ -90,7 +90,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:moderation_log_read,`
         * Allows admins to read the entries in the moderation log.
       * `:emoji_manage_emoji`
-        * Allows you to manage emoji on your instance
+        * Allows admins to manage custom emoji on the instance.
       * `:statistics_read,`
         * Allows you to see some simple statistics from your instance
 * `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
