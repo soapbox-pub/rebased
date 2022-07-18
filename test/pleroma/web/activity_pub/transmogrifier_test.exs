@@ -10,7 +10,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
@@ -348,47 +347,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"]["quoteUrl"] == quote_id
       assert modified["object"]["quoteUri"] == quote_id
-    end
-
-    test "it drops attachment IDs" do
-      user = insert(:user)
-
-      file = %Plug.Upload{
-        content_type: "image/jpeg",
-        path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an_image.jpg"
-      }
-
-      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
-      {:ok, activity} = CommonAPI.post(user, %{status: "", media_ids: [upload.id]})
-
-      {:ok, %{"object" => %{"attachment" => [attachment]}}} =
-        Transmogrifier.prepare_outgoing(activity.data)
-
-      refute attachment["id"]
-      assert attachment["type"] == "Document"
-    end
-
-    test "Updates of Notes are handled" do
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
-      {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew :blank:"})
-
-      {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
-
-      assert %{
-               "content" => "mew mew :blank:",
-               "tag" => [%{"name" => ":blank:", "type" => "Emoji"}],
-               "formerRepresentations" => %{
-                 "orderedItems" => [
-                   %{
-                     "content" => "everybody do the dinosaur :dinosaur:",
-                     "tag" => [%{"name" => ":dinosaur:", "type" => "Emoji"}]
-                   }
-                 ]
-               }
-             } = prepared["object"]
     end
   end
 

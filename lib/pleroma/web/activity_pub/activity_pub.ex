@@ -27,7 +27,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Workers.BackgroundWorker
   alias Pleroma.Workers.PollWorker
 
-  import Ecto.Changeset
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   import Pleroma.Web.ActivityPub.Visibility
@@ -1454,15 +1453,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, data} <- Upload.store(file, opts) do
       obj_data = Maps.put_if_present(data, "actor", opts[:actor])
 
-      # FIXME: If Objects used FlakeIds, we could pregenerate the ID
-      # instead of calling the DB twice.
-      with {:ok, object} <- Repo.insert(%Object{data: obj_data}) do
-        new_data = Map.put(object.data, "id", object.id)
-
-        object
-        |> change(data: new_data)
-        |> Repo.update()
-      end
+      Repo.insert(%Object{data: obj_data})
     end
   end
 
