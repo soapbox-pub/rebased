@@ -14,7 +14,7 @@ config :pleroma, Pleroma.Upload,
   filters: [
     Pleroma.Upload.Filter.AnalyzeMetadata,
     Pleroma.Upload.Filter.Dedupe,
-    Pleroma.Upload.Filter.Exiftool
+    Pleroma.Upload.Filter.Exiftool.StripLocation
   ]
 
 # Default MRF policies
