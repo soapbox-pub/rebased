@@ -74,7 +74,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:users_manage_activation_state`
         * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
       * `:users_manage_tags`
-        * Allows you to set and remove tags for users. This can be useful in combination with MRF policy `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
+        * Allows admins to set and remove tags for users. This can be useful in combination with MRF policies, such as `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
       * `:users_manage_credentials`
         * Allows you to trigger a password reset and set new credentials
       * `:users_delete`
