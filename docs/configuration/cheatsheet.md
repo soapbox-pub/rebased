@@ -70,7 +70,7 @@ To add configuration to your config file, you can copy it from the base config. 
       * `:users_read`
         * Allows admins to fetch users through the admin API.
       * `:users_manage_invites`
-        * Allows you to manage invites. This includes sending, resending, revoking and approving invites
+        * Allows admins to manage invites. This includes sending, resending, revoking and approving invites.
       * `:users_manage_activation_state`
         * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
       * `:users_manage_tags`
