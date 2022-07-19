@@ -22,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
         message_fields()
         object_fields()
         status_object_fields()
+        event_object_fields()
       end
     end
   end
@@ -54,9 +55,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:attachment, :tag])
+    |> cast(data, __schema__(:fields) -- [:attachment, :tag, :location])
     |> cast_embed(:attachment)
     |> cast_embed(:tag)
+    |> cast_embed(:location)
   end
 
   defp validate_data(data_cng) do

@@ -375,7 +375,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
         parent_visible: visible_for_user?(reply_to, opts[:for]),
-        pinned_at: pinned_at
+        pinned_at: pinned_at,
+        event: build_event(object.data)
       }
     }
   end
@@ -556,6 +557,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
     end)
   end
+
+  def build_event(%{"type" => "Event"} = data) do
+    %{
+      start_time: data["startTime"],
+      end_time: data["endTime"],
+    }
+  end
+
+  def build_event(_), do: nil
 
   defp present?(nil), do: false
   defp present?(false), do: false

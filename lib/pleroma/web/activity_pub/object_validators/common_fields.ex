@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
 
   # Activities and Objects, except (Create)ChatMessage
@@ -65,4 +66,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
     end
   end
+
+  defmacro event_object_fields do
+    quote bind_quoted: binding() do
+      field(:startTime, ObjectValidators.DateTime)
+      field(:endTime, ObjectValidators.DateTime)
+
+      embeds_one(:location, PlaceValidator)
+    end
+  end
+
 end
