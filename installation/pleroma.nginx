@@ -82,15 +82,15 @@ server {
     }
 
     # Uncomment this if you want notice compatibility routes for frontends like Soapbox.
-    # location ~ /@([^/]+)/([^/]+) {
+    # location ~ ^/@[^/]+/([^/]+)$ {
     #     proxy_pass http://phoenix/notice/$1;
     # }
     #
-    # location ~ /@([^/]+)/posts/([^/]+) {
+    # location ~ ^/@[^/]+/posts/([^/]+)$ {
     #     proxy_pass http://phoenix/notice/$1;
     # }
     #
-    # location ~ /([^/]+)/status/([^/]+) {
+    # location ~ ^/[^/]+/status/([^/]+)$ {
     #     proxy_pass http://phoenix/notice/$1;
     # }
 
