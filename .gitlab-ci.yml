@@ -167,7 +167,7 @@ cycles:
   stage: test
   only:
     changes: *build_changes_policy
-  cache: *testing_cache_policy
+  cache: {}
   before_script: *current_bfr_script
   script:
     - mix compile
