@@ -3,14 +3,16 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-22 02:09+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-07-21 23:35+0000\n"
+"Last-Translator: Haelwenn <contact+git.pleroma.social@hacktivis.me>\n"
+"Language-Team: French <http://weblate.pleroma-dev.ebin.club/projects/pleroma/"
+"pleroma-backend-domain-posix_errors/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 3.7.2\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.13.1\n"
 
 ## This file is a PO Template file.
 ##
@@ -22,142 +24,142 @@ msgstr ""
 ## date. Leave `msgstr`s empty as changing them here as no
 ## effect: edit them in PO (`.po`) files instead.
 msgid "eperm"
-msgstr ""
+msgstr "Opération non permise"
 
 msgid "eacces"
-msgstr ""
+msgstr "Permission refusée"
 
 msgid "eagain"
-msgstr ""
+msgstr "Ressource temporairement indisponible"
 
 msgid "ebadf"
-msgstr ""
+msgstr "Mauvais descripteur de fichier"
 
 msgid "ebadmsg"
-msgstr ""
+msgstr "Mauvais message"
 
 msgid "ebusy"
-msgstr ""
+msgstr "Périphérique ou ressource occupée"
 
 msgid "edeadlk"
-msgstr ""
+msgstr "Interblocage des ressources évité"
 
 msgid "edeadlock"
-msgstr ""
+msgstr "Interblocage des ressources évité"
 
 msgid "edquot"
-msgstr ""
+msgstr "Quota disque dépassé"
 
 msgid "eexist"
-msgstr ""
+msgstr "Fichier existant"
 
 msgid "efault"
-msgstr ""
+msgstr "Mauvaise addresse"
 
 msgid "efbig"
-msgstr ""
+msgstr "Fichier trop gros"
 
 msgid "eftype"
-msgstr ""
+msgstr "Type ou format de fichier inapproprié"
 
 msgid "eintr"
-msgstr ""
+msgstr "Appel système interrompu"
 
 msgid "einval"
-msgstr ""
+msgstr "Argument invalide"
 
 msgid "eio"
-msgstr ""
+msgstr "Erreur entrée/sortie"
 
 msgid "eisdir"
-msgstr ""
+msgstr "Opération non-permise sur un répertoire"
 
 msgid "eloop"
-msgstr ""
+msgstr "Trop de niveau de liens symboliques"
 
 msgid "emfile"
-msgstr ""
+msgstr "Trop de fichiers ouverts"
 
 msgid "emlink"
-msgstr ""
+msgstr "Trop de liens"
 
 msgid "emultihop"
-msgstr ""
+msgstr "Multi-saut essayé"
 
 msgid "enametoolong"
-msgstr ""
+msgstr "Nom de fichier trop long"
 
 msgid "enfile"
-msgstr ""
+msgstr "Trop de fichier ouvert dans le système"
 
 msgid "enobufs"
-msgstr ""
+msgstr "Pas d'espace tampon disponible"
 
 msgid "enodev"
-msgstr ""
+msgstr "Périphérique inexistant"
 
 msgid "enolck"
-msgstr ""
+msgstr "Pas de verrous disponibles"
 
 msgid "enolink"
-msgstr ""
+msgstr "Lien rompus"
 
 msgid "enoent"
-msgstr ""
+msgstr "Fichier ou dossier non trouvé"
 
 msgid "enomem"
-msgstr ""
+msgstr "Échec d'allocation mémoire"
 
 msgid "enospc"
-msgstr ""
+msgstr "Plus de place disponible sur le périphérique"
 
 msgid "enosr"
-msgstr ""
+msgstr "Plus de flux disponibles"
 
 msgid "enostr"
-msgstr ""
+msgstr "Périphérique qui n'est pas un flux"
 
 msgid "enosys"
-msgstr ""
+msgstr "Fonction non implémentée"
 
 msgid "enotblk"
-msgstr ""
+msgstr "Périphérique bloc requis"
 
 msgid "enotdir"
-msgstr ""
+msgstr "Pas un répertoire"
 
 msgid "enotsup"
-msgstr ""
+msgstr "Opération non supportée"
 
 msgid "enxio"
-msgstr ""
+msgstr "Addresse de périphérique inconnue"
 
 msgid "eopnotsupp"
-msgstr ""
+msgstr "Opération non supportée"
 
 msgid "eoverflow"
-msgstr ""
+msgstr "Valeur trop grande pour le type de donnée definit"
 
 msgid "epipe"
-msgstr ""
+msgstr "Tuyaux rompu"
 
 msgid "erange"
-msgstr ""
+msgstr "Valeur numérique hors de l'interval"
 
 msgid "erofs"
-msgstr ""
+msgstr "Système de fichier en lecture-seule"
 
 msgid "espipe"
-msgstr ""
+msgstr "Déplacement interdit"
 
 msgid "esrch"
-msgstr ""
+msgstr "Processus inexistant"
 
 msgid "estale"
-msgstr ""
+msgstr "Descripteur de fichier bouché"
 
 msgid "etxtbsy"
-msgstr ""
+msgstr "Fichier texte occupé"
 
 msgid "exdev"
-msgstr ""
+msgstr "Lien inter-périphérique invalide"
