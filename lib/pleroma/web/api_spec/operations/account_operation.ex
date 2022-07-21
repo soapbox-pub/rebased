@@ -545,10 +545,18 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Invite token required when the registrations aren't public"
         },
         birthday: %Schema{
-          type: :string,
           nullable: true,
           description: "User's birthday",
-          format: :date
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
         },
         language: %Schema{
           type: :string,
@@ -733,10 +741,18 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         },
         actor_type: ActorType,
         birthday: %Schema{
-          type: :string,
           nullable: true,
           description: "User's birthday",
-          format: :date
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
         },
         show_birthday: %Schema{
           allOf: [BooleanLike],
