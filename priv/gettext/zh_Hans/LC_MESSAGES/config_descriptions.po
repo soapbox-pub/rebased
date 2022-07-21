@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
 "PO-Revision-Date: 2022-07-22 14:45+0000\n"
-"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
+"Last-Translator: tusooa <tusooa@kazv.moe>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -279,19 +279,20 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_hellthread"
 msgid "Block messages with excessive user mentions"
-msgstr ""
+msgstr "屏蔽提及太多用户的讯息"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_keyword"
 msgid "Reject or Word-Replace messages matching a keyword or [Regex](https://hexdocs.pm/elixir/Regex.html)."
-msgstr ""
+msgstr "对匹配一个关键词或者[正则](https://hexdocs.pm/elixir/Regex."
+"html)的讯息拒绝或替换词语。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_mention"
 msgid "Block messages which mention a specific user"
-msgstr ""
+msgstr "拒绝提及特定用户的讯息"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -303,13 +304,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_object_age"
 msgid "Rejects or delists posts based on their timestamp deviance from your server's clock."
-msgstr ""
+msgstr "基于时间戳和服务器时钟的差距而拒绝或除列文章。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_rejectnonpublic"
 msgid "RejectNonPublic drops posts with non-public visibility settings."
-msgstr ""
+msgstr "RejectNonPublic 丢弃有非公开的可见性设置的文章。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -321,7 +322,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_steal_emoji"
 msgid "Steals emojis from selected instances when it sees them."
-msgstr ""
+msgstr "从选择的实例偷取看到的 emoji。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -333,43 +334,43 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_vocabulary"
 msgid "Filter messages which belong to certain activity vocabularies"
-msgstr ""
+msgstr "过滤属于特定 activity 词汇的讯息"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:oauth2"
 msgid "Configure OAuth 2 provider capabilities"
-msgstr ""
+msgstr "配置 OAuth 2 提供者的能力"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:pools"
 msgid "Advanced settings for `Gun` workers pools"
-msgstr ""
+msgstr "「Gun」工人池的高级设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:populate_hashtags_table"
 msgid "`populate_hashtags_table` background migration settings"
-msgstr ""
+msgstr "「populate_hashtags_table」后台迁移设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:rate_limit"
 msgid "Rate limit settings. This is an advanced feature enabled only for :authentication by default."
-msgstr ""
+msgstr "频率限制设置。这是高级特性，默认只对 :authentication （鉴权）开启。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:restrict_unauthenticated"
 msgid "Disallow viewing timelines, user profiles and statuses for unauthenticated users."
-msgstr ""
+msgstr "不允许未被鉴权的用户查看时间线、用户主页和状态。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:rich_media"
 msgid "If enabled the instance will parse metadata from attached links to generate link previews"
-msgstr ""
+msgstr "如果开启，实例会从附上的链接里析出元数据来生成链接预览"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -381,7 +382,7 @@ msgstr "Pleroma 留言板设定"
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:static_fe"
 msgid "Render profiles and posts using server-generated HTML that is viewable without using JavaScript"
-msgstr ""
+msgstr "用服务器生成的，不用 JavaScript 就可以查看的 HTML 来渲染用户页和文章"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -399,19 +400,19 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:web_cache_ttl"
 msgid "The expiration time for the web responses cache. Values should be in milliseconds or `nil` to disable expiration."
-msgstr ""
+msgstr "web 回应缓存的过期时间。值应该以毫秒为单位，或者用「nil」来禁用过期。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:welcome"
 msgid "Welcome messages settings"
-msgstr ""
+msgstr "欢迎讯息设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:workers"
 msgid "Includes custom worker options not interpretable directly by `Oban`"
-msgstr ""
+msgstr "包含不能直接被「Oban」解读的自定工人选项"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
