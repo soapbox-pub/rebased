@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
-"PO-Revision-Date: 2022-07-21 13:36+0000\n"
+"PO-Revision-Date: 2022-07-21 21:27+0000\n"
 "Last-Translator: tusooa <tusooa@kazv.moe>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
@@ -75,25 +75,25 @@ msgstr "ESSHD"
 #, elixir-autogen, elixir-format
 msgctxt "config label at :logger"
 msgid "Logger"
-msgstr ""
+msgstr "日志器"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :mime"
 msgid "Mime Types"
-msgstr ""
+msgstr "Mime 类型"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma"
 msgid "Pleroma Admin Token"
-msgstr ""
+msgstr "Pleroma 管理员令牌"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma"
 msgid "Pleroma Authenticator"
-msgstr ""
+msgstr "Pleroma 鉴权器"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -105,19 +105,19 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :logger-:console"
 msgid "Console logger settings"
-msgstr ""
+msgstr "终端日志器设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :logger-:ex_syslogger"
 msgid "ExSyslogger-related settings"
-msgstr ""
+msgstr "ExSyslogger 相关设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:activitypub"
 msgid "ActivityPub-related settings"
-msgstr ""
+msgstr "ActivityPub 相关设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -129,25 +129,25 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:auth"
 msgid "Authentication / authorization settings"
-msgstr ""
+msgstr "鉴权/授权设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:connections_pool"
 msgid "Advanced settings for `Gun` connections pool"
-msgstr ""
+msgstr "「Gun」连接池的高级设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:email_notifications"
 msgid "Email notifications settings"
-msgstr ""
+msgstr "邮件通知设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:features"
 msgid "Customizable features"
-msgstr ""
+msgstr "可定制的特性"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
