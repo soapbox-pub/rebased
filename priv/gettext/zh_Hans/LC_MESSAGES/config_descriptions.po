@@ -3,14 +3,16 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-07-21 13:36+0000\n"
+"Last-Translator: tusooa <tusooa@kazv.moe>\n"
+"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 3.7.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.13.1\n"
 
 ## This file is a PO Template file.
 ##
@@ -21,7 +23,6 @@ msgstr ""
 ## Run "mix gettext.extract" to bring this file up to
 ## date. Leave "msgstr"s empty as changing them here has no
 ## effect: edit them in PO (.po) files instead.
-
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :esshd"
@@ -32,13 +33,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :logger"
 msgid "Logger-related settings"
-msgstr ""
+msgstr "日志器相关设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :mime"
 msgid "Mime Types settings"
-msgstr ""
+msgstr "Mime 类型设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -50,7 +51,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma"
 msgid "Authenticator"
-msgstr ""
+msgstr "鉴权器"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -62,13 +63,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :cors_plug"
 msgid "CORS plug config"
-msgstr ""
+msgstr "CORS 插件配置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :esshd"
 msgid "ESSHD"
-msgstr ""
+msgstr "ESSHD"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
