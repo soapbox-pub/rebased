@@ -3,14 +3,16 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 23:42+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-07-21 21:27+0000\n"
+"Last-Translator: Haelwenn <contact+git.pleroma.social@hacktivis.me>\n"
+"Language-Team: French <http://weblate.pleroma-dev.ebin.club/projects/pleroma/"
+"pleroma-backend-domain-default/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 3.7.2\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.13.1\n"
 
 ## This file is a PO Template file.
 ##
@@ -21,61 +23,62 @@ msgstr ""
 ## Run "mix gettext.extract" to bring this file up to
 ## date. Leave "msgstr"s empty as changing them here as no
 ## effect: edit them in PO (.po) files instead.
-
 #: lib/pleroma/web/api_spec/render_error.ex:122
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{count} is not a multiple of %{multiple}."
-msgstr ""
+msgstr "%{name} - %{count} n'est pas un multiple de %{multiple}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:131
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is larger than exclusive maximum %{max}."
-msgstr ""
+msgstr "%{name} - %{value} est plus large que %{max}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:140
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is larger than inclusive maximum %{max}."
-msgstr ""
+msgstr "%{name} - %{value} est plus large que %{max}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:149
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is smaller than exclusive minimum %{min}."
-msgstr ""
+msgstr "%{name} - %{value} est plus petit que %{min}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:158
 #, elixir-autogen, elixir-format
 msgid "%{name} - %{value} is smaller than inclusive minimum %{min}."
-msgstr ""
+msgstr "%{name} - %{value} est plus petit que %{min}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:102
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array items must be unique."
-msgstr ""
+msgstr "%{name} - Les objects de la liste doivent être uniques."
 
 #: lib/pleroma/web/api_spec/render_error.ex:114
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is larger than maxItems: %{}."
 msgstr ""
+"%{name} - La longueur %{length} de la liste est supérieure à maxItems : %{}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:106
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is smaller than minItems: %{min}."
 msgstr ""
+"%{name} - La longueur %{length} de la liste est inférieure à minItems : %{}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:166
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid %{type}. Got: %{value}."
-msgstr ""
+msgstr "%{name} - %{type} invalide. Reçu : %{value}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:174
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid format. Expected %{format}."
-msgstr ""
+msgstr "%{name} - Format invalide. Format voulu : %{format}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:51
 #, elixir-autogen, elixir-format
 msgid "%{name} - Invalid schema.type. Got: %{type}."
-msgstr ""
+msgstr "%{name} - schema.type invalide. Reçu : %{type}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:178
 #, elixir-autogen, elixir-format
