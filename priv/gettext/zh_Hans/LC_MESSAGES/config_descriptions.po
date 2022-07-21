@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
-"PO-Revision-Date: 2022-07-21 21:27+0000\n"
+"PO-Revision-Date: 2022-07-21 23:35+0000\n"
 "Last-Translator: tusooa <tusooa@kazv.moe>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
@@ -28,6 +28,9 @@ msgstr ""
 msgctxt "config description at :esshd"
 msgid "Before enabling this you must add :esshd to mix.exs as one of the extra_applications and generate host keys in your priv dir with ssh-keygen -m PEM -N \"\" -b 2048 -t rsa -f ssh_host_rsa_key"
 msgstr ""
+"在启用这个之前，必须先把 :esshd 作为 extra_application 中之一添加到 mix.exs "
+"里，然后在你的 priv 目录里通过 ssh-keygen -m PEM -N \"\" -b 2048 -t rsa -f "
+"ssh_host_rsa_key 生成主机密钥"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -153,7 +156,7 @@ msgstr "可定制的特性"
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:feed"
 msgid "Configure feed rendering"
-msgstr ""
+msgstr "配置 feed 渲染"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -165,55 +168,59 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontends"
 msgid "Installed frontends management"
-msgstr ""
+msgstr "已经安装的前端的管理"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:gopher"
 msgid "Gopher settings"
-msgstr ""
+msgstr "Gopher 设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:hackney_pools"
 msgid "Advanced settings for `Hackney` connections pools"
-msgstr ""
+msgstr "「Hackney」连接池的高级设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:http"
 msgid "HTTP settings"
-msgstr ""
+msgstr "HTTP 设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:http_security"
 msgid "HTTP security settings"
-msgstr ""
+msgstr "HTTP 安全设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance"
 msgid "Instance-related settings"
-msgstr ""
+msgstr "实例相关设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instances_favicons"
 msgid "Control favicons for instances"
-msgstr ""
+msgstr "控制实例的 favicon"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:ldap"
 msgid "Use LDAP for user authentication. When a user logs in to the Pleroma instance, the name and password will be verified by trying to authenticate (bind) to a LDAP server. If a user exists in the LDAP directory but there is no account with the same name yet on the Pleroma instance then a new Pleroma account will be created with the same name as the LDAP user name."
 msgstr ""
+"用 LDAP 作用户鉴权。当用户登录进 Pleroma 实例时，会通过向 LDAP "
+"服务器尝试鉴权（绑定）来验证名字和密码。如果用户在 LDAP 目录里，但同名账号在 "
+"Pleroma 实例里还不存在，那么就会创建一个新的 Pleroma 账号，它的名字和 LDAP "
+"用户名一样。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:majic_pool"
 msgid "Majic/libmagic configuration"
-msgstr ""
+msgstr "Majic/libmagic 配置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -225,13 +232,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:media_preview_proxy"
 msgid "Media preview proxy"
-msgstr ""
+msgstr "媒体预览代理"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:media_proxy"
 msgid "Media proxy"
-msgstr ""
+msgstr "媒体代理"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -243,25 +250,28 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf"
 msgid "General MRF settings"
-msgstr ""
+msgstr "通用 MRF 设置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_activity_expiration"
 msgid "Adds automatic expiration to all local activities"
-msgstr ""
+msgstr "给所有本地 activity 添加自动过期"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_follow_bot"
 msgid "Automatically follows newly discovered accounts."
-msgstr ""
+msgstr "自动关注新发现的账号。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:mrf_hashtag"
 msgid "Reject, TWKN-remove or Set-Sensitive messsages with specific hashtags (without the leading #)\n\nNote: This MRF Policy is always enabled, if you want to disable it you have to set empty lists.\n"
 msgstr ""
+"把带有特定标签（不带开头#号）的讯息拒绝，从已知网络里删除或者设成敏感的\n"
+"\n"
+"注：这个 MRF 策略总是开启的，如果你想禁用它，你得设置成空列表。\n"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
