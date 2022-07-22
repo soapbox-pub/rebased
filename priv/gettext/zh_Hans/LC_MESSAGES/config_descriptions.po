@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
 "PO-Revision-Date: 2022-07-22 19:00+0000\n"
-"Last-Translator: tusooa <tusooa@kazv.moe>\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -611,7 +611,7 @@ msgstr "Emoji"
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:features"
 msgid "Features"
-msgstr "特色功能"
+msgstr "特性"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -623,19 +623,19 @@ msgstr "信息流"
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:frontend_configurations"
 msgid "Frontend configurations"
-msgstr ""
+msgstr "前端配置"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:frontends"
 msgid "Frontends"
-msgstr ""
+msgstr "前端"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:gopher"
 msgid "Gopher"
-msgstr ""
+msgstr "Gopher"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -809,7 +809,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:populate_hashtags_table"
 msgid "Populate hashtags table"
-msgstr ""
+msgstr "本站话题标签列表"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -827,7 +827,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:rich_media"
 msgid "Rich media"
-msgstr ""
+msgstr "富媒体"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -887,7 +887,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-Oban"
 msgid "Oban"
-msgstr ""
+msgstr "Oban"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -5598,7 +5598,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-Pleroma.Emails.Mailer > Swoosh.Adapters.SMTP-:username"
 msgid "Username"
-msgstr ""
+msgstr "用户名"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -5688,7 +5688,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-Pleroma.Emails.UserEmail > :styling > :link_color"
 msgid "Link color"
-msgstr ""
+msgstr "链接颜色"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -5778,7 +5778,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-Pleroma.Upload > :filters"
 msgid "Filters"
-msgstr ""
+msgstr "过滤器"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -5844,7 +5844,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-Pleroma.User > :email_blacklist"
 msgid "Email blacklist"
-msgstr ""
+msgstr "邮件黑名单"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -5922,7 +5922,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-Pleroma.Web.Plugs.RemoteIp > :enabled"
 msgid "Enabled"
-msgstr ""
+msgstr "已启用"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -5982,7 +5982,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :prometheus-Pleroma.Web.Endpoint.MetricsExporter > :ip_whitelist"
 msgid "IP Whitelist"
-msgstr ""
+msgstr "IP 白名单"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
