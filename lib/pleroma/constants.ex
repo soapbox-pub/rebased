@@ -19,7 +19,9 @@ defmodule Pleroma.Constants do
       "context_id",
       "deleted_activity_id",
       "pleroma_internal",
-      "generator"
+      "generator",
+      "participants",
+      "participant_count"
     ]
   )
 

@@ -441,6 +441,9 @@ defmodule Pleroma.Web.Router do
 
       get("/backups", BackupController, :index)
       post("/backups", BackupController, :create)
+
+      post("/events", EventController, :create)
+      post("/events/:id/participate", EventController, :participate)
     end
 
     scope [] do

@@ -46,19 +46,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
           data: %{
             "actor" => actor,
             "type" => "Accept",
-            "object" => follow_activity_id
+            "object" => activity_id
           }
         } = object,
         meta
       ) do
-    with %Activity{actor: follower_id} = follow_activity <-
-           Activity.get_by_ap_id(follow_activity_id),
-         %User{} = followed <- User.get_cached_by_ap_id(actor),
-         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _follower, followed} <-
-           FollowingRelationship.update(follower, followed, :follow_accept) do
-      Notification.update_notification_type(followed, follow_activity)
+    with %Activity{} = activity <-
+           Activity.get_by_ap_id(activity_id) do
+      handle_accepted(activity, actor)
     end
 
     {:ok, object, meta}
@@ -74,21 +69,63 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
           data: %{
             "actor" => actor,
             "type" => "Reject",
-            "object" => follow_activity_id
+            "object" => activity_id
           }
         } = object,
         meta
       ) do
-    with %Activity{actor: follower_id} = follow_activity <-
-           Activity.get_by_ap_id(follow_activity_id),
-         %User{} = followed <- User.get_cached_by_ap_id(actor),
+    with %Activity{actor: follower_id} = activity <-
+           Activity.get_by_ap_id(activity_id) do
+      handle_rejected(activity, actor)
+    end
+
+    {:ok, object, meta}
+  end
+
+  defp handle_accepted(
+         %Activity{actor: follower_id, data: %{"type" => "Follow"}} = follow_activity,
+         actor
+       ) do
+    with %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _follower, followed} <-
+           FollowingRelationship.update(follower, followed, :follow_accept) do
+      Notification.update_notification_type(followed, follow_activity)
+    end
+  end
+
+  defp handle_accepted(
+         %Activity{data: %{"type" => "Join", "object" => event_id}} = join_activity,
+         _actor
+       ) do
+    with joined_event <- Object.get_by_ap_id(event_id),
+         {:o, join_activity} <- Utils.update_follow_state(join_activity, "accept") do
+      Utils.add_participation_to_object(join_activity, joined_event)
+      # Notification.update_notification_type(followed, follow_activity)
+    end
+  end
+
+  defp handle_rejected(
+         %Activity{actor: follower_id, data: %{"type" => "Follow"}} = follow_activity,
+         actor
+       ) do
+    with %User{} = followed <- User.get_cached_by_ap_id(actor),
          %User{} = follower <- User.get_cached_by_ap_id(follower_id),
          {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
       FollowingRelationship.update(follower, followed, :follow_reject)
       Notification.dismiss(follow_activity)
     end
+  end
 
-    {:ok, object, meta}
+  defp handle_rejected(
+         %Activity{data: %{"type" => "Join", "object" => event_id}} = join_activity,
+         _actor
+       ) do
+    with joined_event <- Object.get_by_ap_id(event_id),
+         {:o, join_activity} <- Utils.update_join_state(join_activity, "reject") do
+      Utils.remove_participation_from_object(join_activity, joined_event)
+    end
   end
 
   # Tasks this handle
@@ -382,6 +419,20 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       nil -> {:error, :user_not_found}
       error -> error
     end
+  end
+
+  # Tasks this handles:
+  # accepts join if event is local
+  @impl true
+  def handle(%{data: %{"type" => "Join"}} = object, meta) do
+    joined_event = Object.get_by_ap_id(object.data["object"])
+
+    if Object.local?(joined_event) and joined_event.data["joinMode"] == "free" do
+      {:ok, accept_data, _} = Builder.accept(joined_event, object)
+      {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+    end
+
+    {:ok, object, meta}
   end
 
   # Nothing to do

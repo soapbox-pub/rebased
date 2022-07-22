@@ -72,6 +72,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       field(:startTime, ObjectValidators.DateTime)
       field(:endTime, ObjectValidators.DateTime)
 
+      field(:joinMode, :string, default: "free")
+
       embeds_one(:location, PlaceValidator)
     end
   end

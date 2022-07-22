@@ -88,6 +88,32 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | object: object}
   end
 
+  def event(user, params) do
+    user
+    |> new(params)
+    |> visibility()
+    |> to_and_cc()
+    |> context()
+    |> event_object()
+    |> with_valid(&changes/1)
+    |> validate()
+  end
+
+  defp event_object(draft) do
+    object =
+      draft.params
+      |> Map.take([:title, :content])
+      |> Map.put("type", "Event")
+      |> Map.put("to", draft.to)
+      |> Map.put("cc", draft.cc)
+      |> Map.put("actor", draft.user.ap_id)
+      |> Map.put("startTime", draft.params[:start_time])
+      |> Map.put("endTime", draft.params[:end_time])
+      |> Map.put("joinMode", draft.params[:join_mode])
+
+    %__MODULE__{draft | object: object}
+  end
+
   defp put_params(draft, params) do
     params = Map.put_new(params, :in_reply_to_status_id, params[:in_reply_to_id])
     %__MODULE__{draft | params: params}

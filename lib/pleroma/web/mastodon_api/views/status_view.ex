@@ -562,6 +562,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     %{
       start_time: data["startTime"],
       end_time: data["endTime"],
+      join_mode: data["joinMode"],
+      participants_count: data["participant_count"]
     }
   end
 

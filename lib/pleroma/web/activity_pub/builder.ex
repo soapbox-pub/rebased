@@ -19,6 +19,30 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   require Pleroma.Constants
 
+  def accept_or_reject(%User{ap_id: ap_id}, activity, type) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => ap_id,
+      "type" => type,
+      "object" => activity.data["id"],
+      "to" => [activity.actor]
+    }
+
+    {:ok, data, []}
+  end
+
+  def accept_or_reject(%Object{data: %{"actor" => actor}} = object, activity, type) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => actor,
+      "type" => type,
+      "object" => activity.data["id"],
+      "to" => [activity.actor]
+    }
+
+    {:ok, data, []}
+  end
+
   def accept_or_reject(actor, activity, type) do
     data = %{
       "id" => Utils.generate_activity_id(),
@@ -31,14 +55,14 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
-  @spec reject(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def reject(actor, rejected_activity) do
-    accept_or_reject(actor, rejected_activity, "Reject")
+  @spec reject(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def reject(object, rejected_activity) do
+    accept_or_reject(object, rejected_activity, "Reject")
   end
 
-  @spec accept(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def accept(actor, accepted_activity) do
-    accept_or_reject(actor, accepted_activity, "Accept")
+  @spec accept(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def accept(object, accepted_activity) do
+    accept_or_reject(object, accepted_activity, "Accept")
   end
 
   @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
@@ -336,5 +360,15 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   defp pinned_url(nickname) when is_binary(nickname) do
     Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname)
+  end
+
+  def join(actor, object) do
+    with {:ok, data, meta} <- object_action(actor, object) do
+      data =
+        data
+        |> Map.put("type", "Join")
+
+      {:ok, data, meta}
+    end
   end
 end

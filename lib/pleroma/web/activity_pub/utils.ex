@@ -432,6 +432,29 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     end
   end
 
+  def add_participation_to_object(%Activity{data: %{"actor" => actor}}, object) do
+    [actor | fetch_participations(object)]
+    |> Enum.uniq()
+    |> update_participations_in_object(object)
+  end
+
+  def remove_participation_from_object(%Activity{data: %{"actor" => actor}}, object) do
+    List.delete(fetch_participations(object), actor)
+    |> update_participations_in_object(object)
+  end
+
+  defp update_participations_in_object(participations, object) do
+    update_element_in_object("participation", participations, object)
+  end
+
+  defp fetch_participations(object) do
+    if is_list(object.data["participations"]) do
+      object.data["participations"]
+    else
+      []
+    end
+  end
+
   #### Follow-related helpers
 
   @doc """
@@ -886,5 +909,27 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where([a, object: o], fragment("(?)->>'inReplyTo' = ?", o.data, ^to_string(id)))
     |> where([a, object: o], fragment("(?)->>'type' = 'Answer'", o.data))
     |> Repo.all()
+  end
+
+  ### Join-related helpers
+  def get_existing_join(actor, %{data: %{"id" => id}}) do
+    actor
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_object_id(id)
+    |> Activity.Queries.by_type("Join")
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  def update_join_state(
+        %Activity{} = activity,
+        state
+      ) do
+    new_data = Map.put(activity.data, "state", state)
+    changeset = Changeset.change(activity, data: new_data)
+
+    with {:ok, activity} <- Repo.update(changeset) do
+      {:ok, activity}
+    end
   end
 end

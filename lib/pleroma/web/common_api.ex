@@ -304,6 +304,43 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def join(%User{} = user, id) do
+    case join_helper(user, id) do
+      {:ok, _} = res ->
+        res
+
+      {:error, :not_found} = res ->
+        res
+
+      {:error, e} ->
+        Logger.error("Could not join #{id}. Error: #{inspect(e, pretty: true)}")
+        {:error, dgettext("errors", "Could not join")}
+    end
+  end
+
+  def join_helper(user, id) do
+    with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
+         {_, {:ok, join_object, meta}} <- {:build_object, Builder.join(user, object)},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(join_object, Keyword.put(meta, :local, true))} do
+      {:ok, activity}
+    else
+      {:find_object, _} ->
+        {:error, :not_found}
+
+      {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
+        if {:object, {"already joined by this actor", []}} in changeset.errors do
+          {:ok, :already_joined}
+        else
+          {:error, e}
+        end
+
+      e ->
+        {:error, e}
+    end
+  end
+
   defp validate_not_author(%{data: %{"actor" => ap_id}}, %{ap_id: ap_id}),
     do: {:error, dgettext("errors", "Poll's author can't vote")}
 
@@ -596,6 +633,12 @@ defmodule Pleroma.Web.CommonAPI do
 
       true ->
         nil
+    end
+  end
+
+  def event(user, data) do
+    with {:ok, draft} <- ActivityDraft.event(user, data) do
+      ActivityPub.create(draft.changes)
     end
   end
 end

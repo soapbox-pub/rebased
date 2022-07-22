@@ -36,7 +36,16 @@
                 "@id": "as:alsoKnownAs",
                 "@type": "@id"
             },
-            "vcard": "http://www.w3.org/2006/vcard/ns#"
+            "vcard": "http://www.w3.org/2006/vcard/ns#",
+            "mz": "https://joinmobilizon.org/ns#",
+            "joinMode": {
+              "@id": "mz:joinMode",
+              "@type": "mz:joinModeType"
+            },
+            "joinModeType": {
+              "@id": "mz:joinModeType",
+              "@type": "rdfs:Class"
+            }
         }
     ]
 }
