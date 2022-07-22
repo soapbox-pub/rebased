@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 23:42+0300\n"
-"PO-Revision-Date: 2022-07-21 23:35+0000\n"
+"PO-Revision-Date: 2022-07-22 19:00+0000\n"
 "Last-Translator: Haelwenn <contact+git.pleroma.social@hacktivis.me>\n"
 "Language-Team: French <http://weblate.pleroma-dev.ebin.club/projects/pleroma/"
 "pleroma-backend-domain-default/fr/>\n"
@@ -63,7 +63,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "%{name} - Array length %{length} is smaller than minItems: %{min}."
 msgstr ""
-"%{name} - La longueur %{length} de la liste est inférieure à minItems : %{}."
+"%{name} - La longueur %{length} de la liste est inférieure à minItems : "
+"%{min}."
 
 #: lib/pleroma/web/api_spec/render_error.ex:166
 #, elixir-autogen, elixir-format
