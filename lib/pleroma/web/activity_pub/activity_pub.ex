@@ -1279,6 +1279,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
+  defp restrict_instance(query, %{instance: instance}) when is_list(instance) do
+    from(
+      activity in query,
+      where: fragment("split_part(actor::text, '/'::text, 3) = ANY(?)", ^instance)
+    )
+  end
+
   defp restrict_instance(query, _), do: query
 
   defp restrict_filtered(query, %{user: %User{} = user}) do

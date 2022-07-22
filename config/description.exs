@@ -1150,6 +1150,12 @@ config :pleroma, :config_description, [
             description: "Only display posts from own domain on local timeline"
           }
         ]
+      },
+      %{
+        key: :local_bubble,
+        type: {:list, :string},
+        description:
+          "List of instances that make up your local bubble (closely-related instances). Used to populate the 'bubble' timeline (domain only)."
       }
     ]
   },

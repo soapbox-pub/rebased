@@ -1070,6 +1070,59 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
   end
 
+  describe "bubble" do
+    setup do: oauth_access(["read:statuses"])
+
+    test "it returns nothing if no bubble is configured", %{user: user, conn: conn} do
+      clear_config([:instance, :local_bubble], [])
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      conn = get(conn, "/api/v1/timelines/bubble")
+
+      assert [] = json_response_and_validate_schema(conn, :ok)
+    end
+
+    test "filtering", %{conn: conn, user: user} do
+      clear_config([:instance, :local_bubble], [])
+      local_user = insert(:user)
+      remote_user = insert(:user, %{ap_id: "https://example.com/users/remote_user"})
+      {:ok, user, local_user} = User.follow(user, local_user)
+      {:ok, _user, remote_user} = User.follow(user, remote_user)
+
+      {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Status"})
+      remote_activity = create_remote_activity(remote_user)
+
+      resp =
+        conn
+        |> get("/api/v1/timelines/bubble")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert Enum.empty?(resp)
+
+      clear_config([:instance, :local_bubble], ["localhost:4001"])
+
+      one_instance =
+        conn
+        |> get("/api/v1/timelines/bubble")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in one_instance
+
+      clear_config([:instance, :local_bubble], ["localhost:4001", "example.com"])
+
+      two_instances =
+        conn
+        |> get("/api/v1/timelines/bubble")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["id"])
+
+      assert local_activity.id in two_instances
+      assert remote_activity.id in two_instances
+    end
+  end
+
   defp create_remote_activity(user) do
     obj =
       insert(:note, %{

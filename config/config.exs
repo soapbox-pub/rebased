@@ -262,7 +262,8 @@ config :pleroma, :instance,
   migration_cooldown_period: 30,
   multitenancy: %{
     enabled: false
-  }
+  },
+  local_bubble: []
 
 config :pleroma, :welcome,
   direct_message: [

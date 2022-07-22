@@ -26,8 +26,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   plug(RateLimiter, [name: :timeline, bucket_name: :home_timeline] when action == :home)
   plug(RateLimiter, [name: :timeline, bucket_name: :hashtag_timeline] when action == :hashtag)
   plug(RateLimiter, [name: :timeline, bucket_name: :list_timeline] when action == :list)
+  plug(RateLimiter, [name: :timeline, bucket_name: :bubble_timeline] when action == :bubble)
 
-  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
+  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct, :bubble])
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)
 
   plug(
@@ -121,6 +122,33 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
       conn
       |> add_link_headers(activities, %{"local" => local_only})
+      |> render("index.json",
+        activities: activities,
+        for: user,
+        as: :activity,
+        with_muted: Map.get(params, :with_muted, false)
+      )
+    end
+  end
+
+  # GET /api/v1/timelines/bubble
+  def bubble(%{assigns: %{user: user}} = conn, params) do
+    bubble_instances = Config.get([:instance, :local_bubble], [])
+
+    if is_nil(user) do
+      fail_on_bad_auth(conn)
+    else
+      activities =
+        params
+        |> Map.put(:type, ["Create"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:instance, bubble_instances)
+        |> ActivityPub.fetch_public_activities()
+
+      conn
+      |> add_link_headers(activities)
       |> render("index.json",
         activities: activities,
         for: user,

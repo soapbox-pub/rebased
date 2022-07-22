@@ -77,6 +77,26 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
     }
   end
 
+  def bubble_operation do
+    %Operation{
+      tags: ["Timelines"],
+      summary: "Bubble timeline",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        only_media_param(),
+        remote_param(),
+        with_muted_param(),
+        exclude_visibilities_param(),
+        reply_visibility_param() | pagination_params()
+      ],
+      operationId: "TimelineController.bubble",
+      responses: %{
+        200 => Operation.response("Array of Status", "application/json", array_of_statuses()),
+        401 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def hashtag_operation do
     %Operation{
       tags: ["Timelines"],
