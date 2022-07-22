@@ -43,4 +43,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
 
     %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
   end
+
+  test "a note with an attachment should work", _ do
+    insert(:user, %{ap_id: "https://owncast.localhost.localdomain/federation/user/streamer"})
+
+    note =
+      "test/fixtures/owncast-note-with-attachment.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
 end
