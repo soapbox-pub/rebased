@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-07-21 04:21+0300\n"
-"PO-Revision-Date: 2022-07-21 23:35+0000\n"
-"Last-Translator: tusooa <tusooa@kazv.moe>\n"
+"PO-Revision-Date: 2022-07-22 14:45+0000\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-config_descriptions/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -163,6 +163,8 @@ msgstr "配置 feed 渲染"
 msgctxt "config description at :pleroma-:frontend_configurations"
 msgid "This form can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for pleroma_fe are configured. If you want to add your own configuration your settings all fields must be complete."
 msgstr ""
+"此表格可被用于创建一个关键词列表，为不同的前端保留配置数据。在默认情况下，"
+"pleroma_fe 已处于被设定状态。若您想要创建自定义设定，您就必须完成所有栏目。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -223,10 +225,10 @@ msgid "Majic/libmagic configuration"
 msgstr "Majic/libmagic 配置"
 
 #: lib/pleroma/docs/translator.ex:5
-#, elixir-autogen, elixir-format
+#, elixir-autogen, elixir-format, fuzzy
 msgctxt "config description at :pleroma-:manifest"
 msgid "This section describe PWA manifest instance-specific values. Currently this option relate only for MastoFE."
-msgstr ""
+msgstr "此处提供针对特定实例的 PWA manifest 数值。目前相关设定尚只支持 MastoFE。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -241,10 +243,10 @@ msgid "Media proxy"
 msgstr "媒体代理"
 
 #: lib/pleroma/docs/translator.ex:5
-#, elixir-autogen, elixir-format
+#, elixir-autogen, elixir-format, fuzzy
 msgctxt "config description at :pleroma-:modules"
 msgid "Custom Runtime Modules"
-msgstr ""
+msgstr "自定义 Runtime 模块"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -373,7 +375,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:shout"
 msgid "Pleroma shout settings"
-msgstr ""
+msgstr "Pleroma 留言板设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -427,7 +429,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Captcha"
 msgid "Captcha-related settings"
-msgstr ""
+msgstr "验证码相关设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -445,37 +447,37 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Emails.NewUsersDigestEmail"
 msgid "New users admin email digest"
-msgstr ""
+msgstr "新用户管理邮件摘要"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Emails.UserEmail"
 msgid "Email template settings"
-msgstr ""
+msgstr "邮件模板设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Formatter"
 msgid "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs."
-msgstr ""
+msgstr "这是 Pleroma 的链接格式器的具体设定，可在此配置提及，标签与网址等。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.ScheduledActivity"
 msgid "Scheduled activities settings"
-msgstr ""
+msgstr "定时活动设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Upload"
 msgid "Upload general settings"
-msgstr ""
+msgstr "上传通用设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Upload.Filter.AnonymizeFilename"
 msgid "Filter replaces the filename of the upload"
-msgstr ""
+msgstr "过滤器将会匿名化上传文件的文件名"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -499,7 +501,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.User.Backup"
 msgid "Account Backup"
-msgstr ""
+msgstr "账户备份"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -511,13 +513,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Web.MediaProxy.Invalidation.Script"
 msgid "Invalidation script settings"
-msgstr ""
+msgstr "无效的脚本设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Web.Metadata"
 msgid "Metadata-related settings"
-msgstr ""
+msgstr "元数据相关设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -529,13 +531,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Web.Preload"
 msgid "Preload-related settings"
-msgstr ""
+msgstr "预加载相关设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-Pleroma.Workers.PurgeExpiredActivity"
 msgid "Expired activities settings"
-msgstr ""
+msgstr "失效活动设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -571,7 +573,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:activitypub"
 msgid "ActivityPub"
-msgstr ""
+msgstr "ActivityPub"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -583,7 +585,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:auth"
 msgid "Auth"
-msgstr ""
+msgstr "验证"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -595,25 +597,25 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:email_notifications"
 msgid "Email notifications"
-msgstr ""
+msgstr "邮件通知"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:emoji"
 msgid "Emoji"
-msgstr ""
+msgstr "Emoji"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:features"
 msgid "Features"
-msgstr ""
+msgstr "特色功能"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:feed"
 msgid "Feed"
-msgstr ""
+msgstr "信息流"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -643,25 +645,25 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:http"
 msgid "HTTP"
-msgstr ""
+msgstr "HTTP"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:http_security"
 msgid "HTTP security"
-msgstr ""
+msgstr "HTTP 安全性"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:instance"
 msgid "Instance"
-msgstr ""
+msgstr "实例"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:instances_favicons"
 msgid "Instances favicons"
-msgstr ""
+msgstr "实例图标"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -691,13 +693,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:media_preview_proxy"
 msgid "Media preview proxy"
-msgstr ""
+msgstr "媒体文件预览代理"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:media_proxy"
 msgid "Media proxy"
-msgstr ""
+msgstr "媒体文件代理"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -829,7 +831,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:shout"
 msgid "Shout"
-msgstr ""
+msgstr "留言板"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -853,7 +855,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:user"
 msgid "User"
-msgstr ""
+msgstr "用户"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -865,7 +867,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config label at :pleroma-:welcome"
 msgid "Welcome"
-msgstr ""
+msgstr "欢迎"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1045,7 +1047,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :esshd > :port"
 msgid "Port to connect"
-msgstr ""
+msgstr "用于连接的端口"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1093,7 +1095,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :logger-:console > :level"
 msgid "Log level"
-msgstr ""
+msgstr "日志等级"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1111,7 +1113,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :logger-:ex_syslogger > :level"
 msgid "Log level"
-msgstr ""
+msgstr "日志等级"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1123,13 +1125,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:activitypub > :blockers_visible"
 msgid "Whether a user can see someone who has blocked them"
-msgstr ""
+msgstr "用户能否查看屏蔽了他们的用户"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:activitypub > :follow_handshake_timeout"
 msgid "Following handshake timeout"
-msgstr ""
+msgstr "关注请求超时"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1237,19 +1239,19 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:email_notifications > :digest > :active"
 msgid "Globally enable or disable digest emails"
-msgstr ""
+msgstr "完全开启或关闭摘要邮件"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:email_notifications > :digest > :inactivity_threshold"
 msgid "Minimum user inactivity threshold"
-msgstr ""
+msgstr "非活跃用户数量最低门槛"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:email_notifications > :digest > :interval"
 msgid "Minimum interval between digest emails to one user"
-msgstr ""
+msgstr "单个用户能收到摘要邮件的间隔频次"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1297,7 +1299,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:feed > :post_title > :max_length"
 msgid "Maximum number of characters before truncating title"
-msgstr ""
+msgstr "不被折叠的用户名的字符上限"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1309,13 +1311,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe"
 msgid "Settings for Pleroma FE"
-msgstr ""
+msgstr "Pleroma FE 设定"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :alwaysShowSubjectInput"
 msgid "When disabled, auto-hide the subject field if it's empty"
-msgstr ""
+msgstr "当被停用时，自动隐藏未被填写的标题栏"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1327,7 +1329,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :collapseMessageWithSubject"
 msgid "When a message has a subject (aka Content Warning), collapse it by default"
-msgstr ""
+msgstr "默认状态下，将自动折叠带有标题的信息（内容警告）"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1339,43 +1341,44 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :hideFilteredStatuses"
 msgid "Hides filtered statuses from timelines"
-msgstr ""
+msgstr "从时间线上隐藏被过滤的状态"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :hideMutedPosts"
 msgid "Hides muted statuses from timelines"
-msgstr ""
+msgstr "从时间线上折叠被隐藏的状态"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :hidePostStats"
 msgid "Hide notices statistics (repeats, favorites, ...)"
-msgstr ""
+msgstr "关闭互动提醒（转发，点赞等）"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :hideSitename"
 msgid "Hides instance name from PleromaFE banner"
-msgstr ""
+msgstr "在 PleromaFE 横幅上隐藏实例名称"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :hideUserStats"
 msgid "Hide profile statistics (posts, posts per day, followers, followings, ...)"
-msgstr ""
+msgstr "隐藏账号页面数据（发文数量、平均每日发文数量、关注者数量、正在关注数量等）"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :logo"
 msgid "URL of the logo, defaults to Pleroma's logo"
-msgstr ""
+msgstr "输入指定 logo 的链接，默认下为 Pleroma 的 logo"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :logoMargin"
 msgid "Allows you to adjust vertical margins between logo boundary and navbar borders. The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout."
-msgstr ""
+msgstr "您可以自定义 logo 与导航栏边界之间的垂直间隔。此功能是为了去除多余的 logo "
+"间隔，允许您根据自己所需来调整布局。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1393,13 +1396,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :nsfwCensorImage"
 msgid "URL of the image to use for hiding NSFW media attachments in the timeline"
-msgstr ""
+msgstr "在此指定用于隐藏出现在时间线上 NSFW 媒体文件的遮罩图片链接"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :postContentType"
 msgid "Default post formatting option"
-msgstr ""
+msgstr "贴文格式默认选项"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1429,7 +1432,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :showInstanceSpecificPanel"
 msgid "Whether to show the instance's custom panel"
-msgstr ""
+msgstr "是否展示该实例的自定义面板"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1447,7 +1450,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:frontend_configurations > :pleroma_fe > :theme"
 msgid "Which theme to use. Available themes are defined in styles.json"
-msgstr ""
+msgstr "使用某个主题。styles.json 中已限定了可用主题"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1549,7 +1552,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:gopher > :port"
 msgid "Port to bind to"
-msgstr ""
+msgstr "指定绑定端口"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1627,7 +1630,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:http > :proxy_url"
 msgid "Proxy URL"
-msgstr ""
+msgstr "代理地址"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1681,7 +1684,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :account_approval_required"
 msgid "Require users to be manually approved by an admin before signing in"
-msgstr ""
+msgstr "用户登陆需要管理员同意"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1717,7 +1720,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :autofollowed_nicknames"
 msgid "Set to nicknames of (local) users that every new user should automatically follow"
-msgstr ""
+msgstr "为一个会被新用户自动关注的（本地）用户设定昵称"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1729,25 +1732,25 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :avatar_upload_limit"
 msgid "File size limit of user's profile avatars"
-msgstr ""
+msgstr "用户头像的文件大小上限"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :background_upload_limit"
 msgid "File size limit of user's profile backgrounds"
-msgstr ""
+msgstr "用户资料背景的文件大小上限"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :banner_upload_limit"
 msgid "File size limit of user's profile banners"
-msgstr ""
+msgstr "用户资料横幅的文件大小上限"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :birthday_min_age"
 msgid "Minimum required age for users to create account. Only used if birthday is required."
-msgstr ""
+msgstr "创建账户的最低年龄限制。只有当需要输入生日时才生效。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1789,7 +1792,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :federating"
 msgid "Enable federation with other instances"
-msgstr ""
+msgstr "启用与其他实例的联邦互通"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1849,13 +1852,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :max_media_attachments"
 msgid "Maximum number of post media attachments"
-msgstr ""
+msgstr "最多可上传的媒体文件数量"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :max_pinned_statuses"
 msgid "The maximum number of pinned statuses. 0 will disable the feature."
-msgstr ""
+msgstr "可被置顶的状态数量上限。设定为0则关闭该功能。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1939,13 +1942,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :poll_limits > :max_option_chars"
 msgid "Maximum number of characters per option"
-msgstr ""
+msgstr "单个选项的字符上限"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :poll_limits > :max_options"
 msgid "Maximum number of options"
-msgstr ""
+msgstr "选项数量上限"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -1981,7 +1984,7 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :registration_reason_length"
 msgid "Maximum registration reason length. Default: 500."
-msgstr ""
+msgstr "注册申请理由的字符上限。默认为500。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
@@ -2035,13 +2038,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :user_bio_length"
 msgid "A user bio maximum length. Default: 5000."
-msgstr ""
+msgstr "用户自传的字符上限。默认为5000。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
 msgctxt "config description at :pleroma-:instance > :user_name_length"
 msgid "A user name maximum length. Default: 100."
-msgstr ""
+msgstr "用户名的字符上限。默认为100。"
 
 #: lib/pleroma/docs/translator.ex:5
 #, elixir-autogen, elixir-format
