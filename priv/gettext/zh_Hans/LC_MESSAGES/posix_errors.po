@@ -9,7 +9,7 @@
 msgid ""
 msgstr ""
 "PO-Revision-Date: 2022-07-22 19:00+0000\n"
-"Last-Translator: tusooa <tusooa@kazv.moe>\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-posix_errors/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -124,16 +124,16 @@ msgid "enotdir"
 msgstr ""
 
 msgid "enotsup"
-msgstr ""
+msgstr "不受支持的操作"
 
 msgid "enxio"
-msgstr ""
+msgstr "该设备或路径不存在"
 
 msgid "eopnotsupp"
-msgstr ""
+msgstr "不受支持的操作"
 
 msgid "eoverflow"
-msgstr ""
+msgstr "请为给定类型的数据指定较小的数值"
 
 msgid "epipe"
 msgstr ""
@@ -142,19 +142,19 @@ msgid "erange"
 msgstr ""
 
 msgid "erofs"
-msgstr ""
+msgstr "只读权限文件系统"
 
 msgid "espipe"
 msgstr ""
 
 msgid "esrch"
-msgstr ""
+msgstr "具体进程不存在"
 
 msgid "estale"
 msgstr ""
 
 msgid "etxtbsy"
-msgstr ""
+msgstr "文本文件忙碌"
 
 msgid "exdev"
-msgstr ""
+msgstr "该多设备链接不可用"
