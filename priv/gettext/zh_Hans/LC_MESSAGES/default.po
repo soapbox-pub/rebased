@@ -8,8 +8,8 @@
 ## to merge POT files into PO files.
 msgid ""
 msgstr ""
-"PO-Revision-Date: 2022-07-22 14:42+0000\n"
-"Last-Translator: tusooa <tusooa@kazv.moe>\n"
+"PO-Revision-Date: 2022-07-22 19:00+0000\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
 "Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
 "projects/pleroma/pleroma-backend-domain-default/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -151,7 +151,7 @@ msgstr ""
 #: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
 #, elixir-format
 msgid "Oops"
-msgstr "呃"
+msgstr "嗨呀"
 
 #: lib/pleroma/web/api_spec/render_error.ex:188
 #, elixir-format
