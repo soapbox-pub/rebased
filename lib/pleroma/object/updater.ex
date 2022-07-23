@@ -198,7 +198,7 @@ defmodule Pleroma.Object.Updater do
     }
   end
 
-  defp for_each_history_item(%{"orderedItems" => items} = history, _object, fun) do
+  def for_each_history_item(%{"orderedItems" => items} = history, _object, fun) do
     new_items =
       Enum.map(items, fun)
       |> Enum.reduce_while(
@@ -215,7 +215,7 @@ defmodule Pleroma.Object.Updater do
     end
   end
 
-  defp for_each_history_item(history, _, _) do
+  def for_each_history_item(history, _, _) do
     {:ok, history}
   end
 
