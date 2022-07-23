@@ -197,4 +197,44 @@ defmodule Pleroma.Object.Updater do
       used_history_in_new_object?: used_history_in_new_object?
     }
   end
+
+  defp for_each_history_item(%{"orderedItems" => items} = history, _object, fun) do
+    new_items =
+      Enum.map(items, fun)
+      |> Enum.reduce_while(
+        {:ok, []},
+        fn
+          {:ok, item}, {:ok, acc} -> {:cont, {:ok, acc ++ [item]}}
+          e, _acc -> {:halt, e}
+        end
+      )
+
+    case new_items do
+      {:ok, items} -> {:ok, Map.put(history, "orderedItems", items)}
+      e -> e
+    end
+  end
+
+  defp for_each_history_item(history, _, _) do
+    {:ok, history}
+  end
+
+  def do_with_history(object, fun) do
+    with history <- object["formerRepresentations"],
+         object <- Map.drop(object, ["formerRepresentations"]),
+         {_, {:ok, object}} <- {:main_body, fun.(object)},
+         {_, {:ok, history}} <- {:history_items, for_each_history_item(history, object, fun)} do
+      object =
+        if history do
+          Map.put(object, "formerRepresentations", history)
+        else
+          object
+        end
+
+      {:ok, object}
+    else
+      {:main_body, e} -> e
+      {:history_items, e} -> e
+    end
+  end
 end

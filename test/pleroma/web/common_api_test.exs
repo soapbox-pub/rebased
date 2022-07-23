@@ -1647,5 +1647,22 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert edited_note.data["emoji"]["remoteemoji"] == remote_emoji_uri
     end
+
+    test "respects MRF" do
+      user = insert(:user)
+
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+      clear_config([:mrf_keyword, :replace], [{"updated", "mewmew"}])
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "foo1", spoiler_text: "updated 1"})
+      assert Object.normalize(activity).data["summary"] == "mewmew 1"
+
+      {:ok, updated} = CommonAPI.update(user, activity, %{status: "updated 2"})
+
+      updated_object = Object.normalize(updated)
+      assert updated_object.data["content"] == "mewmew 2"
+      assert Map.get(updated_object.data, "summary", "") == ""
+      assert Map.has_key?(updated_object.data, "updated")
+    end
   end
 end
