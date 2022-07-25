@@ -137,4 +137,49 @@ defmodule Pleroma.Emoji do
   end
 
   def is_unicode_emoji?(_), do: false
+
+  # FE0F is the emoji variation sequence. It is used for fully-qualifying
+  # emoji, and that includes emoji combinations.
+  # This code generates combinations per emoji: for each FE0F, all possible
+  # combinations of the character being removed or staying will be generated.
+  # This is made as an attempt to find all partially-qualified and unqualified
+  # versions of a fully-qualified emoji.
+  # I have found *no cases* for which this would be a problem, after browsing
+  # the entire emoji list in emoji-test.txt. This is safe, and, sadly, most
+  # likely sane too.
+  emoji_qualification_map =
+    emojis
+    |> Enum.filter(&String.contains?(&1, "\uFE0F"))
+    |> Enum.map(fn emoji ->
+      combinate = fn x, combinate ->
+        case x do
+          [] ->
+            [[]]
+
+          ["\uFE0F" | tail] ->
+            combinate.(tail, combinate)
+            |> Enum.flat_map(fn x -> [x, ["\uFE0F" | x]] end)
+
+          [codepoint | tail] ->
+            combinate.(tail, combinate)
+            |> Enum.map(fn x -> [codepoint | x] end)
+        end
+      end
+
+      unqualified_list =
+        emoji
+        |> String.codepoints()
+        |> combinate.(combinate)
+        |> Enum.map(&List.to_string/1)
+
+      {emoji, unqualified_list}
+    end)
+
+  for {qualified, unqualified_list} <- emoji_qualification_map do
+    for unqualified <- unqualified_list do
+      def fully_qualify_emoji(unquote(unqualified)), do: unquote(qualified)
+    end
+  end
+
+  def fully_qualify_emoji(emoji), do: emoji
 end
