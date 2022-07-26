@@ -36,6 +36,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
+  alias Pleroma.Webhook.Notify
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -880,6 +881,7 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
+      Notify.trigger_webhooks(user, :"account.created")
       post_register_action(user)
     end
   end

@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
