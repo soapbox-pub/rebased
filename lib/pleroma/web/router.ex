@@ -895,7 +895,6 @@ defmodule Pleroma.Web.Router do
     post("/tags/:id/follow", TagController, :follow)
     post("/tags/:id/unfollow", TagController, :unfollow)
     get("/followed_tags", TagController, :show_followed)
-  end
 
     post("/bite", BiteController, :bite)
   end

@@ -459,10 +459,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "should not return 404 if local is specified" do
       clear_config([:instance, :federated_timeline_available], false)
 
-      result =
-        build_conn()
-        |> get("/api/v1/timelines/public?local=true")
-        |> json_response_and_validate_schema(200)
+      build_conn()
+      |> get("/api/v1/timelines/public?local=true")
+      |> json_response_and_validate_schema(200)
     end
   end
 
@@ -1093,18 +1092,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "bubble" do
     setup do: oauth_access(["read:statuses"])
 
-    test "it returns nothing if no bubble is configured", %{user: user, conn: conn} do
-      clear_config([:instance, :local_bubble], [])
-      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
-
-      conn = get(conn, "/api/v1/timelines/bubble")
-
-      assert [] = json_response_and_validate_schema(conn, :ok)
-    end
-
     test "filtering", %{conn: conn, user: user} do
       clear_config([:instance, :local_bubble], [])
-      local_user = insert(:user)
+      # our endpoint host has a port in it so let's set the AP ID
+      local_user = insert(:user, %{ap_id: "https://localhost/users/user"})
       remote_user = insert(:user, %{ap_id: "https://example.com/users/remote_user"})
       {:ok, user, local_user} = User.follow(user, local_user)
       {:ok, _user, remote_user} = User.follow(user, remote_user)
@@ -1112,15 +1103,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       {:ok, local_activity} = CommonAPI.post(local_user, %{status: "Status"})
       remote_activity = create_remote_activity(remote_user)
 
-      resp =
-        conn
-        |> get("/api/v1/timelines/bubble")
-        |> json_response_and_validate_schema(200)
-        |> Enum.map(& &1["id"])
-
-      assert Enum.empty?(resp)
-
-      clear_config([:instance, :local_bubble], ["localhost:4001"])
+      # If nothing, only include ours
+      clear_config([:instance, :local_bubble], [])
 
       one_instance =
         conn
