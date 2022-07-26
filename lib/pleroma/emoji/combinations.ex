@@ -13,18 +13,22 @@ defmodule Pleroma.Emoji.Combinations do
   # the entire emoji list in emoji-test.txt. This is safe, and, sadly, most
   # likely sane too.
 
-  defp qualification_combinations([]), do: [[]]
-
-  defp qualification_combinations(["\uFE0F" | tail]) do
-    tail
-    |> qualification_combinations()
-    |> Enum.flat_map(fn x -> [x, ["\uFE0F" | x]] end)
+  defp qualification_combinations(codepoints) do
+    qualification_combinations([[]], codepoints)
   end
 
-  defp qualification_combinations([codepoint | tail]) do
-    tail
-    |> qualification_combinations()
-    |> Enum.map(fn x -> [codepoint | x] end)
+  defp qualification_combinations(acc, []), do: acc
+
+  defp qualification_combinations(acc, ["\uFE0F" | tail]) do
+    acc
+    |> Enum.flat_map(fn x -> [x, x ++ ["\uFE0F"]] end)
+    |> qualification_combinations(tail)
+  end
+
+  defp qualification_combinations(acc, [codepoint | tail]) do
+    acc
+    |> Enum.map(&Kernel.++(&1, [codepoint]))
+    |> qualification_combinations(tail)
   end
 
   def variate_emoji_qualification(emoji) when is_binary(emoji) do
