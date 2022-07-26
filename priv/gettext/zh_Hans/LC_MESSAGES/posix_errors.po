@@ -8,107 +8,114 @@
 ## to merge POT files into PO files.
 msgid ""
 msgstr ""
+"PO-Revision-Date: 2022-07-22 19:00+0000\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
+"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"projects/pleroma/pleroma-backend-domain-posix_errors/zh_Hans/>\n"
 "Language: zh_Hans\n"
-"Plural-Forms: nplurals=1\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.13.1\n"
 
 msgid "eperm"
-msgstr ""
+msgstr "不允许的操作"
 
 msgid "eacces"
-msgstr ""
+msgstr "权限不够"
 
 msgid "eagain"
-msgstr ""
+msgstr "资源暂时不可用"
 
 msgid "ebadf"
-msgstr ""
+msgstr "坏的文件描述符"
 
 msgid "ebadmsg"
-msgstr ""
+msgstr "坏讯息"
 
 msgid "ebusy"
-msgstr ""
+msgstr "设备或资源忙"
 
 msgid "edeadlk"
-msgstr ""
+msgstr "避免了资源死锁"
 
 msgid "edeadlock"
-msgstr ""
+msgstr "避免了资源死锁"
 
 msgid "edquot"
-msgstr ""
+msgstr "超出了磁盘配额"
 
 msgid "eexist"
-msgstr ""
+msgstr "文件存在"
 
 msgid "efault"
-msgstr ""
+msgstr "坏地址"
 
 msgid "efbig"
-msgstr ""
+msgstr "文件太大"
 
 msgid "eftype"
-msgstr ""
+msgstr "不合适的文件类型或格式"
 
 msgid "eintr"
-msgstr ""
+msgstr "系统调用被中断"
 
 msgid "einval"
-msgstr ""
+msgstr "不合法的参数"
 
 msgid "eio"
-msgstr ""
+msgstr "输入/输出错误"
 
 msgid "eisdir"
-msgstr ""
+msgstr "在目录上非法操作"
 
 msgid "eloop"
-msgstr ""
+msgstr "太多层符号链接"
 
 msgid "emfile"
-msgstr ""
+msgstr "太多打开的文件"
 
 msgid "emlink"
-msgstr ""
+msgstr "太多链接"
 
 msgid "emultihop"
 msgstr ""
 
 msgid "enametoolong"
-msgstr ""
+msgstr "文件名太长"
 
 msgid "enfile"
-msgstr ""
+msgstr "系统里太多打开的文件"
 
 msgid "enobufs"
-msgstr ""
+msgstr "没有可用的缓冲空间"
 
 msgid "enodev"
-msgstr ""
+msgstr "没这设备"
 
 msgid "enolck"
-msgstr ""
+msgstr "没有可用的锁"
 
 msgid "enolink"
-msgstr ""
+msgstr "链接被切断了"
 
 msgid "enoent"
-msgstr ""
+msgstr "没这文件或目录"
 
 msgid "enomem"
-msgstr ""
+msgstr "不能分配内存"
 
 msgid "enospc"
-msgstr ""
+msgstr "设备上没剩余空间"
 
 msgid "enosr"
 msgstr ""
 
 msgid "enostr"
-msgstr ""
+msgstr "设备不是流"
 
 msgid "enosys"
-msgstr ""
+msgstr "功能没实现"
 
 msgid "enotblk"
 msgstr ""
@@ -117,16 +124,16 @@ msgid "enotdir"
 msgstr ""
 
 msgid "enotsup"
-msgstr ""
+msgstr "不受支持的操作"
 
 msgid "enxio"
-msgstr ""
+msgstr "该设备或路径不存在"
 
 msgid "eopnotsupp"
-msgstr ""
+msgstr "不受支持的操作"
 
 msgid "eoverflow"
-msgstr ""
+msgstr "请为给定类型的数据指定较小的数值"
 
 msgid "epipe"
 msgstr ""
@@ -135,19 +142,19 @@ msgid "erange"
 msgstr ""
 
 msgid "erofs"
-msgstr ""
+msgstr "只读权限文件系统"
 
 msgid "espipe"
 msgstr ""
 
 msgid "esrch"
-msgstr ""
+msgstr "具体进程不存在"
 
 msgid "estale"
 msgstr ""
 
 msgid "etxtbsy"
-msgstr ""
+msgstr "文本文件忙碌"
 
 msgid "exdev"
-msgstr ""
+msgstr "该多设备链接不可用"

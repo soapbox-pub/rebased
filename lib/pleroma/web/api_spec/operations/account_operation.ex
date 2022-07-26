@@ -566,10 +566,18 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             "Whether the user opts-in to receiving news and marketing updates from site admins."
         },
         birthday: %Schema{
-          type: :string,
           nullable: true,
           description: "User's birthday",
-          format: :date
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
         },
         language: %Schema{
           type: :string,
