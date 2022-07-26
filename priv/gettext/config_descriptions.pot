@@ -5997,3 +5997,27 @@ msgstr ""
 msgctxt "config label at :web_push_encryption-:vapid_details > :subject"
 msgid "Subject"
 msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:activitypub > :authorized_fetch_mode"
+msgid "Require HTTP signatures for AP fetches"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :short_description"
+msgid "Shorter version of instance description. It can be seen on `/api/v1/instance`"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:activitypub > :authorized_fetch_mode"
+msgid "Authorized fetch mode"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :short_description"
+msgid "Short description"
+msgstr ""
