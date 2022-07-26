@@ -1,0 +1,31 @@
+{
+  "attachment": {
+    "content": "Live stream preview",
+    "type": "Image",
+    "url": "https://owncast.localhost.localdomain/preview.gif?us=KjfNX387gm"
+  },
+  "attributedTo": "https://owncast.localhost.localdomain/federation/user/streamer",
+  "audience": "https://www.w3.org/ns/activitystreams#Public",
+  "content": "<p>I've gone live!</p><p></p><p><a class=\"hashtag\" href=\"https://directory.owncast.online/tags/owncast\">#owncast</a> <a class=\"hashtag\" href=\"https://directory.owncast.online/tags/streaming\">#streaming</a></p><a href=\"https://owncast.localhost.localdomain\">https://owncast.localhost.localdomain</a>",
+  "id": "https://owncast.localhost.localdomain/federation/KjBNuq8ng",
+  "published": "2022-04-17T15:42:03Z",
+  "tag": [
+    {
+      "href": "https://directory.owncast.online/tags/owncast",
+      "name": "#owncast",
+      "type": "Hashtag"
+    },
+    {
+      "href": "https://directory.owncast.online/tags/streaming",
+      "name": "#streaming",
+      "type": "Hashtag"
+    },
+    {
+      "href": "https://directory.owncast.online/tags/owncast",
+      "name": "#owncast",
+      "type": "Hashtag"
+    }
+  ],
+  "to": "https://www.w3.org/ns/activitystreams#Public",
+  "type": "Note"
+}

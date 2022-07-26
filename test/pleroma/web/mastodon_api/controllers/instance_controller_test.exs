@@ -23,6 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "uri" => _,
              "title" => _,
              "description" => _,
+             "short_description" => _,
              "version" => _,
              "email" => from_config_email,
              "urls" => %{

@@ -239,6 +239,12 @@ defmodule Pleroma.Web.Router do
     patch("/rules/:id", RuleController, :update)
     delete("/rules/:id", RuleController, :delete)
 
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements", AnnouncementController, :create)
+    get("/announcements/:id", AnnouncementController, :show)
+    patch("/announcements/:id", AnnouncementController, :change)
+    delete("/announcements/:id", AnnouncementController, :delete)
+
     get("/webhooks", WebhookController, :index)
     get("/webhooks/:id", WebhookController, :show)
     post("/webhooks", WebhookController, :create)
@@ -485,6 +491,8 @@ defmodule Pleroma.Web.Router do
       pipe_through(:api)
       get("/accounts/:id/favourites", AccountController, :favourites)
       get("/accounts/:id/endorsements", AccountController, :endorsements)
+
+      get("/statuses/:id/quotes", StatusController, :quotes)
     end
 
     scope [] do
@@ -620,6 +628,9 @@ defmodule Pleroma.Web.Router do
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
     get("/timelines/list/:list_id", TimelineController, :list)
+
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
