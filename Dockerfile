@@ -1,21 +1,27 @@
-FROM elixir:1.9-alpine as build
-
-COPY . .
+FROM ubuntu:22.04 as build
 
 ENV MIX_ENV=prod
+WORKDIR /src
 
-RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
-	echo "import Mix.Config" > config/prod.secret.exs &&\
-	mix local.hex --force &&\
-	mix local.rebar --force &&\
-	mix deps.get --only prod &&\
-	mkdir release &&\
-	mix release --path release
+RUN apt-get update &&\
+    apt-get install -y git elixir erlang-dev erlang-nox build-essential cmake libssl-dev libmagic-dev automake autoconf libncurses5-dev &&\
+    mix local.hex --force &&\
+    mix local.rebar --force
 
-FROM alpine:3.14
+COPY . /src
+
+RUN cd /src &&\
+    mix deps.get --only prod &&\
+    mkdir release &&\
+    mix release --path release
+
+FROM ubuntu:22.04
 
 ARG BUILD_DATE
 ARG VCS_REF
+
+ARG DEBIAN_FRONTEND="noninteractive"
+ENV TZ="Etc/UTC"
 
 LABEL maintainer="ops@pleroma.social" \
     org.opencontainers.image.title="pleroma" \
@@ -31,18 +37,18 @@ LABEL maintainer="ops@pleroma.social" \
 ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
-RUN apk update &&\
-	apk add exiftool ffmpeg imagemagick libmagic ncurses postgresql-client &&\
-	adduser --system --shell /bin/false --home ${HOME} pleroma &&\
-	mkdir -p ${DATA}/uploads &&\
-	mkdir -p ${DATA}/static &&\
-	chown -R pleroma ${DATA} &&\
-	mkdir -p /etc/pleroma &&\
-	chown -R pleroma /etc/pleroma
+RUN apt-get update &&\
+    apt-get install -y --no-install-recommends imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client &&\
+    adduser --system --shell /bin/false --home ${HOME} pleroma &&\
+    mkdir -p ${DATA}/uploads &&\
+    mkdir -p ${DATA}/static &&\
+    chown -R pleroma ${DATA} &&\
+    mkdir -p /etc/pleroma &&\
+    chown -R pleroma /etc/pleroma
 
 USER pleroma
 
-COPY --from=build --chown=pleroma:0 /release ${HOME}
+COPY --from=build --chown=pleroma:0 /src/release ${HOME}
 
 COPY ./config/docker.exs /etc/pleroma/config.exs
 COPY ./docker-entrypoint.sh ${HOME}
