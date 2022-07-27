@@ -23,14 +23,14 @@ ARG VCS_REF
 ARG DEBIAN_FRONTEND="noninteractive"
 ENV TZ="Etc/UTC"
 
-LABEL maintainer="ops@pleroma.social" \
-    org.opencontainers.image.title="pleroma" \
-    org.opencontainers.image.description="Pleroma for Docker" \
-    org.opencontainers.image.authors="ops@pleroma.social" \
-    org.opencontainers.image.vendor="pleroma.social" \
-    org.opencontainers.image.documentation="https://git.pleroma.social/pleroma/pleroma" \
+LABEL maintainer="hello@soapbox.pub" \
+    org.opencontainers.image.title="soapbox-be" \
+    org.opencontainers.image.description="Soapbox BE for Docker" \
+    org.opencontainers.image.authors="hello@soapbox.pub" \
+    org.opencontainers.image.vendor="soapbox.pub" \
+    org.opencontainers.image.documentation="https://gitlab.com/soapbox-pub/soapbox-be" \
     org.opencontainers.image.licenses="AGPL-3.0" \
-    org.opencontainers.image.url="https://pleroma.social" \
+    org.opencontainers.image.url="https://soapbox.pub" \
     org.opencontainers.image.revision=$VCS_REF \
     org.opencontainers.image.created=$BUILD_DATE
 
