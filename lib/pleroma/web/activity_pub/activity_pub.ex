@@ -32,6 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   import Pleroma.Web.ActivityPub.Visibility
+  import Pleroma.Webhook.Notify, only: [trigger_webhooks: 2]
 
   require Logger
   require Pleroma.Constants
@@ -97,6 +98,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
+
+  defp increase_quotes_count_if_quote(%{
+         "object" => %{"quoteUrl" => quote_ap_id} = object,
+         "type" => "Create"
+       }) do
+    if is_public?(object) do
+      Object.increase_quotes_count(quote_ap_id)
+    end
+  end
+
+  defp increase_quotes_count_if_quote(_create_data), do: :noop
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Page]
   @impl true
@@ -292,6 +304,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_quotes_count_if_quote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
@@ -392,6 +405,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
          _ <- notify_and_stream(activity),
+         _ <- trigger_webhooks(activity, :"report.created"),
          :ok <-
            maybe_federate(stripped_activity) do
       User.all_superusers()
@@ -1204,6 +1218,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_filtered(query, _), do: query
 
+  defp restrict_quote_url(query, %{quote_url: quote_url}) do
+    from([_activity, object] in query,
+      where: fragment("(?)->'quoteUrl' = ?", object.data, ^quote_url)
+    )
+  end
+
+  defp restrict_quote_url(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1367,6 +1389,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
+      |> restrict_quote_url(opts)
       |> Activity.restrict_deactivated_users()
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)

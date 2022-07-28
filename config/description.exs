@@ -3460,6 +3460,26 @@ config :pleroma, :config_description, [
             suggestion: [5]
           }
         ]
+      },
+      %{
+        key: Pleroma.Webhook.Notify,
+        type: :keyword,
+        description: "Concurrent limits configuration for webhooks.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
       }
     ]
   }

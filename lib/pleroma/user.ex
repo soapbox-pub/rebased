@@ -36,6 +36,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
+  alias Pleroma.Webhook.Notify
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -880,6 +881,7 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
+      Notify.trigger_webhooks(user, :"account.created")
       post_register_action(user)
     end
   end
@@ -1493,15 +1495,28 @@ defmodule Pleroma.User do
     notifications? = Map.get(params, :notifications, true)
     expires_in = Map.get(params, :expires_in, 0)
 
-    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+    expires_at =
+      if expires_in > 0 do
+        DateTime.utc_now()
+        |> DateTime.add(expires_in)
+      else
+        nil
+      end
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee, expires_at),
          {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+           (notifications? &&
+              UserRelationship.create_notification_mute(
+                muter,
+                mutee,
+                expires_at
+              )) ||
              {:ok, nil} do
       if expires_in > 0 do
         Pleroma.Workers.MuteExpireWorker.enqueue(
           "unmute_user",
           %{"muter_id" => muter.id, "mutee_id" => mutee.id},
-          schedule_in: expires_in
+          scheduled_at: expires_at
         )
       end
 
