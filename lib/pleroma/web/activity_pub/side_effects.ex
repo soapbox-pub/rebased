@@ -16,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ThreadSubscription
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
@@ -477,12 +478,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   defp handle_follow(
-         object,
-         %User{} = _follower,
+         _object,
+         %User{id: user_id} = _follower,
          %Object{} = followed,
          meta
        ) do
-    Utils.add_follower_to_object(object, followed)
+    ThreadSubscription.add_subscription(user_id, followed.data["context"])
 
     {:ok, meta}
   end
@@ -529,10 +530,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_undoing(
-        %{data: %{"type" => "Follow", "actor" => _follower, "object" => followed}} = object
+        %{data: %{"type" => "Follow", "actor" => ap_id, "object" => followed}} = object
       ) do
     with %Object{} = followed <- Object.normalize(followed, fetch: false),
-         {:ok, _} <- Utils.remove_follower_from_object(object, followed),
+         %User{id: user_id} <- User.get_cached_by_ap_id(ap_id),
+         _ <- ThreadSubscription.remove_subscription(user_id, followed.data["context"]),
          {:ok, _} <- Repo.delete(object) do
       :ok
     else

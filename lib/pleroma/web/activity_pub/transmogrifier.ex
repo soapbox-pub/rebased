@@ -559,19 +559,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{
           "type" => "Undo",
           "object" => %{"type" => "Follow", "object" => followed},
-          "actor" => follower,
-          "id" => id
-        } = _data,
+          "actor" => _follower,
+          "id" => _id
+        } = data,
         _options
       ) do
-    with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
-         {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
-         {:ok, activity} <- ActivityPub.unfollow(follower, followed, id, false) do
-      User.unfollow(follower, followed)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
+    handle_undo_follow(
+      data,
+      Object.normalize(followed, fetch: false) || User.get_cached_by_ap_id(followed)
+    )
   end
 
   def handle_incoming(
@@ -624,6 +620,26 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(_, _), do: :error
+
+  defp handle_undo_follow(%{"actor" => follower, "id" => id}, %User{local: true} = followed) do
+    with {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
+         {:ok, activity} <- ActivityPub.unfollow(follower, followed, id, false) do
+      User.unfollow(follower, followed)
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  defp handle_undo_follow(data, %Object{}) do
+    with {:ok, activity, _meta} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  defp handle_undo_follow(_, _), do: :error
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do

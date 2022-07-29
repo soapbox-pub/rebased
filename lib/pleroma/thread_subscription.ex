@@ -34,28 +34,38 @@ defmodule Pleroma.ThreadSubscription do
 
   def subscribers_query(context) do
     ThreadSubscription
-    |> join(:inner, [tm], u in assoc(tm, :user))
-    |> where([tm], tm.context == ^context)
-    |> select([tm, u], u.ap_id)
+    |> join(:inner, [ts], u in assoc(ts, :user))
+    |> where([ts], ts.context == ^context)
+    |> select([ts, u], u.ap_id)
   end
 
-  def subscriber_ap_ids(context, ap_ids \\ nil)
+  def subscriber_ap_ids(context, ap_ids \\ nil, opts \\ [])
 
   # Note: applies to fake activities (ActivityPub.Utils.get_notified_from_object/1 etc.)
-  def subscriber_ap_ids(context, _ap_ids) when is_nil(context), do: []
+  def subscriber_ap_ids(context, _ap_ids, _opts) when is_nil(context), do: []
 
-  def subscriber_ap_ids(context, ap_ids) do
+  def subscriber_ap_ids(context, ap_ids, opts) do
     context
     |> subscribers_query()
     |> maybe_filter_on_ap_id(ap_ids)
+    |> maybe_filter_local(opts)
     |> Repo.all()
   end
 
   defp maybe_filter_on_ap_id(query, ap_ids) when is_list(ap_ids) do
-    where(query, [tm, u], u.ap_id in ^ap_ids)
+    where(query, [ts, u], u.ap_id in ^ap_ids)
   end
 
   defp maybe_filter_on_ap_id(query, _ap_ids), do: query
+
+  defp maybe_filter_local(query, opts) do
+    local = Keyword.get(opts, :local)
+    if not is_nil(local) do
+      where(query, [ts, u], u.local == ^local)
+    else
+      query
+    end
+  end
 
   def add_subscription(user_id, context) do
     %ThreadSubscription{}

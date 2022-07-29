@@ -7,12 +7,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.ThreadSubscription
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
-  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -206,11 +206,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
     {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
+    %{data: %{"context" => context}} = Object.normalize(follow_data["object"], fetch: false)
+    %User{id: user_id} = User.get_by_ap_id(data["actor"])
+
     assert data["type"] == "Undo"
-    assert data["object"]["type"] == "Follow"
-    assert data["object"]["object"] == object.data["id"]
+    assert data["object"] == follow_data["id"]
     assert data["actor"] == "https://ica.mkljczk.pl/profile/nofriend"
 
-    refute data["actor"] in Object.normalize(follow_data["object"], fetch: false).data["followers"]
+    refute ThreadSubscription.exists?(user_id, context)
   end
 end

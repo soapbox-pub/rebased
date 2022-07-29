@@ -559,7 +559,6 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, unfollow, _} <- Pipeline.common_pipeline(unfollow_data, local: true) do
       {:ok, unfollow}
     else
-      {:fetch_block, nil} -> {:error, :not_blocking}
       e -> e
     end
   end

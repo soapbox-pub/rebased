@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Instances
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ThreadSubscription
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -141,9 +142,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     subscribers =
       if Pleroma.Constants.as_public() in activity.recipients do
         get_thread_subscribers(activity.data["object"])
-        |> Enum.map(&User.get_cached_by_ap_id/1)
-        |> Enum.filter(fn user -> user && !user.local end)
-        |> Enum.uniq()
+        |> Enum.filter(fn ts -> ts.user end)
       else
         []
       end
@@ -155,16 +154,9 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   defp get_thread_subscribers(ap_id) when is_binary(ap_id),
     do: get_thread_subscribers(Object.get_by_ap_id(ap_id))
 
-  defp get_thread_subscribers(%{data: %{"subscribers" => subscribers}} = object) do
-    subscribers ++
-      with %Object{data: %{"inReplyTo" => reply}} <- object do
-        get_thread_subscribers(reply)
-      else
-        _ -> []
-      end
+  defp get_thread_subscribers(%{data: %{"context" => context}}) do
+    ThreadSubscription.subscriber_ap_ids(context, nil, local: false)
   end
-
-  defp get_thread_subscribers(%{data: %{"inReplyTo" => reply}}), do: get_thread_subscribers(reply)
 
   defp get_thread_subscribers(_), do: []
 

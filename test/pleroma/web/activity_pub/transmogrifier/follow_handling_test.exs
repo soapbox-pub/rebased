@@ -8,12 +8,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ThreadSubscription
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
 
-  import Pleroma.Factory
   import Ecto.Query
+  import Pleroma.Factory
+  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -213,14 +215,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         |> Jason.decode!()
         |> Map.put("object", object.data["id"])
 
-      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      %{data: %{"context" => context}} = Object.normalize(data["object"], fetch: false)
+      %User{id: user_id} = User.get_by_ap_id(data["actor"])
 
       assert data["actor"] == "https://ica.mkljczk.pl/profile/nofriend"
       assert data["type"] == "Follow"
       assert data["id"] == "https://ica.mkljczk.pl/objects/a85d7459-6062-7ab5-16c3-a84988943159"
 
-      activity = Repo.get(Activity, activity.id)
-      assert data["actor"] in Object.normalize(data["object"], fetch: false).data["followers"]
+      assert ThreadSubscription.exists?(user_id, context)
     end
   end
 end

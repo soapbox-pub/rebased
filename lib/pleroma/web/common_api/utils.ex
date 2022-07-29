@@ -412,7 +412,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         recipients,
         %Activity{data: %{"type" => "Create", "context" => context}} = _activity
       ) do
-    subscriber_ids = ThreadSubscription.subscriber_ap_ids(context)
+    subscriber_ids = ThreadSubscription.subscriber_ap_ids(context, nil, local: true)
 
     recipients ++ subscriber_ids
   end

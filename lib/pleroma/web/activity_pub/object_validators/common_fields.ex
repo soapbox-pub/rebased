@@ -64,7 +64,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
 
       field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
       field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
-      field(:followers, {:array, ObjectValidators.ObjectID}, default: [])
     end
   end
 end
