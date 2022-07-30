@@ -197,7 +197,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
       |> Jason.decode!()
       |> Map.put("object", object.data["id"])
 
-    {:ok, %Activity{data: follow_data, local: false}} = Transmogrifier.handle_incoming(follow_data)
+    {:ok, %Activity{data: follow_data, local: false}} =
+      Transmogrifier.handle_incoming(follow_data)
 
     data =
       File.read!("test/fixtures/friendica-object-unfollow-activity.json")

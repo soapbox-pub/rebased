@@ -15,7 +15,7 @@ defmodule Pleroma.Web.PleromaAPI.StatusControllerTest do
 
     setup do
       post_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(post_user, %{status: "HIE"})
+      {:ok, activity} = CommonAPI.post(post_user, %{status: "asdasd"})
       %{activity: activity}
     end
 

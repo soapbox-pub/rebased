@@ -100,7 +100,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(
         %{
           data: %{
-            "id" => follow_id,
             "type" => "Follow",
             "object" => followed_object,
             "actor" => following_user
@@ -108,18 +107,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         } = object,
         meta
       ) do
-    meta =
-      with %User{} = follower <- User.get_cached_by_ap_id(following_user),
-           followed <-
-             Object.normalize(followed_object, fetch: false) ||
-               User.get_cached_by_ap_id(followed_object),
-           {:ok, meta} <- handle_follow(object, follower, followed, meta) do
-        meta
-      end
-
-    updated_object = Activity.get_by_ap_id(follow_id)
-
-    {:ok, updated_object, meta}
+    with %User{} = follower <- User.get_cached_by_ap_id(following_user),
+         followed <-
+           Object.normalize(followed_object, fetch: false) ||
+             User.get_cached_by_ap_id(followed_object),
+         {:ok, object, meta} <- handle_follow(object, follower, followed, meta) do
+      {:ok, object, meta}
+    end
   end
 
   # Tasks this handles:
@@ -448,7 +442,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   defp handle_follow(
-         object,
+         %{data: %{"id" => follow_id}} = object,
          %User{} = follower,
          %User{} = followed,
          meta
@@ -474,18 +468,20 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       meta
       |> add_notifications(notifications)
 
-    {:ok, meta}
+    updated_object = Activity.get_by_ap_id(follow_id)
+
+    {:ok, updated_object, meta}
   end
 
   defp handle_follow(
-         _object,
+         object,
          %User{id: user_id} = _follower,
          %Object{} = followed,
          meta
        ) do
     ThreadSubscription.add_subscription(user_id, followed.data["context"])
 
-    {:ok, meta}
+    {:ok, object, meta}
   end
 
   defp undo_like(nil, object), do: delete_object(object)

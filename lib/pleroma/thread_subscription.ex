@@ -60,6 +60,7 @@ defmodule Pleroma.ThreadSubscription do
 
   defp maybe_filter_local(query, opts) do
     local = Keyword.get(opts, :local)
+
     if not is_nil(local) do
       where(query, [ts, u], u.local == ^local)
     else
