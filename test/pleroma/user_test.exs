@@ -1146,7 +1146,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       muted_user = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(user, muted_user, %{expires_in: 60})
+      {:ok, _user_relationships} = User.mute(user, muted_user, %{duration: 60})
       assert User.mutes?(user, muted_user)
 
       worker = Pleroma.Workers.MuteExpireWorker

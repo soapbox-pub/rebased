@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.CommonAPI
@@ -1010,6 +1011,40 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"id" => _id, "muting" => false, "muting_notifications" => false} =
                json_response_and_validate_schema(conn, 200)
+    end
+
+    test "expiring", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/accounts/#{other_user.id}/mute", %{"duration" => "86400"})
+
+      assert %{"id" => _id, "muting" => true} = json_response_and_validate_schema(conn, 200)
+
+      mute_expires_at = UserRelationship.get_mute_expire_date(user, other_user)
+
+      assert DateTime.diff(
+               mute_expires_at,
+               DateTime.utc_now() |> DateTime.add(24 * 60 * 60)
+             ) in -3..3
+    end
+
+    test "falls back to expires_in", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v1/accounts/#{other_user.id}/mute", %{"expires_in" => "86400"})
+      |> json_response_and_validate_schema(200)
+
+      mute_expires_at = UserRelationship.get_mute_expire_date(user, other_user)
+
+      assert DateTime.diff(
+               mute_expires_at,
+               DateTime.utc_now() |> DateTime.add(24 * 60 * 60)
+             ) in -3..3
     end
   end
 

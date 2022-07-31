@@ -279,10 +279,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "Mute notifications in addition to statuses? Defaults to `true`."
         ),
         Operation.parameter(
+          :duration,
+          :query,
+          %Schema{type: :integer},
+          "Expire the mute in `duration` seconds. Default 0 for infinity"
+        ),
+        Operation.parameter(
           :expires_in,
           :query,
           %Schema{type: :integer, default: 0},
-          "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+          "Deprecated, use `duration` instead"
         )
       ],
       responses: %{
@@ -877,10 +883,15 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Mute notifications in addition to statuses? Defaults to true.",
           default: true
         },
+        duration: %Schema{
+          type: :integer,
+          nullable: true,
+          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+        },
         expires_in: %Schema{
           type: :integer,
           nullable: true,
-          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity",
+          description: "Deprecated, use `duration` instead",
           default: 0
         }
       },
