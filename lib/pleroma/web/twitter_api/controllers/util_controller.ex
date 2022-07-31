@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
@@ -26,7 +27,18 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :change_password,
            :delete_account,
            :update_notificaton_settings,
-           :disable_account
+           :disable_account,
+           :move_account,
+           :add_alias,
+           :delete_alias
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]}
+    when action in [
+           :list_aliases
          ]
   )
 
@@ -155,6 +167,91 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
       {:error, msg} ->
         json(conn, %{error: msg})
+    end
+  end
+
+  def move_account(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
+      {:ok, user} ->
+        with {:ok, target_user} <- find_or_fetch_user_by_nickname(body_params.target_account),
+             {:ok, _user} <- ActivityPub.move(user, target_user) do
+          json(conn, %{status: "success"})
+        else
+          {:not_found, _} ->
+            conn
+            |> put_status(404)
+            |> json(%{error: "Target account not found."})
+
+          {:error, error} ->
+            json(conn, %{error: error})
+        end
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
+  def add_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+    with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
+         {:ok, _user} <- user |> User.add_alias(alias_user) do
+      json(conn, %{status: "success"})
+    else
+      {:not_found, _} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Target account does not exist."})
+
+      {:error, error} ->
+        json(conn, %{error: error})
+    end
+  end
+
+  def delete_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+    with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
+         {:ok, _user} <- user |> User.delete_alias(alias_user) do
+      json(conn, %{status: "success"})
+    else
+      {:error, :no_such_alias} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Account has no such alias."})
+
+      {:error, error} ->
+        json(conn, %{error: error})
+    end
+  end
+
+  def list_aliases(%{assigns: %{user: user}} = conn, %{}) do
+    alias_nicks =
+      user
+      |> User.alias_users()
+      |> Enum.map(&User.full_nickname/1)
+
+    json(conn, %{aliases: alias_nicks})
+  end
+
+  defp find_user_by_nickname(nickname) do
+    user = User.get_cached_by_nickname(nickname)
+
+    if user == nil do
+      {:not_found, nil}
+    else
+      {:ok, user}
+    end
+  end
+
+  defp find_or_fetch_user_by_nickname(nickname) do
+    user = User.get_by_nickname(nickname)
+
+    if user != nil and user.local do
+      {:ok, user}
+    else
+      with {:ok, user} <- User.fetch_by_nickname(nickname) do
+        {:ok, user}
+      else
+        _ ->
+          {:not_found, nil}
+      end
     end
   end
 
