@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User do
@@ -78,6 +78,10 @@ defmodule Pleroma.User do
     inverse_subscription: [
       subscribee_subscriptions: :subscriber_users,
       subscriber_subscriptions: :subscribee_users
+    ],
+    endorsement: [
+      endorser_endorsements: :endorsed_users,
+      endorsee_endorsements: :endorser_users
     ]
   ]
 
@@ -150,6 +154,9 @@ defmodule Pleroma.User do
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
     field(:last_status_at, :naive_datetime)
+    field(:birthday, :date)
+    field(:show_birthday, :boolean, default: false)
+    field(:language, :string)
 
     embeds_one(
       :notification_settings,
@@ -170,25 +177,25 @@ defmodule Pleroma.User do
            {incoming_relation, incoming_relation_source}
          ]} <- @user_relationships_config do
       # Definitions of `has_many` relations: :blocker_blocks, :muter_mutes, :reblog_muter_mutes,
-      #   :notification_muter_mutes, :subscribee_subscriptions
+      #   :notification_muter_mutes, :subscribee_subscriptions, :endorser_endorsements
       has_many(outgoing_relation, UserRelationship,
         foreign_key: :source_id,
         where: [relationship_type: relationship_type]
       )
 
       # Definitions of `has_many` relations: :blockee_blocks, :mutee_mutes, :reblog_mutee_mutes,
-      #   :notification_mutee_mutes, :subscriber_subscriptions
+      #   :notification_mutee_mutes, :subscriber_subscriptions, :endorsee_endorsements
       has_many(incoming_relation, UserRelationship,
         foreign_key: :target_id,
         where: [relationship_type: relationship_type]
       )
 
       # Definitions of `has_many` relations: :blocked_users, :muted_users, :reblog_muted_users,
-      #   :notification_muted_users, :subscriber_users
+      #   :notification_muted_users, :subscriber_users, :endorsed_users
       has_many(outgoing_relation_target, through: [outgoing_relation, :target])
 
       # Definitions of `has_many` relations: :blocker_users, :muter_users, :reblog_muter_users,
-      #   :notification_muter_users, :subscribee_users
+      #   :notification_muter_users, :subscribee_users, :endorser_users
       has_many(incoming_relation_source, through: [incoming_relation, :source])
     end
 
@@ -216,7 +223,7 @@ defmodule Pleroma.User do
         @user_relationships_config do
     # `def blocked_users_relation/2`, `def muted_users_relation/2`,
     #   `def reblog_muted_users_relation/2`, `def notification_muted_users/2`,
-    #   `def subscriber_users/2`
+    #   `def subscriber_users/2`, `def endorsed_users_relation/2`
     def unquote(:"#{outgoing_relation_target}_relation")(user, restrict_deactivated? \\ false) do
       target_users_query = assoc(user, unquote(outgoing_relation_target))
 
@@ -229,7 +236,7 @@ defmodule Pleroma.User do
     end
 
     # `def blocked_users/2`, `def muted_users/2`, `def reblog_muted_users/2`,
-    #   `def notification_muted_users/2`, `def subscriber_users/2`
+    #   `def notification_muted_users/2`, `def subscriber_users/2`, `def endorsed_users/2`
     def unquote(outgoing_relation_target)(user, restrict_deactivated? \\ false) do
       __MODULE__
       |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
@@ -240,7 +247,8 @@ defmodule Pleroma.User do
     end
 
     # `def blocked_users_ap_ids/2`, `def muted_users_ap_ids/2`, `def reblog_muted_users_ap_ids/2`,
-    #   `def notification_muted_users_ap_ids/2`, `def subscriber_users_ap_ids/2`
+    #   `def notification_muted_users_ap_ids/2`, `def subscriber_users_ap_ids/2`,
+    #   `def endorsed_users_ap_ids/2`
     def unquote(:"#{outgoing_relation_target}_ap_ids")(user, restrict_deactivated? \\ false) do
       __MODULE__
       |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
@@ -465,7 +473,9 @@ defmodule Pleroma.User do
         :actor_type,
         :also_known_as,
         :accepts_chat_messages,
-        :pinned_objects
+        :pinned_objects,
+        :birthday,
+        :show_birthday
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -526,9 +536,12 @@ defmodule Pleroma.User do
         :is_discoverable,
         :actor_type,
         :accepts_chat_messages,
-        :disclose_client
+        :disclose_client,
+        :birthday,
+        :show_birthday
       ]
     )
+    |> validate_min_age()
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
@@ -693,7 +706,7 @@ defmodule Pleroma.User do
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> put_ap_id()
     |> unique_constraint(:ap_id)
@@ -733,32 +746,57 @@ defmodule Pleroma.User do
       :password_confirmation,
       :emoji,
       :accepts_chat_messages,
-      :registration_reason
+      :registration_reason,
+      :birthday,
+      :language
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
-    |> validate_change(:email, fn :email, email ->
-      valid? =
-        Config.get([User, :email_blacklist])
-        |> Enum.all?(fn blacklisted_domain ->
-          !String.ends_with?(email, ["@" <> blacklisted_domain, "." <> blacklisted_domain])
-        end)
-
-      if valid?, do: [], else: [email: "Invalid email"]
-    end)
+    |> validate_email_not_in_blacklisted_domain(:email)
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_length(:registration_reason, max: reason_limit)
     |> maybe_validate_required_email(opts[:external])
+    |> maybe_validate_required_birthday
+    |> validate_min_age()
     |> put_password_hash
     |> put_ap_id()
     |> unique_constraint(:ap_id)
     |> put_following_and_follower_and_featured_address()
+  end
+
+  def validate_not_restricted_nickname(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      valid? =
+        Config.get([User, :restricted_nicknames])
+        |> Enum.all?(fn restricted_nickname ->
+          String.downcase(value) != String.downcase(restricted_nickname)
+        end)
+
+      if valid?, do: [], else: [nickname: "Invalid nickname"]
+    end)
+  end
+
+  def validate_email_not_in_blacklisted_domain(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      valid? =
+        Config.get([User, :email_blacklist])
+        |> Enum.all?(fn blacklisted_domain ->
+          blacklisted_domain_downcase = String.downcase(blacklisted_domain)
+
+          !String.ends_with?(String.downcase(value), [
+            "@" <> blacklisted_domain_downcase,
+            "." <> blacklisted_domain_downcase
+          ])
+        end)
+
+      if valid?, do: [], else: [email: "Invalid email"]
+    end)
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
@@ -769,6 +807,26 @@ defmodule Pleroma.User do
     else
       changeset
     end
+  end
+
+  defp maybe_validate_required_birthday(changeset) do
+    if Config.get([:instance, :birthday_required]) do
+      validate_required(changeset, [:birthday])
+    else
+      changeset
+    end
+  end
+
+  defp validate_min_age(changeset) do
+    changeset
+    |> validate_change(:birthday, fn :birthday, birthday ->
+      valid? =
+        Date.utc_today()
+        |> Date.diff(birthday) >=
+          Config.get([:instance, :birthday_min_age])
+
+      if valid?, do: [], else: [birthday: "Invalid age"]
+    end)
   end
 
   defp put_ap_id(changeset) do
@@ -1050,6 +1108,10 @@ defmodule Pleroma.User do
     Repo.get_by(User, ap_id: ap_id)
   end
 
+  def get_by_uri(uri) do
+    Repo.get_by(User, uri: uri)
+  end
+
   def get_all_by_ap_id(ap_ids) do
     from(u in __MODULE__,
       where: u.ap_id in ^ap_ids
@@ -1088,10 +1150,24 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def update_and_set_cache(changeset) do
+  def update_and_set_cache(%{data: %Pleroma.User{} = user} = changeset) do
+    was_superuser_before_update = User.superuser?(user)
+
     with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
       set_cache(user)
     end
+    |> maybe_remove_report_notifications(was_superuser_before_update)
+  end
+
+  defp maybe_remove_report_notifications({:ok, %Pleroma.User{} = user} = result, true) do
+    if not User.superuser?(user),
+      do: user |> Notification.destroy_multiple_from_types(["pleroma:report"])
+
+    result
+  end
+
+  defp maybe_remove_report_notifications(result, _) do
+    result
   end
 
   def get_user_friends_ap_ids(user) do
@@ -1404,17 +1480,30 @@ defmodule Pleroma.User do
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
   def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
     notifications? = Map.get(params, :notifications, true)
-    expires_in = Map.get(params, :expires_in, 0)
+    duration = Map.get(params, :duration, 0)
 
-    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+    expires_at =
+      if duration > 0 do
+        DateTime.utc_now()
+        |> DateTime.add(duration)
+      else
+        nil
+      end
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee, expires_at),
          {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+           (notifications? &&
+              UserRelationship.create_notification_mute(
+                muter,
+                mutee,
+                expires_at
+              )) ||
              {:ok, nil} do
-      if expires_in > 0 do
+      if duration > 0 do
         Pleroma.Workers.MuteExpireWorker.enqueue(
           "unmute_user",
           %{"muter_id" => muter.id, "mutee_id" => mutee.id},
-          schedule_in: expires_in
+          scheduled_at: expires_at
         )
       end
 
@@ -1516,6 +1605,40 @@ defmodule Pleroma.User do
     unblock(blocker, get_cached_by_ap_id(ap_id))
   end
 
+  def endorse(%User{} = endorser, %User{} = target) do
+    with max_endorsed_users <- Pleroma.Config.get([:instance, :max_endorsed_users], 0),
+         endorsed_users <-
+           User.endorsed_users_relation(endorser)
+           |> Repo.aggregate(:count, :id) do
+      cond do
+        endorsed_users >= max_endorsed_users ->
+          {:error, "You have already pinned the maximum number of users"}
+
+        not following?(endorser, target) ->
+          {:error, "Could not endorse: You are not following #{target.nickname}"}
+
+        true ->
+          UserRelationship.create_endorsement(endorser, target)
+      end
+    end
+  end
+
+  def endorse(%User{} = endorser, %{ap_id: ap_id}) do
+    with %User{} = endorsed <- get_cached_by_ap_id(ap_id) do
+      endorse(endorser, endorsed)
+    end
+  end
+
+  def unendorse(%User{} = unendorser, %User{} = target) do
+    UserRelationship.delete_endorsement(unendorser, target)
+  end
+
+  def unendorse(%User{} = unendorser, %{ap_id: ap_id}) do
+    with %User{} = user <- get_cached_by_ap_id(ap_id) do
+      unendorse(unendorser, user)
+    end
+  end
+
   def mutes?(nil, _), do: false
   def mutes?(%User{} = user, %User{} = target), do: mutes_user?(user, target)
 
@@ -1559,6 +1682,10 @@ defmodule Pleroma.User do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
       subscribed_to?(user, target)
     end
+  end
+
+  def endorses?(%User{} = user, %User{} = target) do
+    UserRelationship.endorsement_exists?(user, target)
   end
 
   @doc """
@@ -2232,6 +2359,7 @@ defmodule Pleroma.User do
   def get_ap_ids_by_nicknames(nicknames) do
     from(u in User,
       where: u.nickname in ^nicknames,
+      order_by: fragment("array_position(?, ?)", ^nicknames, u.nickname),
       select: u.ap_id
     )
     |> Repo.all()
@@ -2543,5 +2671,14 @@ defmodule Pleroma.User do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
     end
+  end
+
+  def get_friends_birthdays_query(%User{} = user, day, month) do
+    User.Query.build(%{
+      friends: user,
+      deactivated: false,
+      birthday_day: day,
+      birthday_month: month
+    })
   end
 end

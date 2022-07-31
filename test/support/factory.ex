@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
@@ -626,5 +626,17 @@ defmodule Pleroma.Factory do
       phrase: "cofe",
       context: ["home"]
     }
+  end
+
+  def announcement_factory(params \\ %{}) do
+    data = Map.get(params, :data, %{})
+
+    {_, params} = Map.pop(params, :data)
+
+    %Pleroma.Announcement{
+      data: Map.merge(%{"content" => "test announcement", "all_day" => false}, data)
+    }
+    |> Map.merge(params)
+    |> Pleroma.Announcement.add_rendered_properties()
   end
 end

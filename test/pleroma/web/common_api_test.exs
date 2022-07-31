@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPITest do
@@ -683,6 +683,32 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, _activity} = CommonAPI.post(user, %{status: "12345"})
     end
 
+    test "it validates media attachment limits are correctly enforced" do
+      clear_config([:instance, :max_media_attachments], 4)
+
+      user = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      assert {:error, "Too many attachments"} =
+               CommonAPI.post(user, %{
+                 status: "",
+                 media_ids: List.duplicate(upload.id, 5)
+               })
+
+      assert {:ok, _activity} =
+               CommonAPI.post(user, %{
+                 status: "",
+                 media_ids: [upload.id]
+               })
+    end
+
     test "it can handle activities that expire" do
       user = insert(:user)
 
@@ -1205,6 +1231,18 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, follower} = CommonAPI.unfollow(follower, followed)
 
       refute User.subscribed_to?(follower, followed)
+    end
+
+    test "also unpins a user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, _endorsement} = User.endorse(follower, followed)
+
+      assert User.endorses?(follower, followed)
+
+      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+
+      refute User.endorses?(follower, followed)
     end
 
     test "cancels a pending follow for a local user" do

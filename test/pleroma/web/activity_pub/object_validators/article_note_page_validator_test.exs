@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest do
@@ -31,5 +31,27 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     test "a basic note validates", %{note: note} do
       %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
     end
+  end
+
+  test "a Note from Roadhouse validates" do
+    insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+
+    %{"object" => note} =
+      "test/fixtures/roadhouse-create-activity.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
+
+  test "a note with an attachment should work", _ do
+    insert(:user, %{ap_id: "https://owncast.localhost.localdomain/federation/user/streamer"})
+
+    note =
+      "test/fixtures/owncast-note-with-attachment.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
   end
 end

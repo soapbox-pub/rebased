@@ -1,1 +1,1 @@
-<h2>Invalid Token</h2>
+<h2><%= Gettext.dpgettext("static_pages", "password reset invalid token message", "Invalid Token") %></h2>

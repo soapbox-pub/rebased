@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StaticFE.StaticFEController do
@@ -165,15 +165,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   end
 
   defp assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
-    do: assign(conn, :notice_id, notice_id)
-
-  defp assign_id(%{path_info: ["@" <> _nickname, notice_id]} = conn, _opts),
-    do: assign(conn, :notice_id, notice_id)
-
-  defp assign_id(%{path_info: ["@" <> _nickname, "posts", notice_id]} = conn, _opts),
-    do: assign(conn, :notice_id, notice_id)
-
-  defp assign_id(%{path_info: [_nickname, "status", notice_id]} = conn, _opts),
     do: assign(conn, :notice_id, notice_id)
 
   defp assign_id(%{path_info: ["users", user_id]} = conn, _opts),

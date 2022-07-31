@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ConfigDBTest do
@@ -238,10 +238,11 @@ defmodule Pleroma.ConfigDBTest do
     end
 
     test "ssl options" do
-      assert ConfigDB.to_elixir_types([":tlsv1", ":tlsv1.1", ":tlsv1.2"]) == [
+      assert ConfigDB.to_elixir_types([":tlsv1", ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]) == [
                :tlsv1,
                :"tlsv1.1",
-               :"tlsv1.2"
+               :"tlsv1.2",
+               :"tlsv1.3"
              ]
     end
 

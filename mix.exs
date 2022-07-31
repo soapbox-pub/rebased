@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.4.51"),
+      version: version("2.4.52"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -124,7 +124,10 @@ defmodule Pleroma.Mixfile do
       {:ecto_sql, "~> 3.6.2"},
       {:postgrex, ">= 0.15.5"},
       {:oban, "~> 2.3.4"},
-      {:gettext, "~> 0.18"},
+      {:gettext,
+       git: "https://github.com/tusooa/gettext.git",
+       ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
+       override: true},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
@@ -142,15 +145,14 @@ defmodule Pleroma.Mixfile do
       {:mogrify, "~> 0.9.1"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
-      {:sweet_xml, "~> 0.6.6"},
+      {:sweet_xml, "~> 0.7.2"},
       {:earmark, "~> 1.4.15"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
        git: "https://github.com/msantos/crypt.git",
        ref: "f75cd55325e33cbea198fb41fe41871392f8fb76"},
       {:cors_plug, "~> 2.0"},
-      {:web_push_encryption,
-       git: "https://github.com/lanodan/elixir-web-push-encryption.git", branch: "bugfix/otp-24"},
+      {:web_push_encryption, "~> 0.3.1"},
       {:swoosh, "~> 1.0"},
       {:phoenix_swoosh, "~> 0.3"},
       {:gen_smtp, "~> 0.13"},
@@ -158,7 +160,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.5.1"},
+      {:linkify, "~> 0.5.2"},
       {:http_signatures, "~> 0.1.1"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
@@ -183,9 +185,7 @@ defmodule Pleroma.Mixfile do
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:flake_id, "~> 0.1.0"},
-      {:concurrent_limiter,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter.git",
-       ref: "d81be41024569330f296fc472e24198d7499ba78"},
+      {:concurrent_limiter, "~> 0.1.1"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
@@ -194,7 +194,7 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
-      {:eblurhash, "~> 1.1.0"},
+      {:eblurhash, "~> 1.2.2"},
       {:open_api_spex, "~> 3.10"},
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:ecto_psql_extras, "~> 0.6"},
@@ -246,9 +246,10 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     git_available? = match?({_output, 0}, System.cmd("sh", ["-c", "command -v git"]))
+    dotgit_present? = File.exists?(".git")
 
     git_pre_release =
-      if git_available? do
+      if git_available? and dotgit_present? do
         {tag, tag_err} =
           System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
 
@@ -275,6 +276,7 @@ defmodule Pleroma.Mixfile do
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
       with true <- git_available?,
+           true <- dotgit_present?,
            {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StreamerTest do
@@ -772,6 +772,7 @@ defmodule Pleroma.Web.StreamerTest do
       refute_receive _
     end
 
+    @tag :erratic
     test "it sends conversation update to the 'direct' stream when a message is deleted", %{
       user: user,
       token: oauth_token

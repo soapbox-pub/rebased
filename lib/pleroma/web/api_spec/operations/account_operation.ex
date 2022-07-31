@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.AccountOperation do
@@ -279,10 +279,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "Mute notifications in addition to statuses? Defaults to `true`."
         ),
         Operation.parameter(
+          :duration,
+          :query,
+          %Schema{type: :integer},
+          "Expire the mute in `duration` seconds. Default 0 for infinity"
+        ),
+        Operation.parameter(
           :expires_in,
           :query,
           %Schema{type: :integer, default: 0},
-          "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+          "Deprecated, use `duration` instead"
         )
       ],
       responses: %{
@@ -327,6 +333,42 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.unblock",
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
       description: "Unblock the given account.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
+  def endorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Endorse",
+      operationId: "AccountController.endorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Addds the given account to endorsed accounts list.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 =>
+          Operation.response("Bad Request", "application/json", %Schema{
+            allOf: [ApiError],
+            title: "Unprocessable Entity",
+            example: %{
+              "error" => "You have already pinned the maximum number of users"
+            }
+          })
+      }
+    }
+  end
+
+  def unendorse_operation do
+    %Operation{
+      tags: ["Account actions"],
+      summary: "Unendorse",
+      operationId: "AccountController.unendorse",
+      security: [%{"oAuth" => ["follow", "write:accounts"]}],
+      description: "Removes the given account from endorsed accounts list.",
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Relationship", "application/json", AccountRelationship)
@@ -400,15 +442,35 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
+  def lookup_operation do
+    %Operation{
+      tags: ["Account lookup"],
+      summary: "Find a user by nickname",
+      operationId: "AccountController.lookup",
+      parameters: [
+        Operation.parameter(
+          :acct,
+          :query,
+          :string,
+          "User nickname"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", Account),
+        404 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def endorsements_operation do
     %Operation{
       tags: ["Retrieve account information"],
       summary: "Endorsements",
       operationId: "AccountController.endorsements",
-      description: "Not implemented",
+      description: "Returns endorsed accounts",
       security: [%{"oAuth" => ["read:accounts"]}],
       responses: %{
-        200 => empty_array_response()
+        200 => Operation.response("Array of Accounts", "application/json", array_of_accounts())
       }
     }
   end
@@ -487,6 +549,25 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           type: :string,
           nullable: true,
           description: "Invite token required when the registrations aren't public"
+        },
+        birthday: %Schema{
+          nullable: true,
+          description: "User's birthday",
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
+        },
+        language: %Schema{
+          type: :string,
+          nullable: true,
+          description: "User's preferred language for emails"
         }
       },
       example: %{
@@ -664,7 +745,26 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description:
             "Discovery (listing, indexing) of this account by external services (search bots etc.) is allowed."
         },
-        actor_type: ActorType
+        actor_type: ActorType,
+        birthday: %Schema{
+          nullable: true,
+          description: "User's birthday",
+          anyOf: [
+            %Schema{
+              type: :string,
+              format: :date
+            },
+            %Schema{
+              type: :string,
+              maxLength: 0
+            }
+          ]
+        },
+        show_birthday: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "User's birthday will be visible"
+        }
       },
       example: %{
         bot: false,
@@ -684,7 +784,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         allow_following_move: false,
         also_known_as: ["https://foo.bar/users/foo"],
         discoverable: false,
-        actor_type: "Person"
+        actor_type: "Person",
+        show_birthday: false,
+        birthday: "2001-02-12"
       }
     }
   end
@@ -781,10 +883,15 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Mute notifications in addition to statuses? Defaults to true.",
           default: true
         },
+        duration: %Schema{
+          type: :integer,
+          nullable: true,
+          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity"
+        },
         expires_in: %Schema{
           type: :integer,
           nullable: true,
-          description: "Expire the mute in `expires_in` seconds. Default 0 for infinity",
+          description: "Deprecated, use `duration` instead",
           default: 0
         }
       },

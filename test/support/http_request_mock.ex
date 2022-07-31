@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule HttpRequestMock do
@@ -1367,6 +1367,36 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/emoji-in-summary.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://gleasonator.com/objects/102eb097-a18b-4cd5-abfc-f952efcb70bb", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/gleasonator-AG3RzWfwEKKrY63qj2.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://gleasonator.com/users/macgirvin", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/macgirvin@gleasonator.com.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://gleasonator.com/users/macgirvin/collections/featured", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/users_mock/masto_featured.json")
+         |> String.replace("{{domain}}", "gleasonator.com")
+         |> String.replace("{{nickname}}", "macgirvin"),
        headers: activitypub_object_headers()
      }}
   end

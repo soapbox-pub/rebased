@@ -116,3 +116,9 @@ Feel free to contact us to be added to this list!
 - Contact: [@r@freesoftwareextremist.com](https://freesoftwareextremist.com/users/r)
 - Features: Does not requires JavaScript
 - Features: MastoAPI
+
+### Glitch-lily
+- Source Code: <https://lily.kazv.moe/infra/glitch-lily>
+- Contact: [@tusooa@kazv.moe](https://kazv.moe/users/tusooa)
+- Features: MastoAPI
+- Based on [glitch-soc](https://github.com/glitch-soc/mastodon) frontend

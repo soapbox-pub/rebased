@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
@@ -494,6 +494,40 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
   end
 
+  describe "hiding birthday" do
+    test "doesn't show birthday if hidden" do
+      user =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: false
+        })
+
+      other_user = insert(:user)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: other_user}
+             )[:birthday] == nil
+    end
+
+    test "shows hidden birthday to the account owner" do
+      user =
+        insert(:user, %{
+          birthday: "2001-02-12",
+          show_birthday: false
+        })
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: user}
+             )[:birthday] == nil
+    end
+  end
+
   describe "follow requests counter" do
     test "shows zero when no follow requests are pending" do
       user = insert(:user)
@@ -599,5 +633,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       end)
       |> assert()
     end
+  end
+
+  test "renders mute expiration date" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _user_relationships} =
+      User.mute(user, other_user, %{notifications: true, duration: 24 * 60 * 60})
+
+    %{
+      mute_expires_at: mute_expires_at
+    } = AccountView.render("show.json", %{user: other_user, for: user, mutes: true})
+
+    assert DateTime.diff(
+             mute_expires_at,
+             DateTime.utc_now() |> DateTime.add(24 * 60 * 60)
+           ) in -3..3
   end
 end

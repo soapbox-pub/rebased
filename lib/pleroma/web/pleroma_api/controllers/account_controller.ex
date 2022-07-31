@@ -1,12 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.AccountController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
+    only: [
+      json_response: 3,
+      add_link_headers: 2,
+      embed_relationships?: 1,
+      assign_account_by_id: 2
+    ]
 
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -40,9 +45,23 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     %{scopes: ["read:favourites"], fallback: :proceed_unauthenticated} when action == :favourites
   )
 
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
+    when action == :endorsements
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]} when action == :birthdays
+  )
+
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 
-  plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
+  plug(
+    :assign_account_by_id
+    when action in [:favourites, :endorsements, :subscribe, :unsubscribe]
+  )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
 
@@ -90,6 +109,22 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     )
   end
 
+  @doc "GET /api/v1/pleroma/accounts/:id/endorsements"
+  def endorsements(%{assigns: %{user: for_user, account: user}} = conn, params) do
+    users =
+      user
+      |> User.endorsed_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Repo.all()
+
+    conn
+    |> render("index.json",
+      for: for_user,
+      users: users,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
+  end
+
   @doc "POST /api/v1/pleroma/accounts/:id/subscribe"
   def subscribe(%{assigns: %{user: user, account: subscription_target}} = conn, _params) do
     with {:ok, _subscription} <- User.subscribe(user, subscription_target) do
@@ -106,5 +141,19 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
     end
+  end
+
+  @doc "GET /api/v1/pleroma/birthdays"
+  def birthdays(%{assigns: %{user: %User{} = user}} = conn, %{day: day, month: month} = _params) do
+    birthdays =
+      User.get_friends_birthdays_query(user, day, month)
+      |> Pleroma.Repo.all()
+
+    conn
+    |> render("index.json",
+      for: user,
+      users: birthdays,
+      as: :user
+    )
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
@@ -289,6 +289,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/objects/#{uuid}")
 
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
+    end
+
+    test "does not cache authenticated response", %{conn: conn} do
+      user = insert(:user)
+      reader = insert(:user)
+
+      {:ok, post} =
+        CommonAPI.post(user, %{status: "test @#{reader.nickname}", visibility: "local"})
+
+      object = Object.normalize(post, fetch: false)
+      uuid = String.split(object.data["id"], "/") |> List.last()
+
+      assert response =
+               conn
+               |> assign(:user, reader)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/objects/#{uuid}")
+
+      json_response(response, 200)
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> get("/objects/#{uuid}")
+      |> json_response(404)
     end
 
     test "it returns 404 for non-public messages", %{conn: conn} do

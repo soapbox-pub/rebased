@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
@@ -65,6 +65,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
 
   defp fix_replies(data), do: data
 
+  def fix_attachments(%{"attachment" => attachment} = data) when is_map(attachment),
+    do: Map.put(data, "attachment", [attachment])
+
+  def fix_attachments(data), do: data
+
   defp fix(data) do
     data
     |> CommonFixes.fix_actor()
@@ -72,6 +77,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_url()
     |> fix_tag()
     |> fix_replies()
+    |> fix_attachments()
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
   end

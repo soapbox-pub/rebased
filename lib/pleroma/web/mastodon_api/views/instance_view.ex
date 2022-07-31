@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceView do
@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       uri: Pleroma.Web.Endpoint.url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
+      short_description: Keyword.get(instance, :short_description),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
@@ -31,6 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       approval_required: Keyword.get(instance, :account_approval_required),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
+      max_media_attachments: Keyword.get(instance, :max_media_attachments),
       poll_limits: Keyword.get(instance, :poll_limits),
       upload_limit: Keyword.get(instance, :upload_limit),
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
@@ -46,7 +48,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           federation: federation(),
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats]),
-          privileged_staff: Config.get([:instance, :privileged_staff])
+          privileged_staff: Config.get([:instance, :privileged_staff]),
+          birthday_required: Config.get([:instance, :birthday_required]),
+          birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
@@ -65,6 +69,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
+      if Config.get([:activitypub, :blockers_visible]) do
+        "blockers_visible"
+      end,
       if Config.get([:media_proxy, :enabled]) do
         "media_proxy"
       end,

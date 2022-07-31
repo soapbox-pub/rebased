@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
@@ -363,7 +363,8 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       [note, _] = notes
 
       assert note["user"]["nickname"] == admin.nickname
-      assert note["content"] == "this is disgusting!"
+      # We use '=~' because the order of the notes isn't guaranteed
+      assert note["content"] =~ "this is disgusting"
       assert note["created_at"]
       assert response["total"] == 1
     end

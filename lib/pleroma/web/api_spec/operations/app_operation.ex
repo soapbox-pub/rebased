@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.AppOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
+  alias Pleroma.Web.ApiSpec.Schemas.App
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -22,7 +23,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       operationId: "AppController.create",
       requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       responses: %{
-        200 => Operation.response("App", "application/json", create_response()),
+        200 => Operation.response("App", "application/json", App),
         422 =>
           Operation.response(
             "Unprocessable Entity",
@@ -115,32 +116,6 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       example: %{
         "client_name" => "My App",
         "redirect_uris" => "https://myapp.com/auth/callback",
-        "website" => "https://myapp.com/"
-      }
-    }
-  end
-
-  defp create_response do
-    %Schema{
-      title: "AppCreateResponse",
-      description: "Response schema for an app",
-      type: :object,
-      properties: %{
-        id: %Schema{type: :string},
-        name: %Schema{type: :string},
-        client_id: %Schema{type: :string},
-        client_secret: %Schema{type: :string},
-        redirect_uri: %Schema{type: :string},
-        vapid_key: %Schema{type: :string},
-        website: %Schema{type: :string, nullable: true}
-      },
-      example: %{
-        "id" => "123",
-        "name" => "My App",
-        "client_id" => "TWhM-tNSuncnqN7DBJmoyeLnk6K3iJJ71KKXxgL1hPM",
-        "client_secret" => "ZEaFUFmF0umgBX1qKJDjaU99Q31lDkOU8NutzTOoliw",
-        "vapid_key" =>
-          "BCk-QqERU0q-CfYZjcuB6lnyyOYfJ2AifKqfeGIm7Z-HiTU5T9eTG5GxVA0_OH5mMlI4UkkDTpaZwozy0TzdZ2M=",
         "website" => "https://myapp.com/"
       }
     }

@@ -1,6 +1,6 @@
 # Pleroma: A lightweight social networking server
 # Copyright © 2019-2020 Moxley Stratton, Mike Buhot <https://github.com/open-api-spex/open_api_spex>, MPL-2.0
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.CastAndValidate do

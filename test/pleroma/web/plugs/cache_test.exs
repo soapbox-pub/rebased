@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.CacheTest do
@@ -177,6 +177,24 @@ defmodule Pleroma.Web.Plugs.CacheTest do
              |> Cache.call(%{query_params: true, ttl: nil})
              |> put_resp_content_type("tea/iced")
              |> send_resp(:im_a_teapot, "🥤")
+             |> sent_resp()
+  end
+
+  test "ignores if skip_cache is assigned" do
+    assert @miss_resp ==
+             conn(:get, "/")
+             |> assign(:skip_cache, true)
+             |> Cache.call(%{query_params: false, ttl: nil})
+             |> put_resp_content_type("cofe/hot")
+             |> send_resp(:ok, "cofe")
+             |> sent_resp()
+
+    assert @miss_resp ==
+             conn(:get, "/")
+             |> assign(:skip_cache, true)
+             |> Cache.call(%{query_params: false, ttl: nil})
+             |> put_resp_content_type("cofe/hot")
+             |> send_resp(:ok, "cofe")
              |> sent_resp()
   end
 end

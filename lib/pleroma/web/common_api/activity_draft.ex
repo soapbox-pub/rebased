@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
@@ -112,7 +112,12 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp attachments(%{params: params} = draft) do
     attachments = Utils.attachments_from_ids(params)
-    %__MODULE__{draft | attachments: attachments}
+    draft = %__MODULE__{draft | attachments: attachments}
+
+    case Utils.validate_attachments_count(attachments) do
+      :ok -> draft
+      {:error, message} -> add_error(draft, message)
+    end
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft

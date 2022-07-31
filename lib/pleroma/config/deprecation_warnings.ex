@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.DeprecationWarnings do
@@ -19,6 +19,43 @@ defmodule Pleroma.Config.DeprecationWarnings do
     {[:instance, :mrf_transparency_exclusions], [:mrf, :transparency_exclusions],
      "\n* `config :pleroma, :instance, mrf_transparency_exclusions` is now `config :pleroma, :mrf, transparency_exclusions`"}
   ]
+
+  def check_exiftool_filter do
+    filters = Config.get([Pleroma.Upload]) |> Keyword.get(:filters, [])
+
+    if Pleroma.Upload.Filter.Exiftool in filters do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using Exiftool as a filter instead of Exiftool.StripLocation. This should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool.StripLocation]
+      ```
+      """)
+
+      new_config =
+        filters
+        |> Enum.map(fn
+          Pleroma.Upload.Filter.Exiftool -> Pleroma.Upload.Filter.Exiftool.StripLocation
+          filter -> filter
+        end)
+
+      Config.put([Pleroma.Upload, :filters], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
 
   def check_simple_policy_tuples do
     has_strings =
@@ -180,7 +217,8 @@ defmodule Pleroma.Config.DeprecationWarnings do
       check_old_chat_shoutbox(),
       check_quarantined_instances_tuples(),
       check_transparency_exclusions_tuples(),
-      check_simple_policy_tuples()
+      check_simple_policy_tuples(),
+      check_exiftool_filter()
     ]
     |> Enum.reduce(:ok, fn
       :ok, :ok -> :ok

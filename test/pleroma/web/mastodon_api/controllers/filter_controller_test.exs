@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
@@ -64,12 +64,13 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
       assert response["irreversible"] == false
 
-      expires_at =
+      expected_expiration =
         NaiveDateTime.utc_now()
         |> NaiveDateTime.add(in_seconds)
-        |> Pleroma.Web.CommonAPI.Utils.to_masto_date()
 
-      assert response["expires_at"] == expires_at
+      {:ok, actual_expiration} = NaiveDateTime.from_iso8601(response["expires_at"])
+
+      assert abs(NaiveDateTime.diff(expected_expiration, actual_expiration)) <= 5
 
       filter = Filter.get(response["id"], user)
 
@@ -176,6 +177,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       assert response["whole_word"] == true
     end
 
+    @tag :erratic
     test "with adding expires_at", %{conn: conn, user: user} do
       filter = insert(:filter, user: user)
       in_seconds = 600

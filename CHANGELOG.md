@@ -12,20 +12,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Allow users to remove their emails if instance does not need email to register
+- Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
 - Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
+- `ForceMentionsInPostContent` MRF policy
 - AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
 - AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
+- PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
+- MastoAPI: Add `GET /api/v1/accounts/lookup`
+- MastoAPI: Profile Directory support
+- MastoAPI: Support v2 Suggestions (handpicked accounts only)
+- Ability to log slow Ecto queries by configuring `:pleroma, :telemetry, :slow_queries_logging`
+- Added Phoenix LiveDashboard at `/phoenix/live_dashboard`
+- Added `/manifest.json` for progressive web apps.
+- MastoAPI: Support for `birthday` and `show_birthday` field in `/api/v1/accounts/update_credentials`.
+- Configuration: Add `birthday_required` and `birthday_min_age` settings to provide a way to require users to enter their birth date.
+- PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
+- Make backend-rendered pages translatable. This includes emails. Pages returned as a HTTP response are translated using the language specified in the `userLanguage` cookie, or the `Accept-Language` header. Emails are translated using the `language` field when registering. This language can be changed by `PATCH /api/v1/accounts/update_credentials` with the `language` field.
+- Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
 - Added move account API
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
 - Handle Reject for already-accepted Follows properly
 - Display OpenGraph data on alternative notice routes.
+- Fix replies count for remote replies
+- Fixed hashtags disappearing from the end of lines when Markdown is enabled
+- ChatAPI: Add link headers
+- Limited number of search results to 40 to prevent DoS attacks
+- ActivityPub: fixed federation of attachment dimensions
+- Fixed benchmarks
+- Elixir 1.13 support
+- Fixed crash when pinned_objects is nil
+- Fixed slow timelines when there are a lot of deactivated users
+- Fixed account deletion API
 
 ### Removed
+
+## 2.4.3 - 2022-05-06
+
+### Security
+- Private `/objects/` and `/activities/` leaking if cached by authenticated user
+- SweetXML library DTD bomb
+
+## 2.4.2 - 2022-01-10
+
+### Fixed
+- Federation issues caused by HTTP pool checkout timeouts
+- Compatibility with Elixir 1.13
+
+### Upgrade notes
+
+1. Restart Pleroma
 
 ## 2.4.1 - 2021-08-29
 
@@ -60,6 +100,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
 - AdminAPI: sort users so the newest are at the top.
 - ActivityPub Client-to-Server(C2S): Limitation on the type of Activity/Object are lifted as they are now passed through ObjectValidators
+- MRF (`AntiFollowbotPolicy`): Bot accounts are now also considered followbots. Users can still allow bots to follow them by first following the bot.
 
 ### Added
 

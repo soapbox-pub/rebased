@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
@@ -517,6 +517,25 @@ defmodule Pleroma.NotificationTest do
 
       assert Notification.for_user(other_user) == []
       assert Notification.for_user(third_user) != []
+    end
+  end
+
+  describe "destroy_multiple_from_types/2" do
+    test "clears all notifications of a certain type for a given user" do
+      report_activity = insert(:report_activity)
+      user1 = insert(:user, is_moderator: true, is_admin: true)
+      user2 = insert(:user, is_moderator: true, is_admin: true)
+      {:ok, _} = Notification.create_notifications(report_activity)
+
+      {:ok, _} =
+        CommonAPI.post(user2, %{
+          status: "hey @#{user1.nickname} !"
+        })
+
+      Notification.destroy_multiple_from_types(user1, ["pleroma:report"])
+
+      assert [%Pleroma.Notification{type: "mention"}] = Notification.for_user(user1)
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user2)
     end
   end
 

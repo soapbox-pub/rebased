@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
@@ -117,7 +117,8 @@ defmodule Pleroma.Web.CommonAPI do
   def unfollow(follower, unfollowed) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
-         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed) do
+         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed),
+         {:ok, _endorsement} <- User.unendorse(follower, unfollowed) do
       {:ok, follower}
     end
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Notification do
@@ -337,6 +337,14 @@ defmodule Pleroma.Notification do
     from(n in Notification,
       where: n.id in ^ids,
       where: n.user_id == ^user_id
+    )
+    |> Repo.delete_all()
+  end
+
+  def destroy_multiple_from_types(%{id: user_id}, types) do
+    from(n in Notification,
+      where: n.user_id == ^user_id,
+      where: n.type in ^types
     )
     |> Repo.delete_all()
   end

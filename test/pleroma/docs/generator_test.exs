@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Docs.GeneratorTest do
@@ -86,7 +86,7 @@ defmodule Pleroma.Docs.GeneratorTest do
           key: :versions,
           type: {:list, :atom},
           description: "List of TLS version to use",
-          suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
+          suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]
         }
       ]
     },
@@ -213,7 +213,7 @@ defmodule Pleroma.Docs.GeneratorTest do
     test "suggestion for tls versions" do
       [%{children: children} | _] = Generator.convert_to_strings(@descriptions)
       child = Enum.at(children, 8)
-      assert child[:suggestions] == [":tlsv1", ":tlsv1.1", ":tlsv1.2"]
+      assert child[:suggestions] == [":tlsv1", ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]
     end
 
     test "subgroup with module name" do

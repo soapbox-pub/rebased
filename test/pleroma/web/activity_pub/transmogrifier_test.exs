@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
@@ -106,6 +106,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["object"] == old_user.ap_id
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
+    end
+
+    test "a reply with mismatched context is rejected" do
+      insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+
+      note_activity =
+        "test/fixtures/roadhouse-create-activity.json"
+        |> File.read!()
+        |> Jason.decode!()
+
+      assert {:error, _} = Transmogrifier.handle_incoming(note_activity)
     end
   end
 

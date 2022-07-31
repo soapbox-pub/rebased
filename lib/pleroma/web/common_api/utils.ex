@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
@@ -490,6 +490,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       :ok
     else
       {:error, dgettext("errors", "The status is over the character limit")}
+    end
+  end
+
+  def validate_attachments_count([] = _attachments) do
+    :ok
+  end
+
+  def validate_attachments_count(attachments) do
+    limit = Config.get([:instance, :max_media_attachments])
+    count = length(attachments)
+
+    if count <= limit do
+      :ok
+    else
+      {:error, dgettext("errors", "Too many attachments")}
     end
   end
 end

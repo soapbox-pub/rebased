@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -617,13 +618,31 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
+      clear_config([User, :restricted_nicknames], ["about"])
       [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
-      assert is_bitstring(restricted_name)
+      assert is_binary(restricted_name)
 
       params =
         @full_user_data
         |> Map.put(:nickname, restricted_name)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+
+    test "it is case-insensitive when restricting nicknames" do
+      clear_config([User, :restricted_nicknames], ["about"])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
+
+      assert is_binary(restricted_name)
+
+      restricted_upcase_name = String.upcase(restricted_name)
+
+      params =
+        @full_user_data
+        |> Map.put(:nickname, restricted_upcase_name)
 
       changeset = User.register_changeset(%User{}, params)
 
@@ -635,6 +654,11 @@ defmodule Pleroma.UserTest do
 
       # Block with match
       params = Map.put(@full_user_data, :email, "troll@trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Block with case-insensitive match
+      params = Map.put(@full_user_data, :email, "troll@TrOlLing.wOrld")
       changeset = User.register_changeset(%User{}, params)
       refute changeset.valid?
 
@@ -748,6 +772,54 @@ defmodule Pleroma.UserTest do
           :registration_reason,
           "Quia et nesciunt dolores numquam ipsam nisi sapiente soluta. Ullam repudiandae nisi quam porro officiis officiis ad. Consequatur animi velit ex quia. Odit voluptatem perferendis quia ut nisi. Dignissimos sit soluta atque aliquid dolorem ut dolorum ut. Labore voluptates iste iusto amet voluptatum earum. Ad fugit illum nam eos ut nemo. Pariatur ea fuga non aspernatur. Dignissimos debitis officia corporis est nisi ab et. Atque itaque alias eius voluptas minus. Accusamus numquam tempore occaecati in."
         )
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+  end
+
+  describe "user registration, with :birthday_required and :birthday_min_age" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+
+    setup do
+      clear_config([:instance, :birthday_required], true)
+      clear_config([:instance, :birthday_min_age], 18 * 365)
+    end
+
+    test "it passes when correct birth date is provided" do
+      today = Date.utc_today()
+      birthday = Date.add(today, -19 * 365)
+
+      params =
+        @full_user_data
+        |> Map.put(:birthday, birthday)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      assert changeset.valid?
+    end
+
+    test "it fails when birth date is not provided" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+
+      refute changeset.valid?
+    end
+
+    test "it fails when provided invalid birth date" do
+      today = Date.utc_today()
+      birthday = Date.add(today, -17 * 365)
+
+      params =
+        @full_user_data
+        |> Map.put(:birthday, birthday)
 
       changeset = User.register_changeset(%User{}, params)
 
@@ -1074,7 +1146,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       muted_user = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(user, muted_user, %{expires_in: 60})
+      {:ok, _user_relationships} = User.mute(user, muted_user, %{duration: 60})
       assert User.mutes?(user, muted_user)
 
       worker = Pleroma.Workers.MuteExpireWorker
@@ -2084,6 +2156,17 @@ defmodule Pleroma.UserTest do
       assert user.ap_id in ap_ids
       assert user_two.ap_id in ap_ids
     end
+
+    test "it returns a list of AP ids in the same order" do
+      user = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
+
+      ap_ids =
+        User.get_ap_ids_by_nicknames([user.nickname, user_three.nickname, user_two.nickname])
+
+      assert [user.ap_id, user_three.ap_id, user_two.ap_id] == ap_ids
+    end
   end
 
   describe "sync followers count" do
@@ -2150,6 +2233,26 @@ defmodule Pleroma.UserTest do
       assert {:ok, %User{bio: "test-bio"} = user} = User.update_and_set_cache(changeset)
       assert {:ok, user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
+    end
+
+    test "removes report notifs when user isn't superuser any more" do
+      report_activity = insert(:report_activity)
+      user = insert(:user, is_moderator: true, is_admin: true)
+      {:ok, _} = Notification.create_notifications(report_activity)
+
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
+
+      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
+      # is still superuser because still admin
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
+
+      {:ok, user} = user |> User.admin_api_update(%{is_moderator: true, is_admin: false})
+      # is still superuser because still moderator
+      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
+
+      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
+      # is not a superuser any more
+      assert [] = Notification.for_user(user)
     end
   end
 
@@ -2572,6 +2675,41 @@ defmodule Pleroma.UserTest do
 
       assert user3_updated.also_known_as |> length() == 1
       assert user.ap_id in user3_updated.also_known_as
+    end
+  end
+
+  describe "account endorsements" do
+    test "it pins people" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+
+      {:ok, _user_relationship} = User.endorse(user, pinned_user)
+
+      assert User.endorses?(user, pinned_user)
+    end
+
+    test "it unpins users" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
+      {:ok, _user_relationship} = User.endorse(user, pinned_user)
+      {:ok, _user_pin} = User.unendorse(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+    end
+
+    test "it doesn't pin users you do not follow" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      assert {:error, _message} = User.endorse(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
     end
   end
 end
