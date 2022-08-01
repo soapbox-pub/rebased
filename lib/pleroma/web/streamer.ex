@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Marker
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -249,6 +250,16 @@ defmodule Pleroma.Web.Streamer do
 
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, _auth} ->
+        send(pid, {:text, text})
+      end)
+    end)
+  end
+
+  defp do_stream(topic, %Marker{} = marker) do
+    Registry.dispatch(@registry, "#{topic}:#{marker.user_id}", fn list ->
+      Enum.each(list, fn {pid, _auth} ->
+        text = StreamerView.render("marker.json", marker)
+
         send(pid, {:text, text})
       end)
     end)
