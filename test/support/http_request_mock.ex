@@ -1401,6 +1401,42 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mk.absturztau.be/users/8ozbzjs3o8", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mametsuko@mk.absturztau.be.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://p.helene.moe/users/helene", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/helene@p.helene.moe.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mk.absturztau.be/notes/93e7nm8wqg", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://p.helene.moe/objects/fd5910ac-d9dc-412e-8d1d-914b203296c4", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/p.helene.moe-AM7S6vZQmL6pI9TgPY.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
