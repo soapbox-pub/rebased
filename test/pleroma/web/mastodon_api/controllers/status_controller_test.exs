@@ -1901,23 +1901,50 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              |> json_response_and_validate_schema(:ok)
   end
 
-  test "posting a local only status" do
-    %{user: _user, conn: conn} = oauth_access(["write:statuses"])
+  describe "local-only statuses" do
+    test "posting a local only status" do
+      %{user: _user, conn: conn} = oauth_access(["write:statuses"])
 
-    conn_one =
-      conn
-      |> put_req_header("content-type", "application/json")
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "visibility" => "local"
-      })
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "visibility" => "local"
+        })
 
-    local = Utils.as_local_public()
+      local = Utils.as_local_public()
 
-    assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
-             json_response_and_validate_schema(conn_one, 200)
+      assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
+               json_response_and_validate_schema(conn_one, 200)
 
-    assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+      assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+    end
+
+    test "other users can read local-only posts" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      received =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert received["id"] == activity.id
+    end
+
+    test "anonymous users cannot see local-only posts" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      _received =
+        build_conn()
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(:not_found)
+    end
   end
 
   describe "muted reactions" do

@@ -247,6 +247,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(response, 200) == ObjectView.render("object.json", %{object: object})
     end
 
+    test "does not return local-only objects for remote users", %{conn: conn} do
+      user = insert(:user)
+      reader = insert(:user, local: false)
+
+      {:ok, post} =
+        CommonAPI.post(user, %{status: "test @#{reader.nickname}", visibility: "local"})
+
+      assert Pleroma.Web.ActivityPub.Visibility.is_local_public?(post)
+
+      object = Object.normalize(post, fetch: false)
+      uuid = String.split(object.data["id"], "/") |> List.last()
+
+      assert response =
+               conn
+               |> assign(:user, reader)
+               |> put_req_header("accept", "application/activity+json")
+               |> get("/objects/#{uuid}")
+
+      json_response(response, 404)
+    end
+
     test "it returns a json representation of the object with accept application/json", %{
       conn: conn
     } do
@@ -1295,6 +1316,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result = json_response(conn, 200)
       assert outbox_endpoint == result["id"]
+    end
+
+    test "it returns a local note activity when authenticated as local user", %{conn: conn} do
+      user = insert(:user)
+      reader = insert(:user)
+      {:ok, note_activity} = CommonAPI.post(user, %{status: "mew mew", visibility: "local"})
+      ap_id = note_activity.data["id"]
+
+      resp =
+        conn
+        |> assign(:user, reader)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox?page=true")
+        |> json_response(200)
+
+      assert %{"orderedItems" => [%{"id" => ^ap_id}]} = resp
+    end
+
+    test "it does not return a local note activity when unauthenticated", %{conn: conn} do
+      user = insert(:user)
+      {:ok, _note_activity} = CommonAPI.post(user, %{status: "mew mew", visibility: "local"})
+
+      resp =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox?page=true")
+        |> json_response(200)
+
+      assert %{"orderedItems" => []} = resp
     end
 
     test "it returns a note activity in a collection", %{conn: conn} do
