@@ -82,4 +82,24 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
              |> post("/api/v1/pleroma/backups")
              |> json_response_and_validate_schema(400)
   end
+
+  test "Backup without email address" do
+    user = Pleroma.Factory.insert(:user, email: nil)
+    %{conn: conn} = oauth_access(["read:accounts"], user: user)
+
+    assert is_nil(user.email)
+
+    assert [
+             %{
+               "content_type" => "application/zip",
+               "url" => _url,
+               "file_size" => 0,
+               "processed" => false,
+               "inserted_at" => _
+             }
+           ] =
+             conn
+             |> post("/api/v1/pleroma/backups")
+             |> json_response_and_validate_schema(:ok)
+  end
 end
