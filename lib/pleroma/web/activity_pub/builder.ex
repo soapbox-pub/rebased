@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
-  def accept_or_reject(%Object{data: %{"actor" => actor}} = object, activity, type) do
+  def accept_or_reject(%Object{data: %{"actor" => actor}}, activity, type) do
     data = %{
       "id" => Utils.generate_activity_id(),
       "actor" => actor,
@@ -362,11 +362,12 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname)
   end
 
-  def join(actor, object) do
+  def join(actor, object, participation_message \\ nil) do
     with {:ok, data, meta} <- object_action(actor, object) do
       data =
         data
         |> Map.put("type", "Join")
+        |> Map.put("participationMessage", participation_message)
 
       {:ok, data, meta}
     end

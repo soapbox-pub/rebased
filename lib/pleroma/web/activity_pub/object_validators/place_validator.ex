@@ -5,8 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator do
   use Ecto.Schema
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
-
   import Ecto.Changeset
 
   @primary_key false

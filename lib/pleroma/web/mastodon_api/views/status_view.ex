@@ -558,16 +558,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  def build_event(%{"type" => "Event"} = data) do
+  defp build_event(%{"type" => "Event"} = data) do
     %{
+      name: data["name"],
       start_time: data["startTime"],
       end_time: data["endTime"],
       join_mode: data["joinMode"],
-      participants_count: data["participant_count"]
+      participants_count: data["participant_count"],
+      location: build_event_location(data["location"])
     }
   end
 
-  def build_event(_), do: nil
+  defp build_event(_), do: nil
+
+  defp build_event_location(%{"type" => "Place", "name" => name}) do
+    %{name: name}
+  end
+
+  defp build_event_location(_), do: nil
 
   defp present?(nil), do: false
   defp present?(false), do: false

@@ -912,11 +912,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   ### Join-related helpers
-  def get_existing_join(actor, %{data: %{"id" => id}}) do
+  def get_existing_join(actor, id) do
     actor
     |> Activity.Queries.by_actor()
     |> Activity.Queries.by_object_id(id)
     |> Activity.Queries.by_type("Join")
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
     |> limit(1)
     |> Repo.one()
   end

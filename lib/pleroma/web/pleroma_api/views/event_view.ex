@@ -4,21 +4,35 @@
 
 defmodule Pleroma.Web.PleromaAPI.EventView do
   use Pleroma.Web, :view
-  alias Pleroma.Web.MastodonAPI
+
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.AccountView
 
   def render(
         "participation_requests.json",
-        %{participation_requests: participation_requests} = opts
+        %{activities: activities} = opts
       ) do
     render_many(
-      participation_requests,
+      activities,
       __MODULE__,
       "participation_request.json",
-      Map.delete(opts, :participation_requests)
+      Map.delete(opts, :activities)
     )
   end
 
-  def render("participation_request.json", %{participation_request: participation_request} = opts) do
-    %{}
+  def render(
+        "participation_request.json",
+        %{activity: activity} = opts
+      ) do
+    user = CommonAPI.get_user(activity.data["actor"])
+
+    %{
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: opts[:for]
+        }),
+      participation_message: activity.data["participationMessage"]
+    }
   end
 end

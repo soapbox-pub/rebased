@@ -77,5 +77,4 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       embeds_one(:location, PlaceValidator)
     end
   end
-
 end

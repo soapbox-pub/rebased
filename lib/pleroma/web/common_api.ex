@@ -304,8 +304,10 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def join(%User{} = user, id) do
-    case join_helper(user, id) do
+  def join(%User{} = user, event_id, params \\ %{}) do
+    participation_message = Map.get(params, :participation_message)
+
+    case join_helper(user, event_id, participation_message) do
       {:ok, _} = res ->
         res
 
@@ -313,14 +315,15 @@ defmodule Pleroma.Web.CommonAPI do
         res
 
       {:error, e} ->
-        Logger.error("Could not join #{id}. Error: #{inspect(e, pretty: true)}")
+        Logger.error("Could not join #{event_id}. Error: #{inspect(e, pretty: true)}")
         {:error, dgettext("errors", "Could not join")}
     end
   end
 
-  def join_helper(user, id) do
+  def join_helper(user, id, participation_message) do
     with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
-         {_, {:ok, join_object, meta}} <- {:build_object, Builder.join(user, object)},
+         {_, {:ok, join_object, meta}} <-
+           {:build_object, Builder.join(user, object, participation_message)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,
             Pipeline.common_pipeline(join_object, Keyword.put(meta, :local, true))} do
@@ -338,6 +341,33 @@ defmodule Pleroma.Web.CommonAPI do
 
       e ->
         {:error, e}
+    end
+  end
+
+  def leave(%User{} = user, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(user, event_id),
+         {:ok, undo, _} <- Builder.undo(user, join_activity),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
+    else
+      _ ->
+        {:error, dgettext("errors", "Could not remove join activity")}
+    end
+  end
+
+  def accept_join_request(%User{} = user, %User{} = participant, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(participant, event_id),
+         {:ok, accept_data, _} <- Builder.accept(user, join_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true) do
+      {:ok, participant}
+    end
+  end
+
+  def reject_join_request(%User{} = user, %User{} = participant, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(participant, event_id),
+         {:ok, reject_data, _} <- Builder.reject(user, join_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(reject_data, local: true) do
+      {:ok, participant}
     end
   end
 

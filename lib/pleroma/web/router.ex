@@ -443,7 +443,23 @@ defmodule Pleroma.Web.Router do
       post("/backups", BackupController, :create)
 
       post("/events", EventController, :create)
+      get("/events/:id/participations", EventController, :participations)
+      get("/events/:id/participation_requests", EventController, :participation_requests)
+
+      post(
+        "/events/:id/participation_requests/:participant_id/accept",
+        EventController,
+        :accept_participation_request
+      )
+
+      post(
+        "/events/:id/participation_requests/:participant_id/reject",
+        EventController,
+        :reject_participation_request
+      )
+
       post("/events/:id/participate", EventController, :participate)
+      post("/events/:id/unparticipate", EventController, :unparticipate)
     end
 
     scope [] do
