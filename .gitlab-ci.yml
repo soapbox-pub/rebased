@@ -6,6 +6,9 @@ variables: &global_variables
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
   MIX_ENV: test
+  # Needed for Dokku deployment.
+  # https://github.com/dokku/dokku/issues/2514#issuecomment-616775470
+  GIT_DEPTH: 0
 
 cache: &global_cache_policy
   key:
