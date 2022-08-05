@@ -206,6 +206,7 @@ review_app:
     GIT_REMOTE_URL: ssh://$DOKKU_HOST/$CI_ENVIRONMENT_SLUG
   script: dokku-deploy
   after_script: [dokku-unlock]
+  before_script: []
 
 spec-deploy:
   stage: deploy
