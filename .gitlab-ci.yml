@@ -203,7 +203,7 @@ review_app:
   except:
     - develop
   variables:
-    GIT_REMOTE_URL: ssh://$DOKKU_HOST/$CI_ENVIRONMENT_SLUG
+    GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/$CI_ENVIRONMENT_SLUG
   script: dokku-deploy
   after_script: [dokku-unlock]
   before_script: []
