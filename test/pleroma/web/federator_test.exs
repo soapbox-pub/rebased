@@ -169,7 +169,7 @@ defmodule Pleroma.Web.FederatorTest do
         |> Jason.decode!()
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, _} = ObanHelpers.perform(job)
+      assert {:cancel, _} = ObanHelpers.perform(job)
     end
   end
 end
