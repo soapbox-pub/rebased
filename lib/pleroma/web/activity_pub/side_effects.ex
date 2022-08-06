@@ -163,8 +163,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     updated_object_id = updated_object["id"]
 
     with {_, true} <- {:has_id, is_binary(updated_object_id)},
-         {_, user} <- {:user, Pleroma.User.get_by_ap_id(updated_object_id)} do
-      if user do
+         %{"type" => type} <- updated_object,
+         {_, is_user} <- {:is_user, type in Pleroma.Constants.actor_types()} do
+      if is_user do
         handle_update_user(object, meta)
       else
         handle_update_object(object, meta)
