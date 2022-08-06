@@ -22,14 +22,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   def fix_object_defaults(data) do
-    %{data: %{"id" => context}, id: context_id} =
-      Utils.create_context(data["context"] || data["conversation"])
+    context = Utils.maybe_create_context(data["context"] || data["conversation"])
 
     %User{follower_address: follower_collection} = User.get_cached_by_ap_id(data["attributedTo"])
 
     data
     |> Map.put("context", context)
-    |> Map.put("context_id", context_id)
     |> cast_and_filter_recipients("to", follower_collection)
     |> cast_and_filter_recipients("cc", follower_collection)
     |> cast_and_filter_recipients("bto", follower_collection)

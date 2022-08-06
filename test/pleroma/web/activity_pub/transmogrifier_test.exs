@@ -227,7 +227,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["generator"])
     end
 
@@ -242,7 +241,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["likes"])
     end
 

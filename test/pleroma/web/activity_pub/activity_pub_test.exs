@@ -554,7 +554,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["ok"] == data["ok"]
       assert activity.data["id"] == given_id
       assert activity.data["context"] == "blabla"
-      assert activity.data["context_id"]
     end
 
     test "adds a context when none is there" do
@@ -576,8 +575,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
-      assert activity.data["context_id"]
-      assert object.data["context_id"]
     end
 
     test "adds an id to a given object if it lacks one and is a note and inserts it to the object database" do
@@ -1612,7 +1609,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                })
 
       assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 2
+      assert Repo.aggregate(Object, :count, :id) == 1
       assert Repo.aggregate(Notification, :count, :id) == 0
     end
   end

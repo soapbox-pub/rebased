@@ -208,10 +208,6 @@ defmodule Pleroma.Object do
     end
   end
 
-  def context_mapping(context) do
-    Object.change(%Object{}, %{data: %{"id" => context}})
-  end
-
   def make_tombstone(%Object{data: %{"id" => id, "type" => type}}, deleted \\ DateTime.utc_now()) do
     %ObjectTombstone{
       id: id,
