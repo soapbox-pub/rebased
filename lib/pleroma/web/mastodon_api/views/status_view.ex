@@ -57,8 +57,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context),
-    do: :erlang.crc32(context)
+  # DEPRECATED This field seems to be a left-over from the StatusNet era.
+  # If your application uses `pleroma.conversation_id`: this field is deprecated.
+  # It is currently stubbed instead by doing a CRC32 of the context, and
+  # clearing the MSB to avoid overflow exceptions with signed integers on the
+  # different clients using this field (Java/Kotlin code, mostly; see Husky.)
+  # This should be removed in a future version of Pleroma. Pleroma-FE currently
+  # depends on this field, as well.
+  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context) do
+    use Bitwise
+
+    :erlang.crc32(context)
+    |> band(bnot(0x8000_0000))
+  end
 
   defp get_context_id(_), do: nil
 
