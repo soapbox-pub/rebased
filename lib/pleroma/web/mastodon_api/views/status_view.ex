@@ -375,6 +375,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pleroma: %{
         local: activity.local,
         conversation_id: get_context_id(activity),
+        context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
