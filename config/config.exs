@@ -273,7 +273,7 @@ config :pleroma, :instance,
     :emoji_manage_emoji,
     :statistics_read
   ],
-  moderator_privileges: [],
+  moderator_privileges: [:messages_delete, :reports_manage_reports],
   max_endorsed_users: 20,
   birthday_required: false,
   birthday_min_age: 0,
