@@ -49,6 +49,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   defp fix(data) do
     data =
       data
+      |> fix_emoji_qualification()
       |> CommonFixes.fix_actor()
       |> CommonFixes.fix_activity_addressing()
 
@@ -60,6 +61,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
       _ -> data
     end
   end
+
+  defp fix_emoji_qualification(%{"content" => emoji} = data) do
+    new_emoji = Pleroma.Emoji.fully_qualify_emoji(emoji)
+
+    cond do
+      Pleroma.Emoji.is_unicode_emoji?(emoji) ->
+        data
+
+      Pleroma.Emoji.is_unicode_emoji?(new_emoji) ->
+        data |> Map.put("content", new_emoji)
+
+      true ->
+        data
+    end
+  end
+
+  defp fix_emoji_qualification(data), do: data
 
   defp validate_emoji(cng) do
     content = get_field(cng, :content)

@@ -283,11 +283,13 @@ defmodule Pleroma.Notification do
         select: n.id
       )
 
-    {:ok, %{ids: {_, notification_ids}}} =
+    {:ok, %{ids: {_, notification_ids}, marker: marker}} =
       Multi.new()
       |> Multi.update_all(:ids, query, set: [seen: true, updated_at: NaiveDateTime.utc_now()])
       |> Marker.multi_set_last_read_id(user, "notifications")
       |> Repo.transaction()
+
+    Streamer.stream(["user", "user:notification"], marker)
 
     for_user_query(user)
     |> where([n], n.id in ^notification_ids)

@@ -89,6 +89,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
 
   defp fix_quote_url(data), do: data
 
+  def fix_attachments(%{"attachment" => attachment} = data) when is_map(attachment),
+    do: Map.put(data, "attachment", [attachment])
+
+  def fix_attachments(data), do: data
+
   defp fix(data) do
     data
     |> CommonFixes.fix_actor()
@@ -97,6 +102,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_tag()
     |> fix_replies()
     |> fix_quote_url()
+    |> fix_attachments()
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
   end
