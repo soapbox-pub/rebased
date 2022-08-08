@@ -153,7 +153,7 @@ defmodule Pleroma.Web.FederatorTest do
       }
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, :origin_containment_failed} = ObanHelpers.perform(job)
+      assert {:cancel, :origin_containment_failed} = ObanHelpers.perform(job)
     end
 
     test "it does not crash if MRF rejects the post" do
