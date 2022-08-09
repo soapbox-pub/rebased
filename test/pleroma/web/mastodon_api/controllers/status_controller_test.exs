@@ -124,6 +124,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       )
     end
 
+    test "posting a quote post", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(user, %{status: "yolo"})
+      %{data: %{"id" => quote_url}} = Object.normalize(activity)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "indeed",
+          "quote_id" => activity_id
+        })
+
+      assert %{
+               "id" => id,
+               "pleroma" => %{"quote" => %{"id" => ^activity_id}, "quote_url" => ^quote_url}
+             } = json_response_and_validate_schema(conn, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
@@ -993,6 +1015,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       refute Activity.get_by_id(activity1.id)
       refute Activity.get_by_id(activity2.id)
     end
+
+    test "deleting a status with attachments returns the original IDs" do
+      %{user: user, conn: conn} = oauth_access(["write:statuses"])
+
+      file = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+      {:ok, activity} = CommonAPI.post(user, %{status: "", media_ids: [upload.id]})
+
+      expected = to_string(upload.id)
+
+      assert %{"media_attachments" => [%{"id" => ^expected}]} =
+               conn
+               |> assign(:user, user)
+               |> delete("/api/v1/statuses/#{activity.id}")
+               |> json_response_and_validate_schema(200)
+    end
   end
 
   describe "reblogging" do
@@ -1368,16 +1411,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "url" => "https://example.com/ogp",
         "description" =>
           "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-        "pleroma" => %{
-          "opengraph" => %{
-            "image" => "http://ia.media-imdb.com/images/rock.jpg",
-            "title" => "The Rock",
-            "type" => "video.movie",
-            "url" => "https://example.com/ogp",
-            "description" =>
-              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
-          }
-        }
+        "author_name" => "",
+        "author_url" => "",
+        "blurhash" => nil,
+        "embed_url" => "",
+        "height" => 0,
+        "html" => "",
+        "width" => 0
       }
 
       response =
@@ -1417,13 +1457,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                "provider_name" => "example.com",
                "provider_url" => "https://example.com",
                "url" => "https://example.com/ogp-missing-data",
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "title" => "Pleroma",
-                   "type" => "website",
-                   "url" => "https://example.com/ogp-missing-data"
-                 }
-               }
+               "author_name" => "",
+               "author_url" => "",
+               "blurhash" => nil,
+               "embed_url" => "",
+               "height" => 0,
+               "html" => "",
+               "width" => 0
              }
     end
   end
@@ -1901,23 +1941,50 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              |> json_response_and_validate_schema(:ok)
   end
 
-  test "posting a local only status" do
-    %{user: _user, conn: conn} = oauth_access(["write:statuses"])
+  describe "local-only statuses" do
+    test "posting a local only status" do
+      %{user: _user, conn: conn} = oauth_access(["write:statuses"])
 
-    conn_one =
-      conn
-      |> put_req_header("content-type", "application/json")
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "visibility" => "local"
-      })
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "visibility" => "local"
+        })
 
-    local = Utils.as_local_public()
+      local = Utils.as_local_public()
 
-    assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
-             json_response_and_validate_schema(conn_one, 200)
+      assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
+               json_response_and_validate_schema(conn_one, 200)
 
-    assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+      assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+    end
+
+    test "other users can read local-only posts" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      received =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert received["id"] == activity.id
+    end
+
+    test "anonymous users cannot see local-only posts" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      _received =
+        build_conn()
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(:not_found)
+    end
   end
 
   describe "muted reactions" do

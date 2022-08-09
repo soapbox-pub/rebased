@@ -28,9 +28,12 @@ defmodule Pleroma.Web.Feed.UserController do
     ActivityPubController.call(conn, :user)
   end
 
-  def feed_redirect(conn, %{"nickname" => nickname}) do
+  def feed_redirect(%{assigns: assigns} = conn, %{"nickname" => nickname}) do
+    format = Map.get(assigns, :format, "atom")
+    format = if format in ["atom", "rss"], do: format, else: "atom"
+
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      redirect(conn, external: "#{Routes.user_feed_url(conn, :feed, user.nickname)}.atom")
+      redirect(conn, external: "#{Routes.user_feed_url(conn, :feed, user.nickname)}.#{format}")
     end
   end
 

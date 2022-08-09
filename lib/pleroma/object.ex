@@ -301,10 +301,6 @@ defmodule Pleroma.Object do
     end
   end
 
-  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
-
-  defp poll_is_multiple?(_), do: false
-
   def decrease_replies_count(ap_id) do
     Object
     |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
@@ -327,6 +323,56 @@ defmodule Pleroma.Object do
       _ -> {:error, "Not found"}
     end
   end
+
+  def increase_quotes_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            safe_jsonb_set(?, '{quotesCount}',
+              (coalesce((?->>'quotesCount')::int, 0) + 1)::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def decrease_quotes_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            safe_jsonb_set(?, '{quotesCount}',
+              (greatest(0, (?->>'quotesCount')::int - 1))::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
+
+  defp poll_is_multiple?(_), do: false
 
   def increase_vote_count(ap_id, name, actor) do
     with %Object{} = object <- Object.normalize(ap_id, fetch: false),

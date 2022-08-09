@@ -53,6 +53,12 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
           default: false,
           description:
             "If the account is remote, should the report be forwarded to the remote admin?"
+        },
+        rule_ids: %Schema{
+          type: :array,
+          nullable: true,
+          items: %Schema{type: :number},
+          description: "Array of rules"
         }
       },
       required: [:account_id],
@@ -60,7 +66,8 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
         "account_id" => "123",
         "status_ids" => ["1337"],
         "comment" => "bad status!",
-        "forward" => "false"
+        "forward" => "false",
+        "rule_ids" => [3]
       }
     }
   end

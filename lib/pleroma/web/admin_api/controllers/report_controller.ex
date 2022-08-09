@@ -10,6 +10,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
   alias Pleroma.ReportNote
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
@@ -24,7 +25,7 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["admin:write:reports"]}
-    when action in [:update, :notes_create, :notes_delete]
+    when action in [:update, :assign_account, :notes_create, :notes_delete]
   )
 
   action_fallback(AdminAPI.FallbackController)
@@ -73,6 +74,16 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
     end
   end
 
+  def assign_account(%{assigns: %{user: admin}, body_params: %{reports: reports}} = conn, _) do
+    result = Enum.map(reports, &do_assign_account(&1, admin))
+
+    if Enum.any?(result, &Map.has_key?(&1, :error)) do
+      json_response(conn, :bad_request, result)
+    else
+      json_response(conn, :no_content, "")
+    end
+  end
+
   def notes_create(%{assigns: %{user: user}, body_params: %{content: content}} = conn, %{
         id: report_id
       }) do
@@ -109,6 +120,42 @@ defmodule Pleroma.Web.AdminAPI.ReportController do
       json_response(conn, :no_content, "")
     else
       _ -> json_response(conn, :bad_request, "")
+    end
+  end
+
+  defp do_assign_account(%{assigned_account: nil, id: id}, admin) do
+    with {:ok, activity} <- CommonAPI.assign_report_to_account(id, nil),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_unassigned",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor
+      })
+
+      activity
+    else
+      {:error, message} ->
+        %{id: id, error: message}
+    end
+  end
+
+  defp do_assign_account(%{assigned_account: assigned_account, id: id}, admin) do
+    with %User{id: account} = user <- User.get_cached_by_nickname(assigned_account),
+         {:ok, activity} <- CommonAPI.assign_report_to_account(id, account),
+         report <- Activity.get_by_id_with_user_actor(activity.id) do
+      ModerationLog.insert_log(%{
+        action: "report_assigned",
+        actor: admin,
+        subject: activity,
+        subject_actor: report.user_actor,
+        assigned_account: user.nickname
+      })
+
+      activity
+    else
+      {:error, message} ->
+        %{id: id, error: message}
     end
   end
 end

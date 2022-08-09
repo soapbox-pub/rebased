@@ -12,6 +12,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Rule
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -722,6 +723,46 @@ defmodule Pleroma.Web.CommonAPITest do
         scheduled_at: expires_at
       )
     end
+
+    test "it allows quote posting" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id})
+
+      quoted = Object.normalize(quoted)
+      quote_post = Object.normalize(quote_post)
+
+      assert quote_post.data["quoteUrl"] == quoted.data["id"]
+
+      # The OP is mentioned
+      assert quoted.data["actor"] in quote_post.data["to"]
+    end
+
+    test "quote posting with explicit addressing doesn't mention the OP" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+
+      {:ok, quote_post} =
+        CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id, to: []})
+
+      assert Object.normalize(quote_post).data["to"] == [Pleroma.Constants.as_public()]
+    end
+
+    test "quote posting visibility" do
+      user = insert(:user)
+
+      {:ok, direct} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
+      {:ok, private} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, unlisted} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, public} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: direct.id})
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: private.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
+    end
   end
 
   describe "reactions" do
@@ -1185,6 +1226,56 @@ defmodule Pleroma.Web.CommonAPITest do
       assert report_ids -- [first_report_id, second_report_id] == []
       assert first_report.data["state"] == "resolved"
       assert second_report.data["state"] == "resolved"
+    end
+
+    test "assigns report to an account" do
+      [reporter, target_user] = insert_pair(:user)
+      %{id: assigned} = insert(:user)
+
+      {:ok, %Activity{id: report_id}} = CommonAPI.report(reporter, %{account_id: target_user.id})
+
+      {:ok, activity} = CommonAPI.assign_report_to_account(report_id, assigned)
+
+      assert %{data: %{"assigned_account" => ^assigned}} = activity
+    end
+
+    test "unassigns report from account" do
+      [reporter, target_user] = insert_pair(:user)
+      %{id: assigned} = insert(:user)
+
+      {:ok, %Activity{id: report_id}} = CommonAPI.report(reporter, %{account_id: target_user.id})
+
+      CommonAPI.assign_report_to_account(report_id, assigned)
+      {:ok, activity} = CommonAPI.assign_report_to_account(report_id, nil)
+
+      refute Map.has_key?(activity.data, "assigned_account")
+    end
+
+    test "creates a report with provided rules" do
+      reporter = insert(:user)
+      target_user = insert(:user)
+
+      %{id: rule_id} = Rule.create(%{text: "There are no rules"})
+
+      reporter_ap_id = reporter.ap_id
+      target_ap_id = target_user.ap_id
+
+      report_data = %{
+        account_id: target_user.id,
+        rule_ids: [rule_id]
+      }
+
+      assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
+
+      assert %Activity{
+               actor: ^reporter_ap_id,
+               data: %{
+                 "type" => "Flag",
+                 "object" => [^target_ap_id],
+                 "state" => "open",
+                 "rules" => [^rule_id]
+               }
+             } = flag_activity
     end
   end
 

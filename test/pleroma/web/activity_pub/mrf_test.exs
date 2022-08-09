@@ -70,11 +70,27 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
 
       assert MRF.instance_list_from_tuples(list) == expected
     end
+
+    test "it handles legacy config" do
+      list = [{"some.tld", "a reason"}, "other.tld"]
+      expected = ["some.tld", "other.tld"]
+
+      assert MRF.instance_list_from_tuples(list) == expected
+    end
+  end
+
+  describe "normalize_instance_list/1" do
+    test "returns a list of tuples" do
+      list = [{"some.tld", "a reason"}, "other.tld"]
+      expected = [{"some.tld", "a reason"}, {"other.tld", ""}]
+
+      assert MRF.normalize_instance_list(list) == expected
+    end
   end
 
   describe "describe/0" do
     test "it works as expected with noop policy" do
-      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.NoOpPolicy])
+      clear_config([:mrf, :policies], [MRF.NoOpPolicy])
 
       expected = %{
         mrf_policies: ["NoOpPolicy", "HashtagPolicy"],
@@ -101,6 +117,32 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
           sensitive: ["nsfw"]
         },
         exclusions: false
+      }
+
+      {:ok, ^expected} = MRF.describe()
+    end
+
+    test "it works as expected with SimplePolicy" do
+      clear_config([:mrf, :policies], [MRF.SimplePolicy])
+      clear_config([:mrf_simple, :reject], [{"lain.com", "2kool4skool"}, "othersite.xyz"])
+
+      expected = %{
+        exclusions: false,
+        mrf_hashtag: %{federated_timeline_removal: [], reject: [], sensitive: ["nsfw"]},
+        mrf_policies: ["SimplePolicy", "HashtagPolicy"],
+        mrf_simple: %{
+          accept: [],
+          avatar_removal: [],
+          banner_removal: [],
+          federated_timeline_removal: [],
+          followers_only: [],
+          media_nsfw: [],
+          media_removal: [],
+          reject: ["lain.com", "othersite.xyz"],
+          reject_deletes: [],
+          report_removal: []
+        },
+        mrf_simple_info: %{reject: %{"lain.com" => %{"reason" => "2kool4skool"}}}
       }
 
       {:ok, ^expected} = MRF.describe()

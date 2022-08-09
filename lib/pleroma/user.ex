@@ -36,6 +36,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
+  alias Pleroma.Webhook.Notify
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -151,11 +152,13 @@ defmodule Pleroma.User do
     field(:accepts_chat_messages, :boolean, default: nil)
     field(:last_active_at, :naive_datetime)
     field(:disclose_client, :boolean, default: true)
+    field(:accepts_email_list, :boolean, default: false)
     field(:pinned_objects, :map, default: %{})
     field(:is_suggested, :boolean, default: false)
     field(:last_status_at, :naive_datetime)
     field(:birthday, :date)
     field(:show_birthday, :boolean, default: false)
+    field(:location, :string)
     field(:language, :string)
 
     embeds_one(
@@ -425,6 +428,7 @@ defmodule Pleroma.User do
   def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    location_limit = Config.get([:instance, :user_location_length], 50)
 
     name =
       case params[:name] do
@@ -475,7 +479,8 @@ defmodule Pleroma.User do
         :accepts_chat_messages,
         :pinned_objects,
         :birthday,
-        :show_birthday
+        :show_birthday,
+        :location
       ]
     )
     |> cast(params, [:name], empty_values: [])
@@ -485,6 +490,7 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
+    |> validate_length(:location, max: location_limit)
     |> validate_fields(true)
     |> validate_non_local()
   end
@@ -503,6 +509,7 @@ defmodule Pleroma.User do
   def update_changeset(struct, params \\ %{}) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    location_limit = Config.get([:instance, :user_location_length], 50)
 
     struct
     |> cast(
@@ -537,14 +544,17 @@ defmodule Pleroma.User do
         :actor_type,
         :accepts_chat_messages,
         :disclose_client,
+        :accepts_email_list,
         :birthday,
-        :show_birthday
+        :show_birthday,
+        :location
       ]
     )
     |> validate_min_age()
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:location, max: location_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_inclusion(:actor_type, ["Person", "Service"])
     |> put_fields()
@@ -702,7 +712,8 @@ defmodule Pleroma.User do
       :name,
       :nickname,
       :email,
-      :accepts_chat_messages
+      :accepts_chat_messages,
+      :accepts_email_list
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
@@ -747,6 +758,7 @@ defmodule Pleroma.User do
       :emoji,
       :accepts_chat_messages,
       :registration_reason,
+      :accepts_email_list,
       :birthday,
       :language
     ])
@@ -869,6 +881,7 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
+      Notify.trigger_webhooks(user, :"account.created")
       post_register_action(user)
     end
   end
@@ -1480,17 +1493,30 @@ defmodule Pleroma.User do
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
   def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
     notifications? = Map.get(params, :notifications, true)
-    expires_in = Map.get(params, :expires_in, 0)
+    duration = Map.get(params, :duration, 0)
 
-    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+    expires_at =
+      if duration > 0 do
+        DateTime.utc_now()
+        |> DateTime.add(duration)
+      else
+        nil
+      end
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee, expires_at),
          {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+           (notifications? &&
+              UserRelationship.create_notification_mute(
+                muter,
+                mutee,
+                expires_at
+              )) ||
              {:ok, nil} do
-      if expires_in > 0 do
+      if duration > 0 do
         Pleroma.Workers.MuteExpireWorker.enqueue(
           "unmute_user",
           %{"muter_id" => muter.id, "mutee_id" => mutee.id},
-          schedule_in: expires_in
+          scheduled_at: expires_at
         )
       end
 
@@ -1774,6 +1800,12 @@ defmodule Pleroma.User do
 
   def approve(%User{} = user), do: {:ok, user}
 
+  def reject(%User{is_approved: false} = user) do
+    delete(user)
+  end
+
+  def reject(%User{} = _user), do: {:error, "User is approved"}
+
   def confirm(users) when is_list(users) do
     Repo.transaction(fn ->
       Enum.map(users, fn user ->
@@ -1850,7 +1882,8 @@ defmodule Pleroma.User do
       fields: [],
       raw_fields: [],
       is_discoverable: false,
-      also_known_as: []
+      also_known_as: [],
+      accepts_email_list: false
       # id: preserved
       # ap_id: preserved
       # nickname: preserved
@@ -2385,7 +2418,39 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  # Internal function; public one is `deactivate/2`
+  def alias_users(user) do
+    user.also_known_as
+    |> Enum.map(&User.get_cached_by_ap_id/1)
+    |> Enum.filter(fn user -> user != nil end)
+  end
+
+  def add_alias(user, new_alias_user) do
+    current_aliases = user.also_known_as || []
+    new_alias_ap_id = new_alias_user.ap_id
+
+    if new_alias_ap_id in current_aliases do
+      {:ok, user}
+    else
+      user
+      |> cast(%{also_known_as: current_aliases ++ [new_alias_ap_id]}, [:also_known_as])
+      |> update_and_set_cache()
+    end
+  end
+
+  def delete_alias(user, alias_user) do
+    current_aliases = user.also_known_as || []
+    alias_ap_id = alias_user.ap_id
+
+    if alias_ap_id in current_aliases do
+      user
+      |> cast(%{also_known_as: current_aliases -- [alias_ap_id]}, [:also_known_as])
+      |> update_and_set_cache()
+    else
+      {:error, :no_such_alias}
+    end
+  end
+
+  # Internal function; public one is `set_activation/2`
   defp set_activation_status(user, status) do
     user
     |> cast(%{is_active: status}, [:is_active])

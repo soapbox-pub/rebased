@@ -524,6 +524,11 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           type: :string,
           description:
             "Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`."
+        },
+        quote_id: %Schema{
+          nullable: true,
+          allOf: [FlakeID],
+          description: "ID of the status being quoted, if any"
         }
       },
       example: %{

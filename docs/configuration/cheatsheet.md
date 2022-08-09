@@ -54,6 +54,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `user_bio_length`: A user bio maximum length (default: `5000`).
 * `user_name_length`: A user name maximum length (default: `100`).
+* `user_location_length`: A user location maximum length (default: `50`).
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`).
@@ -129,6 +130,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy`: Drops follow requests from followbots. Users can still allow bots to follow them by first following the bot.
     * `Pleroma.Web.ActivityPub.MRF.KeywordPolicy`: Rejects or removes from the federated timeline or replaces keywords. (See [`:mrf_keyword`](#mrf_keyword)).
     * `Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent`: Forces every mentioned user to be reflected in the post content.
+    * `Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy`: Forces quote post URLs to be reflected in the message content inline.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -230,6 +232,8 @@ Notes:
 
 * `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
 
+#### :mrf_inline_quote
+* `prefix`: Prefix before the link (default: `RT`)
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
@@ -388,6 +392,7 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"].
 * `parsers`: list of Rich Media parsers.
+* `oembed_providers_enabled`: Embed rich media from a list of known providers. This takes precedence over other parsers.
 * `failure_backoff`: Amount of milliseconds after request failure, during which the request will not be retried.
 
 ## HTTP server

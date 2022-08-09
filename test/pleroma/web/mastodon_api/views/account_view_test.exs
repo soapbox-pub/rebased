@@ -92,7 +92,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false,
-        accepts_chat_messages: nil
+        accepts_chat_messages: nil,
+        location: nil
       }
     }
 
@@ -194,7 +195,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false,
-        accepts_chat_messages: nil
+        accepts_chat_messages: nil,
+        location: nil
       }
     }
 
@@ -494,6 +496,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
   end
 
+  test "shows accepts_email_list only to the account owner" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    user = User.get_cached_by_ap_id(user.ap_id)
+
+    assert AccountView.render(
+             "show.json",
+             %{user: user, for: other_user}
+           )[:pleroma][:accepts_email_list] == nil
+
+    assert AccountView.render(
+             "show.json",
+             %{user: user, for: user}
+           )[:pleroma][:accepts_email_list] == user.accepts_email_list
+  end
+
   describe "hiding birthday" do
     test "doesn't show birthday if hidden" do
       user =
@@ -633,5 +652,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       end)
       |> assert()
     end
+  end
+
+  test "renders mute expiration date" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _user_relationships} =
+      User.mute(user, other_user, %{notifications: true, duration: 24 * 60 * 60})
+
+    %{
+      mute_expires_at: mute_expires_at
+    } = AccountView.render("show.json", %{user: other_user, for: user, mutes: true})
+
+    assert DateTime.diff(
+             mute_expires_at,
+             DateTime.utc_now() |> DateTime.add(24 * 60 * 60)
+           ) in -3..3
   end
 end

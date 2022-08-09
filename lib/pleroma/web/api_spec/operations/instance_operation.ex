@@ -34,6 +34,17 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
     }
   end
 
+  def rules_operation do
+    %Operation{
+      tags: ["Instance"],
+      summary: "Retrieve list of instance rules",
+      operationId: "InstanceController.rules",
+      responses: %{
+        200 => Operation.response("Array of rules", "application/json", array_of_rules())
+      }
+    }
+  end
+
   defp instance do
     %Schema{
       type: :object,
@@ -130,6 +141,62 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
           type: :string,
           format: :uri,
           description: "The background image for the website"
+        },
+        configuration: %Schema{
+          type: :object,
+          description: "Instance configuration",
+          properties: %{
+            statuses: %Schema{
+              type: :object,
+              description: "A map with poll limits for local statuses",
+              properties: %{
+                max_characters: %Schema{
+                  type: :integer,
+                  description: "Posts character limit (CW/Subject included in the counter)"
+                },
+                max_media_attachments: %Schema{
+                  type: :integer,
+                  description: "Media attachment limit"
+                }
+              }
+            },
+            media_attachments: %Schema{
+              type: :object,
+              description: "A map with poll limits for media attachments",
+              properties: %{
+                image_size_limit: %Schema{
+                  type: :integer,
+                  description: "File size limit of uploaded images"
+                },
+                video_size_limit: %Schema{
+                  type: :integer,
+                  description: "File size limit of uploaded videos"
+                }
+              }
+            },
+            polls: %Schema{
+              type: :object,
+              description: "A map with poll limits for local polls",
+              properties: %{
+                max_options: %Schema{
+                  type: :integer,
+                  description: "Maximum number of options."
+                },
+                max_characters_per_option: %Schema{
+                  type: :integer,
+                  description: "Maximum number of characters per option."
+                },
+                min_expiration: %Schema{
+                  type: :integer,
+                  description: "Minimum expiration time (in seconds)."
+                },
+                max_expiration: %Schema{
+                  type: :integer,
+                  description: "Maximum expiration time (in seconds)."
+                }
+              }
+            }
+          }
         }
       },
       example: %{
@@ -160,7 +227,8 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         "urls" => %{
           "streaming_api" => "wss://lain.com"
         },
-        "version" => "2.7.2 (compatible; Pleroma 2.0.50-536-g25eec6d7-develop)"
+        "version" => "2.7.2 (compatible; Pleroma 2.0.50-536-g25eec6d7-develop)",
+        "rules" => array_of_rules()
       }
     }
   end
@@ -170,6 +238,19 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       type: :array,
       items: %Schema{type: :string},
       example: ["pleroma.site", "lain.com", "bikeshed.party"]
+    }
+  end
+
+  defp array_of_rules do
+    %Schema{
+      type: :array,
+      items: %Schema{
+        type: :object,
+        properties: %{
+          id: %Schema{type: :integer},
+          text: %Schema{type: :string}
+        }
+      }
     }
   end
 end

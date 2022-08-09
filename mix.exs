@@ -1,6 +1,8 @@
 defmodule Pleroma.Mixfile do
   use Mix.Project
 
+  @build_name "soapbox"
+
   def project do
     [
       app: :pleroma,
@@ -135,6 +137,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 3.1", override: true},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
+      {:csv, "~> 2.4"},
       {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.4.0", override: true},
       {:castore, "~> 0.1"},
@@ -166,14 +169,14 @@ defmodule Pleroma.Mixfile do
       {:poolboy, "~> 1.5"},
       {:prometheus, "~> 4.6"},
       {:prometheus_ex,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus.ex.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus.ex.git",
        ref: "a4e9beb3c1c479d14b352fd9d6dd7b1f6d7deee5",
        override: true},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
       # Note: once `prometheus_phx` is integrated into `prometheus_phoenix`, remove the former:
       {:prometheus_phx,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus-phx.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus-phx.git",
        branch: "no-logging"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
@@ -187,14 +190,15 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:concurrent_limiter, "~> 0.1.1"},
       {:remote_ip,
-       git: "https://git.pleroma.social/pleroma/remote_ip.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
+       git: "https://gitlab.com/soapbox-pub/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
       {:eblurhash, "~> 1.2.2"},
+      {:oembed_providers, "~> 0.1.0"},
       {:open_api_spex, "~> 3.10"},
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:ecto_psql_extras, "~> 0.6"},
@@ -284,21 +288,15 @@ defmodule Pleroma.Mixfile do
              !Enum.any?(["master", "HEAD", "release/", "stable"], fn name ->
                String.starts_with?(name, branch_name)
              end) do
-        branch_name =
-          branch_name
-          |> String.trim()
-          |> String.replace(identifier_filter, "-")
-
-        branch_name
+        String.trim(branch_name)
       else
         _ -> ""
       end
 
     build_name =
       cond do
-        name = Application.get_env(:pleroma, :build_name) -> name
         name = System.get_env("PLEROMA_BUILD_NAME") -> name
-        true -> nil
+        true -> @build_name
       end
 
     env_name = if Mix.env() != :prod, do: to_string(Mix.env())
@@ -316,20 +314,22 @@ defmodule Pleroma.Mixfile do
     pre_release =
       [git_pre_release, branch_name]
       |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.join(".")
       |> (fn
             "" -> nil
-            string -> "-" <> String.replace(string, identifier_filter, "-")
+            string -> "-" <> string
           end).()
 
     # Build metadata, denoted with a plus sign
     build_metadata =
       [build_name, env_name]
       |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.map(&String.replace(&1, identifier_filter, "-"))
       |> Enum.join(".")
       |> (fn
             "" -> nil
-            string -> "+" <> String.replace(string, identifier_filter, "-")
+            string -> "+" <> string
           end).()
 
     [version, pre_release, build_metadata]

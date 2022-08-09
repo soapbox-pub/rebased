@@ -559,4 +559,21 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert Utils.get_cached_emoji_reactions(object) == []
     end
   end
+
+  describe "assign_report_to_account/2" do
+    test "assigns report to an account" do
+      reporter = insert(:user)
+      target_account = insert(:user)
+      %{id: assigned_id} = assigned = insert(:user)
+      context = Utils.generate_context_id()
+
+      target_ap_id = target_account.ap_id
+
+      {:ok, report} = CommonAPI.report(reporter, %{account_id: target_account.id})
+
+      {:ok, report} = Utils.assign_report_to_account(report, assigned_id)
+
+      assert %{data: %{"assigned_account" => ^assigned_id}} = report
+    end
+  end
 end

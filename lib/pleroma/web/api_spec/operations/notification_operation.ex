@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
@@ -202,7 +201,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "pleroma:report",
         "move",
         "follow_request",
-        "poll"
+        "poll",
+        "status"
       ],
       description: """
       The type of event that resulted in the notification.
@@ -216,6 +216,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `pleroma:emoji_reaction` - Someone reacted with emoji to your status
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
       - `pleroma:report` - Someone was reported
+      - `status` - Someone you are subscribed to created a status
       """
     }
   end

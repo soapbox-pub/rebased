@@ -18,7 +18,8 @@ Environment="HOME=/var/lib/pleroma"
 ; Path to the folder containing the Pleroma installation.
 WorkingDirectory=/opt/pleroma
 ; Path to the Mix binary.
-ExecStart=/usr/bin/mix phx.server
+Environment="PATH=/var/lib/pleroma/.asdf/shims:/var/lib/pleroma/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/var/lib/pleroma/.asdf/shims/mix phx.server
 
 ; Some security directives.
 ; Use private /tmp and /var/tmp folders inside a new file system namespace, which are discarded after the process stops.

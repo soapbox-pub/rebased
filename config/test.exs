@@ -31,6 +31,9 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test, enabled: true
 
 config :pleroma, :instance,
+  name: "Pleroma",
+  description: "Pleroma: An efficient and flexible fediverse server",
+  instance_thumbnail: "/instance/thumbnail.jpeg",
   email: "admin@example.com",
   notify_email: "noreply@example.com",
   skip_thread_containment: false,

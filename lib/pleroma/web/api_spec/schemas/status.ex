@@ -177,6 +177,25 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description: "The `acct` property of User entity for replied user (if any)"
           },
+          quote: %Schema{
+            allOf: [%OpenApiSpex.Reference{"$ref": "#/components/schemas/Status"}],
+            nullable: true,
+            description: "Quoted status (if any)"
+          },
+          quote_url: %Schema{
+            type: :string,
+            format: :uri,
+            nullable: true,
+            description: "URL of the quoted status"
+          },
+          quote_visible: %Schema{
+            type: :boolean,
+            description: "`true` if the quoted post is visible to the user"
+          },
+          quotes_count: %Schema{
+            type: :integer,
+            description: "How many statuses quoted this status"
+          },
           local: %Schema{
             type: :boolean,
             description: "`true` if the post was made on the local instance"
@@ -201,6 +220,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description:
               "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
+          },
+          content_type: %Schema{
+            type: :string,
+            nullable: true,
+            description: "A MIME type of the status"
           }
         }
       },
@@ -326,7 +350,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "in_reply_to_account_acct" => nil,
         "local" => true,
         "spoiler_text" => %{"text/plain" => ""},
-        "thread_muted" => false
+        "thread_muted" => false,
+        "quotes_count" => 0
       },
       "poll" => nil,
       "reblog" => nil,

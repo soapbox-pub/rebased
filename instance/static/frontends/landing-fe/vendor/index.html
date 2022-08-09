@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Welcome to Soapbox</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <style type="text/css">
+      :root {
+        --brand-color: #0482d8;
+        --background-color: #f2f2f2;
+      }
+
+      body {
+        background-color: var(--background-color);
+        font-family: 'Lato', sans-serif;
+        padding: 0;
+        margin: 0;
+      }
+
+      main {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 30px;
+      }
+
+      .logo {
+        width: 100%;
+        display: block;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: normal;
+        line-height: 1.5;
+      }
+
+      p {
+        line-height: 1.5;
+      }
+
+      a {
+        color: var(--brand-color);
+      }
+
+      code {
+        display: block;
+        color: white;
+        background-color: black;
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      code.inline {
+        display: inline;
+        border-radius: 4px;
+        padding: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img class="logo" src="/assets/soapbox-logo-wide.svg" alt="Soapbox" />
+      <h2>Almost done...</h2>
+      <p>Congrats! 🎉 You've installed Soapbox BE. Now you just need to install a frontend.</p>
+      <h2>Installing Soapbox FE</h2>
+      <p>To install <a href="https://gitlab.com/soapbox-pub/soapbox-fe" target="_blank">Soapbox FE</a>, SSH into the server and download a .zip of the latest build:</p>
+      <code>curl -L https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/develop/download?job=build-production -o soapbox-fe.zip</code>
+      <p>Then unpack it into the <code class="inline">instance</code> directory:</p>
+      <code>busybox unzip soapbox-fe.zip -o -d /opt/pleroma/instance</code>
+      <p><strong>That's it!</strong> Just refresh this page.</p>
+    </main>
+  </body>
+</html>

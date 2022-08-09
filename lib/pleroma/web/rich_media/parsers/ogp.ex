@@ -4,7 +4,5 @@
 
 defmodule Pleroma.Web.RichMedia.Parsers.OGP do
   @deprecated "OGP parser is deprecated. Use TwitterCard instead."
-  def parse(_html, _data) do
-    %{}
-  end
+  def parse(_html, data), do: data
 end

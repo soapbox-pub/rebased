@@ -60,7 +60,12 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes(:u, [])
   Meta.allow_tag_with_these_attributes(:ul, [])
 
-  Meta.allow_tag_with_this_attribute_values(:span, "class", ["h-card", "recipients-inline"])
+  Meta.allow_tag_with_this_attribute_values(:span, "class", [
+    "h-card",
+    "quote-inline",
+    "recipients-inline"
+  ])
+
   Meta.allow_tag_with_these_attributes(:span, [])
 
   Meta.allow_tag_with_this_attribute_values(:code, "class", ["inline"])

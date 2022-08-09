@@ -298,6 +298,15 @@ defmodule Pleroma.Web.StreamerTest do
       assert_receive {:text, ^text}
     end
 
+    test "it does not send 'update' events for chat messages", %{user: user, token: oauth_token} do
+      other_user = insert(:user)
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+
+      refute_receive {:render_with_user, _, _, ^activity}
+    end
+
     test "it sends chat message notifications to the 'user:notification' stream", %{
       user: user,
       token: oauth_token

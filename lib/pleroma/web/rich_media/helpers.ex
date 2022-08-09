@@ -8,12 +8,15 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
+  alias Pleroma.Web.RichMedia.Parser.Embed
 
   @options [
     pool: :media,
     max_body: 2_000_000,
     recv_timeout: 2_000
   ]
+
+  defp headers, do: [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
@@ -60,10 +63,10 @@ defmodule Pleroma.Web.RichMedia.Helpers do
          {:ok, page_url} <-
            HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
-         {:ok, rich_media} <- Parser.parse(page_url) do
-      %{page_url: page_url, rich_media: rich_media}
+         {:ok, %Embed{} = embed} <- Parser.parse(page_url) do
+      embed
     else
-      _ -> %{}
+      _ -> nil
     end
   end
 
@@ -72,14 +75,18 @@ defmodule Pleroma.Web.RichMedia.Helpers do
          %Object{} = object <- Object.normalize(activity, fetch: false) do
       fetch_data_for_object(object)
     else
-      _ -> %{}
+      _ -> nil
     end
   end
 
   def fetch_data_for_activity(_), do: %{}
 
+  def oembed_get(url) do
+    Pleroma.HTTP.get(url, headers(), @options)
+  end
+
   def rich_media_get(url) do
-    headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
+    headers = headers()
 
     head_check =
       case Pleroma.HTTP.head(url, headers, @options) do

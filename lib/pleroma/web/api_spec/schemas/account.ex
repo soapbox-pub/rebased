@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       header: %Schema{type: :string, format: :uri},
       id: FlakeID,
       locked: %Schema{type: :boolean},
+      mute_expires_at: %Schema{type: :string, format: "date-time", nullable: true},
       note: %Schema{type: :string, format: :html},
       statuses_count: %Schema{type: :integer},
       url: %Schema{type: :string, format: :uri},
@@ -55,6 +56,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               "whether the user account is waiting on email confirmation to be activated"
           },
           show_birthday: %Schema{type: :boolean, nullable: true},
+          location: %Schema{type: :string, nullable: true},
           hide_favorites: %Schema{type: :boolean},
           hide_followers_count: %Schema{
             type: :boolean,

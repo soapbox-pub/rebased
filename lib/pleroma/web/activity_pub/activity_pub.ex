@@ -27,9 +27,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Workers.BackgroundWorker
   alias Pleroma.Workers.PollWorker
 
+  import Ecto.Changeset
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   import Pleroma.Web.ActivityPub.Visibility
+  import Pleroma.Webhook.Notify, only: [trigger_webhooks: 2]
 
   require Logger
   require Pleroma.Constants
@@ -95,6 +97,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
+
+  defp increase_quotes_count_if_quote(%{
+         "object" => %{"quoteUrl" => quote_ap_id} = object,
+         "type" => "Create"
+       }) do
+    if is_public?(object) do
+      Object.increase_quotes_count(quote_ap_id)
+    end
+  end
+
+  defp increase_quotes_count_if_quote(_create_data), do: :noop
 
   @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Page]
   @impl true
@@ -290,6 +303,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_quotes_count_if_quote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
@@ -390,6 +404,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
          _ <- notify_and_stream(activity),
+         _ <- trigger_webhooks(activity, :"report.created"),
          :ok <-
            maybe_federate(stripped_activity) do
       User.all_superusers()
@@ -413,7 +428,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "type" => "Move",
       "actor" => origin.ap_id,
       "object" => origin.ap_id,
-      "target" => target.ap_id
+      "target" => target.ap_id,
+      "to" => [origin.follower_address]
     }
 
     with true <- origin.ap_id in target.also_known_as,
@@ -501,9 +517,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @spec fetch_public_or_unlisted_activities(map(), Pagination.type()) :: [Activity.t()]
   def fetch_public_or_unlisted_activities(opts \\ %{}, pagination \\ :keyset) do
+    includes_local_public = Map.get(opts, :includes_local_public, false)
+
     opts = Map.delete(opts, :user)
 
-    [Constants.as_public()]
+    intended_recipients =
+      if includes_local_public do
+        [Constants.as_public(), as_local_public()]
+      else
+        [Constants.as_public()]
+      end
+
+    intended_recipients
     |> fetch_activities_query(opts)
     |> restrict_unlisted(opts)
     |> fetch_paginated_optimized(opts, pagination)
@@ -603,9 +628,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     do: query
 
   defp restrict_thread_visibility(query, %{user: %User{ap_id: ap_id}}, _) do
+    local_public = as_local_public()
+
     from(
       a in query,
-      where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+      where: fragment("thread_visibility(?, (?)->>'id', ?) = true", ^ap_id, a.data, ^local_public)
     )
   end
 
@@ -641,12 +668,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp fetch_activities_for_user(user, reading_user, params) do
+    pinned_object_ids = if user.pinned_objects, do: Map.keys(user.pinned_objects), else: []
+
     params =
       params
       |> Map.put(:type, ["Create", "Announce"])
       |> Map.put(:user, reading_user)
       |> Map.put(:actor_id, user.ap_id)
-      |> Map.put(:pinned_object_ids, Map.keys(user.pinned_objects))
+      |> Map.put(:pinned_object_ids, pinned_object_ids)
 
     params =
       if User.blocks?(reading_user, user) do
@@ -692,8 +721,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp user_activities_recipients(%{godmode: true}), do: []
 
   defp user_activities_recipients(%{reading_user: reading_user}) do
-    if reading_user do
-      [Constants.as_public(), reading_user.ap_id | User.following(reading_user)]
+    if not is_nil(reading_user) and reading_user.local do
+      [
+        Constants.as_public(),
+        as_local_public(),
+        reading_user.ap_id | User.following(reading_user)
+      ]
     else
       [Constants.as_public()]
     end
@@ -912,6 +945,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_state(query, _), do: query
+
+  defp restrict_assigned_account(query, %{assigned_account: assigned_account}) do
+    from(activity in query,
+      where: fragment("?->>'assigned_account' = ?", activity.data, ^assigned_account)
+    )
+  end
+
+  defp restrict_assigned_account(query, _), do: query
 
   defp restrict_favorited_by(query, %{favorited_by: ap_id}) do
     from(
@@ -1191,6 +1232,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_filtered(query, _), do: query
 
+  defp restrict_quote_url(query, %{quote_url: quote_url}) do
+    from([_activity, object] in query,
+      where: fragment("(?)->'quoteUrl' = ?", object.data, ^quote_url)
+    )
+  end
+
+  defp restrict_quote_url(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1339,6 +1388,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_actor(opts)
       |> restrict_type(opts)
       |> restrict_state(opts)
+      |> restrict_assigned_account(opts)
       |> restrict_favorited_by(opts)
       |> restrict_blocked(restrict_blocked_opts)
       |> restrict_blockers_visibility(opts)
@@ -1353,6 +1403,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
+      |> restrict_quote_url(opts)
       |> Activity.restrict_deactivated_users()
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)
@@ -1432,7 +1483,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, data} <- Upload.store(file, opts) do
       obj_data = Maps.put_if_present(data, "actor", opts[:actor])
 
-      Repo.insert(%Object{data: obj_data})
+      # FIXME: If Objects used FlakeIds, we could pregenerate the ID
+      # instead of calling the DB twice.
+      with {:ok, object} <- Repo.insert(%Object{data: obj_data}) do
+        new_data = Map.put(object.data, "id", object.id)
+
+        object
+        |> change(data: new_data)
+        |> Repo.update()
+      end
     end
   end
 
@@ -1537,7 +1596,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       accepts_chat_messages: accepts_chat_messages,
       pinned_objects: pinned_objects,
       birthday: birthday,
-      show_birthday: show_birthday
+      show_birthday: show_birthday,
+      location: data["vcard:Address"] || ""
     }
 
     # nickname can be nil because of virtual actors
