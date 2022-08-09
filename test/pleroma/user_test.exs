@@ -12,12 +12,14 @@ defmodule Pleroma.UserTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Webhook.Notify
 
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Mock
   import Swoosh.TestAssertions
 
   setup_all do
@@ -715,6 +717,14 @@ defmodule Pleroma.UserTest do
 
       assert user.accepts_email_list
     end
+
+    test_with_mock "triggers webhooks", Notify, trigger_webhooks: fn _, _ -> nil end do
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      {:ok, registered_user} = User.register(cng)
+
+      assert_called(Notify.trigger_webhooks(registered_user, :"account.created"))
+    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -1277,7 +1287,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       muted_user = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(user, muted_user, %{expires_in: 60})
+      {:ok, _user_relationships} = User.mute(user, muted_user, %{duration: 60})
       assert User.mutes?(user, muted_user)
 
       worker = Pleroma.Workers.MuteExpireWorker
@@ -2733,41 +2743,6 @@ defmodule Pleroma.UserTest do
     object_id
   end
 
-  describe "account endorsements" do
-    test "it pins people" do
-      user = insert(:user)
-      pinned_user = insert(:user)
-
-      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
-
-      refute User.endorses?(user, pinned_user)
-
-      {:ok, _user_relationship} = User.endorse(user, pinned_user)
-
-      assert User.endorses?(user, pinned_user)
-    end
-
-    test "it unpins users" do
-      user = insert(:user)
-      pinned_user = insert(:user)
-
-      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
-      {:ok, _user_relationship} = User.endorse(user, pinned_user)
-      {:ok, _user_pin} = User.unendorse(user, pinned_user)
-
-      refute User.endorses?(user, pinned_user)
-    end
-
-    test "it doesn't pin users you do not follow" do
-      user = insert(:user)
-      pinned_user = insert(:user)
-
-      assert {:error, _message} = User.endorse(user, pinned_user)
-
-      refute User.endorses?(user, pinned_user)
-    end
-  end
-
   describe "add_alias/2" do
     test "should add alias for another user" do
       user = insert(:user)
@@ -2841,6 +2816,41 @@ defmodule Pleroma.UserTest do
 
       assert user3_updated.also_known_as |> length() == 1
       assert user.ap_id in user3_updated.also_known_as
+    end
+  end
+
+  describe "account endorsements" do
+    test "it pins people" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+
+      {:ok, _user_relationship} = User.endorse(user, pinned_user)
+
+      assert User.endorses?(user, pinned_user)
+    end
+
+    test "it unpins users" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      {:ok, _pinned_user, _user} = User.follow(user, pinned_user)
+      {:ok, _user_relationship} = User.endorse(user, pinned_user)
+      {:ok, _user_pin} = User.unendorse(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
+    end
+
+    test "it doesn't pin users you do not follow" do
+      user = insert(:user)
+      pinned_user = insert(:user)
+
+      assert {:error, _message} = User.endorse(user, pinned_user)
+
+      refute User.endorses?(user, pinned_user)
     end
   end
 end

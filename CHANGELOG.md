@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
 - Make backend-rendered pages translatable. This includes emails. Pages returned as a HTTP response are translated using the language specified in the `userLanguage` cookie, or the `Accept-Language` header. Emails are translated using the `language` field when registering. This language can be changed by `PATCH /api/v1/accounts/update_credentials` with the `language` field.
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
+- Added move account API
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies

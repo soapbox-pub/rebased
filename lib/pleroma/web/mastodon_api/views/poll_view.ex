@@ -21,7 +21,10 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       votes_count: votes_count,
       voters_count: voters_count(object),
       options: options,
-      emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"])
+      emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"]),
+      pleroma: %{
+        non_anonymous: object.data["nonAnonymous"] || false
+      }
     }
 
     if params[:for] do

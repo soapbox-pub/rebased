@@ -205,6 +205,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         Object.increase_replies_count(in_reply_to)
       end
 
+      if quote_url = object.data["quoteUrl"] do
+        Object.increase_quotes_count(quote_url)
+      end
+
       reply_depth = (meta[:depth] || 0) + 1
 
       # FIXME: Force inReplyTo to replies
@@ -304,6 +308,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
             if in_reply_to = deleted_object.data["inReplyTo"] do
               Object.decrease_replies_count(in_reply_to)
+            end
+
+            if quote_url = deleted_object.data["quoteUrl"] do
+              Object.decrease_quotes_count(quote_url)
             end
 
             MessageReference.delete_for_object(deleted_object)

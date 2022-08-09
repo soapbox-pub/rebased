@@ -553,7 +553,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
     end
 
-    test "with proper permissions, valid password and target account does not alias this",
+    test "with proper permissions, valid password and target account does not alias it",
          %{
            conn: conn
          } do
@@ -592,7 +592,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
              }
     end
 
-    test "with proper permissions, valid password, remote target account aliases this and local cache does not exist",
+    test "with proper permissions, valid password, remote target account aliases it and local cache does not exist",
          %{} do
       user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
       %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
@@ -610,7 +610,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
 
-    test "with proper permissions, valid password, remote target account aliases this and local cache does not alias this",
+    test "with proper permissions, valid password, remote target account aliases it and local cache does not aliases it",
          %{} do
       user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
       %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
@@ -636,7 +636,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
 
-    test "with proper permissions, valid password, remote target account does not alias this and local cache aliases this",
+    test "with proper permissions, valid password, remote target account does not aliases it and local cache aliases it",
          %{
            user: user,
            conn: conn
@@ -665,7 +665,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
              }
     end
 
-    test "with proper permissions, valid password and target account aliases this", %{
+    test "with proper permissions, valid password and target account aliases it", %{
       conn: conn,
       user: user
     } do
