@@ -874,7 +874,7 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
 
-config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
 
 import_config "soapbox.exs"
 
