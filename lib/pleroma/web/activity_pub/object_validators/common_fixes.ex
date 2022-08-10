@@ -22,7 +22,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   def fix_object_defaults(data) do
-    context = Utils.maybe_create_context(data["context"] || data["conversation"])
+    context =
+      Utils.maybe_create_context(
+        data["context"] || data["conversation"] || data["inReplyTo"] || data["id"]
+      )
 
     %User{follower_address: follower_collection} = User.get_cached_by_ap_id(data["attributedTo"])
 

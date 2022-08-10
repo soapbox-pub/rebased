@@ -1084,6 +1084,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://404.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
+     }}
+  end
+
   def get(
         "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=acct:lain@zetsubou.xn--q9jyb4c",
         _,
@@ -1424,6 +1432,15 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://mk.absturztau.be/notes/93e7nm8wqg/activity", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg-activity.json"),
        headers: activitypub_object_headers()
      }}
   end
