@@ -156,7 +156,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           type: :string,
           description: "Name of the event."
         },
-        content: %Schema{
+        status: %Schema{
           type: :string,
           description: "Text description of the event."
         },
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
       },
       example: %{
         "name" => "Example event",
-        "content" => "No information for now.",
+        "status" => "No information for now.",
         "start_time" => "21-02-2022T22:00:00Z",
         "end_time" => "21-02-2022T23:00:00Z"
       }
