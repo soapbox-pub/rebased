@@ -6,6 +6,9 @@ variables: &global_variables
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
   MIX_ENV: test
+  # Needed for Dokku deployment.
+  # https://github.com/dokku/dokku/issues/2514#issuecomment-616775470
+  GIT_DEPTH: 0
 
 cache: &global_cache_policy
   key:
@@ -187,34 +190,26 @@ docs-deploy:
   - apk add curl
   script:
   - curl -X POST -F"token=$DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" https://git.pleroma.social/api/v4/projects/673/trigger/pipeline
+
+# Deploy with Dokku
+# https://github.com/dokku/gitlab-ci
+# https://github.com/dokku/ci-docker-image
 review_app:
-  image: alpine:3.9
+  image: dokku/ci-docker-image
   stage: deploy
-  before_script:
-    - apk update && apk add openssh-client git
-  when: manual
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: https://$CI_ENVIRONMENT_SLUG.pleroma.online/
-    on_stop: stop_review_app
+    url: https://$CI_ENVIRONMENT_SLUG.dokku.soapbox.pub
+    # on_stop: stop_review_app
   only:
     - branches
   except:
-    - master
     - develop
-  script:
-    - echo "$CI_ENVIRONMENT_SLUG"
-    - mkdir -p ~/.ssh
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
-    - (ssh -t dokku@pleroma.online -- apps:create "$CI_ENVIRONMENT_SLUG") || true
-    - (ssh -t dokku@pleroma.online -- git:set "$CI_ENVIRONMENT_SLUG" keep-git-dir true) || true
-    - ssh -t dokku@pleroma.online -- config:set "$CI_ENVIRONMENT_SLUG" APP_NAME="$CI_ENVIRONMENT_SLUG" APP_HOST="$CI_ENVIRONMENT_SLUG.pleroma.online" MIX_ENV=dokku
-    - (ssh -t dokku@pleroma.online -- postgres:create $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db) || true
-    - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
-    - (ssh -t dokku@pleroma.online -- certs:add "$CI_ENVIRONMENT_SLUG" /home/dokku/server.crt /home/dokku/server.key) || true
-    - git push -f dokku@pleroma.online:$CI_ENVIRONMENT_SLUG $CI_COMMIT_SHA:refs/heads/master
+  variables:
+    GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/$CI_ENVIRONMENT_SLUG
+  script: dokku-deploy
+  after_script: [dokku-unlock]
+  before_script: []
 
 spec-deploy:
   stage: deploy
