@@ -1,0 +1,13 @@
+{
+  "name": "Soapbox BE",
+  "description": "Soapbox BE (Backend), the recommended backend for Soapbox based on Pleroma.",
+  "keywords": [
+    "fediverse"
+  ],
+  "website": "https://soapbox.pub",
+  "dokku": {
+    "plugins": [
+      "postgres"
+    ]
+  }
+}
