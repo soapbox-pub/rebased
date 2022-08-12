@@ -54,7 +54,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
         stats: %{mau: Pleroma.User.active_user_count()},
-        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
+        oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies()
       },
       configuration: configuration(),
       soapbox: %{
