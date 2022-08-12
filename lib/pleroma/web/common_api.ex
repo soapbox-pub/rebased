@@ -356,16 +356,16 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def accept_join_request(%User{} = user, %User{} = participant, event_id) do
-    with %Activity{} = join_activity <- Utils.get_existing_join(participant, event_id),
+  def accept_join_request(%User{} = user, %User{ap_id: participant_ap_id} = participant, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
          {:ok, accept_data, _} <- Builder.accept(user, join_activity),
          {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true) do
       {:ok, participant}
     end
   end
 
-  def reject_join_request(%User{} = user, %User{} = participant, event_id) do
-    with %Activity{} = join_activity <- Utils.get_existing_join(participant, event_id),
+  def reject_join_request(%User{} = user, %User{ap_id: participant_ap_id} = participant, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
          {:ok, reject_data, _} <- Builder.reject(user, join_activity),
          {:ok, _activity, _} <- Pipeline.common_pipeline(reject_data, local: true) do
       {:ok, participant}

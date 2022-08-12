@@ -524,7 +524,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => type} = data,
         _options
       )
-      when type in ~w{Update Block Follow Accept Reject} do
+      when type in ~w{Update Block Follow Accept Reject Join Leave} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -581,7 +581,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         } = data,
         _options
       )
-      when type in ["Like", "EmojiReact", "Announce", "Block"] do
+      when type in ["Like", "EmojiReact", "Announce", "Block", "Join"] do
     with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end

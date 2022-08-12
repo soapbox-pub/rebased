@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.LeaveValidator do
   use Ecto.Schema
 
   alias Pleroma.Web.ActivityPub.Utils
@@ -20,10 +20,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator do
         activity_fields()
       end
     end
-
-    field(:state, :string, default: "pending")
-
-    field(:participationMessage, :string)
   end
 
   def cast_data(data) do
@@ -33,8 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator do
 
   defp validate_data(data_cng) do
     data_cng
-    |> validate_inclusion(:type, ["Join"])
-    |> validate_inclusion(:state, ~w{pending reject accept})
+    |> validate_inclusion(:type, ["Leave"])
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_actor_presence()
     |> validate_object_presence(allowed_types: ["Event"])
@@ -48,10 +43,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.JoinValidator do
   end
 
   defp validate_existing_join(%{changes: %{actor: actor, object: object}} = cng) do
-    if Utils.get_existing_join(actor, object) do
+    if !Utils.get_existing_join(actor, object) do
       cng
-      |> add_error(:actor, "already joined this event")
-      |> add_error(:object, "already joined by this actor")
+      |> add_error(:actor, "not joined this event")
+      |> add_error(:object, "not joined by this actor")
     else
       cng
     end

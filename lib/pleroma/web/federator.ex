@@ -81,6 +81,7 @@ defmodule Pleroma.Web.Federator do
          nil <- Activity.normalize(params["id"]),
          {_, :ok} <-
            {:correct_origin?, Containment.contain_origin_from_id(actor, params)},
+           _ <- "handling incoming",
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       {:ok, activity}
     else

@@ -943,7 +943,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
-  ### Join-related helpers
   def get_existing_join(actor, id) do
     actor
     |> Activity.Queries.by_actor()

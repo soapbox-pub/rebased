@@ -42,18 +42,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Sends a notification
   @impl true
   def handle(
-        %{
-          data: %{
-            "actor" => actor,
-            "type" => "Accept",
-            "object" => activity_id
-          }
-        } = object,
+        %{data: %{"actor" => actor, "type" => "Accept", "object" => activity_id}} = object,
         meta
       ) do
     with %Activity{} = activity <-
            Activity.get_by_ap_id(activity_id) do
       handle_accepted(activity, actor)
+
+      Notification.create_notifications(object)
     end
 
     {:ok, object, meta}
@@ -403,6 +399,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
+  @impl true
+  def handle(%{actor: actor_id, data: %{"type" => "Leave", "object" => event_id}} = object, meta) do
+    with undone_object <- Utils.get_existing_join(actor_id, event_id),
+         :ok <- handle_undoing(undone_object) do
+      {:ok, object, meta}
+    end
+  end
+
   # Nothing to do
   @impl true
   def handle(object, meta) do
@@ -429,7 +433,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     with joined_event <- Object.get_by_ap_id(event_id),
          {:ok, join_activity} <- Utils.update_join_state(join_activity, "accept") do
       Utils.add_participation_to_object(join_activity, joined_event)
-      # Notification.update_notification_type(followed, follow_activity)
     end
   end
 
@@ -557,6 +560,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     with %User{} = blocker <- User.get_cached_by_ap_id(blocker),
          %User{} = blocked <- User.get_cached_by_ap_id(blocked),
          {:ok, _} <- User.unblock(blocker, blocked),
+         {:ok, _} <- Repo.delete(object) do
+      :ok
+    end
+  end
+
+  def handle_undoing(
+        %{data: %{"type" => "Join", "actor" => _actor_id, "object" => event_id}} = object
+      ) do
+    with %Object{} = event_object <- Object.get_by_ap_id(event_id),
+         {:ok, _} <- Utils.remove_participation_from_object(object, event_object),
          {:ok, _} <- Repo.delete(object) do
       :ok
     end

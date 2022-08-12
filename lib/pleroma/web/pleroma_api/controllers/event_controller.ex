@@ -120,18 +120,18 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     end
   end
 
-  def participate(%{assigns: %{user: user}, body_params: params} = conn, %{id: activity_id}) do
-    with {:ok, _} <- CommonAPI.join(user, activity_id, params),
-         %Activity{} = activity <- Activity.get_by_id(activity_id) do
+  def participate(%{assigns: %{user: user}, body_params: params} = conn, %{id: event_id}) do
+    with {:ok, _} <- CommonAPI.join(user, event_id, params),
+         %Activity{} = activity <- Activity.get_by_id(event_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: user, as: :activity)
     end
   end
 
-  def unparticipate(%{assigns: %{user: user}} = conn, %{id: activity_id}) do
-    with {:ok, _} <- CommonAPI.leave(user, activity_id),
-         %Activity{} = activity <- Activity.get_by_id(activity_id) do
+  def unparticipate(%{assigns: %{user: user}} = conn, %{id: event_id}) do
+    with {:ok, _} <- CommonAPI.leave(user, event_id),
+         %Activity{} = activity <- Activity.get_by_id(event_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: user, as: :activity)
@@ -140,10 +140,11 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
 
   def accept_participation_request(
         %{assigns: %{user: for_user, participant: participant}} = conn,
-        %{id: activity_id}
+        %{id: event_id}
       ) do
-    with {:ok, _} <- CommonAPI.accept_join_request(for_user, participant, activity_id),
-         %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{data: %{"object" => ap_id}} <- Activity.get_by_id(event_id),
+         {:ok, _} <- CommonAPI.accept_join_request(for_user, participant, ap_id),
+         %Activity{} = activity <- Activity.get_by_id(event_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
@@ -152,10 +153,11 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
 
   def reject_participation_request(
         %{assigns: %{user: for_user, participant: participant}} = conn,
-        %{id: activity_id}
+        %{id: event_id}
       ) do
-    with {:ok, _} <- CommonAPI.reject_join_request(for_user, participant, activity_id),
-         %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{data: %{"object" => ap_id}} <- Activity.get_by_id(event_id),
+         {:ok, _} <- CommonAPI.reject_join_request(for_user, participant, ap_id),
+         %Activity{} = activity <- Activity.get_by_id(event_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
