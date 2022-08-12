@@ -61,9 +61,11 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "blocking" do
     setup do
       blocker = insert(:user)
-      blocked = insert(:user)
-      User.follow(blocker, blocked)
-      User.follow(blocked, blocker)
+      blocked = insert(:user, local: false)
+      CommonAPI.follow(blocker, blocked)
+      CommonAPI.follow(blocked, blocker)
+      CommonAPI.accept_follow_request(blocker, blocked)
+      CommonAPI.accept_follow_request(blocked, blocked)
       %{blocker: blocker, blocked: blocked}
     end
 
@@ -72,12 +74,20 @@ defmodule Pleroma.Web.CommonAPITest do
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
+        assert User.get_follow_state(blocker, blocked) == :follow_accept
+        refute is_nil(Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(blocker, blocked))
+
         assert {:ok, block} = CommonAPI.block(blocker, blocked)
 
         assert block.local
         assert User.blocks?(blocker, blocked)
         refute User.following?(blocker, blocked)
         refute User.following?(blocked, blocker)
+
+        refute User.get_follow_state(blocker, blocked)
+
+        assert %{data: %{"state" => "reject"}} =
+                 Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(blocker, blocked)
 
         assert called(Pleroma.Web.Federator.publish(block))
       end
