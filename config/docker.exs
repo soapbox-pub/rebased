@@ -19,9 +19,9 @@ case System.get_env("DATABASE_URL") do
 
   _ ->
     config :pleroma, Pleroma.Repo,
-      username: System.get_env("DB_USER", "pleroma"),
-      password: System.fetch_env!("DB_PASS"),
-      database: System.get_env("DB_NAME", "pleroma"),
+      username: System.get_env("DB_USER", "postgres"),
+      password: System.fetch_env!("DB_PASS", "postgres"),
+      database: System.get_env("DB_NAME", "postgres"),
       hostname: System.get_env("DB_HOST", "db")
 end
 
