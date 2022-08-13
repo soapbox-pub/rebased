@@ -134,6 +134,7 @@ defmodule Pleroma.Web.PleromaAPI.TwoFactorAuthenticationControllerTest do
   end
 
   describe "GET /api/pleroma/accounts/mfa/confirm/totp" do
+    @tag :erratic
     test "returns success result", %{conn: conn} do
       secret = TOTP.generate_secret()
       code = TOTP.generate_token(secret)
