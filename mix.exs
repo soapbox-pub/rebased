@@ -203,6 +203,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:ecto_psql_extras, "~> 0.6"},
       {:absinthe, "~> 1.7"},
+      {:absinthe_plug, "~> 1.5"},
 
       # indirect dependency version override
       {:plug, "~> 1.10.4", override: true},
