@@ -6,9 +6,6 @@ import Config
 # Twitter-like block behavior
 config :pleroma, :activitypub, blockers_visible: false
 
-# Set the default frontend to an instructions page
-config :pleroma, :frontends, primary: %{"name" => "landing-fe", "ref" => "vendor"}
-
 # Sane default upload filters
 config :pleroma, Pleroma.Upload,
   filters: [
