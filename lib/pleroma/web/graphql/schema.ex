@@ -1,9 +1,8 @@
 defmodule Pleroma.Web.GraphQL.Schema do
   use Absinthe.Schema
 
-
   object :hello do
-    field :text, :string
+    field(:text, :string)
   end
 
   query do

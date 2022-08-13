@@ -147,8 +147,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.StaticFEPlug)
   end
 
-  forward "/api/graphql", Absinthe.Plug,
-    schema: Pleroma.Web.GraphQL.Schema
+  forward("/api/graphql", Absinthe.Plug, schema: Pleroma.Web.GraphQL.Schema)
 
   scope "/api/v1/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
