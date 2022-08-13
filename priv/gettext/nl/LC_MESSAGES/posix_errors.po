@@ -3,14 +3,16 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-13 13:32+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-08-14 11:04+0000\n"
+"Last-Translator: Fristi <fristi@subcon.town>\n"
+"Language-Team: Dutch <http://weblate.pleroma-dev.ebin.club/projects/pleroma/"
+"pleroma-backend-domain-posix_errors/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 3.7.2\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.13.1\n"
 
 ## This file is a PO Template file.
 ##
@@ -22,94 +24,94 @@ msgstr ""
 ## date. Leave `msgstr`s empty as changing them here as no
 ## effect: edit them in PO (`.po`) files instead.
 msgid "eperm"
-msgstr ""
+msgstr "Uitvoering niet toegestaan"
 
 msgid "eacces"
-msgstr ""
+msgstr "Toegang geweigerd"
 
 msgid "eagain"
-msgstr ""
+msgstr "Resource tijdelijk niet beschikbaar"
 
 msgid "ebadf"
-msgstr ""
+msgstr "Ongeldige file descriptor"
 
 msgid "ebadmsg"
-msgstr ""
+msgstr "Ongeldig bericht"
 
 msgid "ebusy"
-msgstr ""
+msgstr "Apparaat of resource bezet"
 
 msgid "edeadlk"
-msgstr ""
+msgstr "Resource deadlock vermeden"
 
 msgid "edeadlock"
-msgstr ""
+msgstr "Resource deadlock vermeden"
 
 msgid "edquot"
-msgstr ""
+msgstr "Schijf-quota overschreden"
 
 msgid "eexist"
-msgstr ""
+msgstr "Bestand bestaat"
 
 msgid "efault"
-msgstr ""
+msgstr "Ongeldig adres"
 
 msgid "efbig"
-msgstr ""
+msgstr "Bestand is te groot"
 
 msgid "eftype"
-msgstr ""
+msgstr "Ongepast bestands-type of formaat"
 
 msgid "eintr"
-msgstr ""
+msgstr "Onderbroken systeem aanroep"
 
 msgid "einval"
-msgstr ""
+msgstr "Ongeldig argument"
 
 msgid "eio"
-msgstr ""
+msgstr "Input/output fout"
 
 msgid "eisdir"
-msgstr ""
+msgstr "Illegale bewerking op een directory"
 
 msgid "eloop"
-msgstr ""
+msgstr "Te veel niveau's van symbolische koppelingen"
 
 msgid "emfile"
-msgstr ""
+msgstr "Te veel geopende bestanden"
 
 msgid "emlink"
-msgstr ""
+msgstr "Te veel koppelingen"
 
 msgid "emultihop"
-msgstr ""
+msgstr "Multihop geprobeerd"
 
 msgid "enametoolong"
-msgstr ""
+msgstr "Bestandsnaam is te lang"
 
 msgid "enfile"
-msgstr ""
+msgstr "Te veel geopende bestanden in systeem"
 
 msgid "enobufs"
-msgstr ""
+msgstr "Geen buffer-ruimte beschikbaar"
 
 msgid "enodev"
-msgstr ""
+msgstr "Apparaat bestaat niet"
 
 msgid "enolck"
-msgstr ""
+msgstr "Geen sloten beschikbaar"
 
 msgid "enolink"
-msgstr ""
+msgstr "Koppeling is ongedaan gemaakt"
 
 msgid "enoent"
-msgstr ""
+msgstr "Bestand of directory bestaat niet"
 
 msgid "enomem"
-msgstr ""
+msgstr "Geheugen kon niet toegewezen worden"
 
 msgid "enospc"
-msgstr ""
+msgstr "Geen ruimte over op apparaat"
 
 msgid "enosr"
 msgstr ""
