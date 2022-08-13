@@ -1,4 +1,4 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base
+image: registry.gitlab.com/soapbox-pub/soapbox-be/ci
 
 variables: &global_variables
   POSTGRES_DB: pleroma_test
