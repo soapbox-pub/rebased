@@ -497,6 +497,27 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :delete_context_objects,
+    type: :group,
+    description: "`delete_context_objects` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
