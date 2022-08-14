@@ -629,7 +629,14 @@ ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
     strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
     strategy_module = String.to_atom(strategy_module_name)
-    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+
+    params =
+      case strategy do
+        "keycloak" -> [uid_field: :email, default_scope: "openid profile"]
+        _ -> [callback_params: ["state"]]
+      end
+
+    {String.to_atom(strategy), {strategy_module, params}}
   end
 
 config :ueberauth,
