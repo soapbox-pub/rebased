@@ -122,6 +122,8 @@ config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
 
+config :pleroma, :instances_favicons, enabled: false
+
 config :pleroma, :pipeline,
   object_validator: Pleroma.Web.ActivityPub.ObjectValidatorMock,
   mrf: Pleroma.Web.ActivityPub.MRFMock,
