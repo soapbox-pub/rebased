@@ -5,7 +5,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: System.get_env("PORT", "5000")]
 
 config :pleroma, :instance,
-  name: System.get_env("INSTANCE_NAME", "Pleroma"),
+  name: System.get_env("INSTANCE_NAME", "Soapbox"),
   email: System.get_env("ADMIN_EMAIL"),
   notify_email: System.get_env("NOTIFY_EMAIL"),
   limit: 5000,
@@ -19,9 +19,9 @@ case System.get_env("DATABASE_URL") do
 
   _ ->
     config :pleroma, Pleroma.Repo,
-      username: System.get_env("DB_USER", "pleroma"),
-      password: System.fetch_env!("DB_PASS"),
-      database: System.get_env("DB_NAME", "pleroma"),
+      username: System.get_env("DB_USER", "postgres"),
+      password: System.get_env("DB_PASS", "postgres"),
+      database: System.get_env("DB_NAME", "postgres"),
       hostname: System.get_env("DB_HOST", "db")
 end
 

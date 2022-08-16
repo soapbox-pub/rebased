@@ -1,6 +1,8 @@
 FROM ubuntu:22.04 as build
 
-ENV MIX_ENV=prod
+ARG MIX_ENV=prod \
+    OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft slack github keycloak:ueberauth_keycloak_strategy"
+
 WORKDIR /src
 
 RUN apt-get update &&\

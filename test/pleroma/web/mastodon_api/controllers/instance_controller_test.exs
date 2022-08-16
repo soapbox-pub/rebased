@@ -11,6 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
   import Pleroma.Factory
 
   test "get instance information", %{conn: conn} do
+    clear_config([:auth, :oauth_consumer_strategies], [])
+
     conn = get(conn, "/api/v1/instance")
     assert result = json_response_and_validate_schema(conn, 200)
 
@@ -51,6 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result["pleroma"]["metadata"]["fields_limits"]
     assert result["pleroma"]["vapid_public_key"]
     assert result["pleroma"]["stats"]["mau"] == 0
+    assert result["pleroma"]["oauth_consumer_strategies"] == []
     assert result["soapbox"]["version"] =~ "."
 
     assert email == from_config_email
@@ -118,5 +121,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result = json_response_and_validate_schema(conn, 200)
 
     assert result["configuration"]["statuses"]["max_characters"] == 476
+  end
+
+  test "get oauth_consumer_strategies", %{conn: conn} do
+    clear_config([:auth, :oauth_consumer_strategies], ["keycloak"])
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert result["pleroma"]["oauth_consumer_strategies"] == ["keycloak"]
   end
 end

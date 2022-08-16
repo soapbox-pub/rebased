@@ -9,6 +9,12 @@ defmodule Pleroma.Workers.ReceiverWorker do
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "incoming_ap_doc", "params" => params}}) do
-    Federator.perform(:incoming_ap_doc, params)
+    with {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
+      {:ok, res}
+    else
+      {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
+      {:error, {:reject, reason}} -> {:cancel, reason}
+      e -> e
+    end
   end
 end
