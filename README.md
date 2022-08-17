@@ -1,6 +1,6 @@
 # Rebased
 
-![Rebased](https://gitlab.com/soapbox-pub/soapbox-be/uploads/9c6007f6131e394d45ec99cfac713c0d/rebased-circle.png)
+![Rebased](https://gitlab.com/soapbox-pub/soapbox-be/uploads/4cd1159a8c2653dfcb5c2029ad27acd5/rebased-wide.svg)
 
 **Rebased** is a Fediverse backend written in Elixir.
 It's compatible with the Mastodon API and is the recommended backend for Soapbox.
