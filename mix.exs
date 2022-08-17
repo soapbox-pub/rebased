@@ -18,12 +18,12 @@ defmodule Pleroma.Mixfile do
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: ["coveralls.html": :test],
       # Docs
-      name: "Pleroma",
-      homepage_url: "https://pleroma.social/",
-      source_url: "https://git.pleroma.social/pleroma/pleroma",
+      name: "Rebased",
+      homepage_url: "https://soapbox.pub/",
+      source_url: "https://gitlab.com/soapbox-pub/soapbox-be",
       docs: [
         source_url_pattern:
-          "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
+          "https://gitlab.com/soapbox-pub/soapbox-be/blob/develop/%{path}#L%{line}",
         logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
