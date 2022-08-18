@@ -167,7 +167,14 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
            } = PollView.render("show.json", %{object: object})
   end
 
-  test "that poll is non anonymous" do
+  test "displays correct voters count" do
+    object = Object.normalize("https://friends.grishka.me/posts/54642", fetch: true)
+    result = PollView.render("show.json", %{object: object})
+
+    assert result[:voters_count] == 14
+  end
+
+  test "detects that poll is non anonymous" do
     object = Object.normalize("https://friends.grishka.me/posts/54642", fetch: true)
     result = PollView.render("show.json", %{object: object})
 
