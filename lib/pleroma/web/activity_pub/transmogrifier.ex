@@ -724,7 +724,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def replies(_), do: []
 
   defp set_voters_count(%{"voters" => [_ | _] = voters} = obj) do
-    Map.merge(obj, %{"votersCount" => length(voters)})
+    obj
+    |> Map.merge(%{"votersCount" => length(voters)})
+    |> Map.delete("voters")
   end
 
   defp set_voters_count(obj), do: obj
