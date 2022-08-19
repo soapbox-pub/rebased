@@ -86,7 +86,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
   defp fix_replies(%{"replies" => %{"items" => replies}} = data) when is_list(replies),
     do: Map.put(data, "replies", replies)
 
-  defp fix_replies(%{"replies" => replies} = data) when is_bitstring(replies),
+  # TODO: Pleroma does not have any support for Collections at the moment.
+  # If the `replies` field is not something the ObjectID validator can handle,
+  # the activity/object would be rejected, which is bad behavior.
+  defp fix_replies(%{"replies" => replies} = data) when not is_list(replies),
     do: Map.drop(data, ["replies"])
 
   defp fix_replies(data), do: data
