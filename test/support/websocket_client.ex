@@ -15,7 +15,7 @@ defmodule Pleroma.Integration.WebsocketClient do
     WebSockex.start_link(
       url,
       __MODULE__,
-      %{ sender: sender },
+      %{sender: sender},
       extra_headers: headers
     )
   end

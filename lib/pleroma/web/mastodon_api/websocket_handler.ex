@@ -32,7 +32,8 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
           req
         end
 
-      {:cowboy_websocket, req, %{user: user, topic: topic, oauth_token: oauth_token, count: 0, timer: nil},
+      {:cowboy_websocket, req,
+       %{user: user, topic: topic, oauth_token: oauth_token, count: 0, timer: nil},
        %{idle_timeout: @timeout}}
     else
       {:error, :bad_topic} ->

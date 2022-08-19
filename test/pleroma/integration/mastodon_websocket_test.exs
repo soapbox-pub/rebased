@@ -41,7 +41,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
   test "requires authentication and a valid token for protected streams" do
     capture_log(fn ->
-      assert {:error, %WebSockex.RequestError{code: 401}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+      assert {:error, %WebSockex.RequestError{code: 401}} =
+               start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+
       assert {:error, %WebSockex.RequestError{code: 401}} = start_socket("?stream=user")
       Process.sleep(30)
     end)
@@ -111,7 +113,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, %WebSockex.RequestError{code: 401}} = start_socket("?stream=user:notification")
+        assert {:error, %WebSockex.RequestError{code: 401}} =
+                 start_socket("?stream=user:notification")
+
         Process.sleep(30)
       end)
     end
