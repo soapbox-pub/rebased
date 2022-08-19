@@ -367,6 +367,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     {pinned?, pinned_at} = pin_data(object, user)
 
+    IO.inspect(opts[:for])
+
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
@@ -418,7 +420,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         pinned_at: pinned_at,
         content_type: opts[:with_source] && (object.data["content_type"] || "text/plain"),
         quotes_count: object.data["quotesCount"] || 0,
-        event: build_event(object.data)
+        event: build_event(object.data, opts[:for])
       }
     }
   end
@@ -595,24 +597,38 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp build_event(%{"type" => "Event"} = data) do
+  defp build_event(%{"type" => "Event"} = data, for_user) do
+    IO.inspect(for_user)
     %{
       name: data["name"],
       start_time: data["startTime"],
       end_time: data["endTime"],
       join_mode: data["joinMode"],
       participants_count: data["participation_count"],
-      location: build_event_location(data["location"])
+      location: build_event_location(data["location"]),
+      join_state: build_event_join_state(for_user, data["id"])
     }
   end
 
-  defp build_event(_), do: nil
+  defp build_event(_, _), do: nil
 
   defp build_event_location(%{"type" => "Place", "name" => name}) do
     %{name: name}
   end
 
   defp build_event_location(_), do: nil
+
+  defp build_event_join_state(%{ap_id: actor}, id) do
+    IO.inspect(actor)
+    IO.inspect(id)
+    latest_join = Pleroma.Web.ActivityPub.Utils.get_existing_join(actor, id)
+
+    if latest_join do
+      latest_join.data["state"]
+    end
+  end
+
+  defp build_event_join_state(_, _), do: nil
 
   defp present?(nil), do: false
   defp present?(false), do: false
