@@ -49,7 +49,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
            Activity.get_by_ap_id(activity_id) do
       handle_accepted(activity, actor)
 
-      Notification.create_notifications(object)
+      if activity.data["type"] === "Join" do
+        Notification.create_notifications(object)
+      end
     end
 
     {:ok, object, meta}
@@ -395,6 +397,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, accept_data, _} = Builder.accept(joined_event, object)
       {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
     end
+
+    Notification.create_notifications(object)
 
     {:ok, object, meta}
   end

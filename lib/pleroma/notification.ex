@@ -74,6 +74,8 @@ defmodule Pleroma.Notification do
     reblog
     poll
     status
+    pleroma:participation_accepted
+    pleroma:participation_request
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -388,7 +390,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
-      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag"] do
+      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact", "Flag", "Accept", "Join"] do
     do_create_notifications(activity, options)
   end
 
@@ -448,6 +450,12 @@ defmodule Pleroma.Notification do
       "Create" ->
         activity
         |> type_from_activity_object()
+
+      "Accept" ->
+        "pleroma:participation_accepted"
+
+      "Join" ->
+        "pleroma:participation_request"
 
       t ->
         raise "No notification type for activity type #{t}"
@@ -523,7 +531,17 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
-      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact", "Flag"] do
+      when type in [
+             "Create",
+             "Like",
+             "Announce",
+             "Follow",
+             "Move",
+             "EmojiReact",
+             "Flag",
+             "Accept",
+             "Join"
+           ] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
     potential_receivers =
@@ -570,6 +588,35 @@ defmodule Pleroma.Notification do
     case Object.get_cached_by_ap_id(object_id) do
       %Object{data: %{"actor" => actor}} ->
         [actor]
+
+      _ ->
+        []
+    end
+  end
+
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Accept", "object" => join_id}}) do
+    case Activity.get_by_ap_id_with_object(join_id) do
+      %Activity{
+        data: %{"type" => "Join"},
+        object: %Object{data: %{"type" => "Event", "joinMode" => "free"}}
+      } ->
+        []
+
+      %Activity{data: %{"type" => "Join", "actor" => actor_id}} ->
+        [actor_id]
+
+      _ ->
+        []
+    end
+  end
+
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Join", "object" => object_id}}) do
+    case Object.get_by_ap_id(object_id) do
+      %Object{data: %{"type" => "Event", "joinMode" => "free"}} ->
+        []
+
+      %Object{data: %{"type" => "Event", "actor" => actor_id}} ->
+        [actor_id]
 
       _ ->
         []

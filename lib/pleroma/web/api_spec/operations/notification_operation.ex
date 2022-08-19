@@ -202,12 +202,15 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "move",
         "follow_request",
         "poll",
-        "status"
+        "status",
+        "pleroma:participation_accepted",
+        "pleroma:participation_request"
       ],
       description: """
       The type of event that resulted in the notification.
 
       - `follow` - Someone followed you
+      - `follow_request` - Someone wants to follow you
       - `mention` - Someone mentioned you in their status
       - `reblog` - Someone boosted one of your statuses
       - `favourite` - Someone favourited one of your statuses
@@ -217,6 +220,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
       - `pleroma:report` - Someone was reported
       - `status` - Someone you are subscribed to created a status
+      - `pleroma:participation_request - Someone wants to participate in your event
+      - `pleroma:participation_accepted - Your event participation request was accepted
       """
     }
   end

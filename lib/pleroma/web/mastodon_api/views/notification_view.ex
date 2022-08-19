@@ -129,6 +129,12 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "pleroma:report" ->
         put_report(response, activity)
 
+      "pleroma:participation_accepted" ->
+        put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
+
+      "pleroma:participation_request" ->
+        put_participation_request(response, activity)
+
       type when type in ["follow", "follow_request"] ->
         response
     end
@@ -168,5 +174,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
     target_render = AccountView.render("show.json", target_render_opts)
 
     Map.put(response, :target, target_render)
+  end
+
+  defp put_participation_request(response, activity) do
+    Map.put(response, :participation_message, activity.data["participationMessage"])
   end
 end

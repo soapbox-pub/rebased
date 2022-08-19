@@ -367,8 +367,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     {pinned?, pinned_at} = pin_data(object, user)
 
-    IO.inspect(opts[:for])
-
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
@@ -598,7 +596,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   defp build_event(%{"type" => "Event"} = data, for_user) do
-    IO.inspect(for_user)
     %{
       name: data["name"],
       start_time: data["startTime"],
@@ -619,8 +616,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp build_event_location(_), do: nil
 
   defp build_event_join_state(%{ap_id: actor}, id) do
-    IO.inspect(actor)
-    IO.inspect(id)
     latest_join = Pleroma.Web.ActivityPub.Utils.get_existing_join(actor, id)
 
     if latest_join do
