@@ -37,7 +37,7 @@ defmodule Pleroma.Web.Streamer do
           {:ok, topic :: String.t()} | {:error, :bad_topic} | {:error, :unauthorized}
   def get_topic_and_add_socket(stream, user, oauth_token, params \\ %{}) do
     with {:ok, topic} <- get_topic(stream, user, oauth_token, params) do
-      add_socket(topic, user)
+      add_socket(topic, oauth_token)
     end
   end
 
@@ -120,10 +120,10 @@ defmodule Pleroma.Web.Streamer do
   end
 
   @doc "Registers the process for streaming. Use `get_topic/3` to get the full authorized topic."
-  def add_socket(topic, user) do
+  def add_socket(topic, oauth_token) do
     if should_env_send?() do
-      auth? = if user, do: true
-      Registry.register(@registry, topic, auth?)
+      oauth_token_id = if oauth_token, do: oauth_token.id, else: false
+      Registry.register(@registry, topic, oauth_token_id)
     end
 
     {:ok, topic}
@@ -317,6 +317,22 @@ defmodule Pleroma.Web.Streamer do
       true
     else
       ActivityPub.contain_activity(activity, user)
+    end
+  end
+
+  def close_streams_by_oauth_token(oauth_token) do
+    if should_env_send?() do
+      Registry.select(
+        @registry,
+        [
+          {
+            {:"$1", :"$2", :"$3"},
+            [{:==, :"$3", oauth_token.id}],
+            [:"$2"]
+          }
+        ]
+      )
+      |> Enum.each(fn pid -> send(pid, :close) end)
     end
   end
 

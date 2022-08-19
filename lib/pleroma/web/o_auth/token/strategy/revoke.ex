@@ -22,5 +22,6 @@ defmodule Pleroma.Web.OAuth.Token.Strategy.Revoke do
   @spec revoke(Token.t()) :: {:ok, Token.t()} | {:error, Ecto.Changeset.t()}
   def revoke(%Token{} = token) do
     Repo.delete(token)
+    Pleroma.Web.Streamer.close_streams_by_oauth_token(token)
   end
 end
