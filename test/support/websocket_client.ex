@@ -41,6 +41,12 @@ defmodule Pleroma.Integration.WebsocketClient do
     {:ok, state}
   end
 
+  @impl true
+  def handle_disconnect(conn_status, state) do
+    send(state.sender, {:close, conn_status})
+    {:ok, state}
+  end
+
   @doc false
   @impl true
   def handle_info({:text, msg}, state) do

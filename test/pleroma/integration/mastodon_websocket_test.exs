@@ -91,7 +91,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       {:ok, token} = OAuth.Token.exchange_token(app, auth)
 
-      %{user: user, token: token}
+      %{app: app, user: user, token: token}
     end
 
     test "accepts valid tokens", state do
@@ -125,6 +125,22 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
         Process.sleep(30)
       end)
+    end
+
+    test "disconnect when token is revoked", %{app: app, user: user, token: token} do
+      assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
+      assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
+
+      {:ok, auth} = OAuth.Authorization.create_authorization(app, user)
+
+      {:ok, token2} = OAuth.Token.exchange_token(app, auth)
+      assert {:ok, _} = start_socket("?stream=user&access_token=#{token2.token}")
+
+      OAuth.Token.Strategy.Revoke.revoke(token)
+
+      assert_receive {:close, _}
+      assert_receive {:close, _}
+      refute_receive {:close, _}
     end
   end
 end
