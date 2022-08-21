@@ -102,6 +102,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> to_and_cc()
     |> context()
     |> event_object()
+    |> with_valid(&event_date/1)
     |> with_valid(&changes/1)
     |> validate()
   end
@@ -117,8 +118,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       |> Map.put("cc", draft.cc)
       |> Map.put("content", draft.content_html)
       |> Map.put("actor", draft.user.ap_id)
-      |> Map.put("startTime", draft.params[:start_time])
-      |> Map.put("endTime", draft.params[:end_time])
+      # |> Map.put("startTime", draft.params[:start_time])
+      # |> Map.put("endTime", draft.params[:end_time])
       |> Map.put("joinMode", draft.params[:join_mode])
       |> Map.put("tag", Keyword.values(draft.tags) |> Enum.uniq())
       |> Map.put("emoji", emoji)
@@ -324,6 +325,35 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       |> Utils.maybe_add_list_data(draft.user, draft.visibility)
 
     %__MODULE__{draft | changes: changes}
+  end
+
+  defp event_date(draft) do
+    case draft.params[:start_time] do
+      %DateTime{} = start_time ->
+        case draft.params[:end_time] do
+          %DateTime{} = end_time ->
+            if DateTime.compare(end_time, start_time) == :lt do
+              add_error(draft, dgettext("errors", "Event can't end before its start"))
+            else
+              object =
+                draft.object
+                |> Map.put("startTime", start_time)
+                |> Map.put("endTime", end_time)
+
+              %__MODULE__{draft | object: object}
+            end
+
+          _ ->
+            object =
+              draft.object
+              |> Map.put("startTime", start_time)
+
+            %__MODULE__{draft | object: object}
+        end
+
+      _ ->
+        add_error(draft, dgettext("errors", "Start date is required"))
+    end
   end
 
   defp with_valid(%{valid?: true} = draft, func), do: func.(draft)
