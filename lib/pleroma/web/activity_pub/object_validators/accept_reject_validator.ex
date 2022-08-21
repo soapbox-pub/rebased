@@ -45,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator do
 
   def validate_accept_reject_rights(cng) do
     with object_id when is_binary(object_id) <- get_field(cng, :object),
-         activity <- Activity.get_by_ap_id(object_id),
+         %Activity{} = activity <- Activity.get_by_ap_id(object_id),
          true <- validate_actor(activity, get_field(cng, :actor)) do
       cng
     else

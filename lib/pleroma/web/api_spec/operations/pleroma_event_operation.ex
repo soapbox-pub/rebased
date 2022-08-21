@@ -183,8 +183,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
       example: %{
         "name" => "Example event",
         "status" => "No information for now.",
-        "start_time" => "21-02-2022T22:00:00Z",
-        "end_time" => "21-02-2022T23:00:00Z"
+        "start_time" => "2022-02-21T22:00:00.000Z",
+        "end_time" => "2022-02-21T23:00:00.000Z"
       }
     }
   end
