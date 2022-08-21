@@ -128,6 +128,47 @@ defmodule Pleroma.NotificationTest do
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
     end
+
+    test "creates notification for event join request" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.event(user, %{name: "test event", status: "", join_mode: "restricted"})
+
+      CommonAPI.join(other_user, activity.id)
+
+      user_notifications = Notification.for_user(user)
+      assert length(user_notifications) == 1
+    end
+
+    test "creates notification for event join approval" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.event(user, %{name: "test event", status: "", join_mode: "restricted"})
+
+      CommonAPI.join(other_user, activity.id)
+
+      CommonAPI.accept_join_request(user, other_user, activity.data["object"])
+
+      user_notifications = Notification.for_user(other_user)
+      assert length(user_notifications) == 1
+    end
+
+    test "doesn't create notification for events without participation approval" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.event(user, %{name: "test event", status: "", join_mode: "free"})
+
+      CommonAPI.join(other_user, activity.id)
+
+      user_notifications = Notification.for_user(user)
+      assert length(user_notifications) == 0
+
+      user_notifications = Notification.for_user(other_user)
+      assert length(user_notifications) == 0
+    end
   end
 
   test "create_poll_notifications/1" do
