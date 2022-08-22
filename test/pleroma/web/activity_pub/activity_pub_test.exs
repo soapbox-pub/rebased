@@ -796,7 +796,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert object.data["repliesCount"] == 2
     end
 
-    test "increates quotes count", %{user: user} do
+    test "increases quotes count", %{user: user} do
       user2 = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})

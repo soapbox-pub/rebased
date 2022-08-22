@@ -133,7 +133,13 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.event(user, %{name: "test event", status: "", join_mode: "restricted"})
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "restricted",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
 
       CommonAPI.join(other_user, activity.id)
 
@@ -145,7 +151,13 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.event(user, %{name: "test event", status: "", join_mode: "restricted"})
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "restricted",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
 
       CommonAPI.join(other_user, activity.id)
 
@@ -159,7 +171,13 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.event(user, %{name: "test event", status: "", join_mode: "free"})
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "free",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
 
       CommonAPI.join(other_user, activity.id)
 

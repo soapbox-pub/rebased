@@ -6,7 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [add_link_headers: 2, try_render: 3]
+    only: [add_link_headers: 2, json_response: 3, try_render: 3]
 
   require Ecto.Query
 
@@ -31,6 +31,18 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   )
 
   plug(
+    :assign_event_activity
+    when action in [
+           :participations,
+           :participation_requests,
+           :accept_participation_request,
+           :reject_participation_request,
+           :participate,
+           :unparticipate
+         ]
+  )
+
+  plug(
     OAuthScopesPlug,
     %{scopes: ["write"]}
     when action in [
@@ -51,6 +63,10 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEventOperation
 
   def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
+    params =
+      params
+      |> Map.put(:status, Map.get(params, :status, ""))
+
     with {:ok, activity} <- CommonAPI.event(user, params) do
       conn
       |> put_view(StatusView)
@@ -72,10 +88,8 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     end
   end
 
-  def participations(%{assigns: %{user: user}} = conn, %{id: activity_id}) do
-    with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
-         {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
-         %Object{data: %{"participations" => participations}} <-
+  def participations(%{assigns: %{user: user, event_activity: activity}} = conn, _) do
+    with %Object{data: %{"participations" => participations}} <-
            Object.normalize(activity, fetch: false) do
       users =
         User
@@ -93,58 +107,83 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   end
 
   def participation_requests(
-        %{assigns: %{user: %{ap_id: user_ap_id} = for_user}} = conn,
-        %{id: activity_id} = params
-      ) do
-    with %Activity{object: %Object{data: %{"id" => ap_id, "actor" => ^user_ap_id}}} <-
-           Activity.get_by_id_with_object(activity_id) do
-      params =
+        %{assigns: %{user: %{ap_id: user_ap_id} = for_user, event_activity: activity}} = conn,
         params
-        |> Map.put(:type, "Join")
-        |> Map.put(:object, ap_id)
-        |> Map.put(:state, "pending")
+      ) do
+    case activity do
+      %Activity{actor: ^user_ap_id, data: %{"object" => ap_id}} ->
+        params =
+          params
+          |> Map.put(:type, "Join")
+          |> Map.put(:object, ap_id)
+          |> Map.put(:state, "pending")
 
-      activities =
-        []
-        |> ActivityPub.fetch_activities_query(params)
-        |> Pagination.fetch_paginated(params)
+        activities =
+          []
+          |> ActivityPub.fetch_activities_query(params)
+          |> Pagination.fetch_paginated(params)
 
-      conn
-      |> add_link_headers(activities)
-      |> put_view(EventView)
-      |> render("participation_requests.json",
-        activities: activities,
-        for: for_user,
-        as: :activity
-      )
+        conn
+        |> add_link_headers(activities)
+        |> put_view(EventView)
+        |> render("participation_requests.json",
+          activities: activities,
+          for: for_user,
+          as: :activity
+        )
+
+      %Activity{} ->
+        render_error(conn, :forbidden, "Can't get participation requests")
+
+      {:error, error} ->
+        json_response(conn, :bad_request, %{error: error})
     end
   end
 
-  def participate(%{assigns: %{user: user}, body_params: params} = conn, %{id: event_id}) do
-    with {:ok, _} <- CommonAPI.join(user, event_id, params),
-         %Activity{} = activity <- Activity.get_by_id(event_id) do
+  def participate(%{assigns: %{user: %{ap_id: actor}, event_activity: %{actor: actor}}} = conn, _) do
+    render_error(conn, :bad_request, "Can't join your own event")
+  end
+
+  def participate(
+        %{assigns: %{user: user, event_activity: activity}, body_params: params} = conn,
+        _
+      ) do
+    with {:ok, _} <- CommonAPI.join(user, activity.id, params) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: user, as: :activity)
     end
   end
 
-  def unparticipate(%{assigns: %{user: user}} = conn, %{id: event_id}) do
-    with {:ok, _} <- CommonAPI.leave(user, event_id),
-         %Activity{} = activity <- Activity.get_by_id(event_id) do
+  def unparticipate(
+        %{assigns: %{user: %{ap_id: actor}, event_activity: %{actor: actor}}} = conn,
+        _
+      ) do
+    render_error(conn, :bad_request, "Can't leave your own event")
+  end
+
+  def unparticipate(%{assigns: %{user: user, event_activity: activity}} = conn, _) do
+    with {:ok, _} <- CommonAPI.leave(user, activity.id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: user, as: :activity)
+    else
+      {:error, error} ->
+        json_response(conn, :bad_request, %{error: error})
     end
   end
 
   def accept_participation_request(
-        %{assigns: %{user: for_user, participant: participant}} = conn,
-        %{id: event_id}
+        %{
+          assigns: %{
+            user: for_user,
+            participant: participant,
+            event_activity: %Activity{data: %{"object" => ap_id}} = activity
+          }
+        } = conn,
+        _
       ) do
-    with %Activity{data: %{"object" => ap_id}} <- Activity.get_by_id(event_id),
-         {:ok, _} <- CommonAPI.accept_join_request(for_user, participant, ap_id),
-         %Activity{} = activity <- Activity.get_by_id(event_id) do
+    with {:ok, _} <- CommonAPI.accept_join_request(for_user, participant, ap_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
@@ -152,12 +191,16 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   end
 
   def reject_participation_request(
-        %{assigns: %{user: for_user, participant: participant}} = conn,
-        %{id: event_id}
+        %{
+          assigns: %{
+            user: for_user,
+            participant: participant,
+            event_activity: %Activity{data: %{"object" => ap_id}} = activity
+          }
+        } = conn,
+        _
       ) do
-    with %Activity{data: %{"object" => ap_id}} <- Activity.get_by_id(event_id),
-         {:ok, _} <- CommonAPI.reject_join_request(for_user, participant, ap_id),
-         %Activity{} = activity <- Activity.get_by_id(event_id) do
+    with {:ok, _} <- CommonAPI.reject_join_request(for_user, participant, ap_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
@@ -167,6 +210,15 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   defp assign_participant(%{params: %{participant_id: id}} = conn, _) do
     case User.get_cached_by_id(id) do
       %User{} = participant -> assign(conn, :participant, participant)
+      nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
+    end
+  end
+
+  defp assign_event_activity(%{assigns: %{user: user}, params: %{id: event_id}} = conn, _) do
+    with %Activity{} = activity <- Activity.get_by_id(event_id),
+         {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)} do
+      assign(conn, :event_activity, activity)
+    else
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
   end

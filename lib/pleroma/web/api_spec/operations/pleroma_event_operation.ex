@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
+  alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.ParticipationRequest
@@ -48,6 +49,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
             "application/json",
             AccountOperation.array_of_accounts()
           ),
+        403 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
@@ -68,6 +70,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
             "application/json",
             array_of_participation_requests()
           ),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
@@ -87,6 +90,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           %Schema{
             type: :object,
             properties: %{
+              account: Account,
               participation_message: %Schema{
                 type: :string,
                 description: "Why the user wants to participate"
@@ -97,6 +101,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
         ),
       responses: %{
         200 => event_response(),
+        400 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
@@ -112,6 +117,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
       parameters: [id_param()],
       responses: %{
         200 => event_response(),
+        400 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
@@ -158,6 +164,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
         },
         status: %Schema{
           type: :string,
+          nullable: true,
           description: "Text description of the event."
         },
         banner_id: %Schema{

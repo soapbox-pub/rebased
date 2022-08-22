@@ -346,11 +346,15 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def leave(%User{ap_id: participant_ap_id} = user, event_id) do
-    with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
+    with %Activity{data: %{"object" => event_ap_id}} <- Activity.get_by_id(event_id),
+         %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_ap_id),
          {:ok, undo, _} <- Builder.undo(user, join_activity),
          {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
     else
+      nil ->
+        {:error, dgettext("errors", "Not participating in the event")}
+
       _ ->
         {:error, dgettext("errors", "Could not remove join activity")}
     end

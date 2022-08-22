@@ -525,7 +525,7 @@ defmodule Pleroma.Notification do
   def create_event_notifications(%Activity{} = activity) do
     with %Object{data: %{"type" => "Event", "actor" => actor} = data} <-
            Object.normalize(activity) do
-            participations =
+      participations =
         case data do
           %{"participations" => participations} when is_list(participations) -> participations
           _ -> []

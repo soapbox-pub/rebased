@@ -111,16 +111,14 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
     object =
-      draft.params
-      |> Map.take([:name])
+      %{}
+      |> Map.put("name", draft.params[:name])
       |> Map.put("type", "Event")
       |> Map.put("to", draft.to)
       |> Map.put("cc", draft.cc)
       |> Map.put("content", draft.content_html)
       |> Map.put("actor", draft.user.ap_id)
-      # |> Map.put("startTime", draft.params[:start_time])
-      # |> Map.put("endTime", draft.params[:end_time])
-      |> Map.put("joinMode", draft.params[:join_mode])
+      |> Map.put("joinMode", draft.params[:join_mode] || "free")
       |> Map.put("tag", Keyword.values(draft.tags) |> Enum.uniq())
       |> Map.put("emoji", emoji)
 
@@ -337,8 +335,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             else
               object =
                 draft.object
-                |> Map.put("startTime", start_time)
-                |> Map.put("endTime", end_time)
+                |> Map.put("startTime", start_time |> DateTime.to_iso8601())
+                |> Map.put("endTime", end_time |> DateTime.to_iso8601())
 
               %__MODULE__{draft | object: object}
             end
@@ -346,7 +344,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
           _ ->
             object =
               draft.object
-              |> Map.put("startTime", start_time)
+              |> Map.put("startTime", start_time |> DateTime.to_iso8601())
 
             %__MODULE__{draft | object: object}
         end

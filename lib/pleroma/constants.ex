@@ -23,8 +23,8 @@ defmodule Pleroma.Constants do
       "assigned_account",
       "rules",
       "content_type",
-      "participants",
-      "participant_count"
+      "participations",
+      "participation_count"
     ]
   )
 

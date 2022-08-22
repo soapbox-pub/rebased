@@ -77,6 +77,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       field(:joinMode, :string, default: "free")
 
       embeds_one(:location, PlaceValidator)
+
+      field(:participation_count, :integer, default: 0)
+      field(:participations, {:array, ObjectValidators.ObjectID}, default: [])
     end
   end
 end

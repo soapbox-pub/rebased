@@ -28,17 +28,17 @@ defmodule Pleroma.Workers.EventReminderWorker do
   def schedule_event_reminder(%Activity{data: %{"type" => "Create"}, id: activity_id} = activity) do
     with %Object{data: %{"type" => "Event", "startTime" => start_time}} <-
            Object.normalize(activity),
-         {:ok, start_time} <- NaiveDateTime.from_iso8601(start_time),
+         {:ok, start_time} <- DateTime.from_iso8601(start_time),
          :lt <-
-           NaiveDateTime.compare(
-             start_time |> NaiveDateTime.add(60 * 60 * -2, :second),
-             NaiveDateTime.utc_now()
+           DateTime.compare(
+             start_time |> DateTime.add(60 * 60 * -2, :second),
+             DateTime.utc_now()
            ) do
       %{
         op: "event_reminder",
         activity_id: activity_id
       }
-      |> new(scheduled_at: start_time |> NaiveDateTime.add(60 * 60 * -2, :second))
+      |> new(scheduled_at: start_time |> DateTime.add(60 * 60 * -2, :second))
       |> Oban.insert()
     else
       _ -> {:error, activity}
