@@ -13,6 +13,11 @@ defmodule Pleroma.Repo.Migrations.AddPleromaParticipationAcceptedToNotifications
     alter type notification_type add value 'pleroma:participation_request'
     """
     |> execute()
+
+    """
+    alter type notification_type add value 'pleroma:event_reminder'
+    """
+    |> execute()
   end
 
   def down do
@@ -21,7 +26,7 @@ defmodule Pleroma.Repo.Migrations.AddPleromaParticipationAcceptedToNotifications
     end
 
     """
-    delete from notifications where type in ('pleroma:participation_accepted', 'pleroma:participation_request')
+    delete from notifications where type in ('pleroma:participation_accepted', 'pleroma:participation_request', 'pleroma:event_reminder')
     """
     |> execute()
 

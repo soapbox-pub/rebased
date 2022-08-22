@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.EventReminderWorker
   alias Pleroma.Workers.PollWorker
 
   import Ecto.Changeset
@@ -309,6 +310,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
+         :ok <- maybe_schedule_event_notifications(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -325,6 +327,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_schedule_poll_notifications(activity) do
     PollWorker.schedule_poll_end(activity)
+    :ok
+  end
+
+  defp maybe_schedule_event_notifications(activity) do
+    EventReminderWorker.schedule_event_reminder(activity)
     :ok
   end
 

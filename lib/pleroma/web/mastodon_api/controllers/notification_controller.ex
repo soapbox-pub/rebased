@@ -54,6 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     status
     pleroma:participation_request
     pleroma:participation_accepted
+    pleroma:event_reminder
   }
   def index(%{assigns: %{user: user}} = conn, params) do
     params =

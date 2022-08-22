@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
+  alias Pleroma.Workers.EventReminderWorker
   alias Pleroma.Workers.PollWorker
 
   require Logger
@@ -512,6 +513,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         object.data["actor"]
       )
 
+      {:ok, object, meta}
+    end
+  end
+
+  def handle_object_creation(%{"type" => "Event"} = object, activity, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      EventReminderWorker.schedule_event_reminder(activity)
       {:ok, object, meta}
     end
   end

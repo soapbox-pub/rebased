@@ -76,6 +76,7 @@ defmodule Pleroma.Notification do
     status
     pleroma:participation_accepted
     pleroma:participation_request
+    pleroma:event_reminder
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -512,6 +513,28 @@ defmodule Pleroma.Notification do
         Enum.reduce([actor | voters], [], fn ap_id, acc ->
           with %User{local: true} = user <- User.get_by_ap_id(ap_id) do
             [create_notification(activity, user, type: "poll") | acc]
+          else
+            _ -> acc
+          end
+        end)
+
+      {:ok, notifications}
+    end
+  end
+
+  def create_event_notifications(%Activity{} = activity) do
+    with %Object{data: %{"type" => "Event", "actor" => actor} = data} <-
+           Object.normalize(activity) do
+            participations =
+        case data do
+          %{"participations" => participations} when is_list(participations) -> participations
+          _ -> []
+        end
+
+      notifications =
+        Enum.reduce([actor | participations], [], fn ap_id, acc ->
+          with %User{local: true} = user <- User.get_by_ap_id(ap_id) do
+            [create_notification(activity, user, type: "pleroma:event_reminder") | acc]
           else
             _ -> acc
           end
