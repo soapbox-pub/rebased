@@ -8,7 +8,7 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
   alias Pleroma.Web.Metadata.Utils
 
   describe "scrub_html_and_truncate/1" do
-    test "it returns text without encode HTML" do
+    test "it returns content text without encode HTML if summary is nil" do
       user = insert(:user)
 
       note =
@@ -16,11 +16,45 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
           data: %{
             "actor" => user.ap_id,
             "id" => "https://pleroma.gov/objects/whatever",
+            "summary" => nil,
             "content" => "Pleroma's really cool!"
           }
         })
 
       assert Utils.scrub_html_and_truncate(note) == "Pleroma's really cool!"
+    end
+
+    test "it returns context text without encode HTML if summary is empty" do
+      user = insert(:user)
+
+      note =
+        insert(:note, %{
+          data: %{
+            "actor" => user.ap_id,
+            "id" => "https://pleroma.gov/objects/whatever",
+            "summary" => "",
+            "content" => "Pleroma's really cool!"
+          }
+        })
+
+      assert Utils.scrub_html_and_truncate(note) == "Pleroma's really cool!"
+    end
+
+    test "it returns summary text without encode HTML if summary is filled" do
+      user = insert(:user)
+
+      note =
+        insert(:note, %{
+          data: %{
+            "actor" => user.ap_id,
+            "id" => "https://pleroma.gov/objects/whatever",
+            "summary" => "Public service announcement on caffeine consumption",
+            "content" => "cofe"
+          }
+        })
+
+      assert Utils.scrub_html_and_truncate(note) ==
+               "Public service announcement on caffeine consumption"
     end
 
     test "it does not return old content after editing" do
