@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
