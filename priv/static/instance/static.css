@@ -122,9 +122,9 @@ input {
 }
 
 input:focus {
-  border-color: #0482d8;
+  border-color: var(--brand-color);
   outline: none;
-  box-shadow: #0482d8 0px 0px 0px 1px;
+  box-shadow: var(--brand-color) 0px 0px 0px 1px;
 }
 
 .scopes-input {
@@ -210,7 +210,7 @@ button {
   padding: 8px 16px;
   margin-left: auto;
   appearance: none;
-  background: #0482d8;
+  background: var(--brand-color);
   color: white;
   border: none;
   font-size: 14px;
@@ -352,5 +352,31 @@ button:hover {
 
   .instance-header__content {
     width: fit-content;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #f2f2f2;
+    --foreground-color: #011929;
+    --primary-text-color: #f1f4f6;
+    --muted-text-color: #698393;
+  }
+
+  html {
+    background: #232c31;
+  }
+
+  body {
+    background: linear-gradient(to right top, #01192980, #011929, #01274180);
+  }
+
+  .input {
+    color: var(--primary-text-color);
+  }
+
+  input {
+    background: #161c1f;
+    border-color: #232c31;
   }
 }
