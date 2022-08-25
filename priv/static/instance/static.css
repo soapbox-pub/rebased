@@ -3,7 +3,6 @@
 }
 
 :root {
-  --brand-color: #0482d8;
   --background-color: #f2f2f2;
   --foreground-color: #fff;
   --primary-text-color: #111827;
@@ -14,7 +13,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: linear-gradient(to right top, #f2f9fd, #fff, #ecfeff);
+  background: linear-gradient(to right top, rgb(var(--color-primary-50)), #fff, rgba(var(--color-accent-500), 0.1));
   font-family: sans-serif;
   color: var(--primary-text-color);
   min-height: 100vh;
@@ -53,7 +52,7 @@ body::after {
 .container {
   width: 100%;
   padding: 16px;
-  background-color: var(--foreground-color);
+  background-color: #fff;
   overflow: hidden;
   box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px
 }
@@ -89,7 +88,7 @@ h2 {
 }
 
 a {
-  color: var(--brand-color);
+  color: rgb(var(--color-primary-500));
   text-decoration: none;
 }
 
@@ -122,9 +121,9 @@ input {
 }
 
 input:focus {
-  border-color: var(--brand-color);
+  border-color: rgb(var(--color-primary-500));
   outline: none;
-  box-shadow: var(--brand-color) 0px 0px 0px 1px;
+  box-shadow: rgb(var(--color-primary-500)) 0px 0px 0px 1px;
 }
 
 .scopes-input {
@@ -159,7 +158,7 @@ input:focus {
   margin-right: 1em;
 }
 
-[type="checkbox"] + label {
+[type="checkbox"]+label {
   display: none;
   cursor: pointer;
   margin: 0.5em;
@@ -169,13 +168,13 @@ input:focus {
   display: none;
 }
 
-[type="checkbox"] + label:before {
+[type="checkbox"]+label:before {
   cursor: pointer;
   display: inline-block;
   color: white;
   background-color: var(--background-color);
   border: 4px solid var(--background-color);
-  box-shadow: 0px 0px 1px 0 var(--brand-color);
+  box-shadow: 0px 0px 1px 0 rgb(var(--color-primary-500));
   width: 1.2em;
   height: 1.2em;
   margin-right: 1.0em;
@@ -187,8 +186,8 @@ input:focus {
   border-radius: 2px;
 }
 
-[type="checkbox"]:checked + label:before {
-  background-color: var(--brand-color);
+[type="checkbox"]:checked+label:before {
+  background-color: rgb(var(--color-primary-500));
 }
 
 .actions {
@@ -210,7 +209,7 @@ button {
   padding: 8px 16px;
   margin-left: auto;
   appearance: none;
-  background: var(--brand-color);
+  background: rgb(var(--color-primary-500));
   color: white;
   border: none;
   font-size: 14px;
@@ -221,7 +220,7 @@ button {
 
 a.button:hover,
 button:hover {
-  background: #0362a2;
+  background: rgb(var(--color-primary-400));
   cursor: pointer;
 }
 
@@ -308,14 +307,17 @@ button:hover {
     content: "";
   }
 }
+
 .form-row {
   display: flex;
 }
-.form-row > label {
+
+.form-row>label {
   line-height: 47px;
   flex: 1;
 }
-.form-row > input {
+
+.form-row>input {
   flex: 2;
 }
 
@@ -368,7 +370,16 @@ button:hover {
   }
 
   body {
-    background: linear-gradient(to right top, #01192980, #011929, #01274180);
+    background: linear-gradient(to right top, rgba(var(--color-primary-900), 0.5), rgb(var(--color-primary-900)), rgba(var(--color-primary-900), 0.5));
+  }
+  
+  .container {
+    background-color: rgb(var(--color-primary-900));
+  }
+
+  a.button:hover,
+  button:hover {
+    background: rgb(var(--color-primary-600));
   }
 
   .input {
