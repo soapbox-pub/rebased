@@ -18,6 +18,7 @@ defmodule Pleroma.Application do
   @mix_env Mix.env()
 
   def name, do: @name
+  def compat_name, do: @compat_name
   def version, do: @version
   def named_version, do: @name <> " " <> @version
   def compat_version, do: @compat_name <> " " <> @version
