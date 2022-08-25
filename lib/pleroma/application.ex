@@ -12,6 +12,7 @@ defmodule Pleroma.Application do
   require Logger
 
   @name Mix.Project.config()[:name]
+  @compat_name Mix.Project.config()[:compat_name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
   @mix_env Mix.env()
@@ -19,6 +20,7 @@ defmodule Pleroma.Application do
   def name, do: @name
   def version, do: @version
   def named_version, do: @name <> " " <> @version
+  def compat_version, do: @compat_name <> " " <> @version
   def repository, do: @repository
 
   def user_agent do
