@@ -659,7 +659,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     other_user = insert(:user)
 
     {:ok, _user_relationships} =
-      User.mute(user, other_user, %{notifications: true, expires_in: 24 * 60 * 60})
+      User.mute(user, other_user, %{notifications: true, duration: 24 * 60 * 60})
 
     %{
       mute_expires_at: mute_expires_at

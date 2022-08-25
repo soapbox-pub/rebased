@@ -56,6 +56,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
           }
         },
         description: "Possible answers for the poll."
+      },
+      pleroma: %Schema{
+        type: :object,
+        properties: %{
+          non_anonymous: %Schema{type: :boolean, description: "Is the voters collection public?"}
+        }
       }
     },
     example: %{
@@ -79,7 +85,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
           votes_count: 4
         }
       ],
-      emojis: []
+      emojis: [],
+      pleroma: %{
+        non_anonymous: false
+      }
     }
   })
 end

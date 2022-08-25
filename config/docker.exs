@@ -2,23 +2,28 @@ import Config
 
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: System.get_env("DOMAIN", "localhost"), scheme: "https", port: 443],
-  http: [ip: {0, 0, 0, 0}, port: 4000]
+  http: [ip: {0, 0, 0, 0}, port: System.get_env("PORT", "5000")]
 
 config :pleroma, :instance,
-  name: System.get_env("INSTANCE_NAME", "Pleroma"),
+  name: System.get_env("INSTANCE_NAME", "Soapbox"),
   email: System.get_env("ADMIN_EMAIL"),
   notify_email: System.get_env("NOTIFY_EMAIL"),
   limit: 5000,
   registrations_open: false,
   healthcheck: true
 
-config :pleroma, Pleroma.Repo,
-  adapter: Ecto.Adapters.Postgres,
-  username: System.get_env("DB_USER", "pleroma"),
-  password: System.fetch_env!("DB_PASS"),
-  database: System.get_env("DB_NAME", "pleroma"),
-  hostname: System.get_env("DB_HOST", "db"),
-  pool_size: 10
+# Prefer `DATABASE_URL` if set, otherwise use granular env.
+case System.get_env("DATABASE_URL") do
+  database_url when is_binary(database_url) ->
+    config :pleroma, Pleroma.Repo, url: database_url
+
+  _ ->
+    config :pleroma, Pleroma.Repo,
+      username: System.get_env("DB_USER", "postgres"),
+      password: System.get_env("DB_PASS", "postgres"),
+      database: System.get_env("DB_NAME", "postgres"),
+      hostname: System.get_env("DB_HOST", "db")
+end
 
 # Configure web push notifications
 config :web_push_encryption, :vapid_details, subject: "mailto:#{System.get_env("NOTIFY_EMAIL")}"

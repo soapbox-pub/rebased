@@ -12,13 +12,16 @@ defmodule Pleroma.Application do
   require Logger
 
   @name Mix.Project.config()[:name]
+  @compat_name Mix.Project.config()[:compat_name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
   @mix_env Mix.env()
 
   def name, do: @name
+  def compat_name, do: @compat_name
   def version, do: @version
   def named_version, do: @name <> " " <> @version
+  def compat_version, do: @compat_name <> " " <> @version
   def repository, do: @repository
 
   def user_agent do
@@ -112,7 +115,17 @@ defmodule Pleroma.Application do
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
+    # If we have a lot of caches, default max_restarts can cause test
+    # resets to fail.
+    # Go for the default 3 unless we're in test
+    max_restarts =
+      if @mix_env == :test do
+        100
+      else
+        3
+      end
+
+    opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
     result = Supervisor.start_link(children, opts)
 
     set_postgres_server_version()

@@ -1493,12 +1493,12 @@ defmodule Pleroma.User do
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
   def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
     notifications? = Map.get(params, :notifications, true)
-    expires_in = Map.get(params, :expires_in, 0)
+    duration = Map.get(params, :duration, 0)
 
     expires_at =
-      if expires_in > 0 do
+      if duration > 0 do
         DateTime.utc_now()
-        |> DateTime.add(expires_in)
+        |> DateTime.add(duration)
       else
         nil
       end
@@ -1512,7 +1512,7 @@ defmodule Pleroma.User do
                 expires_at
               )) ||
              {:ok, nil} do
-      if expires_in > 0 do
+      if duration > 0 do
         Pleroma.Workers.MuteExpireWorker.enqueue(
           "unmute_user",
           %{"muter_id" => muter.id, "mutee_id" => mutee.id},
@@ -1587,11 +1587,17 @@ defmodule Pleroma.User do
         blocker
       end
 
-    # clear any requested follows as well
+    # clear any requested follows from both sides as well
     blocked =
       case CommonAPI.reject_follow_request(blocked, blocker) do
         {:ok, %User{} = updated_blocked} -> updated_blocked
         nil -> blocked
+      end
+
+    blocker =
+      case CommonAPI.reject_follow_request(blocker, blocked) do
+        {:ok, %User{} = updated_blocker} -> updated_blocker
+        nil -> blocker
       end
 
     unsubscribe(blocked, blocker)

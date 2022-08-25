@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
@@ -54,7 +54,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
         stats: %{mau: Pleroma.User.active_user_count()},
-        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
+        oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies()
       },
       configuration: configuration(),
       soapbox: %{
