@@ -112,7 +112,7 @@ defmodule Pleroma.Search.Meilisearch do
          not is_nil(object.data["content"]) and
          (Pleroma.Constants.as_public() in object.data["to"] or
             Pleroma.Constants.as_public() in object.data["cc"]) and
-         String.length(object.data["content"]) > 1 do
+         object.data["content"] not in ["", "."] do
       data = object.data
 
       content_str =
@@ -127,7 +127,8 @@ defmodule Pleroma.Search.Meilisearch do
           trimmed
         end
 
-      if String.length(content) > 1 do
+      # Make sure we have a non-empty string
+      if content != "" do
         {:ok, published, _} = DateTime.from_iso8601(data["published"])
 
         %{
