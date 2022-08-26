@@ -75,6 +75,7 @@ defmodule Pleroma.Search.Meilisearch do
       )
   end
 
+  @impl true
   def search(user, query, options \\ []) do
     limit = Enum.min([Keyword.get(options, :limit), 40])
     offset = Keyword.get(options, :offset, 0)

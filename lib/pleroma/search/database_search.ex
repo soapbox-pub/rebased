@@ -15,6 +15,7 @@ defmodule Pleroma.Search.DatabaseSearch do
 
   @behaviour Pleroma.Search.SearchBackend
 
+  @impl true
   def search(user, search_query, options \\ []) do
     index_type = if Pleroma.Config.get([:database, :rum_enabled]), do: :rum, else: :gin
     limit = Enum.min([Keyword.get(options, :limit), 40])
