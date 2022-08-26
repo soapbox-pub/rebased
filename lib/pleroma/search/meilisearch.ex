@@ -93,7 +93,6 @@ defmodule Pleroma.Search.Meilisearch do
         hits
         |> Activity.create_by_object_ap_id()
         |> Activity.with_preloaded_object()
-        |> Activity.with_preloaded_object()
         |> Activity.restrict_deactivated_users()
         |> maybe_restrict_local(user)
         |> maybe_restrict_author(author)
