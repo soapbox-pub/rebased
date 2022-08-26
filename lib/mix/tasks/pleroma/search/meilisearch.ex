@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   import Ecto.Query
 
   import Pleroma.Search.Meilisearch,
-    only: [meili_post: 2, meili_put: 2, meili_get: 1, meili_delete!: 1]
+    only: [meili_post: 2, meili_put: 2, meili_get: 1, meili_delete: 1]
 
   def run(["index"]) do
     start_pleroma()
@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
   def run(["clear"]) do
     start_pleroma()
 
-    meili_delete!("/indexes/objects/documents")
+    meili_delete("/indexes/objects/documents")
   end
 
   def run(["show-keys", master_key]) do

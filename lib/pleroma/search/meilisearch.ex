@@ -62,17 +62,16 @@ defmodule Pleroma.Search.Meilisearch do
     end
   end
 
-  def meili_delete!(path) do
+  def meili_delete(path) do
     endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
 
-    {:ok, _} =
-      Pleroma.HTTP.request(
-        :delete,
-        Path.join(endpoint, path),
-        "",
-        meili_headers(),
-        []
-      )
+    Pleroma.HTTP.request(
+      :delete,
+      Path.join(endpoint, path),
+      "",
+      meili_headers(),
+      []
+    )
   end
 
   @impl true
@@ -155,16 +154,22 @@ defmodule Pleroma.Search.Meilisearch do
 
       with {:ok, res} <- result,
            true <- Map.has_key?(res, "uid") do
-        # Do nothing
+        # Added successfully
+        :ok
       else
         _ ->
+          # There was an error, report it
           Logger.error("Failed to add activity #{activity.id} to index: #{inspect(result)}")
+          {:error, result}
       end
+    else
+      # The post isn't something we can search, that's ok
+      :ok
     end
   end
 
   @impl true
   def remove_from_index(object) do
-    meili_delete!("/indexes/objects/documents/#{object.id}")
+    meili_delete("/indexes/objects/documents/#{object.id}")
   end
 end
