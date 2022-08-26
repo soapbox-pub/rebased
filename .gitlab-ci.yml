@@ -64,7 +64,7 @@ openapi:
   script:
     - mix pleroma.openapi_spec spec.json
 
-unit-testing:
+test:
   stage: test
   only:
     changes: *elixir-changes
@@ -78,7 +78,7 @@ unit-testing:
   script:
     - mix coveralls --preload-modules
 
-unit-testing-erratic:
+test-erratic:
   stage: test
   allow_failure: true
   only:
