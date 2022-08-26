@@ -13,6 +13,7 @@ defmodule Mix.Tasks.Pleroma.Search.Meilisearch do
 
   def run(["index"]) do
     start_pleroma()
+    Pleroma.HTML.compile_scrubbers()
 
     meili_version =
       (
