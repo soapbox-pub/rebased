@@ -93,6 +93,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | object: object}
   end
 
+  @spec event(any, map) :: {:error, any} | {:ok, %{:valid? => true, optional(any) => any}}
   def event(user, params) do
     user
     |> new(params)
@@ -103,6 +104,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> context()
     |> event_object()
     |> with_valid(&event_date/1)
+    |> with_valid(&event_location/1)
     |> with_valid(&changes/1)
     |> validate()
   end
@@ -351,6 +353,44 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
       _ ->
         add_error(draft, dgettext("errors", "Start date is required"))
+    end
+  end
+
+  defp event_location(draft) do
+    case draft.params[:location] do
+      %{} = address ->
+        location = %{
+          "type" => "Place",
+          "name" => address.description,
+          "id" => address.url,
+          "address" => %{
+            "type" => "PostalAddress",
+            "streetAddress" => address.street,
+            "postalCode" => address.postal_code,
+            "addressLocality" => address.locality,
+            "addressRegion" => address.region,
+            "addressCountry" => address.country
+          }
+        }
+
+        location =
+          if is_nil(address.geom) do
+            location
+          else
+            [longitude, latitude] = address.geom.coordinates
+            location
+            |> Map.put("longitude", longitude)
+            |> Map.put("latitude", latitude)
+          end
+
+        object =
+          draft.object
+          |> Map.put("location", location)
+
+        %__MODULE__{draft | object: object}
+
+      _ ->
+        draft
     end
   end
 

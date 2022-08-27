@@ -17,22 +17,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator do
     field(:altitude, :float)
     field(:radius, :float)
     field(:units, :string)
-  end
 
-  def cast_and_validate(data) do
-    data
-    |> cast_data()
-    |> validate_data()
-  end
-
-  def cast_data(data) do
-    %__MODULE__{}
-    |> changeset(data)
+    embeds_one :address, Address do
+      field(:type, :string)
+      field(:postalCode, :string)
+      field(:addressRegion, :string)
+      field(:streetAddress, :string)
+      field(:addressCountry, :string)
+      field(:addressLocality, :string)
+    end
   end
 
   def changeset(struct, data) do
     struct
     |> cast(data, [:type, :name, :longitude, :latitude, :accuracy, :altitude, :radius, :units])
+    |> cast_embed(:address, with: &address_changeset/2)
     |> validate_inclusion(:type, ["Place"])
     |> validate_inclusion(:radius, ~w[cm feet inches km m miles])
     |> validate_number(:accuracy, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
@@ -40,12 +39,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator do
     |> validate_required([:type, :name])
   end
 
-  defp validate_data(cng) do
-    cng
-    |> validate_inclusion(:type, ["Place"])
-    |> validate_inclusion(:radius, ~w[cm feet inches km m miles])
-    |> validate_number(:accuracy, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
-    |> validate_number(:radius, greater_than_or_equal_to: 0)
-    |> validate_required([:type, :name])
+  def address_changeset(struct, data) do
+    struct
+    |> cast(data, [:type, :postalCode, :addressRegion, :streetAddress, :addressCountry, :addressLocality])
+    |> validate_inclusion(:type, ["PostalAddress"])
   end
 end
