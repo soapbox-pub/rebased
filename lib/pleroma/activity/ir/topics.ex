@@ -39,6 +39,10 @@ defmodule Pleroma.Activity.Ir.Topics do
         end
         |> item_creation_tags(object, activity)
 
+      "local" ->
+        ["public:local"]
+        |> item_creation_tags(object, activity)
+
       "direct" ->
         ["direct"]
 
@@ -71,7 +75,18 @@ defmodule Pleroma.Activity.Ir.Topics do
 
   defp attachment_topics(%{data: %{"attachment" => []}}, _act), do: []
 
-  defp attachment_topics(_object, %{local: true}), do: ["public:media", "public:local:media"]
+  defp attachment_topics(_object, %{local: true} = activity) do
+    case Visibility.get_visibility(activity) do
+      "public" ->
+        ["public:media", "public:local:media"]
+
+      "local" ->
+        ["public:local:media"]
+
+      _ ->
+        []
+    end
+  end
 
   defp attachment_topics(_object, %{actor: actor}) when is_binary(actor),
     do: ["public:media", "public:remote:media:" <> URI.parse(actor).host]
