@@ -13,6 +13,14 @@ defmodule Pleroma.Activity.Ir.Topics do
     |> List.flatten()
   end
 
+  defp generate_topics(%{data: %{"type" => "ChatMessage"}}, %{data: %{"type" => "Delete"}}) do
+    ["user", "user:pleroma_chat"]
+  end
+
+  defp generate_topics(%{data: %{"type" => "ChatMessage"}}, %{data: %{"type" => "Create"}}) do
+    []
+  end
+
   defp generate_topics(%{data: %{"type" => "Answer"}}, _) do
     []
   end

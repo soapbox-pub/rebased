@@ -13,6 +13,29 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
 
   import Mock
 
+  describe "chat message" do
+    test "Create produces no topics" do
+      activity = %Activity{
+        object: %Object{data: %{"type" => "ChatMessage"}},
+        data: %{"type" => "Create"}
+      }
+
+      assert [] == Topics.get_activity_topics(activity)
+    end
+
+    test "Delete produces user and user:pleroma_chat" do
+      activity = %Activity{
+        object: %Object{data: %{"type" => "ChatMessage"}},
+        data: %{"type" => "Delete"}
+      }
+
+      topics = Topics.get_activity_topics(activity)
+      assert [_, _] = topics
+      assert "user" in topics
+      assert "user:pleroma_chat" in topics
+    end
+  end
+
   describe "poll answer" do
     test "produce no topics" do
       activity = %Activity{object: %Object{data: %{"type" => "Answer"}}}
