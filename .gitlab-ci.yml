@@ -41,11 +41,33 @@ after_script:
 
 check-changelog:
   stage: check-changelog
+  image: alpine
   rules:
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+  before_script: ''
+  after_script: ''
+  cache: {}
   script:
     - echo $CI_MERGE_REQUEST_IID
-    - count=0; for i in changelog.d/"$CI_MERGE_REQUEST_IID".{add,remove,fix,security,skip}; do [ -f "$i" ]; count=$(( $count + 1 - $? )); done; if [ $count -eq 1 ]; then echo "ok"; else echo "must have a changelog entry or explicitly skip it"; exit 1; fi
+    - >
+      ls changelog.d
+      count=0
+      for i in add remove fix security skip; do
+        [ -f changelog.d/"$CI_MERGE_REQUEST_IID"."$i" ]
+        retcode=$?
+        if [ $retcode -eq 0 ]; then
+          echo "found $CI_MERGE_REQUEST_IID.$i"
+        else
+          echo "no $CI_MERGE_REQUEST_IID.$i"
+        fi
+        count=$(( $count + 1 - $retcode ))
+      done
+      if [ $count -eq 1 ]; then
+        echo "ok"
+      else
+        echo "must have a changelog entry or explicitly skip it"
+        exit 1
+      fi
 
 build:
   stage: build
