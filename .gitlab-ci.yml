@@ -48,26 +48,7 @@ check-changelog:
   after_script: ''
   cache: {}
   script:
-    - echo $CI_MERGE_REQUEST_IID
-    - >
-      ls changelog.d
-      count=0
-      for i in add remove fix security skip; do
-        [ -f changelog.d/"$CI_MERGE_REQUEST_IID"."$i" ]
-        retcode=$?
-        if [ $retcode -eq 0 ]; then
-          echo "found $CI_MERGE_REQUEST_IID.$i"
-        else
-          echo "no $CI_MERGE_REQUEST_IID.$i"
-        fi
-        count=$(( $count + 1 - $retcode ))
-      done
-      if [ $count -eq 1 ]; then
-        echo "ok"
-      else
-        echo "must have a changelog entry or explicitly skip it"
-        exit 1
-      fi
+    - sh ./tools/check-changelog
 
 build:
   stage: build
