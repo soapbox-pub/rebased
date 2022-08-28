@@ -16,6 +16,7 @@ cache: &global_cache_policy
     - _build
 
 stages:
+  - check-changelog
   - build
   - test
   - benchmark
@@ -30,6 +31,13 @@ before_script:
 
 after_script:
   - rm -rf _build/*/lib/pleroma
+
+check-changelog:
+  stage: check-changelog
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+  script:
+    - count=0; for i in changelog.d/"$CI_MERGE_REQUEST_IID".{add,remove,fix,security}; do [ -f "$i" ]; count=$(( $count + 1 - $? )); done; [ $count -eq 1 ]
 
 build:
   stage: build
