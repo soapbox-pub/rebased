@@ -153,6 +153,21 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
     }
   end
 
+  def export_ics_operation do
+    %Operation{
+      tags: ["Event actions"],
+      summary: "Export status",
+      description: "Export event to .ics",
+      operationId: "PleromaAPI.EventController.export_ics",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [id_param()],
+      responses: %{
+        200 => Operation.response("Event", "text/calendar", %Schema{type: :string}),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
   defp create_request do
     %Schema{
       title: "EventCreateRequest",

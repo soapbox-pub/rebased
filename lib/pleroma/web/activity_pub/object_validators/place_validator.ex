@@ -41,7 +41,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.PlaceValidator do
 
   def address_changeset(struct, data) do
     struct
-    |> cast(data, [:type, :postalCode, :addressRegion, :streetAddress, :addressCountry, :addressLocality])
+    |> cast(data, [
+      :type,
+      :postalCode,
+      :addressRegion,
+      :streetAddress,
+      :addressCountry,
+      :addressLocality
+    ])
     |> validate_inclusion(:type, ["PostalAddress"])
   end
 end

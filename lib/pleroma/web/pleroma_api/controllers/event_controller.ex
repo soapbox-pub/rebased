@@ -38,7 +38,8 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
            :accept_participation_request,
            :reject_participation_request,
            :participate,
-           :unparticipate
+           :unparticipate,
+           :export_ics
          ]
   )
 
@@ -58,6 +59,12 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     OAuthScopesPlug,
     %{scopes: ["read"]}
     when action in [:participations, :participation_requests]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:statuses"]}
+    when action in [:export_ics]
   )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEventOperation
@@ -205,6 +212,10 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
     end
+  end
+
+  def export_ics(%{assigns: %{event_activity: activity}} = conn, _) do
+    render(conn, "show.ics", activity: activity)
   end
 
   defp assign_participant(%{params: %{participant_id: id}} = conn, _) do

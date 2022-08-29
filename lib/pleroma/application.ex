@@ -103,7 +103,8 @@ defmodule Pleroma.Application do
           Pleroma.JobQueueMonitor,
           {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)},
-          Pleroma.Web.Endpoint
+          Pleroma.Web.Endpoint,
+          TzWorld.Backend.DetsWithIndexCache
         ] ++
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++

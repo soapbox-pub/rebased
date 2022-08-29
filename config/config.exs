@@ -477,7 +477,7 @@ config :pleroma, :shout,
   enabled: true,
   limit: 5_000
 
-config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason, ics: ICalendar
 
 config :phoenix, :json_library, Jason
 
@@ -874,6 +874,28 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
+
+config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
+
+config :geospatial, Geospatial.Providers.Nominatim,
+  endpoint: "https://nominatim.openstreetmap.org",
+  api_key: nil
+
+config :geospatial, Geospatial.Providers.Addok, endpoint: "https://api-adresse.data.gouv.fr"
+
+config :geospatial, Geospatial.Providers.Photon, endpoint: "https://photon.komoot.de"
+
+config :geospatial, Geospatial.Providers.GoogleMaps,
+  api_key: nil,
+  fetch_place_details: true
+
+config :geospatial, Geospatial.Providers.MapQuest, api_key: nil
+
+config :geospatial, Geospatial.Providers.Mimirsbrunn, endpoint: nil
+
+config :geospatial, Geospatial.Providers.Pelias, endpoint: nil
+
+config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
 import_config "soapbox.exs"
 

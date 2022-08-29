@@ -504,6 +504,7 @@ defmodule Pleroma.Web.Router do
 
       post("/events/:id/participate", EventController, :participate)
       post("/events/:id/unparticipate", EventController, :unparticipate)
+      get("/events/:id/ics", EventController, :export_ics)
 
       get("/search/location", SearchController, :location)
     end

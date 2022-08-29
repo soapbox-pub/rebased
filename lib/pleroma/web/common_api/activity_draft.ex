@@ -378,6 +378,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             location
           else
             [longitude, latitude] = address.geom.coordinates
+
             location
             |> Map.put("longitude", longitude)
             |> Map.put("latitude", latitude)
