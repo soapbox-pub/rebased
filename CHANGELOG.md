@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Allow users to remove their emails if instance does not need email to register
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
+- Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
@@ -48,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed crash when pinned_objects is nil
 - Fixed slow timelines when there are a lot of deactivated users
 - Fixed account deletion API
+- Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
 
 ### Removed
 
