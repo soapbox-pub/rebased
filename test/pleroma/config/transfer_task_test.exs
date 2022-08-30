@@ -79,35 +79,70 @@ defmodule Pleroma.Config.TransferTaskTest do
 
   describe "pleroma restart" do
     setup do
-      on_exit(fn -> Restarter.Pleroma.refresh() end)
+      on_exit(fn ->
+        Restarter.Pleroma.refresh()
+
+        # Restarter.Pleroma.refresh/0 is an asynchronous call.
+        # A GenServer will first finish the previous call before starting a new one.
+        # Here we do a synchronous call.
+        # That way we are sure that the previous call has finished before we continue.
+        # See https://stackoverflow.com/questions/51361856/how-to-use-task-await-with-genserver
+        Restarter.Pleroma.rebooted?()
+      end)
     end
 
-    @tag :erratic
     test "don't restart if no reboot time settings were changed" do
       clear_config(:emoji)
       insert(:config, key: :emoji, value: [groups: [a: 1, b: 2]])
 
       refute String.contains?(
-               capture_log(fn -> TransferTask.start_link([]) end),
+               capture_log(fn ->
+                 TransferTask.start_link([])
+
+                 # TransferTask.start_link/1 is an asynchronous call.
+                 # A GenServer will first finish the previous call before starting a new one.
+                 # Here we do a synchronous call.
+                 # That way we are sure that the previous call has finished before we continue.
+                 Restarter.Pleroma.rebooted?()
+               end),
                "pleroma restarted"
              )
     end
 
-    @tag :erratic
     test "on reboot time key" do
       clear_config(:shout)
       insert(:config, key: :shout, value: [enabled: false])
-      assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
+
+      # Note that we don't actually restart Pleroma.
+      # See module Restarter.Pleroma
+      assert capture_log(fn ->
+               TransferTask.start_link([])
+
+               # TransferTask.start_link/1 is an asynchronous call.
+               # A GenServer will first finish the previous call before starting a new one.
+               # Here we do a synchronous call.
+               # That way we are sure that the previous call has finished before we continue.
+               Restarter.Pleroma.rebooted?()
+             end) =~ "pleroma restarted"
     end
 
-    @tag :erratic
     test "on reboot time subkey" do
       clear_config(Pleroma.Captcha)
       insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
-      assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
+
+      # Note that we don't actually restart Pleroma.
+      # See module Restarter.Pleroma
+      assert capture_log(fn ->
+               TransferTask.start_link([])
+
+               # TransferTask.start_link/1 is an asynchronous call.
+               # A GenServer will first finish the previous call before starting a new one.
+               # Here we do a synchronous call.
+               # That way we are sure that the previous call has finished before we continue.
+               Restarter.Pleroma.rebooted?()
+             end) =~ "pleroma restarted"
     end
 
-    @tag :erratic
     test "don't restart pleroma on reboot time key and subkey if there is false flag" do
       clear_config(:shout)
       clear_config(Pleroma.Captcha)
@@ -116,7 +151,15 @@ defmodule Pleroma.Config.TransferTaskTest do
       insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
 
       refute String.contains?(
-               capture_log(fn -> TransferTask.load_and_update_env([], false) end),
+               capture_log(fn ->
+                 TransferTask.load_and_update_env([], false)
+
+                 # TransferTask.start_link/1 is an asynchronous call.
+                 # A GenServer will first finish the previous call before starting a new one.
+                 # Here we do a synchronous call.
+                 # That way we are sure that the previous call has finished before we continue.
+                 Restarter.Pleroma.rebooted?()
+               end),
                "pleroma restarted"
              )
     end

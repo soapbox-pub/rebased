@@ -759,7 +759,7 @@ config :pleroma, :frontends,
       "name" => "fedi-fe",
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
-        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build_release",
       "ref" => "master",
       "custom-http-headers" => [
         {"service-worker-allowed", "/"}
@@ -779,6 +779,14 @@ config :pleroma, :frontends,
         "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
       "ref" => "develop",
       "build_dir" => "static"
+    },
+    "glitch-lily" => %{
+      "name" => "glitch-lily",
+      "git" => "https://lily-is.land/infra/glitch-lily",
+      "build_url" =>
+        "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "servant",
+      "build_dir" => "public"
     }
   }
 
