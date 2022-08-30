@@ -25,9 +25,12 @@ stages:
 
 deps:
   stage: deps
+  variables:
+    MIX_ENV: prod
   script:
     - mix deps.get
     - mix deps.compile
+    - rsync -av _build/prod _build/test
   cache:
     <<: *cache
     policy: pull-push
