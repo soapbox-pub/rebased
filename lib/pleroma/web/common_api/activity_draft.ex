@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
@@ -38,7 +39,10 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             sensitive: false,
             object: nil,
             preview?: false,
-            changes: %{}
+            changes: %{},
+            location: nil,
+            start_time: nil,
+            end_time: nil
 
   def new(user, params) do
     %__MODULE__{user: user}
@@ -102,9 +106,10 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> content()
     |> to_and_cc()
     |> context()
-    |> event_object()
-    |> with_valid(&event_date/1)
+    |> with_valid(&event_banner/1)
     |> with_valid(&event_location/1)
+    |> with_valid(&event_date/1)
+    |> event_object()
     |> with_valid(&changes/1)
     |> validate()
   end
@@ -112,17 +117,22 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp event_object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
-    object =
-      %{}
-      |> Map.put("name", draft.params[:name])
-      |> Map.put("type", "Event")
-      |> Map.put("to", draft.to)
-      |> Map.put("cc", draft.cc)
-      |> Map.put("content", draft.content_html)
-      |> Map.put("actor", draft.user.ap_id)
-      |> Map.put("joinMode", draft.params[:join_mode] || "free")
-      |> Map.put("tag", Keyword.values(draft.tags) |> Enum.uniq())
-      |> Map.put("emoji", emoji)
+    object = %{
+      "type" => "Event",
+      "to" => draft.to,
+      "cc" => draft.cc,
+      "name" => draft.params[:name],
+      "content" => draft.content_html,
+      "context" => draft.context,
+      "attachment" => draft.attachments,
+      "actor" => draft.user.ap_id,
+      "tag" => Keyword.values(draft.tags) |> Enum.uniq(),
+      "joinMode" => draft.params[:join_mode] || "free",
+      "emoji" => emoji,
+      "location" => draft.location,
+      "startTime" => draft.start_time,
+      "endTime" => draft.end_time
+    }
 
     %__MODULE__{draft | object: object}
   end
@@ -335,20 +345,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             if DateTime.compare(end_time, start_time) == :lt do
               add_error(draft, dgettext("errors", "Event can't end before its start"))
             else
-              object =
-                draft.object
-                |> Map.put("startTime", start_time |> DateTime.to_iso8601())
-                |> Map.put("endTime", end_time |> DateTime.to_iso8601())
+              start_time = start_time |> DateTime.to_iso8601()
+              end_time = end_time |> DateTime.to_iso8601()
 
-              %__MODULE__{draft | object: object}
+              %__MODULE__{draft | start_time: start_time, end_time: end_time}
             end
 
           _ ->
-            object =
-              draft.object
-              |> Map.put("startTime", start_time |> DateTime.to_iso8601())
+            start_time = start_time |> DateTime.to_iso8601()
 
-            %__MODULE__{draft | object: object}
+            %__MODULE__{draft | start_time: start_time}
         end
 
       _ ->
@@ -384,14 +390,21 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             |> Map.put("latitude", latitude)
           end
 
-        object =
-          draft.object
-          |> Map.put("location", location)
-
-        %__MODULE__{draft | object: object}
+        %__MODULE__{draft | location: location}
 
       _ ->
         draft
+    end
+  end
+
+  defp event_banner(draft) do
+    with media_id when is_binary(media_id) <- draft.params[:banner_id],
+         %Object{data: data} <- Repo.get(Object, media_id) do
+      banner = Map.put(data, "name", "Banner")
+
+      %__MODULE__{draft | attachments: [banner]}
+    else
+      _ -> draft
     end
   end
 
