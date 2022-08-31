@@ -29,7 +29,7 @@ defmodule Pleroma.Activity.Ir.Topics do
     ["user", "list"] ++ visibility_tags(object, activity)
   end
 
-  defp visibility_tags(object, activity) do
+  defp visibility_tags(object, %{data: %{"type" => "Create"}} = activity) do
     case Visibility.get_visibility(activity) do
       "public" ->
         if activity.local do
@@ -49,6 +49,10 @@ defmodule Pleroma.Activity.Ir.Topics do
       _ ->
         []
     end
+  end
+
+  defp visibility_tags(_object, _activity) do
+    []
   end
 
   defp item_creation_tags(tags, object, %{data: %{"type" => "Create"}} = activity) do
