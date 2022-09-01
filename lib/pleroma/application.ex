@@ -29,7 +29,7 @@ defmodule Pleroma.Application do
       case Config.get([:http, :user_agent], :default) do
         :default ->
           info = "#{Pleroma.Web.Endpoint.url()} <#{Config.get([:instance, :email], "")}>"
-          named_version() <> "; " <> info
+          compat_version() <> "; " <> info
 
         custom ->
           custom
