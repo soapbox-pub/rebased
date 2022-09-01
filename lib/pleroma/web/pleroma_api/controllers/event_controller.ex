@@ -74,7 +74,8 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
       params
       |> Map.put(:status, Map.get(params, :status, ""))
 
-    with {:ok, activity} <- CommonAPI.event(user, params) do
+    with location <- get_location(params),
+         {:ok, activity} <- CommonAPI.event(user, params, location) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json",
@@ -94,6 +95,14 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
         |> json(%{error: message})
     end
   end
+
+  defp get_location(%{location_id: location_id}) when is_binary(location_id) do
+    result = Geospatial.Service.service().get_by_id(location_id)
+
+    result |> List.first()
+  end
+
+  defp get_location(_), do: nil
 
   def participations(%{assigns: %{user: user, event_activity: activity}} = conn, _) do
     with %Object{data: %{"participations" => participations}} <-

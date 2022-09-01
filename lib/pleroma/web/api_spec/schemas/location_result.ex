@@ -19,6 +19,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.LocationResult do
         type: :string,
         description: "The address's original ID from the provider"
       },
+      origin_provider: %Schema{type: :string, description: "The provider used  by instance"},
       postal_code: %Schema{type: :string, description: "The address's postal code"},
       region: %Schema{type: :string, description: "The address's region"},
       street: %Schema{type: :string, description: "The address's street name (with number)"},
@@ -44,7 +45,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.LocationResult do
         "srid" => 4326
       },
       "locality" => "Kutno",
-      "origin_id" => "nominatim:251399743",
+      "origin_id" => "251399743",
+      "origin_provider" => "nominatim",
       "postal_code" => "80-549",
       "region" => "Łódź Voivodeship",
       "street" => "20 Gabriela Narutowicza",

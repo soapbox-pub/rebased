@@ -699,8 +699,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def event(user, data) do
-    with {:ok, draft} <- ActivityDraft.event(user, data) do
+  def event(user, data, location) do
+    with {:ok, draft} <- ActivityDraft.event(user, data, location) do
       ActivityPub.create(draft.changes)
     end
   end

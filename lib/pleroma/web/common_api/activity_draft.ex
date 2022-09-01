@@ -98,7 +98,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   @spec event(any, map) :: {:error, any} | {:ok, %{:valid? => true, optional(any) => any}}
-  def event(user, params) do
+  def event(user, params, location \\ nil) do
     user
     |> new(params)
     |> status()
@@ -107,7 +107,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> to_and_cc()
     |> context()
     |> with_valid(&event_banner/1)
-    |> with_valid(&event_location/1)
+    |> event_location(location)
     |> with_valid(&event_date/1)
     |> event_object()
     |> with_valid(&changes/1)
@@ -362,40 +362,36 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     end
   end
 
-  defp event_location(draft) do
-    case draft.params[:location] do
-      %{} = address ->
-        location = %{
-          "type" => "Place",
-          "name" => address.description,
-          "id" => address.url,
-          "address" => %{
-            "type" => "PostalAddress",
-            "streetAddress" => address.street,
-            "postalCode" => address.postal_code,
-            "addressLocality" => address.locality,
-            "addressRegion" => address.region,
-            "addressCountry" => address.country
-          }
-        }
+  defp event_location(draft, %Geospatial.Address{} = address) do
+    location = %{
+      "type" => "Place",
+      "name" => address.description,
+      "id" => address.url,
+      "address" => %{
+        "type" => "PostalAddress",
+        "streetAddress" => address.street,
+        "postalCode" => address.postal_code,
+        "addressLocality" => address.locality,
+        "addressRegion" => address.region,
+        "addressCountry" => address.country
+      }
+    }
 
-        location =
-          if is_nil(address.geom) do
-            location
-          else
-            [longitude, latitude] = address.geom.coordinates
+    location =
+      if is_nil(address.geom) do
+        location
+      else
+        {longitude, latitude} = address.geom.coordinates
 
-            location
-            |> Map.put("longitude", longitude)
-            |> Map.put("latitude", latitude)
-          end
+        location
+        |> Map.put("longitude", longitude)
+        |> Map.put("latitude", latitude)
+      end
 
-        %__MODULE__{draft | location: location}
-
-      _ ->
-        draft
-    end
+    %__MODULE__{draft | location: location}
   end
+
+  defp event_location(draft, _), do: draft
 
   defp event_banner(draft) do
     with media_id when is_binary(media_id) <- draft.params[:banner_id],

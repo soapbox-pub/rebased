@@ -201,56 +201,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           type: :string,
           enum: ["free", "restricted"]
         },
-        location: %Schema{
-          type: :object,
-          properties: %{
-            country: %Schema{type: :string, description: "The address's country", nullable: true},
-            description: %Schema{
-              type: :string,
-              description: "The address's description",
-              nullable: true
-            },
-            locality: %Schema{
-              type: :string,
-              description: "The address's locality",
-              nullable: true
-            },
-            origin_id: %Schema{
-              type: :string,
-              description: "The address's original ID from the provider",
-              nullable: true
-            },
-            postal_code: %Schema{
-              type: :string,
-              description: "The address's postal code",
-              nullable: true
-            },
-            region: %Schema{type: :string, description: "The address's region", nullable: true},
-            street: %Schema{
-              type: :string,
-              description: "The address's street name (with number)",
-              nullable: true
-            },
-            timezone: %Schema{
-              type: :string,
-              description: "The (estimated) timezone of the location",
-              nullable: true
-            },
-            type: %Schema{type: :string, description: "The address's type", nullable: true},
-            url: %Schema{type: :string, description: "The address's URL", nullable: true},
-            geom: %Schema{
-              type: :object,
-              properties: %{
-                coordinates: %Schema{
-                  type: :array,
-                  items: %Schema{type: :number}
-                },
-                srid: %Schema{type: :integer}
-              },
-              nullable: true
-            }
-          }
-        }
+        location_id: %Schema{
+          type: :string,
+          description: "Location ID from geospatial provider",
+          nullable: true
+        },
       },
       example: %{
         "name" => "Example event",

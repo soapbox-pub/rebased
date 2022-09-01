@@ -20,6 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.SearchView do
       postal_code: location.postal_code,
       street: location.street,
       origin_id: location.origin_id,
+      origin_provider: location.origin_provider,
       type: location.type,
       timezone: location.timezone
     }
@@ -28,9 +29,8 @@ defmodule Pleroma.Web.PleromaAPI.SearchView do
   def render("geom.json", %{
         geom: %Geo.Point{coordinates: {longitude, latitude}, properties: _properties, srid: srid}
       }) do
-    %{
-      coordinates: [longitude, latitude],
-      srid: srid
-    }
+    %{coordinates: [longitude, latitude], srid: srid}
   end
+
+  def render("geom.json", %{geom: _}), do: nil
 end
