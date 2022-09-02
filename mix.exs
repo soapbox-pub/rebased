@@ -211,7 +211,8 @@ defmodule Pleroma.Mixfile do
       {:excoveralls, "0.12.3", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
+      {:mint, "~> 1.4", only: :test, override: true},
+      {:mint_web_socket, "~> 0.3.0", only: :test}
     ] ++ oauth_deps()
   end
 
