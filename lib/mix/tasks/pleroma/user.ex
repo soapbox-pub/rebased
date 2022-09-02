@@ -112,9 +112,10 @@ defmodule Mix.Tasks.Pleroma.User do
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
       shell_info("Generated password reset token for #{user.nickname}")
 
-      IO.puts("URL: #{Pleroma.Web.Router.Helpers.reset_password_url(Pleroma.Web.Endpoint,
-      :reset,
-      token.token)}")
+      url =
+        Pleroma.Web.Router.Helpers.reset_password_url(Pleroma.Web.Endpoint, :reset, token.token)
+
+      IO.puts("URL: #{url}")
     else
       _ ->
         shell_error("No local user #{nickname}")
