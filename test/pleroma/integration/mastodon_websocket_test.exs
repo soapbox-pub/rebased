@@ -28,28 +28,21 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
         qs -> @path <> qs
       end
 
-    WebsocketClient.connect(self(), path, headers)
+    WebsocketClient.start_link(self(), path, headers)
   end
 
   test "refuses invalid requests" do
     capture_log(fn ->
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 404}} = start_socket()
-
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 404}} =
-               start_socket("?stream=ncjdk")
-
+      assert {:error, {404, _}} = start_socket()
+      assert {:error, {404, _}} = start_socket("?stream=ncjdk")
       Process.sleep(30)
     end)
   end
 
   test "requires authentication and a valid token for protected streams" do
     capture_log(fn ->
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
-               start_socket("?stream=user&access_token=aaaaaaaaaaaa")
-
-      assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
-               start_socket("?stream=user")
-
+      assert {:error, {401, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+      assert {:error, {401, _}} = start_socket("?stream=user")
       Process.sleep(30)
     end)
   end
@@ -109,9 +102,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
-                 start_socket("?stream=user")
-
+        assert {:error, {401, _}} = start_socket("?stream=user")
         Process.sleep(30)
       end)
     end
@@ -120,9 +111,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
-                 start_socket("?stream=user:notification")
-
+        assert {:error, {401, _}} = start_socket("?stream=user:notification")
         Process.sleep(30)
       end)
     end
@@ -131,7 +120,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
 
       capture_log(fn ->
-        assert {:error, %Mint.WebSocket.UpgradeFailureError{status_code: 401}} =
+        assert {:error, {401, _}} =
                  start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
 
         Process.sleep(30)
