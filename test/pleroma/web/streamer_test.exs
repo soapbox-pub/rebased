@@ -442,6 +442,31 @@ defmodule Pleroma.Web.StreamerTest do
                "state" => "follow_accept"
              } = Jason.decode!(payload)
     end
+
+    test "it streams edits in the 'user' stream", %{user: user, token: oauth_token} do
+      sender = insert(:user)
+      {:ok, _, _, _} = CommonAPI.follow(user, sender)
+
+      {:ok, activity} = CommonAPI.post(sender, %{status: "hey"})
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew"})
+      create = Pleroma.Activity.get_create_by_object_ap_id_with_object(activity.object.data["id"])
+
+      assert_receive {:render_with_user, _, "status_update.json", ^create}
+      refute Streamer.filtered_by_user?(user, edited)
+    end
+
+    test "it streams own edits in the 'user' stream", %{user: user, token: oauth_token} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, edited} = CommonAPI.update(user, activity, %{status: "mew mew"})
+      create = Pleroma.Activity.get_create_by_object_ap_id_with_object(activity.object.data["id"])
+
+      assert_receive {:render_with_user, _, "status_update.json", ^create}
+      refute Streamer.filtered_by_user?(user, edited)
+    end
   end
 
   describe "public streams" do
@@ -483,6 +508,54 @@ defmodule Pleroma.Web.StreamerTest do
       activity_id = activity.id
       assert_receive {:text, event}
       assert %{"event" => "delete", "payload" => ^activity_id} = Jason.decode!(event)
+    end
+
+    test "it streams edits in the 'public' stream" do
+      sender = insert(:user)
+
+      Streamer.get_topic_and_add_socket("public", nil, nil)
+      {:ok, activity} = CommonAPI.post(sender, %{status: "hey"})
+      assert_receive {:text, _}
+
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew"})
+
+      edited = Pleroma.Activity.normalize(edited)
+
+      %{id: activity_id} = Pleroma.Activity.get_create_by_object_ap_id(edited.object.data["id"])
+
+      assert_receive {:text, event}
+      assert %{"event" => "status.update", "payload" => payload} = Jason.decode!(event)
+      assert %{"id" => ^activity_id} = Jason.decode!(payload)
+      refute Streamer.filtered_by_user?(sender, edited)
+    end
+
+    test "it streams multiple edits in the 'public' stream correctly" do
+      sender = insert(:user)
+
+      Streamer.get_topic_and_add_socket("public", nil, nil)
+      {:ok, activity} = CommonAPI.post(sender, %{status: "hey"})
+      assert_receive {:text, _}
+
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew"})
+
+      edited = Pleroma.Activity.normalize(edited)
+
+      %{id: activity_id} = Pleroma.Activity.get_create_by_object_ap_id(edited.object.data["id"])
+
+      assert_receive {:text, event}
+      assert %{"event" => "status.update", "payload" => payload} = Jason.decode!(event)
+      assert %{"id" => ^activity_id} = Jason.decode!(payload)
+      refute Streamer.filtered_by_user?(sender, edited)
+
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew 2"})
+
+      edited = Pleroma.Activity.normalize(edited)
+
+      %{id: activity_id} = Pleroma.Activity.get_create_by_object_ap_id(edited.object.data["id"])
+      assert_receive {:text, event}
+      assert %{"event" => "status.update", "payload" => payload} = Jason.decode!(event)
+      assert %{"id" => ^activity_id, "content" => "mew mew 2"} = Jason.decode!(payload)
+      refute Streamer.filtered_by_user?(sender, edited)
     end
   end
 

@@ -312,6 +312,28 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert url == "http://localhost:4001/emoji/dino%20walking.gif"
     end
+
+    test "Updates of Notes are handled" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
+      {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew :blank:"})
+
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
+
+      assert %{
+               "content" => "mew mew :blank:",
+               "tag" => [%{"name" => ":blank:", "type" => "Emoji"}],
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{
+                     "content" => "everybody do the dinosaur :dinosaur:",
+                     "tag" => [%{"name" => ":dinosaur:", "type" => "Emoji"}]
+                   }
+                 ]
+               }
+             } = prepared["object"]
+    end
   end
 
   describe "user upgrade" do
@@ -573,6 +595,45 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       }
 
       assert Transmogrifier.fix_attachments(object) == expected
+    end
+  end
+
+  describe "prepare_object/1" do
+    test "it processes history" do
+      original = %{
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+
+      history_item = Enum.at(processed["formerRepresentations"]["orderedItems"], 0)
+
+      refute Map.has_key?(history_item, "generator")
+
+      assert [%{"name" => ":blobcat:"}] = history_item["tag"]
+    end
+
+    test "it works when there is no or bad history" do
+      original = %{
+        "formerRepresentations" => %{
+          "items" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+      assert processed["formerRepresentations"] == original["formerRepresentations"]
     end
   end
 end
