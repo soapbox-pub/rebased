@@ -40,8 +40,7 @@ defmodule Pleroma.Object do
     join(query, join_type, [{object, object_position}], a in Activity,
       on:
         fragment(
-          "COALESCE(?->'object'->>'id', ?->>'object') = (? ->> 'id') AND (?->>'type' = ?) ",
-          a.data,
+          "associated_object_id(?) = (? ->> 'id') AND (?->>'type' = ?) ",
           a.data,
           object.data,
           a.data,

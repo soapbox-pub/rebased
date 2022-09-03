@@ -1159,8 +1159,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       [activity, object: o] in query,
       where:
         fragment(
-          "(?)->>'type' = 'Create' and coalesce((?)->'object'->>'id', (?)->>'object') = any (?)",
-          activity.data,
+          "(?)->>'type' = 'Create' and associated_object_id((?)) = any (?)",
           activity.data,
           activity.data,
           ^ids
