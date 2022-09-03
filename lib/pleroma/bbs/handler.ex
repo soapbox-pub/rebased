@@ -42,8 +42,45 @@ defmodule Pleroma.BBS.Handler do
 
   def puts_activity(activity) do
     status = Pleroma.Web.MastodonAPI.StatusView.render("show.json", %{activity: activity})
+
     IO.puts("-- #{status.id} by #{status.account.display_name} (#{status.account.acct})")
-    IO.puts(HTML.strip_tags(status.content))
+
+    status.content
+    |> String.split("<br/>")
+    |> Enum.map(&HTML.strip_tags/1)
+    |> Enum.map(&HtmlEntities.decode/1)
+    |> Enum.map(&IO.puts/1)
+  end
+
+  def puts_notification(activity, user) do
+    notification =
+      Pleroma.Web.MastodonAPI.NotificationView.render("show.json", %{
+        notification: activity,
+        for: user
+      })
+
+    IO.puts(
+      "== (#{notification.type}) #{notification.status.id} by #{notification.account.display_name} (#{notification.account.acct})"
+    )
+
+    notification.status.content
+    |> String.split("<br/>")
+    |> Enum.map(&HTML.strip_tags/1)
+    |> Enum.map(&HtmlEntities.decode/1)
+    |> (fn x ->
+          case x do
+            [content] ->
+              "> " <> content
+
+            [head | _tail] ->
+              # "> " <> hd <> "..."
+              head
+              |> String.slice(1, 80)
+              |> (fn x -> "> " <> x <> "..." end).()
+          end
+        end).()
+    |> IO.puts()
+
     IO.puts("")
   end
 
@@ -53,6 +90,11 @@ defmodule Pleroma.BBS.Handler do
     IO.puts("home - Show the home timeline")
     IO.puts("p <text> - Post the given text")
     IO.puts("r <id> <text> - Reply to the post with the given id")
+    IO.puts("t <id> - Show a thread from the given id")
+    IO.puts("n - Show notifications")
+    IO.puts("n read - Mark all notifactions as read")
+    IO.puts("f <id> - Favourites the post with the given id")
+    IO.puts("R <id> - Repeat the post with the given id")
     IO.puts("quit - Quit")
 
     state
@@ -73,13 +115,68 @@ defmodule Pleroma.BBS.Handler do
     state
   end
 
+  def handle_command(%{user: user} = state, "t " <> activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+      activities =
+        ActivityPub.fetch_activities_for_context(activity.data["context"], %{
+          blocking_user: user,
+          user: user,
+          exclude_id: activity.id
+        })
+
+      case activities do
+        [] ->
+          activity_id
+          |> Activity.get_by_id()
+          |> puts_activity()
+
+        _ ->
+          activities
+          |> Enum.reverse()
+          |> Enum.each(&puts_activity/1)
+      end
+    else
+      _e -> IO.puts("Could not show this thread...")
+    end
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "n read") do
+    Pleroma.Notification.clear(user)
+    IO.puts("All notifications were marked as read")
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "n") do
+    user
+    |> Pleroma.Web.MastodonAPI.MastodonAPI.get_notifications(%{})
+    |> Enum.each(&puts_notification(&1, user))
+
+    state
+  end
+
   def handle_command(%{user: user} = state, "p " <> text) do
     text = String.trim(text)
 
-    with {:ok, _activity} <- CommonAPI.post(user, %{status: text}) do
-      IO.puts("Posted!")
+    with {:ok, activity} <- CommonAPI.post(user, %{status: text}) do
+      IO.puts("Posted! ID: #{activity.id}")
     else
       _e -> IO.puts("Could not post...")
+    end
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "f " <> id) do
+    id = String.trim(id)
+
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, _activity} <- CommonAPI.favorite(user, activity) do
+      IO.puts("Favourited!")
+    else
+      _e -> IO.puts("Could not Favourite...")
     end
 
     state
@@ -123,7 +220,7 @@ defmodule Pleroma.BBS.Handler do
 
         loop(%{state | counter: state.counter + 1})
 
-      {:error, :interrupted} ->
+      {:input, ^input, {:error, :interrupted}} ->
         IO.puts("Caught Ctrl+C...")
         loop(%{state | counter: state.counter + 1})
 
