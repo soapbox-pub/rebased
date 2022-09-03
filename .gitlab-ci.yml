@@ -84,7 +84,13 @@ unit-testing:
   script:
     - mix ecto.create
     - mix ecto.migrate
-    - mix coveralls --preload-modules
+    - mix test --cover --preload-modules
+  coverage: '/^Line total: ([^ ]*%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 unit-testing-erratic:
   stage: test
