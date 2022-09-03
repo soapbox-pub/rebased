@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   require Logger
 
+  alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
@@ -16,8 +17,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate when action != :remote_subscribe)
-  plug(Pleroma.Web.Plugs.FederatingPlug when action == :remote_subscribe)
+  plug(
+    Pleroma.Web.ApiSpec.CastAndValidate
+    when action != :remote_subscribe and action != :show_subscribe_form
+  )
+
+  plug(
+    Pleroma.Web.Plugs.FederatingPlug
+    when action == :remote_subscribe
+    when action == :show_subscribe_form
+  )
 
   plug(
     OAuthScopesPlug,
@@ -44,7 +53,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.TwitterUtilOperation
 
-  def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
+  def show_subscribe_form(conn, %{"nickname" => nick}) do
     with %User{} = user <- User.get_cached_by_nickname(nick),
          avatar = User.avatar_url(user) do
       conn
@@ -54,9 +63,50 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         render(conn, "subscribe.html", %{
           nickname: nick,
           avatar: nil,
-          error: "Could not find user"
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "remote follow error message - user not found",
+              "Could not find user"
+            )
         })
     end
+  end
+
+  def show_subscribe_form(conn, %{"status_id" => id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, ap_id} <- get_ap_id(activity),
+         %User{} = user <- User.get_cached_by_ap_id(activity.actor),
+         avatar = User.avatar_url(user) do
+      conn
+      |> render("status_interact.html", %{
+        status_link: ap_id,
+        status_id: id,
+        nickname: user.nickname,
+        avatar: avatar,
+        error: false
+      })
+    else
+      _e ->
+        render(conn, "status_interact.html", %{
+          status_id: id,
+          avatar: nil,
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "status interact error message - status not found",
+              "Could not find status"
+            )
+        })
+    end
+  end
+
+  def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
+    show_subscribe_form(conn, %{"nickname" => nick})
+  end
+
+  def remote_subscribe(conn, %{"status_id" => id, "profile" => _}) do
+    show_subscribe_form(conn, %{"status_id" => id})
   end
 
   def remote_subscribe(conn, %{"user" => %{"nickname" => nick, "profile" => profile}}) do
@@ -69,7 +119,33 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         render(conn, "subscribe.html", %{
           nickname: nick,
           avatar: nil,
-          error: "Something went wrong."
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "remote follow error message - unknown error",
+              "Something went wrong."
+            )
+        })
+    end
+  end
+
+  def remote_subscribe(conn, %{"status" => %{"status_id" => id, "profile" => profile}}) do
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile),
+         %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, ap_id} <- get_ap_id(activity) do
+      conn
+      |> Phoenix.Controller.redirect(external: String.replace(template, "{uri}", ap_id))
+    else
+      _e ->
+        render(conn, "status_interact.html", %{
+          status_id: id,
+          avatar: nil,
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "status interact error message - unknown error",
+              "Something went wrong."
+            )
         })
     end
   end
@@ -80,6 +156,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       |> json(%{url: String.replace(template, "{uri}", ap_id)})
     else
       _e -> json(conn, %{error: "Couldn't find user"})
+    end
+  end
+
+  defp get_ap_id(activity) do
+    object = Pleroma.Object.normalize(activity, fetch: false)
+
+    case object do
+      %{data: %{"id" => ap_id}} -> {:ok, ap_id}
+      _ -> {:no_ap_id, nil}
     end
   end
 
