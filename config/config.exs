@@ -189,7 +189,7 @@ config :pleroma, :instance,
   description: "Pleroma: An efficient and flexible fediverse server",
   short_description: "",
   background_image: "/images/city.jpg",
-  instance_thumbnail: "/instance/thumbnail.jpeg",
+  instance_thumbnail: "/instance/thumbnail.png",
   limit: 5_000,
   description_limit: 5_000,
   remote_limit: 100_000,
@@ -629,7 +629,14 @@ ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
     strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
     strategy_module = String.to_atom(strategy_module_name)
-    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+
+    params =
+      case strategy do
+        "keycloak" -> [uid_field: :email, default_scope: "openid profile"]
+        _ -> [callback_params: ["state"]]
+      end
+
+    {String.to_atom(strategy), {strategy_module, params}}
   end
 
 config :ueberauth,
@@ -752,7 +759,7 @@ config :pleroma, :frontends,
       "name" => "fedi-fe",
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
-        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build_release",
       "ref" => "master",
       "custom-http-headers" => [
         {"service-worker-allowed", "/"}
@@ -772,6 +779,14 @@ config :pleroma, :frontends,
         "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
       "ref" => "develop",
       "build_dir" => "static"
+    },
+    "glitch-lily" => %{
+      "name" => "glitch-lily",
+      "git" => "https://lily-is.land/infra/glitch-lily",
+      "build_url" =>
+        "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "servant",
+      "build_dir" => "public"
     }
   }
 

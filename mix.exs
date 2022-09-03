@@ -6,6 +6,8 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
+      name: "Rebased",
+      compat_name: "Pleroma",
       version: version("2.4.52"),
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -18,12 +20,11 @@ defmodule Pleroma.Mixfile do
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: ["coveralls.html": :test],
       # Docs
-      name: "Pleroma",
-      homepage_url: "https://pleroma.social/",
-      source_url: "https://git.pleroma.social/pleroma/pleroma",
+      homepage_url: "https://soapbox.pub/",
+      source_url: "https://gitlab.com/soapbox-pub/rebased",
       docs: [
         source_url_pattern:
-          "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
+          "https://gitlab.com/soapbox-pub/rebased/blob/develop/%{path}#L%{line}",
         logo: "priv/static/images/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [

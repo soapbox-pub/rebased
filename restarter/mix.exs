@@ -13,7 +13,8 @@ defmodule Restarter.MixProject do
 
   def application do
     [
-      mod: {Restarter, []}
+      mod: {Restarter, []},
+      extra_applications: [:logger]
     ]
   end
 
