@@ -14,9 +14,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  require Bitwise
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -226,7 +227,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     object_data = Object.normalize(note, fetch: false).data
     user = User.get_cached_by_ap_id(note.data["actor"])
 
-    convo_id = Utils.context_to_conversation_id(object_data["context"])
+    convo_id = :erlang.crc32(object_data["context"]) |> Bitwise.band(Bitwise.bnot(0x8000_0000))
 
     status = StatusView.render("show.json", %{activity: note})
 
@@ -280,6 +281,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pleroma: %{
         local: true,
         conversation_id: convo_id,
+        context: object_data["context"],
         in_reply_to_account_acct: nil,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},

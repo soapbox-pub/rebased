@@ -249,7 +249,8 @@ defmodule Pleroma.Application do
 
   defp background_migrators do
     [
-      Pleroma.Migrators.HashtagsTableMigrator
+      Pleroma.Migrators.HashtagsTableMigrator,
+      Pleroma.Migrators.ContextObjectsDeletionMigrator
     ]
   end
 

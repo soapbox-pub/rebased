@@ -262,6 +262,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> Map.put("url", nil)
         |> Map.put("uri", nil)
         |> Map.put("created_at", nil)
+        |> Kernel.put_in(["pleroma", "context"], nil)
         |> Kernel.put_in(["pleroma", "conversation_id"], nil)
 
       fake_conn =
@@ -285,6 +286,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> Map.put("url", nil)
         |> Map.put("uri", nil)
         |> Map.put("created_at", nil)
+        |> Kernel.put_in(["pleroma", "context"], nil)
         |> Kernel.put_in(["pleroma", "conversation_id"], nil)
 
       assert real_status == fake_status

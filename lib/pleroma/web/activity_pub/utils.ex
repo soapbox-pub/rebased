@@ -154,22 +154,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Notification.get_notified_from_activity(%Activity{data: object}, false)
   end
 
-  def create_context(context) do
-    context = context || generate_id("contexts")
-
-    # Ecto has problems accessing the constraint inside the jsonb,
-    # so we explicitly check for the existed object before insert
-    object = Object.get_cached_by_ap_id(context)
-
-    with true <- is_nil(object),
-         changeset <- Object.context_mapping(context),
-         {:ok, inserted_object} <- Repo.insert(changeset) do
-      inserted_object
-    else
-      _ ->
-        object
-    end
-  end
+  def maybe_create_context(context), do: context || generate_id("contexts")
 
   @doc """
   Enqueues an activity for federation if it's local
@@ -201,18 +186,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Map.put_new("id", "pleroma:fakeid")
     |> Map.put_new_lazy("published", &make_date/0)
     |> Map.put_new("context", "pleroma:fakecontext")
-    |> Map.put_new("context_id", -1)
     |> lazy_put_object_defaults(true)
   end
 
   def lazy_put_activity_defaults(map, _fake?) do
-    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+    context = maybe_create_context(map["context"])
 
     map
     |> Map.put_new_lazy("id", &generate_activity_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
     |> Map.put_new("context", context)
-    |> Map.put_new("context_id", context_id)
     |> lazy_put_object_defaults(false)
   end
 
@@ -226,7 +209,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> Map.put_new("id", "pleroma:fake_object_id")
       |> Map.put_new_lazy("published", &make_date/0)
       |> Map.put_new("context", activity["context"])
-      |> Map.put_new("context_id", activity["context_id"])
       |> Map.put_new("fake", true)
 
     %{activity | "object" => object}
@@ -239,7 +221,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> Map.put_new_lazy("id", &generate_object_id/0)
       |> Map.put_new_lazy("published", &make_date/0)
       |> Map.put_new("context", activity["context"])
-      |> Map.put_new("context_id", activity["context_id"])
 
     %{activity | "object" => object}
   end
