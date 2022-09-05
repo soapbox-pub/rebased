@@ -92,7 +92,6 @@ cycles:
   stage: test
   only:
     changes: *elixir-changes
-  cache: {}
   script:
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
