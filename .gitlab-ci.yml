@@ -22,8 +22,9 @@ cache: &cache
 stages:
   - deps
   - test
+  - deploy
 
-test-deps:
+deps:
   stage: deps
   script:
     - mix deps.get
@@ -31,27 +32,6 @@ test-deps:
   cache:
     <<: *cache
     policy: pull-push
-
-release:
-  stage: deps
-  variables:
-    MIX_ENV: prod
-    PLEROMA_BUILD_BRANCH: $CI_COMMIT_REF_NAME
-  script:
-    - mix deps.get
-    - mkdir release
-    - mix release --path release
-  artifacts:
-    name: "rebased-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
-    paths:
-      - release/*
-  cache: {}
-  only:
-    changes: &elixir-changes
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
 
 openapi:
   stage: test
@@ -139,3 +119,26 @@ review:
     GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/$CI_ENVIRONMENT_SLUG
   script: dokku-deploy
   allow_failure: true
+
+release:
+  stage: deploy
+  variables:
+    MIX_ENV: prod
+    PLEROMA_BUILD_BRANCH: $CI_COMMIT_REF_NAME
+  script:
+    - mix deps.get
+    - mkdir release
+    - mix release --path release
+  artifacts:
+    name: "rebased-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
+    paths:
+      - release/*
+  cache: {}
+  only:
+    refs:
+      - develop
+    changes: &elixir-changes
+      - ".gitlab-ci.yml"
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
