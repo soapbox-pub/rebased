@@ -162,7 +162,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
       security: [%{"oAuth" => ["read:statuses"]}],
       parameters: [id_param()],
       responses: %{
-        200 => Operation.response("Event", "text/calendar", %Schema{type: :string}),
+        200 => Operation.response("Event", "text/calendar; charset=utf-8", %Schema{type: :string}),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }

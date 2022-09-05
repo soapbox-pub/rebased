@@ -639,4 +639,55 @@ defmodule Pleroma.Factory do
     |> Map.merge(params)
     |> Pleroma.Announcement.add_rendered_properties()
   end
+
+  def event_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "type" => "Event",
+      "actor" => user.ap_id,
+      "attributedTo" => user.ap_id,
+      "name" => "Event",
+      "content" => "",
+      "attachment" => [],
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [user.follower_address],
+      "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
+      "startTime" => DateTime.utc_now() |> DateTime.add(14_400) |> DateTime.to_iso8601(),
+      "endTime" => DateTime.utc_now() |> DateTime.add(18_000) |> DateTime.to_iso8601(),
+      "joinMode" => "free"
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def event_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    event = attrs[:event] || insert(:event, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :event, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => event.data["actor"],
+        "to" => event.data["to"],
+        "object" => event.data["id"],
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => event.data["context"]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
+  end
 end

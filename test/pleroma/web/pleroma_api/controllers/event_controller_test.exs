@@ -295,4 +295,39 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     assert %{data: %{"state" => "reject"}} =
              Utils.get_existing_join(other_user.ap_id, activity.data["object"])
   end
+
+  test "GET /api/v1/pleroma/events/:id/ics" do
+    %{conn: conn} = oauth_access(["read"])
+    user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.event(user, %{
+        name: "test event",
+        status: "",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    conn =
+      conn
+      |> get("/api/v1/pleroma/events/#{activity.id}/ics")
+
+    assert conn.status == 200
+
+    assert conn.resp_body == """
+           BEGIN:VCALENDAR
+           CALSCALE:GREGORIAN
+           VERSION:2.0
+           PRODID:-//Elixir ICalendar//Elixir ICalendar//EN
+           BEGIN:VEVENT
+           DESCRIPTION:
+           DTSTART:20230101T010000Z
+           ORGANIZER:#{Pleroma.HTML.strip_tags(user.name || user.nickname)}
+           SUMMARY:test event
+           UID:#{activity.object.id}
+           URL:#{activity.object.data["id"]}
+           END:VEVENT
+           END:VCALENDAR
+           """
+  end
 end

@@ -576,4 +576,47 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert %{data: %{"assigned_account" => ^assigned_id}} = report
     end
   end
+
+  describe "add_participation_to_object/2" do
+    test "add actor to participations" do
+      user = insert(:user)
+      user2 = insert(:user)
+      object = insert(:event)
+
+      assert {:ok, updated_object} =
+               Utils.add_participation_to_object(
+                 %Activity{data: %{"actor" => user.ap_id}},
+                 object
+               )
+
+      assert updated_object.data["participations"] == [user.ap_id]
+      assert updated_object.data["participation_count"] == 1
+
+      assert {:ok, updated_object2} =
+               Utils.add_participation_to_object(
+                 %Activity{data: %{"actor" => user2.ap_id}},
+                 updated_object
+               )
+
+      assert updated_object2.data["participations"] == [user2.ap_id, user.ap_id]
+      assert updated_object2.data["participation_count"] == 2
+    end
+  end
+
+  describe "remove_participation_from_object/2" do
+    test "removes ap_id from participations" do
+      user = insert(:user)
+      user2 = insert(:user)
+      object = insert(:event, data: %{"participations" => [user.ap_id, user2.ap_id], "participation_count" => 2})
+
+      assert {:ok, updated_object} =
+               Utils.remove_participation_from_object(
+                 %Activity{data: %{"actor" => user.ap_id}},
+                 object
+               )
+
+      assert updated_object.data["participations"] == [user2.ap_id]
+      assert updated_object.data["participation_count"] == 1
+    end
+  end
 end

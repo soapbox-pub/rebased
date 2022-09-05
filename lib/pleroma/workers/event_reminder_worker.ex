@@ -28,8 +28,8 @@ defmodule Pleroma.Workers.EventReminderWorker do
   def schedule_event_reminder(%Activity{data: %{"type" => "Create"}, id: activity_id} = activity) do
     with %Object{data: %{"type" => "Event", "startTime" => start_time}} <-
            Object.normalize(activity),
-         {:ok, start_time} <- DateTime.from_iso8601(start_time),
-         :lt <-
+         {:ok, start_time, _} <- DateTime.from_iso8601(start_time),
+         :gt <-
            DateTime.compare(
              start_time |> DateTime.add(60 * 60 * -2, :second),
              DateTime.utc_now()
