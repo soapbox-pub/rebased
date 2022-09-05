@@ -49,11 +49,15 @@ openapi:
 test:
   stage: test
   only:
-    changes: *elixir-changes
+    changes: &elixir-changes
+      - ".gitlab-ci.yml"
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
   services: &db-services
-  - name: postgres:13-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    - name: postgres:13-alpine
+      alias: postgres
+      command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   before_script: &db-setup
     - mix ecto.create
     - mix ecto.migrate
@@ -71,16 +75,9 @@ test-erratic:
     - mix test --only=erratic
 
 lint:
-  image: &current-elixir elixir:1.12-alpine
   stage: test
   only:
     changes: *elixir-changes
-  before_script: &current-setup
-    - apk update
-    - apk add build-base cmake file-dev git openssl
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
   script:
     - mix format --check-formatted
 
@@ -92,14 +89,11 @@ analysis:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
-  image: *current-elixir
   stage: test
   only:
     changes: *elixir-changes
   cache: {}
-  before_script: *current-setup
   script:
-    - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
 # Deploy with Dokku
@@ -137,8 +131,4 @@ release:
   only:
     refs:
       - develop
-    changes: &elixir-changes
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *elixir-changes
