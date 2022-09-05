@@ -12,5 +12,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.Policy do
               label: String.t(),
               description: String.t()
             }
-  @optional_callbacks config_description: 0
+  @callback history_awareness() :: :auto | :manual
+  @optional_callbacks config_description: 0, history_awareness: 0
 end

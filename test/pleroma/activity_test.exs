@@ -278,4 +278,78 @@ defmodule Pleroma.ActivityTest do
 
     assert Repo.aggregate(Activity, :count, :id) == 2
   end
+
+  describe "associated_object_id() sql function" do
+    test "with json object" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": {"id":"foobar"}}'::jsonb);
+          """
+        )
+
+      assert object_id == "foobar"
+    end
+
+    test "with string object" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": "foobar"}'::jsonb);
+          """
+        )
+
+      assert object_id == "foobar"
+    end
+
+    test "with array object" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": ["foobar", {}]}'::jsonb);
+          """
+        )
+
+      assert object_id == "foobar"
+    end
+
+    test "invalid" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": {}}'::jsonb);
+          """
+        )
+
+      assert is_nil(object_id)
+    end
+
+    test "invalid object id" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": {"id": 123}}'::jsonb);
+          """
+        )
+
+      assert is_nil(object_id)
+    end
+
+    test "no object field" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{}'::jsonb);
+          """
+        )
+
+      assert is_nil(object_id)
+    end
+  end
 end

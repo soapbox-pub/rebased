@@ -83,7 +83,8 @@ defmodule Pleroma.Mixfile do
         :quack,
         :fast_sanitize,
         :os_mon,
-        :ssl
+        :ssl,
+        :esshd
       ],
       included_applications: [:ex_syslogger]
     ]

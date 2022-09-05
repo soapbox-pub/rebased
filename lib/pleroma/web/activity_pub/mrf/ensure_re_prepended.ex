@@ -10,6 +10,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   @reply_prefix Regex.compile!("^re:[[:space:]]*", [:caseless])
 
+  def history_awareness, do: :auto
+
   def filter_by_summary(
         %{data: %{"summary" => parent_summary}} = _in_reply_to,
         %{"summary" => child_summary} = child
@@ -27,8 +29,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   def filter_by_summary(_in_reply_to, child), do: child
 
-  def filter(%{"type" => "Create", "object" => child_object} = object)
-      when is_map(child_object) do
+  def filter(%{"type" => type, "object" => child_object} = object)
+      when type in ["Create", "Update"] and is_map(child_object) do
     child =
       child_object["inReplyTo"]
       |> Object.normalize(fetch: false)

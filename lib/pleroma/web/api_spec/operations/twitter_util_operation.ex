@@ -405,6 +405,16 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     }
   end
 
+  def show_subscribe_form_operation do
+    %Operation{
+      tags: ["Accounts"],
+      summary: "Show remote subscribe form",
+      operationId: "UtilController.show_subscribe_form",
+      parameters: [],
+      responses: %{200 => Operation.response("Web Page", "test/html", %Schema{type: :string})}
+    }
+  end
+
   defp delete_account_request do
     %Schema{
       title: "AccountDeleteRequest",

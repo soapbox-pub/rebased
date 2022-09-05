@@ -291,6 +291,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     created_at = Utils.to_masto_date(object.data["published"])
 
+    edited_at =
+      with %{"updated" => updated} <- object.data,
+           date <- Utils.to_masto_date(updated),
+           true <- date != "" do
+        date
+      else
+        _ ->
+          nil
+      end
+
     reply_to = get_reply_to(activity, opts)
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
 
@@ -304,6 +314,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         nil
       end
 
+    history_len =
+      1 +
+        (Object.Updater.history_for(object.data)
+         |> Map.get("orderedItems")
+         |> length())
+
+    # See render("history.json", ...) for more details
+    # Here the implicit index of the current content is 0
+    chrono_order = history_len - 1
+
     content =
       object
       |> render_content()
@@ -313,14 +333,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     content_plaintext =
       content
       |> Activity.HTML.get_cached_stripped_html_for_activity(
         activity,
-        "mastoapi:content"
+        "mastoapi:content:#{chrono_order}"
       )
 
     summary = object.data["summary"] || ""
@@ -389,8 +409,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblog: nil,
       card: card,
       content: content_html,
-      text: opts[:with_source] && object.data["source"],
+      text: opts[:with_source] && get_source_text(object.data["source"]),
       created_at: created_at,
+      edited_at: edited_at,
       reblogs_count: announcement_count,
       replies_count: object.data["repliesCount"] || 0,
       favourites_count: like_count,
@@ -412,6 +433,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pleroma: %{
         local: activity.local,
         conversation_id: get_context_id(activity),
+        context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         quote: quote_post,
         quote_url: object.data["quoteUrl"],
@@ -442,6 +464,135 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
+  def render("history.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    object = Object.normalize(activity, fetch: false)
+
+    hashtags = Object.hashtags(object)
+
+    user = CommonAPI.get_user(activity.data["actor"])
+
+    past_history =
+      Object.Updater.history_for(object.data)
+      |> Map.get("orderedItems")
+      |> Enum.map(&Map.put(&1, "id", object.data["id"]))
+      |> Enum.map(&%Object{data: &1, id: object.id})
+
+    history =
+      [object | past_history]
+      # Mastodon expects the original to be at the first
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.map(fn {object, chrono_order} ->
+        %{
+          # The history is prepended every time there is a new edit.
+          # In chrono_order, the oldest item is always at 0, and so on.
+          # The chrono_order is an invariant kept between edits.
+          chrono_order: chrono_order,
+          object: object
+        }
+      end)
+
+    individual_opts =
+      opts
+      |> Map.put(:as, :item)
+      |> Map.put(:user, user)
+      |> Map.put(:hashtags, hashtags)
+
+    render_many(history, StatusView, "history_item.json", individual_opts)
+  end
+
+  def render(
+        "history_item.json",
+        %{
+          activity: activity,
+          user: user,
+          item: %{object: object, chrono_order: chrono_order},
+          hashtags: hashtags
+        } = opts
+      ) do
+    sensitive = object.data["sensitive"] || Enum.member?(hashtags, "nsfw")
+
+    attachment_data = object.data["attachment"] || []
+    attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
+
+    created_at = Utils.to_masto_date(object.data["updated"] || object.data["published"])
+
+    content =
+      object
+      |> render_content()
+
+    content_html =
+      content
+      |> Activity.HTML.get_cached_scrubbed_html_for_activity(
+        User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:content:#{chrono_order}"
+      )
+
+    summary = object.data["summary"] || ""
+
+    %{
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: opts[:for]
+        }),
+      content: content_html,
+      sensitive: sensitive,
+      spoiler_text: summary,
+      created_at: created_at,
+      media_attachments: attachments,
+      emojis: build_emojis(object.data["emoji"]),
+      poll: render(PollView, "show.json", object: object, for: opts[:for])
+    }
+  end
+
+  def render("source.json", %{activity: %{data: %{"object" => _object}} = activity} = _opts) do
+    object = Object.normalize(activity, fetch: false)
+
+    %{
+      id: activity.id,
+      text: get_source_text(Map.get(object.data, "source", "")),
+      spoiler_text: Map.get(object.data, "summary", ""),
+      content_type: get_source_content_type(object.data["source"])
+    }
+  end
+
+  def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
+    page_url_data = URI.parse(page_url)
+
+    page_url_data =
+      if is_binary(rich_media["url"]) do
+        URI.merge(page_url_data, URI.parse(rich_media["url"]))
+      else
+        page_url_data
+      end
+
+    page_url = page_url_data |> to_string
+
+    image_url_data =
+      if is_binary(rich_media["image"]) do
+        URI.parse(rich_media["image"])
+      else
+        nil
+      end
+
+    image_url = build_image_url(image_url_data, page_url_data)
+
+    %{
+      type: "link",
+      provider_name: page_url_data.host,
+      provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
+      url: page_url,
+      image: image_url |> MediaProxy.url(),
+      title: rich_media["title"] || "",
+      description: rich_media["description"] || "",
+      pleroma: %{
+        opengraph: rich_media
+      }
+    }
+  end
+
   def render("card.json", %{embed: %Card{} = card}), do: Card.to_map(card)
   def render("card.json", _), do: nil
 
@@ -460,10 +611,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         true -> "unknown"
       end
 
-    <<hash_id::signed-32, _rest::binary>> = :crypto.hash(:md5, href)
+    attachment_id =
+      with {_, ap_id} when is_binary(ap_id) <- {:ap_id, attachment["id"]},
+           {_, %Object{data: _object_data, id: object_id}} <-
+             {:object, Object.get_by_ap_id(ap_id)} do
+        to_string(object_id)
+      else
+        _ ->
+          <<hash_id::signed-32, _rest::binary>> = :crypto.hash(:md5, href)
+          to_string(attachment["id"] || hash_id)
+      end
 
     %{
-      id: to_string(attachment["id"] || hash_id),
+      id: attachment_id,
       url: href,
       remote_url: href,
       preview_url: href_preview,
@@ -632,18 +792,38 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   # Avoid applying URI.merge unless necessary
   # TODO: revert to always attempting URI.merge(image_url_data, page_url_data)
   # when Elixir 1.12 is the minimum supported version
-  # @spec build_image_url(struct() | nil, struct()) :: String.t() | nil
-  # defp build_image_url(
-  #        %URI{scheme: image_scheme, host: image_host} = image_url_data,
-  #        %URI{} = _page_url_data
-  #      )
-  #      when not is_nil(image_scheme) and not is_nil(image_host) do
-  #   image_url_data |> to_string
-  # end
-  #
-  # defp build_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
-  #   URI.merge(page_url_data, image_url_data) |> to_string
-  # end
-  #
-  # defp build_image_url(_, _), do: nil
+  @spec build_image_url(struct() | nil, struct()) :: String.t() | nil
+  defp build_image_url(
+         %URI{scheme: image_scheme, host: image_host} = image_url_data,
+         %URI{} = _page_url_data
+       )
+       when not is_nil(image_scheme) and not is_nil(image_host) do
+    image_url_data |> to_string
+  end
+
+  defp build_image_url(%URI{} = image_url_data, %URI{} = page_url_data) do
+    URI.merge(page_url_data, image_url_data) |> to_string
+  end
+
+  defp build_image_url(_, _), do: nil
+
+  defp get_source_text(%{"content" => content} = _source) do
+    content
+  end
+
+  defp get_source_text(source) when is_binary(source) do
+    source
+  end
+
+  defp get_source_text(_) do
+    ""
+  end
+
+  defp get_source_content_type(%{"mediaType" => type} = _source) do
+    type
+  end
+
+  defp get_source_content_type(_source) do
+    Utils.get_content_type(nil)
+  end
 end

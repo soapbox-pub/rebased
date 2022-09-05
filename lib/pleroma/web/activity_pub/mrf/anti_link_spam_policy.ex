@@ -9,6 +9,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
 
   require Logger
 
+  @impl true
+  def history_awareness, do: :auto
+
   # has the user successfully posted before?
   defp old_user?(%User{} = u) do
     u.note_count > 0 || u.follower_count > 0
