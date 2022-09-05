@@ -24,6 +24,8 @@ defmodule Pleroma.MigrationHelper.NotificationBackfillTest do
       {:ok, like} = CommonAPI.favorite(other_user, post.id)
       {:ok, react_2} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       data =
         react_2.data
         |> Map.put("type", "EmojiReaction")

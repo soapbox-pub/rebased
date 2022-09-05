@@ -1052,6 +1052,8 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, favorite_activity} = CommonAPI.favorite(friend2, activity.id)
       {:ok, repeat_activity} = CommonAPI.repeat(activity.id, friend1)
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       assert Repo.aggregate(
                from(n in Notification, where: n.seen == false and n.user_id == ^friend1.id),
                :count
