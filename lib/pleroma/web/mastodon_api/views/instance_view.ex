@@ -89,6 +89,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
       "quote_posting",
+      "editing",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -119,7 +120,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
-      end
+      end,
+      "pleroma:get:main/ostatus"
     ]
     |> Enum.filter(& &1)
   end

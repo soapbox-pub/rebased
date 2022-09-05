@@ -23,10 +23,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidatorTest do
     {:ok, object_data} = ObjectValidator.cast_and_apply(note_activity["object"])
     meta = [object_data: ObjectValidator.stringify_keys(object_data)]
 
-    %{valid?: true} = CreateGenericValidator.cast_and_validate(note_activity, meta)
+    assert %{valid?: true} = CreateGenericValidator.cast_and_validate(note_activity, meta)
   end
 
-  test "a Create/Note with mismatched context is invalid" do
+  test "a Create/Note with mismatched context uses the Note's context" do
     user = insert(:user)
 
     note = %{
@@ -54,6 +54,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidatorTest do
     {:ok, object_data} = ObjectValidator.cast_and_apply(note_activity["object"])
     meta = [object_data: ObjectValidator.stringify_keys(object_data)]
 
-    %{valid?: false} = CreateGenericValidator.cast_and_validate(note_activity, meta)
+    validated = CreateGenericValidator.cast_and_validate(note_activity, meta)
+
+    assert validated.valid?
+    assert {:context, note["context"]} in validated.changes
   end
 end

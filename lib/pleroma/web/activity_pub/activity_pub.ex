@@ -27,7 +27,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Workers.BackgroundWorker
   alias Pleroma.Workers.PollWorker
 
-  import Ecto.Changeset
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   import Pleroma.Web.ActivityPub.Visibility
@@ -203,7 +202,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def notify_and_stream(activity) do
     Notification.create_notifications(activity)
 
-    conversation = create_or_bump_conversation(activity, activity.actor)
+    original_activity =
+      case activity do
+        %{data: %{"type" => "Update"}, object: %{data: %{"id" => id}}} ->
+          Activity.get_create_by_object_ap_id_with_object(id)
+
+        _ ->
+          activity
+      end
+
+    conversation = create_or_bump_conversation(original_activity, original_activity.actor)
     participations = get_participations(conversation)
     stream_out(activity)
     stream_out_participations(participations)
@@ -269,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @impl true
   def stream_out(%Activity{data: %{"type" => data_type}} = activity)
-      when data_type in ["Create", "Announce", "Delete"] do
+      when data_type in ["Create", "Announce", "Delete", "Update"] do
     activity
     |> Topics.get_activity_topics()
     |> Streamer.stream(activity)
@@ -1175,8 +1183,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       [activity, object: o] in query,
       where:
         fragment(
-          "(?)->>'type' = 'Create' and coalesce((?)->'object'->>'id', (?)->>'object') = any (?)",
-          activity.data,
+          "(?)->>'type' = 'Create' and associated_object_id((?)) = any (?)",
           activity.data,
           activity.data,
           ^ids
@@ -1483,15 +1490,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, data} <- Upload.store(file, opts) do
       obj_data = Maps.put_if_present(data, "actor", opts[:actor])
 
-      # FIXME: If Objects used FlakeIds, we could pregenerate the ID
-      # instead of calling the DB twice.
-      with {:ok, object} <- Repo.insert(%Object{data: obj_data}) do
-        new_data = Map.put(object.data, "id", object.id)
-
-        object
-        |> change(data: new_data)
-        |> Repo.update()
-      end
+      Repo.insert(%Object{data: obj_data})
     end
   end
 

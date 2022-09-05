@@ -10,7 +10,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
@@ -131,15 +130,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Object.normalize("https://misskey.io/notes/8vs6wxufd0")
     end
 
-    test "a reply with mismatched context is rejected" do
-      insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+    test "it fixes both the Create and object contexts in a reply" do
+      insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+      insert(:user, ap_id: "https://p.helene.moe/users/helene")
 
-      note_activity =
-        "test/fixtures/roadhouse-create-activity.json"
+      create_activity =
+        "test/fixtures/create-pleroma-reply-to-misskey-thread.json"
         |> File.read!()
         |> Jason.decode!()
 
-      assert {:error, _} = Transmogrifier.handle_incoming(note_activity)
+      assert {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(create_activity)
+
+      object = Object.normalize(activity, fetch: false)
+
+      assert activity.data["context"] == object.data["context"]
     end
   end
 
@@ -250,7 +254,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["generator"])
     end
 
@@ -265,7 +268,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["likes"])
     end
 
@@ -348,25 +350,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"]["quoteUrl"] == quote_id
       assert modified["object"]["quoteUri"] == quote_id
-    end
-
-    test "it drops attachment IDs" do
-      user = insert(:user)
-
-      file = %Plug.Upload{
-        content_type: "image/jpeg",
-        path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an_image.jpg"
-      }
-
-      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
-      {:ok, activity} = CommonAPI.post(user, %{status: "", media_ids: [upload.id]})
-
-      {:ok, %{"object" => %{"attachment" => [attachment]}}} =
-        Transmogrifier.prepare_outgoing(activity.data)
-
-      refute attachment["id"]
-      assert attachment["type"] == "Document"
     end
   end
 
@@ -629,6 +612,45 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       }
 
       assert Transmogrifier.fix_attachments(object) == expected
+    end
+  end
+
+  describe "prepare_object/1" do
+    test "it processes history" do
+      original = %{
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+
+      history_item = Enum.at(processed["formerRepresentations"]["orderedItems"], 0)
+
+      refute Map.has_key?(history_item, "generator")
+
+      assert [%{"name" => ":blobcat:"}] = history_item["tag"]
+    end
+
+    test "it works when there is no or bad history" do
+      original = %{
+        "formerRepresentations" => %{
+          "items" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+      assert processed["formerRepresentations"] == original["formerRepresentations"]
     end
   end
 end
