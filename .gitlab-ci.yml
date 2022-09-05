@@ -103,13 +103,13 @@ review:
   stage: test
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: https://$CI_ENVIRONMENT_SLUG.dokku.soapbox.pub
+    url: https://rebased-$CI_COMMIT_REF_SLUG.dokku.soapbox.pub
   only:
     - branches
   except:
     - develop
   variables:
-    GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/$CI_ENVIRONMENT_SLUG
+    GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/rebased-$CI_COMMIT_REF_SLUG
   script: dokku-deploy
   allow_failure: true
 
