@@ -1504,6 +1504,8 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{user2.nickname}"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       activity = Repo.preload(activity, :bookmark)
 
       [notification] = Pleroma.Notification.for_user(user2)
@@ -2141,6 +2143,8 @@ defmodule Pleroma.UserTest do
             status: "hey again @#{to.nickname}"
           })
       end)
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       Enum.each(active, fn user ->
         [n1, _n2] = Pleroma.Notification.for_user(user)
