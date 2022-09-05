@@ -130,15 +130,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Object.normalize("https://misskey.io/notes/8vs6wxufd0")
     end
 
-    test "a reply with mismatched context is rejected" do
-      insert(:user, ap_id: "https://macgirvin.com/channel/mike")
+    test "it fixes both the Create and object contexts in a reply" do
+      insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+      insert(:user, ap_id: "https://p.helene.moe/users/helene")
 
-      note_activity =
-        "test/fixtures/roadhouse-create-activity.json"
+      create_activity =
+        "test/fixtures/create-pleroma-reply-to-misskey-thread.json"
         |> File.read!()
         |> Jason.decode!()
 
-      assert {:error, _} = Transmogrifier.handle_incoming(note_activity)
+      assert {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(create_activity)
+
+      object = Object.normalize(activity, fetch: false)
+
+      assert activity.data["context"] == object.data["context"]
     end
   end
 
@@ -249,7 +254,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["generator"])
     end
 
@@ -264,7 +268,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["likes"])
     end
 

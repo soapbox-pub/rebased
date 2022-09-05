@@ -39,6 +39,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
           "actor" => user.ap_id,
           "tag" => [],
           "id" => "https://pleroma.gov/objects/whatever",
+          "summary" => "",
           "content" => "pleroma in a nutshell"
         }
       })
@@ -48,6 +49,36 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
     assert [
              {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
              {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
+             {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
+              []},
+             {:meta, [property: "twitter:card", content: "summary"], []}
+           ] == result
+  end
+
+  test "it uses summary as description if post has one" do
+    user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
+    {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
+
+    note =
+      insert(:note, %{
+        data: %{
+          "actor" => user.ap_id,
+          "tag" => [],
+          "id" => "https://pleroma.gov/objects/whatever",
+          "summary" => "Public service announcement on caffeine consumption",
+          "content" => "cofe"
+        }
+      })
+
+    result = TwitterCard.build_tags(%{object: note, user: user, activity_id: activity.id})
+
+    assert [
+             {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta,
+              [
+                property: "twitter:description",
+                content: "Public service announcement on caffeine consumption"
+              ], []},
              {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
               []},
              {:meta, [property: "twitter:card", content: "summary"], []}
@@ -65,6 +96,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
           "actor" => user.ap_id,
           "tag" => [],
           "id" => "https://pleroma.gov/objects/whatever",
+          "summary" => "",
           "content" => "pleroma in a nutshell",
           "sensitive" => true,
           "attachment" => [
@@ -109,6 +141,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
           "actor" => user.ap_id,
           "tag" => [],
           "id" => "https://pleroma.gov/objects/whatever",
+          "summary" => "",
           "content" => "pleroma in a nutshell",
           "attachment" => [
             %{

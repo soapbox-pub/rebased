@@ -707,4 +707,42 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
              }
            ]
   end
+
+  test "the standalone note uses its own ID when context is missing" do
+    insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+
+    activity =
+      "test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg-activity.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    {:ok, %Activity{} = modified} = Transmogrifier.handle_incoming(activity)
+    object = Object.normalize(modified, fetch: false)
+
+    assert object.data["context"] == object.data["id"]
+    assert modified.data["context"] == object.data["id"]
+  end
+
+  test "the reply note uses its parent's ID when context is missing and reply is unreachable" do
+    insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+
+    activity =
+      "test/fixtures/tesla_mock/mk.absturztau.be-93e7nm8wqg-activity.json"
+      |> File.read!()
+      |> Jason.decode!()
+
+    object =
+      activity["object"]
+      |> Map.put("inReplyTo", "https://404.site/object/went-to-buy-milk")
+
+    activity =
+      activity
+      |> Map.put("object", object)
+
+    {:ok, %Activity{} = modified} = Transmogrifier.handle_incoming(activity)
+    object = Object.normalize(modified, fetch: false)
+
+    assert object.data["context"] == object.data["inReplyTo"]
+    assert modified.data["context"] == object.data["inReplyTo"]
+  end
 end
