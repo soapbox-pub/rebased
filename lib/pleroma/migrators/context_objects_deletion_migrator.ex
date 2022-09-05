@@ -12,8 +12,11 @@ defmodule Pleroma.Migrators.ContextObjectsDeletionMigrator do
 
   use Pleroma.Migrators.Support.BaseMigrator
 
+  alias Pleroma.DataMigrationFailedId
   alias Pleroma.Migrators.Support.BaseMigrator
   alias Pleroma.Object
+
+  import Ecto.Query
 
   @doc "This migration removes objects created exclusively for contexts, containing only an `id` field."
 
@@ -50,19 +53,20 @@ defmodule Pleroma.Migrators.ContextObjectsDeletionMigrator do
 
       for failed_id <- failed_ids do
         _ =
-          Repo.query(
-            "INSERT INTO data_migration_failed_ids(data_migration_id, record_id) " <>
-              "VALUES ($1, $2) ON CONFLICT DO NOTHING;",
-            [data_migration_id, failed_id]
-          )
+          %DataMigrationFailedId{
+            data_migration_id: data_migration_id,
+            record_id: failed_id
+          }
+          |> Repo.insert(on_conflict: :nothing)
       end
 
+      record_ids = object_ids -- failed_ids
+
       _ =
-        Repo.query(
-          "DELETE FROM data_migration_failed_ids " <>
-            "WHERE data_migration_id = $1 AND record_id = ANY($2)",
-          [data_migration_id, object_ids -- failed_ids]
-        )
+        DataMigrationFailedId
+        |> where(data_migration_id: ^data_migration_id)
+        |> where([dmf], dmf.record_id in ^record_ids)
+        |> Repo.delete_all()
 
       max_object_id = Enum.at(object_ids, -1)
 
@@ -110,14 +114,13 @@ defmodule Pleroma.Migrators.ContextObjectsDeletionMigrator do
 
     failed_objects_query()
     |> Repo.chunk_stream(100, :one)
-    |> Stream.each(fn object ->
-      with {res, _} when res != :error <- delete_context_object(object.id) do
+    |> Stream.each(fn %{id: object_id} ->
+      with {res, _} when res != :error <- delete_context_object(object_id) do
         _ =
-          Repo.query(
-            "DELETE FROM data_migration_failed_ids " <>
-              "WHERE data_migration_id = $1 AND record_id = $2",
-            [data_migration_id, object.id]
-          )
+          DataMigrationFailedId
+          |> where(data_migration_id: ^data_migration_id)
+          |> where(record_id: ^object_id)
+          |> Repo.delete_all()
       end
     end)
     |> Stream.run()
@@ -130,9 +133,7 @@ defmodule Pleroma.Migrators.ContextObjectsDeletionMigrator do
 
   defp failed_objects_query do
     from(o in Object)
-    |> join(:inner, [o], dmf in fragment("SELECT * FROM data_migration_failed_ids"),
-      on: dmf.record_id == o.id
-    )
+    |> join(:inner, [o], dmf in DataMigrationFailedId, on: dmf.record_id == o.id)
     |> where([_o, dmf], dmf.data_migration_id == ^data_migration_id())
     |> order_by([o], asc: o.id)
   end
