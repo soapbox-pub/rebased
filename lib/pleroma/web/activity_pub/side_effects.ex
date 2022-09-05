@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.PollWorker
 
+  require Pleroma.Constants
   require Logger
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
@@ -153,23 +154,26 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   # Tasks this handles:
   # - Update the user
+  # - Update a non-user object (Note, Question, etc.)
   #
   # For a local user, we also get a changeset with the full information, so we
   # can update non-federating, non-activitypub settings as well.
   @impl true
   def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
-    if changeset = Keyword.get(meta, :user_update_changeset) do
-      changeset
-      |> User.update_and_set_cache()
+    updated_object_id = updated_object["id"]
+
+    with {_, true} <- {:has_id, is_binary(updated_object_id)},
+         %{"type" => type} <- updated_object,
+         {_, is_user} <- {:is_user, type in Pleroma.Constants.actor_types()} do
+      if is_user do
+        handle_update_user(object, meta)
+      else
+        handle_update_object(object, meta)
+      end
     else
-      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
-
-      User.get_by_ap_id(updated_object["id"])
-      |> User.remote_user_changeset(new_user_data)
-      |> User.update_and_set_cache()
+      _ ->
+        {:ok, object, meta}
     end
-
-    {:ok, object, meta}
   end
 
   # Tasks this handles:
@@ -387,6 +391,79 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Nothing to do
   @impl true
   def handle(object, meta) do
+    {:ok, object, meta}
+  end
+
+  defp handle_update_user(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    if changeset = Keyword.get(meta, :user_update_changeset) do
+      changeset
+      |> User.update_and_set_cache()
+    else
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+
+      User.get_by_ap_id(updated_object["id"])
+      |> User.remote_user_changeset(new_user_data)
+      |> User.update_and_set_cache()
+    end
+
+    {:ok, object, meta}
+  end
+
+  defp handle_update_object(
+         %{data: %{"type" => "Update", "object" => updated_object}} = object,
+         meta
+       ) do
+    orig_object_ap_id = updated_object["id"]
+    orig_object = Object.get_by_ap_id(orig_object_ap_id)
+    orig_object_data = orig_object.data
+
+    updated_object =
+      if meta[:local] do
+        # If this is a local Update, we don't process it by transmogrifier,
+        # so we use the embedded object as-is.
+        updated_object
+      else
+        meta[:object_data]
+      end
+
+    if orig_object_data["type"] in Pleroma.Constants.updatable_object_types() do
+      %{
+        updated_data: updated_object_data,
+        updated: updated,
+        used_history_in_new_object?: used_history_in_new_object?
+      } = Object.Updater.make_new_object_data_from_update_object(orig_object_data, updated_object)
+
+      changeset =
+        orig_object
+        |> Repo.preload(:hashtags)
+        |> Object.change(%{data: updated_object_data})
+
+      with {:ok, new_object} <- Repo.update(changeset),
+           {:ok, _} <- Object.invalid_object_cache(new_object),
+           {:ok, _} <- Object.set_cache(new_object),
+           # The metadata/utils.ex uses the object id for the cache.
+           {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(new_object.id) do
+        if used_history_in_new_object? do
+          with create_activity when not is_nil(create_activity) <-
+                 Pleroma.Activity.get_create_by_object_ap_id(orig_object_ap_id),
+               {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(create_activity.id) do
+            nil
+          else
+            _ -> nil
+          end
+        end
+
+        if updated do
+          object
+          |> Activity.normalize()
+          |> ActivityPub.notify_and_stream()
+        end
+      end
+    end
+
     {:ok, object, meta}
   end
 

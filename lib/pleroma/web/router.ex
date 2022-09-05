@@ -337,6 +337,7 @@ defmodule Pleroma.Web.Router do
     pipe_through(:pleroma_html)
 
     post("/main/ostatus", UtilController, :remote_subscribe)
+    get("/main/ostatus", UtilController, :show_subscribe_form)
     get("/ostatus_subscribe", RemoteFollowController, :follow)
     post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
@@ -463,6 +464,13 @@ defmodule Pleroma.Web.Router do
       get("/birthdays", AccountController, :birthdays)
     end
 
+    scope [] do
+      pipe_through(:authenticated_api)
+
+      get("/settings/:app", SettingsController, :show)
+      patch("/settings/:app", SettingsController, :update)
+    end
+
     post("/accounts/confirmation_resend", AccountController, :confirmation_resend)
   end
 
@@ -563,6 +571,7 @@ defmodule Pleroma.Web.Router do
     get("/bookmarks", StatusController, :bookmarks)
 
     post("/statuses", StatusController, :create)
+    put("/statuses/:id", StatusController, :update)
     delete("/statuses/:id", StatusController, :delete)
     post("/statuses/:id/reblog", StatusController, :reblog)
     post("/statuses/:id/unreblog", StatusController, :unreblog)
@@ -622,6 +631,8 @@ defmodule Pleroma.Web.Router do
     get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
+    get("/statuses/:id/history", StatusController, :show_history)
+    get("/statuses/:id/source", StatusController, :show_source)
 
     get("/custom_emojis", CustomEmojiController, :index)
 

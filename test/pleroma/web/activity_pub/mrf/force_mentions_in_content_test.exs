@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
 
   alias Pleroma.Constants
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent
   alias Pleroma.Web.CommonAPI
 
@@ -160,5 +161,99 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
 
     assert filtered ==
              "<p><span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{luigi.id}\" href=\"#{luigi.ap_id}\" rel=\"ugc\">@<span>luigi</span></a></span> </span>I'ma tired...</p>"
+  end
+
+  test "aware of history" do
+    mario = insert(:user, nickname: "mario")
+    wario = insert(:user, nickname: "wario")
+
+    {:ok, post1} = CommonAPI.post(mario, %{status: "Letsa go!"})
+
+    activity = %{
+      "type" => "Create",
+      "actor" => wario.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "actor" => wario.ap_id,
+        "content" => "WHA-HA!",
+        "to" => [
+          mario.ap_id,
+          Constants.as_public()
+        ],
+        "inReplyTo" => post1.object.data["id"],
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{
+              "type" => "Note",
+              "actor" => wario.ap_id,
+              "content" => "WHA-HA!",
+              "to" => [
+                mario.ap_id,
+                Constants.as_public()
+              ],
+              "inReplyTo" => post1.object.data["id"]
+            }
+          ]
+        }
+      }
+    }
+
+    expected =
+      "<span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{mario.id}\" href=\"#{mario.ap_id}\" rel=\"ugc\">@<span>mario</span></a></span> </span>WHA-HA!"
+
+    assert {:ok,
+            %{
+              "object" => %{
+                "content" => ^expected,
+                "formerRepresentations" => %{"orderedItems" => [%{"content" => ^expected}]}
+              }
+            }} = MRF.filter_one(ForceMentionsInContent, activity)
+  end
+
+  test "works with Updates" do
+    mario = insert(:user, nickname: "mario")
+    wario = insert(:user, nickname: "wario")
+
+    {:ok, post1} = CommonAPI.post(mario, %{status: "Letsa go!"})
+
+    activity = %{
+      "type" => "Update",
+      "actor" => wario.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "actor" => wario.ap_id,
+        "content" => "WHA-HA!",
+        "to" => [
+          mario.ap_id,
+          Constants.as_public()
+        ],
+        "inReplyTo" => post1.object.data["id"],
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{
+              "type" => "Note",
+              "actor" => wario.ap_id,
+              "content" => "WHA-HA!",
+              "to" => [
+                mario.ap_id,
+                Constants.as_public()
+              ],
+              "inReplyTo" => post1.object.data["id"]
+            }
+          ]
+        }
+      }
+    }
+
+    expected =
+      "<span class=\"recipients-inline\"><span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{mario.id}\" href=\"#{mario.ap_id}\" rel=\"ugc\">@<span>mario</span></a></span> </span>WHA-HA!"
+
+    assert {:ok,
+            %{
+              "object" => %{
+                "content" => ^expected,
+                "formerRepresentations" => %{"orderedItems" => [%{"content" => ^expected}]}
+              }
+            }} = MRF.filter_one(ForceMentionsInContent, activity)
   end
 end

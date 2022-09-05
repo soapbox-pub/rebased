@@ -1574,11 +1574,17 @@ defmodule Pleroma.User do
         blocker
       end
 
-    # clear any requested follows as well
+    # clear any requested follows from both sides as well
     blocked =
       case CommonAPI.reject_follow_request(blocked, blocker) do
         {:ok, %User{} = updated_blocked} -> updated_blocked
         nil -> blocked
+      end
+
+    blocker =
+      case CommonAPI.reject_follow_request(blocker, blocked) do
+        {:ok, %User{} = updated_blocker} -> updated_blocker
+        nil -> blocker
       end
 
     unsubscribe(blocked, blocker)
