@@ -271,7 +271,7 @@ amd64:
     MIX_ENV: prod
   before_script: &before-release
   - apt-get update && apt-get install -y cmake libmagic-dev
-  - echo "import Mix.Config" > config/prod.secret.exs
+  - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
   script: &release
@@ -290,7 +290,7 @@ amd64-musl:
   variables: *release-variables
   before_script: &before-release-musl
   - apk add git build-base cmake file-dev openssl
-  - echo "import Mix.Config" > config/prod.secret.exs
+  - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
   script: *release
