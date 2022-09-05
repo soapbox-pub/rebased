@@ -19,7 +19,7 @@ defmodule Pleroma.Web.PleromaAPI.SearchView do
       region: location.region,
       postal_code: location.postal_code,
       street: location.street,
-      origin_id: location.origin_id,
+      origin_id: "#{location.origin_id}",
       origin_provider: location.origin_provider,
       type: location.type,
       timezone: location.timezone
