@@ -32,6 +32,9 @@ deps:
   cache:
     <<: *cache
     policy: pull-push
+  only:
+    changes:
+      - mix.lock
 
 openapi:
   stage: test
