@@ -992,7 +992,8 @@ config :pleroma, :config_description, [
         key: :birthday_min_age,
         type: :integer,
         description:
-          "Minimum required age for users to create account. Only used if birthday is required."
+          "Minimum required age (in days) for users to create account. Only used if birthday is required.",
+        suggestions: [6570]
       }
     ]
   },
