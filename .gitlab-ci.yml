@@ -101,7 +101,7 @@ cycles:
 # https://github.com/dokku/ci-docker-image
 review:
   image: dokku/ci-docker-image
-  stage: deps
+  stage: test
   environment:
     name: review/$CI_COMMIT_REF_NAME
     url: https://$CI_ENVIRONMENT_SLUG.dokku.soapbox.pub
