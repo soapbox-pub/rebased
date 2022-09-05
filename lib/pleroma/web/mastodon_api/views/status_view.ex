@@ -80,22 +80,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp get_context_id(%{data: %{"context_id" => context_id}}) when is_binary(context_id),
-    do: context_id
-
-  defp get_context_id(%{data: %{"context_id" => context_id}}) when is_integer(context_id),
-    do: to_string(context_id)
-
-  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context) do
-    case Utils.context_to_conversation_id(context) do
-      id when is_binary(id) -> id
-      id when is_integer(id) -> to_string(id)
-      _ -> nil
-    end
-  end
-
-  defp get_context_id(_), do: nil
-
   # Check if the user reblogged this status
   defp reblogged?(activity, %User{ap_id: ap_id}) do
     with %Object{data: %{"announcements" => announcements}} when is_list(announcements) <-
@@ -432,7 +416,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
         local: activity.local,
-        conversation_id: get_context_id(activity),
         context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         quote: quote_post,
