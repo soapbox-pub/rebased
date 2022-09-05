@@ -609,11 +609,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp build_event(_, _), do: nil
 
-  defp build_event_location(%{"type" => "Place", "name" => name}) do
-    %{name: name}
+  defp build_event_location(%{"type" => "Place"} = location) do
+    %{
+      name: location["name"],
+      url: location["url"],
+      longitude: location["longitude"],
+      latitude: location["latitude"]
+    }
+    |> maybe_put_address(location["address"])
   end
 
   defp build_event_location(_), do: nil
+
+  defp maybe_put_address(location, %{"type" => "PostalAddress"}) do
+    Map.merge(location, %{
+      street: location["streetAddress"],
+      postal_code: location["postalCode"],
+      locality: location["addressLocality"],
+      region: location["addressRegion"],
+      country: location["addressCountry"]
+    })
+  end
+
+  defp maybe_put_address(location, _), do: location
 
   defp build_event_join_state(%{ap_id: actor}, id) do
     latest_join = Pleroma.Web.ActivityPub.Utils.get_existing_join(actor, id)

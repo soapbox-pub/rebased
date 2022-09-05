@@ -205,7 +205,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           type: :string,
           description: "Location ID from geospatial provider",
           nullable: true
-        },
+        }
       },
       example: %{
         "name" => "Example event",
