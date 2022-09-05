@@ -7,6 +7,7 @@ defmodule Pleroma.Factory do
 
   require Pleroma.Constants
 
+  alias Pleroma.Keys
   alias Pleroma.Object
   alias Pleroma.User
 
@@ -28,6 +29,8 @@ defmodule Pleroma.Factory do
   end
 
   def user_factory(attrs \\ %{}) do
+    {:ok, pem} = Keys.generate_rsa_pem()
+
     user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
@@ -39,7 +42,8 @@ defmodule Pleroma.Factory do
       last_refreshed_at: NaiveDateTime.utc_now(),
       notification_settings: %Pleroma.User.NotificationSetting{},
       multi_factor_authentication_settings: %Pleroma.MFA.Settings{},
-      ap_enabled: true
+      ap_enabled: true,
+      keys: pem
     }
 
     urls =
