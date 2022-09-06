@@ -150,6 +150,8 @@ defmodule Pleroma.NotificationTest do
           status: "hey @#{other_user.nickname}! mew mew"
         })
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       assert [%{type: "reblog"}] = Notification.for_user(user)
       assert [%{type: "update"}] = Notification.for_user(repeated_user)
       assert [%{type: "mention"}] = Notification.for_user(other_user)
