@@ -1919,7 +1919,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
 
-      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       refute User.following?(follower, old_user)
       assert User.following?(follower, new_user)

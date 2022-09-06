@@ -30,6 +30,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
     user2 = insert(:user, last_digest_emailed_at: date)
     {:ok, _} = User.switch_email_notifications(user2, "digest", true)
     CommonAPI.post(user, %{status: "hey @#{user2.nickname}!"})
+    ObanHelpers.perform_all()
 
     {:ok, user2: user2}
   end

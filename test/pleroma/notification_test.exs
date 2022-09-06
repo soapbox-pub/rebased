@@ -84,6 +84,8 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, [notification, other_notification]} = Notification.create_notifications(activity)
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       notified_ids = Enum.sort([notification.user_id, other_notification.user_id])
       assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
@@ -121,6 +123,8 @@ defmodule Pleroma.NotificationTest do
           status: "test reply",
           in_reply_to_status_id: activity.id
         })
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       user_notifications = Notification.for_user(user)
       assert length(user_notifications) == 1
@@ -176,6 +180,8 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(user, %{status: "hey @#{blocker.nickname}!"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       blocker_id = blocker.id
       assert [%Notification{user_id: ^blocker_id}] = Repo.all(Notification)
       refute called(Push.send(:_))
@@ -190,6 +196,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _user_relationships} = User.mute(muter, user)
 
       {:ok, _activity} = CommonAPI.post(user, %{status: "hey @#{muter.nickname}!"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       muter_id = muter.id
       assert [%Notification{user_id: ^muter_id}] = Repo.all(Notification)
@@ -205,6 +212,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{thread_muter.nickname}!"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+      [pre_mute_notification] = Repo.all(Notification)
+
       {:ok, _} = CommonAPI.add_mute(thread_muter, activity)
 
       {:ok, _same_context_activity} =
@@ -213,8 +223,15 @@ defmodule Pleroma.NotificationTest do
           in_reply_to_status_id: activity.id
         })
 
-      [pre_mute_notification, post_mute_notification] =
-        Repo.all(from(n in Notification, where: n.user_id == ^thread_muter.id, order_by: n.id))
+      Pleroma.Tests.ObanHelpers.perform_all()
+
+      [post_mute_notification] =
+        Repo.all(
+          from(n in Notification,
+            where: n.id != ^pre_mute_notification.id and n.user_id == ^thread_muter.id,
+            order_by: n.id
+          )
+        )
 
       pre_mute_notification_id = pre_mute_notification.id
       post_mute_notification_id = post_mute_notification.id
@@ -557,6 +574,7 @@ defmodule Pleroma.NotificationTest do
 
       Notification.destroy_multiple_from_types(user1, ["pleroma:report"])
 
+      Pleroma.Tests.ObanHelpers.perform_all()
       assert [%Pleroma.Notification{type: "mention"}] = Notification.for_user(user1)
       assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user2)
     end
@@ -576,6 +594,8 @@ defmodule Pleroma.NotificationTest do
           status: "hey again @#{other_user.nickname}!"
         })
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       [n2, n1] = Notification.for_user(other_user)
 
       assert n2.id > n1.id
@@ -584,6 +604,8 @@ defmodule Pleroma.NotificationTest do
         CommonAPI.post(user, %{
           status: "hey yet again @#{other_user.nickname}!"
         })
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       [_, read_notification] = Notification.set_read_up_to(other_user, n2.id)
 
@@ -615,6 +637,8 @@ defmodule Pleroma.NotificationTest do
         CommonAPI.post(other_user, %{
           status: "hi @#{user.nickname}!"
         })
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       [%{id: notification_id}] = Notification.for_user(user)
 
@@ -1032,6 +1056,7 @@ defmodule Pleroma.NotificationTest do
           in_reply_to_status_id: activity.id
         })
 
+      Pleroma.Tests.ObanHelpers.perform_all()
       assert Enum.empty?(Notification.for_user(user))
     end
 
@@ -1042,6 +1067,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{status: "hi @#{other_user.nickname}", visibility: "direct"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
       refute Enum.empty?(Notification.for_user(other_user))
 
       {:ok, job} = User.delete(user)
@@ -1146,6 +1172,8 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       [notification] = Notification.for_user(user)
 
       assert notification.activity.object
@@ -1188,6 +1216,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{status: "hey @#{user.nickname}"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
       assert length(Notification.for_user(user)) == 1
     end
 
@@ -1205,6 +1234,8 @@ defmodule Pleroma.NotificationTest do
       {:ok, _user_relationships} = User.mute(user, muted)
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
     end
@@ -1235,6 +1266,7 @@ defmodule Pleroma.NotificationTest do
       another_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(another_user, %{status: "hey @#{user.nickname}"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       {:ok, _} = Pleroma.ThreadMute.add_mute(user.id, activity.data["context"])
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
@@ -1254,6 +1286,7 @@ defmodule Pleroma.NotificationTest do
       another_user = insert(:user)
 
       {:ok, _} = CommonAPI.post(another_user, %{status: "@#{user.nickname} test"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       assert length(Notification.for_user(user)) == 1
     end

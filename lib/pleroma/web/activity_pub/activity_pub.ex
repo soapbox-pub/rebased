@@ -12,7 +12,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Filter
   alias Pleroma.Hashtag
   alias Pleroma.Maps
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Object.Fetcher
@@ -25,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.NotificationWorker
   alias Pleroma.Workers.PollWorker
 
   import Ecto.Query
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def notify_and_stream(activity) do
-    Notification.create_notifications(activity)
+    NotificationWorker.enqueue("create", %{"activity_id" => activity.id})
 
     original_activity =
       case activity do

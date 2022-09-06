@@ -35,6 +35,8 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
           })
       end)
 
+      ObanHelpers.perform_all()
+
       yesterday =
         NaiveDateTime.add(
           NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
