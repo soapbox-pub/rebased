@@ -1917,6 +1917,8 @@ config :pleroma, :config_description, [
           federator_outgoing: 50,
           mailer: 10,
           scheduled_activities: 10,
+          poll_notifications: 10,
+          notifications: 20,
           transmogrifier: 20,
           web_push: 50
         ],
@@ -1968,6 +1970,18 @@ config :pleroma, :config_description, [
             type: :integer,
             description: "Scheduled activities queue, see Pleroma.ScheduledActivities",
             suggestions: [10]
+          },
+          %{
+            key: :poll_notifications,
+            type: :integer,
+            description: "Stores poll expirations so it can notify users when a poll ends",
+            suggestions: [10]
+          },
+          %{
+            key: :notifications,
+            type: :integer,
+            description: "Creates notifications for activities in the background",
+            suggestions: [20]
           },
           %{
             key: :transmogrifier,
