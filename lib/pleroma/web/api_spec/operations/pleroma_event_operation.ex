@@ -76,13 +76,13 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
     }
   end
 
-  def participate_operation do
+  def join_operation do
     %Operation{
       tags: ["Event actions"],
       summary: "Participate",
       security: [%{"oAuth" => ["write"]}],
       description: "Participate in an event",
-      operationId: "PleromaAPI.EventController.participate",
+      operationId: "PleromaAPI.EventController.join",
       parameters: [id_param()],
       requestBody:
         request_body(
@@ -107,13 +107,13 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
     }
   end
 
-  def unparticipate_operation do
+  def leave_operation do
     %Operation{
       tags: ["Event actions"],
       summary: "Unparticipate",
       security: [%{"oAuth" => ["write"]}],
       description: "Delete event participation",
-      operationId: "PleromaAPI.EventController.unparticipate",
+      operationId: "PleromaAPI.EventController.leave",
       parameters: [id_param()],
       responses: %{
         200 => event_response(),
@@ -123,13 +123,13 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
     }
   end
 
-  def accept_participation_request_operation do
+  def authorize_participation_request_operation do
     %Operation{
       tags: ["Event actions"],
       summary: "Accept participation",
       security: [%{"oAuth" => ["write"]}],
       description: "Accept event participation request",
-      operationId: "PleromaAPI.EventController.accept_participation_request",
+      operationId: "PleromaAPI.EventController.authorize_participation_request",
       parameters: [id_param(), participant_id_param()],
       responses: %{
         200 => event_response(),

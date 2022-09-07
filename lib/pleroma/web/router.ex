@@ -491,9 +491,9 @@ defmodule Pleroma.Web.Router do
       get("/events/:id/participation_requests", EventController, :participation_requests)
 
       post(
-        "/events/:id/participation_requests/:participant_id/accept",
+        "/events/:id/participation_requests/:participant_id/authorize",
         EventController,
-        :accept_participation_request
+        :authorize_participation_request
       )
 
       post(
@@ -502,8 +502,8 @@ defmodule Pleroma.Web.Router do
         :reject_participation_request
       )
 
-      post("/events/:id/participate", EventController, :participate)
-      post("/events/:id/unparticipate", EventController, :unparticipate)
+      post("/events/:id/join", EventController, :join)
+      post("/events/:id/leave", EventController, :leave)
       get("/events/:id/ics", EventController, :export_ics)
 
       get("/search/location", SearchController, :location)

@@ -27,7 +27,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
 
   plug(
     :assign_participant
-    when action in [:accept_participation_request, :reject_participation_request]
+    when action in [:authorize_participation_request, :reject_participation_request]
   )
 
   plug(
@@ -35,10 +35,10 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     when action in [
            :participations,
            :participation_requests,
-           :accept_participation_request,
+           :authorize_participation_request,
            :reject_participation_request,
-           :participate,
-           :unparticipate,
+           :join,
+           :leave,
            :export_ics
          ]
   )
@@ -48,10 +48,10 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     %{scopes: ["write"]}
     when action in [
            :create,
-           :accept_participation_request,
+           :authorize_participation_request,
            :reject_participation_request,
-           :participate,
-           :unparticipate
+           :join,
+           :leave
          ]
   )
 
@@ -156,11 +156,11 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     end
   end
 
-  def participate(%{assigns: %{user: %{ap_id: actor}, event_activity: %{actor: actor}}} = conn, _) do
+  def join(%{assigns: %{user: %{ap_id: actor}, event_activity: %{actor: actor}}} = conn, _) do
     render_error(conn, :bad_request, "Can't join your own event")
   end
 
-  def participate(
+  def join(
         %{assigns: %{user: user, event_activity: activity}, body_params: params} = conn,
         _
       ) do
@@ -171,14 +171,14 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     end
   end
 
-  def unparticipate(
+  def leave(
         %{assigns: %{user: %{ap_id: actor}, event_activity: %{actor: actor}}} = conn,
         _
       ) do
     render_error(conn, :bad_request, "Can't leave your own event")
   end
 
-  def unparticipate(%{assigns: %{user: user, event_activity: activity}} = conn, _) do
+  def leave(%{assigns: %{user: user, event_activity: activity}} = conn, _) do
     with {:ok, _} <- CommonAPI.leave(user, activity.id) do
       conn
       |> put_view(StatusView)
@@ -189,7 +189,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     end
   end
 
-  def accept_participation_request(
+  def authorize_participation_request(
         %{
           assigns: %{
             user: for_user,

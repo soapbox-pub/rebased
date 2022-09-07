@@ -137,7 +137,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     end
   end
 
-  describe "POST /api/v1/pleroma/events/:id/participate" do
+  describe "POST /api/v1/pleroma/events/:id/join" do
     setup do
       user = insert(:user)
       %{user: user, conn: conn} = oauth_access(["write"], user: user)
@@ -156,7 +156,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       conn =
         conn
-        |> post("/api/v1/pleroma/events/#{activity.id}/participate")
+        |> post("/api/v1/pleroma/events/#{activity.id}/join")
 
       assert json_response_and_validate_schema(conn, 200)
 
@@ -177,7 +177,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       conn =
         conn
-        |> post("/api/v1/pleroma/events/#{activity.id}/participate")
+        |> post("/api/v1/pleroma/events/#{activity.id}/join")
 
       assert json_response_and_validate_schema(conn, :bad_request) == %{
                "error" => "Can't join your own event"
@@ -185,7 +185,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     end
   end
 
-  describe "POST /api/v1/pleroma/events/:id/unparticipate" do
+  describe "POST /api/v1/pleroma/events/:id/leave" do
     setup do
       user = insert(:user)
       %{user: user, conn: conn} = oauth_access(["write"], user: user)
@@ -206,7 +206,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       conn =
         conn
-        |> post("/api/v1/pleroma/events/#{activity.id}/unparticipate")
+        |> post("/api/v1/pleroma/events/#{activity.id}/leave")
 
       assert json_response_and_validate_schema(conn, 200)
 
@@ -229,7 +229,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       conn =
         conn
-        |> post("/api/v1/pleroma/events/#{activity.id}/unparticipate")
+        |> post("/api/v1/pleroma/events/#{activity.id}/leave")
 
       assert json_response_and_validate_schema(conn, :bad_request) == %{
                "error" => "Not participating in the event"
