@@ -154,8 +154,9 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> join(:inner, [a], o in Object,
       on:
         fragment(
-          "(?->>'id') = associated_object_id((?))",
+          "(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
           o.data,
+          a.data,
           a.data
         )
     )

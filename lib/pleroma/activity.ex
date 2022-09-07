@@ -53,7 +53,7 @@ defmodule Pleroma.Activity do
     #
     # ```
     # |> join(:inner, [activity], o in Object,
-    #      on: fragment("(?->>'id') = associated_object_id((?))",
+    #      on: fragment("(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
     #        o.data, activity.data, activity.data))
     # |> preload([activity, object], [object: object])
     # ```
@@ -69,8 +69,9 @@ defmodule Pleroma.Activity do
     join(query, join_type, [activity], o in Object,
       on:
         fragment(
-          "(?->>'id') = associated_object_id(?)",
+          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
           o.data,
+          activity.data,
           activity.data
         ),
       as: :object

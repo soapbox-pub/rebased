@@ -118,8 +118,9 @@ defmodule Pleroma.Notification do
     |> join(:left, [n, a], object in Object,
       on:
         fragment(
-          "(?->>'id') = associated_object_id(?)",
+          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
           object.data,
+          a.data,
           a.data
         )
     )
@@ -193,11 +194,13 @@ defmodule Pleroma.Notification do
       |> join(:left, [n, a], mutated_activity in Pleroma.Activity,
         on:
           fragment(
-            "associated_object_id(?)",
+            "COALESCE((?->'object')->>'id', ?->>'object')",
+            a.data,
             a.data
           ) ==
             fragment(
-              "associated_object_id(?)",
+              "COALESCE((?->'object')->>'id', ?->>'object')",
+              mutated_activity.data,
               mutated_activity.data
             ) and
             fragment("(?->>'type' = 'Like' or ?->>'type' = 'Announce')", a.data, a.data) and
