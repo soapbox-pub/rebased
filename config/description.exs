@@ -3523,5 +3523,18 @@ config :pleroma, :config_description, [
         ]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.WebFinger,
+    type: :group,
+    description: "Webfinger",
+    children: [
+      %{
+        key: :update_nickname_on_user_fetch,
+        type: :boolean,
+        description: "Update nickname according to host-meta, when refetching the user"
+      }
+    ]
   }
 ]

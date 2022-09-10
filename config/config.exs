@@ -893,6 +893,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
 
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
+
 import_config "soapbox.exs"
 
 # Import environment specific config. This must remain at the bottom
