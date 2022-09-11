@@ -7,9 +7,17 @@ defmodule Pleroma.Factory do
 
   require Pleroma.Constants
 
-  alias Pleroma.Keys
   alias Pleroma.Object
   alias Pleroma.User
+
+  @rsa_keys [
+              "test/fixtures/rsa_keys/key_1.pem",
+              "test/fixtures/rsa_keys/key_2.pem",
+              "test/fixtures/rsa_keys/key_3.pem",
+              "test/fixtures/rsa_keys/key_4.pem",
+              "test/fixtures/rsa_keys/key_5.pem"
+            ]
+            |> Enum.map(&File.read!/1)
 
   def participation_factory do
     conversation = insert(:conversation)
@@ -29,7 +37,7 @@ defmodule Pleroma.Factory do
   end
 
   def user_factory(attrs \\ %{}) do
-    {:ok, pem} = Keys.generate_rsa_pem()
+    pem = Enum.random(@rsa_keys)
 
     user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
