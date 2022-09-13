@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Utils.Colors do
   alias Pleroma.Web.Utils.Colors.RGB
 
   # Adapted from:
-  # https://gitlab.com/soapbox-pub/soapbox-fe/-/blob/develop/app/soapbox/utils/colors.ts
+  # https://gitlab.com/soapbox-pub/soapbox/-/blob/develop/app/soapbox/utils/colors.ts
   @intensity_map %{
     50 => 0.95,
     100 => 0.9,
