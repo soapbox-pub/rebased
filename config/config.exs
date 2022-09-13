@@ -775,11 +775,11 @@ config :pleroma, :frontends,
         "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "develop"
     },
-    "soapbox-fe" => %{
-      "name" => "soapbox-fe",
-      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+    "soapbox" => %{
+      "name" => "soapbox",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
       "ref" => "develop",
       "build_dir" => "static"
     },

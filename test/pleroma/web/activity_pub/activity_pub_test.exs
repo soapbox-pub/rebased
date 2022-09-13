@@ -1883,6 +1883,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "Move activity" do
+    @tag :erratic
     test "create" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
