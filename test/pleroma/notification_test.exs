@@ -1131,6 +1131,7 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(local_user))
     end
 
+    @tag :erratic
     test "move activity generates a notification" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
