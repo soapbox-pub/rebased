@@ -1985,7 +1985,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       CommonAPI.follow(other_user, user)
 
-      assert %{"id" => other_user_id, "followed_by" => false} =
+      assert %{"id" => ^other_user_id, "followed_by" => false} =
+               conn
+               |> post("/api/v1/accounts/#{other_user_id}/remove_from_followers")
+               |> json_response_and_validate_schema(200)
+
+      refute User.following?(other_user, user)
+    end
+
+    test "removing remote user from followers", %{conn: conn, user: user} do
+      %{id: other_user_id} = other_user = insert(:user, local: false)
+
+      CommonAPI.follow(other_user, user)
+
+      assert User.following?(other_user, user)
+
+      assert %{"id" => ^other_user_id, "followed_by" => false} =
                conn
                |> post("/api/v1/accounts/#{other_user_id}/remove_from_followers")
                |> json_response_and_validate_schema(200)
