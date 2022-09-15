@@ -50,3 +50,6 @@ config :pleroma, :instance,
   name: "Soapbox",
   description: "Social media owned by you",
   instance_thumbnail: "/instance/thumbnail.png"
+
+# Background migration performance
+config :pleroma, :delete_context_objects, sleep_interval_ms: 3_000
