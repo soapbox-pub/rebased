@@ -1662,7 +1662,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "fetch_follow_information_for_user" do
-    test "syncronizes following/followers counters" do
+    test "synchronizes following/followers counters" do
       user =
         insert(:user,
           local: false,

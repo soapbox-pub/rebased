@@ -311,7 +311,7 @@ defmodule Pleroma.UserTest do
   describe "unfollow/2" do
     setup do: clear_config([:instance, :external_user_synchronization])
 
-    test "unfollow with syncronizes external user" do
+    test "unfollow with synchronizes external user" do
       clear_config([:instance, :external_user_synchronization], true)
 
       followed =
@@ -2265,7 +2265,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 1
     end
 
-    test "syncronizes the counters with the remote instance for the followed when enabled" do
+    test "synchronizes the counters with the remote instance for the followed when enabled" do
       clear_config([:instance, :external_user_synchronization], false)
 
       user = insert(:user)
@@ -2287,7 +2287,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 437
     end
 
-    test "syncronizes the counters with the remote instance for the follower when enabled" do
+    test "synchronizes the counters with the remote instance for the follower when enabled" do
       clear_config([:instance, :external_user_synchronization], false)
 
       user = insert(:user)
