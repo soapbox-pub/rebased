@@ -1,4 +1,4 @@
-image: git.pleroma.social:5050/pleroma/pleroma/ci-base
+image: registry.gitlab.com/soapbox-pub/rebased/ci
 
 variables: &global_variables
   POSTGRES_DB: pleroma_test
@@ -6,43 +6,37 @@ variables: &global_variables
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
   MIX_ENV: test
+  # Needed for Dokku deployment.
+  # https://github.com/dokku/dokku/issues/2514#issuecomment-616775470
+  GIT_DEPTH: 0
 
-cache: &global_cache_policy
+cache: &cache
   key:
     files:
       - mix.lock
   paths:
     - deps
     - _build
+  policy: pull
 
 stages:
-  - build
+  - deps
   - test
-  - benchmark
   - deploy
-  - release
-  - docker
 
-before_script:
-  - echo $MIX_ENV
-  - rm -rf _build/*/lib/pleroma
-  - mix deps.get
-
-after_script:
-  - rm -rf _build/*/lib/pleroma
-
-build:
-  stage: build
-  only:
-    changes: &build_changes_policy
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+deps:
+  stage: deps
   script:
-  - mix compile --force
+    - mix deps.get
+    - mix deps.compile
+  cache:
+    <<: *cache
+    policy: pull-push
+  only:
+    changes:
+      - mix.lock
 
-spec-build:
+openapi:
   stage: test
   only:
     changes:
@@ -51,399 +45,108 @@ spec-build:
       - "lib/pleroma/web/api_spec.ex"
   artifacts:
     paths:
-    - spec.json
+      - spec.json
   script:
-  - mix pleroma.openapi_spec spec.json
+    - mix pleroma.openapi_spec spec.json
 
-benchmark:
-  stage: benchmark
-  when: manual
-  variables:
-    MIX_ENV: benchmark
-  services:
-  - name: postgres:9.6-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  script:
-    - mix ecto.create
-    - mix ecto.migrate
-    - mix pleroma.load_testing
-
-unit-testing:
+test:
   stage: test
   only:
-    changes: *build_changes_policy
-  cache: &testing_cache_policy
-    <<: *global_cache_policy
-    policy: pull
-
-  services:
-  - name: postgres:13-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-  script:
+    changes: &elixir-changes
+      - ".gitlab-ci.yml"
+      - "**/*.ex"
+      - "**/*.exs"
+      - "mix.lock"
+  services: &db-services
+    - name: postgres:13-alpine
+      alias: postgres
+      command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  before_script: &db-setup
     - mix ecto.create
     - mix ecto.migrate
+  script:
     - mix coveralls --preload-modules
 
-unit-testing-erratic:
+test-erratic:
   stage: test
-  retry: 2
   allow_failure: true
   only:
-    changes: *build_changes_policy
-  cache: &testing_cache_policy
-    <<: *global_cache_policy
-    policy: pull
-
-  services:
-  - name: postgres:13-alpine
-    alias: postgres
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    changes: *elixir-changes
+  services: *db-services
+  before_script: *db-setup
   script:
-    - mix ecto.create
-    - mix ecto.migrate
     - mix test --only=erratic
 
-# Removed to fix CI issue. In this early state it wasn't adding much value anyway.
-# TODO Fix and reinstate federated testing
-# federated-testing:
-#   stage: test
-#   cache: *testing_cache_policy
-#   services:
-#   - name: minibikini/postgres-with-rum:12
-#     alias: postgres
-#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-#   script:
-#     - mix deps.get
-#     - mix ecto.create
-#     - mix ecto.migrate
-#     - epmd -daemon
-#     - mix test --trace --only federated
-
-# unit-testing-rum:
-#   stage: test
-#   only:
-#     changes:
-#       - "**/*.ex"
-#       - "**/*.exs"
-#       - "mix.lock"
-#   cache: *testing_cache_policy
-#   services:
-#   - name: minibikini/postgres-with-rum:12
-#     alias: postgres
-#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-#   variables:
-#     <<: *global_variables
-#     RUM_ENABLED: "true"
-#   script:
-#     - mix ecto.create
-#     - mix ecto.migrate
-#     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-#     - mix test --preload-modules
-
 lint:
-  image: &current_elixir elixir:1.12-alpine
   stage: test
   only:
-    changes: *build_changes_policy
-  cache: *testing_cache_policy
-  before_script: &current_bfr_script
-    - apk update
-    - apk add build-base cmake file-dev git openssl
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
+    changes: *elixir-changes
   script:
     - mix format --check-formatted
 
 analysis:
   stage: test
   only:
-    changes: *build_changes_policy
-  cache: *testing_cache_policy
+    changes: *elixir-changes
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
-  image: *current_elixir
   stage: test
   only:
-    changes: *build_changes_policy
-  cache: {}
-  before_script: *current_bfr_script
+    changes: *elixir-changes
   script:
-    - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
-docs-deploy:
-  stage: deploy
-  cache: *testing_cache_policy
-  image: alpine:latest
-  only:
-  - stable@pleroma/pleroma
-  - develop@pleroma/pleroma
-  before_script:
-  - apk add curl
-  script:
-  - curl -X POST -F"token=$DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" https://git.pleroma.social/api/v4/projects/673/trigger/pipeline
-review_app:
-  image: alpine:3.9
-  stage: deploy
-  before_script:
-    - apk update && apk add openssh-client git
-  when: manual
+# Deploy with Dokku
+# https://github.com/dokku/gitlab-ci
+# https://github.com/dokku/ci-docker-image
+review:
+  image: dokku/ci-docker-image
+  stage: test
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: https://$CI_ENVIRONMENT_SLUG.pleroma.online/
-    on_stop: stop_review_app
+    url: https://rebased-$CI_COMMIT_REF_SLUG.dokku.soapbox.pub
   only:
     - branches
   except:
-    - master
     - develop
-  script:
-    - echo "$CI_ENVIRONMENT_SLUG"
-    - mkdir -p ~/.ssh
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
-    - (ssh -t dokku@pleroma.online -- apps:create "$CI_ENVIRONMENT_SLUG") || true
-    - (ssh -t dokku@pleroma.online -- git:set "$CI_ENVIRONMENT_SLUG" keep-git-dir true) || true
-    - ssh -t dokku@pleroma.online -- config:set "$CI_ENVIRONMENT_SLUG" APP_NAME="$CI_ENVIRONMENT_SLUG" APP_HOST="$CI_ENVIRONMENT_SLUG.pleroma.online" MIX_ENV=dokku
-    - (ssh -t dokku@pleroma.online -- postgres:create $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db) || true
-    - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
-    - (ssh -t dokku@pleroma.online -- certs:add "$CI_ENVIRONMENT_SLUG" /home/dokku/server.crt /home/dokku/server.key) || true
-    - git push -f dokku@pleroma.online:$CI_ENVIRONMENT_SLUG $CI_COMMIT_SHA:refs/heads/master
+  variables:
+    GIT_REMOTE_URL: ssh://dokku@$DOKKU_HOST/rebased-$CI_COMMIT_REF_SLUG
+    GIT_PUSH_FLAGS: --force
+  script: dokku-deploy
+  allow_failure: true
 
-spec-deploy:
+release:
   stage: deploy
+  variables:
+    MIX_ENV: prod
+    PLEROMA_BUILD_BRANCH: $CI_COMMIT_REF_NAME
+  script:
+    - mix deps.get
+    - mkdir release
+    - mix release --path release
   artifacts:
-    paths:
-    - spec.json
-  only:
-    - develop@pleroma/pleroma
-  image: alpine:latest
-  before_script:
-    - apk add curl
-  script:
-    - curl -X POST -F"token=$API_DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" -F"variables[JOB_REF]=$CI_JOB_ID" https://git.pleroma.social/api/v4/projects/1130/trigger/pipeline
-
-
-stop_review_app:
-  image: alpine:3.9
-  stage: deploy
-  before_script:
-    - apk update && apk add openssh-client git
-  when: manual
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    action: stop
-  script:
-    - echo "$CI_ENVIRONMENT_SLUG"
-    - mkdir -p ~/.ssh
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
-    - ssh -t dokku@pleroma.online -- --force apps:destroy "$CI_ENVIRONMENT_SLUG"
-    - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db
-
-amd64:
-  stage: release
-  image: elixir:1.10.4
-  only: &release-only
-  - stable@pleroma/pleroma
-  - develop@pleroma/pleroma
-  - /^maint/.*$/@pleroma/pleroma
-  - /^release/.*$/@pleroma/pleroma
-  artifacts: &release-artifacts
-    name: "pleroma-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
+    name: "rebased-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
     paths:
       - release/*
-    # Ideally it would be never for master branch and with the next commit for develop,
-    # but Gitlab does not support neither `only` for artifacts
-    # nor setting it to never from .gitlab-ci.yml
-    # nor expiring with the next commit
-    expire_in: 42 yrs
-
-  cache: &release-cache
-    key: $CI_COMMIT_REF_NAME-$CI_JOB_NAME
-    paths:
-          - deps
-  variables: &release-variables
-    MIX_ENV: prod
-  before_script: &before-release
-  - apt-get update && apt-get install -y cmake libmagic-dev
-  - echo "import Mix.Config" > config/prod.secret.exs
-  - mix local.hex --force
-  - mix local.rebar --force
-  script: &release
-    - mix deps.get --only prod
-    - mkdir release
-    - export PLEROMA_BUILD_BRANCH=$CI_COMMIT_REF_NAME
-    - mix release --path release
-
-
-amd64-musl:
-  stage: release
-  artifacts: *release-artifacts
-  only: *release-only
-  image: elixir:1.10.4-alpine
-  cache: *release-cache
-  variables: *release-variables
-  before_script: &before-release-musl
-  - apk add git build-base cmake file-dev openssl
-  - echo "import Mix.Config" > config/prod.secret.exs
-  - mix local.hex --force
-  - mix local.rebar --force
-  script: *release
-
-arm:
-  stage: release
-  artifacts: *release-artifacts
-  only: *release-only
-  tags:
-    - arm32-specified
-  image: arm32v7/elixir:1.10.4
-  cache: *release-cache
-  variables: *release-variables
-  before_script: *before-release
-  script: *release
-
-arm-musl:
-  stage: release
-  artifacts: *release-artifacts
-  only: *release-only
-  tags:
-    - arm32-specified
-  image: arm32v7/elixir:1.10.4-alpine
-  cache: *release-cache
-  variables: *release-variables
-  before_script: *before-release-musl
-  script: *release
-
-arm64:
-  stage: release
-  artifacts: *release-artifacts
-  only: *release-only
-  tags:
-    - arm
-  image: arm64v8/elixir:1.10.4
-  cache: *release-cache
-  variables: *release-variables
-  before_script: *before-release
-  script: *release
-
-arm64-musl:
-  stage: release
-  artifacts: *release-artifacts
-  only: *release-only
-  tags:
-    - arm
-  image: arm64v8/elixir:1.10.4-alpine
-  cache: *release-cache
-  variables: *release-variables
-  before_script: *before-release-musl
-  script: *release
+  cache: {}
+  only:
+    refs:
+      - develop
+    changes: *elixir-changes
 
 docker:
-  stage: docker
-  image: docker:latest
+  stage: deploy
+  image: docker:20.10.17
   cache: {}
-  dependencies: []
-  variables: &docker-variables
-    DOCKER_DRIVER: overlay2
-    DOCKER_HOST: unix:///var/run/docker.sock
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-    IMAGE_TAG_SLUG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
-    IMAGE_TAG_LATEST_STABLE: $CI_REGISTRY_IMAGE:latest-stable
-    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.6.3/buildx-v0.6.3.linux-amd64
-    DOCKER_BUILDX_HASH: 980e6b9655f971991fbbb5fd6cd19f1672386195
-  before_script: &before-docker
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $IMAGE_TAG_SLUG || true
-    - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
-    - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
-  allow_failure: true
+  services:
+    - docker:20.10.17-dind
+  # https://medium.com/devops-with-valentine/how-to-build-a-docker-image-and-push-it-to-the-gitlab-container-registry-from-a-gitlab-ci-pipeline-acac0d1f26df
   script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
-  tags:
-    - dind
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+    - docker build -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
   only:
-    - develop@pleroma/pleroma
-
-docker-stable:
-  stage: docker
-  image: docker:latest
-  cache: {}
-  dependencies: []
-  variables: *docker-variables
-  before_script: *before-docker
-  allow_failure: true
-  script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
-  tags:
-    - dind
-  only:
-    - stable@pleroma/pleroma
-
-docker-release:
-  stage: docker
-  image: docker:latest
-  cache: {}
-  dependencies: []
-  variables: *docker-variables
-  before_script: *before-docker
-  allow_failure: true
-  script:
-  script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
-  tags:
-    - dind
-  only:
-    - /^release/.*$/@pleroma/pleroma
-
-docker-adhoc:
-  stage: docker
-  image: docker:latest
-  cache: {}
-  dependencies: []
-  variables: *docker-variables
-  before_script: *before-docker
-  allow_failure: true
-  script:
-  script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
-  tags:
-    - dind
-  only:
-    - /^build-docker/.*$/@pleroma/pleroma
+    refs:
+      - develop

@@ -1,6 +1,8 @@
 FROM ubuntu:22.04 as build
 
-ENV MIX_ENV=prod
+ARG MIX_ENV=prod \
+    OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft slack github keycloak:ueberauth_keycloak_strategy"
+
 WORKDIR /src
 
 RUN apt-get update &&\
@@ -24,8 +26,8 @@ ARG DEBIAN_FRONTEND="noninteractive"
 ENV TZ="Etc/UTC"
 
 LABEL maintainer="hello@soapbox.pub" \
-    org.opencontainers.image.title="soapbox-be" \
-    org.opencontainers.image.description="Soapbox BE for Docker" \
+    org.opencontainers.image.title="rebased" \
+    org.opencontainers.image.description="Rebased" \
     org.opencontainers.image.authors="hello@soapbox.pub" \
     org.opencontainers.image.vendor="soapbox.pub" \
     org.opencontainers.image.documentation="https://gitlab.com/soapbox-pub/soapbox-be" \
@@ -52,7 +54,5 @@ COPY --from=build --chown=pleroma:0 /src/release ${HOME}
 
 COPY ./config/docker.exs /etc/pleroma/config.exs
 COPY ./docker-entrypoint.sh ${HOME}
-
-EXPOSE 4000
 
 ENTRYPOINT ["/opt/pleroma/docker-entrypoint.sh"]

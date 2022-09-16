@@ -12,13 +12,16 @@ defmodule Pleroma.Application do
   require Logger
 
   @name Mix.Project.config()[:name]
+  @compat_name Mix.Project.config()[:compat_name]
   @version Mix.Project.config()[:version]
   @repository Mix.Project.config()[:source_url]
   @mix_env Mix.env()
 
   def name, do: @name
+  def compat_name, do: @compat_name
   def version, do: @version
   def named_version, do: @name <> " " <> @version
+  def compat_version, do: @compat_name <> " " <> @version
   def repository, do: @repository
 
   def user_agent do
@@ -26,7 +29,7 @@ defmodule Pleroma.Application do
       case Config.get([:http, :user_agent], :default) do
         :default ->
           info = "#{Pleroma.Web.Endpoint.url()} <#{Config.get([:instance, :email], "")}>"
-          named_version() <> "; " <> info
+          compat_version() <> "; " <> info
 
         custom ->
           custom
@@ -113,7 +116,17 @@ defmodule Pleroma.Application do
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
+    # If we have a lot of caches, default max_restarts can cause test
+    # resets to fail.
+    # Go for the default 3 unless we're in test
+    max_restarts =
+      if @mix_env == :test do
+        100
+      else
+        3
+      end
+
+    opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
     result = Supervisor.start_link(children, opts)
 
     set_postgres_server_version()
@@ -190,6 +203,7 @@ defmodule Pleroma.Application do
       build_cachex("object", default_ttl: 25_000, ttl_interval: 1000, limit: 2500),
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
+      build_cachex("scrubber_management", limit: 2500),
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
@@ -239,7 +253,8 @@ defmodule Pleroma.Application do
 
   defp background_migrators do
     [
-      Pleroma.Migrators.HashtagsTableMigrator
+      Pleroma.Migrators.HashtagsTableMigrator,
+      Pleroma.Migrators.ContextObjectsDeletionMigrator
     ]
   end
 

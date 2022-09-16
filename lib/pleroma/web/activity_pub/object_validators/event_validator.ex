@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     data_cng
     |> validate_inclusion(:type, ["Event"])
     |> validate_inclusion(:joinMode, ~w[free restricted invite])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

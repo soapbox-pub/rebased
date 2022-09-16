@@ -24,7 +24,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
     %{
       version: "2.0",
       software: %{
-        name: Pleroma.Application.name() |> String.downcase(),
+        name: Pleroma.Application.compat_name() |> String.downcase(),
         version: Pleroma.Application.version()
       },
       protocols: Publisher.gather_nodeinfo_protocol_names(),

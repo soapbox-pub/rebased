@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
@@ -54,7 +54,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
         stats: %{mau: Pleroma.User.active_user_count()},
-        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
+        oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies()
       },
       configuration: configuration(),
       soapbox: %{
@@ -88,6 +89,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
       "quote_posting",
+      "editing",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -118,7 +120,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
-      end
+      end,
+      "pleroma:get:main/ostatus"
     ]
     |> Enum.filter(& &1)
   end

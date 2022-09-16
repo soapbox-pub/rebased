@@ -345,7 +345,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   end
 
   describe "notice compatibility routes" do
-    test "Soapbox FE", %{conn: conn} do
+    test "Soapbox", %{conn: conn} do
       user = insert(:user)
       note_activity = insert(:note_activity, user: user)
 

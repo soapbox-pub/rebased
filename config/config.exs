@@ -189,7 +189,7 @@ config :pleroma, :instance,
   description: "Pleroma: An efficient and flexible fediverse server",
   short_description: "",
   background_image: "/images/city.jpg",
-  instance_thumbnail: "/instance/thumbnail.jpeg",
+  instance_thumbnail: "/instance/thumbnail.png",
   limit: 5_000,
   description_limit: 5_000,
   remote_limit: 100_000,
@@ -578,6 +578,7 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     poll_notifications: 10,
+    notifications: 20,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,
@@ -629,7 +630,14 @@ ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
     strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
     strategy_module = String.to_atom(strategy_module_name)
-    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+
+    params =
+      case strategy do
+        "keycloak" -> [uid_field: :email, default_scope: "openid profile"]
+        _ -> [callback_params: ["state"]]
+      end
+
+    {String.to_atom(strategy), {strategy_module, params}}
   end
 
 config :ueberauth,
@@ -683,6 +691,8 @@ config :pleroma, :database, rum_enabled: false
 config :pleroma, :features, improved_hashtag_timeline: :auto
 
 config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
+
+config :pleroma, :delete_context_objects, fault_rate_allowance: 0.01
 
 config :pleroma, :env, Mix.env()
 
@@ -752,7 +762,7 @@ config :pleroma, :frontends,
       "name" => "fedi-fe",
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
-        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build_release",
       "ref" => "master",
       "custom-http-headers" => [
         {"service-worker-allowed", "/"}
@@ -765,13 +775,21 @@ config :pleroma, :frontends,
         "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "develop"
     },
-    "soapbox-fe" => %{
-      "name" => "soapbox-fe",
-      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+    "soapbox" => %{
+      "name" => "soapbox",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
       "ref" => "develop",
       "build_dir" => "static"
+    },
+    "glitch-lily" => %{
+      "name" => "glitch-lily",
+      "git" => "https://lily-is.land/infra/glitch-lily",
+      "build_url" =>
+        "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "servant",
+      "build_dir" => "public"
     }
   }
 
@@ -874,6 +892,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
+
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
 
 config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
 

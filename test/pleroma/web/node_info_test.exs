@@ -64,6 +64,12 @@ defmodule Pleroma.Web.NodeInfoTest do
     assert Pleroma.Application.repository() == result["software"]["repository"]
   end
 
+  test "returns Pleroma as software name", %{conn: conn} do
+    conn = get(conn, "/nodeinfo/2.1.json")
+    assert result = json_response(conn, 200)
+    assert result["software"]["name"] == "pleroma"
+  end
+
   test "returns fieldsLimits field", %{conn: conn} do
     clear_config([:instance, :max_account_fields], 10)
     clear_config([:instance, :max_remote_account_fields], 15)

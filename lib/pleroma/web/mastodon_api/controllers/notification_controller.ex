@@ -52,6 +52,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     pleroma:emoji_reaction
     poll
     status
+    update
     pleroma:participation_request
     pleroma:participation_accepted
     pleroma:event_reminder

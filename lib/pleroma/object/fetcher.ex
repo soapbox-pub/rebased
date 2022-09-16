@@ -26,7 +26,41 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   defp maybe_reinject_internal_fields(%{data: %{} = old_data}, new_data) do
+    has_history? = fn
+      %{"formerRepresentations" => %{"orderedItems" => list}} when is_list(list) -> true
+      _ -> false
+    end
+
     internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
+
+    remote_history_exists? = has_history?.(new_data)
+
+    # If the remote history exists, we treat that as the only source of truth.
+    new_data =
+      if has_history?.(old_data) and not remote_history_exists? do
+        Map.put(new_data, "formerRepresentations", old_data["formerRepresentations"])
+      else
+        new_data
+      end
+
+    # If the remote does not have history information, we need to manage it ourselves
+    new_data =
+      if not remote_history_exists? do
+        changed? =
+          Pleroma.Constants.status_updatable_fields()
+          |> Enum.any?(fn field -> Map.get(old_data, field) != Map.get(new_data, field) end)
+
+        %{updated_object: updated_object} =
+          new_data
+          |> Object.Updater.maybe_update_history(old_data,
+            updated: changed?,
+            use_history_in_new_object?: false
+          )
+
+        updated_object
+      else
+        new_data
+      end
 
     Map.merge(new_data, internal_fields)
   end
