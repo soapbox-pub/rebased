@@ -237,7 +237,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     end
   end
 
-  test "POST /api/v1/pleroma/events/:id/participation_requests/:participant_id/accept" do
+  test "POST /api/v1/pleroma/events/:id/participation_requests/:participant_id/authorize" do
     [user, %{ap_id: ap_id} = other_user] = insert_pair(:user)
     %{user: user, conn: conn} = oauth_access(["write"], user: user)
 

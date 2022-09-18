@@ -603,7 +603,11 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "removes ap_id from participations" do
       user = insert(:user)
       user2 = insert(:user)
-      object = insert(:event, data: %{"participations" => [user.ap_id, user2.ap_id], "participation_count" => 2})
+
+      object =
+        insert(:event,
+          data: %{"participations" => [user.ap_id, user2.ap_id], "participation_count" => 2}
+        )
 
       assert {:ok, updated_object} =
                Utils.remove_participation_from_object(

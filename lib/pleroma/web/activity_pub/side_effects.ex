@@ -465,6 +465,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          {:o, join_activity} <- Utils.update_join_state(join_activity, "reject") do
       Utils.remove_participation_from_object(join_activity, joined_event)
     end
+  end
 
   defp handle_update_user(
          %{data: %{"type" => "Update", "object" => updated_object}} = object,

@@ -23,7 +23,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.LocationResult do
       postal_code: %Schema{type: :string, description: "The address's postal code"},
       region: %Schema{type: :string, description: "The address's region"},
       street: %Schema{type: :string, description: "The address's street name (with number)"},
-      timezone: %Schema{type: :string, description: "The (estimated) timezone of the location"},
+      timezone: %Schema{
+        type: :string,
+        description: "The (estimated) timezone of the location",
+        nullable: true
+      },
       type: %Schema{type: :string, description: "The address's type"},
       url: %Schema{type: :string, description: "The address's URL"},
       geom: %Schema{
