@@ -363,7 +363,9 @@ defmodule Pleroma.Web.CommonAPI do
   def accept_join_request(%User{} = user, %User{ap_id: participant_ap_id} = participant, event_id) do
     with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
          {:ok, accept_data, _} <- Builder.accept(user, join_activity),
-         {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true) do
+         {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true),
+         event <- Object.get_by_ap_id(event_id),
+         {:ok, _} <- Utils.update_participation_request_count_in_object(event) do
       {:ok, participant}
     end
   end
@@ -371,7 +373,9 @@ defmodule Pleroma.Web.CommonAPI do
   def reject_join_request(%User{} = user, %User{ap_id: participant_ap_id} = participant, event_id) do
     with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
          {:ok, reject_data, _} <- Builder.reject(user, join_activity),
-         {:ok, _activity, _} <- Pipeline.common_pipeline(reject_data, local: true) do
+         {:ok, _activity, _} <- Pipeline.common_pipeline(reject_data, local: true),
+         event <- Object.get_by_ap_id(event_id),
+         {:ok, _} <- Utils.update_participation_request_count_in_object(event) do
       {:ok, participant}
     end
   end

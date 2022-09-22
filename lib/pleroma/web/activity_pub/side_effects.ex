@@ -403,6 +403,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
     end
 
+    if Object.local?(joined_event) and joined_event.data["joinMode"] != "free" do
+      Utils.update_participation_request_count_in_object(joined_event)
+    end
+
     Notification.create_notifications(object)
 
     {:ok, object, meta}
@@ -412,6 +416,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(%{actor: actor_id, data: %{"type" => "Leave", "object" => event_id}} = object, meta) do
     with undone_object <- Utils.get_existing_join(actor_id, event_id),
          :ok <- handle_undoing(undone_object) do
+      event = Object.get_by_ap_id(event_id)
+
+      if Object.local?(event) and event.data["joinMode"] != "free" do
+        Utils.update_participation_request_count_in_object(event)
+      end
+
       {:ok, object, meta}
     end
   end

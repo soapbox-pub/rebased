@@ -771,7 +771,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       join_mode: data["joinMode"],
       participants_count: data["participation_count"],
       location: build_event_location(data["location"]),
-      join_state: build_event_join_state(for_user, data["id"])
+      join_state: build_event_join_state(for_user, data["id"]),
+      participation_request_count: maybe_put_participation_request_count(data, for_user)
     }
   end
 
@@ -789,13 +790,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp build_event_location(_), do: nil
 
-  defp maybe_put_address(location, %{"type" => "PostalAddress"}) do
+  defp maybe_put_address(location, %{"type" => "PostalAddress"} = address) do
     Map.merge(location, %{
-      street: location["streetAddress"],
-      postal_code: location["postalCode"],
-      locality: location["addressLocality"],
-      region: location["addressRegion"],
-      country: location["addressCountry"]
+      street: address["streetAddress"],
+      postal_code: address["postalCode"],
+      locality: address["addressLocality"],
+      region: address["addressRegion"],
+      country: address["addressCountry"]
     })
   end
 
@@ -810,6 +811,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   defp build_event_join_state(_, _), do: nil
+
+  defp maybe_put_participation_request_count(%{"actor" => actor} = data, %{ap_id: actor}) do
+    data["participation_request_count"]
+  end
+
+  defp maybe_put_participation_request_count(_, _), do: nil
 
   defp present?(nil), do: false
   defp present?(false), do: false

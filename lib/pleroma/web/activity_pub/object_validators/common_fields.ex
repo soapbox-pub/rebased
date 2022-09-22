@@ -79,6 +79,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
 
       field(:participation_count, :integer, default: 0)
       field(:participations, {:array, ObjectValidators.ObjectID}, default: [])
+      field(:participation_request_count, :integer, default: 0)
     end
   end
 end

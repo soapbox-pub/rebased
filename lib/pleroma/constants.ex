@@ -24,7 +24,8 @@ defmodule Pleroma.Constants do
       "rules",
       "content_type",
       "participations",
-      "participation_count"
+      "participation_count",
+      "participation_request_count"
     ]
   )
 

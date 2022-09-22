@@ -428,6 +428,26 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     update_element_in_object("participation", participations, object)
   end
 
+  def update_participation_request_count_in_object(object) do
+    params =
+      %{
+        type: "Join",
+        object: object.data["id"],
+        state: "pending"
+      }
+
+    count =
+      []
+      |> ActivityPub.fetch_activities_query(params)
+      |> Repo.aggregate(:count)
+
+    data = Map.put(object.data, "participation_request_count", count)
+
+    object
+    |> Changeset.change(data: data)
+    |> Object.update_and_set_cache()
+  end
+
   defp fetch_participations(object) do
     if is_list(object.data["participations"]) do
       object.data["participations"]
