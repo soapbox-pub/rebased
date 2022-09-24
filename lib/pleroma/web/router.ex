@@ -233,8 +233,6 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through([:admin_api, :require_admin])
 
-    put("/users/disable_mfa", AdminAPIController, :disable_mfa)
-
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
 
@@ -265,15 +263,9 @@ defmodule Pleroma.Web.Router do
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
 
-    patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
-    get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
-
     get("/instance_document/:name", InstanceDocumentController, :show)
     patch("/instance_document/:name", InstanceDocumentController, :update)
     delete("/instance_document/:name", InstanceDocumentController, :delete)
-
-    patch("/users/confirm_email", AdminAPIController, :confirm_email)
-    patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
 
     get("/config", ConfigController, :show)
     post("/config", ConfigController, :update)
@@ -319,7 +311,12 @@ defmodule Pleroma.Web.Router do
     pipe_through(:require_privileged_role_users_manage_credentials)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
+    get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
     patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
+    put("/users/disable_mfa", AdminAPIController, :disable_mfa)
+    patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
+    patch("/users/confirm_email", AdminAPIController, :confirm_email)
+    patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)

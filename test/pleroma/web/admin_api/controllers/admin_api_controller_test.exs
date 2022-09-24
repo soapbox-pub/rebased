@@ -352,6 +352,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PUT disable_mfa" do
     test "returns 200 and disable 2fa", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
+
       user =
         insert(:user,
           multi_factor_authentication_settings: %MFA.Settings{
@@ -373,12 +375,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "returns 404 if user not found", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
+
       response =
         conn
         |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: "nickname"})
         |> json_response(404)
 
       assert response == %{"error" => "Not found"}
+    end
+
+    test "it requires privileged role :users_manage_credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: "nickname"})
+
+      assert json_response(response, :forbidden)
     end
   end
 
@@ -785,6 +799,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /users/:nickname/credentials" do
     test "gets the user credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
       user = insert(:user)
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials")
 
@@ -793,6 +808,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "returns 403 if requested by a non-admin" do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
       user = insert(:user)
 
       conn =
@@ -801,6 +817,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/users/#{user.nickname}/credentials")
 
       assert json_response(conn, :forbidden)
+    end
+
+    test "it requires privileged role :users_manage_credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/users/nickname/credentials")
+
+      assert json_response(response, :forbidden)
     end
   end
 
@@ -896,6 +922,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PATCH /users/:nickname/force_password_reset" do
     test "sets password_reset_pending to true", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
       user = insert(:user)
       assert user.password_reset_pending == false
 
@@ -908,10 +935,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert User.get_by_id(user.id).password_reset_pending == true
     end
+
+    test "it requires privileged role :users_manage_credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> patch("/api/pleroma/admin/users/force_password_reset", %{nickname: "nickname"})
+
+      assert json_response(response, :forbidden)
+    end
   end
 
   describe "PATCH /confirm_email" do
     test "it confirms emails of two users", %{conn: conn, admin: admin} do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
       [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
       refute first_user.is_confirmed
@@ -938,10 +976,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert ModerationLog.get_log_entry_message(log_entry) ==
                "@#{admin.nickname} confirmed email for users: @#{first_user.nickname}, @#{second_user.nickname}"
     end
+
+    test "it requires privileged role :users_manage_credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> patch("/api/pleroma/admin/users/confirm_email", %{nicknames: ["nickname"]})
+
+      assert json_response(response, :forbidden)
+    end
   end
 
   describe "PATCH /resend_confirmation_email" do
     test "it resend emails for two users", %{conn: conn, admin: admin} do
+      clear_config([:instance, :admin_privileges], [:users_manage_credentials])
       [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
       ret_conn =
@@ -966,6 +1015,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       # https://git.pleroma.social/pleroma/pleroma/-/issues/2101
       |> Swoosh.Email.put_private(:hackney_options, ssl_options: [versions: [:"tlsv1.2"]])
       |> assert_email_sent()
+    end
+
+    test "it requires privileged role :users_manage_credentials", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      response =
+        conn
+        |> patch("/api/pleroma/admin/users/resend_confirmation_email", %{nicknames: ["nickname"]})
+
+      assert json_response(response, :forbidden)
     end
   end
 
