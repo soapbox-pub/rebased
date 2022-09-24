@@ -134,7 +134,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
       "pleroma:participation_request" ->
-        put_participation_request(response, activity)
+        create_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
+
+        response
+        |> put_status(create_activity, reading_user, status_render_opts)
+        |> put_participation_request(activity)
 
       type when type in ["follow", "follow_request"] ->
         response
