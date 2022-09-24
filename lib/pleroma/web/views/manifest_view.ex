@@ -22,7 +22,48 @@ defmodule Pleroma.Web.ManifestView do
       ],
       serviceworker: %{
         src: "/sw.js"
-      }
+      },
+      share_target: %{
+        action: "share",
+        method: "GET",
+        params: %{
+          title: "title",
+          text: "text",
+          url: "url"
+        }
+      },
+      shortcuts: [
+        %{
+          name: "Search",
+          url: "/search",
+          icons: [
+            %{
+              src: "/images/shortcuts/search.png",
+              sizes: "192x192"
+            }
+          ]
+        },
+        %{
+          name: "Notifications",
+          url: "/notifications",
+          icons: [
+            %{
+              src: "/images/shortcuts/notifications.png",
+              sizes: "192x192"
+            }
+          ]
+        },
+        %{
+          name: "Chats",
+          url: "/chats",
+          icons: [
+            %{
+              src: "/images/shortcuts/chats.png",
+              sizes: "192x192"
+            }
+          ]
+        }
+      ]
     }
   end
 end
