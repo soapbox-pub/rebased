@@ -1246,6 +1246,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_filtered(query, _), do: query
 
+  defp restrict_object(query, %{object: object}) do
+    from(activity in query, where: fragment("?->>'object' = ?", activity.data, ^object))
+  end
+
+  defp restrict_object(query, _), do: query
+
   defp restrict_quote_url(query, %{quote_url: quote_url}) do
     from([_activity, object] in query,
       where: fragment("(?)->'quoteUrl' = ?", object.data, ^quote_url)
@@ -1417,6 +1423,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
+      |> restrict_object(opts)
       |> restrict_quote_url(opts)
       |> Activity.restrict_deactivated_users()
       |> exclude_poll_votes(opts)

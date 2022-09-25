@@ -129,10 +129,12 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     case activity do
       %Activity{actor: ^user_ap_id, data: %{"object" => ap_id}} ->
         params =
-          params
-          |> Map.put(:type, "Join")
-          |> Map.put(:object, ap_id)
-          |> Map.put(:state, "pending")
+          Map.merge(params, %{
+            type: "Join",
+            object: ap_id,
+            state: "pending",
+            skip_preload: true
+          })
 
         activities =
           []
