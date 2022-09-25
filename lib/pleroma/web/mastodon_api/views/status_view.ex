@@ -555,7 +555,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: activity.id,
       text: get_source_text(Map.get(object.data, "source", "")),
       spoiler_text: Map.get(object.data, "summary", ""),
-      content_type: get_source_content_type(object.data["source"])
+      content_type: get_source_content_type(object.data["source"]),
+      location: build_source_location(object.data)
     }
   end
 
@@ -882,4 +883,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_source_content_type(_source) do
     Utils.get_content_type(nil)
   end
+
+  def build_source_location(%{"location_id" => location_id}) do
+    location = Geospatial.Service.service().get_by_id(location_id) |> List.first()
+
+    if location do
+      Pleroma.Web.PleromaAPI.SearchView.render("show_location.json", %{location: location})
+    else
+      nil
+    end
+  end
+
+  def build_source_location(_), do: nil
 end

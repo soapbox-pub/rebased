@@ -429,12 +429,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def update_participation_request_count_in_object(object) do
-    params =
-      %{
-        type: "Join",
-        object: object.data["id"],
-        state: "pending"
-      }
+    params = %{
+      type: "Join",
+      object: object.data["id"],
+      state: "pending"
+    }
 
     count =
       []

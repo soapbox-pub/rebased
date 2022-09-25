@@ -42,7 +42,9 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             changes: %{},
             location: nil,
             start_time: nil,
-            end_time: nil
+            end_time: nil,
+            location_id: nil,
+            location_provider: nil
 
   def new(user, params) do
     %__MODULE__{user: user}
@@ -130,6 +132,8 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       "joinMode" => draft.params[:join_mode] || "free",
       "emoji" => emoji,
       "location" => draft.location,
+      "location_id" => draft.location_id,
+      "location_provider" => draft.location_provider,
       "startTime" => draft.start_time,
       "endTime" => draft.end_time
     }
@@ -391,7 +395,12 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         |> Map.put("latitude", latitude)
       end
 
-    %__MODULE__{draft | location: location}
+    %__MODULE__{
+      draft
+      | location: location,
+        location_id: address.origin_id,
+        location_provider: address.origin_provider
+    }
   end
 
   defp event_location(draft, _), do: draft
