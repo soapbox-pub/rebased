@@ -135,7 +135,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       "location_id" => draft.location_id,
       "location_provider" => draft.location_provider,
       "startTime" => draft.start_time,
-      "endTime" => draft.end_time
+      "endTime" => draft.end_time,
+      "source" => %{
+        "content" => draft.status,
+        "mediaType" => Utils.get_content_type(draft.params[:content_type])
+      },
+      "generator" => draft.params[:generator],
+      "content_type" => draft.params[:content_type],
     }
 
     %__MODULE__{draft | object: object}

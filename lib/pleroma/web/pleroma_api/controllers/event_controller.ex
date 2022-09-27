@@ -48,6 +48,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     %{scopes: ["write"]}
     when action in [
            :create,
+           :update,
            :authorize_participation_request,
            :reject_participation_request,
            :join,
@@ -66,6 +67,8 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     %{scopes: ["read:statuses"]}
     when action in [:export_ics]
   )
+
+  plug(Pleroma.Web.Plugs.SetApplicationPlug, [] when action in [:create, :update])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEventOperation
 
@@ -93,6 +96,32 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{error: message})
+    end
+  end
+
+  @doc "PUT /api/v1/statuses/:id"
+  def update(%{assigns: %{user: user}, body_params: body_params} = conn, %{id: id} = params) do
+    with {_, %Activity{}} = {_, activity} <- {:activity, Activity.get_by_id_with_object(id)},
+         {_, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
+         {_, true} <- {:is_create, activity.data["type"] == "Create"},
+         actor <- Activity.user_actor(activity),
+         {_, true} <- {:own_status, actor.id == user.id},
+         changes <- body_params |> Map.put(:application, conn.assigns.application),
+         {_, {:ok, _update_activity}} <-
+           {:pipeline, CommonAPI.update_event(user, activity, changes)},
+         {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
+      conn
+      |> put_view(StatusView)
+      |> try_render("show.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
+      )
+    else
+      {:own_status, _} -> {:error, :forbidden}
+      {:pipeline, e} -> {:error, :internal_server_error}
+      _ -> {:error, :not_found}
     end
   end
 

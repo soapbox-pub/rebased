@@ -34,6 +34,23 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
     }
   end
 
+  def update_operation do
+    %Operation{
+      tags: ["Event actions"],
+      summary: "Update event",
+      description: "Change the content of an event",
+      operationId: "PleromaAPI.EventController.update",
+      security: [%{"oAuth" => ["write"]}],
+      parameters: [id_param()],
+      requestBody: request_body("Parameters", update_request(), required: true),
+      responses: %{
+        200 => event_response(),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
   def participations_operation do
     %Operation{
       tags: ["Event actions"],
@@ -213,6 +230,50 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
         "status" => "No information for now.",
         "start_time" => "2022-02-21T22:00:00.000Z",
         "end_time" => "2022-02-21T23:00:00.000Z"
+      }
+    }
+  end
+
+  defp update_request do
+    %Schema{
+      title: "EventUpdateRequest",
+      type: :object,
+      properties: %{
+        name: %Schema{
+          type: :string,
+          description: "Name of the event."
+        },
+        status: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Text description of the event."
+        },
+        banner_id: %Schema{
+          nullable: true,
+          type: :string,
+          description: "Attachment id to be attached as banner."
+        },
+        start_time: %Schema{
+          type: :string,
+          format: :"date-time",
+          description: "Start time."
+        },
+        end_time: %Schema{
+          type: :string,
+          format: :"date-time",
+          description: "End time."
+        },
+        location_id: %Schema{
+          type: :string,
+          description: "Location ID from geospatial provider",
+          nullable: true
+        }
+      },
+      example: %{
+        "name" => "Updated event",
+        "status" => "We had to reschedule the event.",
+        "start_time" => "2022-02-22T22:00:00.000Z",
+        "end_time" => "2022-02-22T23:00:00.000Z"
       }
     }
   end
