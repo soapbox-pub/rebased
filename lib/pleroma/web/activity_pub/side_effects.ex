@@ -447,9 +447,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   defp handle_accepted(
          %Activity{data: %{"type" => "Join", "object" => event_id}} = join_activity,
-         _actor
+         actor
        ) do
-    with joined_event <- Object.get_by_ap_id(event_id),
+    with %Object{data: %{"actor" => ^actor}} = joined_event <- Object.get_by_ap_id(event_id),
          {:ok, join_activity} <- Utils.update_join_state(join_activity, "accept") do
       Utils.add_participation_to_object(join_activity, joined_event)
     end
@@ -469,9 +469,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   defp handle_rejected(
          %Activity{data: %{"type" => "Join", "object" => event_id}} = join_activity,
-         _actor
+         actor
        ) do
-    with joined_event <- Object.get_by_ap_id(event_id),
+    with %Object{data: %{"actor" => ^actor}} = joined_event <- Object.get_by_ap_id(event_id),
          {:o, join_activity} <- Utils.update_join_state(join_activity, "reject") do
       Utils.remove_participation_from_object(join_activity, joined_event)
     end
