@@ -65,6 +65,14 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
+    test "excludes deactivated users from results" do
+      user = insert(:user, %{nickname: "john t1000"})
+      insert(:user, %{is_active: false, nickname: "john t800"})
+
+      [found_user] = User.search("john")
+      assert found_user.id == user.id
+    end
+
     # Note: as in Mastodon, `is_discoverable` doesn't anyhow relate to user searchability
     test "includes non-discoverable users in results" do
       insert(:user, %{nickname: "john 3000", is_discoverable: false})
