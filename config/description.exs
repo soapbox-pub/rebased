@@ -1015,6 +1015,13 @@ config :pleroma, :config_description, [
         description:
           "Minimum required age (in days) for users to create account. Only used if birthday is required.",
         suggestions: [6570]
+      },
+      %{
+        key: :migration_cooldown_period,
+        type: :integer,
+        description:
+          "Number of days for which users won't be able to migrate account again after successful migration.",
+        suggestions: [30]
       }
     ]
   },

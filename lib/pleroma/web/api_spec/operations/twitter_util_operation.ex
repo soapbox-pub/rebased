@@ -229,7 +229,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
           }),
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError)
+        404 => Operation.response("Error", "application/json", ApiError),
+        429 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
