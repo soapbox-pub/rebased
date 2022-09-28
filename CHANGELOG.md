@@ -11,8 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MastoFE
 
 ### Changed
+- **Breaking:** Elixir >=1.10 is now required (was >= 1.9)
 - Allow users to remove their emails if instance does not need email to register
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
+- **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
 - Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
 
 ### Added

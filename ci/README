@@ -1,0 +1,12 @@
+## Dependencies
+
+Assuming an AMD64 Alpine system, you're going to need the following packages
+- `qemu qemu-openrc qemu-arm qemu-aarch64` for binfmt
+- `docker-cli-buildx` for building the images
+
+## Setting up
+
+```
+docker login git.pleroma.social:5050
+doas rc-service qemu-binfmt start
+```

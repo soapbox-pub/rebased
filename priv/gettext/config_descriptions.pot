@@ -1722,12 +1722,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :pleroma-:instance > :birthday_min_age"
-msgid "Minimum required age for users to create account. Only used if birthday is required."
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :pleroma-:instance > :birthday_required"
 msgid "Require users to enter their birthday."
 msgstr ""
@@ -6020,4 +6014,46 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma-:instance > :short_description"
 msgid "Short description"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:delete_context_objects"
+msgid "`delete_context_objects` background migration settings"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:delete_context_objects > :fault_rate_allowance"
+msgid "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:delete_context_objects > :sleep_interval_ms"
+msgid "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :birthday_min_age"
+msgid "Minimum required age (in days) for users to create account. Only used if birthday is required."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:delete_context_objects"
+msgid "Delete context objects"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:delete_context_objects > :fault_rate_allowance"
+msgid "Fault rate allowance"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:delete_context_objects > :sleep_interval_ms"
+msgid "Sleep interval ms"
 msgstr ""

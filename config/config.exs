@@ -37,7 +37,7 @@
 # FIGURATION! EDIT YOUR SECRET FILE (either prod.secret.exs, dev.secret.exs).
 #
 # This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# and its dependencies with the aid of the Config module.
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
@@ -571,8 +571,8 @@ config :pleroma, Oban,
     token_expiration: 5,
     filter_expiration: 1,
     backup: 1,
-    federator_incoming: 50,
-    federator_outgoing: 50,
+    federator_incoming: 5,
+    federator_outgoing: 5,
     ingestion_queue: 50,
     web_push: 50,
     mailer: 10,
