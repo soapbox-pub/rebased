@@ -14,7 +14,7 @@ defmodule Pleroma.Repo.Migrations.GenerateUnsetUserKeys do
       from(u in User,
         where: u.local == true,
         where: is_nil(u.keys),
-        select: u
+        select: struct(u, [:id, :keys])
       )
 
     Repo.stream(query)
