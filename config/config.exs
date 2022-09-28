@@ -262,7 +262,8 @@ config :pleroma, :instance,
   max_endorsed_users: 20,
   birthday_required: false,
   birthday_min_age: 0,
-  max_media_attachments: 1_000
+  max_media_attachments: 1_000,
+  migration_cooldown_period: 30
 
 config :pleroma, :welcome,
   direct_message: [
@@ -775,11 +776,11 @@ config :pleroma, :frontends,
         "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "develop"
     },
-    "soapbox-fe" => %{
-      "name" => "soapbox-fe",
-      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+    "soapbox" => %{
+      "name" => "soapbox",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
       "ref" => "develop",
       "build_dir" => "static"
     },
@@ -892,6 +893,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
+
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
 
 import_config "soapbox.exs"
 

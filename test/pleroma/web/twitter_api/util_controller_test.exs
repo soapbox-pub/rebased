@@ -6,9 +6,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
+  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
 
+  import Ecto.Changeset
   import Pleroma.Factory
   import Mock
 
@@ -837,6 +839,50 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       refute User.following?(follower, user)
       assert User.following?(follower, target_user)
+    end
+
+    test "do not allow to migrate account within cooldown period", %{conn: conn, user: user} do
+      user
+      |> cast(
+        %{last_move_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(-1 * 24 * 60 * 60, :second)},
+        [:last_move_at]
+      )
+      |> Repo.update()
+
+      target_user = insert(:user, also_known_as: [user.ap_id])
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{password: "test", target_account: target_nick})
+
+      assert json_response_and_validate_schema(conn, 429) == %{
+               "error" => "You are within cooldown period."
+             }
+    end
+
+    test "allow to migrate account after cooldown period", %{conn: conn, user: user} do
+      user
+      |> cast(
+        %{
+          last_move_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(-31 * 24 * 60 * 60, :second)
+        },
+        [:last_move_at]
+      )
+      |> Repo.update()
+
+      target_user = insert(:user, also_known_as: [user.ap_id])
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{password: "test", target_account: target_nick})
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
   end
 

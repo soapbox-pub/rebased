@@ -111,24 +111,24 @@ defmodule Mix.Tasks.Pleroma.FrontendTest do
     end
 
     test "enabling a primary frontend" do
-      capture_io(fn -> Frontend.run(["enable", "soapbox-fe"]) end)
+      capture_io(fn -> Frontend.run(["enable", "soapbox"]) end)
 
       primary = Pleroma.Config.get([:frontends, :primary])
-      assert primary["name"] == "soapbox-fe"
+      assert primary["name"] == "soapbox"
     end
 
     test "enabling an admin frontend" do
-      capture_io(fn -> Frontend.run(["enable", "soapbox-fe", "--admin"]) end)
+      capture_io(fn -> Frontend.run(["enable", "soapbox", "--admin"]) end)
 
       primary = Pleroma.Config.get([:frontends, :admin])
-      assert primary["name"] == "soapbox-fe"
+      assert primary["name"] == "soapbox"
     end
 
     test "raise if configurable_from_database is disabled" do
       clear_config(:configurable_from_database, false)
 
       assert_raise(RuntimeError, fn ->
-        capture_io(fn -> Frontend.run(["enable", "soapbox-fe"]) end)
+        capture_io(fn -> Frontend.run(["enable", "soapbox"]) end)
       end)
     end
   end
