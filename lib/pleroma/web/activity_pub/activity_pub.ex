@@ -450,6 +450,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "target_id" => target.id
       })
 
+      User.update_last_move_at(origin)
+
       {:ok, activity}
     else
       false -> {:error, "Target account must have the origin in `alsoKnownAs`"}
