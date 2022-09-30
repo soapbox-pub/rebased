@@ -259,6 +259,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
       {:ok, user} ->
         with {:ok, target_user} <- find_or_fetch_user_by_nickname(body_params.target_account),
+             {:period, false} <- {:period, within_cooldown?(user)},
              {:ok, _user} <- ActivityPub.move(user, target_user) do
           json(conn, %{status: "success"})
         else
@@ -267,6 +268,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
             |> put_status(404)
             |> json(%{error: "Target account not found."})
 
+          {:period, true} ->
+            conn
+            |> put_status(429)
+            |> json(%{error: "You are within cooldown period."})
+
           {:error, error} ->
             json(conn, %{error: error})
         end
@@ -274,6 +280,19 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       {:error, msg} ->
         json(conn, %{error: msg})
     end
+  end
+
+  defp within_cooldown?(%{last_move_at: nil}), do: false
+
+  defp within_cooldown?(user) do
+    cooldown_period =
+      Pleroma.Config.get([:instance, :migration_cooldown_period], 0) * 60 * 60 * 24
+
+    now = NaiveDateTime.utc_now()
+
+    difference = NaiveDateTime.diff(now, user.last_move_at)
+
+    difference < cooldown_period
   end
 
   def add_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do

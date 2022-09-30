@@ -262,7 +262,8 @@ config :pleroma, :instance,
   max_endorsed_users: 20,
   birthday_required: false,
   birthday_min_age: 0,
-  max_media_attachments: 1_000
+  max_media_attachments: 1_000,
+  migration_cooldown_period: 30
 
 config :pleroma, :welcome,
   direct_message: [
