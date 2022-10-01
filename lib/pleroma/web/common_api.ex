@@ -744,9 +744,9 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def update_event(user, orig_activity, changes) do
+  def update_event(user, orig_activity, changes, location \\ nil) do
     with orig_object <- Object.normalize(orig_activity),
-         {:ok, new_object} <- make_update_event_data(user, orig_object, changes),
+         {:ok, new_object} <- make_update_event_data(user, orig_object, changes, location),
          {:ok, update_data, _} <- Builder.update(user, new_object),
          {:ok, update, _} <- Pipeline.common_pipeline(update_data, local: true) do
       {:ok, update}
@@ -755,7 +755,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp make_update_event_data(user, orig_object, changes) do
+  defp make_update_event_data(user, orig_object, changes, location) do
     kept_params = %{
       visibility: Visibility.get_visibility(orig_object),
       in_reply_to_id:
@@ -769,7 +769,7 @@ defmodule Pleroma.Web.CommonAPI do
 
     params = Map.merge(changes, kept_params)
 
-    with {:ok, draft} <- ActivityDraft.event(user, params) do
+    with {:ok, draft} <- ActivityDraft.event(user, params, location) do
       change =
         Object.Updater.make_update_object_data(orig_object.data, draft.object, Utils.make_date())
 

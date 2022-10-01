@@ -45,7 +45,13 @@ defmodule Pleroma.Constants do
       "summary",
       "sensitive",
       "attachment",
-      "generator"
+      "generator",
+      "startTime",
+      "endTime",
+      "location",
+      "location_id",
+      "location_provider",
+      "name"
     ]
   )
 

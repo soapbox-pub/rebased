@@ -99,7 +99,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     end
   end
 
-  @doc "PUT /api/v1/statuses/:id"
+  @doc "PUT /api/v1/pleroma/events/:id"
   def update(%{assigns: %{user: user}, body_params: body_params} = conn, %{id: id} = params) do
     with {_, %Activity{}} = {_, activity} <- {:activity, Activity.get_by_id_with_object(id)},
          {_, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
@@ -107,8 +107,9 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
          actor <- Activity.user_actor(activity),
          {_, true} <- {:own_status, actor.id == user.id},
          changes <- body_params |> Map.put(:application, conn.assigns.application),
+         location <- get_location(body_params),
          {_, {:ok, _update_activity}} <-
-           {:pipeline, CommonAPI.update_event(user, activity, changes)},
+           {:pipeline, CommonAPI.update_event(user, activity, changes, location)},
          {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
       conn
       |> put_view(StatusView)
@@ -120,7 +121,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
       )
     else
       {:own_status, _} -> {:error, :forbidden}
-      {:pipeline, e} -> {:error, :internal_server_error}
+      {:pipeline, _} -> {:error, :internal_server_error}
       _ -> {:error, :not_found}
     end
   end
