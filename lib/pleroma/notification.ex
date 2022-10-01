@@ -77,6 +77,7 @@ defmodule Pleroma.Notification do
     pleroma:participation_accepted
     pleroma:participation_request
     pleroma:event_reminder
+    pleroma:event_update
   }
 
   def changeset(%Notification{} = notification, attrs) do
@@ -407,11 +408,20 @@ defmodule Pleroma.Notification do
   defp do_create_notifications(%Activity{} = activity, options) do
     do_send = Keyword.get(options, :do_send, true)
 
+    {enabled_participants, disabled_participants} =
+      get_notified_participants_from_activity(activity)
+
+    potential_participants = enabled_participants ++ disabled_participants
+
     {enabled_receivers, disabled_receivers} = get_notified_from_activity(activity)
-    potential_receivers = enabled_receivers ++ disabled_receivers
+
+    potential_receivers = (enabled_receivers ++ disabled_receivers) -- potential_participants
 
     {enabled_subscribers, disabled_subscribers} = get_notified_subscribers_from_activity(activity)
-    potential_subscribers = (enabled_subscribers ++ disabled_subscribers) -- potential_receivers
+
+    potential_subscribers =
+      (enabled_subscribers ++ disabled_subscribers) --
+        (potential_participants ++ potential_receivers)
 
     notifications =
       (Enum.map(potential_receivers, fn user ->
@@ -421,6 +431,10 @@ defmodule Pleroma.Notification do
          Enum.map(potential_subscribers, fn user ->
            do_send = do_send && user in enabled_subscribers
            create_notification(activity, user, do_send: do_send, type: "status")
+         end) ++
+         Enum.map(potential_participants, fn user ->
+           do_send = do_send && user in enabled_participants
+           create_notification(activity, user, do_send: do_send, type: "pleroma:event_update")
          end))
       |> Enum.reject(&is_nil/1)
 
@@ -615,6 +629,27 @@ defmodule Pleroma.Notification do
   end
 
   def get_notified_subscribers_from_activity(_, _), do: {[], []}
+
+  def get_notified_participants_from_activity(activity, local_only \\ true)
+
+  def get_notified_participants_from_activity(
+        %Activity{data: %{"type" => "Update"}} = activity,
+        local_only
+      ) do
+    notification_enabled_ap_ids =
+      []
+      |> Utils.maybe_notify_participants(activity)
+
+    potential_receivers =
+      User.get_users_from_set(notification_enabled_ap_ids, local_only: local_only)
+
+    notification_enabled_users =
+      Enum.filter(potential_receivers, fn u -> u.ap_id in notification_enabled_ap_ids end)
+
+    {notification_enabled_users, potential_receivers -- notification_enabled_users}
+  end
+
+  def get_notified_participants_from_activity(_, _), do: {[], []}
 
   # For some activities, only notify the author of the object
   def get_potential_receiver_ap_ids(%{data: %{"type" => type, "object" => object_id}})

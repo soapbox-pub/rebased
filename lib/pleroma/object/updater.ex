@@ -124,11 +124,6 @@ defmodule Pleroma.Object.Updater do
       original_data
       |> update_content_fields(new_data)
 
-      IO.inspect(updated_data)
-      IO.inspect(updated)
-      IO.inspect(original_data)
-      IO.inspect(new_data)
-
     if not updated do
       updated_data
     else

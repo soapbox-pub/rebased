@@ -141,7 +141,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         "mediaType" => Utils.get_content_type(draft.params[:content_type])
       },
       "generator" => draft.params[:generator],
-      "content_type" => draft.params[:content_type],
+      "content_type" => draft.params[:content_type]
     }
 
     %__MODULE__{draft | object: object}

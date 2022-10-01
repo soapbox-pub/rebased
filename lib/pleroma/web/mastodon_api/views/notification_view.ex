@@ -113,7 +113,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "reblog" ->
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
-      "update" ->
+      type when type in ["update", "pleroma:event_update"] ->
         put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
       "move" ->
