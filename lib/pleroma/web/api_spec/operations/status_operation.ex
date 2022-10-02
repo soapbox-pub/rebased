@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.Schemas.LocationResult
   alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
@@ -770,6 +771,11 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           content_type: %Schema{
             type: :string,
             description: "The content type of the source"
+          },
+          location: %Schema{
+            allOf: [LocationResult],
+            description: "Location result for an event",
+            nullable: true
           }
         }
       }

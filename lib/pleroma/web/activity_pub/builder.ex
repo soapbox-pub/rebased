@@ -43,18 +43,6 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
-  def accept_or_reject(actor, activity, type) do
-    data = %{
-      "id" => Utils.generate_activity_id(),
-      "actor" => actor.ap_id,
-      "type" => type,
-      "object" => activity.data["id"],
-      "to" => [activity.actor]
-    }
-
-    {:ok, data, []}
-  end
-
   @spec reject(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
   def reject(object, rejected_activity) do
     accept_or_reject(object, rejected_activity, "Reject")

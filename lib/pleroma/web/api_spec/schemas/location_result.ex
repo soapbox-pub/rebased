@@ -12,24 +12,41 @@ defmodule Pleroma.Web.ApiSpec.Schemas.LocationResult do
     description: "Represents a location lookup result",
     type: :object,
     properties: %{
-      country: %Schema{type: :string, description: "The address's country"},
-      description: %Schema{type: :string, description: "The address's description"},
-      locality: %Schema{type: :string, description: "The address's locality"},
+      country: %Schema{type: :string, description: "The address's country", nullable: true},
+      description: %Schema{
+        type: :string,
+        description: "The address's description",
+        nullable: true
+      },
+      locality: %Schema{type: :string, description: "The address's locality", nullable: true},
       origin_id: %Schema{
         type: :string,
-        description: "The address's original ID from the provider"
+        description: "The address's original ID from the provider",
+        nullable: true
       },
-      origin_provider: %Schema{type: :string, description: "The provider used  by instance"},
-      postal_code: %Schema{type: :string, description: "The address's postal code"},
-      region: %Schema{type: :string, description: "The address's region"},
-      street: %Schema{type: :string, description: "The address's street name (with number)"},
+      origin_provider: %Schema{
+        type: :string,
+        description: "The provider used  by instance",
+        nullable: true
+      },
+      postal_code: %Schema{
+        type: :string,
+        description: "The address's postal code",
+        nullable: true
+      },
+      region: %Schema{type: :string, description: "The address's region", nullable: true},
+      street: %Schema{
+        type: :string,
+        description: "The address's street name (with number)",
+        nullable: true
+      },
       timezone: %Schema{
         type: :string,
         description: "The (estimated) timezone of the location",
         nullable: true
       },
-      type: %Schema{type: :string, description: "The address's type"},
-      url: %Schema{type: :string, description: "The address's URL"},
+      type: %Schema{type: :string, description: "The address's type", nullable: true},
+      url: %Schema{type: :string, description: "The address's URL", nullable: true},
       geom: %Schema{
         type: :object,
         properties: %{
@@ -38,7 +55,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.LocationResult do
             items: %Schema{type: :number}
           },
           srid: %Schema{type: :integer}
-        }
+        },
+        nullable: true
       }
     },
     example: %{

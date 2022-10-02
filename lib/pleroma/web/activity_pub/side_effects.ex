@@ -474,6 +474,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     with %Object{data: %{"actor" => ^actor}} = joined_event <- Object.get_by_ap_id(event_id),
          {:o, join_activity} <- Utils.update_join_state(join_activity, "reject") do
       Utils.remove_participation_from_object(join_activity, joined_event)
+      Notification.dismiss(join_activity)
     end
   end
 

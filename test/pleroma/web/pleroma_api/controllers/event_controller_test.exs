@@ -254,7 +254,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     conn =
       conn
       |> post(
-        "/api/v1/pleroma/events/#{activity.id}/participation_requests/#{other_user.id}/accept"
+        "/api/v1/pleroma/events/#{activity.id}/participation_requests/#{other_user.id}/authorize"
       )
 
     assert json_response_and_validate_schema(conn, 200)

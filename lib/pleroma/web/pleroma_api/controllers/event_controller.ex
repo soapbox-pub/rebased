@@ -106,7 +106,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
          {_, true} <- {:is_create, activity.data["type"] == "Create"},
          actor <- Activity.user_actor(activity),
          {_, true} <- {:own_status, actor.id == user.id},
-         changes <- body_params |> Map.put(:application, conn.assigns.application),
+         changes <- body_params |> Map.put(:generator, conn.assigns.application),
          location <- get_location(body_params),
          {_, {:ok, _update_activity}} <-
            {:pipeline, CommonAPI.update_event(user, activity, changes, location)},

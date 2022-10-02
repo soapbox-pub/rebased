@@ -169,6 +169,11 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
             "Status that was the object of the notification, e.g. in mentions, reblogs, favourites, or polls.",
           nullable: true
         },
+        participation_message: %Schema{
+          type: :string,
+          description: "Description of event participation request",
+          nullable: true
+        },
         pleroma: %Schema{
           type: :object,
           properties: %{

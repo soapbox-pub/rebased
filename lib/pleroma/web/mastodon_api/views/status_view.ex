@@ -884,7 +884,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     Utils.get_content_type(nil)
   end
 
-  def build_source_location(%{"location_id" => location_id}) do
+  def build_source_location(%{"location_id" => location_id}) when is_binary(location_id) do
     location = Geospatial.Service.service().get_by_id(location_id) |> List.first()
 
     if location do

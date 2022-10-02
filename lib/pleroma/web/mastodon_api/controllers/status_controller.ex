@@ -143,7 +143,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     params =
       params
       |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
-      |> Map.put(:application, conn.assigns.application)
+      |> Map.put(:generator, conn.assigns.application)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     params =
       params
       |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
-      |> Map.put(:application, conn.assigns.application)
+      |> Map.put(:generator, conn.assigns.application)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -234,7 +234,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
          {_, true} <- {:is_create, activity.data["type"] == "Create"},
          actor <- Activity.user_actor(activity),
          {_, true} <- {:own_status, actor.id == user.id},
-         changes <- body_params |> Map.put(:application, conn.assigns.application),
+         changes <- body_params |> Map.put(:generator, conn.assigns.application),
          {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
          {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
       try_render(conn, "show.json",

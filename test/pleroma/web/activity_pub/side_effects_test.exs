@@ -499,7 +499,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       %{activity: activity, meta: meta}
     end
 
-    test "enqueues the poll end", %{activity: activity, meta: meta} do
+    test "enqueues event reminder notification worker", %{activity: activity, meta: meta} do
       {:ok, activity, meta} = SideEffects.handle(activity, meta)
 
       assert_enqueued(
