@@ -6,7 +6,9 @@ defmodule Pleroma.Workers.EventReminderWorker do
   @moduledoc """
   Generates notifications for upcoming events.
   """
-  use Pleroma.Workers.WorkerHelper, queue: "event_notifications"
+  use Pleroma.Workers.WorkerHelper, queue: "event_reminders"
+
+  import Ecto.Query
 
   alias Pleroma.Activity
   alias Pleroma.Notification
@@ -45,5 +47,28 @@ defmodule Pleroma.Workers.EventReminderWorker do
     end
   end
 
-  def schedule_event_reminder(activity), do: {:error, activity}
+  def schedule_event_reminder(
+        %Activity{data: %{"type" => "Update", "object" => %{"id" => ap_id}}} = activity
+      ) do
+    with %Activity{id: activity_id} = create_activity <-
+           Activity.get_create_by_object_ap_id(ap_id),
+         {:ok, _} <- remove_event_reminders(activity_id) do
+      schedule_event_reminder(create_activity)
+    else
+      _ -> {:error, activity}
+    end
+  end
+
+  def schedule_event_reminder(activity) do
+    {:error, activity}
+  end
+
+  defp remove_event_reminders(activity_id) do
+    from(j in Oban.Job,
+      where: j.state == "scheduled",
+      where: j.queue == "event_reminders",
+      where: fragment("?->>'activity_id' = ?", j.args, ^activity_id)
+    )
+    |> Oban.cancel_all_jobs()
+  end
 end

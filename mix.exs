@@ -127,7 +127,7 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.6.2"},
       {:postgrex, ">= 0.15.5"},
-      {:oban, "~> 2.3.4"},
+      {:oban, "~> 2.9"},
       {:gettext,
        git: "https://github.com/tusooa/gettext.git",
        ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
