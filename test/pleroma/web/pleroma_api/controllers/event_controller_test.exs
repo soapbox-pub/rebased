@@ -16,7 +16,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     setup do
       user = insert(:user)
       %{user: user, conn: conn} = oauth_access(["write"], user: user)
-      [current_user: user, conn: conn]
+      [user: user, conn: conn]
     end
 
     test "creates an event", %{conn: conn} do
@@ -87,10 +87,10 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     setup do
       user = insert(:user)
       %{user: user, conn: conn} = oauth_access(["read"], user: user)
-      [current_user: user, conn: conn]
+      [user: user, conn: conn]
     end
 
-    test "show participation requests", %{conn: conn, current_user: user} do
+    test "show participation requests", %{conn: conn, user: user} do
       other_user = insert(:user)
 
       {:ok, activity} =
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     setup do
       user = insert(:user)
       %{user: user, conn: conn} = oauth_access(["write"], user: user)
-      [current_user: user, conn: conn]
+      [user: user, conn: conn]
     end
 
     test "joins an event", %{conn: conn} do
@@ -167,7 +167,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
              } = Object.get_by_ap_id(activity.data["object"])
     end
 
-    test "can't participate in your own event", %{conn: conn, current_user: user} do
+    test "can't participate in your own event", %{conn: conn, user: user} do
       {:ok, activity} =
         CommonAPI.event(user, %{
           name: "test event",
@@ -189,10 +189,10 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     setup do
       user = insert(:user)
       %{user: user, conn: conn} = oauth_access(["write"], user: user)
-      [current_user: user, conn: conn]
+      [user: user, conn: conn]
     end
 
-    test "leaves an event", %{conn: conn, current_user: user} do
+    test "leaves an event", %{conn: conn, user: user} do
       other_user = insert(:user)
 
       {:ok, activity} =
@@ -237,37 +237,66 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
     end
   end
 
-  test "POST /api/v1/pleroma/events/:id/participation_requests/:participant_id/authorize" do
-    [user, %{ap_id: ap_id} = other_user] = insert_pair(:user)
-    %{user: user, conn: conn} = oauth_access(["write"], user: user)
+  describe "POST /api/v1/pleroma/events/:id/participation_requests/:participant_id/authorize" do
+    setup do
+      user = insert(:user)
+      %{user: user, conn: conn} = oauth_access(["write"], user: user)
+      [user: user, conn: conn]
+    end
 
-    {:ok, activity} =
-      CommonAPI.event(user, %{
-        name: "test event",
-        status: "",
-        join_mode: "restricted",
-        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
-      })
+    test "accepts a participation request", %{user: user, conn: conn} do
+      %{ap_id: ap_id} = other_user = insert(:user)
 
-    CommonAPI.join(other_user, activity.id)
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "restricted",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
 
-    conn =
-      conn
-      |> post(
-        "/api/v1/pleroma/events/#{activity.id}/participation_requests/#{other_user.id}/authorize"
-      )
+      CommonAPI.join(other_user, activity.id)
 
-    assert json_response_and_validate_schema(conn, 200)
+      conn =
+        conn
+        |> post(
+          "/api/v1/pleroma/events/#{activity.id}/participation_requests/#{other_user.id}/authorize"
+        )
 
-    assert %{
-             data: %{
-               "participations" => [^ap_id],
-               "participation_count" => 1
-             }
-           } = Object.get_by_ap_id(activity.data["object"])
+      assert json_response_and_validate_schema(conn, 200)
 
-    assert %{data: %{"state" => "accept"}} =
-             Utils.get_existing_join(other_user.ap_id, activity.data["object"])
+      assert %{
+               data: %{
+                 "participations" => [^ap_id],
+                 "participation_count" => 1
+               }
+             } = Object.get_by_ap_id(activity.data["object"])
+
+      assert %{data: %{"state" => "accept"}} =
+               Utils.get_existing_join(other_user.ap_id, activity.data["object"])
+    end
+
+    test "it refuses to accept a request when event is not by the user", %{user: user, conn: conn} do
+      [second_user, third_user] = insert_pair(:user)
+
+      {:ok, activity} =
+        CommonAPI.event(second_user, %{
+          name: "test event",
+          status: "",
+          join_mode: "restricted",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
+
+      CommonAPI.join(third_user, activity.id)
+
+      conn =
+        conn
+        |> post(
+          "/api/v1/pleroma/events/#{activity.id}/participation_requests/#{third_user.id}/authorize"
+        )
+
+      assert json_response_and_validate_schema(conn, :forbidden)
+    end
   end
 
   test "POST /api/v1/pleroma/events/:id/participation_requests/:participant_id/reject" do

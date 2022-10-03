@@ -70,6 +70,8 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
 
   plug(Pleroma.Web.Plugs.SetApplicationPlug, [] when action in [:create, :update])
 
+  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEventOperation
 
   def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
@@ -231,10 +233,14 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
         } = conn,
         _
       ) do
-    with {:ok, _} <- CommonAPI.accept_join_request(for_user, participant, ap_id) do
+    with actor <- Activity.user_actor(activity),
+         {_, true} <- {:own_event, actor.id == for_user.id},
+         {:ok, _} <- CommonAPI.accept_join_request(for_user, participant, ap_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
+    else
+      {:own_event, _} -> {:error, :forbidden}
     end
   end
 
@@ -248,10 +254,14 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
         } = conn,
         _
       ) do
-    with {:ok, _} <- CommonAPI.reject_join_request(for_user, participant, ap_id) do
+    with actor <- Activity.user_actor(activity),
+         {_, true} <- {:own_event, actor.id == for_user.id},
+         {:ok, _} <- CommonAPI.reject_join_request(for_user, participant, ap_id) do
       conn
       |> put_view(StatusView)
       |> try_render("show.json", activity: activity, for: for_user, as: :activity)
+    else
+      {:own_event, _} -> {:error, :forbidden}
     end
   end
 

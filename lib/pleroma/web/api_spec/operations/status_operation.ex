@@ -487,7 +487,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       responses: %{
         200 => status_response(),
         403 => Operation.response("Forbidden", "application/json", ApiError),
-        404 => Operation.response("Not Found", "application/json", ApiError)
+        404 => Operation.response("Not Found", "application/json", ApiError),
+        422 => Operation.response("Unprocessable Entity", "application/json", ApiError)
       }
     }
   end

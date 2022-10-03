@@ -60,6 +60,8 @@ config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
 
+config :tesla, Geospatial.HTTP, adapter: Tesla.Mock
+
 config :pleroma, :rich_media,
   enabled: false,
   ignore_hosts: [],

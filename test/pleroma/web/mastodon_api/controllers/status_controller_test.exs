@@ -2193,6 +2193,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       |> json_response_and_validate_schema(:forbidden)
     end
 
+    test "it refuses to update an event", %{conn: conn, user: user} do
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "I'm not a regular status",
+          status: "",
+          join_mode: "free",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/statuses/#{activity.id}", %{
+        "status" => "edited"
+      })
+      |> json_response_and_validate_schema(:unprocessable_entity)
+    end
+
     test "it returns 404 if the user cannot see the post", %{conn: conn} do
       another_user = insert(:user)
 
