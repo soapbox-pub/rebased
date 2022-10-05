@@ -707,7 +707,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{data: %{"name" => name}} = object) when not is_nil(name) and name != "" do
+  def render_content(%{data: %{"name" => name, "type" => type}} = object)
+      when not is_nil(name) and name != "" and type != "Event" do
     url = object.data["url"] || object.data["id"]
 
     "<p><a href=\"#{url}\">#{name}</a></p>#{object.data["content"]}"

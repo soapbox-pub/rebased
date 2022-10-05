@@ -55,6 +55,37 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
                "error" => "Event can't end before its start"
              }
     end
+
+    test "assigns location from location id", %{conn: conn} do
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/events", %{
+          "name" => "Event name",
+          "start_time" => "2023-01-01T01:00:00.000Z",
+          "end_time" => "2023-01-01T04:00:00.000Z",
+          "join_mode" => "free",
+          "location_id" => "3726208425"
+        })
+
+      assert %{
+               "pleroma" => %{
+                 "event" => %{
+                   "location" => %{
+                     "name" => "Benis",
+                     "longitude" => 45.7285348,
+                     "latitude" => 38.212263,
+                     "street" => " ",
+                     "locality" => "بخش مرکزی",
+                     "region" => "East Azerbaijan Province",
+                     "country" => "Iran"
+                   }
+                 }
+               }
+             } = json_response_and_validate_schema(conn, 200)
+    end
   end
 
   test "GET /api/v1/pleroma/events/:id/participations" do
@@ -276,7 +307,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
                Utils.get_existing_join(other_user.ap_id, activity.data["object"])
     end
 
-    test "it refuses to accept a request when event is not by the user", %{user: user, conn: conn} do
+    test "it refuses to accept a request when event is not by the user", %{conn: conn} do
       [second_user, third_user] = insert_pair(:user)
 
       {:ok, activity} =

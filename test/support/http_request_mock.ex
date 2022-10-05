@@ -1496,6 +1496,20 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://nominatim.openstreetmap.org/lookup?format=geocodejson&osm_ids=N3726208425,R3726208425,W3726208425&accept-language=en&addressdetails=1&namedetails=1",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/nominatim_single_result.json"),
+       headers: [{"content-type", "application/json"}]
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}

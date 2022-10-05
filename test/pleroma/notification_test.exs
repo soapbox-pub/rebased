@@ -147,8 +147,10 @@ defmodule Pleroma.NotificationTest do
 
       CommonAPI.join(other_user, activity.id)
 
-      user_notifications = Notification.for_user(user)
+      [notification] = user_notifications = Notification.for_user(user)
       assert length(user_notifications) == 1
+
+      assert notification.type == "pleroma:participation_request"
     end
 
     test "creates notification for event join approval" do
@@ -167,8 +169,10 @@ defmodule Pleroma.NotificationTest do
 
       CommonAPI.accept_join_request(user, other_user, activity.data["object"])
 
-      user_notifications = Notification.for_user(other_user)
+      [notification] = user_notifications = Notification.for_user(other_user)
       assert length(user_notifications) == 1
+
+      assert notification.type == "pleroma:participation_accepted"
     end
 
     test "doesn't create notification for events without participation approval" do
@@ -215,6 +219,65 @@ defmodule Pleroma.NotificationTest do
       assert [%{type: "update"}] = Notification.for_user(repeated_user)
       assert [%{type: "mention"}] = Notification.for_user(other_user)
     end
+  end
+
+  test "creates notifications for edited events for participants" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.event(user, %{
+        name: "test event",
+        status: "test evnet",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    CommonAPI.join(other_user, activity.id)
+
+    {:ok, _edit_activity} =
+      CommonAPI.update_event(user, activity, %{
+        name: "test event",
+        status: "test event",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    Pleroma.Tests.ObanHelpers.perform_all()
+
+    [notification] = user_notifications = Notification.for_user(other_user)
+    assert length(user_notifications) == 1
+
+    assert notification.type == "pleroma:event_update"
+  end
+
+  test "doesn't create multiple edit notifications for events" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.event(user, %{
+        name: "test event",
+        status: "test evnet",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    CommonAPI.join(other_user, activity.id)
+    CommonAPI.repeat(activity.id, other_user)
+
+    {:ok, _edit_activity} =
+      CommonAPI.update_event(user, activity, %{
+        name: "test event",
+        status: "test event",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    Pleroma.Tests.ObanHelpers.perform_all()
+
+    user_notifications = Notification.for_user(other_user)
+    assert length(user_notifications) == 1
   end
 
   test "create_poll_notifications/1" do

@@ -813,6 +813,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.text == "object source"
   end
 
+  test "it shows an event" do
+    event = insert(:event)
+
+    activity = insert(:event_activity, event: event)
+
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status.pleroma.event == %{
+             name: event.data["name"],
+             start_time: event.data["startTime"],
+             end_time: event.data["endTime"],
+             join_mode: event.data["joinMode"],
+             participants_count: nil,
+             location: nil,
+             join_state: nil,
+             participation_request_count: nil
+           }
+  end
+
   describe "source.json" do
     test "with a source object, renders both source and content type" do
       note =
