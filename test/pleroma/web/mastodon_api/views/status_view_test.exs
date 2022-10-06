@@ -656,8 +656,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert represented[:url] ==
              "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
 
-    assert represented[:content] ==
-             "<p><a href=\"https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39\">Mobilizon Launching Party</a></p><p>Mobilizon is now federated! 🎉</p><p></p><p>You can view this event from other instances if they are subscribed to mobilizon.org, and soon directly from Mastodon and Pleroma. It is possible that you may see some comments from other instances, including Mastodon ones, just below.</p><p></p><p>With a Mobilizon account on an instance, you may <strong>participate</strong> at events from other instances and <strong>add comments</strong> on events.</p><p></p><p>Of course, it&#39;s still <u>a work in progress</u>: if reports made from an instance on events and comments can be federated, you can&#39;t block people right now, and moderators actions are rather limited, but this <strong>will definitely get fixed over time</strong> until first stable version next year.</p><p></p><p>Anyway, if you want to come up with some feedback, head over to our forum or - if you feel you have technical skills and are familiar with it - on our Gitlab repository.</p><p></p><p>Also, to people that want to set Mobilizon themselves even though we really don&#39;t advise to do that for now, we have a little documentation but it&#39;s quite the early days and you&#39;ll probably need some help. No worries, you can chat with us on our Forum or though our Matrix channel.</p><p></p><p>Check our website for more informations and follow us on Twitter or Mastodon.</p>"
+    assert represented.pleroma.event == %{
+             name: "Mobilizon Launching Party",
+             start_time: "2019-12-18T13:00:00Z",
+             end_time: "2019-12-18T14:00:00Z",
+             join_mode: "free",
+             participants_count: nil,
+             location: %{
+               country: "France",
+               latitude: nil,
+               locality: "Nantes",
+               longitude: nil,
+               name: "Cour du Château des Ducs de Bretagne",
+               postal_code: nil,
+               region: "Pays de la Loire",
+               street: " ",
+               url: nil
+             },
+             join_state: nil,
+             participation_request_count: nil
+           }
   end
 
   describe "build_tags/1" do
@@ -811,25 +829,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("show.json", activity: activity, with_source: true)
     assert status.text == "object source"
-  end
-
-  test "it shows an event" do
-    event = insert(:event)
-
-    activity = insert(:event_activity, event: event)
-
-    status = StatusView.render("show.json", activity: activity)
-
-    assert status.pleroma.event == %{
-             name: event.data["name"],
-             start_time: event.data["startTime"],
-             end_time: event.data["endTime"],
-             join_mode: event.data["joinMode"],
-             participants_count: nil,
-             location: nil,
-             join_state: nil,
-             participation_request_count: nil
-           }
   end
 
   describe "source.json" do
