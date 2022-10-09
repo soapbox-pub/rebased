@@ -8,9 +8,14 @@ defmodule Pleroma.Repo.Migrations.MovePinnedActivitiesIntoPinnedObjects do
   import Ecto.Query
 
   alias Pleroma.Repo
+  alias Pleroma.Repo.Migrations.AddAssociatedObjectIdFunction
   alias Pleroma.User
 
   def up do
+    # This migration will crash unless `associated_object_id` is already available.
+    # https://gitlab.com/soapbox-pub/rebased/-/issues/113
+    AddAssociatedObjectIdFunction.up()
+
     from(u in User)
     |> select([u], {u.id, fragment("?.pinned_activities", u)})
     |> Repo.stream()
@@ -28,5 +33,7 @@ defmodule Pleroma.Repo.Migrations.MovePinnedActivitiesIntoPinnedObjects do
     |> Stream.run()
   end
 
-  def down, do: :noop
+  def down do
+    AddAssociatedObjectIdFunction.down()
+  end
 end
