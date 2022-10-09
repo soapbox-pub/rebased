@@ -97,7 +97,8 @@ defmodule Pleroma.Application do
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
-        Pleroma.Web.Plugs.RateLimiter.Supervisor
+        Pleroma.Web.Plugs.RateLimiter.Supervisor,
+        {Task.Supervisor, name: Pleroma.TaskSupervisor}
       ] ++
         cachex_children() ++
         http_children(adapter, @mix_env) ++
