@@ -600,6 +600,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert length(json_response_and_validate_schema(conn, 200)) == 1
   end
 
+  @tag :erratic
   test "see move notifications" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
