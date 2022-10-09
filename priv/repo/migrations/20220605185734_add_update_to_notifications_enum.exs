@@ -10,7 +10,7 @@ defmodule Pleroma.Repo.Migrations.AddUpdateToNotificationsEnum do
     |> execute()
   end
 
-  # 20210717000000_add_poll_to_notifications_enum.exs
+  # 20220319000000_add_status_to_notifications_enum.exs
   def down do
     alter table(:notifications) do
       modify(:type, :string)
@@ -37,7 +37,8 @@ defmodule Pleroma.Repo.Migrations.AddUpdateToNotificationsEnum do
       'reblog',
       'favourite',
       'pleroma:report',
-      'poll'
+      'poll',
+      'status'
     )
     """
     |> execute()
