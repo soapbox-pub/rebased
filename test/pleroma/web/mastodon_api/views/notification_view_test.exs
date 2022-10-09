@@ -144,6 +144,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     refute Repo.one(Notification)
   end
 
+  @tag :erratic
   test "Move notification" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
