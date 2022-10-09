@@ -222,12 +222,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_quote_url(object, _options), do: object
 
+  @object_media_types [
+    "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+    "application/activity+json"
+  ]
+
   defp is_quote_tag(%{
          "type" => "Link",
-         "mediaType" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+         "mediaType" => media_type,
          "href" => href
        })
-       when is_binary(href),
+       when is_binary(href) and media_type in @object_media_types,
        do: true
 
   defp is_quote_tag(_object), do: false
