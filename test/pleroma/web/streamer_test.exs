@@ -813,4 +813,105 @@ defmodule Pleroma.Web.StreamerTest do
       assert last_status["id"] == to_string(create_activity.id)
     end
   end
+
+  describe "stop streaming if token got revoked" do
+    setup do
+      child_proc = fn start, finalize ->
+        fn ->
+          start.()
+
+          receive do
+            {StreamerTest, :ready} ->
+              assert_receive {:render_with_user, _, "update.json", _}
+
+              receive do
+                {StreamerTest, :revoked} -> finalize.()
+              end
+          end
+        end
+      end
+
+      starter = fn user, token ->
+        fn -> Streamer.get_topic_and_add_socket("user", user, token) end
+      end
+
+      hit = fn -> assert_receive :close end
+      miss = fn -> refute_receive :close end
+
+      send_all = fn tasks, thing -> Enum.each(tasks, &send(&1.pid, thing)) end
+
+      %{
+        child_proc: child_proc,
+        starter: starter,
+        hit: hit,
+        miss: miss,
+        send_all: send_all
+      }
+    end
+
+    test "do not revoke other tokens", %{
+      child_proc: child_proc,
+      starter: starter,
+      hit: hit,
+      miss: miss,
+      send_all: send_all
+    } do
+      %{user: user, token: token} = oauth_access(["read"])
+      %{token: token2} = oauth_access(["read"], user: user)
+      %{user: user2, token: user2_token} = oauth_access(["read"])
+
+      post_user = insert(:user)
+      CommonAPI.follow(user, post_user)
+      CommonAPI.follow(user2, post_user)
+
+      tasks = [
+        Task.async(child_proc.(starter.(user, token), hit)),
+        Task.async(child_proc.(starter.(user, token2), miss)),
+        Task.async(child_proc.(starter.(user2, user2_token), miss))
+      ]
+
+      {:ok, _} =
+        CommonAPI.post(post_user, %{
+          status: "hi"
+        })
+
+      send_all.(tasks, {StreamerTest, :ready})
+
+      Pleroma.Web.OAuth.Token.Strategy.Revoke.revoke(token)
+
+      send_all.(tasks, {StreamerTest, :revoked})
+
+      Enum.each(tasks, &Task.await/1)
+    end
+
+    test "revoke all streams for this token", %{
+      child_proc: child_proc,
+      starter: starter,
+      hit: hit,
+      send_all: send_all
+    } do
+      %{user: user, token: token} = oauth_access(["read"])
+
+      post_user = insert(:user)
+      CommonAPI.follow(user, post_user)
+
+      tasks = [
+        Task.async(child_proc.(starter.(user, token), hit)),
+        Task.async(child_proc.(starter.(user, token), hit))
+      ]
+
+      {:ok, _} =
+        CommonAPI.post(post_user, %{
+          status: "hi"
+        })
+
+      send_all.(tasks, {StreamerTest, :ready})
+
+      Pleroma.Web.OAuth.Token.Strategy.Revoke.revoke(token)
+
+      send_all.(tasks, {StreamerTest, :revoked})
+
+      Enum.each(tasks, &Task.await/1)
+    end
+  end
 end
