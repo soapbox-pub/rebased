@@ -1389,6 +1389,18 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mitra.social/objects/01830912-1357-d4c5-e4a2-76eab347e749", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/tesla_mock/mitra.social_01830912-1357-d4c5-e4a2-76eab347e749.json"
+         ),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("https://gleasonator.com/objects/102eb097-a18b-4cd5-abfc-f952efcb70bb", _, _, _) do
     {:ok,
      %Tesla.Env{
