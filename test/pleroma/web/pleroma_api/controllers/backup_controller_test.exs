@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   setup do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
-    oauth_access(["read:accounts"])
+    oauth_access(["read:backups"])
   end
 
   test "GET /api/v1/pleroma/backups", %{user: user, conn: conn} do
@@ -85,7 +85,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
 
   test "Backup without email address" do
     user = Pleroma.Factory.insert(:user, email: nil)
-    %{conn: conn} = oauth_access(["read:accounts"], user: user)
+    %{conn: conn} = oauth_access(["read:backups"], user: user)
 
     assert is_nil(user.email)
 

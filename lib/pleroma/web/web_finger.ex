@@ -69,8 +69,6 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def represent_user(user, "JSON") do
-    {:ok, user} = User.ensure_keys_present(user)
-
     %{
       "subject" => "acct:#{user.nickname}@#{domain()}",
       "aliases" => gather_aliases(user),
@@ -79,8 +77,6 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def represent_user(user, "XML") do
-    {:ok, user} = User.ensure_keys_present(user)
-
     aliases =
       user
       |> gather_aliases()

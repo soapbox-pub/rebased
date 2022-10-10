@@ -8,8 +8,8 @@ defmodule Pleroma.Mixfile do
       app: :pleroma,
       name: "Rebased",
       compat_name: "Pleroma",
-      version: version("2.4.52"),
-      elixir: "~> 1.9",
+      version: version("2.4.53"),
+      elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
@@ -172,7 +172,7 @@ defmodule Pleroma.Mixfile do
       {:prometheus, "~> 4.6"},
       {:prometheus_ex,
        git: "https://gitlab.com/soapbox-pub/elixir-libraries/prometheus.ex.git",
-       ref: "a4e9beb3c1c479d14b352fd9d6dd7b1f6d7deee5",
+       branch: "fix/elixir-1.14",
        override: true},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
@@ -217,7 +217,7 @@ defmodule Pleroma.Mixfile do
       {:excoveralls, "0.12.3", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
+      {:websockex, "~> 0.4.3", only: :test}
     ] ++ oauth_deps()
   end
 

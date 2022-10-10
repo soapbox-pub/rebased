@@ -83,6 +83,7 @@ msgid "Account followed!"
 msgstr ""
 
 #, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/status_interact.html.eex:7
 #: lib/pleroma/web/templates/twitter_api/util/subscribe.html.eex:7
 msgctxt "placeholder text for account id"
 msgid "Your account ID, e.g. lain@quitter.se"
@@ -510,4 +511,52 @@ msgstr ""
 #: lib/pleroma/emails/user_email.ex:368
 msgctxt "account archive email body - admin requested"
 msgid "<p>Admin @%{admin_nickname} requested a full backup of your Pleroma account. It's ready for download:</p>\n<p><a href=\"%{download_url}\">%{download_url}</a></p>\n"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/twitter_api/controllers/util_controller.ex:123
+msgctxt "remote follow error message - unknown error"
+msgid "Something went wrong."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/twitter_api/controllers/util_controller.ex:67
+msgctxt "remote follow error message - user not found"
+msgid "Could not find user"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/status_interact.html.eex:8
+msgctxt "status interact authorization button"
+msgid "Interact"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/status_interact.html.eex:2
+msgctxt "status interact error"
+msgid "Error: %{error}"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/twitter_api/controllers/util_controller.ex:95
+msgctxt "status interact error message - status not found"
+msgid "Could not find status"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/twitter_api/controllers/util_controller.ex:144
+msgctxt "status interact error message - unknown error"
+msgid "Something went wrong."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/status_interact.html.eex:4
+msgctxt "status interact header"
+msgid "Interacting with %{nickname}'s %{status_link}"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/twitter_api/util/status_interact.html.eex:4
+msgctxt "status interact header - status link text"
+msgid "status"
 msgstr ""

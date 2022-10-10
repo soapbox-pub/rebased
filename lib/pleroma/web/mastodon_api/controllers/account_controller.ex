@@ -488,7 +488,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   def remove_from_followers(%{assigns: %{user: followed, account: follower}} = conn, _params) do
     with {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
-      render(conn, "relationship.json", user: follower, target: followed)
+      render(conn, "relationship.json", user: followed, target: follower)
     else
       nil ->
         render_error(conn, :not_found, "Record not found")
