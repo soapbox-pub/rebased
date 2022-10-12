@@ -40,6 +40,5 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EventHandlingTest do
     assert object.data["name"] == "Mobilizon Launching Party"
     assert object.data["startTime"] == "2019-12-18T13:00:00Z"
     assert object.data["endTime"] == "2019-12-18T14:00:00Z"
-
   end
 end
