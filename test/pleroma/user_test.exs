@@ -313,7 +313,7 @@ defmodule Pleroma.UserTest do
   describe "unfollow/2" do
     setup do: clear_config([:instance, :external_user_synchronization])
 
-    test "unfollow with syncronizes external user" do
+    test "unfollow with synchronizes external user" do
       clear_config([:instance, :external_user_synchronization], true)
 
       followed =
@@ -679,14 +679,14 @@ defmodule Pleroma.UserTest do
       assert changeset.valid?
     end
 
-    test "it sets the password_hash and ap_id" do
+    test "it sets the password_hash, ap_id, private key and followers collection address" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 
       assert changeset.valid?
 
       assert is_binary(changeset.changes[:password_hash])
+      assert is_binary(changeset.changes[:keys])
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
-
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
 
@@ -2276,21 +2276,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "ensure_keys_present" do
-    test "it creates keys for a user and stores them in info" do
-      user = insert(:user)
-      refute is_binary(user.keys)
-      {:ok, user} = User.ensure_keys_present(user)
-      assert is_binary(user.keys)
-    end
-
-    test "it doesn't create keys if there already are some" do
-      user = insert(:user, keys: "xxx")
-      {:ok, user} = User.ensure_keys_present(user)
-      assert user.keys == "xxx"
-    end
-  end
-
   describe "get_ap_ids_by_nicknames" do
     test "it returns a list of AP ids for a given set of nicknames" do
       user = insert(:user)
@@ -2425,7 +2410,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 1
     end
 
-    test "syncronizes the counters with the remote instance for the followed when enabled" do
+    test "synchronizes the counters with the remote instance for the followed when enabled" do
       clear_config([:instance, :external_user_synchronization], false)
 
       user = insert(:user)
@@ -2447,7 +2432,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 437
     end
 
-    test "syncronizes the counters with the remote instance for the follower when enabled" do
+    test "synchronizes the counters with the remote instance for the follower when enabled" do
       clear_config([:instance, :external_user_synchronization], false)
 
       user = insert(:user)

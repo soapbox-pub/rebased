@@ -204,7 +204,38 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_quote_url(options)
   end
 
+  # FEP-e232
+  # https://codeberg.org/fediverse/fep/src/branch/main/feps/fep-e232.md
+  def fix_quote_url(%{"tag" => tags} = object, options) when is_list(tags) do
+    tags
+    |> Enum.find(&is_quote_tag/1)
+    |> case do
+      %{"href" => quote_url} ->
+        object
+        |> Map.put("quoteUrl", quote_url)
+        |> fix_quote_url(options)
+
+      _ ->
+        object
+    end
+  end
+
   def fix_quote_url(object, _options), do: object
+
+  @object_media_types [
+    "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+    "application/activity+json"
+  ]
+
+  defp is_quote_tag(%{
+         "type" => "Link",
+         "mediaType" => media_type,
+         "href" => href
+       })
+       when is_binary(href) and media_type in @object_media_types,
+       do: true
+
+  defp is_quote_tag(_object), do: false
 
   defp prepare_in_reply_to(in_reply_to) do
     cond do
