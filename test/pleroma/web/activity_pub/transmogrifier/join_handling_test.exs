@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.JoinHandlingTest do
   use Pleroma.DataCase
+
   alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Object

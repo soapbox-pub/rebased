@@ -661,7 +661,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
              start_time: "2019-12-18T13:00:00Z",
              end_time: "2019-12-18T14:00:00Z",
              join_mode: "free",
-             participants_count: nil,
+             participants_count: 0,
              location: %{
                country: "France",
                latitude: nil,
