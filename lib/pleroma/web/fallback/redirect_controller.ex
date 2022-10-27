@@ -17,10 +17,8 @@ defmodule Pleroma.Web.Fallback.RedirectController do
     |> json(%{error: "Not implemented"})
   end
 
-  def redirector(conn, _params, code \\ 200) do
-    conn
-    |> put_resp_content_type("text/html")
-    |> send_file(code, index_file_path())
+  def redirector(conn, params, code \\ 200) do
+    redirector_with_ssr(conn, params, [:title, :favicon], code)
   end
 
   def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do
@@ -44,7 +42,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
     redirector_with_ssr(conn, params, [:preload, :title, :favicon])
   end
 
-  defp redirector_with_ssr(conn, params, keys) do
+  defp redirector_with_ssr(conn, params, keys, code \\ 200) do
     {:ok, index_content} = File.read(index_file_path())
 
     meta = compose_meta(conn, params, keys)
@@ -55,7 +53,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
 
     conn
     |> put_resp_content_type("text/html")
-    |> send_resp(200, response)
+    |> send_resp(code, response)
   end
 
   def registration_page(conn, params) do
