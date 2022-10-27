@@ -989,6 +989,12 @@ config :pleroma, :config_description, [
         suggestions: ["/instance/thumbnail.jpeg"]
       },
       %{
+        key: :favicon,
+        type: {:string, :image},
+        description: "Shortcut icon displayed in the browser, and possibly displayed by other instances.",
+        suggestions: ["/favicon.png"]
+      },
+      %{
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."

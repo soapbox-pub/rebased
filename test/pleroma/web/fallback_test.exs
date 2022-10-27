@@ -31,6 +31,7 @@ defmodule Pleroma.Web.FallbackTest do
   describe "preloaded data and metadata attached to" do
     test "GET /:maybe_nickname_or_id", %{conn: conn} do
       clear_config([:instance, :name], "a cool title")
+      clear_config([:instance, :favicon], "/favicon.svg")
 
       user = insert(:user)
       user_missing = get(conn, "/foo")
@@ -40,6 +41,7 @@ defmodule Pleroma.Web.FallbackTest do
       refute html_response(user_present, 200) =~ "<!--server-generated-meta-->"
       assert html_response(user_present, 200) =~ "initial-results"
       assert html_response(user_present, 200) =~ "<title>a cool title</title>"
+      assert html_response(user_present, 200) =~ "<link rel=\"icon\" href=\"/favicon.svg\">"
     end
 
     test "GET /*path", %{conn: conn} do
