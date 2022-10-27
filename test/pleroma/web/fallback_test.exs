@@ -10,13 +10,13 @@ defmodule Pleroma.Web.FallbackTest do
     test "GET /registration/:token", %{conn: conn} do
       response = get(conn, "/registration/foo")
 
-      assert html_response(response, 200) =~ "<!--server-generated-meta-->"
+      refute html_response(response, 200) =~ "initial-results"
     end
 
     test "GET /*path", %{conn: conn} do
-      assert conn
+      refute conn
              |> get("/foo")
-             |> html_response(200) =~ "<!--server-generated-meta-->"
+             |> html_response(200) =~ "initial-results"
     end
   end
 
@@ -31,21 +31,25 @@ defmodule Pleroma.Web.FallbackTest do
   describe "preloaded data and metadata attached to" do
     test "GET /:maybe_nickname_or_id", %{conn: conn} do
       clear_config([:instance, :name], "a cool title")
+      clear_config([:instance, :favicon], "/favicon.svg")
 
       user = insert(:user)
       user_missing = get(conn, "/foo")
       user_present = get(conn, "/#{user.nickname}")
 
-      assert html_response(user_missing, 200) =~ "<!--server-generated-meta-->"
+      refute html_response(user_missing, 200) =~ "<!--server-generated-meta-->"
       refute html_response(user_present, 200) =~ "<!--server-generated-meta-->"
       assert html_response(user_present, 200) =~ "initial-results"
       assert html_response(user_present, 200) =~ "<title>a cool title</title>"
+      assert html_response(user_present, 200) =~ "<link rel=\"icon\" href=\"/favicon.svg\">"
     end
 
     test "GET /*path", %{conn: conn} do
+      clear_config([:instance, :name], "Rebased")
+
       assert conn
              |> get("/foo")
-             |> html_response(200) =~ "<!--server-generated-meta-->"
+             |> html_response(200) =~ "Rebased"
 
       refute conn
              |> get("/foo/bar")
