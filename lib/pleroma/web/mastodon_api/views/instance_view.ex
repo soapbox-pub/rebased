@@ -56,7 +56,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
-        oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies()
+        oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies(),
+        favicon:
+          URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :favicon))
+          |> to_string
       },
       configuration: configuration(),
       soapbox: %{
