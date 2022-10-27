@@ -991,7 +991,8 @@ config :pleroma, :config_description, [
       %{
         key: :favicon,
         type: {:string, :image},
-        description: "Shortcut icon displayed in the browser, and possibly displayed by other instances.",
+        description:
+          "Shortcut icon displayed in the browser, and possibly displayed by other instances.",
         suggestions: ["/favicon.png"]
       },
       %{
