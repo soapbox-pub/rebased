@@ -25,13 +25,14 @@ config :logger, :ex_syslogger, level: :info
 
 # PromEx set up
 config :pleroma, Pleroma.Web.Plugs.MetricsPredicate,
-  auth_token: System.fetch_env!("PROMETHEUS_AUTH_TOKEN")
+  auth_token: System.get_env("PROMETHEUS_AUTH_TOKEN", "supersecret")
 
 config :pleroma, Pleroma.PromEx,
-  prometheus_data_source_id: System.fetch_env!("PROMETHEUS_DATASOURCE_ID"),
+  prometheus_data_source_id: System.get_env("PROMETHEUS_DATASOURCE_ID",
+    "Prometheus"),
   grafana: [
-    host: System.fetch_env!("GRAFANA_HOST"),
-    auth_token: System.fetch_env!("GRAFANA_AUTH_TOKEN"),
+    host: System.get_env("GRAFANA_HOST", "http://localhost:3000"),
+    auth_token: System.get_env("GRAFANA_AUTH_TOKEN", "LOLNO"),
     upload_dashboards_on_start: true,
     folder_name: "Pleroma - PromEx",
     annotate_app_lifecycle: true
