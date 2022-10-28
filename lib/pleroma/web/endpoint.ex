@@ -17,7 +17,6 @@ defmodule Pleroma.Web.Endpoint do
     do: {PromEx.Plug, path: "/api/metrics", prom_ex_module: Pleroma.PromEx}
   )
 
-
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
   plug(Pleroma.Web.Plugs.SetLocalePlug)
