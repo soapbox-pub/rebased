@@ -28,8 +28,11 @@ config :pleroma, Pleroma.Web.Plugs.MetricsPredicate,
   auth_token: System.get_env("PROMETHEUS_AUTH_TOKEN", "supersecret")
 
 config :pleroma, Pleroma.PromEx,
-  prometheus_data_source_id: System.get_env("PROMETHEUS_DATASOURCE_ID",
-    "Prometheus"),
+  prometheus_data_source_id:
+    System.get_env(
+      "PROMETHEUS_DATASOURCE_ID",
+      "Prometheus"
+    ),
   grafana: [
     host: System.get_env("GRAFANA_HOST", "http://localhost:3000"),
     auth_token: System.get_env("GRAFANA_AUTH_TOKEN", "LOLNO"),
