@@ -138,4 +138,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     assert result["pleroma"]["oauth_consumer_strategies"] == ["keycloak"]
   end
+
+  test "get instance information v2", %{conn: conn} do
+    clear_config([:auth, :oauth_consumer_strategies], [])
+
+    assert get(conn, "/api/v2/instance")
+           |> json_response_and_validate_schema(200)
+  end
 end
