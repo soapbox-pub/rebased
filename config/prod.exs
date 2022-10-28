@@ -23,6 +23,20 @@ config :phoenix, serve_endpoints: true
 config :logger, :console, level: :info
 config :logger, :ex_syslogger, level: :info
 
+# PromEx set up
+config :pleroma, Pleroma.Web.Plugs.MetricsPredicate,
+  auth_token: System.fetch_env!("PROMETHEUS_AUTH_TOKEN")
+
+config :pleroma, Pleroma.PromEx,
+  prometheus_data_source_id: System.fetch_env!("PROMETHEUS_DATASOURCE_ID"),
+  grafana: [
+    host: System.fetch_env!("GRAFANA_HOST"),
+    auth_token: System.fetch_env!("GRAFANA_AUTH_TOKEN"),
+    upload_dashboards_on_start: true,
+    folder_name: "Pleroma - PromEx",
+    annotate_app_lifecycle: true
+  ]
+
 # ## SSL Support
 #
 # To get SSL working, you will need to add the `https` key
