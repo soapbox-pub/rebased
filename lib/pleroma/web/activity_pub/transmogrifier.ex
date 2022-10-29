@@ -772,6 +772,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_emoji_tags
     |> add_attributed_to
+    |> maybe_add_content_map
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
@@ -817,7 +818,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -832,7 +833,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -853,7 +854,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> strip_internal_fields
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -873,7 +874,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.merge(Utils.make_json_ld_header())
+        |> Map.merge(Utils.make_json_ld_header(data))
 
       {:ok, data}
     end
@@ -891,7 +892,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.merge(Utils.make_json_ld_header())
+        |> Map.merge(Utils.make_json_ld_header(data))
 
       {:ok, data}
     end
@@ -902,7 +903,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data
       |> strip_internal_fields
       |> maybe_fix_object_url
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
 
     {:ok, data}
   end
@@ -1088,4 +1089,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
+
+  defp maybe_add_content_map(%{"language" => language, "content" => content} = object)
+       when not_empty_string(language) do
+    Map.put(object, "contentMap", Map.put(%{}, language, content))
+  end
+
+  defp maybe_add_content_map(object), do: object
 end

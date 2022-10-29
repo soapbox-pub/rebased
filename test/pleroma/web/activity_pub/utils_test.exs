@@ -138,16 +138,30 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     end
   end
 
-  test "make_json_ld_header/0" do
-    assert Utils.make_json_ld_header() == %{
-             "@context" => [
-               "https://www.w3.org/ns/activitystreams",
-               "http://localhost:4001/schemas/litepub-0.1.jsonld",
-               %{
-                 "@language" => "und"
-               }
-             ]
-           }
+  describe "make_json_ld_header/1" do
+    test "makes jsonld header" do
+      assert Utils.make_json_ld_header() == %{
+               "@context" => [
+                 "https://www.w3.org/ns/activitystreams",
+                 "http://localhost:4001/schemas/litepub-0.1.jsonld",
+                 %{
+                   "@language" => "und"
+                 }
+               ]
+             }
+    end
+
+    test "includes language if specified" do
+      assert Utils.make_json_ld_header(%{"language" => "pl"}) == %{
+               "@context" => [
+                 "https://www.w3.org/ns/activitystreams",
+                 "http://localhost:4001/schemas/litepub-0.1.jsonld",
+                 %{
+                   "@language" => "pl"
+                 }
+               ]
+             }
+    end
   end
 
   describe "get_existing_votes" do

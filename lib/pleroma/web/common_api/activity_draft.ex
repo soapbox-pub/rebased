@@ -14,6 +14,15 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   import Pleroma.Web.Gettext
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
+  @supported_locales ~w(
+    aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr cs cu cv cy da
+    de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gu gv ha he hi ho hr ht hu hy hz ia
+    id ie ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb lg li ln lo
+    lt lu lv mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi pl
+    ps pt qu rm rn ro ru rw sa sc sd se sg si sk sl sn so sq sr ss st su sv sw ta te tg th ti tk tl
+    tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu ast ckb kab kmr zgh
+  )
+
   defstruct valid?: true,
             errors: [],
             user: nil,
@@ -36,6 +45,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             cc: [],
             context: nil,
             sensitive: false,
+            language: nil,
             object: nil,
             preview?: false,
             changes: %{}
@@ -62,6 +72,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> content()
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
+    |> with_valid(&language/1)
     |> sensitive()
     |> with_valid(&object/1)
     |> preview?()
@@ -224,6 +235,18 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | sensitive: sensitive}
   end
 
+  defp language(%{params: %{language: language}} = draft) when not_empty_string(language) do
+    case language |> String.split("_") |> Enum.at(0) do
+      locale when locale in @supported_locales ->
+        %__MODULE__{draft | language: locale}
+
+      _ ->
+        draft
+    end
+  end
+
+  defp language(draft), do: draft
+
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
@@ -264,6 +287,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       })
       |> Map.put("generator", draft.params[:generator])
       |> Map.put("content_type", draft.params[:content_type])
+      |> Map.put("language", draft.language)
 
     %__MODULE__{draft | object: object}
   end
