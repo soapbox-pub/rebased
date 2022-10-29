@@ -225,7 +225,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       mentions: mentions,
       tags: reblogged[:tags] || [],
       application: build_application(object.data["generator"]),
-      language: nil,
+      language: object.data["language"],
       emojis: [],
       pleroma: %{
         local: activity.local,
@@ -428,7 +428,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       mentions: mentions,
       tags: build_tags(tags),
       application: build_application(object.data["generator"]),
-      language: nil,
+      language: object.data["language"],
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
         local: activity.local,
