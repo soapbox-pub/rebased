@@ -44,6 +44,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_content_map()
     |> fix_addressing()
     |> fix_summary()
+    |> maybe_add_language()
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -1096,4 +1097,40 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp maybe_add_content_map(object), do: object
+
+  def maybe_add_language(object) do
+    language =
+      get_language_from_context(object) |> Pleroma.Web.CommonAPI.Utils.get_valid_language() ||
+        get_language_from_content_map(object) |> Pleroma.Web.CommonAPI.Utils.get_valid_language()
+
+    if language do
+      Map.put(object, "language", language)
+    else
+      object
+    end
+  end
+
+  defp get_language_from_context(%{"@context" => context}) do
+    case context
+         |> Enum.find(fn
+           %{"@language" => language} -> language != "und"
+           _ -> nil
+         end) do
+      %{"@language" => language} -> language
+      _ -> nil
+    end
+  end
+
+  defp get_language_from_context(_), do: nil
+
+  defp get_language_from_content_map(%{"contentMap" => content_map, "content" => source_content}) do
+    content_groups = Map.to_list(content_map)
+
+    case Enum.find(content_groups, fn {_, content} -> content == source_content end) do
+      {language, _} -> language
+      _ -> nil
+    end
+  end
+
+  defp get_language_from_content_map(_), do: nil
 end
