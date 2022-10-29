@@ -18,6 +18,7 @@ defmodule Pleroma.Webhook do
     field(:events, {:array, Ecto.Enum}, values: @event_types, null: false, default: [])
     field(:secret, :string, null: false, default: "")
     field(:enabled, :boolean, null: false, default: true)
+    field(:internal, :boolean, null: false, default: false)
 
     timestamps()
   end
@@ -32,7 +33,7 @@ defmodule Pleroma.Webhook do
 
   def changeset(%__MODULE__{} = webhook, params) do
     webhook
-    |> cast(params, [:url, :events, :enabled])
+    |> cast(params, [:url, :events, :enabled, :internal])
     |> validate_required([:url, :events])
     |> unique_constraint(:url)
     |> strip_events()
@@ -41,7 +42,7 @@ defmodule Pleroma.Webhook do
 
   def update_changeset(%__MODULE__{} = webhook, params \\ %{}) do
     webhook
-    |> cast(params, [:url, :events, :enabled])
+    |> cast(params, [:url, :events, :enabled, :internal])
     |> unique_constraint(:url)
     |> strip_events()
   end

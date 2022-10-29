@@ -11,6 +11,12 @@ defmodule Pleroma.Web.AdminAPI.FallbackController do
     |> json(%{error: dgettext("errors", "Not found")})
   end
 
+  def call(conn, {:error, :forbidden}) do
+    conn
+    |> put_status(:forbidden)
+    |> json(%{error: dgettext("errors", "Forbidden")})
+  end
+
   def call(conn, {:error, reason}) do
     conn
     |> put_status(:bad_request)
