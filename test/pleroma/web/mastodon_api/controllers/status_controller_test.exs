@@ -2233,7 +2233,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses/#{activity.id}/translate")
         |> json_response_and_validate_schema(200)
 
-        assert response == %{"content" => "!ćśezC", "detected_source_language" => "pl", "provider" => "TranslationMock"}
+      assert response == %{
+               "content" => "!ćśezC",
+               "detected_source_language" => "pl",
+               "provider" => "TranslationMock"
+             }
     end
 
     test "it returns an error if no target language provided" do
@@ -2250,6 +2254,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         conn
         |> post("/api/v1/statuses/#{activity.id}/translate")
         |> json_response_and_validate_schema(400)
+    end
+
+    test "it doesn't translate non-public statuses" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "Cześć!",
+          visibility: "private",
+          language: "pl"
+        })
+
+      response =
+        conn
+        |> post("/api/v1/statuses/#{activity.id}/translate")
+        |> json_response_and_validate_schema(404)
     end
   end
 end

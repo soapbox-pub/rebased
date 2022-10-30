@@ -456,6 +456,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   @doc "POST /api/v1/statuses/:id/translate"
   def translate(%{body_params: params, assigns: %{user: user}} = conn, %{id: status_id}) do
     with %Activity{object: object} <- Activity.get_by_id_with_object(status_id),
+         {:visibility, visibility} when visibility in ["public", "unlisted"] <-
+           {:visibility, Visibility.get_visibility(object)},
          {:language, language} when is_binary(language) <-
            {:language, Map.get(params, :target_language) || user.language},
          {:ok, result} <-
@@ -468,6 +470,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     else
       {:language, nil} ->
         render_error(conn, :bad_request, "Language not specified")
+
+      {:visibility, _} ->
+        render_error(conn, :not_found, "Record not found")
 
       {:error, :not_found} ->
         render_error(conn, :not_found, "Translation service not configured")
