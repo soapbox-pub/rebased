@@ -665,6 +665,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def render("translation.json", %{
+        content: content,
+        detected_source_language: detected_source_language,
+        provider: provider
+      }) do
+    %{content: content, detected_source_language: detected_source_language, provider: provider}
+  end
+
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
     object = Object.normalize(activity, fetch: false)
 
