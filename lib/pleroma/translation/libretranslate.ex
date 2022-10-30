@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Translation.LibreTranslate do
+defmodule Pleroma.Translation.Libretranslate do
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   alias Pleroma.Translation.Service

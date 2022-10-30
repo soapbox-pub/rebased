@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Translation.DeepL do
+defmodule Pleroma.Translation.Deepl do
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   alias Pleroma.Translation.Service
@@ -60,7 +60,7 @@ defmodule Pleroma.Translation.DeepL do
 
   defp endpoint_url do
     case get_plan() do
-      "free" -> "https://api-free.deepl.com/v2/translate"
+      :free -> "https://api-free.deepl.com/v2/translate"
       _ -> "https://api.deepl.com/v2/translate"
     end
   end
