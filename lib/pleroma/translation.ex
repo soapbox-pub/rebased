@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Translation do
-  @cache_ttl 86_400_000
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   def configured? do
@@ -45,7 +44,7 @@ defmodule Pleroma.Translation do
   end
 
   defp store_result({:ok, result}, cache_key) do
-    @cachex.put(:translations_cache, cache_key, result, ttl: @cache_ttl)
+    @cachex.put(:translations_cache, cache_key, result)
   end
 
   defp store_result(_, _), do: nil

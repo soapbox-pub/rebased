@@ -2212,4 +2212,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       |> json_response_and_validate_schema(:not_found)
     end
   end
+
+  describe "translating statuses" do
+    setup do: clear_config([Pleroma.Translation, :service], TranslationMock)
+
+    test "it translates a status to user language" do
+      user = insert(:user, language: "fr")
+      %{conn: conn, user: user} = oauth_access(["read:statuses"], user: user)
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{
+          status: "Cześć!",
+          visibility: "public",
+          language: "pl"
+        })
+
+      response =
+        conn
+        |> post("/api/v1/statuses/#{activity.id}/translate")
+        |> json_response_and_validate_schema(200)
+
+        assert response == %{"content" => "!ćśezC", "detected_source_language" => "pl", "provider" => "TranslationMock"}
+    end
+
+    test "it returns an error if no target language provided" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{
+          status: "Cześć!",
+          language: "pl"
+        })
+
+      response =
+        conn
+        |> post("/api/v1/statuses/#{activity.id}/translate")
+        |> json_response_and_validate_schema(400)
+    end
+  end
 end
