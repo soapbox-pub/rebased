@@ -19,7 +19,9 @@ defmodule Pleroma.Web.Utils.Colors do
     900 => 0.19
   }
 
-  def get_shades("#" <> base_color) do
+  def get_shades(base_color, overrides \\ %{})
+
+  def get_shades("#" <> base_color, overrides) do
     base_color = base_color |> hex_to_rgb()
 
     shades = %{
@@ -29,20 +31,34 @@ defmodule Pleroma.Web.Utils.Colors do
     shades =
       [50, 100, 200, 300, 400]
       |> Enum.reduce(shades, fn level, map ->
-        Map.put(map, level, lighten(base_color, Map.get(@intensity_map, level)))
+        Map.put(
+          map,
+          level,
+          get_override(level, overrides) || lighten(base_color, Map.get(@intensity_map, level))
+        )
       end)
 
     shades =
       [600, 700, 800, 900]
       |> Enum.reduce(shades, fn level, map ->
-        Map.put(map, level, darken(base_color, Map.get(@intensity_map, level)))
+        Map.put(
+          map,
+          level,
+          get_override(level, overrides) || darken(base_color, Map.get(@intensity_map, level))
+        )
       end)
 
     shades
   end
 
-  def get_shades(_) do
-    get_shades("#0482d8")
+  def get_shades(_, overrides), do: get_shades("#0482d8", overrides)
+
+  defp get_override(level, overrides) do
+    if Map.has_key?(overrides, "#{level}") do
+      Map.get(overrides, "#{level}")
+      |> hex_to_rgb()
+      |> rgb_to_string()
+    end
   end
 
   defp lighten(%RGB{red: red, green: green, blue: blue}, intensity) do
@@ -75,14 +91,18 @@ defmodule Pleroma.Web.Utils.Colors do
     }
   end
 
+  defp hex_to_rgb("#" <> base_color) do
+    hex_to_rgb(base_color)
+  end
+
   defp hex_to_decimal(hex) do
     {decimal, ""} = Integer.parse(hex, 16)
 
     decimal
   end
 
-  def shades_to_css(name, base_color \\ nil) do
-    get_shades(base_color)
+  def shades_to_css(name, base_color \\ nil, overrides \\ %{}) do
+    get_shades(base_color, overrides)
     |> Map.to_list()
     |> Enum.reduce([], fn {key, shade}, list -> list ++ ["--color-#{name}-#{key}: #{shade};"] end)
     |> Enum.join("\n")
