@@ -850,6 +850,13 @@ defmodule Pleroma.UserTest do
       freshed_user = refresh_record(user)
       assert freshed_user == fetched_user
     end
+
+    test "gets an existing user by nickname starting with http" do
+      user = insert(:user, nickname: "httpssome")
+      {:ok, fetched_user} = User.get_or_fetch("httpssome")
+
+      assert user == fetched_user
+    end
   end
 
   describe "fetching a user from nickname or trying to build one" do
