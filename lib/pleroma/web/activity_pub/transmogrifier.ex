@@ -1110,7 +1110,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp get_language_from_context(%{"@context" => context}) do
+  defp get_language_from_context(%{"@context" => context}) when is_list(context) do
     case context
          |> Enum.find(fn
            %{"@language" => language} -> language != "und"
