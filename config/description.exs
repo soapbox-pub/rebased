@@ -3550,5 +3550,18 @@ config :pleroma, :config_description, [
         description: "Update nickname according to host-meta, when refetching the user"
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Translation,
+    type: :group,
+    description: "Translation providers",
+    children: [
+      %{
+        key: Pleroma.Translation,
+        type: :service,
+        suggestions: [Pleroma.Translation.DeepL, Pleroma.Translation.LibreTranslate]
+      }
+    ]
   }
 ]

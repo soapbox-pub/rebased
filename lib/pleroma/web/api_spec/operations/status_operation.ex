@@ -433,9 +433,9 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           required: false
         ),
       responses: %{
-        200 => Operation.response("Translation", "application/json", translation())
-        400 => Operation.response("Error", "application/json", ApiError)
-        404 => Operation.response("Error", "application/json", ApiError)
+        200 => Operation.response("Translation", "application/json", translation()),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError),
         503 => Operation.response("Error", "application/json", ApiError)
       }
     }

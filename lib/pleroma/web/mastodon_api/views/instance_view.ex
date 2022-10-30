@@ -206,7 +206,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
-      translation: %{enabled: false}
+      translation: %{enabled: Pleroma.Translation.configured?}
     })
   end
 
