@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule TranslationMock do
-  alias Pleroma.Translation.Service
+  alias Pleroma.Language.Translation.Provider
 
-  @behaviour Service
+  @behaviour Provider
 
-  @impl Service
+  @impl Provider
   def configured?, do: true
 
-  @impl Service
+  @impl Provider
   def translate(content, source_language, _target_language) do
     {:ok,
      %{

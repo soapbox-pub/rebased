@@ -2214,7 +2214,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   end
 
   describe "translating statuses" do
-    setup do: clear_config([Pleroma.Translation, :service], TranslationMock)
+    setup do: clear_config([Pleroma.Language.Translation, :provider], TranslationMock)
 
     test "it translates a status to user language" do
       user = insert(:user, language: "fr")

@@ -143,7 +143,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "profile_directory"
       end,
       "pleroma:get:main/ostatus",
-      if Pleroma.Translation.configured?() do
+      if Pleroma.Language.Translation.configured?() do
         "translation"
       end
     ]
@@ -209,7 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
-      translation: %{enabled: Pleroma.Translation.configured?()}
+      translation: %{enabled: Pleroma.Language.Translation.configured?()}
     })
   end
 

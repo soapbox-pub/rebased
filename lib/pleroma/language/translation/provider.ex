@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Translation.Service do
+defmodule Pleroma.Language.Translation.Provider do
   @callback configured?() :: boolean()
 
   @callback translate(

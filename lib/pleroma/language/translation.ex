@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Translation do
+defmodule Pleroma.Language.Translation do
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   def configured? do
@@ -37,7 +37,7 @@ defmodule Pleroma.Translation do
     end
   end
 
-  defp get_service, do: Pleroma.Config.get([__MODULE__, :service])
+  defp get_service, do: Pleroma.Config.get([__MODULE__, :provider])
 
   defp get_cache_key(text, source_language, target_language) do
     "#{source_language}/#{target_language}/#{content_hash(text)}"

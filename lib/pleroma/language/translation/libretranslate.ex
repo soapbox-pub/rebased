@@ -2,17 +2,17 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Translation.Libretranslate do
+defmodule Pleroma.Language.Translation.Libretranslate do
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
-  alias Pleroma.Translation.Service
+  alias Pleroma.Language.Translation.Provider
 
-  @behaviour Service
+  @behaviour Provider
 
-  @impl Service
+  @impl Provider
   def configured?, do: not_empty_string(get_base_url())
 
-  @impl Service
+  @impl Provider
   def translate(content, source_language, target_language) do
     endpoint = endpoint_url()
 

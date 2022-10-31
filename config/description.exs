@@ -3553,38 +3553,41 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.Translation,
+    key: Pleroma.Language.Translation,
     type: :group,
     description: "Translation providers",
     children: [
       %{
-        key: :service,
+        key: :provider,
         type: :module,
-        suggestions: [Pleroma.Translation.Deepl, Pleroma.Translation.Libretranslate]
+        suggestions: [
+          Pleroma.Language.Translation.Deepl,
+          Pleroma.Language.Translation.Libretranslate
+        ]
       },
       %{
-        group: {:subgroup, Pleroma.Translation.Deepl},
+        group: {:subgroup, Pleroma.Language.Translation.Deepl},
         key: :plan,
         label: "DeepL plan",
         type: {:dropdown, :atom},
         suggestions: [:free, :pro]
       },
       %{
-        group: {:subgroup, Pleroma.Translation.Deepl},
+        group: {:subgroup, Pleroma.Language.Translation.Deepl},
         key: :api_key,
         label: "DeepL API Key",
         type: :string,
         suggestions: ["YOUR_API_KEY"]
       },
       %{
-        group: {:subgroup, Pleroma.Translation.Libretranslate},
+        group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
         key: :base_url,
         label: "LibreTranslate plan",
         type: :string,
         suggestions: ["https://libretranslate.com"]
       },
       %{
-        group: {:subgroup, Pleroma.Translation.Libretranslate},
+        group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
         key: :api_key,
         label: "LibreTranslate API Key",
         type: :string,
