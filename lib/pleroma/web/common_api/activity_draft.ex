@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Visibility
@@ -226,17 +227,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | sensitive: sensitive}
   end
 
-  defp language(%{params: %{language: language}} = draft) when not_empty_string(language) do
-    case Utils.get_valid_language(language) do
-      language when is_binary(language) ->
-        %__MODULE__{draft | language: language}
+  defp language(draft) do
+    language =
+      Utils.get_valid_language(draft.params[:language]) ||
+        LanguageDetector.detect(draft.full_payload)
 
-      _ ->
-        draft
-    end
+    %__MODULE__{draft | language: language}
   end
-
-  defp language(draft), do: draft
 
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)

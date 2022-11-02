@@ -3594,5 +3594,27 @@ config :pleroma, :config_description, [
         suggestions: ["YOUR_API_KEY"]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Language.LanguageDetector,
+    type: :group,
+    description: "Language detection providers",
+    children: [
+      %{
+        key: :provider,
+        type: :module,
+        suggestions: [
+          Pleroma.Language.LanguageDetector.Fasttext
+        ]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.LanguageDetector.Fasttext},
+        key: :model,
+        label: "fastText language detection model",
+        type: :string,
+        suggestions: ["/usr/share/fasttext/lid.176.bin"]
+      }
+    ]
   }
 ]

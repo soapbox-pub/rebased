@@ -6,9 +6,9 @@ defmodule Pleroma.Language.Translation do
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
 
   def configured? do
-    service = get_service()
+    provider = get_provider()
 
-    !!service and service.configured?
+    !!provider and provider.configured?
   end
 
   def translate(text, source_language, target_language) do
@@ -16,13 +16,13 @@ defmodule Pleroma.Language.Translation do
 
     case @cachex.get(:translations_cache, cache_key) do
       {:ok, nil} ->
-        service = get_service()
+        provider = get_provider()
 
         result =
-          if !service or !service.configured? do
+          if !configured?() do
             {:error, :not_found}
           else
-            service.translate(text, source_language, target_language)
+            provider.translate(text, source_language, target_language)
           end
 
         store_result(result, cache_key)
@@ -37,7 +37,7 @@ defmodule Pleroma.Language.Translation do
     end
   end
 
-  defp get_service, do: Pleroma.Config.get([__MODULE__, :provider])
+  defp get_provider, do: Pleroma.Config.get([__MODULE__, :provider])
 
   defp get_cache_key(text, source_language, target_language) do
     "#{source_language}/#{target_language}/#{content_hash(text)}"
