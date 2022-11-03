@@ -128,7 +128,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: id}} = draft) when is_binary(id) do
-    %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
+    case Activity.get_by_id(id) do
+      %Activity{} = activity ->
+        %__MODULE__{draft | in_reply_to: activity}
+
+      _ ->
+        add_error(draft, dgettext("errors", "The post being replied to was deleted"))
+    end
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: %Activity{} = in_reply_to}} = draft) do

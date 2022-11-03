@@ -773,6 +773,13 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: unlisted.id})
       {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
     end
+
+    test "block replying to a deleted or non-existant status" do
+      user = insert(:user)
+
+      assert {:error, "The post being replied to was deleted"} =
+               CommonAPI.post(user, %{status: "hi", in_reply_to_id: "nonexistant"})
+    end
   end
 
   describe "reactions" do
