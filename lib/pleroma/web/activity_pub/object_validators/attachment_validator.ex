@@ -45,9 +45,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
 
     struct
     |> cast(data, [:id, :type, :mediaType, :name, :blurhash])
-    |> cast_embed(:url, with: &url_changeset/2)
-    |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
-    |> validate_required([:type, :mediaType, :url])
+    |> cast_embed(:url, with: &url_changeset/2, required: true)
   end
 
   def url_changeset(struct, data) do
@@ -90,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
 
   defp validate_data(cng) do
     cng
-    |> validate_inclusion(:type, ~w[Document Audio Image Video])
-    |> validate_required([:mediaType, :url, :type])
+    |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
+    |> validate_required([:type, :mediaType])
   end
 end
