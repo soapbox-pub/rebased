@@ -11,7 +11,7 @@ defmodule Pleroma.Language.LanguageDetector do
     if provider do
       provider.missing_dependencies()
     else
-      nil
+      []
     end
   end
 
@@ -28,7 +28,7 @@ defmodule Pleroma.Language.LanguageDetector do
     end
   end
 
-  defp get_provider() do
+  defp get_provider do
     Pleroma.Config.get([__MODULE__, :provider])
   end
 end
