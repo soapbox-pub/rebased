@@ -41,7 +41,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
-      shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
       pleroma: pleroma_configuration(instance),
       soapbox: %{
@@ -119,13 +118,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       if Config.get([:gopher, :enabled]) do
         "gopher"
-      end,
-      # backwards compat
-      if Config.get([:shout, :enabled]) do
-        "chat"
-      end,
-      if Config.get([:shout, :enabled]) do
-        "shout"
       end,
       if Config.get([:instance, :allow_relay]) do
         "relay"
@@ -245,7 +237,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
           background_image:
             Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
-          shout_limit: Config.get([:shout, :limit]),
           description_limit: Keyword.get(instance, :description_limit)
         })
     })

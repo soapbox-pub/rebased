@@ -157,13 +157,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/accounts/verify_credentials"
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
-    chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
-
     render(conn, "show.json",
       user: user,
       for: user,
-      with_pleroma_settings: true,
-      with_chat_token: chat_token
+      with_pleroma_settings: true
     )
   end
 
