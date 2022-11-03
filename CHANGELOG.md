@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
 - Added move account API
 - Enable remote users to interact with posts
+- Possibility to discover users like `user@example.org`, while Pleroma is working on `pleroma.example.org`. Additional configuration required.
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
