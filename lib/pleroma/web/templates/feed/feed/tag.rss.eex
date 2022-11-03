@@ -9,7 +9,7 @@
     <webfeeds:logo><%= feed_logo() %></webfeeds:logo>
     <webfeeds:accentColor>2b90d9</webfeeds:accentColor>
     <%= for activity <- @activities do %>
-    <%= render @view_module, "_tag_activity.xml", Map.merge(assigns, prepare_activity(activity)) %>
+    <%= render Phoenix.Controller.view_module(@conn), "_tag_activity.xml", Map.merge(assigns, prepare_activity(activity)) %>
     <% end %>
   </channel>
 </rss>

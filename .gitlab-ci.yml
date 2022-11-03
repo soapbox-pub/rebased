@@ -247,7 +247,7 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:1.10.4
+  image: elixir:1.11.4
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -285,7 +285,7 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.10.4-alpine
+  image: elixir:1.11.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
@@ -301,7 +301,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.4
+  image: arm32v7/elixir:1.11.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -313,7 +313,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.4-alpine
+  image: arm32v7/elixir:1.11.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -325,7 +325,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.4
+  image: arm64v8/elixir:1.11.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -337,7 +337,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.4-alpine
+  image: arm64v8/elixir:1.11.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl

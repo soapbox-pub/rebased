@@ -17,6 +17,6 @@
     <updated><%= most_recent_update(@activities) %></updated>
     <link rel="self" href="<%= '#{Routes.tag_feed_url(@conn, :feed, @tag)}.atom'  %>" type="application/atom+xml"/>
     <%= for activity <- @activities do %>
-    <%= render @view_module, "_tag_activity.atom", Map.merge(assigns, prepare_activity(activity, actor: true)) %>
+    <%= render Phoenix.Controller.view_module(@conn), "_tag_activity.atom", Map.merge(assigns, prepare_activity(activity, actor: true)) %>
     <% end %>
 </feed>

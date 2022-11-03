@@ -5,6 +5,6 @@
     <title><%= @email.subject %></title>
   </head>
   <body>
-    <%= render @view_module, @view_template, assigns %>
+    <%= render Phoenix.Controller.view_module(@conn), Phoenix.Controller.view_template(@conn), assigns %>
   </body>
 </html>
