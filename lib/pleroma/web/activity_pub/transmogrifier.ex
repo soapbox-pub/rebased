@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -23,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
+  import Pleroma.Web.CommonAPI.Utils, only: [get_valid_language: 1]
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   require Logger
@@ -1100,8 +1102,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_add_language(object) do
     language =
-      get_language_from_context(object) |> Pleroma.Web.CommonAPI.Utils.get_valid_language() ||
-        get_language_from_content_map(object) |> Pleroma.Web.CommonAPI.Utils.get_valid_language()
+      get_language_from_context(object) |> get_valid_language() ||
+        get_language_from_content_map(object) |> get_valid_language() ||
+        get_language_from_content(object) |> get_valid_language()
 
     if language do
       Map.put(object, "language", language)
@@ -1133,4 +1136,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp get_language_from_content_map(_), do: nil
+
+  defp get_language_from_content(%{"summary" => summary, "content" => content}) do
+    LanguageDetector.detect("#{summary} #{content}")
+  end
+
+  defp get_language_from_content(_), do: nil
 end

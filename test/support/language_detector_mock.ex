@@ -14,5 +14,5 @@ defmodule LanguageDetectorMock do
   def configured?, do: true
 
   @impl Provider
-  def detect(text), do: "fr"
+  def detect(_text), do: "fr"
 end
