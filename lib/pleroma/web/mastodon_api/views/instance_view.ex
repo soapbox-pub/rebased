@@ -30,6 +30,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
+      configuration: configuration(),
+      rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
       max_media_attachments: Keyword.get(instance, :max_media_attachments),
@@ -41,27 +43,42 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
       shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
-      rules: render(__MODULE__, "rules.json"),
-      pleroma: %{
-        metadata: %{
-          account_activation_required: Keyword.get(instance, :account_activation_required),
-          features: features(),
-          federation: federation(),
-          fields_limits: fields_limits(),
-          post_formats: Config.get([:instance, :allowed_post_formats]),
-          privileged_staff: Config.get([:instance, :privileged_staff]),
-          birthday_required: Config.get([:instance, :birthday_required]),
-          birthday_min_age: Config.get([:instance, :birthday_min_age]),
-          migration_cooldown_period: Config.get([:instance, :migration_cooldown_period])
-        },
-        stats: %{mau: Pleroma.User.active_user_count()},
-        vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
-        oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies(),
-        favicon:
-          URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :favicon))
+      pleroma: pleroma_configuration(instance),
+      soapbox: %{
+        version: Soapbox.version()
+      }
+    }
+  end
+
+  def render("show2.json", _) do
+    instance = Config.get(:instance)
+
+    %{
+      domain: Pleroma.Web.Endpoint.url(),
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
+      source_url: Pleroma.Application.repository(),
+      description: Keyword.get(instance, :short_description),
+      usage: %{users: %{active_month: Pleroma.User.active_user_count()}},
+      thumbnail: %{
+        url:
+          URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
           |> to_string
       },
-      configuration: configuration(),
+      languages: ["en"],
+      configuration: configuration2(),
+      registrations: %{
+        enabled: Keyword.get(instance, :registrations_open),
+        approval_required: Keyword.get(instance, :account_approval_required),
+        message: nil
+      },
+      contact: %{
+        email: Keyword.get(instance, :email),
+        account: nil
+      },
+      rules: render(__MODULE__, "rules.json"),
+      # Extra (not present in Mastodon):
+      pleroma: pleroma_configuration2(instance),
       soapbox: %{
         version: Soapbox.version()
       }
@@ -183,5 +200,54 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         max_expiration: Config.get([:instance, :poll_limits, :max_expiration])
       }
     }
+  end
+
+  def configuration2 do
+    configuration()
+    |> Map.merge(%{
+      urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
+      translation: %{enabled: false}
+    })
+  end
+
+  defp pleroma_configuration(instance) do
+    %{
+      metadata: %{
+        account_activation_required: Keyword.get(instance, :account_activation_required),
+        features: features(),
+        federation: federation(),
+        fields_limits: fields_limits(),
+        post_formats: Config.get([:instance, :allowed_post_formats]),
+        privileged_staff: Config.get([:instance, :privileged_staff]),
+        birthday_required: Config.get([:instance, :birthday_required]),
+        birthday_min_age: Config.get([:instance, :birthday_min_age]),
+        migration_cooldown_period: Config.get([:instance, :migration_cooldown_period])
+      },
+      stats: %{mau: Pleroma.User.active_user_count()},
+      vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
+      oauth_consumer_strategies: Pleroma.Config.oauth_consumer_strategies(),
+      favicon:
+        URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :favicon))
+        |> to_string
+    }
+  end
+
+  defp pleroma_configuration2(instance) do
+    configuration = pleroma_configuration(instance)
+
+    configuration
+    |> Map.merge(%{
+      metadata:
+        configuration.metadata
+        |> Map.merge(%{
+          avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
+          background_upload_limit: Keyword.get(instance, :background_upload_limit),
+          banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
+          background_image:
+            Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
+          shout_limit: Config.get([:shout, :limit]),
+          description_limit: Keyword.get(instance, :description_limit)
+        })
+    })
   end
 end
