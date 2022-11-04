@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Language.TranslationTest do
+defmodule Pleroma.Language.Translation.DeeplTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Language.Translation.Deepl
@@ -13,11 +13,11 @@ defmodule Pleroma.Language.TranslationTest do
     clear_config([Pleroma.Language.Translation.Deepl, :api_key], "API_KEY")
 
     {:ok, res} =
-             Deepl.translate(
-               "USUNĄĆ ŚLEDZIKA!Wklej to na swojego śledzika. Jeżeli uzbieramy 70% użytkowników nk...to usuną śledzika!!!",
-               "pl",
-               "en"
-             )
+      Deepl.translate(
+        "USUNĄĆ ŚLEDZIKA!Wklej to na swojego śledzika. Jeżeli uzbieramy 70% użytkowników nk...to usuną śledzika!!!",
+        "pl",
+        "en"
+      )
 
     assert %{
              detected_source_language: "PL",

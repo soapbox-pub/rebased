@@ -11,7 +11,7 @@ defmodule Pleroma.Language.Translation.Deepl do
 
   @impl Provider
   def configured? do
-    not_empty_string(get_plan()) and not_empty_string(get_api_key())
+    is_atom(get_plan()) and not_empty_string(get_api_key())
   end
 
   @impl Provider
