@@ -2744,27 +2744,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :shout,
-    type: :group,
-    description: "Pleroma shout settings",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables the backend Shoutbox chat feature."
-      },
-      %{
-        key: :limit,
-        type: :integer,
-        description: "Shout message character limit.",
-        suggestions: [
-          5_000
-        ]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: :http,
     label: "HTTP",
     type: :group,

@@ -8,11 +8,6 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
-## :shout
-
-* `enabled` - Enables the backend Shoutbox chat feature. Defaults to `true`.
-* `limit` - Shout character limit. Defaults to `5_000`
-
 ## :instance
 * `name`: The instance’s name.
 * `email`: Email used to reach an Administrator/Moderator of the instance.
