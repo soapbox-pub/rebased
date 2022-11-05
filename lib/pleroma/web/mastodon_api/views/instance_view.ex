@@ -142,7 +142,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
       end,
-      "pleroma:get:main/ostatus"
+      "pleroma:get:main/ostatus",
+      if Pleroma.Language.Translation.configured?() do
+        "translation"
+      end
     ]
     |> Enum.filter(& &1)
   end
@@ -206,7 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
-      translation: %{enabled: false}
+      translation: %{enabled: Pleroma.Language.Translation.configured?()}
     })
   end
 

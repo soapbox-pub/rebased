@@ -392,6 +392,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified["object"]["quoteUrl"] == quote_id
       assert modified["object"]["quoteUri"] == quote_id
     end
+
+    test "it adds contentMap if language is specified" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "тест", language: "uk"})
+
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert prepared["object"]["contentMap"] == %{
+               "uk" => "тест"
+             }
+    end
   end
 
   describe "user upgrade" do

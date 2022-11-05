@@ -220,6 +220,36 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
                "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
     end
 
+    test "it only uses contentMap if content is not present" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "id" => Utils.generate_object_id(),
+          "type" => "Note",
+          "content" => "Hi",
+          "contentMap" => %{
+            "de" => "Hallo",
+            "uk" => "Привіт"
+          },
+          "inReplyTo" => nil,
+          "attributedTo" => user.ap_id
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(message)
+      object = Object.normalize(data["object"], fetch: false)
+
+      assert object.data["content"] == "Hi"
+    end
+
     test "it works for incoming notices with to/cc not being an array (kroeg)" do
       data = File.read!("test/fixtures/kroeg-post-activity.json") |> Jason.decode!()
 
@@ -354,6 +384,87 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
 
       assert ["http://mastodon.example.org/users/admin/followers"] == activity.data["cc"]
       assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
+    end
+
+    test "it detects language from context" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => ["https://www.w3.org/ns/activitystreams", %{"@language" => "pl"}],
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "id" => Utils.generate_object_id(),
+          "type" => "Note",
+          "content" => "Szczęść Boże",
+          "attributedTo" => user.ap_id
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(message)
+      object = Object.normalize(data["object"], fetch: false)
+
+      assert object.data["language"] == "pl"
+    end
+
+    test "it detects language from contentMap" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "id" => Utils.generate_object_id(),
+          "type" => "Note",
+          "content" => "Szczęść Boże",
+          "contentMap" => %{
+            "de" => "Gott segne",
+            "pl" => "Szczęść Boże"
+          },
+          "attributedTo" => user.ap_id
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(message)
+      object = Object.normalize(data["object"], fetch: false)
+
+      assert object.data["language"] == "pl"
+    end
+
+    test "it detects language from content" do
+      clear_config([Pleroma.Language.LanguageDetector, :provider], LanguageDetectorMock)
+
+      user = insert(:user)
+
+      message = %{
+        "@context" => ["https://www.w3.org/ns/activitystreams"],
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "id" => Utils.generate_object_id(),
+          "type" => "Note",
+          "content" => "Dieu vous bénisse, Fédivers.",
+          "attributedTo" => user.ap_id
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(message)
+      object = Object.normalize(data["object"], fetch: false)
+
+      assert object.data["language"] == "fr"
     end
   end
 

@@ -22,7 +22,8 @@ defmodule Pleroma.Constants do
       "generator",
       "assigned_account",
       "rules",
-      "content_type"
+      "content_type",
+      "language"
     ]
   )
 
@@ -41,7 +42,8 @@ defmodule Pleroma.Constants do
       "summary",
       "sensitive",
       "attachment",
-      "generator"
+      "generator",
+      "language"
     ]
   )
 

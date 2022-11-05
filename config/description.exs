@@ -3550,5 +3550,71 @@ config :pleroma, :config_description, [
         description: "Update nickname according to host-meta, when refetching the user"
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Language.Translation,
+    type: :group,
+    description: "Translation providers",
+    children: [
+      %{
+        key: :provider,
+        type: :module,
+        suggestions: [
+          Pleroma.Language.Translation.Deepl,
+          Pleroma.Language.Translation.Libretranslate
+        ]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Deepl},
+        key: :plan,
+        label: "DeepL plan",
+        type: {:dropdown, :atom},
+        suggestions: [:free, :pro]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Deepl},
+        key: :api_key,
+        label: "DeepL API Key",
+        type: :string,
+        suggestions: ["YOUR_API_KEY"]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
+        key: :base_url,
+        label: "LibreTranslate plan",
+        type: :string,
+        suggestions: ["https://libretranslate.com"]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
+        key: :api_key,
+        label: "LibreTranslate API Key",
+        type: :string,
+        suggestions: ["YOUR_API_KEY"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Language.LanguageDetector,
+    type: :group,
+    description: "Language detection providers",
+    children: [
+      %{
+        key: :provider,
+        type: :module,
+        suggestions: [
+          Pleroma.Language.LanguageDetector.Fasttext
+        ]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.LanguageDetector.Fasttext},
+        key: :model,
+        label: "fastText language detection model",
+        type: :string,
+        suggestions: ["/usr/share/fasttext/lid.176.bin"]
+      }
+    ]
   }
 ]

@@ -19,6 +19,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.Web.Router.Helpers
 
   import Ecto.Query
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   require Logger
   require Pleroma.Constants
@@ -107,17 +108,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     end
   end
 
-  def make_json_ld_header do
+  def make_json_ld_header(data \\ %{}) do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
         "#{Endpoint.url()}/schemas/litepub-0.1.jsonld",
         %{
-          "@language" => "und"
+          "@language" => get_language(data)
         }
       ]
     }
   end
+
+  defp get_language(%{"language" => language}) when not_empty_string(language) do
+    language
+  end
+
+  defp get_language(_), do: "und"
 
   def make_date do
     DateTime.utc_now() |> DateTime.to_iso8601()
