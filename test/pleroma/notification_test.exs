@@ -1167,23 +1167,6 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(user))
     end
 
-    test "replying to a deleted post without tagging does not generate a notification" do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
-      {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
-
-      {:ok, _reply_activity} =
-        CommonAPI.post(other_user, %{
-          status: "test reply",
-          in_reply_to_status_id: activity.id
-        })
-
-      Pleroma.Tests.ObanHelpers.perform_all()
-      assert Enum.empty?(Notification.for_user(user))
-    end
-
     test "notifications are deleted if a local user is deleted" do
       user = insert(:user)
       other_user = insert(:user)

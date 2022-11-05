@@ -104,14 +104,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
 
     struct
     |> cast(data, __schema__(:fields) -- [:attachment, :tag])
-    |> cast_embed(:attachment)
+    |> cast_embed(:attachment, required: true)
     |> cast_embed(:tag)
   end
 
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Audio", "Video"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :attachment])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     email = Pleroma.Config.get([:instance, :email])
     thumbnail = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :instance_thumbnail])
     background = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :background_image])
+    favicon = Pleroma.Web.Endpoint.url() <> Pleroma.Config.get([:instance, :favicon])
 
     # Note: not checking for "max_toot_chars" since it's optional
     assert %{
@@ -44,7 +45,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "background_image" => from_config_background,
              "shout_limit" => _,
              "description_limit" => _,
-             "rules" => _
+             "rules" => _,
+             "pleroma" => %{
+               "favicon" => from_config_favicon
+             }
            } = result
 
     assert result["version"] =~ "Pleroma"
@@ -60,6 +64,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert email == from_config_email
     assert thumbnail == from_config_thumbnail
     assert background == from_config_background
+    assert favicon == from_config_favicon
   end
 
   test "get instance stats", %{conn: conn} do
@@ -132,5 +137,12 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result = json_response_and_validate_schema(conn, 200)
 
     assert result["pleroma"]["oauth_consumer_strategies"] == ["keycloak"]
+  end
+
+  test "get instance information v2", %{conn: conn} do
+    clear_config([:auth, :oauth_consumer_strategies], [])
+
+    assert get(conn, "/api/v2/instance")
+           |> json_response_and_validate_schema(200)
   end
 end

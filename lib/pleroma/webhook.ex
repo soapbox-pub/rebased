@@ -14,10 +14,10 @@ defmodule Pleroma.Webhook do
   @event_types [:"account.created", :"report.created"]
 
   schema "webhooks" do
-    field(:url, ObjectValidators.Uri, null: false)
-    field(:events, {:array, Ecto.Enum}, values: @event_types, null: false, default: [])
-    field(:secret, :string, null: false, default: "")
-    field(:enabled, :boolean, null: false, default: true)
+    field(:url, ObjectValidators.Uri)
+    field(:events, {:array, Ecto.Enum}, values: @event_types, default: [])
+    field(:secret, :string, default: "")
+    field(:enabled, :boolean, default: true)
 
     timestamps()
   end
