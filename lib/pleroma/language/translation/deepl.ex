@@ -11,12 +11,12 @@ defmodule Pleroma.Language.Translation.Deepl do
 
   @impl Provider
   def configured? do
-    is_atom(get_plan()) and not_empty_string(get_api_key())
+    is_atom(get_base_url()) and not_empty_string(get_api_key())
   end
 
   @impl Provider
   def translate(content, source_language, target_language) do
-    endpoint = endpoint_url()
+    endpoint = get_base_url()
 
     case Pleroma.HTTP.post(
            endpoint <>
@@ -58,15 +58,8 @@ defmodule Pleroma.Language.Translation.Deepl do
     end
   end
 
-  defp endpoint_url do
-    case get_plan() do
-      :free -> "https://api-free.deepl.com/v2/translate"
-      _ -> "https://api.deepl.com/v2/translate"
-    end
-  end
-
-  defp get_plan do
-    Pleroma.Config.get([__MODULE__, :plan])
+  defp get_base_url do
+    Pleroma.Config.get([__MODULE__, :base_url])
   end
 
   defp get_api_key do

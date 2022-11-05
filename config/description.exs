@@ -3567,10 +3567,10 @@ config :pleroma, :config_description, [
       },
       %{
         group: {:subgroup, Pleroma.Language.Translation.Deepl},
-        key: :plan,
-        label: "DeepL plan",
-        type: {:dropdown, :atom},
-        suggestions: [:free, :pro]
+        key: :base_url,
+        label: "DeepL base URL",
+        type: :string,
+        suggestions: ["https://api-free.deepl.com", "https://api.deepl.com"]
       },
       %{
         group: {:subgroup, Pleroma.Language.Translation.Deepl},
@@ -3582,7 +3582,7 @@ config :pleroma, :config_description, [
       %{
         group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
         key: :base_url,
-        label: "LibreTranslate plan",
+        label: "LibreTranslate instance URL",
         type: :string,
         suggestions: ["https://libretranslate.com"]
       },
