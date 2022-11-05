@@ -6,7 +6,7 @@ ARG MIX_ENV=prod \
 WORKDIR /src
 
 RUN apt-get update &&\
-    apt-get install -y git elixir erlang-dev erlang-nox build-essential cmake libssl-dev libmagic-dev automake autoconf libncurses5-dev &&\
+    apt-get install -y git elixir erlang-dev erlang-nox build-essential cmake libssl-dev libmagic-dev automake autoconf libncurses5-dev fasttext &&\
     mix local.hex --force &&\
     mix local.rebar --force
 
@@ -46,7 +46,10 @@ RUN apt-get update &&\
     mkdir -p ${DATA}/static &&\
     chown -R pleroma ${DATA} &&\
     mkdir -p /etc/pleroma &&\
-    chown -R pleroma /etc/pleroma
+    chown -R pleroma /etc/pleroma &&\
+    mkdir -p /usr/share/fasttext &&\
+    curl -L https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin -o /usr/share/fasttext/lid.176.bin &&\
+    chmod 0644 /usr/share/fasttext/lid.176.bin
 
 USER pleroma
 
