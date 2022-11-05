@@ -428,6 +428,10 @@ config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, prefix: "RT"
 
+config :pleroma, :mrf_remote_report,
+  reject_anonymous: true,
+  reject_empty_message: true
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
