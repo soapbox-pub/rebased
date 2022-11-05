@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicy do
   @impl true
   def filter(%{"type" => "Flag"} = object) do
     with {_, false} <- {:local, local?(object)},
+         {:ok, _} <- maybe_reject_all(object),
          {:ok, _} <- maybe_reject_anonymous(object),
          {:ok, _} <- maybe_reject_empty_message(object) do
       {:ok, object}
@@ -18,6 +19,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicy do
   end
 
   def filter(object), do: {:ok, object}
+
+  defp maybe_reject_all(object) do
+    if Config.get([:mrf_remote_report, :reject_all]) do
+      {:reject, "[RemoteReportPolicy] Remote report"}
+    else
+      {:ok, object}
+    end
+  end
 
   defp maybe_reject_anonymous(%{"actor" => actor} = object) do
     with true <- Config.get([:mrf_remote_report, :reject_anonymous]),
@@ -62,6 +71,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.RemoteReportPolicy do
       label: "MRF Remote Report",
       description: "Drop remote reports if they don't contain enough information.",
       children: [
+        %{
+          key: :reject_all,
+          type: :boolean,
+          description: "Reject all remote reports? (this option takes precedence)",
+          suggestions: [false]
+        },
         %{
           key: :reject_anonymous,
           type: :boolean,
