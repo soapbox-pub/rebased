@@ -16,7 +16,7 @@ defmodule Pleroma.Language.Translation.Deepl do
 
   @impl Provider
   def translate(content, source_language, target_language) do
-    endpoint = get_base_url()
+    endpoint = get_endpoint()
 
     case Pleroma.HTTP.post(
            endpoint <>
@@ -56,6 +56,12 @@ defmodule Pleroma.Language.Translation.Deepl do
       _ ->
         {:error, :internal_server_error}
     end
+  end
+
+  defp get_endpoint do
+    get_base_url()
+    |> URI.merge("/v2/translate")
+    |> URI.to_string()
   end
 
   defp get_base_url do
