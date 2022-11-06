@@ -9,7 +9,7 @@ defmodule Pleroma.Language.Translation.DeeplTest do
 
   test "it translates text" do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-    clear_config([Pleroma.Language.Translation.Deepl, :plan], :free)
+    clear_config([Pleroma.Language.Translation.Deepl, :base_url], "https://api-free.deepl.com")
     clear_config([Pleroma.Language.Translation.Deepl, :api_key], "API_KEY")
 
     {:ok, res} =

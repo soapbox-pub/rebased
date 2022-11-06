@@ -25,7 +25,7 @@ defmodule Pleroma.Language.LanguageDetector.Fasttext do
   def detect(text) do
     text_path = Path.join(System.tmp_dir!(), "fasttext-#{Ecto.UUID.generate()}")
 
-    File.write(text_path, text)
+    File.write(text_path, text |> String.replace(~r/\s+/, " "))
 
     detected_language =
       case System.cmd("fasttext", ["predict", get_model(), text_path]) do
