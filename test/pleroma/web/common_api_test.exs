@@ -518,6 +518,15 @@ defmodule Pleroma.Web.CommonAPITest do
     assert Object.tags(object) == ["2hu"]
   end
 
+  test "zwnj is treated as word character" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{status: "#ساٴين‌س"})
+
+    object = Object.normalize(activity, fetch: false)
+
+    assert Object.tags(object) == ["ساٴين‌س"]
+  end
+
   test "it adds emoji in the object" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: ":firefox:"})
