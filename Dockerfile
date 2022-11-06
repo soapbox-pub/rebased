@@ -40,7 +40,7 @@ ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
 RUN apt-get update &&\
-    apt-get install -y --no-install-recommends curl imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client fasttext &&\
+    apt-get install -y --no-install-recommends curl ca-certificates imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client fasttext &&\
     adduser --system --shell /bin/false --home ${HOME} pleroma &&\
     mkdir -p ${DATA}/uploads &&\
     mkdir -p ${DATA}/static &&\
