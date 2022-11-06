@@ -6,7 +6,7 @@ ARG MIX_ENV=prod \
 WORKDIR /src
 
 RUN apt-get update &&\
-    apt-get install -y git elixir erlang-dev erlang-nox build-essential cmake libssl-dev libmagic-dev automake autoconf libncurses5-dev fasttext &&\
+    apt-get install -y git elixir erlang-dev erlang-nox build-essential cmake libssl-dev libmagic-dev automake autoconf libncurses5-dev &&\
     mix local.hex --force &&\
     mix local.rebar --force
 
@@ -40,7 +40,7 @@ ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
 RUN apt-get update &&\
-    apt-get install -y --no-install-recommends imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client &&\
+    apt-get install -y --no-install-recommends curl imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client fasttext &&\
     adduser --system --shell /bin/false --home ${HOME} pleroma &&\
     mkdir -p ${DATA}/uploads &&\
     mkdir -p ${DATA}/static &&\
