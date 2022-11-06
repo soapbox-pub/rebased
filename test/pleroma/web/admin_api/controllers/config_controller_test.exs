@@ -409,7 +409,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "saving config which need pleroma reboot", %{conn: conn} do
-      clear_config([:shout, :enabled], true)
+      clear_config([:streamer, :workers], 3)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -417,17 +417,17 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "/api/pleroma/admin/config",
                %{
                  configs: [
-                   %{group: ":pleroma", key: ":shout", value: [%{"tuple" => [":enabled", true]}]}
+                   %{group: ":pleroma", key: ":streamer", value: [%{"tuple" => [":workers", 5]}]}
                  ]
                }
              )
              |> json_response_and_validate_schema(200) == %{
                "configs" => [
                  %{
-                   "db" => [":enabled"],
+                   "db" => [":workers"],
                    "group" => ":pleroma",
-                   "key" => ":shout",
-                   "value" => [%{"tuple" => [":enabled", true]}]
+                   "key" => ":streamer",
+                   "value" => [%{"tuple" => [":workers", 5]}]
                  }
                ],
                "need_reboot" => true
@@ -454,7 +454,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
-      clear_config([:shout, :enabled], true)
+      clear_config([:streamer, :workers], 3)
 
       assert conn
              |> put_req_header("content-type", "application/json")
@@ -462,17 +462,17 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "/api/pleroma/admin/config",
                %{
                  configs: [
-                   %{group: ":pleroma", key: ":shout", value: [%{"tuple" => [":enabled", true]}]}
+                   %{group: ":pleroma", key: ":streamer", value: [%{"tuple" => [":workers", 5]}]}
                  ]
                }
              )
              |> json_response_and_validate_schema(200) == %{
                "configs" => [
                  %{
-                   "db" => [":enabled"],
+                   "db" => [":workers"],
                    "group" => ":pleroma",
-                   "key" => ":shout",
-                   "value" => [%{"tuple" => [":enabled", true]}]
+                   "key" => ":streamer",
+                   "value" => [%{"tuple" => [":workers", 5]}]
                  }
                ],
                "need_reboot" => true
