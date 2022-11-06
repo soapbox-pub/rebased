@@ -20,7 +20,7 @@ defmodule Pleroma.Language.Translation.Deepl do
 
     case Pleroma.HTTP.post(
            endpoint <>
-             "?" <>
+             "/v2/translate?" <>
              URI.encode_query(%{
                text: content,
                source_lang: source_language |> String.upcase(),
