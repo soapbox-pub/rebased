@@ -59,7 +59,9 @@ defmodule Pleroma.Language.Translation.Deepl do
   end
 
   defp get_endpoint do
-    URI.merge(get_base_url(), "/v2/translate")
+    get_base_url()
+    |> URI.merge("/v2/translate")
+    |> URI.to_string()
   end
 
   defp get_base_url do
