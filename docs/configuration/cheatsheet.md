@@ -204,7 +204,7 @@ config :pleroma, :mrf_user_allowlist, %{
   e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
-  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message
   * `:reject` rejects the message entirely
 
 #### :mrf_steal_emoji
