@@ -17,4 +17,9 @@ defmodule Pleroma.Language.Translation.Provider do
                  provider: String.t()
                }}
               | {:error, atom()}
+
+  @callback supported_languages(type :: :string | :target) ::
+              {:ok, [String.t()]} | {:error, atom()}
+
+  @callback name() :: String.t()
 end

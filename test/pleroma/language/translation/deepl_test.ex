@@ -24,4 +24,14 @@ defmodule Pleroma.Language.Translation.DeeplTest do
              provider: "DeepL"
            } = res
   end
+
+  test "it returns languages list" do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    clear_config([Pleroma.Language.Translation.Deepl, :base_url], "https://api-free.deepl.com")
+    clear_config([Pleroma.Language.Translation.Deepl, :api_key], "API_KEY")
+
+    assert {:ok, [language | _languages]} = Deepl.supported_languages(:target)
+
+    assert is_binary(language)
+  end
 end

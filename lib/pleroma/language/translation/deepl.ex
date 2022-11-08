@@ -9,14 +9,17 @@ defmodule Pleroma.Language.Translation.Deepl do
 
   @behaviour Provider
 
+  @name "DeepL"
+
   @impl Provider
-  def configured? do
-    not_empty_string(get_base_url()) and not_empty_string(get_api_key())
-  end
+  def configured?, do: not_empty_string(base_url()) and not_empty_string(api_key())
 
   @impl Provider
   def translate(content, source_language, target_language) do
-    endpoint = get_endpoint()
+    endpoint =
+      base_url()
+      |> URI.merge("/v2/translate")
+      |> URI.to_string()
 
     case Pleroma.HTTP.post(
            endpoint <>
@@ -30,7 +33,7 @@ defmodule Pleroma.Language.Translation.Deepl do
            "",
            [
              {"Content-Type", "application/x-www-form-urlencoded"},
-             {"Authorization", "DeepL-Auth-Key #{get_api_key()}"}
+             {"Authorization", "DeepL-Auth-Key #{api_key()}"}
            ]
          ) do
       {:ok, %{status: 429}} ->
@@ -50,7 +53,7 @@ defmodule Pleroma.Language.Translation.Deepl do
          %{
            content: content,
            detected_source_language: detected_source_language,
-           provider: "DeepL"
+           provider: @name
          }}
 
       _ ->
@@ -58,17 +61,42 @@ defmodule Pleroma.Language.Translation.Deepl do
     end
   end
 
-  defp get_endpoint do
-    get_base_url()
-    |> URI.merge("/v2/translate")
-    |> URI.to_string()
+  @impl Provider
+  def supported_languages(type) when type in [:source, :target] do
+    endpoint =
+      base_url()
+      |> URI.merge("/v2/languages")
+      |> URI.to_string()
+
+    case Pleroma.HTTP.post(
+           endpoint <> "?" <> URI.encode_query(%{type: type}),
+           "",
+           [
+             {"Content-Type", "application/x-www-form-urlencoded"},
+             {"Authorization", "DeepL-Auth-Key #{api_key()}"}
+           ]
+         ) do
+      {:ok, %{status: 200} = res} ->
+        IO.inspect(res.body)
+        languages =
+          Jason.decode!(res.body)
+          |> Enum.map(fn %{"language" => language} -> language |> String.downcase() end)
+
+        {:ok, languages}
+
+      _ ->
+        {:error, :internal_server_error}
+    end
   end
 
-  defp get_base_url do
+  @impl Provider
+  def name, do: @name
+
+  defp base_url do
     Pleroma.Config.get([__MODULE__, :base_url])
   end
 
-  defp get_api_key do
+  defp api_key do
     Pleroma.Config.get([__MODULE__, :api_key])
   end
 end

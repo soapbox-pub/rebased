@@ -204,8 +204,30 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
-      translation: %{enabled: Pleroma.Language.Translation.configured?()}
+      translation: translation_config()
     })
+  end
+
+  defp translation_config do
+    enabled = Pleroma.Language.Translation.configured?()
+
+    source_languages =
+      case Pleroma.Language.Translation.supported_languages(:source) do
+        {:ok, languages} -> languages
+        _ -> nil
+      end
+
+    target_languages =
+      case Pleroma.Language.Translation.supported_languages(:target) do
+        {:ok, languages} -> languages
+        _ -> nil
+      end
+
+    %{
+      enabled: enabled,
+      source_languages: source_languages,
+      target_languages: target_languages
+    }
   end
 
   defp pleroma_configuration(instance) do

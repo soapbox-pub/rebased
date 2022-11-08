@@ -9,21 +9,21 @@ defmodule Pleroma.Language.Translation.Libretranslate do
 
   @behaviour Provider
 
+  @name "LibreTranslate"
+
   @impl Provider
-  def configured?, do: not_empty_string(get_base_url())
+  def configured?, do: not_empty_string(base_url()) and not_empty_string(api_key())
 
   @impl Provider
   def translate(content, source_language, target_language) do
-    endpoint = endpoint_url()
-
     case Pleroma.HTTP.post(
-           endpoint,
+           base_url() <> "/translate",
            Jason.encode!(%{
              q: content,
              source: source_language |> String.upcase(),
              target: target_language,
              format: "html",
-             api_key: get_api_key()
+             api_key: api_key()
            }),
            [
              {"Content-Type", "application/json"}
@@ -52,15 +52,29 @@ defmodule Pleroma.Language.Translation.Libretranslate do
     end
   end
 
-  defp endpoint_url do
-    get_base_url() <> "/translate"
+  @impl Provider
+  def supported_languages(_) do
+    case Pleroma.HTTP.get(base_url() <> "/languages") do
+      {:ok, %{status: 200} = res} ->
+        languages =
+          Jason.decode!(res.body)
+          |> Enum.map(fn %{"code" => code} -> code end)
+
+        {:ok, languages}
+
+      _ ->
+        {:error, :internal_server_error}
+    end
   end
 
-  defp get_base_url do
+  @impl Provider
+  def name, do: @name
+
+  defp base_url do
     Pleroma.Config.get([__MODULE__, :base_url])
   end
 
-  defp get_api_key do
+  defp api_key do
     Pleroma.Config.get([__MODULE__, :api_key], "")
   end
 end
