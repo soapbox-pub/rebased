@@ -30,7 +30,7 @@ LABEL maintainer="hello@soapbox.pub" \
     org.opencontainers.image.description="Rebased" \
     org.opencontainers.image.authors="hello@soapbox.pub" \
     org.opencontainers.image.vendor="soapbox.pub" \
-    org.opencontainers.image.documentation="https://gitlab.com/soapbox-pub/soapbox-be" \
+    org.opencontainers.image.documentation="https://gitlab.com/soapbox-pub/rebased" \
     org.opencontainers.image.licenses="AGPL-3.0" \
     org.opencontainers.image.url="https://soapbox.pub" \
     org.opencontainers.image.revision=$VCS_REF \
@@ -48,8 +48,8 @@ RUN apt-get update &&\
     mkdir -p /etc/pleroma &&\
     chown -R pleroma /etc/pleroma &&\
     mkdir -p /usr/share/fasttext &&\
-    curl -L https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin -o /usr/share/fasttext/lid.176.bin &&\
-    chmod 0644 /usr/share/fasttext/lid.176.bin
+    curl -L https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz -o /usr/share/fasttext/lid.176.ftz &&\
+    chmod 0644 /usr/share/fasttext/lid.176.ftz
 
 USER pleroma
 
