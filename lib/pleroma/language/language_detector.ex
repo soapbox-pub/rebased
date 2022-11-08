@@ -19,7 +19,9 @@ defmodule Pleroma.Language.LanguageDetector do
   defp prepare_text(text) do
     text
     |> Floki.parse_fragment!()
-    |> Floki.filter_out(".h-card, .mention, .hashtag, .u-url, .quote-inline, .recipients-inline, code, pre")
+    |> Floki.filter_out(
+      ".h-card, .mention, .hashtag, .u-url, .quote-inline, .recipients-inline, code, pre"
+    )
     |> Floki.text()
   end
 
