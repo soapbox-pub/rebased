@@ -236,7 +236,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp language(draft) do
     language =
       Utils.get_valid_language(draft.params[:language]) ||
-        LanguageDetector.detect(draft.full_payload)
+        LanguageDetector.detect(draft.content_html <> " " <> draft.summary)
 
     %__MODULE__{draft | language: language}
   end
