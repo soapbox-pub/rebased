@@ -77,7 +77,6 @@ defmodule Pleroma.Language.Translation.Deepl do
            ]
          ) do
       {:ok, %{status: 200} = res} ->
-        IO.inspect(res.body)
         languages =
           Jason.decode!(res.body)
           |> Enum.map(fn %{"language" => language} -> language |> String.downcase() end)
