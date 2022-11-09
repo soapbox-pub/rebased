@@ -193,6 +193,7 @@ defmodule Pleroma.Mixfile do
       {:eblurhash, "~> 1.2.2"},
       {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
+      {:vix, "~> 0.14.0"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
