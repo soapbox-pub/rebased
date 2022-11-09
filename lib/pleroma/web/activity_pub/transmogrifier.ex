@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -23,6 +24,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
+  import Pleroma.Web.CommonAPI.Utils, only: [get_valid_language: 1]
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   require Logger
   require Pleroma.Constants
@@ -43,6 +46,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_content_map()
     |> fix_addressing()
     |> fix_summary()
+    |> maybe_add_language()
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -389,6 +393,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_tag(object), do: object
 
+  def fix_content_map(%{"content" => content} = object) when not_empty_string(content), do: object
+
   # content map usually only has one language so this will do for now.
   def fix_content_map(%{"contentMap" => content_map} = object) do
     content_groups = Map.to_list(content_map)
@@ -526,6 +532,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> fix_type(fetch_options)
       |> fix_in_reply_to(fetch_options)
       |> fix_quote_url(fetch_options)
+      |> maybe_add_language_from_activity(data)
 
     data = Map.put(data, "object", object)
     options = Keyword.put(options, :local, false)
@@ -769,6 +776,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_emoji_tags
     |> add_attributed_to
+    |> maybe_add_content_map
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
@@ -814,7 +822,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -829,7 +837,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> Map.put("object", object)
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -850,7 +858,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> strip_internal_fields
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
       |> Map.delete("bcc")
 
     {:ok, data}
@@ -870,7 +878,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.merge(Utils.make_json_ld_header())
+        |> Map.merge(Utils.make_json_ld_header(data))
 
       {:ok, data}
     end
@@ -888,7 +896,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.merge(Utils.make_json_ld_header())
+        |> Map.merge(Utils.make_json_ld_header(data))
 
       {:ok, data}
     end
@@ -899,7 +907,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data
       |> strip_internal_fields
       |> maybe_fix_object_url
-      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.merge(Utils.make_json_ld_header(data))
 
     {:ok, data}
   end
@@ -1085,4 +1093,64 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
+
+  defp maybe_add_content_map(%{"language" => language, "content" => content} = object)
+       when not_empty_string(language) do
+    Map.put(object, "contentMap", Map.put(%{}, language, content))
+  end
+
+  defp maybe_add_content_map(object), do: object
+
+  def maybe_add_language(object) do
+    language =
+      get_language_from_context(object) |> get_valid_language() ||
+        get_language_from_content_map(object) |> get_valid_language() ||
+        get_language_from_content(object) |> get_valid_language()
+
+    if language do
+      Map.put(object, "language", language)
+    else
+      object
+    end
+  end
+
+  def maybe_add_language_from_activity(object, activity) do
+    language = get_language_from_context(activity) |> get_valid_language()
+
+    if language do
+      Map.put(object, "language", language)
+    else
+      object
+    end
+  end
+
+  defp get_language_from_context(%{"@context" => context}) when is_list(context) do
+    case context
+         |> Enum.find(fn
+           %{"@language" => language} -> language != "und"
+           _ -> nil
+         end) do
+      %{"@language" => language} -> language
+      _ -> nil
+    end
+  end
+
+  defp get_language_from_context(_), do: nil
+
+  defp get_language_from_content_map(%{"contentMap" => content_map, "content" => source_content}) do
+    content_groups = Map.to_list(content_map)
+
+    case Enum.find(content_groups, fn {_, content} -> content == source_content end) do
+      {language, _} -> language
+      _ -> nil
+    end
+  end
+
+  defp get_language_from_content_map(_), do: nil
+
+  defp get_language_from_content(%{"content" => content}) do
+    LanguageDetector.detect(content)
+  end
+
+  defp get_language_from_content(_), do: nil
 end

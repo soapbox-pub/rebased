@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
     event_author = insert(:user)
     participant = insert(:user)
 
-    event = insert(:event, %{data: %{"joinMode" => "restricted"}})
+    event = insert(:event, %{user: event_author, data: %{"joinMode" => "restricted"}})
     event_activity = insert(:event_activity, event: event)
 
     {:ok, join_activity} = CommonAPI.join(participant, event_activity.id)

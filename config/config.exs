@@ -110,17 +110,6 @@ config :pleroma, :uri_schemes,
     "xmpp"
   ]
 
-websocket_config = [
-  path: "/websocket",
-  serializer: [
-    {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
-    {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}
-  ],
-  timeout: 60_000,
-  transport_log: false,
-  compress: false
-]
-
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
@@ -130,9 +119,6 @@ config :pleroma, Pleroma.Web.Endpoint,
       {:_,
        [
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
-          {Phoenix.Transports.WebSocket,
-           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
          {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
@@ -428,6 +414,11 @@ config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, prefix: "RT"
 
+config :pleroma, :mrf_remote_report,
+  reject_all: false,
+  reject_anonymous: true,
+  reject_empty_message: true
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
@@ -474,10 +465,6 @@ config :pleroma, :media_preview_proxy,
   thumbnail_max_height: 600,
   image_quality: 85,
   min_content_length: 100 * 1024
-
-config :pleroma, :shout,
-  enabled: true,
-  limit: 5_000
 
 config :phoenix, :format_encoders, json: Jason, "activity+json": Jason, ics: ICalendar
 

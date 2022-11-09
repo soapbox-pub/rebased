@@ -225,7 +225,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       mentions: mentions,
       tags: reblogged[:tags] || [],
       application: build_application(object.data["generator"]),
-      language: nil,
+      language: object.data["language"],
       emojis: [],
       pleroma: %{
         local: activity.local,
@@ -428,7 +428,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       mentions: mentions,
       tags: build_tags(tags),
       application: build_application(object.data["generator"]),
-      language: nil,
+      language: object.data["language"],
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
         local: activity.local,
@@ -665,6 +665,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       ancestors: render("index.json", for: user, activities: ancestors, as: :activity),
       descendants: render("index.json", for: user, activities: descendants, as: :activity)
     }
+  end
+
+  def render("translation.json", %{
+        content: content,
+        detected_source_language: detected_source_language,
+        provider: provider
+      }) do
+    %{content: content, detected_source_language: detected_source_language, provider: provider}
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do

@@ -32,6 +32,12 @@ config :pleroma, :database, rum_enabled: false
 config :pleroma, :instance, static_dir: "/var/lib/pleroma/static"
 config :pleroma, Pleroma.Uploaders.Local, uploads: "/var/lib/pleroma/uploads"
 
+config :pleroma, Pleroma.Language.LanguageDetector,
+  provider: Pleroma.Language.LanguageDetector.Fasttext
+
+config :pleroma, Pleroma.Language.LanguageDetector.Fasttext,
+  model: "/usr/share/fasttext/lid.176.ftz"
+
 # We can't store the secrets in this file, since this is baked into the docker image
 if not File.exists?("/var/lib/pleroma/secret.exs") do
   secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)

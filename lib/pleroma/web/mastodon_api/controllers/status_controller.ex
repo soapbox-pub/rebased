@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Language.Translation
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -42,6 +43,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :show_source
          ]
   )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :translate)
 
   plug(
     OAuthScopesPlug,
@@ -84,7 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     %{scopes: ["write:bookmarks"]} when action in [:bookmark, :unbookmark]
   )
 
-  @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete)a
+  @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete translate)a
 
   plug(
     RateLimiter,
@@ -452,6 +455,35 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         })
 
       render(conn, "context.json", activity: activity, activities: activities, user: user)
+    end
+  end
+
+  @doc "POST /api/v1/statuses/:id/translate"
+  def translate(%{body_params: params, assigns: %{user: user}} = conn, %{id: status_id}) do
+    with %Activity{object: object} <- Activity.get_by_id_with_object(status_id),
+         {:visibility, visibility} when visibility in ["public", "unlisted"] <-
+           {:visibility, Visibility.get_visibility(object)},
+         {:language, language} when is_binary(language) <-
+           {:language, Map.get(params, :target_language) || user.language},
+         {:ok, result} <-
+           Translation.translate(
+             object.data["content"],
+             object.data["language"],
+             language
+           ) do
+      render(conn, "translation.json", result)
+    else
+      {:language, nil} ->
+        render_error(conn, :bad_request, "Language not specified")
+
+      {:visibility, _} ->
+        render_error(conn, :not_found, "Record not found")
+
+      {:error, :not_found} ->
+        render_error(conn, :not_found, "Translation service not configured")
+
+      {:error, error} when error in [:unexpected_response, :quota_exceeded, :too_many_requests] ->
+        render_error(conn, :service_unavailable, "Translation service not available")
     end
   end
 

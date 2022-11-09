@@ -6,7 +6,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   use Pleroma.Web, :view
 
   alias Pleroma.Config
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.MastodonAPI
 
   @mastodon_api_level "2.7.2"
 
@@ -31,6 +33,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
       configuration: configuration(),
+      contact_account: contact_account(Keyword.get(instance, :contact_username)),
       rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
@@ -41,7 +44,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
-      shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
       pleroma: pleroma_configuration(instance),
       soapbox: %{
@@ -74,7 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       },
       contact: %{
         email: Keyword.get(instance, :email),
-        account: nil
+        account: contact_account(Keyword.get(instance, :contact_username))
       },
       rules: render(__MODULE__, "rules.json"),
       # Extra (not present in Mastodon):
@@ -120,13 +122,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:gopher, :enabled]) do
         "gopher"
       end,
-      # backwards compat
-      if Config.get([:shout, :enabled]) do
-        "chat"
-      end,
-      if Config.get([:shout, :enabled]) do
-        "shout"
-      end,
       if Config.get([:instance, :allow_relay]) do
         "relay"
       end,
@@ -142,7 +137,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
       end,
-      "pleroma:get:main/ostatus"
+      "pleroma:get:main/ostatus",
+      if Pleroma.Language.Translation.configured?() do
+        "translation"
+      end
     ]
     |> Enum.filter(& &1)
   end
@@ -206,7 +204,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},
-      translation: %{enabled: false}
+      translation: %{enabled: Pleroma.Language.Translation.configured?()}
     })
   end
 
@@ -245,9 +243,24 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
           background_image:
             Pleroma.Web.Endpoint.url() <> Keyword.get(instance, :background_image),
-          shout_limit: Config.get([:shout, :limit]),
           description_limit: Keyword.get(instance, :description_limit)
         })
     })
+  end
+
+  defp contact_account(nil), do: nil
+
+  defp contact_account("@" <> username) do
+    contact_account(username)
+  end
+
+  defp contact_account(username) do
+    user = User.get_cached_by_nickname(username)
+
+    if user do
+      MastodonAPI.AccountView.render("show.json", %{user: user, for: nil})
+    else
+      nil
+    end
   end
 end

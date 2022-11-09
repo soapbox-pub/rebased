@@ -9,13 +9,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.JoinHandlingTest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.ActivityPub.Utils
 
   import Pleroma.Factory
   import Ecto.Query
-  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -34,8 +31,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.JoinHandlingTest do
         |> Map.put("actor", user.ap_id)
         |> Map.put("object", event.data["id"])
 
-      {:ok, %Activity{data: data, local: false} = activity} =
-        Transmogrifier.handle_incoming(join_data)
+      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(join_data)
 
       event = Object.get_by_id(event.id)
 
@@ -46,18 +42,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.JoinHandlingTest do
     end
 
     test "with restricted events, it does create a Join, but not an Accept" do
-      user = insert(:user)
+      [participant, event_author] = insert_pair(:user)
 
-      event = insert(:event, %{data: %{"joinMode" => "restricted"}})
+      event = insert(:event, %{user: event_author, data: %{"joinMode" => "restricted"}})
 
       join_data =
         File.read!("test/fixtures/tesla_mock/mobilizon-event-join.json")
         |> Jason.decode!()
-        |> Map.put("actor", user.ap_id)
+        |> Map.put("actor", participant.ap_id)
         |> Map.put("object", event.data["id"])
 
-      {:ok, %Activity{data: data, local: false} = activity} =
-        Transmogrifier.handle_incoming(join_data)
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(join_data)
 
       event = Object.get_by_id(event.id)
 
@@ -74,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.JoinHandlingTest do
 
       assert Enum.empty?(accepts)
 
-      [notification] = Notification.for_user(user)
+      [notification] = Notification.for_user(event_author)
       assert notification.type == "pleroma:participation_request"
     end
   end

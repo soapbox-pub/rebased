@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.Builder
@@ -37,6 +38,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             cc: [],
             context: nil,
             sensitive: false,
+            language: nil,
             object: nil,
             preview?: false,
             changes: %{},
@@ -68,6 +70,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> content()
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
+    |> with_valid(&language/1)
     |> sensitive()
     |> with_valid(&object/1)
     |> preview?()
@@ -284,6 +287,14 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | sensitive: sensitive}
   end
 
+  defp language(draft) do
+    language =
+      Utils.get_valid_language(draft.params[:language]) ||
+        LanguageDetector.detect(draft.content_html <> " " <> draft.summary)
+
+    %__MODULE__{draft | language: language}
+  end
+
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
@@ -324,6 +335,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       })
       |> Map.put("generator", draft.params[:generator])
       |> Map.put("content_type", draft.params[:content_type])
+      |> Map.put("language", draft.language)
 
     %__MODULE__{draft | object: object}
   end

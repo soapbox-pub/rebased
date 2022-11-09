@@ -1823,7 +1823,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       response = json_response_and_validate_schema(conn, 200)
 
       assert %{"id" => id, "source" => %{"privacy" => "public"}} = response
-      assert response["pleroma"]["chat_token"]
       assert response["pleroma"]["unread_notifications_count"] == 6
       assert id == to_string(user.id)
     end

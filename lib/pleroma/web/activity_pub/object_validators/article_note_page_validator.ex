@@ -108,6 +108,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_attachments()
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
+    |> Transmogrifier.maybe_add_language()
   end
 
   def changeset(struct, data) do

@@ -246,7 +246,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {to, cc, bcc} =
       if object["type"] in Pleroma.Constants.actor_types() do
         # User updates, always public
-        {[Pleroma.Constants.as_public(), actor.follower_address], []}
+        {[Pleroma.Constants.as_public(), actor.follower_address], [], []}
       else
         # Status updates, follow the recipients in the object
         {object["to"] || [], object["cc"] || [], object["participations"] || []}

@@ -113,7 +113,6 @@ defmodule Pleroma.Application do
         ] ++
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++
-        shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -214,7 +213,8 @@ defmodule Pleroma.Application do
       build_cachex("chat_message_id_idempotency_key",
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
-      )
+      ),
+      build_cachex("translations", default_ttl: :timer.hours(24), limit: 5_000)
     ]
   end
 
@@ -238,8 +238,6 @@ defmodule Pleroma.Application do
       type: :worker
     }
 
-  defp shout_enabled?, do: Config.get([:shout, :enabled])
-
   defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
   defp dont_run_in_test(_) do
@@ -259,15 +257,6 @@ defmodule Pleroma.Application do
       Pleroma.Migrators.ContextObjectsDeletionMigrator
     ]
   end
-
-  defp shout_child(true) do
-    [
-      Pleroma.Web.ShoutChannel.ShoutChannelState,
-      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
-    ]
-  end
-
-  defp shout_child(_), do: []
 
   defp task_children(:test) do
     [

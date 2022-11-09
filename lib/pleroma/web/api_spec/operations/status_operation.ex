@@ -410,6 +410,38 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
+  def translate_operation do
+    %Operation{
+      tags: ["Retrieve status information"],
+      summary: "Translate status",
+      description: "Translate status with an external API",
+      operationId: "StatusController.translate",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [id_param()],
+      requestBody:
+        request_body(
+          "Parameters",
+          %Schema{
+            type: :object,
+            properties: %{
+              target_language: %Schema{
+                type: :string,
+                nullable: true,
+                description: "Translation target language."
+              }
+            }
+          },
+          required: false
+        ),
+      responses: %{
+        200 => Operation.response("Translation", "application/json", translation()),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError),
+        503 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
   def favourites_operation do
     %Operation{
       tags: ["Timelines"],
@@ -797,6 +829,34 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       example: %{
         "ancestors" => [Status.schema().example],
         "descendants" => [Status.schema().example]
+      }
+    }
+  end
+
+  defp translation do
+    %Schema{
+      title: "StatusTranslation",
+      description: "Represents status translation with related information.",
+      type: :object,
+      required: [:content, :detected_source_language, :provider],
+      properties: %{
+        content: %Schema{
+          type: :string,
+          description: "Translated status content"
+        },
+        detected_source_language: %Schema{
+          type: :string,
+          description: "Detected source language"
+        },
+        provider: %Schema{
+          type: :string,
+          description: "Translation provider service name"
+        }
+      },
+      example: %{
+        "content" => "Software für die nächste Generation der sozialen Medien.",
+        "detected_source_language" => "en",
+        "provider" => "Deepl"
       }
     }
   end
