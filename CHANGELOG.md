@@ -150,6 +150,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added move account API
 - Enable remote users to interact with posts
 - Possibility to discover users like `user@example.org`, while Pleroma is working on `pleroma.example.org`. Additional configuration required.
+- Added Pleroma.Upload.Filter.HeifToJpeg to automate converting .heic files from Apple devices to JPEGs which can be viewed in browsers.
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
