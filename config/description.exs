@@ -816,6 +816,12 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :report_strip_status,
+        label: "Report strip status",
+        type: :boolean,
+        description: "Strip status when closing or resolving a report."
+      },
+      %{
         key: :safe_dm_mentions,
         label: "Safe DM mentions",
         type: :boolean,
