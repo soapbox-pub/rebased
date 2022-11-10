@@ -36,7 +36,9 @@ defmodule Pleroma.Web.AdminAPI.Report do
         "to" => [],
         "cc" => [],
         "object" => act["id"],
-        "published" => act["published"]
+        "published" => act["published"],
+        "id" => act["id"],
+        "context" => "pleroma:fake"
       },
       recipients: [user.ap_id],
       object: %Object{
@@ -46,7 +48,9 @@ defmodule Pleroma.Web.AdminAPI.Report do
           "content" => act["content"],
           "published" => act["published"],
           "to" => [],
-          "cc" => []
+          "cc" => [],
+          "id" => act["id"],
+          "context" => "pleroma:fake"
         }
       }
     }

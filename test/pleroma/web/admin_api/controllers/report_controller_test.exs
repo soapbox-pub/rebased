@@ -54,6 +54,32 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       assert notes["content"] == "this is an admin note"
     end
 
+    test "renders reported content even if the status is deleted", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+      activity = Activity.normalize(activity)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id]
+        })
+
+      CommonAPI.delete(activity.id, target_user)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/reports/#{report_id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert response["id"] == report_id
+
+      assert [status] = response["statuses"]
+      assert activity.data["id"] == status["uri"]
+      assert activity.object.data["content"] == status["content"]
+    end
+
     test "returns 404 when report id is invalid", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/reports/test")
 
