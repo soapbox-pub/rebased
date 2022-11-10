@@ -212,14 +212,18 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     enabled = Pleroma.Language.Translation.configured?()
 
     source_languages =
-      case Pleroma.Language.Translation.supported_languages(:source) do
-        {:ok, languages} -> languages
+      with true <- enabled,
+           {:ok, languages} <- Pleroma.Language.Translation.supported_languages(:source) do
+        languages
+      else
         _ -> nil
       end
 
     target_languages =
-      case Pleroma.Language.Translation.supported_languages(:target) do
-        {:ok, languages} -> languages
+      with true <- enabled,
+           {:ok, languages} <- Pleroma.Language.Translation.supported_languages(:target) do
+        languages
+      else
         _ -> nil
       end
 
