@@ -1175,7 +1175,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert reported_user == target_user.ap_id
       assert is_map(reported_activity)
-      assert reported_activity["content"] == report_data["object"] |> Enum.at(1) |> Map.get("content")
+
+      assert reported_activity["content"] ==
+               report_data["object"] |> Enum.at(1) |> Map.get("content")
     end
 
     test "does not update report state when state is unsupported" do
