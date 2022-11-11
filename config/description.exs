@@ -1191,45 +1191,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :quack,
-    type: :group,
-    label: "Quack Logger",
-    description: "Quack-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :meta,
-        type: {:list, :atom},
-        description: "Configure which metadata you want to report on",
-        suggestions: [
-          :application,
-          :module,
-          :file,
-          :function,
-          :line,
-          :pid,
-          :crash_reason,
-          :initial_call,
-          :registered_name,
-          :all,
-          :none
-        ]
-      },
-      %{
-        key: :webhook_url,
-        label: "Webhook URL",
-        type: :string,
-        description: "Configure the Slack incoming webhook",
-        suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
-      }
-    ]
-  },
-  %{
     group: :pleroma,
     key: :frontend_configurations,
     type: :group,
