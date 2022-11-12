@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
 - **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
 - Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
+- Set timeout values for Oban queues. The default is infinity and some operations may not time out on their own.
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
