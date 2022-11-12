@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.AdminAPI.Report do
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.User
 
   def extract_report_info(
@@ -16,10 +17,42 @@ defmodule Pleroma.Web.AdminAPI.Report do
       status_ap_ids
       |> Enum.reject(&is_nil(&1))
       |> Enum.map(fn
-        act when is_map(act) -> Activity.get_by_ap_id_with_object(act["id"])
-        act when is_binary(act) -> Activity.get_by_ap_id_with_object(act)
+        act when is_map(act) ->
+          Activity.get_by_ap_id_with_object(act["id"]) || make_fake_activity(act, user)
+
+        act when is_binary(act) ->
+          Activity.get_by_ap_id_with_object(act)
       end)
 
     %{report: report, user: user, account: account, statuses: statuses}
+  end
+
+  defp make_fake_activity(act, user) do
+    %Activity{
+      id: "pleroma:fake",
+      data: %{
+        "actor" => user.ap_id,
+        "type" => "Create",
+        "to" => [],
+        "cc" => [],
+        "object" => act["id"],
+        "published" => act["published"],
+        "id" => act["id"],
+        "context" => "pleroma:fake"
+      },
+      recipients: [user.ap_id],
+      object: %Object{
+        data: %{
+          "actor" => user.ap_id,
+          "type" => "Note",
+          "content" => act["content"],
+          "published" => act["published"],
+          "to" => [],
+          "cc" => [],
+          "id" => act["id"],
+          "context" => "pleroma:fake"
+        }
+      }
+    }
   end
 end
