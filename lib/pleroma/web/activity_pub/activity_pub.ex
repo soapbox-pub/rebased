@@ -1239,6 +1239,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp exclude_invisible_actors(query, %{type: "Flag"}), do: query
   defp exclude_invisible_actors(query, %{invisible_actors: true}), do: query
 
   defp exclude_invisible_actors(query, _opts) do
@@ -1377,7 +1378,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
-      |> Activity.restrict_deactivated_users()
+      |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)
       |> exclude_invisible_actors(opts)
@@ -1789,4 +1790,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_visibility(%{visibility: "direct"})
     |> order_by([activity], asc: activity.id)
   end
+
+  defp maybe_restrict_deactivated_users(activity, %{type: "Flag"}), do: activity
+
+  defp maybe_restrict_deactivated_users(activity, _opts),
+    do: Activity.restrict_deactivated_users(activity)
 end
