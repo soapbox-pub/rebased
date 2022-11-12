@@ -1243,12 +1243,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp exclude_invisible_actors(query, %{invisible_actors: true}), do: query
 
   defp exclude_invisible_actors(query, _opts) do
-    invisible_ap_ids =
-      User.Query.build(%{invisible: true, select: [:ap_id]})
-      |> Repo.all()
-      |> Enum.map(fn %{ap_id: ap_id} -> ap_id end)
-
-    from([activity] in query, where: activity.actor not in ^invisible_ap_ids)
+    query
+    |> join(:inner, [activity], u in User,
+      as: :u,
+      on: activity.actor == u.ap_id and u.invisible == false
+    )
   end
 
   defp exclude_id(query, %{exclude_id: id}) when is_binary(id) do
