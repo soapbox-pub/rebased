@@ -12,4 +12,7 @@ defmodule Pleroma.Workers.TransmogrifierWorker do
     user = User.get_cached_by_id(user_id)
     Pleroma.Web.ActivityPub.Transmogrifier.perform(:user_upgrade, user)
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end
