@@ -324,7 +324,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if result == :ok do
-      Notification.create_notifications(object)
       {:ok, object, meta}
     else
       {:error, result}
