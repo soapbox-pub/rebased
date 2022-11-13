@@ -21,7 +21,7 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> pub_date
   end
 
-  def pub_date(%DateTime{} = date), do: Timex.format!(date, "{RFC822}")
+  def pub_date(%DateTime{} = date), do: to_rfc1123(date)
 
   def prepare_activity(activity, opts \\ []) do
     object = Object.normalize(activity, fetch: false)
@@ -41,13 +41,18 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def most_recent_update(activities) do
     with %{updated_at: updated_at} <- List.first(activities) do
-      NaiveDateTime.to_iso8601(updated_at)
+      to_rfc3339(updated_at)
     end
   end
 
-  def most_recent_update(activities, user) do
+  def most_recent_update(activities, user, :atom) do
     (List.first(activities) || user).updated_at
-    |> NaiveDateTime.to_iso8601()
+    |> to_rfc3339()
+  end
+
+  def most_recent_update(activities, user, :rss) do
+    (List.first(activities) || user).updated_at
+    |> to_rfc1123()
   end
 
   def feed_logo do
@@ -61,6 +66,10 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> MediaProxy.url()
   end
 
+  def email(user) do
+    user.nickname <> "@" <> Pleroma.Web.Endpoint.host()
+  end
+
   def logo(user) do
     user
     |> User.avatar_url()
@@ -69,18 +78,35 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def last_activity(activities), do: List.last(activities)
 
-  def activity_title(%{"content" => content}, opts \\ %{}) do
-    content
+  def activity_title(%{"content" => content, "summary" => summary} = data, opts \\ %{}) do
+    title =
+      cond do
+        summary != "" -> summary
+        content != "" -> activity_content(data)
+        true -> "a post"
+      end
+
+    title
     |> Pleroma.Web.Metadata.Utils.scrub_html()
     |> Pleroma.Emoji.Formatter.demojify()
     |> Formatter.truncate(opts[:max_length], opts[:omission])
     |> escape()
   end
 
+  def activity_description(data) do
+    content = activity_content(data)
+    summary = data["summary"]
+
+    cond do
+      content != "" -> escape(content)
+      summary != "" -> escape(summary)
+      true -> escape(data["type"])
+    end
+  end
+
   def activity_content(%{"content" => content}) do
     content
     |> String.replace(~r/[\n\r]/, "")
-    |> escape()
   end
 
   def activity_content(_), do: ""
@@ -111,5 +137,36 @@ defmodule Pleroma.Web.Feed.FeedView do
     html
     |> html_escape()
     |> safe_to_string()
+  end
+
+  @spec to_rfc3339(String.t() | NativeDateTime.t()) :: String.t()
+  def to_rfc3339(date) when is_binary(date) do
+    date
+    |> Timex.parse!("{ISO:Extended}")
+    |> to_rfc3339()
+  end
+
+  def to_rfc3339(nd) do
+    nd
+    |> Timex.to_datetime()
+    |> Timex.format!("{RFC3339}")
+  end
+
+  @spec to_rfc1123(String.t() | DateTime.t() | NativeDateTime.t()) :: String.t()
+  def to_rfc1123(datestr) when is_binary(datestr) do
+    datestr
+    |> Timex.parse!("{ISO:Extended}")
+    |> to_rfc1123()
+  end
+
+  def to_rfc1123(%DateTime{} = date) do
+    date
+    |> Timex.format!("{RFC1123}")
+  end
+
+  def to_rfc1123(nd) do
+    nd
+    |> Timex.to_datetime()
+    |> Timex.format!("{RFC1123}")
   end
 end
