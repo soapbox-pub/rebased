@@ -208,7 +208,7 @@ defmodule Pleroma.Mixfile do
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:ex_machina, "~> 2.4", only: :test},
-      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
       # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
       {:excoveralls, "0.12.3", only: :test},
