@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
 - Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
 - Set timeout values for Oban queues. The default is infinity and some operations may not time out on their own.
+- Delete activities are federated at lowest priority
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
@@ -55,6 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed slow timelines when there are a lot of deactivated users
 - Fixed account deletion API
 - Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
+- Removed useless notification call on Delete activities
 - Improved performance for filtering out deactivated and invisible users
 
 ### Removed
