@@ -6,6 +6,7 @@ defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Instances
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
 
@@ -158,6 +159,17 @@ defmodule Pleroma.Object.FetcherTest do
                Fetcher.fetch_object_from_id(
                  "https://patch.cx/media/03ca3c8b4ac3ddd08bf0f84be7885f2f88de0f709112131a22d83650819e36c2.json"
                )
+    end
+
+    test "it resets instance reachability on successful fetch" do
+      id = "http://mastodon.example.org/@admin/99541947525187367"
+      Instances.set_consistently_unreachable(id)
+      refute Instances.reachable?(id)
+
+      {:ok, object} =
+        Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert Instances.reachable?(id)
     end
   end
 
