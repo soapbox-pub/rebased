@@ -662,8 +662,6 @@ defmodule Pleroma.Web.Router do
     get("/instance/peers", InstanceController, :peers)
     get("/instance/rules", InstanceController, :rules)
     get("/instance/domain_blocks", InstanceController, :domain_blocks)
-    get("/instance/privacy_policy", InstanceController, :privacy_policy)
-    get("/instance/extended_description", InstanceController, :extended_description)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)

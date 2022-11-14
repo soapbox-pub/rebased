@@ -1035,18 +1035,6 @@ config :pleroma, :config_description, [
         description:
           "Number of days for which users won't be able to migrate account again after successful migration.",
         suggestions: [30]
-      },
-      %{
-        key: :privacy_policy,
-        type: :string,
-        description: "Privacy policy content file.",
-        suggestions: ["/instance/about/privacy.html"]
-      },
-      %{
-        key: :extended_description,
-        type: :string,
-        description: "Extended description content file.",
-        suggestions: ["/instance/about/index.html"]
       }
     ]
   },

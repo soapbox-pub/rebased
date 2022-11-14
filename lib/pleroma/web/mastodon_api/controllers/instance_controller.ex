@@ -9,8 +9,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
 
   plug(:skip_auth when action in [:show, :peers])
 
-  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
-
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.InstanceOperation
 
   @doc "GET /api/v1/instance"
@@ -36,34 +34,5 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
   @doc "GET /api/v1/instance/domain_blocks"
   def domain_blocks(conn, _params) do
     render(conn, "domain_blocks.json")
-  end
-
-  @doc "GET /api/v1/instance/privacy_policy"
-  def privacy_policy(conn, _params) do
-    render_file(conn, Pleroma.Config.get([:instance, :privacy_policy]))
-  end
-
-  @doc "GET /api/v1/instance/extended_description"
-  def extended_description(conn, _params) do
-    render_file(conn, Pleroma.Config.get([:instance, :extended_description]))
-  end
-
-  defp render_file(conn, path) when is_binary(path) do
-    with path <- Pleroma.Web.Plugs.InstanceStatic.file_path(path),
-         true <- File.exists?(path),
-         {:ok, content} <- File.read(path),
-         {:ok, %{mtime: updated_at}} <- File.stat(path),
-         updated_at <- Timex.to_datetime(updated_at, "Etc/UTC") do
-      json(conn, %{
-        updated_at: updated_at,
-        content: content
-      })
-    else
-      _ -> {:error, :not_found}
-    end
-  end
-
-  defp render_file(_, _) do
-    {:error, :not_found}
   end
 end
