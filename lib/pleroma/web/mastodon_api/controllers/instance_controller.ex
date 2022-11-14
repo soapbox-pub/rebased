@@ -33,10 +33,23 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
     render(conn, "rules.json")
   end
 
+  @doc "GET /api/v1/instance/domain_blocks"
+  def domain_blocks(conn, _params) do
+    render(conn, "domain_blocks.json")
+  end
+
   @doc "GET /api/v1/instance/privacy_policy"
   def privacy_policy(conn, _params) do
-    with path when is_binary(path) <- Pleroma.Config.get([:instance, :privacy_policy]),
-         path <- Pleroma.Web.Plugs.InstanceStatic.file_path(path),
+    render_file(conn, Pleroma.Config.get([:instance, :privacy_policy]))
+  end
+
+  @doc "GET /api/v1/instance/extended_description"
+  def extended_description(conn, _params) do
+    render_file(conn, Pleroma.Config.get([:instance, :extended_description]))
+  end
+
+  defp render_file(conn, path) when is_binary(path) do
+    with path <- Pleroma.Web.Plugs.InstanceStatic.file_path(path),
          true <- File.exists?(path),
          {:ok, content} <- File.read(path),
          {:ok, %{mtime: updated_at}} <- File.stat(path),
@@ -48,5 +61,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
     else
       _ -> {:error, :not_found}
     end
+  end
+
+  defp render_file(_, _) do
+    {:error, :not_found}
   end
 end

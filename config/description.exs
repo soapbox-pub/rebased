@@ -1041,6 +1041,12 @@ config :pleroma, :config_description, [
         type: :string,
         description: "Privacy policy content file.",
         suggestions: ["/instance/about/privacy.html"]
+      },
+      %{
+        key: :extended_description,
+        type: :string,
+        description: "Extended description content file.",
+        suggestions: ["/instance/about/index.html"]
       }
     ]
   },

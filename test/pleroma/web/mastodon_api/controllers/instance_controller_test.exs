@@ -157,6 +157,33 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
            |> json_response_and_validate_schema(200)
   end
 
+  describe "instance domain blocks" do
+    setup do
+      clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses Soapbox"}])
+    end
+
+    test "get instance domain blocks", %{conn: conn} do
+      conn = get(conn, "/api/v1/instance/domain_blocks")
+
+      assert [
+               %{
+                 "comment" => "uses Soapbox",
+                 "digest" => "55e3f44aefe7eb022d3b1daaf7396cabf7f181bf6093c8ea841e30c9fc7d8226",
+                 "domain" => "fediverse.pl",
+                 "severity" => "suspend"
+               }
+             ] == json_response_and_validate_schema(conn, 200)
+    end
+
+    test "returns empty array if mrf transparency is disabled", %{conn: conn} do
+      clear_config([:mrf, :transparency], false)
+
+      conn = get(conn, "/api/v1/instance/domain_blocks")
+
+      assert [] == json_response_and_validate_schema(conn, 200)
+    end
+  end
+
   describe "instance privacy policy" do
     setup do
       File.mkdir_p!(@dir)

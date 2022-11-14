@@ -251,7 +251,8 @@ config :pleroma, :instance,
   birthday_min_age: 0,
   max_media_attachments: 1_000,
   migration_cooldown_period: 30,
-  privacy_policy: "/instance/about/privacy.html"
+  privacy_policy: "/instance/about/privacy.html",
+  extended_description: "/instance/about/index.html"
 
 config :pleroma, :welcome,
   direct_message: [
