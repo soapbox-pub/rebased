@@ -10,6 +10,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
   alias Pleroma.User
   import Pleroma.Factory
 
+  @dir "test/instance_static_test"
+
   test "get instance information", %{conn: conn} do
     clear_config([:auth, :oauth_consumer_strategies], [])
 
@@ -153,5 +155,48 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
   test "get instance information v2", %{conn: conn} do
     assert get(conn, "/api/v2/instance")
            |> json_response_and_validate_schema(200)
+  end
+
+  describe "instance privacy policy" do
+    setup do
+      File.mkdir_p!(@dir)
+      clear_config([:instance, :static_dir], @dir)
+
+      on_exit(fn ->
+        File.rm_rf(@dir)
+      end)
+    end
+
+    test "get instance privacy policy", %{conn: conn} do
+      clear_config([:instance, :privacy_policy], "/instance/privacy.html")
+
+      content = "<h1>Privacy policy</h1><p>What information do we collect?</p>"
+
+      File.mkdir!(@dir <> "/instance/")
+      File.write!(@dir <> "/instance/privacy.html", content)
+
+      conn = get(conn, "/api/v1/instance/privacy_policy")
+
+      assert %{
+               "content" => ^content,
+               "updated_at" => _
+             } = json_response_and_validate_schema(conn, 200)
+    end
+
+    test "returns 404 if privacy policy not specified", %{conn: conn} do
+      clear_config([:instance, :privacy_policy], nil)
+
+      conn = get(conn, "/api/v1/instance/privacy_policy")
+
+      assert json_response_and_validate_schema(conn, 404)
+    end
+
+    test "returns 404 if privacy policy file does not exist", %{conn: conn} do
+      clear_config([:instance, :privacy_policy], "/instance/i_do_not_exist.html")
+
+      conn = get(conn, "/api/v1/instance/privacy_policy")
+
+      assert json_response_and_validate_schema(conn, 404)
+    end
   end
 end

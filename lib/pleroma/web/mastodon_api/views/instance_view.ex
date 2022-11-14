@@ -172,7 +172,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     |> Map.put(:enabled, Config.get([:instance, :federating]))
   end
 
-  def fields_limits do
+  defp fields_limits do
     %{
       max_fields: Config.get([:instance, :max_account_fields]),
       max_remote_fields: Config.get([:instance, :max_remote_account_fields]),
@@ -181,7 +181,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
-  def configuration do
+  defp configuration do
     %{
       statuses: %{
         max_characters: Config.get([:instance, :limit]),
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
-  def configuration2 do
+  defp configuration2 do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},

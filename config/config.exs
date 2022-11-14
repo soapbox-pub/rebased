@@ -250,7 +250,8 @@ config :pleroma, :instance,
   birthday_required: false,
   birthday_min_age: 0,
   max_media_attachments: 1_000,
-  migration_cooldown_period: 30
+  migration_cooldown_period: 30,
+  privacy_policy: "/instance/about/privacy.html"
 
 config :pleroma, :welcome,
   direct_message: [

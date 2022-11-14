@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.InstanceOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -53,6 +54,18 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       operationId: "InstanceController.rules",
       responses: %{
         200 => Operation.response("Array of rules", "application/json", array_of_rules())
+      }
+    }
+  end
+
+  def privacy_policy_operation do
+    %Operation{
+      tags: ["Instance"],
+      summary: "Retrieve instance privacy policy",
+      operationId: "InstanceController.privacy_policy",
+      responses: %{
+        200 => Operation.response("Privacy policy", "application/json", privacy_policy()),
+        404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
   end
@@ -422,6 +435,16 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
           id: %Schema{type: :integer},
           text: %Schema{type: :string}
         }
+      }
+    }
+  end
+
+  defp privacy_policy do
+    %Schema{
+      type: :object,
+      properties: %{
+        updated_at: %Schema{type: :string, format: :"date-time"},
+        content: %Schema{type: :string}
       }
     }
   end
