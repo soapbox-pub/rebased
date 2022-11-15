@@ -63,7 +63,6 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
            ]
 
     assert xpath(xml, ~x"//feed/entry/author/name/text()"ls) == [user.nickname, user.nickname]
-    assert xpath(xml, ~x"//feed/entry/author/id/text()"ls) == [user.ap_id, user.ap_id]
 
     conn =
       conn
