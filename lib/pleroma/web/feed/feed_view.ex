@@ -93,7 +93,6 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> Pleroma.Web.Metadata.Utils.scrub_html()
     |> Pleroma.Emoji.Formatter.demojify()
     |> Formatter.truncate(opts[:max_length], opts[:omission])
-    |> escape()
   end
 
   def activity_description(data) do
