@@ -17,15 +17,6 @@ defmodule Pleroma.Web.Feed.FeedView do
   @days ~w(Mon Tue Wed Thu Fri Sat Sun)
   @months ~w(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 
-  @spec pub_date(String.t() | DateTime.t()) :: String.t()
-  def pub_date(date) when is_binary(date) do
-    date
-    |> Timex.parse!("{ISO:Extended}")
-    |> pub_date
-  end
-
-  def pub_date(%DateTime{} = date), do: to_rfc2822(date)
-
   def prepare_activity(activity, opts \\ []) do
     object = Object.normalize(activity, fetch: false)
 
