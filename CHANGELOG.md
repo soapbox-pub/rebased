@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
 - **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
 - Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
+- Set timeout values for Oban queues. The default is infinity and some operations may not time out on their own.
+- Delete activities are federated at lowest priority
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
@@ -37,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
 - Added move account API
 - Enable remote users to interact with posts
+- Possibility to discover users like `user@example.org`, while Pleroma is working on `pleroma.example.org`. Additional configuration required.
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
@@ -53,8 +56,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed slow timelines when there are a lot of deactivated users
 - Fixed account deletion API
 - Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
+- Removed useless notification call on Delete activities
 
 ### Removed
+- Quack, the logging backend that pushes to Slack channels
 
 ## 2.4.4 - 2022-08-19
 
