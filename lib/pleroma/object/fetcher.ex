@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
+  alias Pleroma.Instances
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -234,6 +235,10 @@ defmodule Pleroma.Object.Fetcher do
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
+      if not Instances.reachable?(id) do
+        Instances.set_reachable(id)
+      end
+
       {:ok, data}
     else
       {:scheme, _} ->

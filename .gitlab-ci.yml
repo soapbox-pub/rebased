@@ -5,6 +5,7 @@ variables: &global_variables
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
+  DB_PORT: 5432
   MIX_ENV: test
   # Needed for Dokku deployment.
   # https://github.com/dokku/dokku/issues/2514#issuecomment-616775470
@@ -65,7 +66,13 @@ test:
     - mix ecto.create
     - mix ecto.migrate
   script:
-    - mix coveralls --preload-modules
+    - mix test --cover --preload-modules
+  coverage: '/^Line total: ([^ ]*%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 test-erratic:
   stage: test

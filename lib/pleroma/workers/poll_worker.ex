@@ -19,6 +19,9 @@ defmodule Pleroma.Workers.PollWorker do
     end
   end
 
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
+
   defp find_poll_activity(activity_id) do
     with nil <- Activity.get_by_id(activity_id) do
       {:error, :poll_activity_not_found}

@@ -44,6 +44,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `autofollowing_nicknames`: Set to nicknames of (local) users that automatically follows every newly registered user.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
+* `report_strip_status`: Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy.
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
@@ -201,7 +202,7 @@ config :pleroma, :mrf_user_allowlist, %{
   e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
-  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message
   * `:reject` rejects the message entirely
 
 #### :mrf_steal_emoji

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Rule
   alias Pleroma.ThreadMute
@@ -148,6 +149,21 @@ defmodule Pleroma.Web.CommonAPI do
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
+      if User.superuser?(user) and user.ap_id != object.data["actor"] do
+        action =
+          if object.data["type"] == "ChatMessage" do
+            "chat_message_delete"
+          else
+            "status_delete"
+          end
+
+        ModerationLog.insert_log(%{
+          action: action,
+          actor: user,
+          subject_id: activity_id
+        })
+      end
+
       {:ok, delete}
     else
       {:find_activity, _} ->
