@@ -1204,6 +1204,32 @@ defmodule Pleroma.Web.CommonAPITest do
       assert activity_id == activity.data["id"]
     end
 
+    test "updates report state, don't strip when report_strip_status is false" do
+      clear_config([:instance, :report_strip_status], false)
+
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: report_id, data: report_data}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id]
+        })
+
+      {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
+
+      assert report.data["state"] == "resolved"
+
+      [reported_user, reported_activity] = report.data["object"]
+
+      assert reported_user == target_user.ap_id
+      assert is_map(reported_activity)
+
+      assert reported_activity["content"] ==
+               report_data["object"] |> Enum.at(1) |> Map.get("content")
+    end
+
     test "does not update report state when state is unsupported" do
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)

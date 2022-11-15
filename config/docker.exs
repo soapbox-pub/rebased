@@ -22,7 +22,8 @@ case System.get_env("DATABASE_URL") do
       username: System.get_env("DB_USER", "postgres"),
       password: System.get_env("DB_PASS", "postgres"),
       database: System.get_env("DB_NAME", "postgres"),
-      hostname: System.get_env("DB_HOST", "db")
+      hostname: System.get_env("DB_HOST", "db"),
+      port: System.get_env("DB_PORT", "5432")
 end
 
 # Configure web push notifications

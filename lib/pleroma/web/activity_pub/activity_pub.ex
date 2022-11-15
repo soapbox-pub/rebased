@@ -1563,8 +1563,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           {:ok, date} -> date
           {:error, _} -> nil
         end
-      else
-        nil
       end
 
     show_birthday = !!birthday
@@ -1595,11 +1593,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       inbox: data["inbox"],
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
-      pinned_objects: pinned_objects,
       birthday: birthday,
       show_birthday: show_birthday,
       nickname: nickname,
-      location: data["vcard:Address"] || ""
+      location: data["vcard:Address"] || "",
+      pinned_objects: pinned_objects
     }
   end
 
