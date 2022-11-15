@@ -50,6 +50,7 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
+  port: System.get_env("DB_PORT") || "5432",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 50
 
@@ -133,6 +134,8 @@ config :pleroma, :pipeline,
   config: Pleroma.ConfigMock
 
 config :pleroma, :cachex, provider: Pleroma.CachexMock
+
+config :pleroma, Pleroma.Web.WebFinger, update_nickname_on_user_fetch: false
 
 config :pleroma, :side_effects,
   ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,

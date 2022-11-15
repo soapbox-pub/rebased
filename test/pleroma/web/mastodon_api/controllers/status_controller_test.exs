@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -992,30 +993,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_by_id(activity.id) == activity
     end
 
-    test "when you're an admin or moderator", %{conn: conn} do
-      activity1 = insert(:note_activity)
-      activity2 = insert(:note_activity)
-      admin = insert(:user, is_admin: true)
-      moderator = insert(:user, is_moderator: true)
+    test "when you're an admin", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user, is_admin: true)
 
       res_conn =
         conn
-        |> assign(:user, admin)
-        |> assign(:token, insert(:oauth_token, user: admin, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity1.id}")
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
 
       assert %{} = json_response_and_validate_schema(res_conn, 200)
+
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
+
+      refute Activity.get_by_id(activity.id)
+    end
+
+    test "when you're a moderator", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user, is_moderator: true)
 
       res_conn =
         conn
-        |> assign(:user, moderator)
-        |> assign(:token, insert(:oauth_token, user: moderator, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity2.id}")
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
 
       assert %{} = json_response_and_validate_schema(res_conn, 200)
 
-      refute Activity.get_by_id(activity1.id)
-      refute Activity.get_by_id(activity2.id)
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
+
+      refute Activity.get_by_id(activity.id)
     end
   end
 

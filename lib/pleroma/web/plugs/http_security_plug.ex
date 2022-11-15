@@ -68,7 +68,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
         ]
       }
 
-      [{"reply-to", Jason.encode!(report_group)} | headers]
+      [{"report-to", Jason.encode!(report_group)} | headers]
     else
       headers
     end

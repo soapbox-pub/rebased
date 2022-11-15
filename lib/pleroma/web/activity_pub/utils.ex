@@ -759,22 +759,21 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     ActivityPub.fetch_activities([], params, :offset)
   end
 
-  def update_report_state(%Activity{} = activity, state)
-      when state in @strip_status_report_states do
-    {:ok, stripped_activity} = strip_report_status_data(activity)
-
-    new_data =
-      activity.data
-      |> Map.put("state", state)
-      |> Map.put("object", stripped_activity.data["object"])
-
-    activity
-    |> Changeset.change(data: new_data)
-    |> Repo.update()
+  defp maybe_strip_report_status(data, state) do
+    with true <- Config.get([:instance, :report_strip_status]),
+         true <- state in @strip_status_report_states,
+         {:ok, stripped_activity} = strip_report_status_data(%Activity{data: data}) do
+      data |> Map.put("object", stripped_activity.data["object"])
+    else
+      _ -> data
+    end
   end
 
   def update_report_state(%Activity{} = activity, state) when state in @supported_report_states do
-    new_data = Map.put(activity.data, "state", state)
+    new_data =
+      activity.data
+      |> Map.put("state", state)
+      |> maybe_strip_report_status(state)
 
     activity
     |> Changeset.change(data: new_data)

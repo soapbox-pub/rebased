@@ -42,8 +42,8 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :pleroma, Pleroma.Web.WebFinger, domain: "example.org"
 ```
 
-- `domain` - is the domain for which your Pleroma instance has authority, it's the domain used in `acct:` URI. In our example, `domain` would be set to `example.org.
-- `host` - is the domain used for any URL generated for your instance, including the author/actor URL's. In our case, that would be `pleroma.example.org.
+- `domain` - is the domain for which your Pleroma instance has authority, it's the domain used in `acct:` URI. In our example, `domain` would be set to `example.org`. This is used in WebFinger account ids, which are the canonical account identifier in some other fediverse software like Mastodon. **If you change `domain`, the accounts on your server will be shown as different accounts in those software**.
+- `host` - is the domain used for any URL generated for your instance, including the author/actor URL's. In our case, that would be `pleroma.example.org`. This is used in AP ids, which are the canonical account identifier in Pleroma and some other fediverse software. **You should not change this after you have set up the instance**.
 
 ### Configuring WebFinger domain
 
