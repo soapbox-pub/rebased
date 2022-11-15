@@ -14,6 +14,9 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   require Pleroma.Constants
 
+  @days ~w(Mon Tue Wed Thu Fri Sat Sun)
+  @months ~w(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
+
   @spec pub_date(String.t() | DateTime.t()) :: String.t()
   def pub_date(date) when is_binary(date) do
     date
@@ -21,7 +24,7 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> pub_date
   end
 
-  def pub_date(%DateTime{} = date), do: to_rfc1123(date)
+  def pub_date(%DateTime{} = date), do: to_rfc2822(date)
 
   def prepare_activity(activity, opts \\ []) do
     object = Object.normalize(activity, fetch: false)
@@ -52,7 +55,7 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def most_recent_update(activities, user, :rss) do
     (List.first(activities) || user).updated_at
-    |> to_rfc1123()
+    |> to_rfc2822()
   end
 
   def feed_logo do
@@ -152,21 +155,46 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> Timex.format!("{RFC3339}")
   end
 
-  @spec to_rfc1123(String.t() | DateTime.t() | NativeDateTime.t()) :: String.t()
-  def to_rfc1123(datestr) when is_binary(datestr) do
+  @spec to_rfc2822(String.t() | DateTime.t() | NativeDateTime.t()) :: String.t()
+  def to_rfc2822(datestr) when is_binary(datestr) do
     datestr
     |> Timex.parse!("{ISO:Extended}")
-    |> to_rfc1123()
+    |> to_rfc2822()
   end
 
-  def to_rfc1123(%DateTime{} = date) do
+  def to_rfc2822(%DateTime{} = date) do
     date
-    |> Timex.format!("{RFC1123}")
+    |> DateTime.to_naive()
+    |> NaiveDateTime.to_erl()
+    |> rfc2822_from_erl()
   end
 
-  def to_rfc1123(nd) do
+  def to_rfc2822(nd) do
     nd
     |> Timex.to_datetime()
-    |> Timex.format!("{RFC1123}")
+    |> DateTime.to_naive()
+    |> NaiveDateTime.to_erl()
+    |> rfc2822_from_erl()
+  end
+
+  @doc """
+  Builds a RFC2822 timestamp from an Erlang timestamp
+  [RFC2822 3.3 - Date and Time Specification](https://tools.ietf.org/html/rfc2822#section-3.3)
+  This function always assumes the Erlang timestamp is in Universal time, not Local time
+  """
+  def rfc2822_from_erl({{year, month, day} = date, {hour, minute, second}}) do
+    day_name = Enum.at(@days, :calendar.day_of_the_week(date) - 1)
+    month_name = Enum.at(@months, month - 1)
+
+    date_part = "#{day_name}, #{day} #{month_name} #{year}"
+    time_part = "#{pad(hour)}:#{pad(minute)}:#{pad(second)}"
+
+    date_part <> " " <> time_part <> " +0000"
+  end
+
+  defp pad(num) do
+    num
+    |> Integer.to_string()
+    |> String.pad_leading(2, "0")
   end
 end
