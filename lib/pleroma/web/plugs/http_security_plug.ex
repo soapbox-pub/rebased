@@ -117,8 +117,6 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       if Config.get(:env) == :dev do
         "script-src 'self' 'unsafe-eval'"
       else
-        # TODO right now unsafe-eval is needed for WASM to load in chrome
-        # see: https://github.com/WebAssembly/content-security-policy/issues/7
         "script-src 'self' 'wasm-unsafe-eval'"
       end
 
