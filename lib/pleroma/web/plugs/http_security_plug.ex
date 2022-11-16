@@ -119,7 +119,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       else
         # TODO right now unsafe-eval is needed for WASM to load in chrome
         # see: https://github.com/WebAssembly/content-security-policy/issues/7
-        "script-src 'self' 'unsafe-eval'"
+        "script-src 'self' 'wasm-unsafe-eval'"
       end
 
     report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
