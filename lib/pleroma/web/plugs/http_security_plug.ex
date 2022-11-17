@@ -117,7 +117,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       if Config.get(:env) == :dev do
         "script-src 'self' 'unsafe-eval'"
       else
-        "script-src 'self'"
+        "script-src 'self' 'wasm-unsafe-eval'"
       end
 
     report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
