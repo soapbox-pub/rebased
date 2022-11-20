@@ -473,7 +473,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       content = "foobar"
 
       target_ap_id = target_account.ap_id
-      activity_ap_id = activity.data["id"]
+      object_ap_id = activity.object.data["id"]
 
       res =
         Utils.make_flag_data(
@@ -489,7 +489,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => object_ap_id,
         "content" => content,
         "published" => activity.object.data["published"],
         "actor" =>
