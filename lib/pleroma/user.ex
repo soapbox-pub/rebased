@@ -1190,8 +1190,8 @@ defmodule Pleroma.User do
     was_superuser_before_update = User.superuser?(user)
 
     with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
-      set_cache(user)
       BackgroundWorker.enqueue("verify_fields_links", %{"user_id" => user.id})
+      set_cache(user)
     end
     |> maybe_remove_report_notifications(was_superuser_before_update)
   end
