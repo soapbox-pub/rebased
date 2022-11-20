@@ -695,6 +695,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Enum.map(statuses || [], &build_flag_object/1)
   end
 
+  defp build_flag_object(%Activity{} = activity) do
+    object = Object.normalize(activity, fetch: false)
+    build_flag_object(object)
+  end
+
   defp build_flag_object(%Object{data: data}) do
     actor = User.get_by_ap_id(data["actor"])
     id = data["id"]

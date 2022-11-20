@@ -18,10 +18,12 @@ defmodule Pleroma.Web.AdminAPI.Report do
       |> Enum.reject(&is_nil(&1))
       |> Enum.map(fn
         act when is_map(act) ->
-          Activity.get_by_ap_id_with_object(act["id"]) || make_fake_activity(act, user)
+          Activity.get_create_by_object_ap_id_with_object(act["id"]) ||
+            Activity.get_by_ap_id_with_object(act["id"]) || make_fake_activity(act, user)
 
         act when is_binary(act) ->
-          Activity.get_by_ap_id_with_object(act)
+          Activity.get_create_by_object_ap_id_with_object(act) ||
+            Activity.get_by_ap_id_with_object(act)
       end)
 
     %{report: report, user: user, account: account, statuses: statuses}
