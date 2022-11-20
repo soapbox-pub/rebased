@@ -40,6 +40,11 @@ defmodule Pleroma.Workers.BackgroundWorker do
     Pleroma.FollowingRelationship.move_following(origin, target)
   end
 
+  def perform(%Job{args: %{"op" => "verify_fields_links", "user_id" => user_id}}) do
+    user = User.get_by_id(user_id)
+    User.perform(:verify_fields_links, user)
+  end
+
   def perform(%Job{args: %{"op" => "delete_instance", "host" => host}}) do
     Instance.perform(:delete_instance, host)
   end

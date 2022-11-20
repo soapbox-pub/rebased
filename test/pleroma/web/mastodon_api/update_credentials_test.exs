@@ -502,10 +502,15 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account_data["fields"] == [
-               %{"name" => "<a href=\"http://google.com\">foo</a>", "value" => "bar"},
+               %{
+                 "name" => "<a href=\"http://google.com\">foo</a>",
+                 "value" => "bar",
+                 "verified_at" => nil
+               },
                %{
                  "name" => "link.io",
-                 "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>)
+                 "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>),
+                 "verified_at" => nil
                }
              ]
 
@@ -564,8 +569,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account_data["fields"] == [
-               %{"name" => ":firefox:", "value" => "is best 2hu"},
-               %{"name" => "they wins", "value" => ":blank:"}
+               %{"name" => ":firefox:", "value" => "is best 2hu", "verified_at" => nil},
+               %{"name" => "they wins", "value" => ":blank:", "verified_at" => nil}
              ]
 
       assert account_data["source"]["fields"] == [
@@ -593,10 +598,11 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account["fields"] == [
-               %{"name" => "foo", "value" => "bar"},
+               %{"name" => "foo", "value" => "bar", "verified_at" => nil},
                %{
                  "name" => "link",
-                 "value" => ~S(<a href="http://cofe.io" rel="ugc">http://cofe.io</a>)
+                 "value" => ~S(<a href="http://cofe.io" rel="ugc">http://cofe.io</a>),
+                 "verified_at" => nil
                }
              ]
 
@@ -618,7 +624,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account["fields"] == [
-               %{"name" => "foo", "value" => ""}
+               %{"name" => "foo", "value" => "", "verified_at" => nil}
              ]
     end
 
