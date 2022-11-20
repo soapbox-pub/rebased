@@ -695,8 +695,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Enum.map(statuses || [], &build_flag_object/1)
   end
 
-  defp build_flag_object(%Activity{data: %{"id" => id}, object: %{data: data}}) do
-    activity_actor = User.get_by_ap_id(data["actor"])
+  defp build_flag_object(%Object{data: data}) do
+    actor = User.get_by_ap_id(data["actor"])
+    id = data["id"]
 
     %{
       "type" => "Note",
@@ -706,7 +707,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" =>
         AccountView.render(
           "show.json",
-          %{user: activity_actor, skip_visibility_check: true}
+          %{user: actor, skip_visibility_check: true}
         )
     }
   end
@@ -720,12 +721,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       end
 
     case Activity.get_by_ap_id_with_object(id) do
-      %Activity{} = activity ->
-        build_flag_object(activity)
+      %Activity{object: object} = _ ->
+        build_flag_object(object)
 
       nil ->
-        if activity = Activity.get_by_object_ap_id_with_object(id) do
-          build_flag_object(activity)
+        if %Object{} = object = Object.get_by_ap_id(id) do
+          build_flag_object(object)
         else
           %{"id" => id, "deleted" => true}
         end
