@@ -57,6 +57,22 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
     }
   end
 
+  def domain_blocks_operation do
+    %Operation{
+      tags: ["Instance"],
+      summary: "Retrieve instance domain blocks",
+      operationId: "InstanceController.domain_blocks",
+      responses: %{
+        200 =>
+          Operation.response(
+            "Array of domain blocks",
+            "application/json",
+            array_of_domain_blocks()
+          )
+      }
+    }
+  end
+
   defp instance do
     %Schema{
       type: :object,
@@ -421,6 +437,21 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         properties: %{
           id: %Schema{type: :integer},
           text: %Schema{type: :string}
+        }
+      }
+    }
+  end
+
+  defp array_of_domain_blocks do
+    %Schema{
+      type: :array,
+      items: %Schema{
+        type: :object,
+        properties: %{
+          domain: %Schema{type: :string},
+          digest: %Schema{type: :string},
+          severity: %Schema{type: :string},
+          comment: %Schema{type: :string}
         }
       }
     }
