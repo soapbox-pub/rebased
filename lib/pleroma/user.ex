@@ -561,7 +561,7 @@ defmodule Pleroma.User do
     |> validate_inclusion(:actor_type, ["Person", "Service"])
     |> put_fields()
     |> put_emoji()
-    |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
+    |> put_change_if_present(:bio, &{:ok, parse_bio(&1)})
     |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
     |> put_change_if_present(:banner, &put_upload(&1, :banner))
     |> put_change_if_present(:background, &put_upload(&1, :background))
