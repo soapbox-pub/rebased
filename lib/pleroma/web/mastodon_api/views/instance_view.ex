@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     instance = Config.get(:instance)
 
     %{
-      uri: Pleroma.Web.Endpoint.url(),
+      uri: Pleroma.Web.WebFinger.domain(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     instance = Config.get(:instance)
 
     %{
-      domain: Pleroma.Web.Endpoint.url(),
+      domain: Pleroma.Web.WebFinger.domain(),
       title: Keyword.get(instance, :name),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       source_url: Pleroma.Application.repository(),
