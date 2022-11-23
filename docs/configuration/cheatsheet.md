@@ -778,7 +778,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 * ``private_key``: VAPID private key
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```elixir
@@ -801,10 +801,10 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
-An example of logging info to local syslog, but warn to a Slack channel:
+An example of logging info to local syslog, but debug to console:
 ```elixir
 config :logger,
-  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  backends: [ {ExSyslogger, :ex_syslogger}, :console ],
   level: :info
 
 config :logger, :ex_syslogger,
@@ -812,13 +812,11 @@ config :logger, :ex_syslogger,
   ident: "pleroma",
   format: "$metadata[$level] $message"
 
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+config :logger, :console,
+  level: :debug,
+  format: "\n$time $metadata[$level] $message\n",
+  metadata: [:request_id]
 ```
-
-See the [Quack Github](https://github.com/azohra/quack) for more details
 
 
 
