@@ -1411,7 +1411,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
-      |> restrict_filtered(opts)
       |> restrict_quote_url(opts)
       |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
