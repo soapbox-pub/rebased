@@ -485,9 +485,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> where(
       [activity],
       fragment(
-        "?->>'type' = ? and ?->>'context' = ?",
+        "?->>'type' = 'Create' and ?->>'context' = ?",
         activity.data,
-        "Create",
         activity.data,
         ^context
       )
@@ -987,7 +986,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_media(query, %{only_media: true}) do
     from(
       [activity, object] in query,
-      where: fragment("(?)->>'type' = ?", activity.data, "Create"),
+      where: fragment("(?)->>'type' = 'Create'", activity.data),
       where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
     )
   end
@@ -1281,7 +1280,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp exclude_poll_votes(query, _) do
     if has_named_binding?(query, :object) do
       from([activity, object: o] in query,
-        where: fragment("not(?->>'type' = ?)", o.data, "Answer")
+        where: fragment("not(?->>'type' = 'Answer')", o.data)
       )
     else
       query
@@ -1293,7 +1292,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp exclude_chat_messages(query, _) do
     if has_named_binding?(query, :object) do
       from([activity, object: o] in query,
-        where: fragment("not(?->>'type' = ?)", o.data, "ChatMessage")
+        where: fragment("not(?->>'type' = 'ChatMessage')", o.data)
       )
     else
       query
