@@ -14,9 +14,10 @@ defmodule Pleroma.Webhook.NotifyTest do
     activity = insert(:report_activity)
 
     %{secret: secret} =
-      webhook = Webhook.create(%{url: "https://example.com/webhook", events: [:"report.created"]})
+      Webhook.create(%{url: "https://example.com/webhook", events: [:"report.created"]})
 
-    Tesla.Mock.mock(fn %{url: "https://example.com/webhook", body: body, headers: headers} = _ ->
+    Tesla.Mock.mock_global(fn %{url: "https://example.com/webhook", body: body, headers: headers} =
+                                _ ->
       {"X-Hub-Signature", "sha256=" <> signature} =
         Enum.find(headers, fn {key, _} -> key == "X-Hub-Signature" end)
 
@@ -24,6 +25,12 @@ defmodule Pleroma.Webhook.NotifyTest do
       %Tesla.Env{status: 200, body: ""}
     end)
 
-    Notify.report_created(webhook, activity)
+    [{:ok, task}] = Notify.trigger_webhooks(activity, :"report.created")
+
+    ref = Process.monitor(task)
+
+    receive do
+      {:DOWN, ^ref, _, _, _} -> nil
+    end
   end
 end
