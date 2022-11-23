@@ -994,6 +994,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_media(query, _), do: query
 
+  defp restrict_events(_query, %{only_events: _val, skip_preload: true}) do
+    raise "Can't use the child object without preloading!"
+  end
+
+  defp restrict_events(query, %{only_events: true}) do
+    from(
+      [activity, object] in query,
+      where: fragment("(?)->>'type' = 'Create'", activity.data),
+      where: fragment("(?)->>'type' = 'Event'", object.data)
+    )
+  end
+
+  defp restrict_events(query, _), do: query
+
   defp restrict_replies(query, %{exclude_replies: true}) do
     from(
       [_activity, object] in query,
@@ -1286,15 +1300,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp exclude_invisible_actors(query, %{type: "Flag"}), do: query
   defp exclude_invisible_actors(query, %{invisible_actors: true}), do: query
 
   defp exclude_invisible_actors(query, _opts) do
-    invisible_ap_ids =
-      User.Query.build(%{invisible: true, select: [:ap_id]})
-      |> Repo.all()
-      |> Enum.map(fn %{ap_id: ap_id} -> ap_id end)
-
-    from([activity] in query, where: activity.actor not in ^invisible_ap_ids)
+    query
+    |> join(:inner, [activity], u in User,
+      as: :u,
+      on: activity.actor == u.ap_id and u.invisible == false
+    )
   end
 
   defp exclude_id(query, %{exclude_id: id}) when is_binary(id) do
@@ -1417,6 +1431,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_muted(restrict_muted_opts)
       |> restrict_filtered(opts)
       |> restrict_media(opts)
+      |> restrict_events(opts)
       |> restrict_visibility(opts)
       |> restrict_thread_visibility(opts, config)
       |> restrict_reblogs(opts)
@@ -1424,10 +1439,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
-      |> restrict_filtered(opts)
       |> restrict_object(opts)
       |> restrict_quote_url(opts)
-      |> Activity.restrict_deactivated_users()
+      |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)
       |> exclude_invisible_actors(opts)
@@ -1840,4 +1854,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_visibility(%{visibility: "direct"})
     |> order_by([activity], asc: activity.id)
   end
+
+  defp maybe_restrict_deactivated_users(activity, %{type: "Flag"}), do: activity
+
+  defp maybe_restrict_deactivated_users(activity, _opts),
+    do: Activity.restrict_deactivated_users(activity)
 end
