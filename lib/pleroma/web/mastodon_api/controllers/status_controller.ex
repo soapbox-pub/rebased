@@ -484,6 +484,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
       {:error, error} when error in [:unexpected_response, :quota_exceeded, :too_many_requests] ->
         render_error(conn, :service_unavailable, "Translation service not available")
+
+      nil ->
+        render_error(conn, :not_found, "Record not found")
     end
   end
 

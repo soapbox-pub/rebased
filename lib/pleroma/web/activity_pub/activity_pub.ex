@@ -1275,6 +1275,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_quote_url(query, _), do: query
 
+  defp restrict_join_state(query, %{state: state}) when is_binary(state) do
+    from(
+      [activity] in query,
+      where: fragment("(?)->>'state' = ?", activity.data, ^state),
+    )
+  end
+
+  defp restrict_join_state(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1858,4 +1867,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_restrict_deactivated_users(activity, _opts),
     do: Activity.restrict_deactivated_users(activity)
+
+  def fetch_joined_events(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Join")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([join, object, activity], %{activity | object: object, pagination_id: join.id})
+    |> order_by([join, _, _], desc_nulls_last: join.id)
+    |> restrict_join_state(params)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{skip_order: true}),
+      pagination
+    )
+  end
 end

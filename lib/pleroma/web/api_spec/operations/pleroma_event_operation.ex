@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.ParticipationRequest
   alias Pleroma.Web.ApiSpec.Schemas.Status
+  alias Pleroma.Web.ApiSpec.StatusOperation
 
   import Pleroma.Web.ApiSpec.Helpers
 
@@ -184,6 +185,28 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
         200 =>
           Operation.response("Event", "text/calendar; charset=utf-8", %Schema{type: :string}),
         404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def joined_events_operation do
+    %Operation{
+      tags: ["Event actions"],
+      summary: "Joined events",
+      description: "Get your joined events",
+      operationId: "PleromaAPI.EventController.joined_events",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        Operation.parameter(
+          :state,
+          :query,
+          %Schema{type: :string, enum: ["pending", "reject", "accept"]},
+          "Filter by join state"
+        )
+        | pagination_params()
+      ],
+      responses: %{
+        200 => Operation.response("Array of Statuses", "application/json", StatusOperation.array_of_statuses())
       }
     }
   end

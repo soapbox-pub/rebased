@@ -488,6 +488,7 @@ defmodule Pleroma.Web.Router do
       post("/backups", BackupController, :create)
 
       post("/events", EventController, :create)
+      get("/events/joined_events", EventController, :joined_events)
       put("/events/:id", EventController, :update)
       get("/events/:id/participations", EventController, :participations)
       get("/events/:id/participation_requests", EventController, :participation_requests)

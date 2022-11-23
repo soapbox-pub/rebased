@@ -59,7 +59,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"]}
-    when action in [:participations, :participation_requests]
+    when action in [:participations, :participation_requests, :joined_events]
   )
 
   plug(
@@ -283,5 +283,18 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     else
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
+  end
+
+  def joined_events(%{assigns: %{user: %User{} = user}} = conn, params) do
+    activities = ActivityPub.fetch_joined_events(user, params)
+
+    conn
+    |> add_link_headers(activities)
+    |> put_view(StatusView)
+    |> render("index.json",
+      activities: activities,
+      for: user,
+      as: :activity
+    )
   end
 end
