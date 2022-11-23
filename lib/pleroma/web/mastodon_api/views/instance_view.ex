@@ -12,11 +12,16 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   @mastodon_api_level "2.7.2"
 
+  @block_severities %{
+    federated_timeline_removal: "silence",
+    reject: "suspend"
+  }
+
   def render("show.json", _) do
     instance = Config.get(:instance)
 
     %{
-      uri: Pleroma.Web.Endpoint.url(),
+      uri: Pleroma.Web.WebFinger.domain(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
@@ -56,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     instance = Config.get(:instance)
 
     %{
-      domain: Pleroma.Web.Endpoint.url(),
+      domain: Pleroma.Web.WebFinger.domain(),
       title: Keyword.get(instance, :name),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.compat_version()})",
       source_url: Pleroma.Application.repository(),
@@ -98,6 +103,34 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       id: rule.id,
       text: rule.text
     }
+  end
+
+  def render("domain_blocks.json", _) do
+    if Config.get([:mrf, :transparency]) do
+      exclusions = Config.get([:mrf, :transparency_exclusions]) |> MRF.instance_list_from_tuples()
+
+      domain_blocks =
+        Config.get(:mrf_simple)
+        |> Enum.map(fn {rule, instances} ->
+          MRF.normalize_instance_list(instances)
+          |> Enum.reject(fn {host, _} ->
+            host in exclusions or not Map.has_key?(@block_severities, rule)
+          end)
+          |> Enum.map(fn {host, reason} ->
+            %{
+              domain: host,
+              digest: :crypto.hash(:sha256, host) |> Base.encode16(case: :lower),
+              severity: Map.get(@block_severities, rule),
+              comment: reason
+            }
+          end)
+        end)
+        |> List.flatten()
+
+      domain_blocks
+    else
+      []
+    end
   end
 
   def features do
@@ -172,7 +205,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     |> Map.put(:enabled, Config.get([:instance, :federating]))
   end
 
-  def fields_limits do
+  defp fields_limits do
     %{
       max_fields: Config.get([:instance, :max_account_fields]),
       max_remote_fields: Config.get([:instance, :max_remote_account_fields]),
@@ -181,7 +214,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
-  def configuration do
+  defp configuration do
     %{
       statuses: %{
         max_characters: Config.get([:instance, :limit]),
@@ -200,7 +233,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     }
   end
 
-  def configuration2 do
+  defp configuration2 do
     configuration()
     |> Map.merge(%{
       urls: %{streaming: Pleroma.Web.Endpoint.websocket_url()},

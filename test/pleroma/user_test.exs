@@ -2614,13 +2614,25 @@ defmodule Pleroma.UserTest do
   end
 
   describe "full_nickname/1" do
-    test "returns fully qualified nickname for local and remote users" do
-      local_user =
-        insert(:user, nickname: "local_user", ap_id: "https://somehost.com/users/local_user")
+    test "returns fully qualified nickname for local users" do
+      local_user = insert(:user, nickname: "local_user")
 
+      assert User.full_nickname(local_user) == "local_user@localhost"
+    end
+
+    test "returns fully qualified nickname for local users when using different domain for webfinger" do
+      clear_config([Pleroma.Web.WebFinger, :domain], "plemora.dev")
+
+      host = Pleroma.Web.Endpoint.host()
+
+      local_user = insert(:user, nickname: "local_user")
+
+      assert User.full_nickname(local_user) == "local_user@plemora.dev"
+    end
+
+    test "returns fully qualified nickname for remote users" do
       remote_user = insert(:user, nickname: "remote@host.com", local: false)
 
-      assert User.full_nickname(local_user) == "local_user@somehost.com"
       assert User.full_nickname(remote_user) == "remote@host.com"
     end
 
@@ -2848,5 +2860,30 @@ defmodule Pleroma.UserTest do
 
       refute User.endorses?(user, pinned_user)
     end
+  end
+
+  test "it checks fields links for a backlink" do
+    user = insert(:user, ap_id: "https://social.example.org/users/lain")
+
+    fields = [
+      %{"name" => "Link", "value" => "http://example.com/rel_me/null"},
+      %{"name" => "Verified link", "value" => "http://example.com/rel_me/link"},
+      %{"name" => "Not a link", "value" => "i'm not a link"}
+    ]
+
+    user
+    |> User.update_and_set_cache(%{raw_fields: fields})
+
+    ObanHelpers.perform_all()
+
+    user = User.get_cached_by_id(user.id)
+
+    assert [
+             %{"verified_at" => nil},
+             %{"verified_at" => verified_at},
+             %{"verified_at" => nil}
+           ] = user.fields
+
+    assert is_binary(verified_at)
   end
 end

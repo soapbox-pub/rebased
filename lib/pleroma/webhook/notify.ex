@@ -12,7 +12,7 @@ defmodule Pleroma.Webhook.Notify do
   def trigger_webhooks(%Activity{} = activity, :"report.created" = type) do
     webhooks = Webhook.get_by_type(type)
 
-    Enum.each(webhooks, fn webhook ->
+    Enum.map(webhooks, fn webhook ->
       ConcurrentLimiter.limit(Webhook.Notify, fn ->
         Task.start(fn -> report_created(webhook, activity) end)
       end)
@@ -22,7 +22,7 @@ defmodule Pleroma.Webhook.Notify do
   def trigger_webhooks(%User{} = user, :"account.created" = type) do
     webhooks = Webhook.get_by_type(type)
 
-    Enum.each(webhooks, fn webhook ->
+    Enum.map(webhooks, fn webhook ->
       ConcurrentLimiter.limit(Webhook.Notify, fn ->
         Task.start(fn -> account_created(webhook, user) end)
       end)
@@ -67,6 +67,6 @@ defmodule Pleroma.Webhook.Notify do
   end
 
   defp signature(body, secret) do
-    :crypto.mac(:hmac, :sha256, secret, body) |> Base.encode16()
+    :crypto.mac(:hmac, :sha256, secret, body) |> Base.encode16(case: :lower)
   end
 end

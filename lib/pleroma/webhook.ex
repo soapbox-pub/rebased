@@ -94,7 +94,6 @@ defmodule Pleroma.Webhook do
   end
 
   defp generate_secret do
-    Base.encode16(:crypto.strong_rand_bytes(20))
-    |> String.downcase()
+    Base.encode16(:crypto.strong_rand_bytes(20), case: :lower)
   end
 end

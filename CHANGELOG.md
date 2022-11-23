@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
 - Set timeout values for Oban queues. The default is infinity and some operations may not time out on their own.
 - Delete activities are federated at lowest priority
+- CSP now includes wasm-unsafe-eval
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
@@ -57,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed account deletion API
 - Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
 - Removed useless notification call on Delete activities
+- Improved performance for filtering out deactivated and invisible users
 
 ### Removed
 - Quack, the logging backend that pushes to Slack channels
