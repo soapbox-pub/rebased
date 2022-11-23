@@ -96,7 +96,7 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc()
   end
 
-  defp domain do
+  def domain do
     Pleroma.Config.get([__MODULE__, :domain]) || Pleroma.Web.Endpoint.host()
   end
 

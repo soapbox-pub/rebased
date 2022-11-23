@@ -67,6 +67,6 @@ defmodule Pleroma.Webhook.Notify do
   end
 
   defp signature(body, secret) do
-    :crypto.mac(:hmac, :sha256, secret, body) |> Base.encode16()
+    :crypto.mac(:hmac, :sha256, secret, body) |> Base.encode16(case: :lower)
   end
 end

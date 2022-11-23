@@ -2253,7 +2253,7 @@ defmodule Pleroma.User do
     if String.contains?(user.nickname, "@") do
       user.nickname
     else
-      %{host: host} = URI.parse(user.ap_id)
+      host = Pleroma.Web.WebFinger.domain()
       user.nickname <> "@" <> host
     end
   end
