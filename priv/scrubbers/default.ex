@@ -79,7 +79,6 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes(:img, [
       "width",
       "height",
-      "class",
       "title",
       "alt"
     ])

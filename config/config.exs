@@ -274,9 +274,7 @@ config :pleroma, :feed,
   }
 
 config :pleroma, :markup,
-  # XXX - unfortunately, inline images must be enabled by default right now, because
-  # of custom emoji.  Issue #275 discusses defanging that somehow.
-  allow_inline_images: true,
+  allow_inline_images: false,
   allow_headings: false,
   allow_tables: false,
   allow_fonts: false,
