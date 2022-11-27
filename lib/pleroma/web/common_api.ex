@@ -596,7 +596,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update_report_state(activity_id, state) do
-    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id, []) do
       Utils.update_report_state(activity, state)
     else
       nil -> {:error, :not_found}
