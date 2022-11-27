@@ -271,7 +271,8 @@ defmodule Pleroma.Object.Fetcher do
               {:ok, "application", "activity+json", _} ->
                 {:ok, body}
 
-              {:ok, "application", "ld+json", _} ->
+              {:ok, "application", "ld+json",
+               %{"profile" => "https://www.w3.org/ns/activitystreams"}} ->
                 {:ok, body}
 
               _ ->
