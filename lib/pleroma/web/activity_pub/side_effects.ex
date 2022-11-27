@@ -389,7 +389,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   # Tasks this handles:
-  # accepts join if event is local
+  # - accepts join if event is local and public
   @impl true
   def handle(%{data: %{"type" => "Join"}} = object, meta) do
     joined_event = Object.get_by_ap_id(object.data["object"])

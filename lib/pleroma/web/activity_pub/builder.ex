@@ -379,4 +379,27 @@ defmodule Pleroma.Web.ActivityPub.Builder do
       {:ok, data, meta}
     end
   end
+
+  @spec event(ActivityDraft.t()) :: {:ok, map(), keyword()}
+  def event(%ActivityDraft{} = draft) do
+    data = %{
+      "type" => "Event",
+      "to" => draft.to,
+      "cc" => draft.cc,
+      "name" => draft.params[:name],
+      "content" => draft.content_html,
+      "context" => draft.context,
+      "attachment" => draft.attachments,
+      "actor" => draft.user.ap_id,
+      "tag" => Keyword.values(draft.tags) |> Enum.uniq(),
+      "joinMode" => draft.params[:join_mode] || "free",
+      "location" => draft.location,
+      "location_id" => draft.location_id,
+      "location_provider" => draft.location_provider,
+      "startTime" => draft.start_time,
+      "endTime" => draft.end_time
+    }
+
+    {:ok, data, []}
+  end
 end

@@ -111,6 +111,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> content()
     |> to_and_cc()
     |> context()
+    |> with_valid(&language/1)
     |> with_valid(&event_banner/1)
     |> event_location(location)
     |> with_valid(&event_date/1)
@@ -122,30 +123,18 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp event_object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
-    object = %{
-      "type" => "Event",
-      "to" => draft.to,
-      "cc" => draft.cc,
-      "name" => draft.params[:name],
-      "content" => draft.content_html,
-      "context" => draft.context,
-      "attachment" => draft.attachments,
-      "actor" => draft.user.ap_id,
-      "tag" => Keyword.values(draft.tags) |> Enum.uniq(),
-      "joinMode" => draft.params[:join_mode] || "free",
-      "emoji" => emoji,
-      "location" => draft.location,
-      "location_id" => draft.location_id,
-      "location_provider" => draft.location_provider,
-      "startTime" => draft.start_time,
-      "endTime" => draft.end_time,
-      "source" => %{
+    {:ok, event_data, _meta} = Builder.event(draft)
+
+    object =
+      event_data
+      |> Map.put("emoji", emoji)
+      |> Map.put("source", %{
         "content" => draft.status,
         "mediaType" => Utils.get_content_type(draft.params[:content_type])
-      },
-      "generator" => draft.params[:generator],
-      "content_type" => draft.params[:content_type]
-    }
+      })
+      |> Map.put("generator", draft.params[:generator])
+      |> Map.put("content_type", draft.params[:content_type])
+      |> Map.put("language", draft.language)
 
     %__MODULE__{draft | object: object}
   end
@@ -290,7 +279,9 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp language(draft) do
     language =
       Utils.get_valid_language(draft.params[:language]) ||
-        LanguageDetector.detect(draft.content_html <> " " <> draft.summary)
+        LanguageDetector.detect(
+          draft.content_html <> " " <> (draft.summary || draft.params[:name])
+        )
 
     %__MODULE__{draft | language: language}
   end
