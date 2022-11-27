@@ -32,4 +32,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
       %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
     end
   end
+
+  test "a Note without replies/first/items validates" do
+    insert(:user, ap_id: "https://mastodon.social/users/emelie")
+
+    note =
+      "test/fixtures/tesla_mock/status.emelie.json"
+      |> File.read!()
+      |> Jason.decode!()
+      |> pop_in(["replies", "first", "items"])
+      |> elem(1)
+
+    %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note)
+  end
 end

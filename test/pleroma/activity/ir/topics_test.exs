@@ -13,6 +13,29 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
 
   import Mock
 
+  describe "chat message" do
+    test "Create produces no topics" do
+      activity = %Activity{
+        object: %Object{data: %{"type" => "ChatMessage"}},
+        data: %{"type" => "Create"}
+      }
+
+      assert [] == Topics.get_activity_topics(activity)
+    end
+
+    test "Delete produces user and user:pleroma_chat" do
+      activity = %Activity{
+        object: %Object{data: %{"type" => "ChatMessage"}},
+        data: %{"type" => "Delete"}
+      }
+
+      topics = Topics.get_activity_topics(activity)
+      assert [_, _] = topics
+      assert "user" in topics
+      assert "user:pleroma_chat" in topics
+    end
+  end
+
   describe "poll answer" do
     test "produce no topics" do
       activity = %Activity{object: %Object{data: %{"type" => "Answer"}}}
@@ -114,6 +137,36 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
     end
   end
 
+  describe "local-public visibility create events" do
+    setup do
+      activity = %Activity{
+        object: %Object{data: %{"attachment" => []}},
+        data: %{"type" => "Create", "to" => [Pleroma.Web.ActivityPub.Utils.as_local_public()]}
+      }
+
+      {:ok, activity: activity}
+    end
+
+    test "doesn't produce public topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public")
+    end
+
+    test "produces public:local topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      assert Enum.member?(topics, "public:local")
+    end
+
+    test "with no attachments doesn't produce public:media topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public:media")
+      refute Enum.member?(topics, "public:local:media")
+    end
+  end
+
   describe "public visibility create events with attachments" do
     setup do
       activity = %Activity{
@@ -149,6 +202,29 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
       topics = Topics.get_activity_topics(activity)
 
       assert Enum.member?(topics, "public:remote:media:lain.com")
+    end
+  end
+
+  describe "local-public visibility create events with attachments" do
+    setup do
+      activity = %Activity{
+        object: %Object{data: %{"attachment" => ["foo"]}},
+        data: %{"type" => "Create", "to" => [Pleroma.Web.ActivityPub.Utils.as_local_public()]}
+      }
+
+      {:ok, activity: activity}
+    end
+
+    test "do not produce public:media topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public:media")
+    end
+
+    test "produces public:local:media topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      assert Enum.member?(topics, "public:local:media")
     end
   end
 

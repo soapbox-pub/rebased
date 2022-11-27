@@ -885,7 +885,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
   end
 
-  describe "hashtag timeline handling of :restrict_unauthenticated setting" do
+  describe "hashtag timeline handling of restrict_unauthenticated setting" do
     setup do
       user = insert(:user)
       {:ok, activity1} = CommonAPI.post(user, %{status: "test #tag1"})

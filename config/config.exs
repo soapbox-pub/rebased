@@ -734,7 +734,7 @@ config :pleroma, :frontends,
       "name" => "fedi-fe",
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
-        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build_release",
       "ref" => "master",
       "custom-http-headers" => [
         {"service-worker-allowed", "/"}
