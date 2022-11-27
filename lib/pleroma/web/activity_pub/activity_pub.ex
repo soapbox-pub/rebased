@@ -1278,7 +1278,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_join_state(query, %{state: state}) when is_binary(state) do
     from(
       [activity] in query,
-      where: fragment("(?)->>'state' = ?", activity.data, ^state),
+      where: fragment("(?)->>'state' = ?", activity.data, ^state)
     )
   end
 

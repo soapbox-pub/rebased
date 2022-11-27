@@ -206,7 +206,12 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
         | pagination_params()
       ],
       responses: %{
-        200 => Operation.response("Array of Statuses", "application/json", StatusOperation.array_of_statuses())
+        200 =>
+          Operation.response(
+            "Array of Statuses",
+            "application/json",
+            StatusOperation.array_of_statuses()
+          )
       }
     }
   end
