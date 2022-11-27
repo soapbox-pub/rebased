@@ -41,13 +41,14 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   # allow inline images for custom emoji
   if Pleroma.Config.get([:markup, :allow_inline_images]) do
+    Meta.allow_tag_with_this_attribute_values(:img, "class", ["emoji"])
+
     # restrict img tags to http/https only, because of MediaProxy.
     Meta.allow_tag_with_uri_attributes(:img, ["src"], ["http", "https"])
 
     Meta.allow_tag_with_these_attributes(:img, [
       "width",
       "height",
-      "class",
       "title",
       "alt"
     ])
