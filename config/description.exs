@@ -3557,6 +3557,7 @@ config :pleroma, :config_description, [
       %{
         key: :provider,
         type: :module,
+        label: "Language detection provider",
         suggestions: [
           Pleroma.Language.LanguageDetector.Fasttext
         ]
@@ -3567,6 +3568,137 @@ config :pleroma, :config_description, [
         label: "fastText language detection model",
         type: :string,
         suggestions: ["/usr/share/fasttext/lid.176.bin"]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Service,
+    type: :group,
+    description: "Geospatial service providers",
+    children: [
+      %{
+        key: :service,
+        type: :module,
+        label: "Geospatial service provider",
+        suggestions: [
+          Geospatial.Providers.Addok,
+          Geospatial.Providers.GoogleMaps,
+          Geospatial.Providers.MapQuest,
+          Geospatial.Providers.Mimirsbrunn,
+          Geospatial.Providers.Nominatim,
+          Geospatial.Providers.Pelias,
+          Geospatial.Providers.Photon
+        ]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Nominatim,
+    type: :group,
+    description: "Nominatim provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Nominatim endpoint",
+        suggestions: ["https://nominatim.openstreetmap.org"]
+      },
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Nominatim API key",
+        suggestions: [nil]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Addok,
+    type: :group,
+    description: "Addok provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Addok endpoint",
+        suggestions: ["https://api-adresse.data.gouv.fr"]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Photon,
+    type: :group,
+    description: "Photon provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Photon endpoint",
+        suggestions: ["https://photon.komoot.de"]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.GoogleMaps,
+    type: :group,
+    description: "Google Maps provider configuration",
+    children: [
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Google Maps API key",
+        suggestions: [nil]
+      },
+      %{
+        key: :fetch_place_details,
+        type: :boolean,
+        description: "Fetch place details"
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.MapQuest,
+    type: :group,
+    description: "MapQuest provider configuration",
+    children: [
+      %{
+        key: :api_key,
+        type: :string,
+        description: "MapQuest API key",
+        suggestions: [nil]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Mimirsbrunn,
+    type: :group,
+    description: "Mimirsbrunn provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Mimirsbrunn endpoint",
+        suggestions: [nil]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Pelias,
+    type: :group,
+    description: "Pelias provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Pelias endpoint",
+        suggestions: [nil]
       }
     ]
   }
