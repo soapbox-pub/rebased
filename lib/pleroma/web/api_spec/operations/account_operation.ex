@@ -223,12 +223,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             type: :object,
             properties: %{
               reblogs: %Schema{
-                type: :boolean,
+                allOf: [BooleanLike],
                 description: "Receive this account's reblogs in home timeline? Defaults to true.",
                 default: true
               },
               notify: %Schema{
-                type: :boolean,
+                allOf: [BooleanLike],
                 description:
                   "Receive notifications for all statuses posted by the account? Defaults to false.",
                 default: false
