@@ -274,9 +274,7 @@ config :pleroma, :feed,
   }
 
 config :pleroma, :markup,
-  # XXX - unfortunately, inline images must be enabled by default right now, because
-  # of custom emoji.  Issue #275 discusses defanging that somehow.
-  allow_inline_images: true,
+  allow_inline_images: false,
   allow_headings: false,
   allow_tables: false,
   allow_fonts: false,
@@ -462,7 +460,7 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason, ics: ICalendar
 
 config :phoenix, :json_library, Jason
 
@@ -879,6 +877,22 @@ config :pleroma, ConcurrentLimiter, [
 ]
 
 config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
+
+config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
+
+config :geospatial, Geospatial.Providers.GoogleMaps,
+  api_key: nil,
+  fetch_place_details: true
+
+config :geospatial, Geospatial.Providers.Nominatim,
+  endpoint: "https://nominatim.openstreetmap.org",
+  api_key: nil
+
+config :geospatial, Geospatial.Providers.Pelias,
+  endpoint: "https://api.geocode.earth",
+  api_key: nil
+
+config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
 import_config "soapbox.exs"
 

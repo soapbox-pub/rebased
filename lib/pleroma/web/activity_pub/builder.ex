@@ -19,10 +19,10 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   require Pleroma.Constants
 
-  def accept_or_reject(actor, activity, type) do
+  def accept_or_reject(%User{ap_id: ap_id}, activity, type) do
     data = %{
       "id" => Utils.generate_activity_id(),
-      "actor" => actor.ap_id,
+      "actor" => ap_id,
       "type" => type,
       "object" => activity.data["id"],
       "to" => [activity.actor]
@@ -31,14 +31,26 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
-  @spec reject(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def reject(actor, rejected_activity) do
-    accept_or_reject(actor, rejected_activity, "Reject")
+  def accept_or_reject(%Object{data: %{"actor" => actor}}, activity, type) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => actor,
+      "type" => type,
+      "object" => activity.data["id"],
+      "to" => [activity.actor]
+    }
+
+    {:ok, data, []}
   end
 
-  @spec accept(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def accept(actor, accepted_activity) do
-    accept_or_reject(actor, accepted_activity, "Accept")
+  @spec reject(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def reject(object, rejected_activity) do
+    accept_or_reject(object, rejected_activity, "Reject")
+  end
+
+  @spec accept(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def accept(object, accepted_activity) do
+    accept_or_reject(object, accepted_activity, "Accept")
   end
 
   @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
@@ -231,13 +243,13 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec update(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def update(actor, object) do
-    {to, cc} =
+    {to, cc, bcc} =
       if object["type"] in Pleroma.Constants.actor_types() do
         # User updates, always public
-        {[Pleroma.Constants.as_public(), actor.follower_address], []}
+        {[Pleroma.Constants.as_public(), actor.follower_address], [], []}
       else
         # Status updates, follow the recipients in the object
-        {object["to"] || [], object["cc"] || []}
+        {object["to"] || [], object["cc"] || [], object["participations"] || []}
       end
 
     {:ok,
@@ -247,7 +259,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "actor" => actor.ap_id,
        "object" => object,
        "to" => to,
-       "cc" => cc
+       "cc" => cc,
+       "bcc" => bcc
      }, []}
   end
 
@@ -354,5 +367,39 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   defp pinned_url(nickname) when is_binary(nickname) do
     Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname)
+  end
+
+  def join(actor, object, participation_message \\ nil) do
+    with {:ok, data, meta} <- object_action(actor, object) do
+      data =
+        data
+        |> Map.put("type", "Join")
+        |> Map.put("participationMessage", participation_message)
+
+      {:ok, data, meta}
+    end
+  end
+
+  @spec event(ActivityDraft.t()) :: {:ok, map(), keyword()}
+  def event(%ActivityDraft{} = draft) do
+    data = %{
+      "type" => "Event",
+      "to" => draft.to,
+      "cc" => draft.cc,
+      "name" => draft.params[:name],
+      "content" => draft.content_html,
+      "context" => draft.context,
+      "attachment" => draft.attachments,
+      "actor" => draft.user.ap_id,
+      "tag" => Keyword.values(draft.tags) |> Enum.uniq(),
+      "joinMode" => draft.params[:join_mode] || "free",
+      "location" => draft.location,
+      "location_id" => draft.location_id,
+      "location_provider" => draft.location_provider,
+      "startTime" => draft.start_time,
+      "endTime" => draft.end_time
+    }
+
+    {:ok, data, []}
   end
 end

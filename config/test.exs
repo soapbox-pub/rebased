@@ -61,6 +61,8 @@ config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
 
+config :tesla, Geospatial.HTTP, adapter: Tesla.Mock
+
 config :pleroma, :rich_media,
   enabled: false,
   ignore_hosts: [],
@@ -144,6 +146,10 @@ config :pleroma, :side_effects,
 # Reduce recompilation time
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
+
+# Allow inline images in tests (for now).
+# FIXME: rework/remove tests that depend on this.
+config :pleroma, :markup, allow_inline_images: true
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

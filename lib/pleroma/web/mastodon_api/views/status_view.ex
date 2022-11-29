@@ -430,7 +430,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         parent_visible: visible_for_user?(reply_to, opts[:for]),
         pinned_at: pinned_at,
         content_type: opts[:with_source] && (object.data["content_type"] || "text/plain"),
-        quotes_count: object.data["quotesCount"] || 0
+        quotes_count: object.data["quotesCount"] || 0,
+        event: build_event(object.data, opts[:for])
       }
     }
   end
@@ -537,7 +538,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: activity.id,
       text: get_source_text(Map.get(object.data, "source", "")),
       spoiler_text: Map.get(object.data, "summary", ""),
-      content_type: get_source_content_type(object.data["source"])
+      content_type: get_source_content_type(object.data["source"]),
+      location: build_source_location(object.data)
     }
   end
 
@@ -696,7 +698,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{data: %{"name" => name}} = object) when not is_nil(name) and name != "" do
+  def render_content(%{data: %{"name" => name, "type" => type}} = object)
+      when not is_nil(name) and name != "" and type != "Event" do
     url = object.data["url"] || object.data["id"]
 
     "<p><a href=\"#{url}\">#{name}</a></p>#{object.data["content"]}"
@@ -752,6 +755,61 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
     end)
   end
+
+  defp build_event(%{"type" => "Event"} = data, for_user) do
+    %{
+      name: data["name"],
+      start_time: data["startTime"],
+      end_time: data["endTime"],
+      join_mode: data["joinMode"],
+      participants_count: data["participation_count"],
+      location: build_event_location(data["location"]),
+      join_state: build_event_join_state(for_user, data["id"]),
+      participation_request_count: maybe_put_participation_request_count(data, for_user)
+    }
+  end
+
+  defp build_event(_, _), do: nil
+
+  defp build_event_location(%{"type" => "Place"} = location) do
+    %{
+      name: location["name"],
+      url: location["url"],
+      longitude: location["longitude"],
+      latitude: location["latitude"]
+    }
+    |> maybe_put_address(location["address"])
+  end
+
+  defp build_event_location(_), do: nil
+
+  defp maybe_put_address(location, %{"type" => "PostalAddress"} = address) do
+    Map.merge(location, %{
+      street: address["streetAddress"],
+      postal_code: address["postalCode"],
+      locality: address["addressLocality"],
+      region: address["addressRegion"],
+      country: address["addressCountry"]
+    })
+  end
+
+  defp maybe_put_address(location, _), do: location
+
+  defp build_event_join_state(%{ap_id: actor}, id) do
+    latest_join = Pleroma.Web.ActivityPub.Utils.get_existing_join(actor, id)
+
+    if latest_join do
+      latest_join.data["state"]
+    end
+  end
+
+  defp build_event_join_state(_, _), do: nil
+
+  defp maybe_put_participation_request_count(%{"actor" => actor} = data, %{ap_id: actor}) do
+    data["participation_request_count"]
+  end
+
+  defp maybe_put_participation_request_count(_, _), do: nil
 
   defp present?(nil), do: false
   defp present?(false), do: false
@@ -817,4 +875,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_source_content_type(_source) do
     Utils.get_content_type(nil)
   end
+
+  def build_source_location(%{"location_id" => location_id}) when is_binary(location_id) do
+    location = Geospatial.Service.service().get_by_id(location_id) |> List.first()
+
+    if location do
+      Pleroma.Web.PleromaAPI.SearchView.render("show_location.json", %{location: location})
+    else
+      nil
+    end
+  end
+
+  def build_source_location(_), do: nil
 end

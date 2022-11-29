@@ -125,7 +125,7 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.9.0"},
       {:postgrex, ">= 0.15.5"},
-      {:oban, "~> 2.4.0"},
+      {:oban, "~> 2.9"},
       {:gettext,
        git: "https://github.com/tusooa/gettext.git",
        ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
@@ -201,6 +201,8 @@ defmodule Pleroma.Mixfile do
       {:open_api_spex, "~> 3.10"},
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:ecto_psql_extras, "~> 0.6"},
+      {:icalendar, "~> 1.1"},
+      {:geospatial, "~> 0.2.0"},
       {:prom_ex, "~> 1.7.1"},
       {:unplug, "~> 1.0"},
 

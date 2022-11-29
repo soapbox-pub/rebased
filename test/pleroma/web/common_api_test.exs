@@ -1204,6 +1204,25 @@ defmodule Pleroma.Web.CommonAPITest do
       assert activity_id == activity.data["id"]
     end
 
+    test "update report state when the actor is deactivated" do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id]
+        })
+
+      # Deactivate the reporter (and sanity-check it).
+      {:ok, reporter} = User.set_activation(reporter, false)
+      refute reporter.is_active
+
+      # We can still close the report.
+      {:ok, _report} = CommonAPI.update_report_state(report_id, "resolved")
+    end
+
     test "updates report state, don't strip when report_strip_status is false" do
       clear_config([:instance, :report_strip_status], false)
 

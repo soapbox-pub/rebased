@@ -272,7 +272,7 @@ defmodule Pleroma.ConfigDB do
     ":#{entity}"
   end
 
-  def to_json_types(entity) when is_atom(entity), do: inspect(entity)
+  def to_json_types(entity) when is_atom(entity) or is_function(entity), do: inspect(entity)
 
   @spec to_elixir_types(boolean() | String.t() | map() | list()) :: term()
   def to_elixir_types(%{"tuple" => [":args", args]}) when is_list(args) do

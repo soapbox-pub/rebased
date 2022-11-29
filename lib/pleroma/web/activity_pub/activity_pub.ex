@@ -25,6 +25,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.EventReminderWorker
   alias Pleroma.Workers.NotificationWorker
   alias Pleroma.Workers.PollWorker
 
@@ -318,6 +319,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
+         :ok <- maybe_schedule_event_notifications(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -334,6 +336,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_schedule_poll_notifications(activity) do
     PollWorker.schedule_poll_end(activity)
+    :ok
+  end
+
+  defp maybe_schedule_event_notifications(activity) do
+    EventReminderWorker.schedule_event_reminder(activity)
     :ok
   end
 
@@ -479,9 +486,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> where(
       [activity],
       fragment(
-        "?->>'type' = ? and ?->>'context' = ?",
+        "?->>'type' = 'Create' and ?->>'context' = ?",
         activity.data,
-        "Create",
         activity.data,
         ^context
       )
@@ -981,12 +987,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_media(query, %{only_media: true}) do
     from(
       [activity, object] in query,
-      where: fragment("(?)->>'type' = ?", activity.data, "Create"),
+      where: fragment("(?)->>'type' = 'Create'", activity.data),
       where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
     )
   end
 
   defp restrict_media(query, _), do: query
+
+  defp restrict_events(_query, %{only_events: _val, skip_preload: true}) do
+    raise "Can't use the child object without preloading!"
+  end
+
+  defp restrict_events(query, %{only_events: true}) do
+    from(
+      [activity, object] in query,
+      where: fragment("(?)->>'type' = 'Create'", activity.data),
+      where: fragment("(?)->>'type' = 'Event'", object.data)
+    )
+  end
+
+  defp restrict_events(query, _), do: query
 
   defp restrict_replies(query, %{exclude_replies: true}) do
     from(
@@ -1242,6 +1262,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_filtered(query, _), do: query
 
+  defp restrict_object(query, %{object: object}) do
+    from(activity in query, where: fragment("?->>'object' = ?", activity.data, ^object))
+  end
+
+  defp restrict_object(query, _), do: query
+
   defp restrict_quote_url(query, %{quote_url: quote_url}) do
     from([_activity, object] in query,
       where: fragment("(?)->'quoteUrl' = ?", object.data, ^quote_url)
@@ -1250,12 +1276,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_quote_url(query, _), do: query
 
+  defp restrict_join_state(query, %{state: state}) when is_binary(state) do
+    from(
+      [activity] in query,
+      where: fragment("(?)->>'state' = ?", activity.data, ^state)
+    )
+  end
+
+  defp restrict_join_state(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
     if has_named_binding?(query, :object) do
       from([activity, object: o] in query,
-        where: fragment("not(?->>'type' = ?)", o.data, "Answer")
+        where: fragment("not(?->>'type' = 'Answer')", o.data)
       )
     else
       query
@@ -1267,7 +1302,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp exclude_chat_messages(query, _) do
     if has_named_binding?(query, :object) do
       from([activity, object: o] in query,
-        where: fragment("not(?->>'type' = ?)", o.data, "ChatMessage")
+        where: fragment("not(?->>'type' = 'ChatMessage')", o.data)
       )
     else
       query
@@ -1405,6 +1440,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_muted(restrict_muted_opts)
       |> restrict_filtered(opts)
       |> restrict_media(opts)
+      |> restrict_events(opts)
       |> restrict_visibility(opts)
       |> restrict_thread_visibility(opts, config)
       |> restrict_reblogs(opts)
@@ -1412,6 +1448,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
+      |> restrict_object(opts)
       |> restrict_quote_url(opts)
       |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
@@ -1831,4 +1868,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_restrict_deactivated_users(activity, _opts),
     do: Activity.restrict_deactivated_users(activity)
+
+  def fetch_joined_events(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Join")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([join, object, activity], %{activity | object: object, pagination_id: join.id})
+    |> order_by([join, _, _], desc_nulls_last: join.id)
+    |> restrict_join_state(params)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{skip_order: true}),
+      pagination
+    )
+  end
 end
