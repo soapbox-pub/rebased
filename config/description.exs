@@ -3582,13 +3582,9 @@ config :pleroma, :config_description, [
         type: :module,
         label: "Geospatial service provider",
         suggestions: [
-          # Geospatial.Providers.Addok,
-          # Geospatial.Providers.GoogleMaps,
-          # Geospatial.Providers.MapQuest,
-          # Geospatial.Providers.Mimirsbrunn,
-          Geospatial.Providers.Nominatim
-          # Geospatial.Providers.Pelias,
-          # Geospatial.Providers.Photon
+          Geospatial.Providers.GoogleMaps,
+          Geospatial.Providers.Nominatim,
+          Geospatial.Providers.Pelias
         ]
       }
     ]
@@ -3612,94 +3608,44 @@ config :pleroma, :config_description, [
         suggestions: [nil]
       }
     ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.GoogleMaps,
+    type: :group,
+    description: "Google Maps provider configuration",
+    children: [
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Google Maps API key",
+        suggestions: [nil]
+      },
+      %{
+        key: :fetch_place_details,
+        type: :boolean,
+        description: "Fetch place details"
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Pelias,
+    type: :group,
+    description: "Pelias provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Pelias endpoint",
+        suggestions: ["https://api.geocode.earth"]
+      },
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Pelias API key",
+        suggestions: [nil]
+      }
+    ]
   }
-  # %{
-  #   group: :geospatial,
-  #   key: Geospatial.Providers.Addok,
-  #   type: :group,
-  #   description: "Addok provider configuration",
-  #   children: [
-  #     %{
-  #       key: :endpoint,
-  #       type: :string,
-  #       description: "Addok endpoint",
-  #       suggestions: ["https://api-adresse.data.gouv.fr"]
-  #     }
-  #   ]
-  # },
-  # %{
-  #   group: :geospatial,
-  #   key: Geospatial.Providers.Photon,
-  #   type: :group,
-  #   description: "Photon provider configuration",
-  #   children: [
-  #     %{
-  #       key: :endpoint,
-  #       type: :string,
-  #       description: "Photon endpoint",
-  #       suggestions: ["https://photon.komoot.de"]
-  #     }
-  #   ]
-  # },
-  # %{
-  #   group: :geospatial,
-  #   key: Geospatial.Providers.GoogleMaps,
-  #   type: :group,
-  #   description: "Google Maps provider configuration",
-  #   children: [
-  #     %{
-  #       key: :api_key,
-  #       type: :string,
-  #       description: "Google Maps API key",
-  #       suggestions: [nil]
-  #     },
-  #     %{
-  #       key: :fetch_place_details,
-  #       type: :boolean,
-  #       description: "Fetch place details"
-  #     }
-  #   ]
-  # },
-  # %{
-  #   group: :geospatial,
-  #   key: Geospatial.Providers.MapQuest,
-  #   type: :group,
-  #   description: "MapQuest provider configuration",
-  #   children: [
-  #     %{
-  #       key: :api_key,
-  #       type: :string,
-  #       description: "MapQuest API key",
-  #       suggestions: [nil]
-  #     }
-  #   ]
-  # },
-  # %{
-  #   group: :geospatial,
-  #   key: Geospatial.Providers.Mimirsbrunn,
-  #   type: :group,
-  #   description: "Mimirsbrunn provider configuration",
-  #   children: [
-  #     %{
-  #       key: :endpoint,
-  #       type: :string,
-  #       description: "Mimirsbrunn endpoint",
-  #       suggestions: [nil]
-  #     }
-  #   ]
-  # },
-  # %{
-  #   group: :geospatial,
-  #   key: Geospatial.Providers.Pelias,
-  #   type: :group,
-  #   description: "Pelias provider configuration",
-  #   children: [
-  #     %{
-  #       key: :endpoint,
-  #       type: :string,
-  #       description: "Pelias endpoint",
-  #       suggestions: [nil]
-  #     }
-  #   ]
-  # }
 ]

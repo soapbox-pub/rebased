@@ -880,23 +880,17 @@ config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fet
 
 config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
 
-config :geospatial, Geospatial.Providers.Nominatim,
-  endpoint: "https://nominatim.openstreetmap.org",
-  api_key: nil
-
-config :geospatial, Geospatial.Providers.Addok, endpoint: "https://api-adresse.data.gouv.fr"
-
-config :geospatial, Geospatial.Providers.Photon, endpoint: "https://photon.komoot.de"
-
 config :geospatial, Geospatial.Providers.GoogleMaps,
   api_key: nil,
   fetch_place_details: true
 
-config :geospatial, Geospatial.Providers.MapQuest, api_key: nil
+config :geospatial, Geospatial.Providers.Nominatim,
+  endpoint: "https://nominatim.openstreetmap.org",
+  api_key: nil
 
-config :geospatial, Geospatial.Providers.Mimirsbrunn, endpoint: nil
-
-config :geospatial, Geospatial.Providers.Pelias, endpoint: nil
+config :geospatial, Geospatial.Providers.Pelias,
+  endpoint: "https://api.geocode.earth",
+  api_key: nil
 
 config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
