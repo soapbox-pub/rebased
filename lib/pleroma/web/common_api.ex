@@ -337,7 +337,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def join_helper(user, id, participation_message) do
+  defp join_helper(user, id, participation_message) do
     with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
          {_, {:ok, join_object, meta}} <-
            {:build_object, Builder.join(user, object, participation_message)},
