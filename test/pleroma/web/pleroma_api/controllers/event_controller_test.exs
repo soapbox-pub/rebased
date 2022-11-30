@@ -111,7 +111,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
       |> get("/api/v1/pleroma/events/#{activity.id}/participations")
 
     assert response = json_response_and_validate_schema(conn, 200)
-    assert length(response) == 2
+    assert length(response) == 3
   end
 
   describe "GET /api/v1/pleroma/events/:id/participation_requests" do
@@ -175,7 +175,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
       [user: user, conn: conn]
     end
 
-    test "joins an event", %{conn: conn} do
+    test "joins an event", %{conn: conn, user: user} do
       other_user = insert(:user)
 
       {:ok, activity} =
@@ -193,12 +193,12 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       assert %{
                data: %{
-                 "participation_count" => 1
+                 "participation_count" => 2
                }
              } = Object.get_by_ap_id(activity.data["object"])
     end
 
-    test "can't participate in your own event", %{conn: conn, user: user} do
+    test "can't join your own event", %{conn: conn, user: user} do
       {:ok, activity} =
         CommonAPI.event(user, %{
           name: "test event",
@@ -243,7 +243,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       assert %{
                data: %{
-                 "participation_count" => 0
+                 "participation_count" => 1
                }
              } = Object.get_by_ap_id(activity.data["object"])
     end
@@ -298,8 +298,8 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
 
       assert %{
                data: %{
-                 "participations" => [^ap_id],
-                 "participation_count" => 1
+                 "participations" => [^ap_id, _],
+                 "participation_count" => 2
                }
              } = Object.get_by_ap_id(activity.data["object"])
 

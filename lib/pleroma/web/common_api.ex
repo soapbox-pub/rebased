@@ -380,8 +380,12 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
          {:ok, accept_data, _} <- Builder.accept(user, join_activity),
          {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true),
-         event <- Object.get_by_ap_id(event_id),
-         {:ok, _} <- Utils.update_participation_request_count_in_object(event) do
+         event <- Object.get_by_ap_id(event_id) do
+      if Object.local?(event) and event.data["joinMode"] != "free" and
+           join_activity.data["actor"] == event.data["actor"] do
+        Utils.update_participation_request_count_in_object(event)
+      end
+
       {:ok, participant}
     end
   end

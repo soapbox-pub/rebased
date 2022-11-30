@@ -401,7 +401,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
     end
 
-    if Object.local?(joined_event) and joined_event.data["joinMode"] != "free" do
+    if Object.local?(joined_event) and joined_event.data["joinMode"] != "free" and
+         object.data["actor"] != joined_event.data["actor"] do
       Utils.update_participation_request_count_in_object(joined_event)
     end
 
