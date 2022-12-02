@@ -20,7 +20,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Repo
   alias Pleroma.Upload
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
@@ -320,6 +322,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
          :ok <- maybe_schedule_event_notifications(activity),
+         :ok <- maybe_join_own_event(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -343,6 +346,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     EventReminderWorker.schedule_event_reminder(activity)
     :ok
   end
+
+  defp maybe_join_own_event(actor, %{object: %{data: %{"type" => "Event"}} = object}) do
+    {:ok, join_object, meta} = Builder.join(actor, object)
+
+    {:ok, _, _} = Pipeline.common_pipeline(join_object, Keyword.put(meta, :local, true))
+
+    :ok
+  end
+
+  defp maybe_join_own_event(_, _), do: :ok
 
   @spec listen(map()) :: {:ok, Activity.t()} | {:error, any()}
   def listen(%{to: to, actor: actor, context: context, object: object} = params) do
