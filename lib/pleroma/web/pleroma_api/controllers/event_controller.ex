@@ -22,6 +22,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.PleromaAPI.EventView
   alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -67,6 +68,16 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
     %{scopes: ["read:statuses"]}
     when action in [:export_ics]
   )
+
+  @rate_limited_event_actions ~w(create update join leave)a
+
+  plug(
+    RateLimiter,
+    [name: :status_id_action, bucket_name: "status_id_action:join_leave", params: [:id]]
+    when action in ~w(join leave)a
+  )
+
+  plug(RateLimiter, [name: :events_actions] when action in @rate_limited_event_actions)
 
   plug(Pleroma.Web.Plugs.SetApplicationPlug, [] when action in [:create, :update])
 

@@ -477,6 +477,7 @@ Supported rate limiters:
 * `:relation_id_action` - Following/Unfollowing for a specific user.
 * `:statuses_actions` - Status actions such as: (un)repeating, (un)favouriting, creating, deleting.
 * `:status_id_action` - (un)Repeating/(un)Favouriting a particular status.
+* `:events_actions` - Events actions such as: creating, joining, leaving.
 * `:authentication` - Authentication actions, i.e getting an OAuth token.
 * `:password_reset` - Requesting password reset emails.
 * `:account_confirmation_resend` - Requesting resending account confirmation emails.
