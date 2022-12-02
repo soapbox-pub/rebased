@@ -2713,10 +2713,11 @@ defmodule Pleroma.User do
   # - display name
   def sanitize_html(%User{} = user, filter) do
     fields =
-      Enum.map(user.fields, fn %{"name" => name, "value" => value} ->
+      Enum.map(user.fields, fn %{"name" => name, "value" => value} = field ->
         %{
           "name" => name,
-          "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+          "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly),
+          "verified_at" => Map.get(field, "verified_at")
         }
       end)
 
