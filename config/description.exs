@@ -2624,8 +2624,7 @@ config :pleroma, :config_description, [
       %{
         key: :events_actions,
         type: [:tuple, {:list, :tuple}],
-        description:
-          "For create / update / join / leave actions on any statuses",
+        description: "For create / update / join / leave actions on any statuses",
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
