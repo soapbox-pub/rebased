@@ -486,6 +486,30 @@ defmodule Pleroma.Web.Router do
 
       get("/backups", BackupController, :index)
       post("/backups", BackupController, :create)
+
+      post("/events", EventController, :create)
+      get("/events/joined_events", EventController, :joined_events)
+      put("/events/:id", EventController, :update)
+      get("/events/:id/participations", EventController, :participations)
+      get("/events/:id/participation_requests", EventController, :participation_requests)
+
+      post(
+        "/events/:id/participation_requests/:participant_id/authorize",
+        EventController,
+        :authorize_participation_request
+      )
+
+      post(
+        "/events/:id/participation_requests/:participant_id/reject",
+        EventController,
+        :reject_participation_request
+      )
+
+      post("/events/:id/join", EventController, :join)
+      post("/events/:id/leave", EventController, :leave)
+      get("/events/:id/ics", EventController, :export_ics)
+
+      get("/search/location", SearchController, :location)
     end
 
     scope [] do

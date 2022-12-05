@@ -43,7 +43,29 @@
             "sm": "http://smithereen.software/ns#",
             "nonAnonymous": "sm:nonAnonymous",
             "formerRepresentations": "litepub:formerRepresentations",
-            "votersCount" : "toot:votersCount"
+            "votersCount": "toot:votersCount",
+            "mz": "https://joinmobilizon.org/ns#",
+            "joinMode": {
+                "@id": "mz:joinMode",
+                "@type": "mz:joinModeType"
+            },
+            "joinModeType": {
+                "@id": "mz:joinModeType",
+                "@type": "rdfs:Class"
+            },
+            "participationMessage": {
+                "@id": "mz:participationMessage",
+                "@type": "sc:Text"
+            },
+            "streetAddress": "sc:streetAddress",
+            "postalCode": "sc:postalCode",
+            "addressLocality": "sc:addressLocality",
+            "addressRegion": "sc:addressRegion",
+            "addressCountry": "sc:addressCountry",
+            "location": {
+                "@id": "sc:location",
+                "@type": "sc:Place"
+            }
         }
     ]
 }

@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
+  alias Pleroma.Workers.EventReminderWorker
   alias Pleroma.Workers.PollWorker
 
   require Pleroma.Constants
@@ -43,23 +44,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Sends a notification
   @impl true
   def handle(
-        %{
-          data: %{
-            "actor" => actor,
-            "type" => "Accept",
-            "object" => follow_activity_id
-          }
-        } = object,
+        %{data: %{"actor" => actor, "type" => "Accept", "object" => activity_id}} = object,
         meta
       ) do
-    with %Activity{actor: follower_id} = follow_activity <-
-           Activity.get_by_ap_id(follow_activity_id),
-         %User{} = followed <- User.get_cached_by_ap_id(actor),
-         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _follower, followed} <-
-           FollowingRelationship.update(follower, followed, :follow_accept) do
-      Notification.update_notification_type(followed, follow_activity)
+    with %Activity{} = activity <-
+           Activity.get_by_ap_id(activity_id) do
+      handle_accepted(activity, actor)
+
+      if activity.data["type"] === "Join" do
+        Notification.create_notifications(object)
+      end
     end
 
     {:ok, object, meta}
@@ -75,18 +69,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
           data: %{
             "actor" => actor,
             "type" => "Reject",
-            "object" => follow_activity_id
+            "object" => activity_id
           }
         } = object,
         meta
       ) do
-    with %Activity{actor: follower_id} = follow_activity <-
-           Activity.get_by_ap_id(follow_activity_id),
-         %User{} = followed <- User.get_cached_by_ap_id(actor),
-         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
-         {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
-      FollowingRelationship.update(follower, followed, :follow_reject)
-      Notification.dismiss(follow_activity)
+    with %Activity{} = activity <-
+           Activity.get_by_ap_id(activity_id) do
+      handle_rejected(activity, actor)
     end
 
     {:ok, object, meta}
@@ -398,10 +388,93 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  # Tasks this handles:
+  # - accepts join if event is local and public
+  @impl true
+  def handle(%{data: %{"type" => "Join"}} = object, meta) do
+    joined_event = Object.get_by_ap_id(object.data["object"])
+
+    if Object.local?(joined_event) and
+         (joined_event.data["joinMode"] == "free" or
+            object.data["actor"] == joined_event.data["actor"]) do
+      {:ok, accept_data, _} = Builder.accept(joined_event, object)
+      {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
+    end
+
+    if Object.local?(joined_event) and joined_event.data["joinMode"] != "free" and
+         object.data["actor"] != joined_event.data["actor"] do
+      Utils.update_participation_request_count_in_object(joined_event)
+    end
+
+    Notification.create_notifications(object)
+
+    {:ok, object, meta}
+  end
+
+  @impl true
+  def handle(%{actor: actor_id, data: %{"type" => "Leave", "object" => event_id}} = object, meta) do
+    with undone_object <- Utils.get_existing_join(actor_id, event_id),
+         :ok <- handle_undoing(undone_object) do
+      event = Object.get_by_ap_id(event_id)
+
+      if Object.local?(event) and event.data["joinMode"] != "free" do
+        Utils.update_participation_request_count_in_object(event)
+      end
+
+      {:ok, object, meta}
+    end
+  end
+
   # Nothing to do
   @impl true
   def handle(object, meta) do
     {:ok, object, meta}
+  end
+
+  defp handle_accepted(
+         %Activity{actor: follower_id, data: %{"type" => "Follow"}} = follow_activity,
+         actor
+       ) do
+    with %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _follower, followed} <-
+           FollowingRelationship.update(follower, followed, :follow_accept) do
+      Notification.update_notification_type(followed, follow_activity)
+    end
+  end
+
+  defp handle_accepted(
+         %Activity{data: %{"type" => "Join", "object" => event_id}} = join_activity,
+         actor
+       ) do
+    with %Object{data: %{"actor" => ^actor}} = joined_event <- Object.get_by_ap_id(event_id),
+         {:ok, join_activity} <- Utils.update_join_state(join_activity, "accept") do
+      Utils.add_participation_to_object(join_activity, joined_event)
+    end
+  end
+
+  defp handle_rejected(
+         %Activity{actor: follower_id, data: %{"type" => "Follow"}} = follow_activity,
+         actor
+       ) do
+    with %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
+      FollowingRelationship.update(follower, followed, :follow_reject)
+      Notification.dismiss(follow_activity)
+    end
+  end
+
+  defp handle_rejected(
+         %Activity{data: %{"type" => "Join", "object" => event_id}} = join_activity,
+         actor
+       ) do
+    with %Object{data: %{"actor" => ^actor}} = joined_event <- Object.get_by_ap_id(event_id),
+         {:o, join_activity} <- Utils.update_join_state(join_activity, "reject") do
+      Utils.remove_participation_from_object(join_activity, joined_event)
+      Notification.dismiss(join_activity)
+    end
   end
 
   defp handle_update_user(
@@ -465,6 +538,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             _ -> nil
           end
         end
+
+        EventReminderWorker.schedule_event_reminder(object)
 
         if updated do
           object
@@ -531,8 +606,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_object_creation(%{"type" => "Event"} = object, activity, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      EventReminderWorker.schedule_event_reminder(activity)
+      {:ok, object, meta}
+    end
+  end
+
   def handle_object_creation(%{"type" => objtype} = object, _activity, meta)
-      when objtype in ~w[Audio Video Event Article Note Page] do
+      when objtype in ~w[Audio Video Article Note Page] do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
       {:ok, object, meta}
     end
@@ -579,6 +661,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     with %User{} = blocker <- User.get_cached_by_ap_id(blocker),
          %User{} = blocked <- User.get_cached_by_ap_id(blocked),
          {:ok, _} <- User.unblock(blocker, blocked),
+         {:ok, _} <- Repo.delete(object) do
+      :ok
+    end
+  end
+
+  def handle_undoing(
+        %{data: %{"type" => "Join", "actor" => _actor_id, "object" => event_id}} = object
+      ) do
+    with %Object{} = event_object <- Object.get_by_ap_id(event_id),
+         {:ok, _} <- Utils.remove_participation_from_object(object, event_object),
          {:ok, _} <- Repo.delete(object) do
       :ok
     end

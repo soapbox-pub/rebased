@@ -460,7 +460,7 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason, ics: ICalendar
 
 config :phoenix, :json_library, Jason
 
@@ -691,6 +691,7 @@ config :pleroma, :rate_limit,
   relation_id_action: {60_000, 2},
   statuses_actions: {10_000, 15},
   status_id_action: {60_000, 3},
+  events_actions: {10_000, 15},
   password_reset: {1_800_000, 5},
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
@@ -877,6 +878,22 @@ config :pleroma, ConcurrentLimiter, [
 ]
 
 config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
+
+config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
+
+config :geospatial, Geospatial.Providers.GoogleMaps,
+  api_key: nil,
+  fetch_place_details: true
+
+config :geospatial, Geospatial.Providers.Nominatim,
+  endpoint: "https://nominatim.openstreetmap.org",
+  api_key: nil
+
+config :geospatial, Geospatial.Providers.Pelias,
+  endpoint: "https://api.geocode.earth",
+  api_key: nil
+
+config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
 import_config "soapbox.exs"
 

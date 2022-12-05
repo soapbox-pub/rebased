@@ -173,7 +173,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "pleroma:get:main/ostatus",
       if Pleroma.Language.Translation.configured?() do
         "translation"
-      end
+      end,
+      "events"
     ]
     |> Enum.filter(& &1)
   end
