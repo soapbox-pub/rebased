@@ -892,6 +892,11 @@ defmodule Pleroma.Web.Router do
     get("/announcements", AnnouncementController, :index)
     post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
 
+    get("/tags/:id", TagController, :show)
+    post("/tags/:id/follow", TagController, :follow)
+    post("/tags/:id/unfollow", TagController, :unfollow)
+  end
+
     post("/bite", BiteController, :bite)
   end
 

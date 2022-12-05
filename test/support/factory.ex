@@ -717,4 +717,11 @@ defmodule Pleroma.Factory do
     }
     |> Map.merge(attrs)
   end
+
+  def hashtag_factory(params \\ %{}) do
+    %Pleroma.Hashtag{
+      name: "test #{sequence(:hashtag_name, & &1)}"
+    }
+    |> Map.merge(params)
+  end
 end
