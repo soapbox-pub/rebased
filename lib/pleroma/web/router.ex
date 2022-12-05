@@ -755,6 +755,10 @@ defmodule Pleroma.Web.Router do
 
     get("/announcements", AnnouncementController, :index)
     post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
+
+    get("/tags/:id", TagController, :show)
+    post("/tags/:id/follow", TagController, :follow)
+    post("/tags/:id/unfollow", TagController, :unfollow)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

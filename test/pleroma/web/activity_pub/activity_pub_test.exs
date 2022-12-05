@@ -867,6 +867,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetch activities for followed hashtags" do
+    test "it should return public activities that reference a given hashtag" do
+      hashtag = insert(:hashtag, name: "tenshi")
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, normally_visible} =
+        CommonAPI.post(other_user, %{status: "hello :)", visibility: "public"})
+
+      {:ok, public} = CommonAPI.post(user, %{status: "maji #tenshi", visibility: "public"})
+      {:ok, _unrelated} = CommonAPI.post(user, %{status: "dai #tensh", visibility: "public"})
+      {:ok, unlisted} = CommonAPI.post(user, %{status: "maji #tenshi", visibility: "unlisted"})
+      {:ok, _private} = CommonAPI.post(user, %{status: "maji #tenshi", visibility: "private"})
+
+      activities =
+        ActivityPub.fetch_activities([other_user.follower_address], %{
+          followed_hashtags: [hashtag.id]
+        })
+
+      assert length(activities) == 3
+      normal_id = normally_visible.id
+      public_id = public.id
+      unlisted_id = unlisted.id
+      assert [%{id: ^normal_id}, %{id: ^public_id}, %{id: ^unlisted_id}] = activities
+    end
+  end
+
   describe "fetch activities in context" do
     test "retrieves activities that have a given context" do
       {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
