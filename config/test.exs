@@ -38,6 +38,7 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
   federating: false,
+  account_approval_required: false,
   external_user_synchronization: false,
   static_dir: "test/instance_static/"
 
