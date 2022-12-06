@@ -65,7 +65,7 @@ defmodule Pleroma.Web.PleromaAPI.EventController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"]}
+    %{fallback: :proceed_unauthenticated, scopes: ["read:statuses"]}
     when action in [:export_ics]
   )
 
