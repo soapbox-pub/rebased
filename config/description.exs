@@ -2622,6 +2622,12 @@ config :pleroma, :config_description, [
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
+        key: :events_actions,
+        type: [:tuple, {:list, :tuple}],
+        description: "For create / update / join / leave actions on any statuses",
+        suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
+      },
+      %{
         key: :authentication,
         type: [:tuple, {:list, :tuple}],
         description: "For authentication create / password check / user existence check requests",
