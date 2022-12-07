@@ -455,6 +455,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
+    |> restrict_unauthenticated(opts[:user])
     |> restrict_blocked(opts)
     |> restrict_blockers_visibility(opts)
     |> restrict_recipients(recipients, opts[:user])
@@ -1214,6 +1215,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_filtered(query, _), do: query
+
+  defp restrict_unauthenticated(query, nil) do
+    local = Config.restrict_unauthenticated_access?(:activities, :local)
+    remote = Config.restrict_unauthenticated_access?(:activities, :remote)
+
+    cond do
+      local and remote ->
+        # is there a better way to handle this?
+        from(activity in query, where: 1 == 0)
+
+      local ->
+        from(activity in query, where: activity.local == false)
+
+      remote ->
+        from(activity in query, where: activity.local == true)
+
+      true ->
+        query
+    end
+  end
+
+  defp restrict_unauthenticated(query, _), do: query
 
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
