@@ -258,6 +258,12 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           type: :string,
           nullable: true,
           description: "ISO 639 language code for this status."
+        },
+        content_type: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "The MIME type of the event description, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
         }
       },
       example: %{
@@ -302,6 +308,12 @@ defmodule Pleroma.Web.ApiSpec.PleromaEventOperation do
           type: :string,
           description: "Location ID from geospatial provider",
           nullable: true
+        },
+        content_type: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "The MIME type of the event description, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
         }
       },
       example: %{
