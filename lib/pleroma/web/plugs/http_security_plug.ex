@@ -177,7 +177,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   end
 
   defp map_tile_server do
-    with tile_server <- Config.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
+    with tile_server when is_binary(tile_server) <-
+           Config.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
          %{host: host} <- URI.parse(tile_server) do
       "*.#{host}"
     else
