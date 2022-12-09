@@ -1100,10 +1100,11 @@ defmodule Pleroma.Web.CommonAPITest do
       target_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(target_user, %{status: "foobar"})
+      activity = Activity.normalize(activity)
 
       reporter_ap_id = reporter.ap_id
       target_ap_id = target_user.ap_id
-      activity_ap_id = activity.data["id"]
+      reported_object_ap_id = activity.object.data["id"]
       comment = "foobar"
 
       report_data = %{
@@ -1114,7 +1115,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => reported_object_ap_id,
         "content" => "foobar",
         "published" => activity.object.data["published"],
         "actor" => AccountView.render("show.json", %{user: target_user})
@@ -1136,6 +1137,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "updates report state" do
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
+      object = Object.normalize(activity)
 
       {:ok, %Activity{id: report_id}} =
         CommonAPI.report(reporter, %{
@@ -1148,10 +1150,10 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert report.data["state"] == "resolved"
 
-      [reported_user, activity_id] = report.data["object"]
+      [reported_user, object_id] = report.data["object"]
 
       assert reported_user == target_user.ap_id
-      assert activity_id == activity.data["id"]
+      assert object_id == object.data["id"]
     end
 
     test "updates report state, don't strip when report_strip_status is false" do
