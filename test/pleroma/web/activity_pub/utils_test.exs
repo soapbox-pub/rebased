@@ -504,6 +504,49 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
                "state" => "open"
              } = res
     end
+
+    test "returns map with Flag object with a non-Create Activity" do
+      reporter = insert(:user)
+      posting_account = insert(:user)
+      target_account = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(posting_account, %{status: "foobar"})
+      {:ok, like} = CommonAPI.favorite(target_account, activity.id)
+      context = Utils.generate_context_id()
+      content = "foobar"
+
+      target_ap_id = target_account.ap_id
+      object_ap_id = activity.object.data["id"]
+
+      res =
+        Utils.make_flag_data(
+          %{
+            actor: reporter,
+            context: context,
+            account: target_account,
+            statuses: [%{"id" => like.data["id"]}],
+            content: content
+          },
+          %{}
+        )
+
+      note_obj = %{
+        "type" => "Note",
+        "id" => object_ap_id,
+        "content" => content,
+        "published" => activity.object.data["published"],
+        "actor" =>
+          AccountView.render("show.json", %{user: posting_account, skip_visibility_check: true})
+      }
+
+      assert %{
+               "type" => "Flag",
+               "content" => ^content,
+               "context" => ^context,
+               "object" => [^target_ap_id, ^note_obj],
+               "state" => "open"
+             } = res
+    end
   end
 
   describe "add_announce_to_object/2" do
