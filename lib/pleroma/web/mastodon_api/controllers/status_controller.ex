@@ -22,7 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
@@ -104,6 +103,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   plug(RateLimiter, [name: :statuses_actions] when action in @rate_limited_status_actions)
 
+  plug(Pleroma.Web.Plugs.SetApplicationPlug, [] when action in [:create, :update])
+
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.StatusOperation
@@ -143,8 +144,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       )
       when not is_nil(scheduled_at) do
     params =
-      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
-      |> put_application(conn)
+      params
+      |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
+      |> Map.put(:generator, conn.assigns.application)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -169,8 +171,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
     params =
-      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
-      |> put_application(conn)
+      params
+      |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
+      |> Map.put(:generator, conn.assigns.application)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -234,7 +237,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
          {_, true} <- {:is_create, activity.data["type"] == "Create"},
          actor <- Activity.user_actor(activity),
          {_, true} <- {:own_status, actor.id == user.id},
-         changes <- body_params |> put_application(conn),
+         {_, true} <- {:not_event, activity.object.data["type"] != "Event"},
+         changes <- body_params |> Map.put(:generator, conn.assigns.application),
          {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
          {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
       try_render(conn, "show.json",
@@ -245,6 +249,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       )
     else
       {:own_status, _} -> {:error, :forbidden}
+      {:not_event, _} -> {:error, :unprocessable_entity, "Use event update route"}
       {:pipeline, _} -> {:error, :internal_server_error}
       _ -> {:error, :not_found}
     end
@@ -479,6 +484,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
       {:error, error} when error in [:unexpected_response, :quota_exceeded, :too_many_requests] ->
         render_error(conn, :service_unavailable, "Translation service not available")
+
+      nil ->
+        render_error(conn, :not_found, "Record not found")
     end
   end
 
@@ -516,15 +524,4 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       as: :activity
     )
   end
-
-  defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
-    if user.disclose_client do
-      %{client_name: client_name, website: website} = Repo.preload(token, :app).app
-      Map.put(params, :generator, %{type: "Application", name: client_name, url: website})
-    else
-      Map.put(params, :generator, nil)
-    end
-  end
-
-  defp put_application(params, _), do: Map.put(params, :generator, nil)
 end

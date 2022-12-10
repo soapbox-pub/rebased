@@ -22,7 +22,8 @@ case System.get_env("DATABASE_URL") do
       username: System.get_env("DB_USER", "postgres"),
       password: System.get_env("DB_PASS", "postgres"),
       database: System.get_env("DB_NAME", "postgres"),
-      hostname: System.get_env("DB_HOST", "db")
+      hostname: System.get_env("DB_HOST", "db"),
+      port: System.get_env("DB_PORT", "5432")
 end
 
 # Configure web push notifications
@@ -36,7 +37,7 @@ config :pleroma, Pleroma.Language.LanguageDetector,
   provider: Pleroma.Language.LanguageDetector.Fasttext
 
 config :pleroma, Pleroma.Language.LanguageDetector.Fasttext,
-  model: "/usr/share/fasttext/lid.176.bin"
+  model: "/usr/share/fasttext/lid.176.ftz"
 
 # We can't store the secrets in this file, since this is baked into the docker image
 if not File.exists?("/var/lib/pleroma/secret.exs") do

@@ -22,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
         message_fields()
         object_fields()
         status_object_fields()
+        event_object_fields()
       end
     end
   end
@@ -54,14 +55,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:attachment, :tag])
+    |> cast(data, __schema__(:fields) -- [:attachment, :tag, :location])
     |> cast_embed(:attachment)
     |> cast_embed(:tag)
+    |> cast_embed(:location)
   end
 
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Event"])
+    |> validate_inclusion(:joinMode, ~w[free restricted invite])
     |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])

@@ -433,6 +433,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_followers(recipients, _), do: recipients
 
+  def maybe_notify_participants(
+        recipients,
+        %Activity{data: %{"type" => "Update"}} = activity
+      ) do
+    with %Object{data: object} <- Object.normalize(activity, fetch: false) do
+      participant_ids = Map.get(object, "participations", [])
+
+      recipients ++ participant_ids
+    else
+      _e -> recipients
+    end
+  end
+
+  def maybe_notify_participants(recipients, _), do: recipients
+
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag
     |> Enum.filter(fn x -> is_map(x) && x["type"] == "Mention" end)

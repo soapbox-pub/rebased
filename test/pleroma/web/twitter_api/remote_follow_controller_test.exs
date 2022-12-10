@@ -167,7 +167,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:follows"]))
         |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
 
-      assert redirected_to(conn) == "/users/#{user2.id}"
+      assert redirected_to(conn) == "/users/#{user2.nickname}"
     end
 
     test "returns error when user is deactivated", %{conn: conn} do
@@ -222,7 +222,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:follows"]))
         |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
 
-      assert redirected_to(conn) == "/users/#{user2.id}"
+      assert redirected_to(conn) == "/users/#{user2.nickname}"
     end
   end
 
@@ -304,7 +304,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
           }
         )
 
-      assert redirected_to(conn) == "/users/#{user2.id}"
+      assert redirected_to(conn) == "/users/#{user2.nickname}"
       assert user2.follower_address in User.following(user)
     end
 
@@ -350,7 +350,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
           "authorization" => %{"name" => user.nickname, "password" => "test", "id" => user2.id}
         })
 
-      assert redirected_to(conn) == "/users/#{user2.id}"
+      assert redirected_to(conn) == "/users/#{user2.nickname}"
       assert user2.follower_address in User.following(user)
     end
 

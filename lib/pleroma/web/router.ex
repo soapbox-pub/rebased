@@ -464,6 +464,7 @@ defmodule Pleroma.Web.Router do
       post("/chats/by-account-id/:id", ChatController, :create)
       get("/chats", ChatController, :index)
       get("/chats/:id", ChatController, :show)
+      delete("/chats/:id", ChatController, :delete)
       get("/chats/:id/messages", ChatController, :messages)
       post("/chats/:id/messages", ChatController, :post_chat_message)
       delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
@@ -486,6 +487,30 @@ defmodule Pleroma.Web.Router do
 
       get("/backups", BackupController, :index)
       post("/backups", BackupController, :create)
+
+      post("/events", EventController, :create)
+      get("/events/joined_events", EventController, :joined_events)
+      put("/events/:id", EventController, :update)
+      get("/events/:id/participations", EventController, :participations)
+      get("/events/:id/participation_requests", EventController, :participation_requests)
+
+      post(
+        "/events/:id/participation_requests/:participant_id/authorize",
+        EventController,
+        :authorize_participation_request
+      )
+
+      post(
+        "/events/:id/participation_requests/:participant_id/reject",
+        EventController,
+        :reject_participation_request
+      )
+
+      post("/events/:id/join", EventController, :join)
+      post("/events/:id/leave", EventController, :leave)
+      get("/events/:id/ics", EventController, :export_ics)
+
+      get("/search/location", SearchController, :location)
     end
 
     scope [] do
@@ -661,6 +686,7 @@ defmodule Pleroma.Web.Router do
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
     get("/instance/rules", InstanceController, :rules)
+    get("/instance/domain_blocks", InstanceController, :domain_blocks)
 
     get("/statuses", StatusController, :index)
     get("/statuses/:id", StatusController, :show)

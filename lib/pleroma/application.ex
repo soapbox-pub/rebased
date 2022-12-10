@@ -108,7 +108,8 @@ defmodule Pleroma.Application do
           Pleroma.JobQueueMonitor,
           {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)},
-          Pleroma.Web.Endpoint
+          Pleroma.Web.Endpoint,
+          TzWorld.Backend.DetsWithIndexCache
         ] ++
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++
@@ -213,7 +214,8 @@ defmodule Pleroma.Application do
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
       ),
-      build_cachex("translations", default_ttl: :timer.hours(24), limit: 5_000)
+      build_cachex("translations", default_ttl: :timer.hours(24), limit: 5_000),
+      build_cachex("rel_me", default_ttl: :timer.minutes(30), limit: 2_500)
     ]
   end
 

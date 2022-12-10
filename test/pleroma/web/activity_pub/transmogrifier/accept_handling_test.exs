@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
@@ -87,5 +89,30 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
     follower = User.get_cached_by_id(follower.id)
 
     refute User.following?(follower, followed) == true
+  end
+
+  test "it works for incoming Mobilizon join accepts" do
+    event_author = insert(:user)
+    participant = insert(:user)
+
+    event = insert(:event, %{user: event_author, data: %{"joinMode" => "restricted"}})
+    event_activity = insert(:event_activity, event: event)
+
+    {:ok, join_activity} = CommonAPI.join(participant, event_activity.id)
+
+    accept_data =
+      File.read!("test/fixtures/tesla_mock/mobilizon-event-join-accept.json")
+      |> Jason.decode!()
+      |> Map.put("actor", event_author.ap_id)
+      |> Map.put("object", join_activity.data["id"])
+
+    {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(accept_data)
+
+    event = Object.get_by_id(event.id)
+
+    assert event.data["participations"] == [participant.ap_id]
+
+    join_activity = Repo.get(Activity, join_activity.id)
+    assert join_activity.data["state"] == "accept"
   end
 end

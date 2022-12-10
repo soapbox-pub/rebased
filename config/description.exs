@@ -822,6 +822,13 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :report_strip_status,
+        label: "Report strip status",
+        type: :boolean,
+        description:
+          "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
+      },
+      %{
         key: :safe_dm_mentions,
         label: "Safe DM mentions",
         type: :boolean,
@@ -1215,45 +1222,6 @@ config :pleroma, :config_description, [
         key: :metadata,
         type: {:list, :atom},
         suggestions: [:request_id]
-      }
-    ]
-  },
-  %{
-    group: :quack,
-    type: :group,
-    label: "Quack Logger",
-    description: "Quack-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :meta,
-        type: {:list, :atom},
-        description: "Configure which metadata you want to report on",
-        suggestions: [
-          :application,
-          :module,
-          :file,
-          :function,
-          :line,
-          :pid,
-          :crash_reason,
-          :initial_call,
-          :registered_name,
-          :all,
-          :none
-        ]
-      },
-      %{
-        key: :webhook_url,
-        label: "Webhook URL",
-        type: :string,
-        description: "Configure the Slack incoming webhook",
-        suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
       }
     ]
   },
@@ -2654,6 +2622,12 @@ config :pleroma, :config_description, [
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
+        key: :events_actions,
+        type: [:tuple, {:list, :tuple}],
+        description: "For create / update / join / leave actions on any statuses",
+        suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
+      },
+      %{
         key: :authentication,
         type: [:tuple, {:list, :tuple}],
         description: "For authentication create / password check / user existence check requests",
@@ -3589,6 +3563,7 @@ config :pleroma, :config_description, [
       %{
         key: :provider,
         type: :module,
+        label: "Language detection provider",
         suggestions: [
           Pleroma.Language.LanguageDetector.Fasttext
         ]
@@ -3599,6 +3574,83 @@ config :pleroma, :config_description, [
         label: "fastText language detection model",
         type: :string,
         suggestions: ["/usr/share/fasttext/lid.176.bin"]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Service,
+    type: :group,
+    description: "Geospatial service providers",
+    children: [
+      %{
+        key: :service,
+        type: :module,
+        label: "Geospatial service provider",
+        suggestions: [
+          Geospatial.Providers.GoogleMaps,
+          Geospatial.Providers.Nominatim,
+          Geospatial.Providers.Pelias
+        ]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Nominatim,
+    type: :group,
+    description: "Nominatim provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Nominatim endpoint",
+        suggestions: ["https://nominatim.openstreetmap.org"]
+      },
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Nominatim API key",
+        suggestions: [nil]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.GoogleMaps,
+    type: :group,
+    description: "Google Maps provider configuration",
+    children: [
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Google Maps API key",
+        suggestions: [nil]
+      },
+      %{
+        key: :fetch_place_details,
+        type: :boolean,
+        description: "Fetch place details"
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Pelias,
+    type: :group,
+    description: "Pelias provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Pelias endpoint",
+        suggestions: ["https://api.geocode.earth"]
+      },
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Pelias API key",
+        suggestions: [nil]
       }
     ]
   }

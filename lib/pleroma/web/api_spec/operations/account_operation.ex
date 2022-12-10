@@ -130,6 +130,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             "Include only statuses with media attached"
           ),
           Operation.parameter(
+            :only_events,
+            :query,
+            BooleanLike,
+            "Include only objects with Event type"
+          ),
+          Operation.parameter(
             :with_muted,
             :query,
             BooleanLike,

@@ -17,8 +17,7 @@ defmodule Pleroma.Mixfile do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: ["coveralls.html": :test],
+      test_coverage: [tool: :covertool, summary: true],
       # Docs
       homepage_url: "https://soapbox.pub/",
       source_url: "https://gitlab.com/soapbox-pub/rebased",
@@ -80,7 +79,6 @@ defmodule Pleroma.Mixfile do
         :logger,
         :runtime_tools,
         :comeonin,
-        :quack,
         :fast_sanitize,
         :os_mon,
         :ssl,
@@ -127,7 +125,7 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.9.0"},
       {:postgrex, ">= 0.15.5"},
-      {:oban, "~> 2.4.0"},
+      {:oban, "~> 2.9"},
       {:gettext,
        git: "https://github.com/tusooa/gettext.git",
        ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
@@ -182,7 +180,6 @@ defmodule Pleroma.Mixfile do
        branch: "no-logging"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
-      {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
@@ -204,6 +201,8 @@ defmodule Pleroma.Mixfile do
       {:open_api_spex, "~> 3.10"},
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:ecto_psql_extras, "~> 0.6"},
+      {:icalendar, "~> 1.1"},
+      {:geospatial, "~> 0.2.0"},
       {:prom_ex, "~> 1.7.1"},
       {:unplug, "~> 1.0"},
 
@@ -216,8 +215,7 @@ defmodule Pleroma.Mixfile do
       {:ex_machina, "~> 2.4", only: :test},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
-      # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
-      {:excoveralls, "0.12.3", only: :test},
+      {:covertool, "~> 2.0", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test}
