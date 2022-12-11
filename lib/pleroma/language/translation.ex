@@ -37,6 +37,32 @@ defmodule Pleroma.Language.Translation do
     end
   end
 
+  def supported_languages(type) when type in [:source, :target] do
+    provider = get_provider()
+
+    cache_key = "#{type}_languages/#{provider.name()}"
+
+    case @cachex.get(:translations_cache, cache_key) do
+      {:ok, nil} ->
+        result =
+          if !configured?() do
+            {:error, :not_found}
+          else
+            provider.supported_languages(type)
+          end
+
+        store_result(result, cache_key)
+
+        result
+
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   defp get_provider, do: Pleroma.Config.get([__MODULE__, :provider])
 
   defp get_cache_key(text, source_language, target_language) do

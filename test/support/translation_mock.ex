@@ -7,6 +7,8 @@ defmodule TranslationMock do
 
   @behaviour Provider
 
+  @name "TranslationMock"
+
   @impl Provider
   def configured?, do: true
 
@@ -16,7 +18,15 @@ defmodule TranslationMock do
      %{
        content: content |> String.reverse(),
        detected_source_language: source_language,
-       provider: "TranslationMock"
+       provider: @name
      }}
   end
+
+  @impl Provider
+  def supported_languages(_) do
+    ["en", "pl"]
+  end
+
+  @impl Provider
+  def name, do: @name
 end

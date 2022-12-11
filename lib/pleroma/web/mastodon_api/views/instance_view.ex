@@ -253,7 +253,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         privileged_staff: Config.get([:instance, :privileged_staff]),
         birthday_required: Config.get([:instance, :birthday_required]),
         birthday_min_age: Config.get([:instance, :birthday_min_age]),
-        migration_cooldown_period: Config.get([:instance, :migration_cooldown_period])
+        migration_cooldown_period: Config.get([:instance, :migration_cooldown_period]),
+        translation: supported_languages()
       },
       stats: %{mau: Pleroma.User.active_user_count()},
       vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
@@ -280,6 +281,31 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           description_limit: Keyword.get(instance, :description_limit)
         })
     })
+  end
+
+  defp supported_languages do
+    enabled = Pleroma.Language.Translation.configured?()
+
+    source_languages =
+      with true <- enabled,
+           {:ok, languages} <- Pleroma.Language.Translation.supported_languages(:source) do
+        languages
+      else
+        _ -> nil
+      end
+
+    target_languages =
+      with true <- enabled,
+           {:ok, languages} <- Pleroma.Language.Translation.supported_languages(:target) do
+        languages
+      else
+        _ -> nil
+      end
+
+    %{
+      source_languages: source_languages,
+      target_languages: target_languages
+    }
   end
 
   defp contact_account(nil), do: nil
