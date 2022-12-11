@@ -611,7 +611,13 @@ defmodule Pleroma.User do
          {:ok, new_value} <- value_function.(value) do
       put_change(changeset, map_field, new_value)
     else
-      _ -> changeset
+      {:error, :file_too_large} ->
+        Ecto.Changeset.validate_change(changeset, map_field, fn map_field, _value ->
+          [{map_field, "file is too large"}]
+        end)
+
+      _ ->
+        changeset
     end
   end
 

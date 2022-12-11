@@ -64,7 +64,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       requestBody: request_body("Parameters", update_credentials_request(), required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
-        403 => Operation.response("Error", "application/json", ApiError)
+        403 => Operation.response("Error", "application/json", ApiError),
+        413 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end

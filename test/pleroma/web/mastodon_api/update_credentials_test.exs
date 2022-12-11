@@ -259,6 +259,34 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user.avatar == nil
     end
 
+    test "updates the user's avatar, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_avatar_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      assert user.avatar == %{}
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar_oversized})
+
+      assert user_response = json_response_and_validate_schema(res, 413)
+      assert user_response["avatar"] != User.avatar_url(user)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
+    end
+
     test "updates the user's banner", %{user: user, conn: conn} do
       new_header = %Plug.Upload{
         content_type: "image/jpeg",
