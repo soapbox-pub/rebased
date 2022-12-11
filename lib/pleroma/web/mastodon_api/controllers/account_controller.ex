@@ -257,6 +257,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       {:error, %Ecto.Changeset{errors: [avatar: {"file is too large", _}]}} ->
         render_error(conn, :request_entity_too_large, "File is too large")
 
+      {:error, %Ecto.Changeset{errors: [banner: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [background: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
       _e ->
         render_error(conn, :forbidden, "Invalid request")
     end
