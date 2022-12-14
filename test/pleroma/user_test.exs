@@ -591,6 +591,21 @@ defmodule Pleroma.UserTest do
       refute_email_sent()
     end
 
+    test "it works when the registering user does not provide an email" do
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([:instance, :account_approval_required], true)
+
+      cng = User.register_changeset(%User{}, @full_user_data |> Map.put(:email, ""))
+
+      # The user is still created
+      assert {:ok, %User{nickname: "nick"}} = User.register(cng)
+
+      # No emails are sent
+      ObanHelpers.perform_all()
+      refute_email_sent()
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       clear_config([:instance, :account_activation_required], true)
 
