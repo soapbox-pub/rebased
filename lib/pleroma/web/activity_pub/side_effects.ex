@@ -282,7 +282,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles:
   # - Delete and unpins the create activity
   # - Replace object with Tombstone
-  # - Set up notification
   # - Reduce the user note count
   # - Reduce the reply count
   # - Stream out the activity
@@ -324,7 +323,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if result == :ok do
-      Notification.create_notifications(object)
       {:ok, object, meta}
     else
       {:error, result}

@@ -5,6 +5,7 @@ variables: &global_variables
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
+  DB_PORT: 5432
   MIX_ENV: test
 
 cache: &global_cache_policy
@@ -84,7 +85,13 @@ unit-testing:
   script:
     - mix ecto.create
     - mix ecto.migrate
-    - mix coveralls --preload-modules
+    - mix test --cover --preload-modules
+  coverage: '/^Line total: ([^ ]*%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 unit-testing-erratic:
   stage: test
@@ -253,6 +260,8 @@ amd64:
   - develop@pleroma/pleroma
   - /^maint/.*$/@pleroma/pleroma
   - /^release/.*$/@pleroma/pleroma
+  tags:
+    - amd64
   artifacts: &release-artifacts
     name: "pleroma-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
     paths:
@@ -286,6 +295,9 @@ amd64-musl:
   artifacts: *release-artifacts
   only: *release-only
   image: elixir:1.11.4-alpine
+  tags:
+    - amd64
+  image: elixir:1.10.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl

@@ -47,9 +47,14 @@ defmodule Pleroma.Web.Federator do
   end
 
   @impl true
-  def publish(activity) do
-    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id})
+  def publish(%Pleroma.Activity{data: %{"type" => type}} = activity) do
+    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id},
+      priority: publish_priority(type)
+    )
   end
+
+  defp publish_priority("Delete"), do: 3
+  defp publish_priority(_), do: 0
 
   # Job Worker Callbacks
 

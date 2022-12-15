@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.4.53"),
+      version: version("2.4.55"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -13,8 +13,7 @@ defmodule Pleroma.Mixfile do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: ["coveralls.html": :test],
+      test_coverage: [tool: :covertool, summary: true],
       # Docs
       name: "Pleroma",
       homepage_url: "https://pleroma.social/",
@@ -77,7 +76,6 @@ defmodule Pleroma.Mixfile do
         :logger,
         :runtime_tools,
         :comeonin,
-        :quack,
         :fast_sanitize,
         :os_mon,
         :ssl,
@@ -181,7 +179,6 @@ defmodule Pleroma.Mixfile do
        branch: "no-logging"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
-      {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
@@ -210,8 +207,7 @@ defmodule Pleroma.Mixfile do
       {:ex_machina, "~> 2.4", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
-      # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
-      {:excoveralls, "0.12.3", only: :test},
+      {:covertool, "~> 2.0", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
       {:websockex, "~> 0.4.3", only: :test}

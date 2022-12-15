@@ -17,4 +17,7 @@ defmodule Pleroma.Workers.MuteExpireWorker do
     Pleroma.Web.CommonAPI.remove_mute(user_id, activity_id)
     :ok
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

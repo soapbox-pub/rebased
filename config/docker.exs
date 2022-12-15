@@ -18,6 +18,7 @@ config :pleroma, Pleroma.Repo,
   password: System.fetch_env!("DB_PASS"),
   database: System.get_env("DB_NAME", "pleroma"),
   hostname: System.get_env("DB_HOST", "db"),
+  port: System.get_env("DB_PORT", "5432"),
   pool_size: 10
 
 # Configure web push notifications
