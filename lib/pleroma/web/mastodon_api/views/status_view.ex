@@ -65,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   # This should be removed in a future version of Pleroma. Pleroma-FE currently
   # depends on this field, as well.
   defp get_context_id(%{data: %{"context" => context}}) when is_binary(context) do
-    use Bitwise
+    import Bitwise
 
     :erlang.crc32(context)
     |> band(bnot(0x8000_0000))
