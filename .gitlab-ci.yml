@@ -297,7 +297,6 @@ amd64-musl:
   image: elixir:1.11.4-alpine
   tags:
     - amd64
-  image: elixir:1.10.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
