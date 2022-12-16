@@ -65,7 +65,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaBackupOperation do
         file_name: %Schema{type: :string},
         file_size: %Schema{type: :integer},
         processed: %Schema{type: :boolean, description: "whether this backup has succeeded"},
-        state: %Schema{type: :string, description: "the state of the backup", enum: ["pending", "running", "complete", "failed"]},
+        state: %Schema{
+          type: :string,
+          description: "the state of the backup",
+          enum: ["pending", "running", "complete", "failed"]
+        },
         processed_number: %Schema{type: :integer, description: "the number of records processed"}
       },
       example: %{

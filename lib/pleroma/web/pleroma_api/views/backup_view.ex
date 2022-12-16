@@ -11,11 +11,11 @@ defmodule Pleroma.Web.PleromaAPI.BackupView do
   def render("show.json", %{backup: %Backup{} = backup}) do
     # To deal with records before the migration
     state =
-    if backup.state == :invalid do
-      if backup.processed, do: :complete, else: :failed
-    else
-      backup.state
-    end
+      if backup.state == :invalid do
+        if backup.processed, do: :complete, else: :failed
+      else
+        backup.state
+      end
 
     %{
       id: backup.id,
