@@ -160,11 +160,8 @@ defmodule Pleroma.User.Backup do
       {:progress, new_processed} ->
         total_processed = current_processed + new_processed
 
-        with {:ok, updated_backup} <- set_state(backup, :running, total_processed) do
-          wait_backup(updated_backup, total_processed)
-        else
-          _ -> wait_backup(backup, total_processed)
-        end
+        set_state(backup, :running, total_processed)
+        wait_backup(backup, total_processed)
 
       :completed ->
         {:ok, get(backup.id)}
