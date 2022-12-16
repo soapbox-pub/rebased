@@ -76,7 +76,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaBackupOperation do
         "inserted_at" => "2020-09-08T16:42:07.000Z",
         "processed" => true,
         "state" => "complete",
-        "processed_number": 20
+        "processed_number" => 20
       }
     }
   end
