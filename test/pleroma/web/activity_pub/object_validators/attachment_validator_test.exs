@@ -11,6 +11,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   import Pleroma.Factory
 
   describe "attachments" do
+    test "fails without url" do
+      attachment = %{
+        "mediaType" => "",
+        "name" => "",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document"
+      }
+
+      assert {:error, _cng} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "works with honkerific attachments" do
       attachment = %{
         "mediaType" => "",
