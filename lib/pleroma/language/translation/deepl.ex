@@ -80,6 +80,15 @@ defmodule Pleroma.Language.Translation.Deepl do
         languages =
           Jason.decode!(res.body)
           |> Enum.map(fn %{"language" => language} -> language |> String.downcase() end)
+          |> Enum.map(fn language ->
+            if String.contains?(language, "-") do
+              [language, language |> String.split("-") |> Enum.at(0)]
+            else
+              language
+            end
+          end)
+          |> List.flatten()
+          |> Enum.uniq()
 
         {:ok, languages}
 
