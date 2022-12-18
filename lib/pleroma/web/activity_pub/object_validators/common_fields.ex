@@ -58,10 +58,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       field(:like_count, :integer, default: 0)
       field(:announcement_count, :integer, default: 0)
       field(:inReplyTo, ObjectValidators.ObjectID)
+      field(:quoteUri, ObjectValidators.ObjectID)
       field(:url, ObjectValidators.Uri)
 
       field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
       field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
+    end
+  end
+
+  defmacro tag_fields do
+    quote bind_quoted: binding() do
+      embeds_many(:tag, TagValidator)
     end
   end
 end

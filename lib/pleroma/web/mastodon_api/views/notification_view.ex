@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -145,7 +146,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   end
 
   defp put_emoji(response, activity) do
-    Map.put(response, :emoji, activity.data["content"])
+    response
+    |> Map.put(:emoji, activity.data["content"])
+    |> Map.put(:emoji_url, MediaProxy.url(Pleroma.Emoji.emoji_url(activity.data)))
   end
 
   defp put_chat_message(response, activity, reading_user, opts) do

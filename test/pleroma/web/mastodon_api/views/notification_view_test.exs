@@ -190,7 +190,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       emoji: "☕",
       account: AccountView.render("show.json", %{user: other_user, for: user}),
       status: StatusView.render("show.json", %{activity: activity, for: user}),
-      created_at: Utils.to_masto_date(notification.inserted_at)
+      created_at: Utils.to_masto_date(notification.inserted_at),
+      emoji_url: nil
     }
 
     test_notifications_rendering([notification], user, [expected])

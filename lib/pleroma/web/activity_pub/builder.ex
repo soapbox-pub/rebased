@@ -90,8 +90,10 @@ defmodule Pleroma.Web.ActivityPub.Builder do
       Enum.find(
         existing_reactions,
         fn [name, _, url] ->
-          url = URI.parse(url)
-          url.host == instance && name == emoji_code
+          if url != nil do
+            url = URI.parse(url)
+            url.host == instance && name == emoji_code
+          end
         end
       )
 
