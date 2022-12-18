@@ -270,6 +270,56 @@ defmodule Pleroma.User.BackupTest do
     Backup.delete(backup)
   end
 
+  test "it handles errors" do
+    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+    Enum.map(1..120, fn i ->
+      {:ok, _status} = CommonAPI.post(user, %{status: "status #{i}"})
+    end)
+
+    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
+
+    with_mock Pleroma.Web.ActivityPub.Transmogrifier,
+              [:passthrough],
+              prepare_outgoing: fn data ->
+                object =
+                  data["object"]
+                  |> Pleroma.Object.normalize(fetch: false)
+                  |> Map.get(:data)
+
+                data = data |> Map.put("object", object)
+
+                if String.contains?(data["object"]["content"], "119"),
+                  do: raise(%Postgrex.Error{}),
+                  else: {:ok, data}
+              end do
+      {:ok, backup} = Backup.process(backup)
+      assert backup.processed
+      assert backup.state == :complete
+      assert backup.processed_number == 1 + 119
+
+      Backup.delete(backup)
+    end
+  end
+
+  test "it handles unrecoverable exceptions" do
+    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
+
+    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
+
+    with_mock Backup, [:passthrough], do_process: fn _, _ -> raise "mock exception" end do
+      {:error, %{backup: backup, reason: :exit}} = Backup.process(backup)
+
+      assert backup.state == :failed
+    end
+
+    with_mock Backup, [:passthrough], do_process: fn _, _ -> Process.sleep(:timer.seconds(32)) end do
+      {:error, %{backup: backup, reason: :timeout}} = Backup.process(backup)
+
+      assert backup.state == :failed
+    end
+  end
+
   describe "it uploads and deletes a backup archive" do
     setup do
       clear_config([Pleroma.Upload, :base_url], "https://s3.amazonaws.com")
