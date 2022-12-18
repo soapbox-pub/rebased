@@ -1,4 +1,8 @@
-FROM elixir:1.11.4-alpine as build
+ARG ELIXIR_VER=1.11.4
+ARG ERLANG_VER=24.2.1
+ARG ALPINE_VER=3.17.0
+
+FROM hexpm/elixir:${ELIXIR_VER}-erlang-${ERLANG_VER}-alpine-${ALPINE_VER} as build
 
 COPY . .
 
@@ -12,7 +16,7 @@ RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine
+FROM alpine:${ALPINE_VER}
 
 ARG BUILD_DATE
 ARG VCS_REF
