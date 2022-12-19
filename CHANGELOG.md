@@ -60,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed useless notification call on Delete activities
 - Improved performance for filtering out deactivated and invisible users
 - RSS and Atom feeds for users work again
+- TwitterCard meta tags conformance
 
 ### Removed
 - Quack, the logging backend that pushes to Slack channels
