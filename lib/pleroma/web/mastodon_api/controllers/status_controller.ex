@@ -40,11 +40,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :card,
            :context,
            :show_history,
-           :show_source
+           :show_source,
+           :translate
          ]
   )
-
-  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :translate)
 
   plug(
     OAuthScopesPlug,
@@ -460,9 +459,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "POST /api/v1/statuses/:id/translate"
   def translate(%{body_params: params, assigns: %{user: user}} = conn, %{id: status_id}) do
-    with %Activity{object: object} <- Activity.get_by_id_with_object(status_id),
+    with {:authentication, true} <-
+           {:authentication,
+            !is_nil(user) ||
+              Pleroma.Config.get([Pleroma.Language.Translation, :allow_unauthenticated])},
+         %Activity{object: object} <- Activity.get_by_id_with_object(status_id),
          {:visibility, visibility} when visibility in ["public", "unlisted"] <-
            {:visibility, Visibility.get_visibility(object)},
+         {:allow_remote, true} <-
+           {:allow_remote,
+            Object.local?(object) ||
+              Pleroma.Config.get([Pleroma.Language.Translation, :allow_remote])},
          {:language, language} when is_binary(language) <-
            {:language, Map.get(params, :target_language) || user.language},
          {:ok, result} <-
@@ -473,6 +480,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            ) do
       render(conn, "translation.json", result)
     else
+      {:authentication, false} ->
+        render_error(conn, :unauthorized, "Authorization is required to translate statuses")
+
+      {:allow_remote, false} ->
+        render_error(conn, :bad_request, "You can't translate remote posts")
+
       {:language, nil} ->
         render_error(conn, :bad_request, "Language not specified")
 
