@@ -167,15 +167,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   defp assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
     do: assign(conn, :notice_id, notice_id)
 
-  defp assign_id(%{path_info: ["@" <> _nickname, notice_id]} = conn, _opts),
-    do: assign(conn, :notice_id, notice_id)
-
-  defp assign_id(%{path_info: ["@" <> _nickname, "posts", notice_id]} = conn, _opts),
-    do: assign(conn, :notice_id, notice_id)
-
-  defp assign_id(%{path_info: [_nickname, "status", notice_id]} = conn, _opts),
-    do: assign(conn, :notice_id, notice_id)
-
   defp assign_id(%{path_info: ["users", user_id]} = conn, _opts),
     do: assign(conn, :username_or_id, user_id)
 

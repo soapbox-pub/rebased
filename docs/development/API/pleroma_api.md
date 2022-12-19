@@ -342,6 +342,36 @@ See [Admin-API](admin_api.md)
 * Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
 * Note: Currently, Mastodon has no API for changing email. If they add it in future it might be incompatible with Pleroma.
 
+## `/api/pleroma/move_account`
+### Move account
+* Method `POST`
+* Authentication: required
+* Params:
+    * `password`: user's password
+    * `target_account`: the nickname of the target account (e.g. `foo@example.org`)
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+* Note: This endpoint emits a `Move` activity to all followers of the current account. Some remote servers will automatically unfollow the current account and follow the target account upon seeing this, but this depends on the remote server implementation and cannot be guaranteed. For local followers , they will automatically unfollow and follow if and only if they have set the `allow_following_move` preference ("Allow auto-follow when following account moves").
+
+## `/api/pleroma/aliases`
+### Get aliases of the current account
+* Method `GET`
+* Authentication: required
+* Response: JSON. Returns `{"aliases": [alias, ...]}`, where `alias` is the nickname of an alias, e.g. `foo@example.org`.
+
+### Add alias to the current account
+* Method `PUT`
+* Authentication: required
+* Params:
+    * `alias`: the nickname of the alias to add, e.g. `foo@example.org`.
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
+### Delete alias from the current account
+* Method `DELETE`
+* Authentication: required
+* Params:
+    * `alias`: the nickname of the alias to delete, e.g. `foo@example.org`.
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+
 # Pleroma Conversations
 
 Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
@@ -695,3 +725,42 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 * Authentication: required
 * Params: none
 * Response: HTTP 200 on success, 500 on error
+
+## `/api/v1/pleroma/settings/:app`
+### Gets settings for some application
+* Method `GET`
+* Authentication: `read:accounts`
+
+* Response: JSON. The settings for that application, or empty object if there is none.
+* Example response:
+```json
+{
+  "some key": "some value"
+}
+```
+
+### Updates settings for some application
+* Method `PATCH`
+* Authentication: `write:accounts`
+* Request body: JSON object. The object will be merged recursively with old settings. If some field is set to null, it is removed.
+* Example request:
+```json
+{
+  "some key": "some value",
+  "key to remove": null,
+  "nested field": {
+    "some key": "some value",
+    "key to remove": null
+  }
+}
+```
+* Response: JSON. Updated (merged) settings for that application.
+* Example response:
+```json
+{
+  "some key": "some value",
+  "nested field": {
+    "some key": "some value",
+  }
+}
+```

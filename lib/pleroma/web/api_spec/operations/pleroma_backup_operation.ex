@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaBackupOperation do
     %Operation{
       tags: ["Backups"],
       summary: "List backups",
-      security: [%{"oAuth" => ["read:account"]}],
+      security: [%{"oAuth" => ["read:backups"]}],
       operationId: "PleromaAPI.BackupController.index",
       responses: %{
         200 =>
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaBackupOperation do
     %Operation{
       tags: ["Backups"],
       summary: "Create a backup",
-      security: [%{"oAuth" => ["read:account"]}],
+      security: [%{"oAuth" => ["read:backups"]}],
       operationId: "PleromaAPI.BackupController.create",
       responses: %{
         200 =>

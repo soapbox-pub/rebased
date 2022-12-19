@@ -311,7 +311,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
     warning_preface = """
     !!!DEPRECATION WARNING!!!
-    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. The setting will not take effect until updated.
     """
 
     updated_config =

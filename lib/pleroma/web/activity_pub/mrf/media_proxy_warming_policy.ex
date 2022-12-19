@@ -16,6 +16,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
     recv_timeout: 10_000
   ]
 
+  @impl true
+  def history_awareness, do: :auto
+
   defp prefetch(url) do
     # Fetching only proxiable resources
     if MediaProxy.enabled?() and MediaProxy.url_proxiable?(url) do
@@ -54,10 +57,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
   end
 
   @impl true
-  def filter(
-        %{"type" => "Create", "object" => %{"attachment" => attachments} = _object} = message
-      )
-      when is_list(attachments) and length(attachments) > 0 do
+  def filter(%{"type" => type, "object" => %{"attachment" => attachments} = _object} = message)
+      when type in ["Create", "Update"] and is_list(attachments) and length(attachments) > 0 do
     preload(message)
 
     {:ok, message}

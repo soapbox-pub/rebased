@@ -779,4 +779,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       |> assert()
     end
   end
+
+  test "renders mute expiration date" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _user_relationships} =
+      User.mute(user, other_user, %{notifications: true, duration: 24 * 60 * 60})
+
+    %{
+      mute_expires_at: mute_expires_at
+    } = AccountView.render("show.json", %{user: other_user, for: user, mutes: true})
+
+    assert DateTime.diff(
+             mute_expires_at,
+             DateTime.utc_now() |> DateTime.add(24 * 60 * 60)
+           ) in -3..3
+  end
 end

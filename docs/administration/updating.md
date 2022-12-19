@@ -17,7 +17,7 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 ## For from source installations (using git)
 
 1. Go to the working directory of Pleroma (default is `/opt/pleroma`)
-2. Run `git pull` [^1]. This pulls the latest changes from upstream.
+2. Run `git checkout <tagged release>` [^1]. e.g. `git checkout v2.4.5` This pulls the [tagged release](https://git.pleroma.social/pleroma/pleroma/-/releases) from upstream.
 3. Run `mix deps.get` [^1]. This pulls in any new dependencies.
 4. Stop the Pleroma service.
 5. Run `mix ecto.migrate` [^1] [^2]. This task performs database migrations, if there were any.

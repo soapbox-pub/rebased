@@ -109,6 +109,11 @@ defmodule Pleroma.SignatureTest do
                {:ok, "https://example.com/users/1234"}
     end
 
+    test "it deduces the actor id for gotoSocial" do
+      assert Signature.key_id_to_actor_id("https://example.com/users/1234/main-key") ==
+               {:ok, "https://example.com/users/1234"}
+    end
+
     test "it calls webfinger for 'acct:' accounts" do
       with_mock(Pleroma.Web.WebFinger,
         finger: fn _ -> %{"ap_id" => "https://gensokyo.2hu/users/raymoo"} end

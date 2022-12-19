@@ -59,7 +59,7 @@ The configuration of Pleroma has traditionally been managed with a config file, 
   Here is an example of a server config stripped down after migration:
 
   ```
-  use Mix.Config
+  import Config
 
   config :pleroma, Pleroma.Web.Endpoint,
     url: [host: "cool.pleroma.site", scheme: "https", port: 443]

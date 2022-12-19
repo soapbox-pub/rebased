@@ -190,7 +190,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def notify_and_stream(activity) do
     Notification.create_notifications(activity)
 
-    conversation = create_or_bump_conversation(activity, activity.actor)
+    original_activity =
+      case activity do
+        %{data: %{"type" => "Update"}, object: %{data: %{"id" => id}}} ->
+          Activity.get_create_by_object_ap_id_with_object(id)
+
+        _ ->
+          activity
+      end
+
+    conversation = create_or_bump_conversation(original_activity, original_activity.actor)
     participations = get_participations(conversation)
     stream_out(activity)
     stream_out_participations(participations)
@@ -256,7 +265,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @impl true
   def stream_out(%Activity{data: %{"type" => data_type}} = activity)
-      when data_type in ["Create", "Announce", "Delete"] do
+      when data_type in ["Create", "Announce", "Delete", "Update"] do
     activity
     |> Topics.get_activity_topics()
     |> Streamer.stream(activity)
@@ -413,7 +422,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "type" => "Move",
       "actor" => origin.ap_id,
       "object" => origin.ap_id,
-      "target" => target.ap_id
+      "target" => target.ap_id,
+      "to" => [origin.follower_address]
     }
 
     with true <- origin.ap_id in target.also_known_as,
@@ -501,9 +511,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @spec fetch_public_or_unlisted_activities(map(), Pagination.type()) :: [Activity.t()]
   def fetch_public_or_unlisted_activities(opts \\ %{}, pagination \\ :keyset) do
+    includes_local_public = Map.get(opts, :includes_local_public, false)
+
     opts = Map.delete(opts, :user)
 
-    [Constants.as_public()]
+    intended_recipients =
+      if includes_local_public do
+        [Constants.as_public(), as_local_public()]
+      else
+        [Constants.as_public()]
+      end
+
+    intended_recipients
     |> fetch_activities_query(opts)
     |> restrict_unlisted(opts)
     |> fetch_paginated_optimized(opts, pagination)
@@ -603,9 +622,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     do: query
 
   defp restrict_thread_visibility(query, %{user: %User{ap_id: ap_id}}, _) do
+    local_public = as_local_public()
+
     from(
       a in query,
-      where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+      where: fragment("thread_visibility(?, (?)->>'id', ?) = true", ^ap_id, a.data, ^local_public)
     )
   end
 
@@ -692,8 +713,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp user_activities_recipients(%{godmode: true}), do: []
 
   defp user_activities_recipients(%{reading_user: reading_user}) do
-    if reading_user do
-      [Constants.as_public(), reading_user.ap_id | User.following(reading_user)]
+    if not is_nil(reading_user) and reading_user.local do
+      [
+        Constants.as_public(),
+        as_local_public(),
+        reading_user.ap_id | User.following(reading_user)
+      ]
     else
       [Constants.as_public()]
     end
@@ -1134,8 +1159,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       [activity, object: o] in query,
       where:
         fragment(
-          "(?)->>'type' = 'Create' and coalesce((?)->'object'->>'id', (?)->>'object') = any (?)",
-          activity.data,
+          "(?)->>'type' = 'Create' and associated_object_id((?)) = any (?)",
           activity.data,
           activity.data,
           ^ids
@@ -1215,15 +1239,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp exclude_invisible_actors(query, %{type: "Flag"}), do: query
   defp exclude_invisible_actors(query, %{invisible_actors: true}), do: query
 
   defp exclude_invisible_actors(query, _opts) do
-    invisible_ap_ids =
-      User.Query.build(%{invisible: true, select: [:ap_id]})
-      |> Repo.all()
-      |> Enum.map(fn %{ap_id: ap_id} -> ap_id end)
-
-    from([activity] in query, where: activity.actor not in ^invisible_ap_ids)
+    query
+    |> join(:inner, [activity], u in User,
+      as: :u,
+      on: activity.actor == u.ap_id and u.invisible == false
+    )
   end
 
   defp exclude_id(query, %{exclude_id: id}) when is_binary(id) do
@@ -1353,7 +1377,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> restrict_instance(opts)
       |> restrict_announce_object_actor(opts)
       |> restrict_filtered(opts)
-      |> Activity.restrict_deactivated_users()
+      |> maybe_restrict_deactivated_users(opts)
       |> exclude_poll_votes(opts)
       |> exclude_chat_messages(opts)
       |> exclude_invisible_actors(opts)
@@ -1458,7 +1482,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp normalize_image(urls) when is_list(urls), do: urls |> List.first() |> normalize_image()
   defp normalize_image(_), do: nil
 
-  defp object_to_user_data(data) do
+  defp object_to_user_data(data, additional) do
     fields =
       data
       |> Map.get("attachment", [])
@@ -1490,15 +1514,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public_key =
       if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
         data["publicKey"]["publicKeyPem"]
-      else
-        nil
       end
 
     shared_inbox =
       if is_map(data["endpoints"]) && is_binary(data["endpoints"]["sharedInbox"]) do
         data["endpoints"]["sharedInbox"]
-      else
-        nil
       end
 
     birthday =
@@ -1507,13 +1527,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           {:ok, date} -> date
           {:error, _} -> nil
         end
-      else
-        nil
       end
 
     show_birthday = !!birthday
 
-    user_data = %{
+    # if WebFinger request was already done, we probably have acct, otherwise
+    # we request WebFinger here
+    nickname = additional[:nickname_from_acct] || generate_nickname(data)
+
+    %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
@@ -1535,22 +1557,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       inbox: data["inbox"],
       shared_inbox: shared_inbox,
       accepts_chat_messages: accepts_chat_messages,
-      pinned_objects: pinned_objects,
       birthday: birthday,
-      show_birthday: show_birthday
+      show_birthday: show_birthday,
+      pinned_objects: pinned_objects,
+      nickname: nickname
     }
+  end
 
-    # nickname can be nil because of virtual actors
-    if data["preferredUsername"] do
-      Map.put(
-        user_data,
-        :nickname,
-        "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}"
-      )
+  defp generate_nickname(%{"preferredUsername" => username} = data) when is_binary(username) do
+    generated = "#{username}@#{URI.parse(data["id"]).host}"
+
+    if Config.get([WebFinger, :update_nickname_on_user_fetch]) do
+      case WebFinger.finger(generated) do
+        {:ok, %{"subject" => "acct:" <> acct}} -> acct
+        _ -> generated
+      end
     else
-      Map.put(user_data, :nickname, nil)
+      generated
     end
   end
+
+  # nickname can be nil because of virtual actors
+  defp generate_nickname(_), do: nil
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
@@ -1623,17 +1651,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp collection_private(_data), do: {:ok, true}
 
-  def user_data_from_user_object(data) do
+  def user_data_from_user_object(data, additional \\ []) do
     with {:ok, data} <- MRF.filter(data) do
-      {:ok, object_to_user_data(data)}
+      {:ok, object_to_user_data(data, additional)}
     else
       e -> {:error, e}
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id) do
+  def fetch_and_prepare_user_from_ap_id(ap_id, additional \\ []) do
     with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
-         {:ok, data} <- user_data_from_user_object(data) do
+         {:ok, data} <- user_data_from_user_object(data, additional) do
       {:ok, maybe_update_follow_information(data)}
     else
       # If this has been deleted, only log a debug and not an error
@@ -1711,13 +1739,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def make_user_from_ap_id(ap_id) do
+  def make_user_from_ap_id(ap_id, additional \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
 
     if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
         {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
 
         if user do
@@ -1737,8 +1765,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_nickname(nickname) do
-    with {:ok, %{"ap_id" => ap_id}} when not is_nil(ap_id) <- WebFinger.finger(nickname) do
-      make_user_from_ap_id(ap_id)
+    with {:ok, %{"ap_id" => ap_id, "subject" => "acct:" <> acct}} when not is_nil(ap_id) <-
+           WebFinger.finger(nickname) do
+      make_user_from_ap_id(ap_id, nickname_from_acct: acct)
     else
       _e -> {:error, "No AP id in WebFinger"}
     end
@@ -1760,4 +1789,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_visibility(%{visibility: "direct"})
     |> order_by([activity], asc: activity.id)
   end
+
+  defp maybe_restrict_deactivated_users(activity, %{type: "Flag"}), do: activity
+
+  defp maybe_restrict_deactivated_users(activity, _opts),
+    do: Activity.restrict_deactivated_users(activity)
 end

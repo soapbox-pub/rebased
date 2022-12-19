@@ -43,4 +43,7 @@ defmodule Pleroma.Workers.BackgroundWorker do
   def perform(%Job{args: %{"op" => "delete_instance", "host" => host}}) do
     Instance.perform(:delete_instance, host)
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

@@ -497,6 +497,27 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :delete_context_objects,
+    type: :group,
+    description: "`delete_context_objects` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
@@ -795,6 +816,13 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :report_strip_status,
+        label: "Report strip status",
+        type: :boolean,
+        description:
+          "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
+      },
+      %{
         key: :safe_dm_mentions,
         label: "Safe DM mentions",
         type: :boolean,
@@ -1022,7 +1050,8 @@ config :pleroma, :config_description, [
         key: :birthday_min_age,
         type: :integer,
         description:
-          "Minimum required age for users to create account. Only used if birthday is required."
+          "Minimum required age (in days) for users to create account. Only used if birthday is required.",
+        suggestions: [6570]
       }
     ]
   },
@@ -1203,45 +1232,6 @@ config :pleroma, :config_description, [
         key: :metadata,
         type: {:list, :atom},
         suggestions: [:request_id]
-      }
-    ]
-  },
-  %{
-    group: :quack,
-    type: :group,
-    label: "Quack Logger",
-    description: "Quack-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :meta,
-        type: {:list, :atom},
-        description: "Configure which metadata you want to report on",
-        suggestions: [
-          :application,
-          :module,
-          :file,
-          :function,
-          :line,
-          :pid,
-          :crash_reason,
-          :initial_call,
-          :registered_name,
-          :all,
-          :none
-        ]
-      },
-      %{
-        key: :webhook_url,
-        label: "Webhook URL",
-        type: :string,
-        description: "Configure the Slack incoming webhook",
-        suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
       }
     ]
   },
@@ -1766,6 +1756,11 @@ config :pleroma, :config_description, [
         key: :sign_object_fetches,
         type: :boolean,
         description: "Sign object fetches with HTTP signatures"
+      },
+      %{
+        key: :authorized_fetch_mode,
+        type: :boolean,
+        description: "Require HTTP signatures for AP fetches"
       },
       %{
         key: :note_replies_output_limit,

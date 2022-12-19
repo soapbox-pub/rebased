@@ -112,9 +112,10 @@ defmodule Mix.Tasks.Pleroma.User do
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
       shell_info("Generated password reset token for #{user.nickname}")
 
-      IO.puts("URL: #{Pleroma.Web.Router.Helpers.reset_password_url(Pleroma.Web.Endpoint,
-      :reset,
-      token.token)}")
+      url =
+        Pleroma.Web.Router.Helpers.reset_password_url(Pleroma.Web.Endpoint, :reset, token.token)
+
+      IO.puts("URL: #{url}")
     else
       _ ->
         shell_error("No local user #{nickname}")
@@ -419,6 +420,38 @@ defmodule Mix.Tasks.Pleroma.User do
       end)
     end)
     |> Stream.run()
+  end
+
+  def run(["fix_follow_state", local_user, remote_user]) do
+    start_pleroma()
+
+    with {:local, %User{} = local} <- {:local, User.get_by_nickname(local_user)},
+         {:remote, %User{} = remote} <- {:remote, User.get_by_nickname(remote_user)},
+         {:follow_data, %{data: %{"state" => request_state}}} <-
+           {:follow_data, Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(local, remote)} do
+      calculated_state = User.following?(local, remote)
+
+      shell_info(
+        "Request state is #{request_state}, vs calculated state of following=#{calculated_state}"
+      )
+
+      if calculated_state == false && request_state == "accept" do
+        shell_info("Discrepancy found, fixing")
+        Pleroma.Web.CommonAPI.reject_follow_request(local, remote)
+        shell_info("Relationship fixed")
+      else
+        shell_info("No discrepancy found")
+      end
+    else
+      {:local, _} ->
+        shell_error("No local user #{local_user}")
+
+      {:remote, _} ->
+        shell_error("No remote user #{remote_user}")
+
+      {:follow_data, _} ->
+        shell_error("No follow data for #{local_user} and #{remote_user}")
+    end
   end
 
   defp set_moderator(user, value) do

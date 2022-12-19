@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
 
     data
     |> CommonFixes.fix_actor()
-    |> Map.put_new("context", object["context"])
+    |> Map.put("context", object["context"])
     |> fix_addressing(object)
   end
 
