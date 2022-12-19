@@ -148,7 +148,7 @@ defmodule Pleroma.Web.CommonAPI do
          true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
-      if User.superuser?(user) and user.ap_id != object.data["actor"] do
+      if User.privileged?(user, :messages_delete) and user.ap_id != object.data["actor"] do
         action =
           if object.data["type"] == "ChatMessage" do
             "chat_message_delete"
