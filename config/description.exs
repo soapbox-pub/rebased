@@ -3525,6 +3525,18 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :allow_unauthenticated,
+        type: :boolean,
+        label: "Allow unauthenticated",
+        description: "Whether to let unauthenticated users translate posts"
+      },
+      %{
+        key: :allow_remote,
+        type: :boolean,
+        label: "Allow remote",
+        description: "Whether to allow translation of remote posts"
+      },
+      %{
         group: {:subgroup, Pleroma.Language.Translation.Deepl},
         key: :base_url,
         label: "DeepL base URL",
