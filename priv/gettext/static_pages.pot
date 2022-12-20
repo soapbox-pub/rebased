@@ -156,8 +156,8 @@ msgid "Password changed!"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/templates/feed/feed/tag.atom.eex:15
-#: lib/pleroma/web/templates/feed/feed/tag.rss.eex:7
+#: lib/pleroma/web/templates/feed/feed/tag.atom.eex:12
+#: lib/pleroma/web/templates/feed/feed/tag.rss.eex:8
 msgctxt "tag feed description"
 msgid "These are public toots tagged with #%{tag}. You can interact with them if you have an account anywhere in the fediverse."
 msgstr ""
