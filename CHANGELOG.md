@@ -59,6 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
 - Removed useless notification call on Delete activities
 - Improved performance for filtering out deactivated and invisible users
+- RSS and Atom feeds for users work again
 - TwitterCard meta tags conformance
 
 ### Removed

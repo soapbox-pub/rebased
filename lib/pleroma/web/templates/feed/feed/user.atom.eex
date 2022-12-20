@@ -8,7 +8,8 @@
 
   <id><%= Routes.user_feed_url(@conn, :feed, @user.nickname) <> ".atom" %></id>
   <title><%= @user.nickname <> "'s timeline" %></title>
-  <updated><%= most_recent_update(@activities, @user) %></updated>
+  <subtitle><%= escape(@user.bio) %></subtitle>
+  <updated><%= most_recent_update(@activities, @user, :atom) %></updated>
   <logo><%= logo(@user) %></logo>
   <link rel="self" href="<%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.atom' %>" type="application/atom+xml"/>
 
