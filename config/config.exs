@@ -160,11 +160,6 @@ config :logger, :ex_syslogger,
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
-
 config :mime, :types, %{
   "application/xml" => ["xml"],
   "application/xrd+xml" => ["xrd+xml"],
@@ -228,6 +223,7 @@ config :pleroma, :instance,
   max_pinned_statuses: 1,
   attachment_links: false,
   max_report_comment_size: 1000,
+  report_strip_status: true,
   safe_dm_mentions: false,
   healthcheck: false,
   remote_post_retention_days: 90,
@@ -758,12 +754,12 @@ config :pleroma, :frontends,
         "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "develop"
     },
-    "soapbox-fe" => %{
-      "name" => "soapbox-fe",
-      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+    "soapbox" => %{
+      "name" => "soapbox",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
-      "ref" => "v1.0.0",
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
+      "ref" => "v3.0.0-beta.1",
       "build_dir" => "static"
     },
     "glitch-lily" => %{
@@ -871,6 +867,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
   {Pleroma.Search, [max_running: 30, max_waiting: 50]}
 ]
+
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
 
 config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
 

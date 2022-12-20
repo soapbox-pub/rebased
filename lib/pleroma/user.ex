@@ -611,7 +611,13 @@ defmodule Pleroma.User do
          {:ok, new_value} <- value_function.(value) do
       put_change(changeset, map_field, new_value)
     else
-      _ -> changeset
+      {:error, :file_too_large} ->
+        Ecto.Changeset.validate_change(changeset, map_field, fn map_field, _value ->
+          [{map_field, "file is too large"}]
+        end)
+
+      _ ->
+        changeset
     end
   end
 
@@ -905,12 +911,16 @@ defmodule Pleroma.User do
     end
   end
 
-  defp send_user_approval_email(user) do
+  defp send_user_approval_email(%User{email: email} = user) when is_binary(email) do
     user
     |> Pleroma.Emails.UserEmail.approval_pending_email()
     |> Pleroma.Emails.Mailer.deliver_async()
 
     {:ok, :enqueued}
+  end
+
+  defp send_user_approval_email(_user) do
+    {:ok, :skipped}
   end
 
   defp send_admin_approval_emails(user) do
@@ -2126,7 +2136,8 @@ defmodule Pleroma.User do
 
   @doc "Gets or fetch a user by uri or nickname."
   @spec get_or_fetch(String.t()) :: {:ok, User.t()} | {:error, String.t()}
-  def get_or_fetch("http" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
+  def get_or_fetch("http://" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
+  def get_or_fetch("https://" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
   def get_or_fetch(nickname), do: get_or_fetch_by_nickname(nickname)
 
   # wait a period of time and return newest version of the User structs

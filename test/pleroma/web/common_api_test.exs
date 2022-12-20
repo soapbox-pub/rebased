@@ -1100,10 +1100,11 @@ defmodule Pleroma.Web.CommonAPITest do
       target_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(target_user, %{status: "foobar"})
+      activity = Activity.normalize(activity)
 
       reporter_ap_id = reporter.ap_id
       target_ap_id = target_user.ap_id
-      activity_ap_id = activity.data["id"]
+      reported_object_ap_id = activity.object.data["id"]
       comment = "foobar"
 
       report_data = %{
@@ -1114,7 +1115,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => reported_object_ap_id,
         "content" => "foobar",
         "published" => activity.object.data["published"],
         "actor" => AccountView.render("show.json", %{user: target_user})
@@ -1136,6 +1137,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "updates report state" do
       [reporter, target_user] = insert_pair(:user)
       activity = insert(:note_activity, user: target_user)
+      object = Object.normalize(activity)
 
       {:ok, %Activity{id: report_id}} =
         CommonAPI.report(reporter, %{
@@ -1148,10 +1150,36 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert report.data["state"] == "resolved"
 
-      [reported_user, activity_id] = report.data["object"]
+      [reported_user, object_id] = report.data["object"]
 
       assert reported_user == target_user.ap_id
-      assert activity_id == activity.data["id"]
+      assert object_id == object.data["id"]
+    end
+
+    test "updates report state, don't strip when report_strip_status is false" do
+      clear_config([:instance, :report_strip_status], false)
+
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: report_id, data: report_data}} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id]
+        })
+
+      {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
+
+      assert report.data["state"] == "resolved"
+
+      [reported_user, reported_activity] = report.data["object"]
+
+      assert reported_user == target_user.ap_id
+      assert is_map(reported_activity)
+
+      assert reported_activity["content"] ==
+               report_data["object"] |> Enum.at(1) |> Map.get("content")
     end
 
     test "does not update report state when state is unsupported" do

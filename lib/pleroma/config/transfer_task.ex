@@ -47,7 +47,7 @@ defmodule Pleroma.Config.TransferTask do
       {logger, other} =
         (Repo.all(ConfigDB) ++ deleted_settings)
         |> Enum.map(&merge_with_default/1)
-        |> Enum.split_with(fn {group, _, _, _} -> group in [:logger, :quack] end)
+        |> Enum.split_with(fn {group, _, _, _} -> group in [:logger] end)
 
       logger
       |> Enum.sort()
@@ -104,11 +104,6 @@ defmodule Pleroma.Config.TransferTask do
   end
 
   # change logger configuration in runtime, without restart
-  defp configure({:quack, key, _, merged}) do
-    Logger.configure_backend(Quack.Logger, [{key, merged}])
-    :ok = update_env(:quack, key, merged)
-  end
-
   defp configure({_, :backends, _, merged}) do
     # removing current backends
     Enum.each(Application.get_env(:logger, :backends), &Logger.remove_backend/1)

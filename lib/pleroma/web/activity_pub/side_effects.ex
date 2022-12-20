@@ -285,7 +285,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles:
   # - Delete and unpins the create activity
   # - Replace object with Tombstone
-  # - Set up notification
   # - Reduce the user note count
   # - Reduce the reply count
   # - Stream out the activity
@@ -328,8 +327,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if result == :ok do
-      Notification.create_notifications(object)
-
       # Only remove from index when deleting actual objects, not users or anything else
       with %Pleroma.Object{} <- deleted_object do
         Pleroma.Search.remove_from_index(deleted_object)
