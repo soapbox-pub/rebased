@@ -22,10 +22,10 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
     res = TwitterCard.build_tags(%{user: user})
 
     assert res == [
-             {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "born 19 March 1994"], []},
-             {:meta, [property: "twitter:image", content: avatar_url], []},
-             {:meta, [property: "twitter:card", content: "summary"], []}
+             {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta, [name: "twitter:description", content: "born 19 March 1994"], []},
+             {:meta, [name: "twitter:image", content: avatar_url], []},
+             {:meta, [name: "twitter:card", content: "summary"], []}
            ]
   end
 
@@ -47,11 +47,11 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
     result = TwitterCard.build_tags(%{object: note, user: user, activity_id: activity.id})
 
     assert [
-             {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
-             {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
+             {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta, [name: "twitter:description", content: "pleroma in a nutshell"], []},
+             {:meta, [name: "twitter:image", content: "http://localhost:4001/images/avi.png"],
               []},
-             {:meta, [property: "twitter:card", content: "summary"], []}
+             {:meta, [name: "twitter:card", content: "summary"], []}
            ] == result
   end
 
@@ -73,15 +73,15 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
     result = TwitterCard.build_tags(%{object: note, user: user, activity_id: activity.id})
 
     assert [
-             {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []},
              {:meta,
               [
-                property: "twitter:description",
+                name: "twitter:description",
                 content: "Public service announcement on caffeine consumption"
               ], []},
-             {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
+             {:meta, [name: "twitter:image", content: "http://localhost:4001/images/avi.png"],
               []},
-             {:meta, [property: "twitter:card", content: "summary"], []}
+             {:meta, [name: "twitter:card", content: "summary"], []}
            ] == result
   end
 
@@ -123,11 +123,11 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
     result = TwitterCard.build_tags(%{object: note, user: user, activity_id: activity.id})
 
     assert [
-             {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
-             {:meta, [property: "twitter:image", content: "http://localhost:4001/images/avi.png"],
+             {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta, [name: "twitter:description", content: "pleroma in a nutshell"], []},
+             {:meta, [name: "twitter:image", content: "http://localhost:4001/images/avi.png"],
               []},
-             {:meta, [property: "twitter:card", content: "summary"], []}
+             {:meta, [name: "twitter:card", content: "summary"], []}
            ] == result
   end
 
@@ -179,26 +179,26 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
     result = TwitterCard.build_tags(%{object: note, user: user, activity_id: activity.id})
 
     assert [
-             {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []},
-             {:meta, [property: "twitter:description", content: "pleroma in a nutshell"], []},
-             {:meta, [property: "twitter:card", content: "summary_large_image"], []},
-             {:meta, [property: "twitter:player", content: "https://pleroma.gov/tenshi.png"], []},
-             {:meta, [property: "twitter:player:width", content: "1280"], []},
-             {:meta, [property: "twitter:player:height", content: "1024"], []},
-             {:meta, [property: "twitter:card", content: "player"], []},
+             {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []},
+             {:meta, [name: "twitter:description", content: "pleroma in a nutshell"], []},
+             {:meta, [name: "twitter:card", content: "summary_large_image"], []},
+             {:meta, [name: "twitter:player", content: "https://pleroma.gov/tenshi.png"], []},
+             {:meta, [name: "twitter:player:width", content: "1280"], []},
+             {:meta, [name: "twitter:player:height", content: "1024"], []},
+             {:meta, [name: "twitter:card", content: "player"], []},
              {:meta,
               [
-                property: "twitter:player",
+                name: "twitter:player",
                 content: Router.Helpers.o_status_url(Endpoint, :notice_player, activity.id)
               ], []},
-             {:meta, [property: "twitter:player:width", content: "800"], []},
-             {:meta, [property: "twitter:player:height", content: "600"], []},
+             {:meta, [name: "twitter:player:width", content: "800"], []},
+             {:meta, [name: "twitter:player:height", content: "600"], []},
              {:meta,
               [
-                property: "twitter:player:stream",
+                name: "twitter:player:stream",
                 content: "https://pleroma.gov/about/juche.webm"
               ], []},
-             {:meta, [property: "twitter:player:stream:content_type", content: "video/webm"], []}
+             {:meta, [name: "twitter:player:stream:content_type", content: "video/webm"], []}
            ] == result
   end
 end

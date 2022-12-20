@@ -3,15 +3,15 @@
   <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
   <id><%= @data["id"] %></id>
   <title><%= activity_title(@data, Keyword.get(@feed_config, :post_title, %{})) %></title>
-  <content type="html"><%= activity_content(@data) %></content>
-  <published><%= @activity.data["published"] %></published>
-  <updated><%= @activity.data["published"] %></updated>
+  <content type="html"><%= activity_description(@data) %></content>
+  <published><%= to_rfc3339(@activity.data["published"]) %></published>
+  <updated><%= to_rfc3339(@activity.data["published"]) %></updated>
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>
   <link href="<%= activity_context(@activity) %>" rel="ostatus:conversation"/>
 
-  <%= if @data["summary"] do %>
+  <%= if @data["summary"] != "" do %>
     <summary><%= escape(@data["summary"]) %></summary>
   <% end %>
 
