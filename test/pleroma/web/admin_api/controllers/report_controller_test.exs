@@ -76,7 +76,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
       assert response["id"] == report_id
 
       assert [status] = response["statuses"]
-      assert activity.data["id"] == status["uri"]
+      assert activity.object.data["id"] == status["uri"]
       assert activity.object.data["content"] == status["content"]
     end
 

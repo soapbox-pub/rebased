@@ -40,9 +40,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_media_removal(
          %{host: actor_host} = _actor_info,
-         %{"type" => "Create", "object" => %{"attachment" => child_attachment}} = object
+         %{"type" => type, "object" => %{"attachment" => child_attachment}} = object
        )
-       when length(child_attachment) > 0 do
+       when length(child_attachment) > 0 and type in ["Create", "Update"] do
     media_removal =
       instance_list(:media_removal)
       |> MRF.subdomains_regex()
@@ -63,10 +63,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_media_nsfw(
          %{host: actor_host} = _actor_info,
          %{
-           "type" => "Create",
+           "type" => type,
            "object" => %{} = _child_object
          } = object
-       ) do
+       )
+       when type in ["Create", "Update"] do
     media_nsfw =
       instance_list(:media_nsfw)
       |> MRF.subdomains_regex()

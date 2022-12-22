@@ -1553,6 +1553,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       reporter_ap_id = reporter.ap_id
       target_ap_id = target_account.ap_id
       activity_ap_id = activity.data["id"]
+      object_ap_id = activity.object.data["id"]
 
       activity_with_object = Activity.get_by_ap_id_with_object(activity_ap_id)
 
@@ -1564,6 +1565,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
          reported_activity: activity,
          content: content,
          activity_ap_id: activity_ap_id,
+         object_ap_id: object_ap_id,
          activity_with_object: activity_with_object,
          reporter_ap_id: reporter_ap_id,
          target_ap_id: target_ap_id
@@ -1577,7 +1579,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
            target_account: target_account,
            reported_activity: reported_activity,
            content: content,
-           activity_ap_id: activity_ap_id,
+           object_ap_id: object_ap_id,
            activity_with_object: activity_with_object,
            reporter_ap_id: reporter_ap_id,
            target_ap_id: target_ap_id
@@ -1593,7 +1595,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => object_ap_id,
         "content" => content,
         "published" => activity_with_object.object.data["published"],
         "actor" =>
@@ -1617,6 +1619,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                      context: context,
                      target_account: target_account,
                      reported_activity: reported_activity,
+                     object_ap_id: object_ap_id,
                      content: content
                    },
                    Utils,
@@ -1631,8 +1634,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           content: content
         })
 
-      new_data =
-        put_in(activity.data, ["object"], [target_account.ap_id, reported_activity.data["id"]])
+      new_data = put_in(activity.data, ["object"], [target_account.ap_id, object_ap_id])
 
       assert_called(Utils.maybe_federate(%{activity | data: new_data}))
     end

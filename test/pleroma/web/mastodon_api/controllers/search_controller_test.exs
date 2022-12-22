@@ -37,6 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       end
     end
 
+    @tag :skip_on_mac
     test "search", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})

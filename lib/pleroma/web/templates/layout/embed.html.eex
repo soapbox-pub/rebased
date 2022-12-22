@@ -10,6 +10,6 @@
     <base target="_parent">
   </head>
   <body>
-    <%= @inner_content %>
+    <%= render Phoenix.Controller.view_module(@conn), Phoenix.Controller.view_template(@conn), assigns %>
   </body>
 </html>
