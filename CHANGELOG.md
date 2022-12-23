@@ -6,12 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+### Added
+
+### Fixed
+
+### Removed
+
+## 2.5.0 - 2022-12-23
+
 ### Removed
 
 - MastoFE
+- Quack, the logging backend that pushes to Slack channels
 
 ### Changed
-- **Breaking:** Elixir >=1.10 is now required (was >= 1.9)
+- **Breaking:** Elixir >=1.11 is now required (was >= 1.9)
 - Allow users to remove their emails if instance does not need email to register
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
 - **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
@@ -24,8 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
 - Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
 - `ForceMentionsInPostContent` MRF policy
-- AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
-- AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 - PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
 - MastoAPI: Add `GET /api/v1/accounts/lookup`
 - MastoAPI: Profile Directory support
@@ -37,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: Add `birthday_required` and `birthday_min_age` settings to provide a way to require users to enter their birth date.
 - PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
 - Make backend-rendered pages translatable. This includes emails. Pages returned as a HTTP response are translated using the language specified in the `userLanguage` cookie, or the `Accept-Language` header. Emails are translated using the `language` field when registering. This language can be changed by `PATCH /api/v1/accounts/update_credentials` with the `language` field.
+- Add fine grained options to provide privileges to moderators and admins (e.g. delete messages, manage reports...)
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
 - Added move account API
 - Enable remote users to interact with posts
@@ -62,10 +72,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RSS and Atom feeds for users work again
 - TwitterCard meta tags conformance
 
-### Removed
-- Quack, the logging backend that pushes to Slack channels
-
-## 2.4.5 - 2022-08-27
+## 2.4.5 - 2022-11-27
 
 ## Fixed
 - Image `class` attributes not being scrubbed, allowing to exploit frontend special classes [!3792](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3792)
