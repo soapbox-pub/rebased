@@ -14,7 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-## 2.5.54
+## 2.5.5
+
+## Security
+- Prevent users from accessing media of other users by creating a status with reused attachment ID
+
+## 2.5.4
 
 ## Security
 - Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitary files from the server's filesystem
