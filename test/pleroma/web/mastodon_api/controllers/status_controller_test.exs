@@ -1,13 +1,14 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -16,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.ScheduledActivityWorker
 
   import Pleroma.Factory
 
@@ -261,6 +263,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> Map.put("url", nil)
         |> Map.put("uri", nil)
         |> Map.put("created_at", nil)
+        |> Kernel.put_in(["pleroma", "context"], nil)
         |> Kernel.put_in(["pleroma", "conversation_id"], nil)
 
       fake_conn =
@@ -284,6 +287,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> Map.put("url", nil)
         |> Map.put("uri", nil)
         |> Map.put("created_at", nil)
+        |> Kernel.put_in(["pleroma", "context"], nil)
         |> Kernel.put_in(["pleroma", "conversation_id"], nil)
 
       assert real_status == fake_status
@@ -705,11 +709,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert {:ok, %{id: activity_id}} =
-               perform_job(Pleroma.Workers.ScheduledActivityWorker, %{
+               perform_job(ScheduledActivityWorker, %{
                  activity_id: scheduled_id
                })
 
-      assert Repo.all(Oban.Job) == []
+      refute_enqueued(worker: ScheduledActivityWorker)
 
       object =
         Activity
@@ -967,30 +971,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_by_id(activity.id) == activity
     end
 
-    test "when you're an admin or moderator", %{conn: conn} do
-      activity1 = insert(:note_activity)
-      activity2 = insert(:note_activity)
-      admin = insert(:user, is_admin: true)
-      moderator = insert(:user, is_moderator: true)
+    test "when you're privileged to", %{conn: conn} do
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
+      activity = insert(:note_activity)
+      user = insert(:user, is_moderator: true)
 
       res_conn =
         conn
-        |> assign(:user, admin)
-        |> assign(:token, insert(:oauth_token, user: admin, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity1.id}")
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
 
       assert %{} = json_response_and_validate_schema(res_conn, 200)
 
-      res_conn =
-        conn
-        |> assign(:user, moderator)
-        |> assign(:token, insert(:oauth_token, user: moderator, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity2.id}")
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
 
-      assert %{} = json_response_and_validate_schema(res_conn, 200)
-
-      refute Activity.get_by_id(activity1.id)
-      refute Activity.get_by_id(activity2.id)
+      refute Activity.get_by_id(activity.id)
     end
   end
 
@@ -1900,23 +1897,50 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
              |> json_response_and_validate_schema(:ok)
   end
 
-  test "posting a local only status" do
-    %{user: _user, conn: conn} = oauth_access(["write:statuses"])
+  describe "local-only statuses" do
+    test "posting a local only status" do
+      %{user: _user, conn: conn} = oauth_access(["write:statuses"])
 
-    conn_one =
-      conn
-      |> put_req_header("content-type", "application/json")
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "visibility" => "local"
-      })
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "visibility" => "local"
+        })
 
-    local = Utils.as_local_public()
+      local = Utils.as_local_public()
 
-    assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
-             json_response_and_validate_schema(conn_one, 200)
+      assert %{"content" => "cofe", "id" => id, "visibility" => "local"} =
+               json_response_and_validate_schema(conn_one, 200)
 
-    assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+      assert %Activity{id: ^id, data: %{"to" => [^local]}} = Activity.get_by_id(id)
+    end
+
+    test "other users can read local-only posts" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      received =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(:ok)
+
+      assert received["id"] == activity.id
+    end
+
+    test "anonymous users cannot see local-only posts" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      _received =
+        build_conn()
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(:not_found)
+    end
   end
 
   describe "muted reactions" do
@@ -1987,6 +2011,180 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                  "emoji_reactions" => [%{"count" => 1, "me" => false, "name" => "🎅"}]
                }
              } = result
+    end
+  end
+
+  describe "get status history" do
+    setup do
+      %{conn: build_conn()}
+    end
+
+    test "unedited post", %{conn: conn} do
+      activity = insert(:note_activity)
+
+      conn = get(conn, "/api/v1/statuses/#{activity.id}/history")
+
+      assert [_] = json_response_and_validate_schema(conn, 200)
+    end
+
+    test "edited post", %{conn: conn} do
+      note =
+        insert(
+          :note,
+          data: %{
+            "formerRepresentations" => %{
+              "type" => "OrderedCollection",
+              "orderedItems" => [
+                %{
+                  "type" => "Note",
+                  "content" => "mew mew 2",
+                  "summary" => "title 2"
+                },
+                %{
+                  "type" => "Note",
+                  "content" => "mew mew 1",
+                  "summary" => "title 1"
+                }
+              ],
+              "totalItems" => 2
+            }
+          }
+        )
+
+      activity = insert(:note_activity, note: note)
+
+      conn = get(conn, "/api/v1/statuses/#{activity.id}/history")
+
+      assert [%{"spoiler_text" => "title 1"}, %{"spoiler_text" => "title 2"}, _] =
+               json_response_and_validate_schema(conn, 200)
+    end
+  end
+
+  describe "get status source" do
+    setup do
+      %{conn: build_conn()}
+    end
+
+    test "it returns the source", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      conn = get(conn, "/api/v1/statuses/#{activity.id}/source")
+
+      id = activity.id
+
+      assert %{"id" => ^id, "text" => "mew mew #abc", "spoiler_text" => "#def"} =
+               json_response_and_validate_schema(conn, 200)
+    end
+  end
+
+  describe "update status" do
+    setup do
+      oauth_access(["write:statuses"])
+    end
+
+    test "it updates the status" do
+      %{conn: conn, user: user} = oauth_access(["write:statuses", "read:statuses"])
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      conn
+      |> get("/api/v1/statuses/#{activity.id}")
+      |> json_response_and_validate_schema(200)
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/v1/statuses/#{activity.id}", %{
+          "status" => "edited",
+          "spoiler_text" => "lol"
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert response["content"] == "edited"
+      assert response["spoiler_text"] == "lol"
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert response["content"] == "edited"
+      assert response["spoiler_text"] == "lol"
+    end
+
+    test "it updates the attachments", %{conn: conn, user: user} do
+      attachment = insert(:attachment, user: user)
+      attachment_id = to_string(attachment.id)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/v1/statuses/#{activity.id}", %{
+          "status" => "mew mew #abc",
+          "spoiler_text" => "#def",
+          "media_ids" => [attachment_id]
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^attachment_id}] = response["media_attachments"]
+    end
+
+    test "it does not update visibility", %{conn: conn, user: user} do
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "mew mew #abc",
+          spoiler_text: "#def",
+          visibility: "private"
+        })
+
+      response =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/v1/statuses/#{activity.id}", %{
+          "status" => "edited",
+          "spoiler_text" => "lol"
+        })
+        |> json_response_and_validate_schema(200)
+
+      assert response["visibility"] == "private"
+    end
+
+    test "it refuses to update when original post is not by the user", %{conn: conn} do
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{status: "mew mew #abc", spoiler_text: "#def"})
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/statuses/#{activity.id}", %{
+        "status" => "edited",
+        "spoiler_text" => "lol"
+      })
+      |> json_response_and_validate_schema(:forbidden)
+    end
+
+    test "it returns 404 if the user cannot see the post", %{conn: conn} do
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{
+          status: "mew mew #abc",
+          spoiler_text: "#def",
+          visibility: "private"
+        })
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/statuses/#{activity.id}", %{
+        "status" => "edited",
+        "spoiler_text" => "lol"
+      })
+      |> json_response_and_validate_schema(:not_found)
     end
   end
 end

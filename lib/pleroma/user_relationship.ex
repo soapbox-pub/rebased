@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserRelationship do
@@ -18,25 +18,35 @@ defmodule Pleroma.UserRelationship do
     belongs_to(:source, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:target, User, type: FlakeId.Ecto.CompatType)
     field(:relationship_type, Pleroma.UserRelationship.Type)
+    field(:expires_at, :utc_datetime)
 
     timestamps(updated_at: false)
   end
 
   for relationship_type <- Keyword.keys(Pleroma.UserRelationship.Type.__enum_map__()) do
-    # `def create_block/2`, `def create_mute/2`, `def create_reblog_mute/2`,
-    #   `def create_notification_mute/2`, `def create_inverse_subscription/2`
-    def unquote(:"create_#{relationship_type}")(source, target),
-      do: create(unquote(relationship_type), source, target)
+    # `def create_block/3`, `def create_mute/3`, `def create_reblog_mute/3`,
+    #   `def create_notification_mute/3`, `def create_inverse_subscription/3`,
+    #   `def endorsement/3`
+    def unquote(:"create_#{relationship_type}")(source, target, expires_at \\ nil),
+      do: create(unquote(relationship_type), source, target, expires_at)
 
     # `def delete_block/2`, `def delete_mute/2`, `def delete_reblog_mute/2`,
-    #   `def delete_notification_mute/2`, `def delete_inverse_subscription/2`
+    #   `def delete_notification_mute/2`, `def delete_inverse_subscription/2`,
+    #   `def delete_endorsement/2`
     def unquote(:"delete_#{relationship_type}")(source, target),
       do: delete(unquote(relationship_type), source, target)
 
     # `def block_exists?/2`, `def mute_exists?/2`, `def reblog_mute_exists?/2`,
-    #   `def notification_mute_exists?/2`, `def inverse_subscription_exists?/2`
+    #   `def notification_mute_exists?/2`, `def inverse_subscription_exists?/2`,
+    #   `def inverse_endorsement_exists?/2`
     def unquote(:"#{relationship_type}_exists?")(source, target),
       do: exists?(unquote(relationship_type), source, target)
+
+    # `def get_block_expire_date/2`, `def get_mute_expire_date/2`,
+    #   `def get_reblog_mute_expire_date/2`, `def get_notification_mute_exists?/2`,
+    #   `def get_inverse_subscription_expire_date/2`, `def get_inverse_endorsement_expire_date/2`
+    def unquote(:"get_#{relationship_type}_expire_date")(source, target),
+      do: get_expire_date(unquote(relationship_type), source, target)
   end
 
   def user_relationship_types, do: Keyword.keys(user_relationship_mappings())
@@ -45,7 +55,7 @@ defmodule Pleroma.UserRelationship do
 
   def changeset(%UserRelationship{} = user_relationship, params \\ %{}) do
     user_relationship
-    |> cast(params, [:relationship_type, :source_id, :target_id])
+    |> cast(params, [:relationship_type, :source_id, :target_id, :expires_at])
     |> validate_required([:relationship_type, :source_id, :target_id])
     |> unique_constraint(:relationship_type,
       name: :user_relationships_source_id_relationship_type_target_id_index
@@ -59,16 +69,31 @@ defmodule Pleroma.UserRelationship do
     |> Repo.exists?()
   end
 
-  def create(relationship_type, %User{} = source, %User{} = target) do
+  def get_expire_date(relationship_type, %User{} = source, %User{} = target) do
+    %UserRelationship{expires_at: expires_at} =
+      UserRelationship
+      |> where(
+        relationship_type: ^relationship_type,
+        source_id: ^source.id,
+        target_id: ^target.id
+      )
+      |> Repo.one!()
+
+    expires_at
+  end
+
+  def create(relationship_type, %User{} = source, %User{} = target, expires_at \\ nil) do
     %UserRelationship{}
     |> changeset(%{
       relationship_type: relationship_type,
       source_id: source.id,
-      target_id: target.id
+      target_id: target.id,
+      expires_at: expires_at
     })
     |> Repo.insert(
-      on_conflict: {:replace_all_except, [:id]},
-      conflict_target: [:source_id, :relationship_type, :target_id]
+      on_conflict: {:replace_all_except, [:id, :inserted_at]},
+      conflict_target: [:source_id, :relationship_type, :target_id],
+      returning: true
     )
   end
 

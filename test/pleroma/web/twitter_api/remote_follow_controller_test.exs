@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
@@ -408,6 +408,51 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
         |> response(200)
 
       assert response =~ "Error following account"
+    end
+  end
+
+  describe "avatar url" do
+    test "without media proxy" do
+      clear_config([:media_proxy, :enabled], false)
+
+      user =
+        insert(:user, %{
+          local: false,
+          avatar: %{"url" => [%{"href" => "https://remote.org/avatar.png"}]}
+        })
+
+      avatar_url = Pleroma.Web.TwitterAPI.RemoteFollowView.avatar_url(user)
+
+      assert avatar_url == "https://remote.org/avatar.png"
+    end
+
+    test "with media proxy" do
+      clear_config([:media_proxy, :enabled], true)
+
+      user =
+        insert(:user, %{
+          local: false,
+          avatar: %{"url" => [%{"href" => "https://remote.org/avatar.png"}]}
+        })
+
+      avatar_url = Pleroma.Web.TwitterAPI.RemoteFollowView.avatar_url(user)
+      url = Pleroma.Web.Endpoint.url()
+
+      assert String.starts_with?(avatar_url, url)
+    end
+
+    test "local avatar is not proxied" do
+      clear_config([:media_proxy, :enabled], true)
+
+      user =
+        insert(:user, %{
+          local: true,
+          avatar: %{"url" => [%{"href" => "#{Pleroma.Web.Endpoint.url()}/localuser/avatar.png"}]}
+        })
+
+      avatar_url = Pleroma.Web.TwitterAPI.RemoteFollowView.avatar_url(user)
+
+      assert avatar_url == "#{Pleroma.Web.Endpoint.url()}/localuser/avatar.png"
     end
   end
 end

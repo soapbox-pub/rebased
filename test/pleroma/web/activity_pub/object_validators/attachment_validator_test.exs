@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
@@ -11,6 +11,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   import Pleroma.Factory
 
   describe "attachments" do
+    test "fails without url" do
+      attachment = %{
+        "mediaType" => "",
+        "name" => "",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document"
+      }
+
+      assert {:error, _cng} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "works with honkerific attachments" do
       attachment = %{
         "mediaType" => "",
@@ -144,6 +157,38 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
              ] = attachment.url
 
       assert attachment.mediaType == "image/jpeg"
+    end
+
+    test "it transforms image dimentions to our internal format" do
+      attachment = %{
+        "type" => "Document",
+        "name" => "Hello world",
+        "url" => "https://media.example.tld/1.jpg",
+        "width" => 880,
+        "height" => 960,
+        "mediaType" => "image/jpeg",
+        "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+      }
+
+      expected = %AttachmentValidator{
+        type: "Document",
+        name: "Hello world",
+        mediaType: "image/jpeg",
+        blurhash: "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of",
+        url: [
+          %AttachmentValidator.UrlObjectValidator{
+            type: "Link",
+            mediaType: "image/jpeg",
+            href: "https://media.example.tld/1.jpg",
+            width: 880,
+            height: 960
+          }
+        ]
+      }
+
+      {:ok, ^expected} =
+        AttachmentValidator.cast_and_validate(attachment)
+        |> Ecto.Changeset.apply_action(:insert)
     end
   end
 end

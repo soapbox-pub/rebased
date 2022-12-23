@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.FormatterTest do
@@ -151,13 +151,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 3
 
       expected_text =
-        ~s(<span class="h-card"><a class="u-url mention" data-user="#{gsimg.id}" href="#{
-          gsimg.ap_id
-        }" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a class="u-url mention" data-user="#{
-          archaeme.id
-        }" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a class="u-url mention" data-user="#{
-          archaeme_remote.id
-        }" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{gsimg.id}" href="#{gsimg.ap_id}" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a class="u-url mention" data-user="#{archaeme.id}" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a class="u-url mention" data-user="#{archaeme_remote.id}" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
 
       assert expected_text == text
     end
@@ -172,9 +166,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        ~s(<span class="h-card"><a class="u-url mention" data-user="#{mike.id}" href="#{
-          mike.ap_id
-        }" rel="ugc">@<span>mike</span></a></span> test)
+        ~s(<span class="h-card"><a class="u-url mention" data-user="#{mike.id}" href="#{mike.ap_id}" rel="ugc">@<span>mike</span></a></span> test)
 
       assert expected_text == text
     end
@@ -210,13 +202,7 @@ defmodule Pleroma.FormatterTest do
       assert mentions == [{"@#{user.nickname}", user}, {"@#{other_user.nickname}", other_user}]
 
       assert expected_text ==
-               ~s(<span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="#{
-                 user.ap_id
-               }" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
-                 other_user.id
-               }" href="#{other_user.ap_id}" rel="ugc">@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class="h-card"><a class="u-url mention" data-user="#{
-                 third_user.id
-               }" href="#{third_user.ap_id}" rel="ugc">@<span>#{third_user.nickname}</span></a></span>)
+               ~s(<span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="#{user.ap_id}" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{other_user.id}" href="#{other_user.ap_id}" rel="ugc">@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class="h-card"><a class="u-url mention" data-user="#{third_user.id}" href="#{third_user.ap_id}" rel="ugc">@<span>#{third_user.nickname}</span></a></span>)
     end
 
     test "given the 'safe_mention' option, it will still work without any mention" do
@@ -284,6 +270,34 @@ defmodule Pleroma.FormatterTest do
 
       assert {^expected_text, ^expected_mentions, []} = Formatter.linkify(text)
     end
+
+    test "correctly parses mentions in html" do
+      text = "<p>@lain hello</p>"
+      lain = insert(:user, %{nickname: "lain"})
+
+      {text, mentions, []} = Formatter.linkify(text)
+
+      assert length(mentions) == 1
+
+      expected_text =
+        ~s(<p><span class="h-card"><a class="u-url mention" data-user="#{lain.id}" href="#{lain.ap_id}" rel="ugc">@<span>lain</span></a></span> hello</p>)
+
+      assert expected_text == text
+    end
+
+    test "correctly parses mentions on the last line of html" do
+      text = "<p>Hello</p><p>@lain</p>"
+      lain = insert(:user, %{nickname: "lain"})
+
+      {text, mentions, []} = Formatter.linkify(text)
+
+      assert length(mentions) == 1
+
+      expected_text =
+        ~s(<p>Hello</p><p><span class="h-card"><a class="u-url mention" data-user="#{lain.id}" href="#{lain.ap_id}" rel="ugc">@<span>lain</span></a></span></p>)
+
+      assert expected_text == text
+    end
   end
 
   describe ".parse_tags" do
@@ -295,6 +309,57 @@ defmodule Pleroma.FormatterTest do
         {"#working", "working"},
         {"#は", "は"},
         {"#漢字", "漢字"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses tags in html" do
+      text = "<p>This is a #test</p>"
+
+      expected_tags = [
+        {"#test", "test"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses mulitple tags in html" do
+      text = "<p>#tag1 #tag2 #tag3 #tag4</p>"
+
+      expected_tags = [
+        {"#tag1", "tag1"},
+        {"#tag2", "tag2"},
+        {"#tag3", "tag3"},
+        {"#tag4", "tag4"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses tags on the last line of html" do
+      text = "<p>This is a</p><p>#test</p>"
+
+      expected_tags = [
+        {"#test", "test"}
+      ]
+
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
+    end
+
+    test "parses mulitple tags on mulitple lines in html" do
+      text =
+        "<p>testing...</p><p>#tag1 #tag2 #tag3 #tag4</p><p>paragraph</p><p>#tag5 #tag6 #tag7 #tag8</p>"
+
+      expected_tags = [
+        {"#tag1", "tag1"},
+        {"#tag2", "tag2"},
+        {"#tag3", "tag3"},
+        {"#tag4", "tag4"},
+        {"#tag5", "tag5"},
+        {"#tag6", "tag6"},
+        {"#tag7", "tag7"},
+        {"#tag8", "tag8"}
       ]
 
       assert {_text, [], ^expected_tags} = Formatter.linkify(text)

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
@@ -37,6 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       end
     end
 
+    @tag :skip_on_mac
     test "search", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
@@ -77,6 +78,51 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
+    end
+
+    test "search local-only status as an authenticated user" do
+      user = insert(:user)
+      %{conn: conn} = oauth_access(["read:search"])
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu"})}")
+        |> json_response_and_validate_schema(200)
+
+      [status] = results["statuses"]
+      assert status["id"] == to_string(activity.id)
+    end
+
+    test "search local-only status as an unauthenticated user" do
+      user = insert(:user)
+      %{conn: conn} = oauth_access([])
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = results["statuses"]
+    end
+
+    test "search local-only status as an anonymous user" do
+      user = insert(:user)
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{status: "This is about 2hu private 天子", visibility: "local"})
+
+      results =
+        build_conn()
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = results["statuses"]
     end
 
     @tag capture_log: true
@@ -125,13 +171,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       results =
         conn
         |> get(
-          "/api/v2/search?#{
-            URI.encode_query(%{
-              q:
-                "https://www.washingtonpost.com/sports/2020/06/10/" <>
-                  "nascar-ban-display-confederate-flag-all-events-properties/"
-            })
-          }"
+          "/api/v2/search?#{URI.encode_query(%{q: "https://www.washingtonpost.com/sports/2020/06/10/" <> "nascar-ban-display-confederate-flag-all-events-properties/"})}"
         )
         |> json_response_and_validate_schema(200)
 
@@ -156,9 +196,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       results =
         conn
         |> get(
-          "/api/v2/search?#{
-            URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})
-          }"
+          "/api/v2/search?#{URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})}"
         )
         |> json_response_and_validate_schema(200)
 

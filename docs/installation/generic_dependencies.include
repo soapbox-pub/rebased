@@ -1,7 +1,7 @@
 ## Required dependencies
 
 * PostgreSQL 9.6+
-* Elixir 1.9+
+* Elixir 1.10+
 * Erlang OTP 22.2+
 * git
 * file / libmagic
@@ -9,7 +9,7 @@
 * GNU make
 * CMake
 
-## Optionnal dependencies
+## Optional dependencies
 
 * ImageMagick
 * FFmpeg

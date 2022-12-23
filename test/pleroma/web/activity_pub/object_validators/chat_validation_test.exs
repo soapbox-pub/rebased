@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 
-      assert Map.put(valid_chat_message, "attachment", nil) == object
+      assert valid_chat_message == object
       assert match?(%{"firefox" => _}, object["emoji"])
     end
 

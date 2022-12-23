@@ -1,16 +1,14 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
@@ -20,35 +18,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
 
   # Extends from NoteValidator
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
-    field(:bto, ObjectValidators.Recipients, default: [])
-    field(:bcc, ObjectValidators.Recipients, default: [])
-    embeds_many(:tag, TagValidator)
-    field(:type, :string)
-    field(:content, :string)
-    field(:context, :string)
-
-    # TODO: Remove actor on objects
-    field(:actor, ObjectValidators.ObjectID)
-
-    field(:attributedTo, ObjectValidators.ObjectID)
-    field(:summary, :string)
-    field(:published, ObjectValidators.DateTime)
-    field(:emoji, ObjectValidators.Emoji, default: %{})
-    field(:sensitive, :boolean, default: false)
-    embeds_many(:attachment, AttachmentValidator)
-    field(:replies_count, :integer, default: 0)
-    field(:like_count, :integer, default: 0)
-    field(:announcement_count, :integer, default: 0)
-    field(:inReplyTo, ObjectValidators.ObjectID)
-    field(:url, ObjectValidators.Uri)
-    # short identifier for PleromaFE to group statuses by context
-    field(:context_id, :integer)
-
-    field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
-    field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        object_fields()
+        status_object_fields()
+      end
+    end
 
     field(:closed, ObjectValidators.DateTime)
     field(:voters, {:array, ObjectValidators.ObjectID}, default: [])
@@ -103,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

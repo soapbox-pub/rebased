@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.FederatorTest do
@@ -153,7 +153,7 @@ defmodule Pleroma.Web.FederatorTest do
       }
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, :origin_containment_failed} = ObanHelpers.perform(job)
+      assert {:cancel, :origin_containment_failed} = ObanHelpers.perform(job)
     end
 
     test "it does not crash if MRF rejects the post" do
@@ -169,7 +169,7 @@ defmodule Pleroma.Web.FederatorTest do
         |> Jason.decode!()
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, _} = ObanHelpers.perform(job)
+      assert {:cancel, _} = ObanHelpers.perform(job)
     end
   end
 end

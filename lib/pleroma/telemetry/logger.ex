@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Telemetry.Logger do
@@ -29,9 +29,7 @@ defmodule Pleroma.Telemetry.Logger do
         _
       ) do
     Logger.debug(fn ->
-      "Connection pool is exhausted (reached #{max_connections} connections). Starting idle connection cleanup to reclaim as much as #{
-        reclaim_max
-      } connections"
+      "Connection pool is exhausted (reached #{max_connections} connections). Starting idle connection cleanup to reclaim as much as #{reclaim_max} connections"
     end)
   end
 
@@ -73,9 +71,7 @@ defmodule Pleroma.Telemetry.Logger do
         _
       ) do
     Logger.warn(fn ->
-      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{
-        inspect(reason)
-      }"
+      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{inspect(reason)}"
     end)
   end
 

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.HTML.Scrubber.Default do
   @doc "The default HTML scrubbing policy: no "
 
@@ -56,7 +60,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes(:u, [])
   Meta.allow_tag_with_these_attributes(:ul, [])
 
-  Meta.allow_tag_with_this_attribute_values(:span, "class", ["h-card"])
+  Meta.allow_tag_with_this_attribute_values(:span, "class", ["h-card", "recipients-inline"])
   Meta.allow_tag_with_these_attributes(:span, [])
 
   Meta.allow_tag_with_this_attribute_values(:code, "class", ["inline"])

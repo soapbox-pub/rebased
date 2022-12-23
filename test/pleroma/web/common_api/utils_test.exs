@@ -1,10 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.CommonAPI.Utils
@@ -160,11 +159,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output ==
-               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{
-                 user.id
-               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{
-                 user.id
-               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{user.id}" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
     end
   end
 
@@ -201,11 +196,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{
-                 mario.ap_id
-               }" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
-                 luigi.id
-               }" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
     end
 
     test "remote mentions" do
@@ -216,11 +207,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{
-                 mario.ap_id
-               }" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{
-                 luigi.id
-               }" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
     end
 
     test "raw HTML" do
@@ -285,22 +272,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "context_to_conversation_id" do
-    test "creates a mapping object" do
-      conversation_id = Utils.context_to_conversation_id("random context")
-      object = Object.get_by_ap_id("random context")
-
-      assert conversation_id == object.id
-    end
-
-    test "returns an existing mapping for an existing object" do
-      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
-      conversation_id = Utils.context_to_conversation_id("random context")
-
-      assert conversation_id == object.id
-    end
-  end
-
   describe "formats date to asctime" do
     test "when date is in ISO 8601 format" do
       date = DateTime.utc_now() |> DateTime.to_iso8601()
@@ -321,7 +292,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert capture_log(fn ->
                assert Utils.date_to_asctime(date) == expected
-             end) =~ "[warn] Date #{date} in wrong format, must be ISO 8601"
+             end) =~ "Date #{date} in wrong format, must be ISO 8601"
     end
 
     test "when date is a Unix timestamp" do
@@ -331,7 +302,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert capture_log(fn ->
                assert Utils.date_to_asctime(date) == expected
-             end) =~ "[warn] Date #{date} in wrong format, must be ISO 8601"
+             end) =~ "Date #{date} in wrong format, must be ISO 8601"
     end
 
     test "when date is nil" do
@@ -339,13 +310,13 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert capture_log(fn ->
                assert Utils.date_to_asctime(nil) == expected
-             end) =~ "[warn] Date  in wrong format, must be ISO 8601"
+             end) =~ "Date  in wrong format, must be ISO 8601"
     end
 
     test "when date is a random string" do
       assert capture_log(fn ->
                assert Utils.date_to_asctime("foo") == ""
-             end) =~ "[warn] Date foo in wrong format, must be ISO 8601"
+             end) =~ "Date foo in wrong format, must be ISO 8601"
     end
   end
 
@@ -529,17 +500,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "conversation_id_to_context/1" do
-    test "returns id" do
-      object = insert(:note)
-      assert Utils.conversation_id_to_context(object.id) == object.data["id"]
-    end
-
-    test "returns error if object not found" do
-      assert Utils.conversation_id_to_context("123") == {:error, "No such conversation"}
-    end
-  end
-
   describe "maybe_notify_mentioned_recipients/2" do
     test "returns recipients when activity is not `Create`" do
       activity = insert(:like_activity)
@@ -678,41 +638,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert Utils.maybe_add_list_data(%{additional: %{}, object: %{}}, user, {:list, list.id}) ==
                %{additional: %{}, object: %{}}
-    end
-  end
-
-  describe "make_note_data/1" do
-    test "returns note data" do
-      user = insert(:user)
-      note = insert(:note)
-      user2 = insert(:user)
-      user3 = insert(:user)
-
-      draft = %ActivityDraft{
-        user: user,
-        to: [user2.ap_id],
-        context: "2hu",
-        content_html: "<h1>This is :moominmamma: note</h1>",
-        in_reply_to: note.id,
-        tags: [name: "jimm"],
-        summary: "test summary",
-        cc: [user3.ap_id],
-        extra: %{"custom_tag" => "test"}
-      }
-
-      assert Utils.make_note_data(draft) == %{
-               "actor" => user.ap_id,
-               "attachment" => [],
-               "cc" => [user3.ap_id],
-               "content" => "<h1>This is :moominmamma: note</h1>",
-               "context" => "2hu",
-               "sensitive" => false,
-               "summary" => "test summary",
-               "tag" => ["jimm"],
-               "to" => [user2.ap_id],
-               "type" => "Note",
-               "custom_tag" => "test"
-             }
     end
   end
 

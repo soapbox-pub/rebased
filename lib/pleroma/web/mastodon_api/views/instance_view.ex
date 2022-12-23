@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.InstanceView do
@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       uri: Pleroma.Web.Endpoint.url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
+      short_description: Keyword.get(instance, :short_description),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
@@ -31,6 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       approval_required: Keyword.get(instance, :account_approval_required),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
+      max_media_attachments: Keyword.get(instance, :max_media_attachments),
       poll_limits: Keyword.get(instance, :poll_limits),
       upload_limit: Keyword.get(instance, :upload_limit),
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
@@ -45,7 +47,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           features: features(),
           federation: federation(),
           fields_limits: fields_limits(),
-          post_formats: Config.get([:instance, :allowed_post_formats])
+          post_formats: Config.get([:instance, :allowed_post_formats]),
+          birthday_required: Config.get([:instance, :birthday_required]),
+          birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
@@ -59,10 +63,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "mastodon_api",
       "mastodon_api_streaming",
       "polls",
+      "v2_suggestions",
       "pleroma_explicit_addressing",
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
+      "editing",
+      if Config.get([:activitypub, :blockers_visible]) do
+        "blockers_visible"
+      end,
       if Config.get([:media_proxy, :enabled]) do
         "media_proxy"
       end,
@@ -83,7 +92,14 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
-      "pleroma_chat_messages"
+      "pleroma_chat_messages",
+      if Config.get([:instance, :show_reactions]) do
+        "exposable_reactions"
+      end,
+      if Config.get([:instance, :profile_directory]) do
+        "profile_directory"
+      end,
+      "pleroma:get:main/ostatus"
     ]
     |> Enum.filter(& &1)
   end
@@ -95,7 +111,20 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       {:ok, data} = MRF.describe()
 
       data
-      |> Map.merge(%{quarantined_instances: quarantined})
+      |> Map.put(
+        :quarantined_instances,
+        Enum.map(quarantined, fn {instance, _reason} -> instance end)
+      )
+      # This is for backwards compatibility. We originally didn't sent
+      # extra info like a reason why an instance was rejected/quarantined/etc.
+      # Because we didn't want to break backwards compatibility it was decided
+      # to add an extra "info" key.
+      |> Map.put(:quarantined_instances_info, %{
+        "quarantined_instances" =>
+          quarantined
+          |> Enum.map(fn {instance, reason} -> {instance, %{"reason" => reason}} end)
+          |> Map.new()
+      })
     else
       %{}
     end

@@ -3,16 +3,11 @@
   <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
   <guid><%= @data["id"] %></guid>
   <title><%= activity_title(@data, Keyword.get(@feed_config, :post_title, %{})) %></title>
-  <description><%= activity_content(@data) %></description>
-  <pubDate><%= @activity.data["published"] %></pubDate>
-  <updated><%= @activity.data["published"] %></updated>
+  <description><%= activity_description(@data) %></description>
+  <pubDate><%= to_rfc2822(@activity.data["published"]) %></pubDate>
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>
-
-  <%= if @data["summary"] do %>
-    <description><%= escape(@data["summary"]) %></description>
-  <% end %>
 
   <%= if @activity.local do %>
     <link><%= @data["id"] %></link>
@@ -27,7 +22,7 @@
   <% end %>
 
   <%= for attachment <- @data["attachment"] || [] do %>
-    <link type="<%= attachment_type(attachment) %>"><%= attachment_href(attachment) %></link>
+    <enclosure url="<%= attachment_href(attachment) %>" type="<%= attachment_type(attachment) %>" />
   <% end %>
 
   <%= if @data["inReplyTo"] do %>

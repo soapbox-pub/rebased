@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
@@ -35,8 +35,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{
           "pleroma_settings_store" => %{
-            masto_fe: %{
-              theme: "bla"
+            soapbox_fe: %{
+              themeMode: "bla"
             }
           }
         })
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data["pleroma"]["settings_store"] ==
                %{
                  "pleroma_fe" => %{"theme" => "bla"},
-                 "masto_fe" => %{"theme" => "bla"}
+                 "soapbox_fe" => %{"themeMode" => "bla"}
                }
 
       user = Repo.get(User, user_data["id"])
@@ -60,8 +60,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
           |> assign(:user, user)
           |> patch("/api/v1/accounts/update_credentials", %{
             "pleroma_settings_store" => %{
-              masto_fe: %{
-                theme: "blub"
+              soapbox_fe: %{
+                themeMode: "blub"
               }
             }
           })
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         assert user_data["pleroma"]["settings_store"] ==
                  %{
                    "pleroma_fe" => %{"theme" => "bla"},
-                   "masto_fe" => %{"theme" => "blub"}
+                   "soapbox_fe" => %{"themeMode" => "blub"}
                  }
 
         assert_called(Pleroma.Web.Federator.publish(:_))
@@ -88,9 +88,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data = json_response_and_validate_schema(conn, 200)
 
       assert user_data["note"] ==
-               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{
-                 user2.id
-               }" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{user2.id}" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
 
       assert user_data["source"]["note"] == raw_bio
 
@@ -261,6 +259,34 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user.avatar == nil
     end
 
+    test "updates the user's avatar, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_avatar_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      assert user.avatar == %{}
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar_oversized})
+
+      assert user_response = json_response_and_validate_schema(res, 413)
+      assert user_response["avatar"] != User.avatar_url(user)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
+    end
+
     test "updates the user's banner", %{user: user, conn: conn} do
       new_header = %Plug.Upload{
         content_type: "image/jpeg",
@@ -278,6 +304,32 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       user = User.get_by_id(user.id)
       assert user.banner == nil
+    end
+
+    test "updates the user's banner, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_header_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{"header" => new_header_oversized})
+
+      assert user_response = json_response_and_validate_schema(res, 413)
+      assert user_response["header"] != User.banner_url(user)
+
+      user = User.get_by_id(user.id)
+      assert user.banner == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
     end
 
     test "updates the user's background", %{conn: conn, user: user} do
@@ -301,6 +353,34 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       user = User.get_by_id(user.id)
       assert user.background == nil
+    end
+
+    test "updates the user's background, upload_limit, returns a HTTP 413", %{
+      conn: conn,
+      user: user
+    } do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_background_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "pleroma_background_image" => new_background_oversized
+        })
+
+      assert user_response = json_response_and_validate_schema(res, 413)
+      assert user.background == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
     end
 
     test "requires 'write:accounts' permission" do
@@ -370,6 +450,40 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
                },
                %{"name" => "link.io", "value" => "cofe.io"}
              ]
+    end
+
+    test "updates birth date", %{conn: conn} do
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "birthday" => "2001-02-12"
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["pleroma"]["birthday"] == "2001-02-12"
+    end
+
+    test "updates the user's show_birthday status", %{conn: conn} do
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "show_birthday" => true
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["source"]["pleroma"]["show_birthday"] == true
+    end
+
+    test "unsets birth date", %{conn: conn} do
+      patch(conn, "/api/v1/accounts/update_credentials", %{
+        "birthday" => "2001-02-12"
+      })
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "birthday" => ""
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["pleroma"]["birthday"] == nil
     end
 
     test "emojis in fields labels", %{conn: conn} do

@@ -1,9 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
+  alias Pleroma.Instances
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -26,7 +27,41 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   defp maybe_reinject_internal_fields(%{data: %{} = old_data}, new_data) do
+    has_history? = fn
+      %{"formerRepresentations" => %{"orderedItems" => list}} when is_list(list) -> true
+      _ -> false
+    end
+
     internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
+
+    remote_history_exists? = has_history?.(new_data)
+
+    # If the remote history exists, we treat that as the only source of truth.
+    new_data =
+      if has_history?.(old_data) and not remote_history_exists? do
+        Map.put(new_data, "formerRepresentations", old_data["formerRepresentations"])
+      else
+        new_data
+      end
+
+    # If the remote does not have history information, we need to manage it ourselves
+    new_data =
+      if not remote_history_exists? do
+        changed? =
+          Pleroma.Constants.status_updatable_fields()
+          |> Enum.any?(fn field -> Map.get(old_data, field) != Map.get(new_data, field) end)
+
+        %{updated_object: updated_object} =
+          new_data
+          |> Object.Updater.maybe_update_history(old_data,
+            updated: changed?,
+            use_history_in_new_object?: false
+          )
+
+        updated_object
+      else
+        new_data
+      end
 
     Map.merge(new_data, internal_fields)
   end
@@ -200,6 +235,10 @@ defmodule Pleroma.Object.Fetcher do
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
+      if not Instances.reachable?(id) do
+        Instances.set_reachable(id)
+      end
+
       {:ok, data}
     else
       {:scheme, _} ->

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountController do
@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   alias Pleroma.Maps
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -31,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action == :create)
+  plug(:skip_auth when action in [:create, :lookup])
 
   plug(:skip_public_check when action in [:show, :statuses])
 
@@ -53,7 +54,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     when action in [:verify_credentials, :endorsements, :identity_proofs]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    when action in [:update_credentials, :note, :endorse, :unendorse]
+  )
 
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :lists)
 
@@ -71,15 +76,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["follow", "write:follows"]} when action in [:follow_by_uri, :follow, :unfollow]
+    %{scopes: ["follow", "write:follows"]}
+    when action in [:follow_by_uri, :follow, :unfollow, :remove_from_followers]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 
-  @relationship_actions [:follow, :unfollow]
-  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
+  @relationship_actions [:follow, :unfollow, :remove_from_followers]
+  @needs_account ~W(
+    followers following lists follow unfollow mute unmute block unblock
+    note endorse unendorse remove_from_followers
+  )a
 
   plug(
     RateLimiter,
@@ -184,7 +193,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :skip_thread_containment,
         :allow_following_move,
         :also_known_as,
-        :accepts_chat_messages
+        :accepts_chat_messages,
+        :show_birthday
       ]
       |> Enum.reduce(%{}, fn key, acc ->
         Maps.put_if_present(acc, key, params[key], &{:ok, Params.truthy_param?(&1)})
@@ -212,6 +222,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:is_locked, params[:locked])
       # Note: param name is indeed :discoverable (not an error)
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
+      |> Maps.put_if_present(:birthday, params[:birthday])
+      |> Maps.put_if_present(:language, Pleroma.Web.Gettext.normalize_locale(params[:language]))
 
     # What happens here:
     #
@@ -242,7 +254,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         with_pleroma_settings: true
       )
     else
-      _e -> render_error(conn, :forbidden, "Invalid request")
+      {:error, %Ecto.Changeset{errors: [avatar: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [banner: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [background: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      _e ->
+        render_error(conn, :forbidden, "Invalid request")
     end
   end
 
@@ -401,6 +423,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/mute"
   def mute(%{assigns: %{user: muter, account: muted}, body_params: params} = conn, _params) do
+    params =
+      params
+      |> Map.put_new(:duration, Map.get(params, :expires_in, 0))
+
     with {:ok, _user_relationships} <- User.mute(muter, muted, params) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
@@ -435,6 +461,48 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     end
   end
 
+  @doc "POST /api/v1/accounts/:id/note"
+  def note(
+        %{assigns: %{user: noter, account: target}, body_params: %{comment: comment}} = conn,
+        _params
+      ) do
+    with {:ok, _user_note} <- UserNote.create(noter, target, comment) do
+      render(conn, "relationship.json", user: noter, target: target)
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/pin"
+  def endorse(%{assigns: %{user: endorser, account: endorsed}} = conn, _params) do
+    with {:ok, _user_relationships} <- User.endorse(endorser, endorsed) do
+      render(conn, "relationship.json", user: endorser, target: endorsed)
+    else
+      {:error, message} -> json_response(conn, :bad_request, %{error: message})
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/unpin"
+  def unendorse(%{assigns: %{user: endorser, account: endorsed}} = conn, _params) do
+    with {:ok, _user_relationships} <- User.unendorse(endorser, endorsed) do
+      render(conn, "relationship.json", user: endorser, target: endorsed)
+    else
+      {:error, message} -> json_response(conn, :forbidden, %{error: message})
+    end
+  end
+
+  @doc "POST /api/v1/accounts/:id/remove_from_followers"
+  def remove_from_followers(%{assigns: %{user: %{id: id}, account: %{id: id}}}, _params) do
+    {:error, "Can not unfollow yourself"}
+  end
+
+  def remove_from_followers(%{assigns: %{user: followed, account: follower}} = conn, _params) do
+    with {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
+      render(conn, "relationship.json", user: followed, target: follower)
+    else
+      nil ->
+        render_error(conn, :not_found, "Record not found")
+    end
+  end
+
   @doc "POST /api/v1/follows"
   def follow_by_uri(%{body_params: %{uri: uri}} = conn, _) do
     case User.get_cached_by_nickname(uri) do
@@ -461,7 +529,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       users: users,
       for: user,
       as: :user,
-      embed_relationships: embed_relationships?(params)
+      embed_relationships: embed_relationships?(params),
+      mutes: true
     )
   end
 
@@ -477,8 +546,33 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     |> render("index.json", users: users, for: user, as: :user)
   end
 
+  @doc "GET /api/v1/accounts/lookup"
+  def lookup(conn, %{acct: nickname} = _params) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      render(conn, "show.json",
+        user: user,
+        skip_visibility_check: true
+      )
+    else
+      error -> user_visibility_error(conn, error)
+    end
+  end
+
   @doc "GET /api/v1/endorsements"
-  def endorsements(conn, params), do: MastodonAPIController.empty_array(conn, params)
+  def endorsements(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.endorsed_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Repo.all()
+
+    conn
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
+  end
 
   @doc "GET /api/v1/identity_proofs"
   def identity_proofs(conn, params), do: MastodonAPIController.empty_array(conn, params)

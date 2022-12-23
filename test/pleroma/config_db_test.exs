@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ConfigDBTest do
@@ -16,13 +16,13 @@ defmodule Pleroma.ConfigDBTest do
 
   test "get_all_as_keyword/0" do
     saved = insert(:config)
-    insert(:config, group: ":quack", key: ":level", value: :info)
-    insert(:config, group: ":quack", key: ":meta", value: [:none])
+    insert(:config, group: ":goose", key: ":level", value: :info)
+    insert(:config, group: ":goose", key: ":meta", value: [:none])
 
     insert(:config,
-      group: ":quack",
+      group: ":goose",
       key: ":webhook_url",
-      value: "https://hooks.slack.com/services/KEY/some_val"
+      value: "https://gander.com/"
     )
 
     config = ConfigDB.get_all_as_keyword()
@@ -31,9 +31,9 @@ defmodule Pleroma.ConfigDBTest do
              {saved.key, saved.value}
            ]
 
-    assert config[:quack][:level] == :info
-    assert config[:quack][:meta] == [:none]
-    assert config[:quack][:webhook_url] == "https://hooks.slack.com/services/KEY/some_val"
+    assert config[:goose][:level] == :info
+    assert config[:goose][:meta] == [:none]
+    assert config[:goose][:webhook_url] == "https://gander.com/"
   end
 
   describe "update_or_create/1" do
@@ -238,10 +238,11 @@ defmodule Pleroma.ConfigDBTest do
     end
 
     test "ssl options" do
-      assert ConfigDB.to_elixir_types([":tlsv1", ":tlsv1.1", ":tlsv1.2"]) == [
+      assert ConfigDB.to_elixir_types([":tlsv1", ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]) == [
                :tlsv1,
                :"tlsv1.1",
-               :"tlsv1.2"
+               :"tlsv1.2",
+               :"tlsv1.3"
              ]
     end
 
@@ -264,10 +265,6 @@ defmodule Pleroma.ConfigDBTest do
 
     test "ExSyslogger module" do
       assert ConfigDB.to_elixir_types("ExSyslogger") == ExSyslogger
-    end
-
-    test "Quack.Logger module" do
-      assert ConfigDB.to_elixir_types("Quack.Logger") == Quack.Logger
     end
 
     test "Swoosh.Adapters modules" do

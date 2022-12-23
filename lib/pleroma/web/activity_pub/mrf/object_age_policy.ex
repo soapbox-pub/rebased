@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
@@ -131,7 +131,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
           type: {:list, :atom},
           description:
             "A list of actions to apply to the post. `:delist` removes the post from public timelines; " <>
-              "`:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines; " <>
+              "`:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message; " <>
               "`:reject` rejects the message entirely",
           suggestions: [:delist, :strip_followers, :reject]
         }

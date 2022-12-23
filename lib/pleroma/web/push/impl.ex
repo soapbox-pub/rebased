@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push.Impl do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
-  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact"]
+  @types ["Create", "Follow", "Announce", "Like", "Move", "EmojiReact", "Update"]
 
   @doc "Performs sending notifications for user subscriptions"
   @spec perform(Notification.t()) :: list(any) | :error | {:error, :unknown_type}
@@ -124,8 +124,8 @@ defmodule Pleroma.Web.Push.Impl do
 
   def format_body(activity, actor, object, mastodon_type \\ nil)
 
-  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage", "content" => content}}, _) do
-    case content do
+  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage"} = data}, _) do
+    case data["content"] do
       nil -> "@#{actor.nickname}: (Attachment)"
       content -> "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
     end
@@ -174,6 +174,15 @@ defmodule Pleroma.Web.Push.Impl do
     end
   end
 
+  def format_body(
+        %{activity: %{data: %{"type" => "Update"}}},
+        actor,
+        _object,
+        _mastodon_type
+      ) do
+    "@#{actor.nickname} edited a status"
+  end
+
   def format_title(activity, mastodon_type \\ nil)
 
   def format_title(%{activity: %{data: %{"directMessage" => true}}}, _mastodon_type) do
@@ -187,6 +196,7 @@ defmodule Pleroma.Web.Push.Impl do
       "follow_request" -> "New Follow Request"
       "reblog" -> "New Repeat"
       "favourite" -> "New Favorite"
+      "update" -> "New Update"
       "pleroma:chat_mention" -> "New Chat Message"
       "pleroma:emoji_reaction" -> "New Reaction"
       type -> "New #{String.capitalize(type || "event")}"

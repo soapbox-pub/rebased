@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Signature do
@@ -66,9 +66,8 @@ defmodule Pleroma.Signature do
     end
   end
 
-  def sign(%User{} = user, headers) do
-    with {:ok, %{keys: keys}} <- User.ensure_keys_present(user),
-         {:ok, private_key, _} <- Keys.keys_from_pem(keys) do
+  def sign(%User{keys: keys} = user, headers) do
+    with {:ok, private_key, _} <- Keys.keys_from_pem(keys) do
       HTTPSignatures.sign(private_key, user.ap_id <> "#main-key", headers)
     end
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Visibility do
@@ -84,7 +84,10 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       when module in [Activity, Object] do
     x = [user.ap_id | User.following(user)]
     y = [message.data["actor"]] ++ message.data["to"] ++ (message.data["cc"] || [])
-    is_public?(message) || Enum.any?(x, &(&1 in y))
+
+    user_is_local = user.local
+    federatable = not is_local_public?(message)
+    (is_public?(message) || Enum.any?(x, &(&1 in y))) and (user_is_local || federatable)
   end
 
   def entire_thread_visible_for_user?(%Activity{} = activity, %User{} = user) do

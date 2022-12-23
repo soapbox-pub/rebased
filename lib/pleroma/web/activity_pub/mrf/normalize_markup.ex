@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
@@ -9,7 +9,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
-  def filter(%{"type" => "Create", "object" => child_object} = object) do
+  def history_awareness, do: :auto
+
+  @impl true
+  def filter(%{"type" => type, "object" => child_object} = object)
+      when type in ["Create", "Update"] do
     scrub_policy = Pleroma.Config.get([:mrf_normalize_markup, :scrub_policy])
 
     content =

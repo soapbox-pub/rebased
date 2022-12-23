@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.TransferTask do
@@ -47,7 +47,7 @@ defmodule Pleroma.Config.TransferTask do
       {logger, other} =
         (Repo.all(ConfigDB) ++ deleted_settings)
         |> Enum.map(&merge_with_default/1)
-        |> Enum.split_with(fn {group, _, _, _} -> group in [:logger, :quack] end)
+        |> Enum.split_with(fn {group, _, _, _} -> group in [:logger] end)
 
       logger
       |> Enum.sort()
@@ -104,11 +104,6 @@ defmodule Pleroma.Config.TransferTask do
   end
 
   # change logger configuration in runtime, without restart
-  defp configure({:quack, key, _, merged}) do
-    Logger.configure_backend(Quack.Logger, [{key, merged}])
-    :ok = update_env(:quack, key, merged)
-  end
-
   defp configure({_, :backends, _, merged}) do
     # removing current backends
     Enum.each(Application.get_env(:logger, :backends), &Logger.remove_backend/1)
@@ -148,9 +143,7 @@ defmodule Pleroma.Config.TransferTask do
     rescue
       error ->
         error_msg =
-          "updating env causes error, group: #{inspect(group)}, key: #{inspect(key)}, value: #{
-            inspect(value)
-          } error: #{inspect(error)}"
+          "updating env causes error, group: #{inspect(group)}, key: #{inspect(key)}, value: #{inspect(value)} error: #{inspect(error)}"
 
         Logger.warn(error_msg)
 

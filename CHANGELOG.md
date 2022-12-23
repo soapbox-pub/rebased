@@ -14,6 +14,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+## 2.5.0 - 2022-12-23
+
+### Removed
+
+- MastoFE
+- Quack, the logging backend that pushes to Slack channels
+
+### Changed
+- **Breaking:** Elixir >=1.11 is now required (was >= 1.9)
+- Allow users to remove their emails if instance does not need email to register
+- Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
+- **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
+- Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
+- Set timeout values for Oban queues. The default is infinity and some operations may not time out on their own.
+- Delete activities are federated at lowest priority
+- CSP now includes wasm-unsafe-eval
+
+### Added
+- `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
+- Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
+- `ForceMentionsInPostContent` MRF policy
+- PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
+- MastoAPI: Add `GET /api/v1/accounts/lookup`
+- MastoAPI: Profile Directory support
+- MastoAPI: Support v2 Suggestions (handpicked accounts only)
+- Ability to log slow Ecto queries by configuring `:pleroma, :telemetry, :slow_queries_logging`
+- Added Phoenix LiveDashboard at `/phoenix/live_dashboard`
+- Added `/manifest.json` for progressive web apps.
+- MastoAPI: Support for `birthday` and `show_birthday` field in `/api/v1/accounts/update_credentials`.
+- Configuration: Add `birthday_required` and `birthday_min_age` settings to provide a way to require users to enter their birth date.
+- PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
+- Make backend-rendered pages translatable. This includes emails. Pages returned as a HTTP response are translated using the language specified in the `userLanguage` cookie, or the `Accept-Language` header. Emails are translated using the `language` field when registering. This language can be changed by `PATCH /api/v1/accounts/update_credentials` with the `language` field.
+- Add fine grained options to provide privileges to moderators and admins (e.g. delete messages, manage reports...)
+- Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
+- Added move account API
+- Enable remote users to interact with posts
+- Possibility to discover users like `user@example.org`, while Pleroma is working on `pleroma.example.org`. Additional configuration required.
+
+### Fixed
+- Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
+- Handle Reject for already-accepted Follows properly
+- Display OpenGraph data on alternative notice routes.
+- Fix replies count for remote replies
+- Fixed hashtags disappearing from the end of lines when Markdown is enabled
+- ChatAPI: Add link headers
+- Limited number of search results to 40 to prevent DoS attacks
+- ActivityPub: fixed federation of attachment dimensions
+- Fixed benchmarks
+- Elixir 1.13 support
+- Fixed crash when pinned_objects is nil
+- Fixed slow timelines when there are a lot of deactivated users
+- Fixed account deletion API
+- Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
+- Removed useless notification call on Delete activities
+- Improved performance for filtering out deactivated and invisible users
+- RSS and Atom feeds for users work again
+- TwitterCard meta tags conformance
+
 ## 2.4.5 - 2022-11-27
 
 ## Fixed
@@ -74,6 +132,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - **Breaking:** Configuration: `:chat, enabled` moved to `:shout, enabled` and `:instance, chat_limit` moved to `:shout, limit`
+- **Breaking** Entries for simple_policy, transparency_exclusions and quarantined_instances now list both the instance and a reason.
 - Support for Erlang/OTP 24
 - The `application` metadata returned with statuses is no longer hardcoded. Apps that want to display these details will now have valid data for new posts after this change.
 - HTTPSecurityPlug now sends a response header to opt out of Google's FLoC (Federated Learning of Cohorts) targeted advertising.
@@ -81,14 +140,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
 - AdminAPI: sort users so the newest are at the top.
 - ActivityPub Client-to-Server(C2S): Limitation on the type of Activity/Object are lifted as they are now passed through ObjectValidators
+- MRF (`AntiFollowbotPolicy`): Bot accounts are now also considered followbots. Users can still allow bots to follow them by first following the bot.
 
 ### Added
 
 - MRF (`FollowBotPolicy`): New MRF Policy which makes a designated local Bot account attempt to follow all users in public Notes received by your instance. Users who require approving follower requests or have #nobot in their profile are excluded.
 - Return OAuth token `id` (primary key) in POST `/oauth/token`.
 - AdminAPI: return `created_at` date with users.
+- AdminAPI: add DELETE `/api/v1/pleroma/admin/instances/:instance` to delete all content from a remote instance.
 - `AnalyzeMetadata` upload filter for extracting image/video attachment dimensions and generating blurhashes for images. Blurhashes for videos are not generated at this time.
 - Attachment dimensions and blurhashes are federated when available.
+- Mastodon API: support `poll` notification.
 - Pinned posts federation
 
 ### Fixed
@@ -96,6 +158,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Checking activated Upload Filters for required commands.
 - Remote users can no longer reappear after being deleted.
 - Deactivated users may now be deleted.
+- Deleting an activity with a lot of likes/boosts no longer causes a database timeout.
 - Mix task `pleroma.database prune_objects`
 - Fixed rendering of JSON errors on ActivityPub endpoints.
 - Linkify: Parsing crash with URLs ending in unbalanced closed paren, no path separator, and no query parameters
@@ -160,6 +223,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support pagination of blocks and mutes.
 - Account backup.
 - Configuration: Add `:instance, autofollowing_nicknames` setting to provide a way to make accounts automatically follow new users that register on the local Pleroma instance.
+- `[:activitypub, :blockers_visible]` config to control visibility of blockers.
 - Ability to view remote timelines, with ex. `/api/v1/timelines/public?instance=lain.com` and streams `public:remote` and `public:remote:media`.
 - The site title is now injected as a `title` tag like preloads or metadata.
 - Password reset tokens now are not accepted after a certain age.

@@ -1,5 +1,5 @@
 <div class="scopes-input">
-  <%= label @form, :scope, "The following permissions will be granted" %>
+  <%= label @form, :scope, Gettext.dpgettext("static_pages", "oauth scopes message", "The following permissions will be granted") %>
   <div class="scopes">
     <%= for scope <- @available_scopes do %>
       <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>

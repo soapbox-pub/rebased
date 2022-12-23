@@ -62,6 +62,7 @@ if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
 else
   IO.puts(
+    :stderr,
     "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
   )
 end

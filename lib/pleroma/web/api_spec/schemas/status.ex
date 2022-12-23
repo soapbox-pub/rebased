@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Status do
@@ -73,6 +73,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         format: "date-time",
         description: "The date when this status was created"
       },
+      edited_at: %Schema{
+        type: :string,
+        format: "date-time",
+        nullable: true,
+        description: "The date when this status was last edited"
+      },
       emojis: %Schema{
         type: :array,
         items: Emoji,
@@ -142,9 +148,15 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             description:
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
           },
+          context: %Schema{
+            type: :string,
+            description: "The thread identifier the status is associated with"
+          },
           conversation_id: %Schema{
             type: :integer,
-            description: "The ID of the AP context the status is associated with (if any)"
+            deprecated: true,
+            description:
+              "The ID of the AP context the status is associated with (if any); deprecated, please use `context` instead"
           },
           direct_conversation_id: %Schema{
             type: :integer,
@@ -282,9 +294,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             "id" => "9toJCsKN7SmSf3aj5c",
             "muting" => false,
             "muting_notifications" => false,
+            "note" => "",
             "requested" => false,
             "showing_reblogs" => true,
-            "subscribing" => false
+            "subscribing" => false,
+            "notifying" => false
           },
           "skip_thread_containment" => false,
           "tags" => []
@@ -317,6 +331,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       "pinned" => false,
       "pleroma" => %{
         "content" => %{"text/plain" => "foobar"},
+        "context" => "http://localhost:4001/objects/8b4c0c80-6a37-4d2a-b1b9-05a19e3875aa",
         "conversation_id" => 345_972,
         "direct_conversation_id" => nil,
         "emoji_reactions" => [],

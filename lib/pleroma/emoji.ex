@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emoji do
@@ -9,6 +9,7 @@ defmodule Pleroma.Emoji do
   """
   use GenServer
 
+  alias Pleroma.Emoji.Combinations
   alias Pleroma.Emoji.Loader
 
   require Logger
@@ -137,4 +138,17 @@ defmodule Pleroma.Emoji do
   end
 
   def is_unicode_emoji?(_), do: false
+
+  emoji_qualification_map =
+    emojis
+    |> Enum.filter(&String.contains?(&1, "\uFE0F"))
+    |> Combinations.variate_emoji_qualification()
+
+  for {qualified, unqualified_list} <- emoji_qualification_map do
+    for unqualified <- unqualified_list do
+      def fully_qualify_emoji(unquote(unqualified)), do: unquote(qualified)
+    end
+  end
+
+  def fully_qualify_emoji(emoji), do: emoji
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.UserControllerTest do
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert activity_titles == ['2hu', '2hu & as']
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['This &amp; t...']
+      assert activity_titles == ['2hu & as']
     end
 
     test "gets a rss feed", %{conn: conn, user: user, object: object, max_id: max_id} do
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert activity_titles == ['2hu', '2hu & as']
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['This &amp; t...']
+      assert activity_titles == ['2hu & as']
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do
@@ -196,13 +196,26 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
                ).resp_body
     end
 
-    test "with html format, it returns error when user is not found", %{conn: conn} do
+    test "with html format, it falls back to frontend when user is remote", %{conn: conn} do
+      user = insert(:user, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      response =
+        conn
+        |> get("/users/#{user.nickname}")
+        |> response(200)
+
+      assert response =~ "</html>"
+    end
+
+    test "with html format, it falls back to frontend when user is not found", %{conn: conn} do
       response =
         conn
         |> get("/users/jimm")
-        |> json_response(404)
+        |> response(200)
 
-      assert response == %{"error" => "Not found"}
+      assert response =~ "</html>"
     end
 
     test "with non-html / non-json format, it redirects to user feed in atom format", %{

@@ -1,10 +1,11 @@
-image: elixir:1.9.4
+image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
+  DB_PORT: 5432
   MIX_ENV: test
 
 cache: &global_cache_policy
@@ -26,12 +27,7 @@ stages:
 before_script:
   - echo $MIX_ENV
   - rm -rf _build/*/lib/pleroma
-  - apt-get update && apt-get install -y cmake
-  - mix local.hex --force
-  - mix local.rebar --force
   - mix deps.get
-  - apt-get -qq update
-  - apt-get install -y libmagic-dev
 
 after_script:
   - rm -rf _build/*/lib/pleroma
@@ -39,7 +35,8 @@ after_script:
 build:
   stage: build
   only:
-    changes:
+    changes: &build_changes_policy
+      - ".gitlab-ci.yml"
       - "**/*.ex"
       - "**/*.exs"
       - "mix.lock"
@@ -50,6 +47,7 @@ spec-build:
   stage: test
   only:
     changes:
+      - ".gitlab-ci.yml"
       - "lib/pleroma/web/api_spec/**/*.ex"
       - "lib/pleroma/web/api_spec.ex"
   artifacts:
@@ -64,7 +62,7 @@ benchmark:
   variables:
     MIX_ENV: benchmark
   services:
-  - name: postgres:9.6
+  - name: postgres:9.6-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -75,24 +73,44 @@ benchmark:
 unit-testing:
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
-  retry: 2
+    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
 
   services:
-  - name: postgres:13
+  - name: postgres:13-alpine
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
-    - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
     - mix ecto.create
     - mix ecto.migrate
-    - mix coveralls --preload-modules
+    - mix test --cover --preload-modules
+  coverage: '/^Line total: ([^ ]*%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+unit-testing-erratic:
+  stage: test
+  retry: 2
+  allow_failure: true
+  only:
+    changes: *build_changes_policy
+  cache: &testing_cache_policy
+    <<: *global_cache_policy
+    policy: pull
+
+  services:
+  - name: postgres:13-alpine
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix test --only=erratic
 
 # Removed to fix CI issue. In this early state it wasn't adding much value anyway.
 # TODO Fix and reinstate federated testing
@@ -113,11 +131,7 @@ unit-testing:
 unit-testing-rum:
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
-  retry: 2
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   services:
   - name: minibikini/postgres-with-rum:12
@@ -127,45 +141,42 @@ unit-testing-rum:
     <<: *global_variables
     RUM_ENABLED: "true"
   script:
-    - apt-get update && apt-get install -y libimage-exiftool-perl ffmpeg
     - mix ecto.create
     - mix ecto.migrate
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
     - mix test --preload-modules
 
 lint:
+  image: &current_elixir elixir:1.12-alpine
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
+  before_script: &current_bfr_script
+    - apk update
+    - apk add build-base cmake file-dev git openssl
+    - mix local.hex --force
+    - mix local.rebar --force
+    - mix deps.get
   script:
     - mix format --check-formatted
 
 analysis:
   stage: test
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: *testing_cache_policy
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
+  image: *current_elixir
   stage: test
-  image: elixir:1.11
   only:
-    changes:
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
+    changes: *build_changes_policy
   cache: {}
+  before_script: *current_bfr_script
   script:
-    - mix deps.get
     - mix compile
     - mix xref graph --format cycles --label compile | awk '{print $0} END{exit ($0 != "No cycles found")}'
 
@@ -243,12 +254,14 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:1.10.4
+  image: elixir:1.11.4
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
   - /^maint/.*$/@pleroma/pleroma
   - /^release/.*$/@pleroma/pleroma
+  tags:
+    - amd64
   artifacts: &release-artifacts
     name: "pleroma-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
     paths:
@@ -267,7 +280,7 @@ amd64:
     MIX_ENV: prod
   before_script: &before-release
   - apt-get update && apt-get install -y cmake libmagic-dev
-  - echo "import Mix.Config" > config/prod.secret.exs
+  - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
   script: &release
@@ -281,12 +294,14 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.10.4-alpine
+  image: elixir:1.11.4-alpine
+  tags:
+    - amd64
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git gcc g++ musl-dev make cmake file-dev
-  - echo "import Mix.Config" > config/prod.secret.exs
+  - apk add git build-base cmake file-dev openssl
+  - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
   script: *release
@@ -297,7 +312,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.4
+  image: arm32v7/elixir:1.11.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -309,7 +324,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.10.4-alpine
+  image: arm32v7/elixir:1.11.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -321,7 +336,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.4
+  image: arm64v8/elixir:1.11.4
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -333,7 +348,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.10.4-alpine
+  image: arm64v8/elixir:1.11.4-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -351,8 +366,8 @@ docker:
     IMAGE_TAG_SLUG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
     IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
     IMAGE_TAG_LATEST_STABLE: $CI_REGISTRY_IMAGE:latest-stable
-    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.4.1/buildx-v0.4.1.linux-amd64
-    DOCKER_BUILDX_HASH: 71a7d01439aa8c165a25b59c44d3f016fddbd98b
+    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.6.3/buildx-v0.6.3.linux-amd64
+    DOCKER_BUILDX_HASH: 980e6b9655f971991fbbb5fd6cd19f1672386195
   before_script: &before-docker
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $IMAGE_TAG_SLUG || true

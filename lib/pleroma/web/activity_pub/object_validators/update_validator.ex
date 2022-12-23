@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator do
@@ -13,11 +13,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+      end
+    end
+
     field(:actor, ObjectValidators.ObjectID)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
     # In this case, we save the full object in this activity instead of just a
     # reference, so we can always see what was actually changed by this.
     field(:object, :map)
@@ -48,7 +51,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator do
     with actor = get_field(cng, :actor),
          object = get_field(cng, :object),
          {:ok, object_id} <- ObjectValidators.ObjectID.cast(object),
-         true <- actor == object_id do
+         actor_uri <- URI.parse(actor),
+         object_uri <- URI.parse(object_id),
+         true <- actor_uri.host == object_uri.host do
       cng
     else
       _e ->

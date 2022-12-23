@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 # NOTES
@@ -17,11 +17,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   @primary_key false
 
   embedded_schema do
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        activity_fields()
+      end
+    end
+
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:actor, ObjectValidators.ObjectID)
     field(:type, :string)
     field(:to, ObjectValidators.Recipients, default: [])
-    field(:object, ObjectValidators.ObjectID)
   end
 
   def cast_and_apply(data) do

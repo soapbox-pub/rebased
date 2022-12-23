@@ -497,6 +497,27 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :delete_context_objects,
+    type: :group,
+    description: "`delete_context_objects` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
@@ -537,6 +558,15 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :short_description,
+        type: :string,
+        description:
+          "Shorter version of instance description. It can be seen on `/api/v1/instance`",
+        suggestions: [
+          "Cool instance"
+        ]
+      },
+      %{
         key: :limit,
         type: :integer,
         description: "Posts character limit (CW/Subject included in the counter)",
@@ -550,6 +580,14 @@ config :pleroma, :config_description, [
         description: "Hard character limit beyond which remote posts will be dropped",
         suggestions: [
           100_000
+        ]
+      },
+      %{
+        key: :max_media_attachments,
+        type: :integer,
+        description: "Maximum number of post media attachments",
+        suggestions: [
+          1_000_000
         ]
       },
       %{
@@ -687,12 +725,14 @@ config :pleroma, :config_description, [
       },
       %{
         key: :quarantined_instances,
-        type: {:list, :string},
+        type: {:list, :tuple},
+        key_placeholder: "instance",
+        value_placeholder: "reason",
         description:
-          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent",
+          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent and the reason for doing so",
         suggestions: [
-          "quarantined.com",
-          "*.quarantined.com"
+          {"quarantined.com", "Reason"},
+          {"*.quarantined.com", "Reason"}
         ]
       },
       %{
@@ -741,6 +781,16 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :max_endorsed_users,
+        type: :integer,
+        description: "The maximum number of recommended accounts. 0 will disable the feature.",
+        suggestions: [
+          0,
+          1,
+          3
+        ]
+      },
+      %{
         key: :autofollowed_nicknames,
         type: {:list, :string},
         description:
@@ -764,6 +814,13 @@ config :pleroma, :config_description, [
         suggestions: [
           1_000
         ]
+      },
+      %{
+        key: :report_strip_status,
+        label: "Report strip status",
+        type: :boolean,
+        description:
+          "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
       },
       %{
         key: :safe_dm_mentions,
@@ -934,6 +991,67 @@ config :pleroma, :config_description, [
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
+      },
+      %{
+        key: :profile_directory,
+        type: :boolean,
+        description: "Enable profile directory."
+      },
+      %{
+        key: :admin_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
+        description:
+          "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+      },
+      %{
+        key: :moderator_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
+        description:
+          "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+      },
+      %{
+        key: :birthday_required,
+        type: :boolean,
+        description: "Require users to enter their birthday."
+      },
+      %{
+        key: :birthday_min_age,
+        type: :integer,
+        description:
+          "Minimum required age (in days) for users to create account. Only used if birthday is required.",
+        suggestions: [6570]
       }
     ]
   },
@@ -1118,51 +1236,12 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :quack,
-    type: :group,
-    label: "Quack Logger",
-    description: "Quack-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :meta,
-        type: {:list, :atom},
-        description: "Configure which metadata you want to report on",
-        suggestions: [
-          :application,
-          :module,
-          :file,
-          :function,
-          :line,
-          :pid,
-          :crash_reason,
-          :initial_call,
-          :registered_name,
-          :all,
-          :none
-        ]
-      },
-      %{
-        key: :webhook_url,
-        label: "Webhook URL",
-        type: :string,
-        description: "Configure the Slack incoming webhook",
-        suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
-      }
-    ]
-  },
-  %{
     group: :pleroma,
     key: :frontend_configurations,
     type: :group,
     description:
       "This form can be used to configure a keyword list that keeps the configuration data for any " <>
-        "kind of frontend. By default, settings for pleroma_fe and masto_fe are configured. If you want to " <>
+        "kind of frontend. By default, settings for pleroma_fe are configured. If you want to " <>
         "add your own configuration your settings all fields must be complete.",
     children: [
       %{
@@ -1360,25 +1439,6 @@ config :pleroma, :config_description, [
             type: :string,
             description: "Which theme to use. Available themes are defined in styles.json",
             suggestions: ["pleroma-dark"]
-          }
-        ]
-      },
-      %{
-        key: :masto_fe,
-        label: "Masto FE",
-        type: :map,
-        description: "Settings for Masto FE",
-        suggestions: [
-          %{
-            showInstanceSpecificPanel: true
-          }
-        ],
-        children: [
-          %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
-            type: :boolean,
-            description: "Whenether to show the instance's specific panel"
           }
         ]
       }
@@ -1688,9 +1748,19 @@ config :pleroma, :config_description, [
         description: "Whether to federate blocks to other instances"
       },
       %{
+        key: :blockers_visible,
+        type: :boolean,
+        description: "Whether a user can see someone who has blocked them"
+      },
+      %{
         key: :sign_object_fetches,
         type: :boolean,
         description: "Sign object fetches with HTTP signatures"
+      },
+      %{
+        key: :authorized_fetch_mode,
+        type: :boolean,
+        description: "Require HTTP signatures for AP fetches"
       },
       %{
         key: :note_replies_output_limit,
@@ -2698,7 +2768,7 @@ config :pleroma, :config_description, [
                 key: :versions,
                 type: {:list, :atom},
                 description: "List of TLS version to use",
-                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
+                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]
               }
             ]
           }

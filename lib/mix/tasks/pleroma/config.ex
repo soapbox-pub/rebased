@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Config do
@@ -286,9 +286,7 @@ defmodule Mix.Tasks.Pleroma.Config do
         file = File.open!(tmp_config_path)
 
         shell_info(
-          "Saving database configuration settings to #{tmp_config_path}. Copy it to the #{
-            Path.dirname(config_path)
-          } manually."
+          "Saving database configuration settings to #{tmp_config_path}. Copy it to the #{Path.dirname(config_path)} manually."
         )
 
         write_config(file, tmp_config_path, opts)
@@ -306,13 +304,8 @@ defmodule Mix.Tasks.Pleroma.Config do
     System.cmd("mix", ["format", path])
   end
 
-  if Code.ensure_loaded?(Config.Reader) do
-    defp config_header, do: "import Config\r\n\r\n"
-    defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
-  else
-    defp config_header, do: "use Mix.Config\r\n\r\n"
-    defp read_file(config_file), do: Mix.Config.eval!(config_file)
-  end
+  defp config_header, do: "import Config\r\n\r\n"
+  defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
 
   defp write_and_delete(config, file, delete?) do
     config

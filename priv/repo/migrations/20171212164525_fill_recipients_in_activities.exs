@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Repo.Migrations.FillRecipientsInActivities do
   use Ecto.Migration
   alias Pleroma.{Repo, Activity}
@@ -14,9 +18,7 @@ defmodule Pleroma.Repo.Migrations.FillRecipientsInActivities do
         max = min + 10_000
 
         execute("""
-        update activities set recipients = array(select jsonb_array_elements_text(data->'to')) where id > #{
-          min
-        } and id <= #{max};
+        update activities set recipients = array(select jsonb_array_elements_text(data->'to')) where id > #{min} and id <= #{max};
         """)
         |> IO.inspect()
       end)

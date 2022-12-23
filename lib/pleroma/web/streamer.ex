@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Streamer do
@@ -295,6 +295,24 @@ defmodule Pleroma.Web.Streamer do
   end
 
   defp push_to_socket(_topic, %Activity{data: %{"type" => "Delete"}}), do: :noop
+
+  defp push_to_socket(topic, %Activity{data: %{"type" => "Update"}} = item) do
+    create_activity =
+      Pleroma.Activity.get_create_by_object_ap_id(item.object.data["id"])
+      |> Map.put(:object, item.object)
+
+    anon_render = StreamerView.render("status_update.json", create_activity)
+
+    Registry.dispatch(@registry, topic, fn list ->
+      Enum.each(list, fn {pid, auth?} ->
+        if auth? do
+          send(pid, {:render_with_user, StreamerView, "status_update.json", create_activity})
+        else
+          send(pid, {:text, anon_render})
+        end
+      end)
+    end)
+  end
 
   defp push_to_socket(topic, item) do
     anon_render = StreamerView.render("update.json", item)

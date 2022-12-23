@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AccountView do
@@ -80,6 +80,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "tags" => user.tags || [],
       "is_confirmed" => user.is_confirmed,
       "is_approved" => user.is_approved,
+      "is_suggested" => user.is_suggested,
       "url" => user.uri || user.ap_id,
       "registration_reason" => user.registration_reason,
       "actor_type" => user.actor_type,

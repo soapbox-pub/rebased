@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF do
@@ -33,9 +33,11 @@ defmodule Pleroma.Web.ActivityPub.MRF do
         %{
           key: :transparency_exclusions,
           label: "MRF transparency exclusions",
-          type: {:list, :string},
+          type: {:list, :tuple},
+          key_placeholder: "instance",
+          value_placeholder: "reason",
           description:
-            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+            "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value. You can also provide a reason for excluding these instance names. The instances and reasons won't be publicly disclosed.",
           suggestions: [
             "exclusion.com"
           ]
@@ -51,10 +53,53 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @required_description_keys [:key, :related_policy]
 
+  def filter_one(policy, message) do
+    should_plug_history? =
+      if function_exported?(policy, :history_awareness, 0) do
+        policy.history_awareness()
+      else
+        :manual
+      end
+      |> Kernel.==(:auto)
+
+    if not should_plug_history? do
+      policy.filter(message)
+    else
+      main_result = policy.filter(message)
+
+      with {_, {:ok, main_message}} <- {:main, main_result},
+           {_,
+            %{
+              "formerRepresentations" => %{
+                "orderedItems" => [_ | _]
+              }
+            }} = {_, object} <- {:object, message["object"]},
+           {_, {:ok, new_history}} <-
+             {:history,
+              Pleroma.Object.Updater.for_each_history_item(
+                object["formerRepresentations"],
+                object,
+                fn item ->
+                  with {:ok, filtered} <- policy.filter(Map.put(message, "object", item)) do
+                    {:ok, filtered["object"]}
+                  else
+                    e -> e
+                  end
+                end
+              )} do
+        {:ok, put_in(main_message, ["object", "formerRepresentations"], new_history)}
+      else
+        {:main, _} -> main_result
+        {:object, _} -> main_result
+        {:history, e} -> e
+      end
+    end
+  end
+
   def filter(policies, %{} = message) do
     policies
     |> Enum.reduce({:ok, message}, fn
-      policy, {:ok, message} -> policy.filter(message)
+      policy, {:ok, message} -> filter_one(policy, message)
       _, error -> error
     end)
   end
@@ -98,6 +143,11 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   @spec subdomain_match?([Regex.t()], String.t()) :: boolean()
   def subdomain_match?(domains, host) do
     Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
+  end
+
+  @spec instance_list_from_tuples([{String.t(), String.t()}]) :: [String.t()]
+  def instance_list_from_tuples(list) do
+    Enum.map(list, fn {instance, _} -> instance end)
   end
 
   def describe(policies) do
@@ -150,9 +200,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
           [description | acc]
         else
           Logger.warn(
-            "#{policy} config description doesn't have one or all required keys #{
-              inspect(@required_description_keys)
-            }"
+            "#{policy} config description doesn't have one or all required keys #{inspect(@required_description_keys)}"
           )
 
           acc

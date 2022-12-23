@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
 
   @primary_key false
   embedded_schema do
+    field(:id, :string)
     field(:type, :string)
     field(:mediaType, ObjectValidators.MIME, default: "application/octet-stream")
     field(:name, :string)
@@ -43,10 +44,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       |> fix_url()
 
     struct
-    |> cast(data, [:type, :mediaType, :name, :blurhash])
-    |> cast_embed(:url, with: &url_changeset/2)
+    |> cast(data, [:id, :type, :mediaType, :name, :blurhash])
+    |> cast_embed(:url, with: &url_changeset/2, required: true)
     |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
-    |> validate_required([:type, :mediaType, :url])
+    |> validate_required([:type, :mediaType])
   end
 
   def url_changeset(struct, data) do
@@ -59,15 +60,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   end
 
   def fix_media_type(data) do
-    Map.put_new(data, "mediaType", data["mimeType"])
+    Map.put_new(data, "mediaType", data["mimeType"] || "application/octet-stream")
   end
 
-  defp handle_href(href, mediaType) do
+  defp handle_href(href, mediaType, data) do
     [
       %{
         "href" => href,
         "type" => "Link",
-        "mediaType" => mediaType
+        "mediaType" => mediaType,
+        "width" => data["width"],
+        "height" => data["height"]
       }
     ]
   end
@@ -75,10 +78,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   defp fix_url(data) do
     cond do
       is_binary(data["url"]) ->
-        Map.put(data, "url", handle_href(data["url"], data["mediaType"]))
+        Map.put(data, "url", handle_href(data["url"], data["mediaType"], data))
 
       is_binary(data["href"]) and data["url"] == nil ->
-        Map.put(data, "url", handle_href(data["href"], data["mediaType"]))
+        Map.put(data, "url", handle_href(data["href"], data["mediaType"], data))
 
       true ->
         data
@@ -88,6 +91,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   defp validate_data(cng) do
     cng
     |> validate_inclusion(:type, ~w[Document Audio Image Video])
-    |> validate_required([:mediaType, :url, :type])
+    |> validate_required([:mediaType, :type])
   end
 end

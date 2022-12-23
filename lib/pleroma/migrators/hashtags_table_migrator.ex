@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Migrators.HashtagsTableMigrator do
@@ -183,7 +183,7 @@ defmodule Pleroma.Migrators.HashtagsTableMigrator do
     DELETE FROM hashtags_objects WHERE object_id IN
       (SELECT DISTINCT objects.id FROM objects
         JOIN hashtags_objects ON hashtags_objects.object_id = objects.id LEFT JOIN activities
-          ON COALESCE(activities.data->'object'->>'id', activities.data->>'object') =
+          ON associated_object_id(activities) =
             (objects.data->>'id')
           AND activities.data->>'type' = 'Create'
         WHERE activities.id IS NULL);

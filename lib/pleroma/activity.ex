@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity do
@@ -53,7 +53,7 @@ defmodule Pleroma.Activity do
     #
     # ```
     # |> join(:inner, [activity], o in Object,
-    #      on: fragment("(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
+    #      on: fragment("(?->>'id') = associated_object_id((?))",
     #        o.data, activity.data, activity.data))
     # |> preload([activity, object], [object: object])
     # ```
@@ -69,9 +69,8 @@ defmodule Pleroma.Activity do
     join(query, join_type, [activity], o in Object,
       on:
         fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
+          "(?->>'id') = associated_object_id(?)",
           o.data,
-          activity.data,
           activity.data
         ),
       as: :object
@@ -302,7 +301,7 @@ defmodule Pleroma.Activity do
     |> Queries.by_object_id()
     |> Queries.exclude_type("Delete")
     |> select([u], u)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: :infinity)
     |> elem(1)
     |> Enum.find(fn
       %{data: %{"type" => "Create", "object" => ap_id}} when is_binary(ap_id) -> ap_id == id
@@ -362,11 +361,11 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
-    deactivated_users =
-      from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
-      |> Repo.all()
-
-    Activity.Queries.exclude_authors(query, deactivated_users)
+    query
+    |> join(:inner, [activity], user in User,
+      as: :user,
+      on: activity.actor == user.ap_id and user.is_active == true
+    )
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search

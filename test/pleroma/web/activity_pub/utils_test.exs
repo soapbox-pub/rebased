@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UtilsTest do
@@ -213,6 +213,20 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert refresh_record(follow_activity).data["state"] == "accept"
       assert refresh_record(follow_activity_two).data["state"] == "accept"
     end
+
+    test "also updates the state of accepted follows" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+
+      {:ok, follow_activity_two} =
+        Utils.update_follow_state_for_all(follow_activity_two, "reject")
+
+      assert refresh_record(follow_activity).data["state"] == "reject"
+      assert refresh_record(follow_activity_two).data["state"] == "reject"
+    end
   end
 
   describe "update_follow_state/2" do
@@ -415,7 +429,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       object = Object.normalize(note_activity, fetch: false)
       res = Utils.lazy_put_activity_defaults(%{"context" => object.data["id"]})
       assert res["context"] == object.data["id"]
-      assert res["context_id"] == object.id
       assert res["id"]
       assert res["published"]
     end
@@ -423,7 +436,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "returns map with fake id and published data" do
       assert %{
                "context" => "pleroma:fakecontext",
-               "context_id" => -1,
                "id" => "pleroma:fakeid",
                "published" => _
              } = Utils.lazy_put_activity_defaults(%{}, true)
@@ -440,13 +452,11 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         })
 
       assert res["context"] == object.data["id"]
-      assert res["context_id"] == object.id
       assert res["id"]
       assert res["published"]
       assert res["object"]["id"]
       assert res["object"]["published"]
       assert res["object"]["context"] == object.data["id"]
-      assert res["object"]["context_id"] == object.id
     end
   end
 
@@ -463,7 +473,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       content = "foobar"
 
       target_ap_id = target_account.ap_id
-      activity_ap_id = activity.data["id"]
+      object_ap_id = activity.object.data["id"]
 
       res =
         Utils.make_flag_data(
@@ -479,11 +489,54 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => object_ap_id,
         "content" => content,
         "published" => activity.object.data["published"],
         "actor" =>
           AccountView.render("show.json", %{user: target_account, skip_visibility_check: true})
+      }
+
+      assert %{
+               "type" => "Flag",
+               "content" => ^content,
+               "context" => ^context,
+               "object" => [^target_ap_id, ^note_obj],
+               "state" => "open"
+             } = res
+    end
+
+    test "returns map with Flag object with a non-Create Activity" do
+      reporter = insert(:user)
+      posting_account = insert(:user)
+      target_account = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(posting_account, %{status: "foobar"})
+      {:ok, like} = CommonAPI.favorite(target_account, activity.id)
+      context = Utils.generate_context_id()
+      content = "foobar"
+
+      target_ap_id = target_account.ap_id
+      object_ap_id = activity.object.data["id"]
+
+      res =
+        Utils.make_flag_data(
+          %{
+            actor: reporter,
+            context: context,
+            account: target_account,
+            statuses: [%{"id" => like.data["id"]}],
+            content: content
+          },
+          %{}
+        )
+
+      note_obj = %{
+        "type" => "Note",
+        "id" => object_ap_id,
+        "content" => content,
+        "published" => activity.object.data["published"],
+        "actor" =>
+          AccountView.render("show.json", %{user: posting_account, skip_visibility_check: true})
       }
 
       assert %{

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SearchController do
@@ -16,6 +16,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   alias Pleroma.Web.Plugs.RateLimiter
 
   require Logger
+
+  @search_limit 40
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -77,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     [
       resolve: params[:resolve],
       following: params[:following],
-      limit: params[:limit],
+      limit: min(params[:limit], @search_limit),
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),

@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -117,7 +118,8 @@ defmodule Pleroma.Web.CommonAPI do
   def unfollow(follower, unfollowed) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
-         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed) do
+         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed),
+         {:ok, _endorsement} <- User.unendorse(follower, unfollowed) do
       {:ok, follower}
     end
   end
@@ -143,9 +145,24 @@ defmodule Pleroma.Web.CommonAPI do
            {:find_activity, Activity.get_by_id(activity_id)},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
-         true <- User.superuser?(user) || user.ap_id == object.data["actor"],
+         true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
+      if User.privileged?(user, :messages_delete) and user.ap_id != object.data["actor"] do
+        action =
+          if object.data["type"] == "ChatMessage" do
+            "chat_message_delete"
+          else
+            "status_delete"
+          end
+
+        ModerationLog.insert_log(%{
+          action: action,
+          actor: user,
+          subject_id: activity_id
+        })
+      end
+
       {:ok, delete}
     else
       {:find_activity, _} ->
@@ -401,6 +418,41 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def update(user, orig_activity, changes) do
+    with orig_object <- Object.normalize(orig_activity),
+         {:ok, new_object} <- make_update_data(user, orig_object, changes),
+         {:ok, update_data, _} <- Builder.update(user, new_object),
+         {:ok, update, _} <- Pipeline.common_pipeline(update_data, local: true) do
+      {:ok, update}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp make_update_data(user, orig_object, changes) do
+    kept_params = %{
+      visibility: Visibility.get_visibility(orig_object),
+      in_reply_to_id:
+        with replied_id when is_binary(replied_id) <- orig_object.data["inReplyTo"],
+             %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(replied_id) do
+          activity_id
+        else
+          _ -> nil
+        end
+    }
+
+    params = Map.merge(changes, kept_params)
+
+    with {:ok, draft} <- ActivityDraft.create(user, params) do
+      change =
+        Object.Updater.make_update_object_data(orig_object.data, draft.object, Utils.make_date())
+
+      {:ok, change}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
   @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def pin(id, %User{} = user) do
     with %Activity{} = activity <- create_activity_by_id(id),
@@ -487,9 +539,7 @@ defmodule Pleroma.Web.CommonAPI do
     else
       {what, result} = error ->
         Logger.warn(
-          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{
-            activity_id
-          }"
+          "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
         {:error, error}

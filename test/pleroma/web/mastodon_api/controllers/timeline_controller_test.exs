@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
@@ -273,6 +273,24 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       [%{"id" => ^reply_from_me}, %{"id" => ^activity_id}] = response
     end
 
+    test "doesn't return posts from users who blocked you when :blockers_visible is disabled" do
+      clear_config([:activitypub, :blockers_visible], false)
+
+      %{conn: conn, user: blockee} = oauth_access(["read:statuses"])
+      blocker = insert(:user)
+      {:ok, _} = User.block(blocker, blockee)
+
+      conn = assign(conn, :user, blockee)
+
+      {:ok, _} = CommonAPI.post(blocker, %{status: "hey!"})
+
+      response =
+        get(conn, "/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert length(response) == 0
+    end
+
     test "doesn't return replies if follow is posting with users from blocked domain" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)
@@ -348,6 +366,47 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                  }
                }
              ] = result
+    end
+
+    test "should return local-only posts for authenticated users" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, %{id: id}} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^id}] = result
+    end
+
+    test "should not return local-only posts for users without read:statuses" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access([])
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
+    end
+
+    test "should not return local-only posts for anonymous users" do
+      user = insert(:user)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
     end
   end
 

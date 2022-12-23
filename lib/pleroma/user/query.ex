@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Query do
@@ -29,6 +29,7 @@ defmodule Pleroma.User.Query do
   import Ecto.Query
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
+  alias Pleroma.Config
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
 
@@ -46,7 +47,10 @@ defmodule Pleroma.User.Query do
             unconfirmed: boolean(),
             is_admin: boolean(),
             is_moderator: boolean(),
+            is_suggested: boolean(),
+            is_discoverable: boolean(),
             super_users: boolean(),
+            is_privileged: atom(),
             invisible: boolean(),
             internal: boolean(),
             followers: User.t(),
@@ -57,7 +61,9 @@ defmodule Pleroma.User.Query do
             order_by: term(),
             select: term(),
             limit: pos_integer(),
-            actor_types: [String.t()]
+            actor_types: [String.t()],
+            birthday_day: pos_integer(),
+            birthday_month: pos_integer()
           }
           | map()
 
@@ -132,6 +138,43 @@ defmodule Pleroma.User.Query do
     )
   end
 
+  defp compose_query({:is_privileged, privilege}, query) do
+    moderator_privileged = privilege in Config.get([:instance, :moderator_privileges])
+    admin_privileged = privilege in Config.get([:instance, :admin_privileges])
+
+    query = compose_query({:active, true}, query)
+    query = compose_query({:local, true}, query)
+
+    case {admin_privileged, moderator_privileged} do
+      {false, false} ->
+        where(
+          query,
+          false
+        )
+
+      {true, true} ->
+        where(
+          query,
+          [u],
+          u.is_admin or u.is_moderator
+        )
+
+      {true, false} ->
+        where(
+          query,
+          [u],
+          u.is_admin
+        )
+
+      {false, true} ->
+        where(
+          query,
+          [u],
+          u.is_moderator
+        )
+    end
+  end
+
   defp compose_query({:local, _}, query), do: location_query(query, true)
 
   defp compose_query({:external, _}, query), do: location_query(query, false)
@@ -165,6 +208,14 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:unconfirmed, _}, query) do
     where(query, [u], u.is_confirmed == false)
+  end
+
+  defp compose_query({:is_suggested, bool}, query) do
+    where(query, [u], u.is_suggested == ^bool)
+  end
+
+  defp compose_query({:is_discoverable, bool}, query) do
+    where(query, [u], u.is_discoverable == ^bool)
   end
 
   defp compose_query({:followers, %User{id: id}}, query) do
@@ -218,6 +269,20 @@ defmodule Pleroma.User.Query do
     query
     |> where([u], not is_nil(u.nickname))
     |> where([u], not like(u.nickname, "internal.%"))
+  end
+
+  defp compose_query({:birthday_day, day}, query) do
+    query
+    |> where([u], u.show_birthday == true)
+    |> where([u], not is_nil(u.birthday))
+    |> where([u], fragment("date_part('day', ?)", u.birthday) == ^day)
+  end
+
+  defp compose_query({:birthday_month, month}, query) do
+    query
+    |> where([u], u.show_birthday == true)
+    |> where([u], not is_nil(u.birthday))
+    |> where([u], fragment("date_part('month', ?)", u.birthday) == ^month)
   end
 
   defp compose_query(_unsupported_param, query), do: query

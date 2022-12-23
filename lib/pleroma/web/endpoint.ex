@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Endpoint do
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Endpoint do
   alias Pleroma.Config
 
   socket("/socket", Pleroma.Web.UserSocket)
+  socket("/live", Phoenix.LiveView.Socket)
 
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
