@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
@@ -154,22 +154,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Notification.get_notified_from_activity(%Activity{data: object}, false)
   end
 
-  def create_context(context) do
-    context = context || generate_id("contexts")
-
-    # Ecto has problems accessing the constraint inside the jsonb,
-    # so we explicitly check for the existed object before insert
-    object = Object.get_cached_by_ap_id(context)
-
-    with true <- is_nil(object),
-         changeset <- Object.context_mapping(context),
-         {:ok, inserted_object} <- Repo.insert(changeset) do
-      inserted_object
-    else
-      _ ->
-        object
-    end
-  end
+  def maybe_create_context(context), do: context || generate_id("contexts")
 
   @doc """
   Enqueues an activity for federation if it's local
@@ -201,18 +186,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Map.put_new("id", "pleroma:fakeid")
     |> Map.put_new_lazy("published", &make_date/0)
     |> Map.put_new("context", "pleroma:fakecontext")
-    |> Map.put_new("context_id", -1)
     |> lazy_put_object_defaults(true)
   end
 
   def lazy_put_activity_defaults(map, _fake?) do
-    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+    context = maybe_create_context(map["context"])
 
     map
     |> Map.put_new_lazy("id", &generate_activity_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
     |> Map.put_new("context", context)
-    |> Map.put_new("context_id", context_id)
     |> lazy_put_object_defaults(false)
   end
 
@@ -226,7 +209,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> Map.put_new("id", "pleroma:fake_object_id")
       |> Map.put_new_lazy("published", &make_date/0)
       |> Map.put_new("context", activity["context"])
-      |> Map.put_new("context_id", activity["context_id"])
       |> Map.put_new("fake", true)
 
     %{activity | "object" => object}
@@ -239,7 +221,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> Map.put_new_lazy("id", &generate_object_id/0)
       |> Map.put_new_lazy("published", &make_date/0)
       |> Map.put_new("context", activity["context"])
-      |> Map.put_new("context_id", activity["context_id"])
 
     %{activity | "object" => object}
   end
@@ -446,7 +427,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Activity.Queries.by_type()
     |> Activity.Queries.by_actor(actor)
     |> Activity.Queries.by_object_id(object)
-    |> where(fragment("data->>'state' = 'pending'"))
+    |> where(fragment("data->>'state' = 'pending'") or fragment("data->>'state' = 'accept'"))
     |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
     |> Repo.update_all([])
 
@@ -714,20 +695,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Enum.map(statuses || [], &build_flag_object/1)
   end
 
-  defp build_flag_object(%Activity{data: %{"id" => id}, object: %{data: data}}) do
-    activity_actor = User.get_by_ap_id(data["actor"])
+  defp build_flag_object(%Activity{} = activity) do
+    object = Object.normalize(activity, fetch: false)
 
-    %{
-      "type" => "Note",
-      "id" => id,
-      "content" => data["content"],
-      "published" => data["published"],
-      "actor" =>
-        AccountView.render(
-          "show.json",
-          %{user: activity_actor, skip_visibility_check: true}
-        )
-    }
+    # Do not allow people to report Creates. Instead, report the Object that is Created.
+    if activity.data["type"] != "Create" do
+      build_flag_object_with_actor_and_id(
+        object,
+        User.get_by_ap_id(activity.data["actor"]),
+        activity.data["id"]
+      )
+    else
+      build_flag_object(object)
+    end
+  end
+
+  defp build_flag_object(%Object{} = object) do
+    actor = User.get_by_ap_id(object.data["actor"])
+    build_flag_object_with_actor_and_id(object, actor, object.data["id"])
   end
 
   defp build_flag_object(act) when is_map(act) or is_binary(act) do
@@ -739,12 +724,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       end
 
     case Activity.get_by_ap_id_with_object(id) do
-      %Activity{} = activity ->
-        build_flag_object(activity)
+      %Activity{object: object} = _ ->
+        build_flag_object(object)
 
       nil ->
-        if activity = Activity.get_by_object_ap_id_with_object(id) do
-          build_flag_object(activity)
+        if %Object{} = object = Object.get_by_ap_id(id) do
+          build_flag_object(object)
         else
           %{"id" => id, "deleted" => true}
         end
@@ -752,6 +737,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   defp build_flag_object(_), do: []
+
+  defp build_flag_object_with_actor_and_id(%Object{data: data}, actor, id) do
+    %{
+      "type" => "Note",
+      "id" => id,
+      "content" => data["content"],
+      "published" => data["published"],
+      "actor" =>
+        AccountView.render(
+          "show.json",
+          %{user: actor, skip_visibility_check: true}
+        )
+    }
+  end
 
   #### Report-related helpers
   def get_reports(params, page, page_size) do
@@ -767,22 +766,21 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     ActivityPub.fetch_activities([], params, :offset)
   end
 
-  def update_report_state(%Activity{} = activity, state)
-      when state in @strip_status_report_states do
-    {:ok, stripped_activity} = strip_report_status_data(activity)
-
-    new_data =
-      activity.data
-      |> Map.put("state", state)
-      |> Map.put("object", stripped_activity.data["object"])
-
-    activity
-    |> Changeset.change(data: new_data)
-    |> Repo.update()
+  defp maybe_strip_report_status(data, state) do
+    with true <- Config.get([:instance, :report_strip_status]),
+         true <- state in @strip_status_report_states,
+         {:ok, stripped_activity} = strip_report_status_data(%Activity{data: data}) do
+      data |> Map.put("object", stripped_activity.data["object"])
+    else
+      _ -> data
+    end
   end
 
   def update_report_state(%Activity{} = activity, state) when state in @supported_report_states do
-    new_data = Map.put(activity.data, "state", state)
+    new_data =
+      activity.data
+      |> Map.put("state", state)
+      |> maybe_strip_report_status(state)
 
     activity
     |> Changeset.change(data: new_data)

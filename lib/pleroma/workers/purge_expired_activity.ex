@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.PurgeExpiredActivity do
@@ -34,6 +34,9 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
       Pleroma.Web.CommonAPI.delete(activity.id, user)
     end
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 
   defp enabled? do
     with false <- Pleroma.Config.get([__MODULE__, :enabled], false) do

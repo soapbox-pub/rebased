@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ActivityTest do
@@ -145,6 +145,7 @@ defmodule Pleroma.ActivityTest do
 
     setup do: clear_config([:instance, :limit_to_local_content])
 
+    @tag :skip_on_mac
     test "finds utf8 text in statuses", %{
       japanese_activity: japanese_activity,
       user: user
@@ -277,5 +278,79 @@ defmodule Pleroma.ActivityTest do
     assert Repo.aggregate(add_query, :count, :id) == 0
 
     assert Repo.aggregate(Activity, :count, :id) == 2
+  end
+
+  describe "associated_object_id() sql function" do
+    test "with json object" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": {"id":"foobar"}}'::jsonb);
+          """
+        )
+
+      assert object_id == "foobar"
+    end
+
+    test "with string object" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": "foobar"}'::jsonb);
+          """
+        )
+
+      assert object_id == "foobar"
+    end
+
+    test "with array object" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": ["foobar", {}]}'::jsonb);
+          """
+        )
+
+      assert object_id == "foobar"
+    end
+
+    test "invalid" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": {}}'::jsonb);
+          """
+        )
+
+      assert is_nil(object_id)
+    end
+
+    test "invalid object id" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{"object": {"id": 123}}'::jsonb);
+          """
+        )
+
+      assert is_nil(object_id)
+    end
+
+    test "no object field" do
+      %{rows: [[object_id]]} =
+        Ecto.Adapters.SQL.query!(
+          Pleroma.Repo,
+          """
+          select associated_object_id('{}'::jsonb);
+          """
+        )
+
+      assert is_nil(object_id)
+    end
   end
 end

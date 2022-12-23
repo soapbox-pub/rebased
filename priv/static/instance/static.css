@@ -51,6 +51,7 @@ body {
   overflow: hidden;
   margin: 35px auto;
   box-shadow: 0 1px 4px 0px rgba(0, 0, 0, 0.5);
+  padding: 0em 1em 0em 1em;
 }
 
 .container__content {
@@ -86,7 +87,6 @@ form {
 }
 
 input {
-  box-sizing: content-box;
   padding: 10px;
   margin-top: 5px;
   margin-bottom: 10px;
@@ -97,6 +97,8 @@ input {
   transition-duration: 0.35s;
   border-bottom: 2px solid #2a384a;
   font-size: 14px;
+  width: inherit;
+  box-sizing: border-box;
 }
 
 .scopes-input {

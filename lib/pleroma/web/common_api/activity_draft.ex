@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
 
@@ -111,7 +112,12 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp attachments(%{params: params} = draft) do
     attachments = Utils.attachments_from_ids(params)
-    %__MODULE__{draft | attachments: attachments}
+    draft = %__MODULE__{draft | attachments: attachments}
+
+    case Utils.validate_attachments_count(attachments) do
+      :ok -> draft
+      {:error, message} -> add_error(draft, message)
+    end
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
@@ -213,10 +219,15 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
     emoji = Map.merge(emoji, summary_emoji)
 
+    {:ok, note_data, _meta} = Builder.note(draft)
+
     object =
-      Utils.make_note_data(draft)
+      note_data
       |> Map.put("emoji", emoji)
-      |> Map.put("source", draft.status)
+      |> Map.put("source", %{
+        "content" => draft.status,
+        "mediaType" => Utils.get_content_type(draft.params[:content_type])
+      })
       |> Map.put("generator", draft.params[:generator])
 
     %__MODULE__{draft | object: object}

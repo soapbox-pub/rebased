@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ChatController do
@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
   alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
-  alias Pleroma.ModerationLog
   alias Pleroma.Pagination
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.CommonAPI
@@ -42,12 +41,6 @@ defmodule Pleroma.Web.AdminAPI.ChatController do
          ^chat_id <- to_string(cm_ref.chat_id),
          %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(object_ap_id),
          {:ok, _} <- CommonAPI.delete(activity_id, user) do
-      ModerationLog.insert_log(%{
-        action: "chat_message_delete",
-        actor: user,
-        subject_id: message_id
-      })
-
       conn
       |> put_view(MessageReferenceView)
       |> render("show.json", chat_message_reference: cm_ref)

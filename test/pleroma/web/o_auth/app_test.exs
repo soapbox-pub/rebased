@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.AppTest do
@@ -40,5 +40,17 @@ defmodule Pleroma.Web.OAuth.AppTest do
       assert error.constraint == "apps_client_id_index"
       assert error.type == :unique
     end
+  end
+
+  test "get_user_apps/1" do
+    user = insert(:user)
+
+    apps = [
+      insert(:oauth_app, user_id: user.id),
+      insert(:oauth_app, user_id: user.id),
+      insert(:oauth_app, user_id: user.id)
+    ]
+
+    assert Enum.sort(App.get_user_apps(user)) == Enum.sort(apps)
   end
 end

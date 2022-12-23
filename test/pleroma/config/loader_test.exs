@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.LoaderTest do
@@ -11,7 +11,6 @@ defmodule Pleroma.Config.LoaderTest do
     config = Loader.read("test/fixtures/config/temp.secret.exs")
     assert config[:pleroma][:first_setting][:key] == "value"
     assert config[:pleroma][:first_setting][:key2] == [Pleroma.Repo]
-    assert config[:quack][:level] == :info
   end
 
   test "filter_group/2" do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy.Client.Wrapper do
@@ -25,5 +25,6 @@ defmodule Pleroma.ReverseProxy.Client.Wrapper do
 
   defp client(Tesla.Adapter.Hackney), do: Pleroma.ReverseProxy.Client.Hackney
   defp client(Tesla.Adapter.Gun), do: Pleroma.ReverseProxy.Client.Tesla
+  defp client({Tesla.Adapter.Finch, _}), do: Pleroma.ReverseProxy.Client.Hackney
   defp client(_), do: Pleroma.Config.get!(Pleroma.ReverseProxy.Client)
 end

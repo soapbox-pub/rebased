@@ -1,1 +1,0 @@
-{"version":3,"sources":["webpack:///app/javascript/tank/sources/git/git.pleroma.social/pleroma/mastofe/app/javascript/packs/common.js"],"names":[],"mappings":"2FAAA,e","file":"flavours/vanilla/common.js","sourcesContent":["import 'styles/application.scss';\n"],"sourceRoot":""}

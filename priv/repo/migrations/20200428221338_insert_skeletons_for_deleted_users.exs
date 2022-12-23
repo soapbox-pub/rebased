@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Repo.Migrations.InsertSkeletonsForDeletedUsers do
   use Ecto.Migration
 
@@ -28,9 +32,7 @@ defmodule Pleroma.Repo.Migrations.InsertSkeletonsForDeletedUsers do
       {:ok, %{rows: ap_ids}} =
         Ecto.Adapters.SQL.query(
           Repo,
-          "select distinct unnest(nonexistent_locals.recipients) from activities, lateral (select array_agg(recipient) as recipients from unnest(activities.recipients) as recipient where recipient similar to '#{
-            instance_uri
-          }/users/[A-Za-z0-9]*' and not(recipient in (select ap_id from users))) nonexistent_locals;",
+          "select distinct unnest(nonexistent_locals.recipients) from activities, lateral (select array_agg(recipient) as recipients from unnest(activities.recipients) as recipient where recipient similar to '#{instance_uri}/users/[A-Za-z0-9]*' and not(recipient in (select ap_id from users))) nonexistent_locals;",
           [],
           timeout: :infinity
         )

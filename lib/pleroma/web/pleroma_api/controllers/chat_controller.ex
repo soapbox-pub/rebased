@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
@@ -151,7 +151,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       index_query(user, params)
       |> Pagination.fetch_paginated(params)
 
-    render(conn, "index.json", chats: chats)
+    conn
+    |> add_link_headers(chats)
+    |> render("index.json", chats: chats)
   end
 
   defp index_query(%{id: user_id} = user, params) do

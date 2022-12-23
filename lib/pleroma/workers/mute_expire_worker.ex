@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.MuteExpireWorker do
@@ -17,4 +17,7 @@ defmodule Pleroma.Workers.MuteExpireWorker do
     Pleroma.Web.CommonAPI.remove_mute(user_id, activity_id)
     :ok
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

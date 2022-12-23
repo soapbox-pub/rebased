@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
@@ -66,8 +66,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def user(conn, %{"nickname" => nickname}) do
-    with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
@@ -174,7 +173,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
          {:show_follows, true} <-
            {:show_follows, (for_user && for_user == user) || !user.hide_follows} do
       {page, _} = Integer.parse(page)
@@ -192,8 +190,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
@@ -213,7 +210,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
          {:show_followers, true} <-
            {:show_followers, (for_user && for_user == user) || !user.hide_followers} do
       {page, _} = Integer.parse(page)
@@ -231,8 +227,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
@@ -245,8 +240,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{"nickname" => nickname, "page" => page?} = params
       )
       when page? in [true, "true"] do
-    with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       # "include_poll_votes" is a hack because postgres generates inefficient
       # queries when filtering by 'Answer', poll votes will be hidden by the
       # visibility filter in this case anyway
@@ -270,8 +264,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def outbox(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
@@ -294,13 +287,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
+  def inbox(%{assigns: %{valid_signature: false}} = conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json("Invalid HTTP Signature")
+  end
+
   # POST /relay/inbox -or- POST /internal/fetch/inbox
-  def inbox(conn, params) do
-    if params["type"] == "Create" && FederatingPlug.federating?() do
+  def inbox(conn, %{"type" => "Create"} = params) do
+    if FederatingPlug.federating?() do
       post_inbox_relayed_create(conn, params)
     else
-      post_inbox_fallback(conn, params)
+      conn
+      |> put_status(:bad_request)
+      |> json("Not federating")
     end
+  end
+
+  def inbox(conn, _params) do
+    conn
+    |> put_status(:bad_request)
+    |> json("error, missing HTTP Signature")
   end
 
   defp post_inbox_relayed_create(conn, params) do
@@ -313,32 +320,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  defp post_inbox_fallback(conn, params) do
-    headers = Enum.into(conn.req_headers, %{})
-
-    if headers["signature"] && params["actor"] &&
-         String.contains?(headers["signature"], params["actor"]) do
-      Logger.debug(
-        "Signature validation error for: #{params["actor"]}, make sure you are forwarding the HTTP Host header!"
-      )
-
-      Logger.debug(inspect(conn.req_headers))
-    end
-
-    conn
-    |> put_status(:bad_request)
-    |> json(dgettext("errors", "error"))
-  end
-
   defp represent_service_actor(%User{} = user, conn) do
-    with {:ok, user} <- User.ensure_keys_present(user) do
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> put_view(UserView)
-      |> render("user.json", %{user: user})
-    else
-      nil -> {:error, :not_found}
-    end
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> put_view(UserView)
+    |> render("user.json", %{user: user})
   end
 
   defp represent_service_actor(nil, _), do: {:error, :not_found}
@@ -391,12 +377,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def read_inbox(%{assigns: %{user: %User{nickname: nickname} = user}} = conn, %{
         "nickname" => nickname
       }) do
-    with {:ok, user} <- User.ensure_keys_present(user) do
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> put_view(UserView)
-      |> render("activity_collection.json", %{iri: "#{user.ap_id}/inbox"})
-    end
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> put_view(UserView)
+    |> render("activity_collection.json", %{iri: "#{user.ap_id}/inbox"})
   end
 
   def read_inbox(%{assigns: %{user: %User{nickname: as_nickname}}} = conn, %{
@@ -531,19 +515,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     conn
-  end
-
-  defp ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
-    {:ok, new_user} = User.ensure_keys_present(user)
-
-    for_user =
-      if new_user != user and match?(%User{}, for_user) do
-        User.get_cached_by_nickname(for_user.nickname)
-      else
-        for_user
-      end
-
-    {new_user, for_user}
   end
 
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do

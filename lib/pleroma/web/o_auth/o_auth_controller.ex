@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.OAuthController do
@@ -596,9 +596,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       {:ok, token}
     end
   end
-
-  # Special case: Local MastodonFE
-  defp redirect_uri(%Plug.Conn{} = conn, "."), do: Routes.auth_url(conn, :login)
 
   defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 

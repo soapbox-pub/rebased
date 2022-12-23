@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP do
@@ -106,5 +106,12 @@ defmodule Pleroma.HTTP do
     [Tesla.Middleware.FollowRedirects, Pleroma.Tesla.Middleware.ConnectionPool]
   end
 
-  defp adapter_middlewares(_), do: []
+  defp adapter_middlewares(_) do
+    if Pleroma.Config.get(:env) == :test do
+      # Emulate redirects in test env, which are handled by adapters in other environments
+      [Tesla.Middleware.FollowRedirects]
+    else
+      []
+    end
+  end
 end

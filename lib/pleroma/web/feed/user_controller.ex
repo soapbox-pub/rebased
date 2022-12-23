@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Feed.UserController do
@@ -18,6 +18,8 @@ defmodule Pleroma.Web.Feed.UserController do
   def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname}) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname_or_id(nickname)} do
       Pleroma.Web.Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
+    else
+      _ -> Pleroma.Web.Fallback.RedirectController.redirector(conn, nil)
     end
   end
 

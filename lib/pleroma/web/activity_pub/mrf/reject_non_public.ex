@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
 
   @impl true
   def describe,
-    do: {:ok, %{mrf_rejectnonpublic: Config.get(:mrf_rejectnonpublic) |> Enum.into(%{})}}
+    do: {:ok, %{mrf_rejectnonpublic: Config.get(:mrf_rejectnonpublic) |> Map.new()}}
 
   @impl true
   def config_description do

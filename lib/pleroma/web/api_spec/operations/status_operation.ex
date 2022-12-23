@@ -1,14 +1,18 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
+  alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
@@ -434,6 +438,59 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
+  def show_history_operation do
+    %Operation{
+      tags: ["Retrieve status history"],
+      summary: "Status history",
+      description: "View history of a status",
+      operationId: "StatusController.show_history",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        id_param()
+      ],
+      responses: %{
+        200 => status_history_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def show_source_operation do
+    %Operation{
+      tags: ["Retrieve status source"],
+      summary: "Status source",
+      description: "View source of a status",
+      operationId: "StatusController.show_source",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        id_param()
+      ],
+      responses: %{
+        200 => status_source_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def update_operation do
+    %Operation{
+      tags: ["Update status"],
+      summary: "Update status",
+      description: "Change the content of a status",
+      operationId: "StatusController.update",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      parameters: [
+        id_param()
+      ],
+      requestBody: request_body("Parameters", update_request(), required: true),
+      responses: %{
+        200 => status_response(),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
   def array_of_statuses do
     %Schema{type: :array, items: Status, example: [Status.schema().example]}
   end
@@ -537,6 +594,60 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
+  defp update_request do
+    %Schema{
+      title: "StatusUpdateRequest",
+      type: :object,
+      properties: %{
+        status: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
+        },
+        media_ids: %Schema{
+          nullable: true,
+          type: :array,
+          items: %Schema{type: :string},
+          description: "Array of Attachment ids to be attached as media."
+        },
+        poll: poll_params(),
+        sensitive: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Mark status and attached media as sensitive?"
+        },
+        spoiler_text: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
+        },
+        content_type: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "The MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
+        },
+        to: %Schema{
+          type: :array,
+          nullable: true,
+          items: %Schema{type: :string},
+          description:
+            "A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply"
+        }
+      },
+      example: %{
+        "status" => "What time is it?",
+        "sensitive" => "false",
+        "poll" => %{
+          "options" => ["Cofe", "Adventure"],
+          "expires_in" => 420
+        }
+      }
+    }
+  end
+
   def poll_params do
     %Schema{
       nullable: true,
@@ -577,6 +688,87 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   defp status_response do
     Operation.response("Status", "application/json", Status)
+  end
+
+  defp status_history_response do
+    Operation.response(
+      "Status History",
+      "application/json",
+      %Schema{
+        title: "Status history",
+        description: "Response schema for history of a status",
+        type: :array,
+        items: %Schema{
+          type: :object,
+          properties: %{
+            account: %Schema{
+              allOf: [Account],
+              description: "The account that authored this status"
+            },
+            content: %Schema{
+              type: :string,
+              format: :html,
+              description: "HTML-encoded status content"
+            },
+            sensitive: %Schema{
+              type: :boolean,
+              description: "Is this status marked as sensitive content?"
+            },
+            spoiler_text: %Schema{
+              type: :string,
+              description:
+                "Subject or summary line, below which status content is collapsed until expanded"
+            },
+            created_at: %Schema{
+              type: :string,
+              format: "date-time",
+              description: "The date when this status was created"
+            },
+            media_attachments: %Schema{
+              type: :array,
+              items: Attachment,
+              description: "Media that is attached to this status"
+            },
+            emojis: %Schema{
+              type: :array,
+              items: Emoji,
+              description: "Custom emoji to be used when rendering status content"
+            },
+            poll: %Schema{
+              allOf: [Poll],
+              nullable: true,
+              description: "The poll attached to the status"
+            }
+          }
+        }
+      }
+    )
+  end
+
+  defp status_source_response do
+    Operation.response(
+      "Status Source",
+      "application/json",
+      %Schema{
+        type: :object,
+        properties: %{
+          id: FlakeID,
+          text: %Schema{
+            type: :string,
+            description: "Raw source of status content"
+          },
+          spoiler_text: %Schema{
+            type: :string,
+            description:
+              "Subject or summary line, below which status content is collapsed until expanded"
+          },
+          content_type: %Schema{
+            type: :string,
+            description: "The content type of the source"
+          }
+        }
+      }
+    )
   end
 
   defp context do

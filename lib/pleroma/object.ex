@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object do
@@ -40,8 +40,7 @@ defmodule Pleroma.Object do
     join(query, join_type, [{object, object_position}], a in Activity,
       on:
         fragment(
-          "COALESCE(?->'object'->>'id', ?->>'object') = (? ->> 'id') AND (?->>'type' = ?) ",
-          a.data,
+          "associated_object_id(?) = (? ->> 'id') AND (?->>'type' = ?) ",
           a.data,
           object.data,
           a.data,
@@ -145,7 +144,7 @@ defmodule Pleroma.Object do
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
   end
 
-  def normalize(_, options \\ [fetch: false])
+  def normalize(_, options \\ [fetch: false, id_only: false])
 
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
@@ -173,10 +172,15 @@ defmodule Pleroma.Object do
   def normalize(%{"id" => ap_id}, options), do: normalize(ap_id, options)
 
   def normalize(ap_id, options) when is_binary(ap_id) do
-    if Keyword.get(options, :fetch) do
-      Fetcher.fetch_object_from_id!(ap_id, options)
-    else
-      get_cached_by_ap_id(ap_id)
+    cond do
+      Keyword.get(options, :id_only) ->
+        ap_id
+
+      Keyword.get(options, :fetch) ->
+        Fetcher.fetch_object_from_id!(ap_id, options)
+
+      true ->
+        get_cached_by_ap_id(ap_id)
     end
   end
 
@@ -206,10 +210,6 @@ defmodule Pleroma.Object do
       {:ok, object} -> object
       nil -> nil
     end
-  end
-
-  def context_mapping(context) do
-    Object.change(%Object{}, %{data: %{"id" => context}})
   end
 
   def make_tombstone(%Object{data: %{"id" => id, "type" => type}}, deleted \\ DateTime.utc_now()) do

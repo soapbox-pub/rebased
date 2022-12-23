@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
@@ -50,9 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def websocket_init(state) do
     Logger.debug(
-      "#{__MODULE__} accepted websocket connection for user #{
-        (state.user || %{id: "anonymous"}).id
-      }, topic #{state.topic}"
+      "#{__MODULE__} accepted websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic}"
     )
 
     Streamer.add_socket(state.topic, state.oauth_token)
@@ -111,9 +109,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def terminate(reason, _req, state) do
     Logger.debug(
-      "#{__MODULE__} terminating websocket connection for user #{
-        (state.user || %{id: "anonymous"}).id
-      }, topic #{state.topic || "?"}: #{inspect(reason)}"
+      "#{__MODULE__} terminating websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic || "?"}: #{inspect(reason)}"
     )
 
     Streamer.remove_socket(state.topic)

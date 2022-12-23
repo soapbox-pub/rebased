@@ -1,8 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.BackgroundWorker do
+  alias Pleroma.Instances.Instance
   alias Pleroma.User
 
   use Pleroma.Workers.WorkerHelper, queue: "background"
@@ -38,4 +39,11 @@ defmodule Pleroma.Workers.BackgroundWorker do
 
     Pleroma.FollowingRelationship.move_following(origin, target)
   end
+
+  def perform(%Job{args: %{"op" => "delete_instance", "host" => host}}) do
+    Instance.perform(:delete_instance, host)
+  end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

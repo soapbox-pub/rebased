@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.NodeInfoTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -38,6 +38,19 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     assert moderator.ap_id in result["metadata"]["staffAccounts"]
     assert admin.ap_id in result["metadata"]["staffAccounts"]
+  end
+
+  test "nodeinfo shows roles and privileges", %{conn: conn} do
+    clear_config([:instance, :moderator_privileges], [:cofe])
+    clear_config([:instance, :admin_privileges], [:suya, :cofe])
+
+    conn =
+      conn
+      |> get("/nodeinfo/2.1.json")
+
+    assert result = json_response(conn, 200)
+
+    assert %{"admin" => ["suya", "cofe"], "moderator" => ["cofe"]} == result["metadata"]["roles"]
   end
 
   test "nodeinfo shows restricted nicknames", %{conn: conn} do
@@ -150,37 +163,127 @@ defmodule Pleroma.Web.NodeInfoTest do
            )
   end
 
-  test "it shows MRF transparency data if enabled", %{conn: conn} do
-    clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
-    clear_config([:mrf, :transparency], true)
+  describe "Quarantined instances" do
+    setup do
+      clear_config([:mrf, :transparency], true)
+      quarantined_instances = [{"example.com", "reason to quarantine"}]
+      clear_config([:instance, :quarantined_instances], quarantined_instances)
+    end
 
-    simple_config = %{"reject" => ["example.com"]}
-    clear_config(:mrf_simple, simple_config)
+    test "shows quarantined instances data if enabled", %{conn: conn} do
+      expected_config = ["example.com"]
 
-    response =
-      conn
-      |> get("/nodeinfo/2.1.json")
-      |> json_response(:ok)
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
 
-    assert response["metadata"]["federation"]["mrf_simple"] == simple_config
+      assert response["metadata"]["federation"]["quarantined_instances"] == expected_config
+    end
+
+    test "shows extra information in the quarantined_info field for relevant entries", %{
+      conn: conn
+    } do
+      clear_config([:mrf, :transparency], true)
+
+      expected_config = %{
+        "quarantined_instances" => %{
+          "example.com" => %{"reason" => "reason to quarantine"}
+        }
+      }
+
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
+
+      assert response["metadata"]["federation"]["quarantined_instances_info"] == expected_config
+    end
   end
 
-  test "it performs exclusions from MRF transparency data if configured", %{conn: conn} do
-    clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
-    clear_config([:mrf, :transparency], true)
-    clear_config([:mrf, :transparency_exclusions], ["other.site"])
+  describe "MRF SimplePolicy" do
+    setup do
+      clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
+      clear_config([:mrf, :transparency], true)
+    end
 
-    simple_config = %{"reject" => ["example.com", "other.site"]}
-    clear_config(:mrf_simple, simple_config)
+    test "shows MRF transparency data if enabled", %{conn: conn} do
+      simple_config = %{"reject" => [{"example.com", ""}]}
+      clear_config(:mrf_simple, simple_config)
 
-    expected_config = %{"reject" => ["example.com"]}
+      expected_config = %{"reject" => ["example.com"]}
 
-    response =
-      conn
-      |> get("/nodeinfo/2.1.json")
-      |> json_response(:ok)
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
 
-    assert response["metadata"]["federation"]["mrf_simple"] == expected_config
-    assert response["metadata"]["federation"]["exclusions"] == true
+      assert response["metadata"]["federation"]["mrf_simple"] == expected_config
+    end
+
+    test "performs exclusions from MRF transparency data if configured", %{conn: conn} do
+      clear_config([:mrf, :transparency_exclusions], [
+        {"other.site", "We don't want them to know"}
+      ])
+
+      simple_config = %{"reject" => [{"example.com", ""}, {"other.site", ""}]}
+      clear_config(:mrf_simple, simple_config)
+
+      expected_config = %{"reject" => ["example.com"]}
+
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
+
+      assert response["metadata"]["federation"]["mrf_simple"] == expected_config
+      assert response["metadata"]["federation"]["exclusions"] == true
+    end
+
+    test "shows extra information in the mrf_simple_info field for relevant entries", %{
+      conn: conn
+    } do
+      simple_config = %{
+        media_removal: [{"no.media", "LEEWWWDD >//<"}],
+        media_nsfw: [],
+        federated_timeline_removal: [{"no.ftl", ""}],
+        report_removal: [],
+        reject: [
+          {"example.instance", "Some reason"},
+          {"uwu.owo", "awoo to much"},
+          {"no.reason", ""}
+        ],
+        followers_only: [],
+        accept: [],
+        avatar_removal: [],
+        banner_removal: [],
+        reject_deletes: [
+          {"peak.me", "I want to peak at what they don't want me to see, eheh"}
+        ]
+      }
+
+      clear_config(:mrf_simple, simple_config)
+
+      clear_config([:mrf, :transparency_exclusions], [
+        {"peak.me", "I don't want them to know"}
+      ])
+
+      expected_config = %{
+        "media_removal" => %{
+          "no.media" => %{"reason" => "LEEWWWDD >//<"}
+        },
+        "reject" => %{
+          "example.instance" => %{"reason" => "Some reason"},
+          "uwu.owo" => %{"reason" => "awoo to much"}
+        }
+      }
+
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
+
+      assert response["metadata"]["federation"]["mrf_simple_info"] == expected_config
+    end
   end
 end

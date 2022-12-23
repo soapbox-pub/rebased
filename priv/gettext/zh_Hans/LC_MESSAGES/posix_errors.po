@@ -1,0 +1,160 @@
+## "msgid"s in this file come from POT (.pot) files.
+##
+## Do not add, change, or remove "msgid"s manually here as
+## they're tied to the ones in the corresponding POT file
+## (with the same domain).
+##
+## Use "mix gettext.extract --merge" or "mix gettext.merge"
+## to merge POT files into PO files.
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2022-07-22 19:00+0000\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
+"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"projects/pleroma/pleroma-backend-domain-posix_errors/zh_Hans/>\n"
+"Language: zh_Hans\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.13.1\n"
+
+msgid "eperm"
+msgstr "不允许的操作"
+
+msgid "eacces"
+msgstr "权限不够"
+
+msgid "eagain"
+msgstr "资源暂时不可用"
+
+msgid "ebadf"
+msgstr "坏的文件描述符"
+
+msgid "ebadmsg"
+msgstr "坏讯息"
+
+msgid "ebusy"
+msgstr "设备或资源忙"
+
+msgid "edeadlk"
+msgstr "避免了资源死锁"
+
+msgid "edeadlock"
+msgstr "避免了资源死锁"
+
+msgid "edquot"
+msgstr "超出了磁盘配额"
+
+msgid "eexist"
+msgstr "文件存在"
+
+msgid "efault"
+msgstr "坏地址"
+
+msgid "efbig"
+msgstr "文件太大"
+
+msgid "eftype"
+msgstr "不合适的文件类型或格式"
+
+msgid "eintr"
+msgstr "系统调用被中断"
+
+msgid "einval"
+msgstr "不合法的参数"
+
+msgid "eio"
+msgstr "输入/输出错误"
+
+msgid "eisdir"
+msgstr "在目录上非法操作"
+
+msgid "eloop"
+msgstr "太多层符号链接"
+
+msgid "emfile"
+msgstr "太多打开的文件"
+
+msgid "emlink"
+msgstr "太多链接"
+
+msgid "emultihop"
+msgstr ""
+
+msgid "enametoolong"
+msgstr "文件名太长"
+
+msgid "enfile"
+msgstr "系统里太多打开的文件"
+
+msgid "enobufs"
+msgstr "没有可用的缓冲空间"
+
+msgid "enodev"
+msgstr "没这设备"
+
+msgid "enolck"
+msgstr "没有可用的锁"
+
+msgid "enolink"
+msgstr "链接被切断了"
+
+msgid "enoent"
+msgstr "没这文件或目录"
+
+msgid "enomem"
+msgstr "不能分配内存"
+
+msgid "enospc"
+msgstr "设备上没剩余空间"
+
+msgid "enosr"
+msgstr ""
+
+msgid "enostr"
+msgstr "设备不是流"
+
+msgid "enosys"
+msgstr "功能没实现"
+
+msgid "enotblk"
+msgstr ""
+
+msgid "enotdir"
+msgstr ""
+
+msgid "enotsup"
+msgstr "不受支持的操作"
+
+msgid "enxio"
+msgstr "该设备或路径不存在"
+
+msgid "eopnotsupp"
+msgstr "不受支持的操作"
+
+msgid "eoverflow"
+msgstr "请为给定类型的数据指定较小的数值"
+
+msgid "epipe"
+msgstr ""
+
+msgid "erange"
+msgstr ""
+
+msgid "erofs"
+msgstr "只读权限文件系统"
+
+msgid "espipe"
+msgstr ""
+
+msgid "esrch"
+msgstr "具体进程不存在"
+
+msgid "estale"
+msgstr ""
+
+msgid "etxtbsy"
+msgstr "文本文件忙碌"
+
+msgid "exdev"
+msgstr "该多设备链接不可用"

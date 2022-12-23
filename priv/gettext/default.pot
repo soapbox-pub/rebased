@@ -1,0 +1,185 @@
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here as no
+## effect: edit them in PO (.po) files instead.
+msgid ""
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:122
+msgid "%{name} - %{count} is not a multiple of %{multiple}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:131
+msgid "%{name} - %{value} is larger than exclusive maximum %{max}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:140
+msgid "%{name} - %{value} is larger than inclusive maximum %{max}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:149
+msgid "%{name} - %{value} is smaller than exclusive minimum %{min}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:158
+msgid "%{name} - %{value} is smaller than inclusive minimum %{min}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:102
+msgid "%{name} - Array items must be unique."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:114
+msgid "%{name} - Array length %{length} is larger than maxItems: %{}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:106
+msgid "%{name} - Array length %{length} is smaller than minItems: %{min}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:166
+msgid "%{name} - Invalid %{type}. Got: %{value}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:174
+msgid "%{name} - Invalid format. Expected %{format}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:51
+msgid "%{name} - Invalid schema.type. Got: %{type}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:178
+msgid "%{name} - Invalid value for enum."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:95
+msgid "%{name} - String length is larger than maxLength: %{length}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:88
+msgid "%{name} - String length is smaller than minLength: %{length}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:63
+msgid "%{name} - null value where %{type} expected."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:60
+msgid "%{name} - null value."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:182
+msgid "Failed to cast to any schema in %{polymorphic_type}"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:71
+msgid "Failed to cast value as %{invalid_schema}. Value must be castable using `allOf` schemas listed."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:84
+msgid "Failed to cast value to one of: %{failed_schemas}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:78
+msgid "Failed to cast value using any of: %{failed_schemas}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:212
+msgid "Invalid value for header: %{name}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:204
+msgid "Missing field: %{name}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:208
+msgid "Missing header: %{name}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:196
+msgid "No value provided for required discriminator `%{field}`."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:216
+msgid "Object property count %{property_count} is greater than maxProperties: %{max_properties}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:224
+msgid "Object property count %{property_count} is less than minProperties: %{min_properties}"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
+msgid "Oops"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:188
+msgid "Unexpected field: %{name}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:200
+msgid "Unknown schema: %{name}."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/render_error.ex:192
+msgid "Value used as discriminator for `%{field}` matches no schemas."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/embed/show.html.eex:43
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:37
+msgid "announces"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/embed/show.html.eex:44
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:38
+msgid "likes"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/embed/show.html.eex:42
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:36
+msgid "replies"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/templates/embed/show.html.eex:27
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:22
+msgid "sensitive media"
+msgstr ""

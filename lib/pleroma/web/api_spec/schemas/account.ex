@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Account do
@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       header: %Schema{type: :string, format: :uri},
       id: FlakeID,
       locked: %Schema{type: :boolean},
+      mute_expires_at: %Schema{type: :string, format: "date-time", nullable: true},
       note: %Schema{type: :string, format: :html},
       statuses_count: %Schema{type: :integer},
       url: %Schema{type: :string, format: :uri},
@@ -47,12 +48,14 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             description: "whether the user allows automatically follow moved following accounts"
           },
           background_image: %Schema{type: :string, nullable: true, format: :uri},
+          birthday: %Schema{type: :string, nullable: true, format: :date},
           chat_token: %Schema{type: :string},
           is_confirmed: %Schema{
             type: :boolean,
             description:
               "whether the user account is waiting on email confirmation to be activated"
           },
+          show_birthday: %Schema{type: :boolean, nullable: true},
           hide_favorites: %Schema{type: :boolean},
           hide_followers_count: %Schema{
             type: :boolean,
@@ -194,13 +197,16 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           "id" => "9tKi3esbG7OQgZ2920",
           "muting" => false,
           "muting_notifications" => false,
+          "note" => "",
           "requested" => false,
           "showing_reblogs" => true,
-          "subscribing" => false
+          "subscribing" => false,
+          "notifying" => false
         },
         "settings_store" => %{
           "pleroma-fe" => %{}
-        }
+        },
+        "birthday" => "2001-02-12"
       },
       "source" => %{
         "fields" => [],

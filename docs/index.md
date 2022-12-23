@@ -17,10 +17,3 @@ Great! Now you can explore the fediverse! Open the login page for your Pleroma i
 
 ### Pleroma-FE
 The default front-end used by Pleroma is Pleroma-FE. You can find more information on what it is and how to use it in the [Introduction to Pleroma-FE](../frontend).
-
-### Mastodon interface
-If the Pleroma interface isn't your thing, or you're just trying something new but you want to keep using the familiar Mastodon interface, we got that too!
-Just add a "/web" after your instance url (e.g. <https://pleroma.soykaf.com/web>) and you'll end on the Mastodon web interface, but with a Pleroma backend! MAGIC!
-The Mastodon interface is from the Glitch-soc fork. For more information on the Mastodon interface you can check the [Mastodon](https://docs.joinmastodon.org/) and [Glitch-soc](https://glitch-soc.github.io/docs/) documentation.
-
-Remember, what you see is only the frontend part of Mastodon, the backend is still Pleroma.

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
@@ -9,6 +9,15 @@ defmodule Pleroma.Factory do
 
   alias Pleroma.Object
   alias Pleroma.User
+
+  @rsa_keys [
+              "test/fixtures/rsa_keys/key_1.pem",
+              "test/fixtures/rsa_keys/key_2.pem",
+              "test/fixtures/rsa_keys/key_3.pem",
+              "test/fixtures/rsa_keys/key_4.pem",
+              "test/fixtures/rsa_keys/key_5.pem"
+            ]
+            |> Enum.map(&File.read!/1)
 
   def participation_factory do
     conversation = insert(:conversation)
@@ -28,6 +37,8 @@ defmodule Pleroma.Factory do
   end
 
   def user_factory(attrs \\ %{}) do
+    pem = Enum.random(@rsa_keys)
+
     user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
@@ -39,7 +50,8 @@ defmodule Pleroma.Factory do
       last_refreshed_at: NaiveDateTime.utc_now(),
       notification_settings: %Pleroma.User.NotificationSetting{},
       multi_factor_authentication_settings: %Pleroma.MFA.Settings{},
-      ap_enabled: true
+      ap_enabled: true,
+      keys: pem
     }
 
     urls =
@@ -111,6 +123,18 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def attachment_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data =
+      attachment_data(user.ap_id, nil)
+      |> Map.put("id", Pleroma.Web.ActivityPub.Utils.generate_object_id())
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
   def attachment_note_factory(attrs \\ %{}) do
     user = attrs[:user] || insert(:user)
     {length, attrs} = Map.pop(attrs, :length, 1)
@@ -140,6 +164,11 @@ defmodule Pleroma.Factory do
       "actor" => ap_id,
       "mediaType" => "image/jpeg"
     }
+  end
+
+  def followers_only_note_factory(attrs \\ %{}) do
+    %Pleroma.Object{data: data} = note_factory(attrs)
+    %Pleroma.Object{data: Map.merge(data, %{"to" => [data["actor"] <> "/followers"]})}
   end
 
   def audio_factory(attrs \\ %{}) do
@@ -208,6 +237,38 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def question_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "type" => "Question",
+      "actor" => user.ap_id,
+      "attributedTo" => user.ap_id,
+      "attachment" => [],
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [user.follower_address],
+      "context" => Pleroma.Web.ActivityPub.Utils.generate_context_id(),
+      "closed" => DateTime.utc_now() |> DateTime.add(86_400) |> DateTime.to_iso8601(),
+      "oneOf" => [
+        %{
+          "type" => "Note",
+          "name" => "chocolate",
+          "replies" => %{"totalItems" => 0, "type" => "Collection"}
+        },
+        %{
+          "type" => "Note",
+          "name" => "vanilla",
+          "replies" => %{"totalItems" => 0, "type" => "Collection"}
+        }
+      ]
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
   def direct_note_activity_factory do
     dm = insert(:direct_note)
 
@@ -256,6 +317,33 @@ defmodule Pleroma.Factory do
         "type" => "Add",
         "to" => [Pleroma.Constants.as_public()],
         "cc" => [user.follower_address]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
+  end
+
+  def followers_only_note_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    note = insert(:followers_only_note, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :note, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => note.data["actor"],
+        "to" => note.data["to"],
+        "object" => note.data,
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => note.data["context"]
       }
       |> Map.merge(data_attrs)
 
@@ -394,6 +482,33 @@ defmodule Pleroma.Factory do
       actor: data["actor"],
       recipients: data["to"] ++ data["cc"]
     }
+  end
+
+  def question_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    question = attrs[:question] || insert(:question, user: user)
+
+    data_attrs = attrs[:data_attrs] || %{}
+    attrs = Map.drop(attrs, [:user, :question, :data_attrs])
+
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "type" => "Create",
+        "actor" => question.data["actor"],
+        "to" => question.data["to"],
+        "object" => question.data["id"],
+        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "context" => question.data["context"]
+      }
+      |> Map.merge(data_attrs)
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+    |> Map.merge(attrs)
   end
 
   def oauth_app_factory do
@@ -535,5 +650,17 @@ defmodule Pleroma.Factory do
       phrase: "cofe",
       context: ["home"]
     }
+  end
+
+  def announcement_factory(params \\ %{}) do
+    data = Map.get(params, :data, %{})
+
+    {_, params} = Map.pop(params, :data)
+
+    %Pleroma.Announcement{
+      data: Map.merge(%{"content" => "test announcement", "all_day" => false}, data)
+    }
+    |> Map.merge(params)
+    |> Pleroma.Announcement.add_rendered_properties()
   end
 end

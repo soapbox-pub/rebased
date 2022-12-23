@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 import EctoEnum
@@ -9,7 +9,9 @@ defenum(Pleroma.UserRelationship.Type,
   mute: 2,
   reblog_mute: 3,
   notification_mute: 4,
-  inverse_subscription: 5
+  inverse_subscription: 5,
+  suggestion_dismiss: 6,
+  endorsement: 7
 )
 
 defenum(Pleroma.FollowingRelationship.State,

@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -23,8 +23,25 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
   end
 
   describe "POST /api/pleroma/admin/users/email_invite, with valid config" do
-    setup do: clear_config([:instance, :registrations_open], false)
-    setup do: clear_config([:instance, :invites_enabled], true)
+    setup do
+      clear_config([:instance, :registrations_open], false)
+      clear_config([:instance, :invites_enabled], true)
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
+    end
+
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json;charset=utf-8")
+        |> post("/api/pleroma/admin/users/email_invite", %{
+          email: "foo@bar.com",
+          name: "J. D."
+        })
+
+      assert json_response(conn, :forbidden)
+    end
 
     test "sends invitation and returns 204", %{admin: admin, conn: conn} do
       recipient_email = "foo@bar.com"
@@ -114,8 +131,11 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
   end
 
   describe "POST /api/pleroma/admin/users/email_invite, with invalid config" do
-    setup do: clear_config([:instance, :registrations_open])
-    setup do: clear_config([:instance, :invites_enabled])
+    setup do
+      clear_config([:instance, :registrations_open])
+      clear_config([:instance, :invites_enabled])
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
+    end
 
     test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn} do
       clear_config([:instance, :registrations_open], false)
@@ -157,6 +177,21 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
   end
 
   describe "POST /api/pleroma/admin/users/invite_token" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
+    end
+
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/invite_token")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "without options", %{conn: conn} do
       conn =
         conn
@@ -221,6 +256,18 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
   end
 
   describe "GET /api/pleroma/admin/users/invites" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
+    end
+
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/users/invites")
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "no invites", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/users/invites")
 
@@ -249,6 +296,21 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
   end
 
   describe "POST /api/pleroma/admin/users/revoke_invite" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:users_manage_invites])
+    end
+
+    test "returns 403 if not privileged with :users_manage_invites", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
+
+      assert json_response(conn, :forbidden)
+    end
+
     test "with token", %{conn: conn} do
       {:ok, invite} = UserInviteToken.create_invite()
 

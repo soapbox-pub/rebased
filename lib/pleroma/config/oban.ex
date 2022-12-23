@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.Oban do
@@ -21,9 +21,7 @@ defmodule Pleroma.Config.Oban do
           """
           !!!OBAN CONFIG WARNING!!!
           You are using old workers in Oban crontab settings, which were removed.
-          Please, remove setting from crontab in your config file (prod.secret.exs): #{
-            inspect(setting)
-          }
+          Please, remove setting from crontab in your config file (prod.secret.exs): #{inspect(setting)}
           """
           |> Logger.warn()
 

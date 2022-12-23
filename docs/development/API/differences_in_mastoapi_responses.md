@@ -40,6 +40,10 @@ Has these additional fields under the `pleroma` object:
 - `parent_visible`: If the parent of this post is visible to the user or not.
 - `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
 
+The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:
+
+- `content_type`: The content type of the status source.
+
 ## Scheduled statuses
 
 Has these additional fields in `params`:
@@ -241,6 +245,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
+- `language` - user's preferred language for receiving emails (digest, confirmation, etc.)
 
 All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 
@@ -292,6 +297,7 @@ Has these additional parameters (which are the same as in Pleroma-API):
 - `captcha_token`: optional, contains provider-specific captcha token
 - `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
+- `language`: optional, user's preferred language for receiving emails (digest, confirmation, etc.), default to the language set in the `userLanguage` cookies or `Accept-Language` header.
 
 ## Instance
 
@@ -376,18 +382,6 @@ Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer feat
 *Added in Mastodon 2.8.0*
 
 - `GET /api/v1/identity_proofs`: Returns an empty array, `[]`
-
-### Endorsements
-
-*Added in Mastodon 2.5.0*
-
-- `GET /api/v1/endorsements`: Returns an empty array, `[]`
-
-### Profile directory
-
-*Added in Mastodon 3.0.0*
-
-- `GET /api/v1/directory`: Returns HTTP 404
 
 ### Featured tags
 

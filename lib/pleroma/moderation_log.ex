@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ModerationLog do
@@ -341,6 +341,26 @@ defmodule Pleroma.ModerationLog do
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
+          "action" => "add_suggestion",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} added suggested users: #{users_to_nicknames_string(users)}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "remove_suggestion",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} removed suggested users: #{users_to_nicknames_string(users)}"
+  end
+
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
           "nicknames" => nicknames,
           "tags" => tags,
           "action" => "tag"
@@ -481,9 +501,7 @@ defmodule Pleroma.ModerationLog do
           "visibility" => visibility
         }
       }) do
-    "@#{actor_nickname} updated status ##{subject_id}, set sensitive: '#{sensitive}', visibility: '#{
-      visibility
-    }'"
+    "@#{actor_nickname} updated status ##{subject_id}, set sensitive: '#{sensitive}', visibility: '#{visibility}'"
   end
 
   def get_log_entry_message(%ModerationLog{
@@ -523,9 +541,7 @@ defmodule Pleroma.ModerationLog do
           "subject" => subjects
         }
       }) do
-    "@#{actor_nickname} re-sent confirmation email for users: #{
-      users_to_nicknames_string(subjects)
-    }"
+    "@#{actor_nickname} re-sent confirmation email for users: #{users_to_nicknames_string(subjects)}"
   end
 
   def get_log_entry_message(%ModerationLog{

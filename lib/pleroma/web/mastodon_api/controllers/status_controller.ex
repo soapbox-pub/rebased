@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusController do
@@ -38,7 +38,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :index,
            :show,
            :card,
-           :context
+           :context,
+           :show_history,
+           :show_source
          ]
   )
 
@@ -49,7 +51,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :create,
            :delete,
            :reblog,
-           :unreblog
+           :unreblog,
+           :update
          ]
   )
 
@@ -189,6 +192,59 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def create(%{assigns: %{user: _user}, body_params: %{media_ids: _} = params} = conn, _) do
     params = Map.put(params, :status, "")
     create(%Plug.Conn{conn | body_params: params}, %{})
+  end
+
+  @doc "GET /api/v1/statuses/:id/history"
+  def show_history(%{assigns: assigns} = conn, %{id: id} = params) do
+    with user = assigns[:user],
+         %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         true <- Visibility.visible_for_user?(activity, user) do
+      try_render(conn, "history.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
+      )
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc "GET /api/v1/statuses/:id/source"
+  def show_source(%{assigns: assigns} = conn, %{id: id} = _params) do
+    with user = assigns[:user],
+         %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         true <- Visibility.visible_for_user?(activity, user) do
+      try_render(conn, "source.json",
+        activity: activity,
+        for: user
+      )
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc "PUT /api/v1/statuses/:id"
+  def update(%{assigns: %{user: user}, body_params: body_params} = conn, %{id: id} = params) do
+    with {_, %Activity{}} = {_, activity} <- {:activity, Activity.get_by_id_with_object(id)},
+         {_, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
+         {_, true} <- {:is_create, activity.data["type"] == "Create"},
+         actor <- Activity.user_actor(activity),
+         {_, true} <- {:own_status, actor.id == user.id},
+         changes <- body_params |> put_application(conn),
+         {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
+         {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
+      try_render(conn, "show.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true,
+        with_muted: Map.get(params, :with_muted, false)
+      )
+    else
+      {:own_status, _} -> {:error, :forbidden}
+      {:pipeline, _} -> {:error, :internal_server_error}
+      _ -> {:error, :not_found}
+    end
   end
 
   @doc "GET /api/v1/statuses/:id"

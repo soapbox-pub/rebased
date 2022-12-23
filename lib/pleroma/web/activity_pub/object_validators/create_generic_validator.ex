@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 # Code based on CreateChatMessageValidator
@@ -20,14 +20,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:actor, ObjectValidators.ObjectID)
-    field(:type, :string)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
-    field(:bto, ObjectValidators.Recipients, default: [])
-    field(:bcc, ObjectValidators.Recipients, default: [])
-    field(:object, ObjectValidators.ObjectID)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
+
     field(:expires_at, ObjectValidators.DateTime)
 
     # Should be moved to object, done for CommonAPI.Utils.make_context
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
 
     data
     |> CommonFixes.fix_actor()
-    |> Map.put_new("context", object["context"])
+    |> Map.put("context", object["context"])
     |> fix_addressing(object)
   end
 

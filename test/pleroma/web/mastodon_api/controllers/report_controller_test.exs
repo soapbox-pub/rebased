@@ -1,10 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Activity
+  alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -24,6 +26,41 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
              conn
              |> put_req_header("content-type", "application/json")
              |> post("/api/v1/reports", %{"account_id" => target_user.id})
+             |> json_response_and_validate_schema(200)
+  end
+
+  test "submit a report with a fake Create", %{
+    conn: conn
+  } do
+    target_user = insert(:user)
+
+    note = insert(:note, user: target_user)
+
+    activity_params = %{
+      "object" => note.data["id"],
+      "actor" => note.data["actor"],
+      "to" => note.data["to"] || [],
+      "cc" => note.data["cc"] || [],
+      "type" => "Create"
+    }
+
+    {:ok, fake_activity} =
+      Repo.insert(%Activity{
+        data: activity_params,
+        recipients: activity_params["to"] ++ activity_params["cc"],
+        local: true,
+        actor: activity_params["actor"]
+      })
+
+    assert %{"action_taken" => false, "id" => _} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/reports", %{
+               "account_id" => target_user.id,
+               "status_ids" => [fake_activity.id],
+               "comment" => "bad status!",
+               "forward" => "false"
+             })
              |> json_response_and_validate_schema(200)
   end
 

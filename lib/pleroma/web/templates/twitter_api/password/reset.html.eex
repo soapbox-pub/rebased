@@ -1,13 +1,13 @@
 <h2>Password Reset for <%= @user.nickname %></h2>
 <%= form_for @conn, Routes.reset_password_path(@conn, :do_reset), [as: "data"], fn f -> %>
   <div class="form-row">
-    <%= label f, :password, "Password" %>
+    <%= label f, :password, Gettext.dpgettext("static_pages", "password reset form password prompt", "Password") %>
     <%= password_input f, :password %>
   </div>
   <div class="form-row">
-    <%= label f, :password_confirmation, "Confirmation" %>
+    <%= label f, :password_confirmation, Gettext.dpgettext("static_pages", "password reset form confirm password prompt", "Confirmation") %>
     <%= password_input f, :password_confirmation %>
   </div>
   <%= hidden_input f, :token, value: @token.token %>
-  <%= submit "Reset" %>
+  <%= submit Gettext.dpgettext("static_pages", "password reset button", "Reset") %>
 <% end %>

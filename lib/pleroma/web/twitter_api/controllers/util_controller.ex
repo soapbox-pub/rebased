@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilController do
@@ -7,16 +7,26 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   require Logger
 
+  alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.WebFinger
 
-  plug(Pleroma.Web.ApiSpec.CastAndValidate when action != :remote_subscribe)
-  plug(Pleroma.Web.Plugs.FederatingPlug when action == :remote_subscribe)
+  plug(
+    Pleroma.Web.ApiSpec.CastAndValidate
+    when action != :remote_subscribe and action != :show_subscribe_form
+  )
+
+  plug(
+    Pleroma.Web.Plugs.FederatingPlug
+    when action == :remote_subscribe
+    when action == :show_subscribe_form
+  )
 
   plug(
     OAuthScopesPlug,
@@ -26,13 +36,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            :change_password,
            :delete_account,
            :update_notificaton_settings,
-           :disable_account
+           :disable_account,
+           :move_account,
+           :add_alias,
+           :delete_alias
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]}
+    when action in [
+           :list_aliases
          ]
   )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.TwitterUtilOperation
 
-  def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
+  def show_subscribe_form(conn, %{"nickname" => nick}) do
     with %User{} = user <- User.get_cached_by_nickname(nick),
          avatar = User.avatar_url(user) do
       conn
@@ -42,9 +63,50 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         render(conn, "subscribe.html", %{
           nickname: nick,
           avatar: nil,
-          error: "Could not find user"
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "remote follow error message - user not found",
+              "Could not find user"
+            )
         })
     end
+  end
+
+  def show_subscribe_form(conn, %{"status_id" => id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, ap_id} <- get_ap_id(activity),
+         %User{} = user <- User.get_cached_by_ap_id(activity.actor),
+         avatar = User.avatar_url(user) do
+      conn
+      |> render("status_interact.html", %{
+        status_link: ap_id,
+        status_id: id,
+        nickname: user.nickname,
+        avatar: avatar,
+        error: false
+      })
+    else
+      _e ->
+        render(conn, "status_interact.html", %{
+          status_id: id,
+          avatar: nil,
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "status interact error message - status not found",
+              "Could not find status"
+            )
+        })
+    end
+  end
+
+  def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
+    show_subscribe_form(conn, %{"nickname" => nick})
+  end
+
+  def remote_subscribe(conn, %{"status_id" => id, "profile" => _}) do
+    show_subscribe_form(conn, %{"status_id" => id})
   end
 
   def remote_subscribe(conn, %{"user" => %{"nickname" => nick, "profile" => profile}}) do
@@ -57,8 +119,52 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         render(conn, "subscribe.html", %{
           nickname: nick,
           avatar: nil,
-          error: "Something went wrong."
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "remote follow error message - unknown error",
+              "Something went wrong."
+            )
         })
+    end
+  end
+
+  def remote_subscribe(conn, %{"status" => %{"status_id" => id, "profile" => profile}}) do
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile),
+         %Activity{} = activity <- Activity.get_by_id(id),
+         {:ok, ap_id} <- get_ap_id(activity) do
+      conn
+      |> Phoenix.Controller.redirect(external: String.replace(template, "{uri}", ap_id))
+    else
+      _e ->
+        render(conn, "status_interact.html", %{
+          status_id: id,
+          avatar: nil,
+          error:
+            Pleroma.Web.Gettext.dpgettext(
+              "static_pages",
+              "status interact error message - unknown error",
+              "Something went wrong."
+            )
+        })
+    end
+  end
+
+  def remote_interaction(%{body_params: %{ap_id: ap_id, profile: profile}} = conn, _params) do
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile) do
+      conn
+      |> json(%{url: String.replace(template, "{uri}", ap_id)})
+    else
+      _e -> json(conn, %{error: "Couldn't find user"})
+    end
+  end
+
+  defp get_ap_id(activity) do
+    object = Pleroma.Object.normalize(activity, fetch: false)
+
+    case object do
+      %{data: %{"id" => ap_id}} -> {:ok, ap_id}
+      _ -> {:no_ap_id, nil}
     end
   end
 
@@ -123,8 +229,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def delete_account(%{assigns: %{user: user}} = conn, params) do
-    password = params[:password] || ""
+  def delete_account(%{assigns: %{user: user}, body_params: body_params} = conn, params) do
+    # This endpoint can accept a query param or JSON body for backwards-compatibility.
+    # Submitting a JSON body is recommended, so passwords don't end up in server logs.
+    password = body_params[:password] || params[:password] || ""
 
     case CommonAPI.Utils.confirm_current_password(user, password) do
       {:ok, user} ->
@@ -144,6 +252,91 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
       {:error, msg} ->
         json(conn, %{error: msg})
+    end
+  end
+
+  def move_account(%{assigns: %{user: user}, body_params: body_params} = conn, %{}) do
+    case CommonAPI.Utils.confirm_current_password(user, body_params.password) do
+      {:ok, user} ->
+        with {:ok, target_user} <- find_or_fetch_user_by_nickname(body_params.target_account),
+             {:ok, _user} <- ActivityPub.move(user, target_user) do
+          json(conn, %{status: "success"})
+        else
+          {:not_found, _} ->
+            conn
+            |> put_status(404)
+            |> json(%{error: "Target account not found."})
+
+          {:error, error} ->
+            json(conn, %{error: error})
+        end
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
+  def add_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+    with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
+         {:ok, _user} <- user |> User.add_alias(alias_user) do
+      json(conn, %{status: "success"})
+    else
+      {:not_found, _} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Target account does not exist."})
+
+      {:error, error} ->
+        json(conn, %{error: error})
+    end
+  end
+
+  def delete_alias(%{assigns: %{user: user}, body_params: body_params} = conn, _) do
+    with {:ok, alias_user} <- find_user_by_nickname(body_params.alias),
+         {:ok, _user} <- user |> User.delete_alias(alias_user) do
+      json(conn, %{status: "success"})
+    else
+      {:error, :no_such_alias} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Account has no such alias."})
+
+      {:error, error} ->
+        json(conn, %{error: error})
+    end
+  end
+
+  def list_aliases(%{assigns: %{user: user}} = conn, %{}) do
+    alias_nicks =
+      user
+      |> User.alias_users()
+      |> Enum.map(&User.full_nickname/1)
+
+    json(conn, %{aliases: alias_nicks})
+  end
+
+  defp find_user_by_nickname(nickname) do
+    user = User.get_cached_by_nickname(nickname)
+
+    if user == nil do
+      {:not_found, nil}
+    else
+      {:ok, user}
+    end
+  end
+
+  defp find_or_fetch_user_by_nickname(nickname) do
+    user = User.get_by_nickname(nickname)
+
+    if user != nil and user.local do
+      {:ok, user}
+    else
+      with {:ok, user} <- User.fetch_by_nickname(nickname) do
+        {:ok, user}
+      else
+        _ ->
+          {:not_found, nil}
+      end
     end
   end
 

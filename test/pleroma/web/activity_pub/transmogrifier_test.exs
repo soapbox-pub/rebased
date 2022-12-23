@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity.data["id"],
+        "id" => activity.object.data["id"],
         "content" => "test post",
         "published" => object.data["published"],
         "actor" => AccountView.render("show.json", %{user: user, skip_visibility_check: true})
@@ -106,6 +106,22 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["object"] == old_user.ap_id
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
+    end
+
+    test "it fixes both the Create and object contexts in a reply" do
+      insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+      insert(:user, ap_id: "https://p.helene.moe/users/helene")
+
+      create_activity =
+        "test/fixtures/create-pleroma-reply-to-misskey-thread.json"
+        |> File.read!()
+        |> Jason.decode!()
+
+      assert {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(create_activity)
+
+      object = Object.normalize(activity, fetch: false)
+
+      assert activity.data["context"] == object.data["context"]
     end
   end
 
@@ -216,7 +232,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["generator"])
     end
 
@@ -231,7 +246,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
-      assert is_nil(modified["object"]["context_id"])
       assert is_nil(modified["object"]["likes"])
     end
 
@@ -300,6 +314,28 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       url = prepared["object"]["tag"] |> List.first() |> Map.get("icon") |> Map.get("url")
 
       assert url == "http://localhost:4001/emoji/dino%20walking.gif"
+    end
+
+    test "Updates of Notes are handled" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "everybody do the dinosaur :dinosaur:"})
+      {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew :blank:"})
+
+      {:ok, prepared} = Transmogrifier.prepare_outgoing(update.data)
+
+      assert %{
+               "content" => "mew mew :blank:",
+               "tag" => [%{"name" => ":blank:", "type" => "Emoji"}],
+               "formerRepresentations" => %{
+                 "orderedItems" => [
+                   %{
+                     "content" => "everybody do the dinosaur :dinosaur:",
+                     "tag" => [%{"name" => ":dinosaur:", "type" => "Emoji"}]
+                   }
+                 ]
+               }
+             } = prepared["object"]
     end
   end
 
@@ -522,6 +558,85 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                Transmogrifier.get_obj_helper(
                  "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
                )
+    end
+  end
+
+  describe "fix_attachments/1" do
+    test "puts dimensions into attachment url field" do
+      object = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => "https://media.example.tld/1.jpg",
+            "width" => 880,
+            "height" => 960,
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      expected = %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "name" => "Hello world",
+            "url" => [
+              %{
+                "type" => "Link",
+                "mediaType" => "image/jpeg",
+                "href" => "https://media.example.tld/1.jpg",
+                "width" => 880,
+                "height" => 960
+              }
+            ],
+            "mediaType" => "image/jpeg",
+            "blurhash" => "eTKL26+HDjcEIBVl;ds+K6t301W.t7nit7y1E,R:v}ai4nXSt7V@of"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_attachments(object) == expected
+    end
+  end
+
+  describe "prepare_object/1" do
+    test "it processes history" do
+      original = %{
+        "formerRepresentations" => %{
+          "orderedItems" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+
+      history_item = Enum.at(processed["formerRepresentations"]["orderedItems"], 0)
+
+      refute Map.has_key?(history_item, "generator")
+
+      assert [%{"name" => ":blobcat:"}] = history_item["tag"]
+    end
+
+    test "it works when there is no or bad history" do
+      original = %{
+        "formerRepresentations" => %{
+          "items" => [
+            %{
+              "generator" => %{},
+              "emoji" => %{"blobcat" => "http://localhost:4001/emoji/blobcat.png"}
+            }
+          ]
+        }
+      }
+
+      processed = Transmogrifier.prepare_object(original)
+      assert processed["formerRepresentations"] == original["formerRepresentations"]
     end
   end
 end

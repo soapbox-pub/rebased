@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.Activity
   alias Pleroma.Chat
@@ -196,10 +196,33 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     test_notifications_rendering([notification], user, [expected])
   end
 
+  test "Poll notification" do
+    user = insert(:user)
+    activity = insert(:question_activity, user: user)
+    {:ok, [notification]} = Notification.create_poll_notifications(activity)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "poll",
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: user
+        }),
+      status: StatusView.render("show.json", %{activity: activity, for: user}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], user, [expected])
+  end
+
   test "Report notification" do
+    clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
+
     reporting_user = insert(:user)
     reported_user = insert(:user)
-    {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+    moderator_user = insert(:user, is_moderator: true)
 
     {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
     {:ok, [notification]} = Notification.create_notifications(activity)
@@ -214,6 +237,32 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     }
 
     test_notifications_rendering([notification], moderator_user, [expected])
+  end
+
+  test "Edit notification" do
+    user = insert(:user)
+    repeat_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "mew"})
+    {:ok, _} = CommonAPI.repeat(activity.id, repeat_user)
+    {:ok, update} = CommonAPI.update(user, activity, %{status: "mew mew"})
+
+    user = Pleroma.User.get_by_ap_id(user.ap_id)
+    activity = Pleroma.Activity.normalize(activity)
+    update = Pleroma.Activity.normalize(update)
+
+    {:ok, [notification]} = Notification.create_notifications(update)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "update",
+      account: AccountView.render("show.json", %{user: user, for: repeat_user}),
+      created_at: Utils.to_masto_date(notification.inserted_at),
+      status: StatusView.render("show.json", %{activity: activity, for: repeat_user})
+    }
+
+    test_notifications_rendering([notification], repeat_user, [expected])
   end
 
   test "muted notification" do

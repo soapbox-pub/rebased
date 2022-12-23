@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
@@ -80,5 +80,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     assert result["id"] == announce_activity.data["id"]
     assert result["object"] == object.data["id"]
     assert result["type"] == "Announce"
+  end
+
+  test "renders an undo announce activity" do
+    note = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, announce} = CommonAPI.repeat(note.id, user)
+    {:ok, undo} = CommonAPI.unrepeat(note.id, user)
+
+    result = ObjectView.render("object.json", %{object: undo})
+
+    assert result["id"] == undo.data["id"]
+    assert result["object"] == announce.data["id"]
+    assert result["type"] == "Undo"
   end
 end

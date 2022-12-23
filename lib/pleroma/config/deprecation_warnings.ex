@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.DeprecationWarnings do
@@ -20,6 +20,177 @@ defmodule Pleroma.Config.DeprecationWarnings do
      "\n* `config :pleroma, :instance, mrf_transparency_exclusions` is now `config :pleroma, :mrf, transparency_exclusions`"}
   ]
 
+  def check_exiftool_filter do
+    filters = Config.get([Pleroma.Upload]) |> Keyword.get(:filters, [])
+
+    if Pleroma.Upload.Filter.Exiftool in filters do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using Exiftool as a filter instead of Exiftool.StripLocation. This should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool.StripLocation]
+      ```
+      """)
+
+      new_config =
+        filters
+        |> Enum.map(fn
+          Pleroma.Upload.Filter.Exiftool -> Pleroma.Upload.Filter.Exiftool.StripLocation
+          filter -> filter
+        end)
+
+      Config.put([Pleroma.Upload, :filters], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
+  def check_simple_policy_tuples do
+    has_strings =
+      Config.get([:mrf_simple])
+      |> Enum.any?(fn {_, v} -> Enum.any?(v, &is_binary/1) end)
+
+    if has_strings do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using strings in the SimplePolicy configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, :mrf_simple,
+        media_removal: ["instance.tld"],
+        media_nsfw: ["instance.tld"],
+        federated_timeline_removal: ["instance.tld"],
+        report_removal: ["instance.tld"],
+        reject: ["instance.tld"],
+        followers_only: ["instance.tld"],
+        accept: ["instance.tld"],
+        avatar_removal: ["instance.tld"],
+        banner_removal: ["instance.tld"],
+        reject_deletes: ["instance.tld"]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, :mrf_simple,
+        media_removal: [{"instance.tld", "Reason for media removal"}],
+        media_nsfw: [{"instance.tld", "Reason for media nsfw"}],
+        federated_timeline_removal: [{"instance.tld", "Reason for federated timeline removal"}],
+        report_removal: [{"instance.tld", "Reason for report removal"}],
+        reject: [{"instance.tld", "Reason for reject"}],
+        followers_only: [{"instance.tld", "Reason for followers only"}],
+        accept: [{"instance.tld", "Reason for accept"}],
+        avatar_removal: [{"instance.tld", "Reason for avatar removal"}],
+        banner_removal: [{"instance.tld", "Reason for banner removal"}],
+        reject_deletes: [{"instance.tld", "Reason for reject deletes"}]
+      ```
+      """)
+
+      new_config =
+        Config.get([:mrf_simple])
+        |> Enum.map(fn {k, v} ->
+          {k,
+           Enum.map(v, fn
+             {instance, reason} -> {instance, reason}
+             instance -> {instance, ""}
+           end)}
+        end)
+
+      Config.put([:mrf_simple], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
+  def check_quarantined_instances_tuples do
+    has_strings = Config.get([:instance, :quarantined_instances]) |> Enum.any?(&is_binary/1)
+
+    if has_strings do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using strings in the quarantined_instances configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, :instance,
+        quarantined_instances: ["instance.tld"]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, :instance,
+        quarantined_instances: [{"instance.tld", "Reason for quarantine"}]
+      ```
+      """)
+
+      new_config =
+        Config.get([:instance, :quarantined_instances])
+        |> Enum.map(fn
+          {instance, reason} -> {instance, reason}
+          instance -> {instance, ""}
+        end)
+
+      Config.put([:instance, :quarantined_instances], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
+  def check_transparency_exclusions_tuples do
+    has_strings = Config.get([:mrf, :transparency_exclusions]) |> Enum.any?(&is_binary/1)
+
+    if has_strings do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using strings in the transparency_exclusions configuration instead of tuples. They should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, :mrf,
+        transparency_exclusions: ["instance.tld"]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, :mrf,
+        transparency_exclusions: [{"instance.tld", "Reason to exlude transparency"}]
+      ```
+      """)
+
+      new_config =
+        Config.get([:mrf, :transparency_exclusions])
+        |> Enum.map(fn
+          {instance, reason} -> {instance, reason}
+          instance -> {instance, ""}
+        end)
+
+      Config.put([:mrf, :transparency_exclusions], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
+
   def check_hellthread_threshold do
     if Config.get([:mrf_hellthread, :threshold]) do
       Logger.warn("""
@@ -34,20 +205,25 @@ defmodule Pleroma.Config.DeprecationWarnings do
   end
 
   def warn do
-    with :ok <- check_hellthread_threshold(),
-         :ok <- check_old_mrf_config(),
-         :ok <- check_media_proxy_whitelist_config(),
-         :ok <- check_welcome_message_config(),
-         :ok <- check_gun_pool_options(),
-         :ok <- check_activity_expiration_config(),
-         :ok <- check_remote_ip_plug_name(),
-         :ok <- check_uploders_s3_public_endpoint(),
-         :ok <- check_old_chat_shoutbox() do
-      :ok
-    else
-      _ ->
-        :error
-    end
+    [
+      check_hellthread_threshold(),
+      check_old_mrf_config(),
+      check_media_proxy_whitelist_config(),
+      check_welcome_message_config(),
+      check_gun_pool_options(),
+      check_activity_expiration_config(),
+      check_remote_ip_plug_name(),
+      check_uploders_s3_public_endpoint(),
+      check_old_chat_shoutbox(),
+      check_quarantined_instances_tuples(),
+      check_transparency_exclusions_tuples(),
+      check_simple_policy_tuples(),
+      check_exiftool_filter()
+    ]
+    |> Enum.reduce(:ok, fn
+      :ok, :ok -> :ok
+      _, _ -> :error
+    end)
   end
 
   def check_welcome_message_config do
@@ -135,7 +311,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
     warning_preface = """
     !!!DEPRECATION WARNING!!!
-    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. The setting will not take effect until updated.
     """
 
     updated_config =

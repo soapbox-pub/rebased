@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ConnCase do
@@ -102,9 +102,7 @@ defmodule Pleroma.Web.ConnCase do
               end)
 
             flunk(
-              "Response does not conform to schema of #{op_id} operation: #{
-                Enum.join(errors, "\n")
-              }\n#{inspect(json)}"
+              "Response does not conform to schema of #{op_id} operation: #{Enum.join(errors, "\n")}\n#{inspect(json)}"
             )
         end
       end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
@@ -59,9 +59,9 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
 
       assert csp =~ ~r|report-uri https://endpoint.com;report-to csp-endpoint;|
 
-      [reply_to] = Conn.get_resp_header(conn, "reply-to")
+      [report_to] = Conn.get_resp_header(conn, "report-to")
 
-      assert reply_to ==
+      assert report_to ==
                "{\"endpoints\":[{\"url\":\"https://endpoint.com\"}],\"group\":\"csp-endpoint\",\"max-age\":10886400}"
     end
 

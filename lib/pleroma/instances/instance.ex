@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Instances.Instance do
@@ -8,6 +8,8 @@ defmodule Pleroma.Instances.Instance do
   alias Pleroma.Instances
   alias Pleroma.Instances.Instance
   alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Workers.BackgroundWorker
 
   use Ecto.Schema
 
@@ -194,5 +196,25 @@ defmodule Pleroma.Instances.Instance do
 
         nil
     end
+  end
+
+  @doc """
+  Deletes all users from an instance in a background task, thus also deleting
+  all of those users' activities and notifications.
+  """
+  def delete_users_and_activities(host) when is_binary(host) do
+    BackgroundWorker.enqueue("delete_instance", %{"host" => host})
+  end
+
+  def perform(:delete_instance, host) when is_binary(host) do
+    User.Query.build(%{nickname: "@#{host}"})
+    |> Repo.chunk_stream(100, :batches)
+    |> Stream.each(fn users ->
+      users
+      |> Enum.each(fn user ->
+        User.perform(:delete, user)
+      end)
+    end)
+    |> Stream.run()
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.StatusController do
@@ -65,12 +65,6 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
 
   def delete(%{assigns: %{user: user}} = conn, %{id: id}) do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
-      ModerationLog.insert_log(%{
-        action: "status_delete",
-        actor: user,
-        subject_id: id
-      })
-
       json(conn, %{})
     end
   end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
@@ -73,16 +73,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
              %{
                "mediaType" => "audio/ogg",
                "type" => "Link",
-               "name" => nil,
-               "blurhash" => nil,
                "url" => [
                  %{
                    "href" =>
                      "https://channels.tests.funkwhale.audio/api/v1/listen/3901e5d8-0445-49d5-9711-e096cf32e515/?upload=42342395-0208-4fee-a38d-259a6dae0871&download=false",
                    "mediaType" => "audio/ogg",
-                   "type" => "Link",
-                   "width" => nil,
-                   "height" => nil
+                   "type" => "Link"
                  }
                ]
              }

@@ -1,9 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
+  import Phoenix.LiveDashboard.Router
 
   pipeline :accepts_html do
     plug(:accepts, ["html"])
@@ -96,14 +97,82 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
+    plug(Pleroma.Web.Plugs.UserIsStaffPlug)
     plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
-  pipeline :mastodon_html do
-    plug(:browser)
-    plug(:authenticate)
-    plug(:after_auth)
+  pipeline :require_admin do
+    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
+  end
+
+  pipeline :require_privileged_role_users_delete do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_delete)
+  end
+
+  pipeline :require_privileged_role_users_manage_credentials do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_credentials)
+  end
+
+  pipeline :require_privileged_role_messages_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :messages_read)
+  end
+
+  pipeline :require_privileged_role_users_manage_tags do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_tags)
+  end
+
+  pipeline :require_privileged_role_users_manage_activation_state do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_activation_state)
+  end
+
+  pipeline :require_privileged_role_users_manage_invites do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_manage_invites)
+  end
+
+  pipeline :require_privileged_role_reports_manage_reports do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :reports_manage_reports)
+  end
+
+  pipeline :require_privileged_role_users_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :users_read)
+  end
+
+  pipeline :require_privileged_role_messages_delete do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :messages_delete)
+  end
+
+  pipeline :require_privileged_role_emoji_manage_emoji do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :emoji_manage_emoji)
+  end
+
+  pipeline :require_privileged_role_instances_delete do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :instances_delete)
+  end
+
+  pipeline :require_privileged_role_moderation_log_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :moderation_log_read)
+  end
+
+  pipeline :require_privileged_role_statistics_read do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :statistics_read)
+  end
+
+  pipeline :require_privileged_role_announcements_manage_announcements do
+    plug(:admin_api)
+    plug(Pleroma.Web.Plugs.EnsurePrivilegedPlug, :announcements_manage_announcements)
   end
 
   pipeline :pleroma_html do
@@ -152,6 +221,7 @@ defmodule Pleroma.Web.Router do
     get("/emoji", UtilController, :emoji)
     get("/captcha", UtilController, :captcha)
     get("/healthcheck", UtilController, :healthcheck)
+    post("/remote_interaction", UtilController, :remote_interaction)
   end
 
   scope "/api/v1/pleroma", Pleroma.Web do
@@ -159,12 +229,9 @@ defmodule Pleroma.Web.Router do
     post("/uploader_callback/:upload_path", UploaderController, :callback)
   end
 
+  # AdminAPI: only admins can perform these actions
   scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
-
-    put("/users/disable_mfa", AdminAPIController, :disable_mfa)
-    put("/users/tag", AdminAPIController, :tag_users)
-    delete("/users/tag", AdminAPIController, :untag_users)
+    pipe_through([:admin_api, :require_admin])
 
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
@@ -187,62 +254,24 @@ defmodule Pleroma.Web.Router do
 
     post("/users/follow", UserController, :follow)
     post("/users/unfollow", UserController, :unfollow)
-    delete("/users", UserController, :delete)
     post("/users", UserController, :create)
-    patch("/users/:nickname/toggle_activation", UserController, :toggle_activation)
-    patch("/users/activate", UserController, :activate)
-    patch("/users/deactivate", UserController, :deactivate)
-    patch("/users/approve", UserController, :approve)
+
+    patch("/users/suggest", UserController, :suggest)
+    patch("/users/unsuggest", UserController, :unsuggest)
 
     get("/relay", RelayController, :index)
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
 
-    post("/users/invite_token", InviteController, :create)
-    get("/users/invites", InviteController, :index)
-    post("/users/revoke_invite", InviteController, :revoke)
-    post("/users/email_invite", InviteController, :email)
-
-    get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
-    patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
-    get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
-    patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
-
-    get("/users", UserController, :index)
-    get("/users/:nickname", UserController, :show)
-    get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
-    get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
-
-    get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
-
     get("/instance_document/:name", InstanceDocumentController, :show)
     patch("/instance_document/:name", InstanceDocumentController, :update)
     delete("/instance_document/:name", InstanceDocumentController, :delete)
-
-    patch("/users/confirm_email", AdminAPIController, :confirm_email)
-    patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
-
-    get("/reports", ReportController, :index)
-    get("/reports/:id", ReportController, :show)
-    patch("/reports", ReportController, :update)
-    post("/reports/:id/notes", ReportController, :notes_create)
-    delete("/reports/:report_id/notes/:id", ReportController, :notes_delete)
-
-    get("/statuses/:id", StatusController, :show)
-    put("/statuses/:id", StatusController, :update)
-    delete("/statuses/:id", StatusController, :delete)
-    get("/statuses", StatusController, :index)
 
     get("/config", ConfigController, :show)
     post("/config", ConfigController, :update)
     get("/config/descriptions", ConfigController, :descriptions)
     get("/need_reboot", AdminAPIController, :need_reboot)
     get("/restart", AdminAPIController, :restart)
-
-    get("/moderation_log", AdminAPIController, :list_log)
-
-    post("/reload_emoji", AdminAPIController, :reload_emoji)
-    get("/stats", AdminAPIController, :stats)
 
     get("/oauth_app", OAuthAppController, :index)
     post("/oauth_app", OAuthAppController, :create)
@@ -253,19 +282,148 @@ defmodule Pleroma.Web.Router do
     post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
     post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
 
-    get("/chats/:id", ChatController, :show)
-    get("/chats/:id/messages", ChatController, :messages)
-    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
-
     get("/frontends", FrontendController, :index)
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
   end
 
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_announcements_manage_announcements)
+
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements", AnnouncementController, :create)
+    get("/announcements/:id", AnnouncementController, :show)
+    patch("/announcements/:id", AnnouncementController, :change)
+    delete("/announcements/:id", AnnouncementController, :delete)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_users_delete)
+
+    delete("/users", UserController, :delete)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_users_manage_credentials)
+
+    get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
+    get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
+    patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
+    put("/users/disable_mfa", AdminAPIController, :disable_mfa)
+    patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
+    patch("/users/confirm_email", AdminAPIController, :confirm_email)
+    patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_messages_read)
+
+    get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
+    get("/users/:nickname/chats", AdminAPIController, :list_user_chats)
+
+    get("/statuses", StatusController, :index)
+
+    get("/chats/:id", ChatController, :show)
+    get("/chats/:id/messages", ChatController, :messages)
+
+    get("/instances/:instance/statuses", InstanceController, :list_statuses)
+
+    get("/statuses/:id", StatusController, :show)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_users_manage_tags)
+
+    put("/users/tag", AdminAPIController, :tag_users)
+    delete("/users/tag", AdminAPIController, :untag_users)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_users_manage_activation_state)
+
+    patch("/users/:nickname/toggle_activation", UserController, :toggle_activation)
+    patch("/users/activate", UserController, :activate)
+    patch("/users/deactivate", UserController, :deactivate)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_users_manage_invites)
+
+    patch("/users/approve", UserController, :approve)
+    post("/users/invite_token", InviteController, :create)
+    get("/users/invites", InviteController, :index)
+    post("/users/revoke_invite", InviteController, :revoke)
+    post("/users/email_invite", InviteController, :email)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_reports_manage_reports)
+
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+    patch("/reports", ReportController, :update)
+    post("/reports/:id/notes", ReportController, :notes_create)
+    delete("/reports/:report_id/notes/:id", ReportController, :notes_delete)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_users_read)
+
+    get("/users", UserController, :index)
+    get("/users/:nickname", UserController, :show)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_messages_delete)
+
+    put("/statuses/:id", StatusController, :update)
+    delete("/statuses/:id", StatusController, :delete)
+
+    delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_emoji_manage_emoji)
+
+    post("/reload_emoji", AdminAPIController, :reload_emoji)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_instances_delete)
+
+    delete("/instances/:instance", InstanceController, :delete)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_moderation_log_read)
+
+    get("/moderation_log", AdminAPIController, :list_log)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_statistics_read)
+
+    get("/stats", AdminAPIController, :stats)
+  end
+
   scope "/api/v1/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope "/pack" do
-      pipe_through(:admin_api)
+      pipe_through(:require_privileged_role_emoji_manage_emoji)
 
       post("/", EmojiPackController, :create)
       patch("/", EmojiPackController, :update)
@@ -280,7 +438,7 @@ defmodule Pleroma.Web.Router do
 
     # Modifying packs
     scope "/packs" do
-      pipe_through(:admin_api)
+      pipe_through(:require_privileged_role_emoji_manage_emoji)
 
       get("/import", EmojiPackController, :import_from_filesystem)
       get("/remote", EmojiPackController, :remote)
@@ -304,6 +462,7 @@ defmodule Pleroma.Web.Router do
     pipe_through(:pleroma_html)
 
     post("/main/ostatus", UtilController, :remote_subscribe)
+    get("/main/ostatus", UtilController, :show_subscribe_form)
     get("/ostatus_subscribe", RemoteFollowController, :follow)
     post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
@@ -316,6 +475,11 @@ defmodule Pleroma.Web.Router do
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
     post("/disable_account", UtilController, :disable_account)
+    post("/move_account", UtilController, :move_account)
+
+    put("/aliases", UtilController, :add_alias)
+    get("/aliases", UtilController, :list_aliases)
+    delete("/aliases", UtilController, :delete_alias)
   end
 
   scope "/api/pleroma", Pleroma.Web.PleromaAPI do
@@ -368,6 +532,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
 
+    get("/apps", AppController, :index)
     get("/statuses/:id/reactions/:emoji", EmojiReactionController, :index)
     get("/statuses/:id/reactions", EmojiReactionController, :index)
   end
@@ -412,6 +577,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:api)
       get("/accounts/:id/favourites", AccountController, :favourites)
+      get("/accounts/:id/endorsements", AccountController, :endorsements)
     end
 
     scope [] do
@@ -419,6 +585,15 @@ defmodule Pleroma.Web.Router do
 
       post("/accounts/:id/subscribe", AccountController, :subscribe)
       post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
+
+      get("/birthdays", AccountController, :birthdays)
+    end
+
+    scope [] do
+      pipe_through(:authenticated_api)
+
+      get("/settings/:app", SettingsController, :show)
+      patch("/settings/:app", SettingsController, :update)
     end
 
     post("/accounts/confirmation_resend", AccountController, :confirmation_resend)
@@ -457,6 +632,10 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/unblock", AccountController, :unblock)
     post("/accounts/:id/mute", AccountController, :mute)
     post("/accounts/:id/unmute", AccountController, :unmute)
+    post("/accounts/:id/note", AccountController, :note)
+    post("/accounts/:id/pin", AccountController, :endorse)
+    post("/accounts/:id/unpin", AccountController, :unendorse)
+    post("/accounts/:id/remove_from_followers", AccountController, :remove_from_followers)
 
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
@@ -518,6 +697,7 @@ defmodule Pleroma.Web.Router do
     get("/bookmarks", StatusController, :bookmarks)
 
     post("/statuses", StatusController, :create)
+    put("/statuses/:id", StatusController, :update)
     delete("/statuses/:id", StatusController, :delete)
     post("/statuses/:id/reblog", StatusController, :reblog)
     post("/statuses/:id/unreblog", StatusController, :unreblog)
@@ -536,17 +716,14 @@ defmodule Pleroma.Web.Router do
     delete("/push/subscription", SubscriptionController, :delete)
 
     get("/suggestions", SuggestionController, :index)
+    delete("/suggestions/:account_id", SuggestionController, :dismiss)
 
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
     get("/timelines/list/:list_id", TimelineController, :list)
-  end
 
-  scope "/api/web", Pleroma.Web do
-    pipe_through(:authenticated_api)
-
-    # Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere
-    put("/settings", MastoFEController, :put_settings)
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
@@ -561,6 +738,8 @@ defmodule Pleroma.Web.Router do
 
     get("/accounts/search", SearchController, :account_search)
     get("/search", SearchController, :search)
+
+    get("/accounts/lookup", AccountController, :lookup)
 
     get("/accounts/:id/statuses", AccountController, :statuses)
     get("/accounts/:id/followers", AccountController, :followers)
@@ -578,6 +757,8 @@ defmodule Pleroma.Web.Router do
     get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
+    get("/statuses/:id/history", StatusController, :show_history)
+    get("/statuses/:id/source", StatusController, :show_source)
 
     get("/custom_emojis", CustomEmojiController, :index)
 
@@ -587,6 +768,8 @@ defmodule Pleroma.Web.Router do
     get("/timelines/tag/:tag", TimelineController, :hashtag)
 
     get("/polls/:id", PollController, :show)
+
+    get("/directory", DirectoryController, :index)
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
@@ -594,6 +777,8 @@ defmodule Pleroma.Web.Router do
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
+
+    get("/suggestions", SuggestionController, :index2)
   end
 
   scope "/api", Pleroma.Web do
@@ -747,20 +932,13 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     pipe_through(:api)
 
-    get("/web/manifest.json", MastoFEController, :manifest)
+    get("/manifest.json", ManifestController, :show)
   end
 
   scope "/", Pleroma.Web do
-    pipe_through(:mastodon_html)
+    pipe_through(:pleroma_html)
 
-    get("/web/login", MastodonAPI.AuthController, :login)
-    delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
-
-    post("/auth/password", MastodonAPI.AuthController, :password_reset)
-
-    get("/web/*path", MastoFEController, :index)
-
-    get("/embed/:id", EmbedController, :show)
+    post("/auth/password", TwitterAPI.PasswordController, :request)
   end
 
   scope "/proxy/", Pleroma.Web do
@@ -776,6 +954,11 @@ defmodule Pleroma.Web.Router do
 
       forward("/mailbox", Plug.Swoosh.MailboxPreview, base_path: "/dev/mailbox")
     end
+  end
+
+  scope "/" do
+    pipe_through([:pleroma_html, :authenticate, :require_admin])
+    live_dashboard("/phoenix/live_dashboard")
   end
 
   # Test-only routes needed to test action dispatching and plug chain execution

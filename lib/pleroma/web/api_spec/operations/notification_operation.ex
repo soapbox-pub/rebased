@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.NotificationOperation do
@@ -49,6 +49,12 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
           ),
           Operation.parameter(
             :include_types,
+            :query,
+            %Schema{type: :array, items: notification_type()},
+            "Deprecated, use `types` instead"
+          ),
+          Operation.parameter(
+            :types,
             :query,
             %Schema{type: :array, items: notification_type()},
             "Include the notifications for activities with the given types"
@@ -195,7 +201,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "pleroma:chat_mention",
         "pleroma:report",
         "move",
-        "follow_request"
+        "follow_request",
+        "poll"
       ],
       description: """
       The type of event that resulted in the notification.

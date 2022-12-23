@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
@@ -99,6 +99,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
 
       assert TagPolicy.filter(message) == {:ok, except_message}
     end
+
+    test "removes attachments in Updates" do
+      actor = insert(:user, tags: ["mrf_tag:media-strip"])
+
+      message = %{
+        "actor" => actor.ap_id,
+        "type" => "Update",
+        "object" => %{"attachment" => ["file1"]}
+      }
+
+      except_message = %{
+        "actor" => actor.ap_id,
+        "type" => "Update",
+        "object" => %{}
+      }
+
+      assert TagPolicy.filter(message) == {:ok, except_message}
+    end
   end
 
   describe "mrf_tag:media-force-nsfw" do
@@ -114,6 +132,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
       except_message = %{
         "actor" => actor.ap_id,
         "type" => "Create",
+        "object" => %{"tag" => ["test"], "attachment" => ["file1"], "sensitive" => true}
+      }
+
+      assert TagPolicy.filter(message) == {:ok, except_message}
+    end
+
+    test "Mark as sensitive on presence of attachments in Updates" do
+      actor = insert(:user, tags: ["mrf_tag:media-force-nsfw"])
+
+      message = %{
+        "actor" => actor.ap_id,
+        "type" => "Update",
+        "object" => %{"tag" => ["test"], "attachment" => ["file1"]}
+      }
+
+      except_message = %{
+        "actor" => actor.ap_id,
+        "type" => "Update",
         "object" => %{"tag" => ["test"], "attachment" => ["file1"], "sensitive" => true}
       }
 

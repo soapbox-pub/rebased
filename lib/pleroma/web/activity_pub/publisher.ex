@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Publisher do
@@ -111,6 +111,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
       quarantined_instances =
         Config.get([:instance, :quarantined_instances], [])
+        |> Pleroma.Web.ActivityPub.MRF.instance_list_from_tuples()
         |> Pleroma.Web.ActivityPub.MRF.subdomains_regex()
 
       !Pleroma.Web.ActivityPub.MRF.subdomain_match?(quarantined_instances, host)

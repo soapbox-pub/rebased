@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
+  import Mock
   import Pleroma.Factory
 
   alias Pleroma.Filter
@@ -53,23 +54,19 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       in_seconds = 600
 
       response =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/filters", %{
-          "phrase" => "knights",
-          context: ["home"],
-          expires_in: in_seconds
-        })
-        |> json_response_and_validate_schema(200)
+        with_mock NaiveDateTime, [:passthrough], utc_now: fn -> ~N[2017-03-17 17:09:58] end do
+          conn
+          |> put_req_header("content-type", "application/json")
+          |> post("/api/v1/filters", %{
+            "phrase" => "knights",
+            context: ["home"],
+            expires_in: in_seconds
+          })
+          |> json_response_and_validate_schema(200)
+        end
 
       assert response["irreversible"] == false
-
-      expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(in_seconds)
-        |> Pleroma.Web.CommonAPI.Utils.to_masto_date()
-
-      assert response["expires_at"] == expires_at
+      assert response["expires_at"] == "2017-03-17T17:19:58.000Z"
 
       filter = Filter.get(response["id"], user)
 
@@ -181,22 +178,20 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       in_seconds = 600
 
       response =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> put("/api/v1/filters/#{filter.filter_id}", %{
-          phrase: "nii",
-          context: ["public"],
-          expires_in: in_seconds,
-          irreversible: true
-        })
-        |> json_response_and_validate_schema(200)
+        with_mock NaiveDateTime, [:passthrough], utc_now: fn -> ~N[2017-03-17 17:09:58] end do
+          conn
+          |> put_req_header("content-type", "application/json")
+          |> put("/api/v1/filters/#{filter.filter_id}", %{
+            phrase: "nii",
+            context: ["public"],
+            expires_in: in_seconds,
+            irreversible: true
+          })
+          |> json_response_and_validate_schema(200)
+        end
 
       assert response["irreversible"] == true
-
-      assert response["expires_at"] ==
-               NaiveDateTime.utc_now()
-               |> NaiveDateTime.add(in_seconds)
-               |> Pleroma.Web.CommonAPI.Utils.to_masto_date()
+      assert response["expires_at"] == "2017-03-17T17:19:58.000Z"
 
       filter = Filter.get(response["id"], user)
 

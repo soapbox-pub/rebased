@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
@@ -12,6 +12,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.UserInviteToken
 
   def register_user(params, opts \\ []) do
+    fallback_language = Gettext.get_locale()
+
     params =
       params
       |> Map.take([:email, :token, :password])
@@ -20,6 +22,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       |> Map.put(:name, Map.get(params, :fullname, params[:username]))
       |> Map.put(:password_confirmation, params[:password])
       |> Map.put(:registration_reason, params[:reason])
+      |> Map.put(:birthday, params[:birthday])
+      |> Map.put(
+        :language,
+        Pleroma.Web.Gettext.normalize_locale(params[:language]) || fallback_language
+      )
 
     if Pleroma.Config.get([:instance, :registrations_open]) do
       create_user(params, opts)

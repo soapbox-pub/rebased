@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Ir.TopicsTest do
@@ -58,7 +58,7 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
     setup do
       activity = %Activity{
         object: %Object{data: %{"type" => "Note"}},
-        data: %{"to" => [Pleroma.Constants.as_public()]}
+        data: %{"to" => [Pleroma.Constants.as_public()], "type" => "Create"}
       }
 
       {:ok, activity: activity}
@@ -134,6 +134,25 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
       topics = Topics.get_activity_topics(activity)
 
       refute Enum.member?(topics, "public:remote:lain.com")
+    end
+  end
+
+  describe "public visibility Announces" do
+    setup do
+      activity = %Activity{
+        object: %Object{data: %{"attachment" => []}},
+        data: %{"type" => "Announce", "to" => [Pleroma.Constants.as_public()]}
+      }
+
+      {:ok, activity: activity}
+    end
+
+    test "does not generate public topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute "public" in topics
+      refute "public:remote" in topics
+      refute "public:local" in topics
     end
   end
 
@@ -230,7 +249,11 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
 
   describe "non-public visibility" do
     test "produces direct topic" do
-      activity = %Activity{object: %Object{data: %{"type" => "Note"}}, data: %{"to" => []}}
+      activity = %Activity{
+        object: %Object{data: %{"type" => "Note"}},
+        data: %{"to" => [], "type" => "Create"}
+      }
+
       topics = Topics.get_activity_topics(activity)
 
       assert Enum.member?(topics, "direct")

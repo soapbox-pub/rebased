@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceBotUnlistedPolicy do
   require Pleroma.Constants
 
   defp check_by_actor_type(user), do: user.actor_type in ["Application", "Service"]
-  defp check_by_nickname(user), do: Regex.match?(~r/bot@|ebooks@/i, user.nickname)
+  defp check_by_nickname(user), do: Regex.match?(~r/.bot@|ebooks@/i, user.nickname)
 
   defp check_if_bot(user), do: check_by_actor_type(user) or check_by_nickname(user)
 

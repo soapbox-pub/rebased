@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
@@ -24,9 +24,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
     assert response.status == 200
 
     assert response.resp_body ==
-             ~s(<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" template="#{
-               Pleroma.Web.Endpoint.url()
-             }/.well-known/webfinger?resource={uri}" type="application/xrd+xml" /></XRD>)
+             ~s(<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" template="#{Pleroma.Web.Endpoint.url()}/.well-known/webfinger?resource={uri}" type="application/xrd+xml" /></XRD>)
   end
 
   test "Webfinger JRD" do
@@ -48,6 +46,35 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
              "https://hyrule.world/users/zelda",
              "https://mushroom.kingdom/users/toad"
            ]
+  end
+
+  test "reach user on tld, while pleroma is runned on subdomain" do
+    Pleroma.Web.Endpoint.config_change(
+      [{Pleroma.Web.Endpoint, url: [host: "sub.example.com"]}],
+      []
+    )
+
+    clear_config([Pleroma.Web.Endpoint, :url, :host], "sub.example.com")
+
+    clear_config([Pleroma.Web.WebFinger, :domain], "example.com")
+
+    user = insert(:user, ap_id: "https://sub.example.com/users/bobby", nickname: "bobby")
+
+    response =
+      build_conn()
+      |> put_req_header("accept", "application/jrd+json")
+      |> get("/.well-known/webfinger?resource=acct:#{user.nickname}@example.com")
+      |> json_response(200)
+
+    assert response["subject"] == "acct:#{user.nickname}@example.com"
+    assert response["aliases"] == ["https://sub.example.com/users/#{user.nickname}"]
+
+    on_exit(fn ->
+      Pleroma.Web.Endpoint.config_change(
+        [{Pleroma.Web.Endpoint, url: [host: "localhost"]}],
+        []
+      )
+    end)
   end
 
   test "it returns 404 when user isn't found (JSON)" do

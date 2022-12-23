@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MediaProxy.MediaProxyController do
@@ -54,7 +54,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     media_proxy_url = MediaProxy.url(url)
 
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
-           Pleroma.HTTP.request("head", media_proxy_url, [], [], pool: :media) do
+           Pleroma.HTTP.request("HEAD", media_proxy_url, [], [], pool: :media) do
       content_type = Tesla.get_header(head_response, "content-type")
       content_length = Tesla.get_header(head_response, "content-length")
       content_length = content_length && String.to_integer(content_length)

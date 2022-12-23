@@ -1,11 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   use Ecto.Schema
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
 
@@ -15,14 +14,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:type, :string)
-    field(:object, ObjectValidators.ObjectID)
-    field(:actor, ObjectValidators.ObjectID)
+    quote do
+      unquote do
+        import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
+        message_fields()
+        activity_fields()
+      end
+    end
+
     field(:context, :string)
     field(:content, :string)
-    field(:to, ObjectValidators.Recipients, default: [])
-    field(:cc, ObjectValidators.Recipients, default: [])
   end
 
   def cast_and_validate(data) do
@@ -48,6 +49,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   defp fix(data) do
     data =
       data
+      |> fix_emoji_qualification()
       |> CommonFixes.fix_actor()
       |> CommonFixes.fix_activity_addressing()
 
@@ -59,6 +61,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
       _ -> data
     end
   end
+
+  defp fix_emoji_qualification(%{"content" => emoji} = data) do
+    new_emoji = Pleroma.Emoji.fully_qualify_emoji(emoji)
+
+    cond do
+      Pleroma.Emoji.is_unicode_emoji?(emoji) ->
+        data
+
+      Pleroma.Emoji.is_unicode_emoji?(new_emoji) ->
+        data |> Map.put("content", new_emoji)
+
+      true ->
+        data
+    end
+  end
+
+  defp fix_emoji_qualification(data), do: data
 
   defp validate_emoji(cng) do
     content = get_field(cng, :content)

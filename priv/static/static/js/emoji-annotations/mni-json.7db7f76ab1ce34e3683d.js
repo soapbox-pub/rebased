@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpleroma_fe=self.webpackChunkpleroma_fe||[]).push([[5401],{81597:e=>{e.exports=JSON.parse('{"🔫":{"keywords":["ঈশিংকাপ্পী নোংমৈ"],"name":"ঈশিংকাপ্পী নোংমৈ"}}')}}]);

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Application do
@@ -61,6 +61,11 @@ defmodule Pleroma.Application do
 
     adapter = Application.get_env(:tesla, :adapter)
 
+    if match?({Tesla.Adapter.Finch, _}, adapter) do
+      Logger.info("Starting Finch")
+      Finch.start_link(name: MyFinch)
+    end
+
     if adapter == Tesla.Adapter.Gun do
       if version = Pleroma.OTPVersion.version() do
         [major, minor] =
@@ -108,7 +113,17 @@ defmodule Pleroma.Application do
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
+    # If we have a lot of caches, default max_restarts can cause test
+    # resets to fail.
+    # Go for the default 3 unless we're in test
+    max_restarts =
+      if @mix_env == :test do
+        100
+      else
+        3
+      end
+
+    opts = [strategy: :one_for_one, name: Pleroma.Supervisor, max_restarts: max_restarts]
     result = Supervisor.start_link(children, opts)
 
     set_postgres_server_version()
@@ -185,6 +200,7 @@ defmodule Pleroma.Application do
       build_cachex("object", default_ttl: 25_000, ttl_interval: 1000, limit: 2500),
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
+      build_cachex("scrubber_management", limit: 2500),
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
@@ -234,7 +250,8 @@ defmodule Pleroma.Application do
 
   defp background_migrators do
     [
-      Pleroma.Migrators.HashtagsTableMigrator
+      Pleroma.Migrators.HashtagsTableMigrator,
+      Pleroma.Migrators.ContextObjectsDeletionMigrator
     ]
   end
 

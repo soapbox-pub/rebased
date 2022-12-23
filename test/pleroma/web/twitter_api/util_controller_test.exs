@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
@@ -26,11 +26,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings", %{user: user, conn: conn} do
       conn
       |> put(
-        "/api/pleroma/notification_settings?#{
-          URI.encode_query(%{
-            block_from_strangers: true
-          })
-        }"
+        "/api/pleroma/notification_settings?#{URI.encode_query(%{block_from_strangers: true})}"
       )
       |> json_response_and_validate_schema(:ok)
 
@@ -45,11 +41,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "it updates notification settings to enable hiding contents", %{user: user, conn: conn} do
       conn
       |> put(
-        "/api/pleroma/notification_settings?#{
-          URI.encode_query(%{
-            hide_notification_contents: 1
-          })
-        }"
+        "/api/pleroma/notification_settings?#{URI.encode_query(%{hide_notification_contents: 1})}"
       )
       |> json_response_and_validate_schema(:ok)
 
@@ -241,6 +233,102 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
+  describe "POST /main/ostatus - remote_subscribe/2 - with statuses" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "renders subscribe form", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+
+      assert is_binary(status_id)
+
+      response =
+        conn
+        |> post("/main/ostatus", %{"status_id" => status_id, "profile" => ""})
+        |> response(:ok)
+
+      refute response =~ "Could not find status"
+      assert response =~ "Interacting with"
+    end
+
+    test "renders subscribe form with error when status not found", %{conn: conn} do
+      response =
+        conn
+        |> post("/main/ostatus", %{"status_id" => "somerandomid", "profile" => ""})
+        |> response(:ok)
+
+      assert response =~ "Could not find status"
+      refute response =~ "Interacting with"
+    end
+
+    test "it redirect to webfinger url", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+      status_ap_id = status.data["object"]
+
+      assert is_binary(status_id)
+      assert is_binary(status_ap_id)
+
+      user2 = insert(:user, ap_id: "shp@social.heldscal.la")
+
+      conn =
+        conn
+        |> post("/main/ostatus", %{
+          "status" => %{"status_id" => status_id, "profile" => user2.ap_id}
+        })
+
+      assert redirected_to(conn) ==
+               "https://social.heldscal.la/main/ostatussub?profile=#{status_ap_id}"
+    end
+
+    test "it renders form with error when status not found", %{conn: conn} do
+      user2 = insert(:user, ap_id: "shp@social.heldscal.la")
+
+      response =
+        conn
+        |> post("/main/ostatus", %{
+          "status" => %{"status_id" => "somerandomid", "profile" => user2.ap_id}
+        })
+        |> response(:ok)
+
+      assert response =~ "Something went wrong."
+    end
+  end
+
+  describe "GET /main/ostatus - show_subscribe_form/2" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "it works with users", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> get("/main/ostatus", %{"nickname" => user.nickname})
+        |> response(:ok)
+
+      refute response =~ "Could not find user"
+      assert response =~ "Remotely follow #{user.nickname}"
+    end
+
+    test "it works with statuses", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+
+      assert is_binary(status_id)
+
+      response =
+        conn
+        |> get("/main/ostatus", %{"status_id" => status_id})
+        |> response(:ok)
+
+      refute response =~ "Could not find status"
+      assert response =~ "Interacting with"
+    end
+  end
+
   test "it returns new captcha", %{conn: conn} do
     with_mock Pleroma.Captcha,
       new: fn -> "test_captcha" end do
@@ -302,15 +390,52 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert %{"error" => "Missing field: email."} = json_response_and_validate_schema(conn, 400)
     end
 
-    test "with proper permissions, valid password and blank email", %{
-      conn: conn
-    } do
+    test "with proper permissions, valid password and blank email, when instance requires user email",
+         %{
+           conn: conn
+         } do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
       conn =
         conn
         |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/pleroma/change_email", %{password: "test", email: ""})
 
       assert json_response_and_validate_schema(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with proper permissions, valid password and blank email, when instance does not require user email",
+         %{
+           conn: conn
+         } do
+      orig_account_activation_required =
+        Pleroma.Config.get([:instance, :account_activation_required])
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put(
+          [:instance, :account_activation_required],
+          orig_account_activation_required
+        )
+      end)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/change_email", %{password: "test", email: ""})
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
 
     test "with proper permissions, valid password and non unique email", %{
@@ -444,7 +569,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     test "with proper permissions and wrong or missing password", %{conn: conn} do
       for params <- [%{"password" => "hi"}, %{}] do
-        ret_conn = post(conn, "/api/pleroma/delete_account", params)
+        ret_conn =
+          conn
+          |> put_req_header("content-type", "application/json")
+          |> post("/api/pleroma/delete_account", params)
 
         assert json_response_and_validate_schema(ret_conn, 200) == %{
                  "error" => "Invalid password."
@@ -452,8 +580,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       end
     end
 
-    test "with proper permissions and valid password", %{conn: conn, user: user} do
-      conn = post(conn, "/api/pleroma/delete_account?password=test")
+    test "with proper permissions and valid password (URL query)", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/delete_account?password=test")
+
       ObanHelpers.perform_all()
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
 
@@ -462,6 +594,389 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert user.name == nil
       assert user.bio == ""
       assert user.password_hash == nil
+    end
+
+    test "with proper permissions and valid password (JSON body)", %{conn: conn, user: user} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/delete_account", %{password: "test"})
+
+      ObanHelpers.perform_all()
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+
+      user = User.get_by_id(user.id)
+      refute user.is_active
+      assert user.name == nil
+      assert user.bio == ""
+      assert user.password_hash == nil
+    end
+  end
+
+  describe "POST /api/pleroma/move_account" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      target_user = insert(:user)
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "hi",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
+    end
+
+    test "with proper permissions and invalid password", %{conn: conn} do
+      target_user = insert(:user)
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "hi",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with proper permissions, valid password and target account does not alias it",
+         %{
+           conn: conn
+         } do
+      target_user = insert(:user)
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "error" => "Target account must have the origin in `alsoKnownAs`"
+             }
+    end
+
+    test "with proper permissions, valid password and target account does not exist",
+         %{
+           conn: conn
+         } do
+      target_nick = "not_found@mastodon.social"
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 404) == %{
+               "error" => "Target account not found."
+             }
+    end
+
+    test "with proper permissions, valid password, remote target account aliases it and local cache does not exist",
+         %{} do
+      user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
+      %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
+
+      target_nick = "mewmew@lm.kazv.moe"
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+    end
+
+    test "with proper permissions, valid password, remote target account aliases it and local cache does not aliases it",
+         %{} do
+      user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
+      %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
+
+      target_user =
+        insert(
+          :user,
+          ap_id: "https://lm.kazv.moe/users/mewmew",
+          nickname: "mewmew@lm.kazv.moe",
+          local: false
+        )
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+    end
+
+    test "with proper permissions, valid password, remote target account does not aliases it and local cache aliases it",
+         %{
+           user: user,
+           conn: conn
+         } do
+      target_user =
+        insert(
+          :user,
+          ap_id: "https://lm.kazv.moe/users/mewmew",
+          nickname: "mewmew@lm.kazv.moe",
+          local: false,
+          also_known_as: [user.ap_id]
+        )
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{
+          "password" => "test",
+          "target_account" => target_nick
+        })
+
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "error" => "Target account must have the origin in `alsoKnownAs`"
+             }
+    end
+
+    test "with proper permissions, valid password and target account aliases it", %{
+      conn: conn,
+      user: user
+    } do
+      target_user = insert(:user, also_known_as: [user.ap_id])
+      target_nick = target_user |> User.full_nickname()
+      follower = insert(:user)
+
+      User.follow(follower, user)
+
+      assert User.following?(follower, user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post(
+          "/api/pleroma/move_account",
+          %{
+            password: "test",
+            target_account: target_nick
+          }
+        )
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => user.id,
+        "target_id" => target_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+
+      refute User.following?(follower, user)
+      assert User.following?(follower, target_user)
+    end
+
+    test "prefix nickname by @ should work", %{
+      conn: conn,
+      user: user
+    } do
+      target_user = insert(:user, also_known_as: [user.ap_id])
+      target_nick = target_user |> User.full_nickname()
+      follower = insert(:user)
+
+      User.follow(follower, user)
+
+      assert User.following?(follower, user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post(
+          "/api/pleroma/move_account",
+          %{
+            password: "test",
+            target_account: "@" <> target_nick
+          }
+        )
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => user.id,
+        "target_id" => target_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+
+      refute User.following?(follower, user)
+      assert User.following?(follower, target_user)
+    end
+  end
+
+  describe "GET /api/pleroma/aliases" do
+    setup do: oauth_access(["read:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> get("/api/pleroma/aliases")
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: read:accounts."
+             }
+    end
+
+    test "with permissions", %{
+      conn: conn
+    } do
+      assert %{"aliases" => []} =
+               conn
+               |> get("/api/pleroma/aliases")
+               |> json_response_and_validate_schema(200)
+    end
+
+    test "with permissions and aliases", %{} do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+
+      %{user: _user, conn: conn} = oauth_access(["read:accounts"], user: user)
+
+      assert %{"aliases" => aliases} =
+               conn
+               |> get("/api/pleroma/aliases")
+               |> json_response_and_validate_schema(200)
+
+      assert aliases == [user2 |> User.full_nickname()]
+    end
+  end
+
+  describe "PUT /api/pleroma/aliases" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/aliases", %{alias: "none"})
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
+    end
+
+    test "with permissions, no alias param", %{
+      conn: conn
+    } do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/aliases", %{})
+
+      assert %{"error" => "Missing field: alias."} = json_response_and_validate_schema(conn, 400)
+    end
+
+    test "with permissions, with alias param", %{
+      conn: conn
+    } do
+      user2 = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/aliases", %{alias: user2 |> User.full_nickname()})
+
+      assert json_response_and_validate_schema(conn, 200) == %{
+               "status" => "success"
+             }
+    end
+  end
+
+  describe "DELETE /api/pleroma/aliases" do
+    setup do
+      alias_user = insert(:user)
+      non_alias_user = insert(:user)
+      user = insert(:user, also_known_as: [alias_user.ap_id])
+
+      oauth_access(["write:accounts"], user: user)
+      |> Map.put(:alias_user, alias_user)
+      |> Map.put(:non_alias_user, non_alias_user)
+    end
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/pleroma/aliases", %{alias: "none"})
+
+      assert json_response_and_validate_schema(conn, 403) == %{
+               "error" => "Insufficient permissions: write:accounts."
+             }
+    end
+
+    test "with permissions, no alias param", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/pleroma/aliases", %{})
+
+      assert %{"error" => "Missing field: alias."} = json_response_and_validate_schema(conn, 400)
+    end
+
+    test "with permissions, account does not have such alias", %{
+      conn: conn,
+      non_alias_user: non_alias_user
+    } do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/pleroma/aliases", %{alias: non_alias_user |> User.full_nickname()})
+
+      assert %{"error" => "Account has no such alias."} =
+               json_response_and_validate_schema(conn, 404)
+    end
+
+    test "with permissions, account does have such alias", %{
+      conn: conn,
+      alias_user: alias_user
+    } do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/pleroma/aliases", %{alias: alias_user |> User.full_nickname()})
+
+      assert %{"status" => "success"} = json_response_and_validate_schema(conn, 200)
     end
   end
 end

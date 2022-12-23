@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRFTest do
@@ -60,6 +60,15 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
 
       refute MRF.subdomain_match?(regexes, "EXAMPLE.COM")
       refute MRF.subdomain_match?(regexes, "example.com")
+    end
+  end
+
+  describe "instance_list_from_tuples/1" do
+    test "returns a list of instances from a list of {instance, reason} tuples" do
+      list = [{"some.tld", "a reason"}, {"other.tld", "another reason"}]
+      expected = ["some.tld", "other.tld"]
+
+      assert MRF.instance_list_from_tuples(list) == expected
     end
   end
 

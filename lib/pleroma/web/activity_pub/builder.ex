@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Builder do
@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI.ActivityDraft
 
   require Pleroma.Constants
 
@@ -125,6 +126,37 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      |> Pleroma.Maps.put_if_present("context", context), []}
   end
 
+  @spec note(ActivityDraft.t()) :: {:ok, map(), keyword()}
+  def note(%ActivityDraft{} = draft) do
+    data =
+      %{
+        "type" => "Note",
+        "to" => draft.to,
+        "cc" => draft.cc,
+        "content" => draft.content_html,
+        "summary" => draft.summary,
+        "sensitive" => draft.sensitive,
+        "context" => draft.context,
+        "attachment" => draft.attachments,
+        "actor" => draft.user.ap_id,
+        "tag" => Keyword.values(draft.tags) |> Enum.uniq()
+      }
+      |> add_in_reply_to(draft.in_reply_to)
+      |> Map.merge(draft.extra)
+
+    {:ok, data, []}
+  end
+
+  defp add_in_reply_to(object, nil), do: object
+
+  defp add_in_reply_to(object, in_reply_to) do
+    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
+      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+    else
+      _ -> object
+    end
+  end
+
   def chat_message(actor, recipient, content, opts \\ []) do
     basic = %{
       "id" => Utils.generate_object_id(),
@@ -186,10 +218,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
-  # Retricted to user updates for now, always public
   @spec update(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def update(actor, object) do
-    to = [Pleroma.Constants.as_public(), actor.follower_address]
+    {to, cc} =
+      if object["type"] in Pleroma.Constants.actor_types() do
+        # User updates, always public
+        {[Pleroma.Constants.as_public(), actor.follower_address], []}
+      else
+        # Status updates, follow the recipients in the object
+        {object["to"] || [], object["cc"] || []}
+      end
 
     {:ok,
      %{
@@ -197,7 +235,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "type" => "Update",
        "actor" => actor.ap_id,
        "object" => object,
-       "to" => to
+       "to" => to,
+       "cc" => cc
      }, []}
   end
 

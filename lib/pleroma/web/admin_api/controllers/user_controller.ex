@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.UserController do
@@ -35,7 +35,9 @@ defmodule Pleroma.Web.AdminAPI.UserController do
            :toggle_activation,
            :activate,
            :deactivate,
-           :approve
+           :approve,
+           :suggest,
+           :unsuggest
          ]
   )
 
@@ -234,6 +236,32 @@ defmodule Pleroma.Web.AdminAPI.UserController do
       actor: admin,
       subject: users,
       action: "approve"
+    })
+
+    render(conn, "index.json", users: updated_users)
+  end
+
+  def suggest(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
+    {:ok, updated_users} = User.set_suggestion(users, true)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "add_suggestion"
+    })
+
+    render(conn, "index.json", users: updated_users)
+  end
+
+  def unsuggest(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
+    {:ok, updated_users} = User.set_suggestion(users, false)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "remove_suggestion"
     })
 
     render(conn, "index.json", users: updated_users)

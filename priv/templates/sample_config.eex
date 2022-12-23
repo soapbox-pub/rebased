@@ -3,16 +3,13 @@
 # NOTE: This file should not be committed to a repo or otherwise made public
 # without removing sensitive information.
 
-<%= if Code.ensure_loaded?(Config) or not Code.ensure_loaded?(Mix.Config) do
-  "import Config"
-else
-  "use Mix.Config"
-end %>
+import Config
 
 config :pleroma, Pleroma.Web.Endpoint,
    url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
    http: [ip: {<%= String.replace(listen_ip, ".", ", ") %>}, port: <%= listen_port %>],
    secret_key_base: "<%= secret %>",
+   live_view: [signing_salt: "<%= lv_signing_salt %>"],
    signing_salt: "<%= signing_salt %>"
 
 config :pleroma, :instance,

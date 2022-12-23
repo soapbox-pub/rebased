@@ -37,7 +37,7 @@
 # FIGURATION! EDIT YOUR SECRET FILE (either prod.secret.exs, dev.secret.exs).
 #
 # This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# and its dependencies with the aid of the Config module.
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
@@ -139,6 +139,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
+  live_view: [signing_salt: "U5ELgdEwTD3n1+D5s0rY0AMg8/y1STxZ3Zvsl3bWh+oBcGrYdil0rXqPMRd3Glcq"],
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
   pubsub_server: Pleroma.PubSub,
@@ -158,11 +159,6 @@ config :logger, :ex_syslogger,
   ident: "pleroma",
   format: "$metadata[$level] $message",
   metadata: [:request_id]
-
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
 
 config :mime, :types, %{
   "application/xml" => ["xml"],
@@ -186,6 +182,7 @@ config :pleroma, :instance,
   email: "example@example.com",
   notify_email: "noreply@example.com",
   description: "Pleroma: An efficient and flexible fediverse server",
+  short_description: "",
   background_image: "/images/city.jpg",
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
@@ -226,6 +223,7 @@ config :pleroma, :instance,
   max_pinned_statuses: 1,
   attachment_links: false,
   max_report_comment_size: 1000,
+  report_strip_status: true,
   safe_dm_mentions: false,
   healthcheck: false,
   remote_post_retention_days: 90,
@@ -253,7 +251,29 @@ config :pleroma, :instance,
     ]
   ],
   show_reactions: true,
-  password_reset_token_validity: 60 * 60 * 24
+  password_reset_token_validity: 60 * 60 * 24,
+  profile_directory: true,
+  admin_privileges: [
+    :users_read,
+    :users_manage_invites,
+    :users_manage_activation_state,
+    :users_manage_tags,
+    :users_manage_credentials,
+    :users_delete,
+    :messages_read,
+    :messages_delete,
+    :instances_delete,
+    :reports_manage_reports,
+    :moderation_log_read,
+    :announcements_manage_announcements,
+    :emoji_manage_emoji,
+    :statistics_read
+  ],
+  moderator_privileges: [:messages_delete, :reports_manage_reports],
+  max_endorsed_users: 20,
+  birthday_required: false,
+  birthday_min_age: 0,
+  max_media_attachments: 1_000
 
 config :pleroma, :welcome,
   direct_message: [
@@ -321,9 +341,6 @@ config :pleroma, :frontend_configurations,
     subjectLineBehavior: "email",
     theme: "pleroma-dark",
     webPushNotifications: false
-  },
-  masto_fe: %{
-    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :assets,
@@ -352,6 +369,7 @@ config :pleroma, :manifest,
 config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
+  blockers_visible: true,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
   sign_object_fetches: true,
@@ -553,13 +571,14 @@ config :pleroma, Oban,
     token_expiration: 5,
     filter_expiration: 1,
     backup: 1,
-    federator_incoming: 50,
-    federator_outgoing: 50,
+    federator_incoming: 5,
+    federator_outgoing: 5,
     ingestion_queue: 50,
     web_push: 50,
     mailer: 10,
     transmogrifier: 20,
     scheduled_activities: 10,
+    poll_notifications: 10,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,
@@ -666,6 +685,8 @@ config :pleroma, :features, improved_hashtag_timeline: :auto
 
 config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
 
+config :pleroma, :delete_context_objects, fault_rate_allowance: 0.01
+
 config :pleroma, :env, Mix.env()
 
 config :http_signatures,
@@ -747,13 +768,21 @@ config :pleroma, :frontends,
         "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "develop"
     },
-    "soapbox-fe" => %{
-      "name" => "soapbox-fe",
-      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+    "soapbox" => %{
+      "name" => "soapbox",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
-      "ref" => "v1.0.0",
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
+      "ref" => "v3.0.0-beta.1",
       "build_dir" => "static"
+    },
+    "glitch-lily" => %{
+      "name" => "glitch-lily",
+      "git" => "https://lily-is.land/infra/glitch-lily",
+      "build_url" =>
+        "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "servant",
+      "build_dir" => "public"
     }
   }
 
@@ -851,6 +880,8 @@ config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
 ]
+
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

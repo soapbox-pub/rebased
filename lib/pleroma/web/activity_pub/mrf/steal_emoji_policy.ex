@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
@@ -11,6 +11,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   defp accept_host?(host), do: host in Config.get([:mrf_steal_emoji, :hosts], [])
+
+  defp shortcode_matches?(shortcode, pattern) when is_binary(pattern) do
+    shortcode == pattern
+  end
+
+  defp shortcode_matches?(shortcode, pattern) do
+    String.match?(shortcode, pattern)
+  end
 
   defp steal_emoji({shortcode, url}, emoji_dir_path) do
     url = Pleroma.Web.MediaProxy.url(url)
@@ -38,9 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
         end
       else
         Logger.debug(
-          "MRF.StealEmojiPolicy: :#{shortcode}: at #{url} (#{byte_size(response.body)} B) over size limit (#{
-            size_limit
-          } B)"
+          "MRF.StealEmojiPolicy: :#{shortcode}: at #{url} (#{byte_size(response.body)} B) over size limit (#{size_limit} B)"
         )
 
         nil
@@ -74,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
           reject_emoji? =
             [:mrf_steal_emoji, :rejected_shortcodes]
             |> Config.get([])
-            |> Enum.find(false, fn regex -> String.match?(shortcode, regex) end)
+            |> Enum.find(false, fn pattern -> shortcode_matches?(shortcode, pattern) end)
 
           !reject_emoji?
         end)
@@ -124,8 +130,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
         %{
           key: :rejected_shortcodes,
           type: {:list, :string},
-          description: "Regex-list of shortcodes to reject",
-          suggestions: [""]
+          description: """
+            A list of patterns or matches to reject shortcodes with.
+
+            Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
+          """,
+          suggestions: ["foo", ~r/foo/]
         },
         %{
           key: :size_limit,

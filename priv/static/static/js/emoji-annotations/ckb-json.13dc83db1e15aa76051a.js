@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpleroma_fe=self.webpackChunkpleroma_fe||[]).push([[2656],{56412:e=>{e.exports=JSON.parse('{"🔫":{"keywords":["دەمانچەی ئاوی"],"name":"دەمانچەی ئاوی"}}')}}]);

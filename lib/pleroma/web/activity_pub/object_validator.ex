@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidator do
@@ -103,8 +103,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         meta
       )
       when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
-    with {:ok, object_data} <- cast_and_apply(object),
-         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+    with {:ok, object_data} <- cast_and_apply_and_stringify_with_history(object),
+         meta = Keyword.put(meta, :object_data, object_data),
          {:ok, create_activity} <-
            create_activity
            |> CreateGenericValidator.cast_and_validate(meta)
@@ -128,16 +128,50 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
       end
 
     with {:ok, object} <-
-           object
-           |> validator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
+           do_separate_with_history(object, fn object ->
+             with {:ok, object} <-
+                    object
+                    |> validator.cast_and_validate()
+                    |> Ecto.Changeset.apply_action(:insert) do
+               object = stringify_keys(object)
 
-      # Insert copy of hashtags as strings for the non-hashtag table indexing
-      tag = (object["tag"] || []) ++ Object.hashtags(%Object{data: object})
-      object = Map.put(object, "tag", tag)
+               # Insert copy of hashtags as strings for the non-hashtag table indexing
+               tag = (object["tag"] || []) ++ Object.hashtags(%Object{data: object})
+               object = Map.put(object, "tag", tag)
 
+               {:ok, object}
+             end
+           end) do
       {:ok, object, meta}
+    end
+  end
+
+  def validate(
+        %{"type" => "Update", "object" => %{"type" => objtype} = object} = update_activity,
+        meta
+      )
+      when objtype in ~w[Question Answer Audio Video Event Article Note Page] do
+    with {_, false} <- {:local, Access.get(meta, :local, false)},
+         {_, {:ok, object_data, _}} <- {:object_validation, validate(object, meta)},
+         meta = Keyword.put(meta, :object_data, object_data),
+         {:ok, update_activity} <-
+           update_activity
+           |> UpdateValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      update_activity = stringify_keys(update_activity)
+      {:ok, update_activity, meta}
+    else
+      {:local, _} ->
+        with {:ok, object} <-
+               update_activity
+               |> UpdateValidator.cast_and_validate()
+               |> Ecto.Changeset.apply_action(:insert) do
+          object = stringify_keys(object)
+          {:ok, object, meta}
+        end
+
+      {:object_validation, e} ->
+        e
     end
   end
 
@@ -178,6 +212,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def validate(o, m), do: {:error, {:validator_not_set, {o, m}}}
 
+  def cast_and_apply_and_stringify_with_history(object) do
+    do_separate_with_history(object, fn object ->
+      with {:ok, object_data} <- cast_and_apply(object),
+           object_data <- object_data |> stringify_keys() do
+        {:ok, object_data}
+      end
+    end)
+  end
+
   def cast_and_apply(%{"type" => "ChatMessage"} = object) do
     ChatMessageValidator.cast_and_apply(object)
   end
@@ -204,8 +247,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
-  # is_struct/1 appears in Elixir 1.11
-  def stringify_keys(%{__struct__: _} = object) do
+  def stringify_keys(object) when is_struct(object) do
     object
     |> Map.from_struct()
     |> stringify_keys
@@ -213,6 +255,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def stringify_keys(object) when is_map(object) do
     object
+    |> Enum.filter(fn {_, v} -> v != nil end)
     |> Map.new(fn {key, val} -> {to_string(key), stringify_keys(val)} end)
   end
 
@@ -234,5 +277,55 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     fetch_actor(object)
     Object.normalize(object["object"], fetch: true)
     :ok
+  end
+
+  defp for_each_history_item(
+         %{"type" => "OrderedCollection", "orderedItems" => items} = history,
+         object,
+         fun
+       ) do
+    processed_items =
+      Enum.map(items, fn item ->
+        with item <- Map.put(item, "id", object["id"]),
+             {:ok, item} <- fun.(item) do
+          item
+        else
+          _ -> nil
+        end
+      end)
+
+    if Enum.all?(processed_items, &(not is_nil(&1))) do
+      {:ok, Map.put(history, "orderedItems", processed_items)}
+    else
+      {:error, :invalid_history}
+    end
+  end
+
+  defp for_each_history_item(nil, _object, _fun) do
+    {:ok, nil}
+  end
+
+  defp for_each_history_item(_, _object, _fun) do
+    {:error, :invalid_history}
+  end
+
+  # fun is (object -> {:ok, validated_object_with_string_keys})
+  defp do_separate_with_history(object, fun) do
+    with history <- object["formerRepresentations"],
+         object <- Map.drop(object, ["formerRepresentations"]),
+         {_, {:ok, object}} <- {:main_body, fun.(object)},
+         {_, {:ok, history}} <- {:history_items, for_each_history_item(history, object, fun)} do
+      object =
+        if history do
+          Map.put(object, "formerRepresentations", history)
+        else
+          object
+        end
+
+      {:ok, object}
+    else
+      {:main_body, e} -> e
+      {:history_items, e} -> e
+    end
   end
 end

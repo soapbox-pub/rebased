@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.User
+  alias Pleroma.UserNote
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -101,6 +102,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         User.following?(target, reading_user)
       end
 
+    subscribing =
+      UserRelationship.exists?(
+        user_relationships,
+        :inverse_subscription,
+        target,
+        reading_user,
+        &User.subscribed_to?(&2, &1)
+      )
+
     # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
@@ -138,14 +148,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           target,
           &User.muted_notifications?(&1, &2)
         ),
-      subscribing:
-        UserRelationship.exists?(
-          user_relationships,
-          :inverse_subscription,
-          target,
-          reading_user,
-          &User.subscribed_to?(&2, &1)
-        ),
+      subscribing: subscribing,
+      notifying: subscribing,
       requested: follow_state == :follow_pending,
       domain_blocking: User.blocks_domain?(reading_user, target),
       showing_reblogs:
@@ -156,7 +160,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           target,
           &User.muting_reblogs?(&1, &2)
         ),
-      endorsed: false
+      note:
+        UserNote.show(
+          reading_user,
+          target
+        ),
+      endorsed:
+        UserRelationship.exists?(
+          user_relationships,
+          :endorsement,
+          target,
+          reading_user,
+          &User.endorses?(&2, &1)
+        )
     }
   end
 
@@ -261,6 +277,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           actor_type: user.actor_type
         }
       },
+      last_status_at: user.last_status_at,
 
       # Pleroma extensions
       # Note: it's insecure to output :email but fully-qualified nickname may serve as safe stub
@@ -269,6 +286,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         ap_id: user.ap_id,
         also_known_as: user.also_known_as,
         is_confirmed: user.is_confirmed,
+        is_suggested: user.is_suggested,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,
         hide_follows_count: user.hide_follows_count,
@@ -293,6 +311,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
+    |> maybe_put_mute_expires_at(user, opts[:for], opts)
+    |> maybe_show_birthday(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -326,6 +346,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> Kernel.put_in([:source, :privacy], user.default_scope)
     |> Kernel.put_in([:source, :pleroma, :show_role], user.show_role)
     |> Kernel.put_in([:source, :pleroma, :no_rich_text], user.no_rich_text)
+    |> Kernel.put_in([:source, :pleroma, :show_birthday], user.show_birthday)
   end
 
   defp maybe_put_settings(data, _, _, _), do: data
@@ -349,18 +370,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_chat_token(data, _, _, _), do: data
 
   defp maybe_put_role(data, %User{show_role: true} = user, _) do
-    data
-    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
-    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    put_role(data, user)
   end
 
   defp maybe_put_role(data, %User{id: user_id} = user, %User{id: user_id}) do
-    data
-    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
-    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    put_role(data, user)
   end
 
   defp maybe_put_role(data, _, _), do: data
+
+  defp put_role(data, user) do
+    data
+    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
+    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    |> Kernel.put_in([:pleroma, :privileges], User.privileges(user))
+  end
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
     Kernel.put_in(
@@ -378,11 +402,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_allow_following_move(data, _, _), do: data
 
-  defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
-    Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active)
+  defp maybe_put_activation_status(data, user, user_for) do
+    if User.privileged?(user_for, :users_manage_activation_state),
+      do: Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active),
+      else: data
   end
-
-  defp maybe_put_activation_status(data, _, _), do: data
 
   defp maybe_put_unread_conversation_count(data, %User{id: user_id} = user, %User{id: user_id}) do
     data
@@ -413,6 +437,30 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_email_address(data, _, _), do: data
+
+  defp maybe_put_mute_expires_at(data, %User{} = user, target, %{mutes: true}) do
+    Map.put(
+      data,
+      :mute_expires_at,
+      UserRelationship.get_mute_expire_date(target, user)
+    )
+  end
+
+  defp maybe_put_mute_expires_at(data, _, _, _), do: data
+
+  defp maybe_show_birthday(data, %User{id: user_id} = user, %User{id: user_id}) do
+    data
+    |> Kernel.put_in([:pleroma, :birthday], user.birthday)
+  end
+
+  defp maybe_show_birthday(data, %User{show_birthday: true} = user, _) do
+    data
+    |> Kernel.put_in([:pleroma, :birthday], user.birthday)
+  end
+
+  defp maybe_show_birthday(data, _, _) do
+    data
+  end
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
