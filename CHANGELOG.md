@@ -6,12 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+### Added
+
+### Fixed
+
+### Removed
+
+## 2.5.0 - 2022-12-23
+
 ### Removed
 
 - MastoFE
+- Quack, the logging backend that pushes to Slack channels
 
 ### Changed
-- **Breaking:** Elixir >=1.10 is now required (was >= 1.9)
+- **Breaking:** Elixir >=1.11 is now required (was >= 1.9)
 - Allow users to remove their emails if instance does not need email to register
 - Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
 - **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
@@ -61,10 +72,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RSS and Atom feeds for users work again
 - TwitterCard meta tags conformance
 
-### Removed
-- Quack, the logging backend that pushes to Slack channels
-
-## 2.4.5 - 2022-08-27
+## 2.4.5 - 2022-11-27
 
 ## Fixed
 - Image `class` attributes not being scrubbed, allowing to exploit frontend special classes [!3792](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3792)
