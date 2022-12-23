@@ -66,6 +66,36 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+* `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
+    * Possible values are:
+      * `:users_read`
+        * Allows admins to fetch users through the admin API.
+      * `:users_manage_invites`
+        * Allows admins to manage invites. This includes sending, resending, revoking and approving invites.
+      * `:users_manage_activation_state`
+        * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
+      * `:users_manage_tags`
+        * Allows admins to set and remove tags for users. This can be useful in combination with MRF policies, such as `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
+      * `:users_manage_credentials`
+        * Allows admins to trigger a password reset and set new credentials for an user.
+      * `:users_delete`
+        * Allows admins to delete accounts. Note that deleting an account is actually deactivating it and removing all data like posts, profile information, etc.
+      * `:messages_read`
+        * Allows admins to read messages through the admin API, including non-public posts and chats.
+      * `:messages_delete`
+        * Allows admins to delete messages from other users.
+      * `:instances_delete,`
+        * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
+      * `:reports_manage_reports`
+        * Allows admins to see and manage reports.
+      * `:moderation_log_read,`
+        * Allows admins to read the entries in the moderation log.
+      * `:emoji_manage_emoji`
+        * Allows admins to manage custom emoji on the instance.
+      * `:statistics_read,`
+        * Allows admins to see some simple statistics about the instance.
+* `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
+    * Possible values are the same as for `admin_privileges`
 
 ## :database
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).

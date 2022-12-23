@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
@@ -971,25 +971,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_by_id(activity.id) == activity
     end
 
-    test "when you're an admin", %{conn: conn} do
-      activity = insert(:note_activity)
-      user = insert(:user, is_admin: true)
-
-      res_conn =
-        conn
-        |> assign(:user, user)
-        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity.id}")
-
-      assert %{} = json_response_and_validate_schema(res_conn, 200)
-
-      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
-               "@#{user.nickname} deleted status ##{activity.id}"
-
-      refute Activity.get_by_id(activity.id)
-    end
-
-    test "when you're a moderator", %{conn: conn} do
+    test "when you're privileged to", %{conn: conn} do
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
       activity = insert(:note_activity)
       user = insert(:user, is_moderator: true)
 
