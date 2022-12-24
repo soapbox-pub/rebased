@@ -643,7 +643,6 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unbookmark", StatusController, :unbookmark)
     post("/statuses/:id/mute", StatusController, :mute_conversation)
     post("/statuses/:id/unmute", StatusController, :unmute_conversation)
-    post("/statuses/:id/translate", StatusController, :translate)
 
     post("/push/subscription", SubscriptionController, :create)
     get("/push/subscription", SubscriptionController, :show)
@@ -696,6 +695,7 @@ defmodule Pleroma.Web.Router do
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
     get("/statuses/:id/history", StatusController, :show_history)
     get("/statuses/:id/source", StatusController, :show_source)
+    post("/statuses/:id/translate", StatusController, :translate)
 
     get("/custom_emojis", CustomEmojiController, :index)
 

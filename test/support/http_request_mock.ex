@@ -1597,6 +1597,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def post("https://api-free.deepl.com/v2/languages" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/deepl-languages-list.json"),
+       headers: [{"content-type", "application/json"}]
+     }}
+  end
+
   def post(url, query, body, headers) do
     {:error,
      "Mock response not implemented for POST #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}

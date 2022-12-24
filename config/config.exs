@@ -879,6 +879,8 @@ config :pleroma, ConcurrentLimiter, [
 
 config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
 
+config :pleroma, Pleroma.Language.Translation, allow_unauthenticated: false, allow_remote: true
+
 config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
 
 config :geospatial, Geospatial.Providers.GoogleMaps,
