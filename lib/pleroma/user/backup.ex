@@ -35,8 +35,6 @@ defmodule Pleroma.User.Backup do
     timestamps()
   end
 
-  @report_every 100
-
   def create(user, admin_id \\ nil) do
     with :ok <- validate_limit(user, admin_id),
          {:ok, backup} <- user |> new() |> Repo.insert() do
@@ -160,6 +158,8 @@ defmodule Pleroma.User.Backup do
   end
 
   defp wait_backup(backup, current_processed, task) do
+    wait_time = Pleroma.Config.get([__MODULE__, :process_wait_time])
+
     receive do
       {:progress, new_processed} ->
         total_processed = current_processed + new_processed
@@ -175,6 +175,8 @@ defmodule Pleroma.User.Backup do
 
           {:ok, backup} = set_state(backup, :failed)
 
+          cleanup(backup)
+
           {:error,
            %{
              backup: backup,
@@ -185,14 +187,16 @@ defmodule Pleroma.User.Backup do
           {:ok, backup}
         end
     after
-      30_000 ->
+      wait_time ->
         Logger.error(
-          "Backup #{backup.id} timed out after no response for 30 seconds, terminating"
+          "Backup #{backup.id} timed out after no response for #{wait_time}ms, terminating"
         )
 
         Task.Supervisor.terminate_child(Pleroma.TaskSupervisor, task.pid)
 
         {:ok, backup} = set_state(backup, :failed)
+
+        cleanup(backup)
 
         {:error,
          %{
@@ -205,8 +209,7 @@ defmodule Pleroma.User.Backup do
   @files ['actor.json', 'outbox.json', 'likes.json', 'bookmarks.json']
   def export(%__MODULE__{} = backup, caller_pid) do
     backup = Repo.preload(backup, :user)
-    name = String.trim_trailing(backup.file_name, ".zip")
-    dir = dir(name)
+    dir = backup_tempdir(backup)
 
     with :ok <- File.mkdir(dir),
          :ok <- actor(dir, backup.user, caller_pid),
@@ -264,16 +267,28 @@ defmodule Pleroma.User.Backup do
     )
   end
 
-  defp should_report?(num), do: rem(num, @report_every) == 0
+  defp should_report?(num, chunk_size), do: rem(num, chunk_size) == 0
+
+  defp backup_tempdir(backup) do
+    name = String.trim_trailing(backup.file_name, ".zip")
+    dir(name)
+  end
+
+  defp cleanup(backup) do
+    dir = backup_tempdir(backup)
+    File.rm_rf(dir)
+  end
 
   defp write(query, dir, name, fun, caller_pid) do
     path = Path.join(dir, "#{name}.json")
+
+    chunk_size = Pleroma.Config.get([__MODULE__, :process_chunk_size])
 
     with {:ok, file} <- File.open(path, [:write, :utf8]),
          :ok <- write_header(file, name) do
       total =
         query
-        |> Pleroma.Repo.chunk_stream(100)
+        |> Pleroma.Repo.chunk_stream(chunk_size, _returns_as = :one, timeout: :infinity)
         |> Enum.reduce(0, fn i, acc ->
           with {:ok, data} <-
                  (try do
@@ -283,8 +298,8 @@ defmodule Pleroma.User.Backup do
                   end),
                {:ok, str} <- Jason.encode(data),
                :ok <- IO.write(file, str <> ",\n") do
-            if should_report?(acc + 1) do
-              send(caller_pid, {:progress, @report_every})
+            if should_report?(acc + 1, chunk_size) do
+              send(caller_pid, {:progress, chunk_size})
             end
 
             acc + 1
@@ -301,7 +316,7 @@ defmodule Pleroma.User.Backup do
           end
         end)
 
-      send(caller_pid, {:progress, rem(total, @report_every)})
+      send(caller_pid, {:progress, rem(total, chunk_size)})
 
       with :ok <- :file.pwrite(file, {:eof, -2}, "\n],\n  \"totalItems\": #{total}}") do
         File.close(file)
