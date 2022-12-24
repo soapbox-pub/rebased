@@ -1914,12 +1914,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :pleroma-:instance > :privileged_staff"
-msgid "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :pleroma-:instance > :profile_directory"
 msgid "Enable profile directory."
 msgstr ""
@@ -4326,12 +4320,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :pleroma-:instance > :privileged_staff"
-msgid "Privileged staff"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma-:instance > :profile_directory"
 msgid "Profile directory"
 msgstr ""
@@ -6020,4 +6008,28 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma-:instance > :report_strip_status"
 msgid "Report strip status"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :admin_privileges"
+msgid "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :moderator_privileges"
+msgid "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :admin_privileges"
+msgid "Admin privileges"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :moderator_privileges"
+msgid "Moderator privileges"
 msgstr ""

@@ -563,7 +563,6 @@ msgid "This API requires an authenticated user"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/plugs/ensure_staff_privileged_plug.ex:26
 #: lib/pleroma/web/plugs/user_is_admin_plug.ex:21
 msgid "User is not an admin."
 msgstr ""
@@ -586,7 +585,6 @@ msgid "Too many attachments"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/plugs/ensure_staff_privileged_plug.ex:33
 #: lib/pleroma/web/plugs/user_is_staff_plug.ex:20
 msgid "User is not a staff member."
 msgstr ""
@@ -601,4 +599,11 @@ msgstr ""
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:261
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:264
 msgid "File is too large"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/plugs/ensure_privileged_plug.ex:21
+#: lib/pleroma/web/plugs/ensure_privileged_plug.ex:34
+#: lib/pleroma/web/plugs/ensure_privileged_plug.ex:41
+msgid "User isn't privileged."
 msgstr ""
