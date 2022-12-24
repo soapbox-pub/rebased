@@ -122,6 +122,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     {:ok, _report} =
       CommonAPI.report(third_user, %{account_id: other_user.id, status_ids: [activity.id]})
 
+    Pleroma.Tests.ObanHelpers.perform_all()
+
     result =
       conn
       |> get("/api/v1/notifications?include_types[]=pleroma:report")
