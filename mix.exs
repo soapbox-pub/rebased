@@ -148,7 +148,7 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
-      {:earmark, "~> 1.4.15"},
+      {:earmark, "~> 1.4.22"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:crypt,
        git: "https://github.com/msantos/crypt.git",

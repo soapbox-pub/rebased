@@ -178,6 +178,10 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       code = "https://github.com/pragdave/earmark/"
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+
+      code = "https://github.com/~foo/bar"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
     end
 
     test "link with local mention" do
