@@ -35,6 +35,9 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
     end
   end
 
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
+
   defp enabled? do
     with false <- Pleroma.Config.get([__MODULE__, :enabled], false) do
       {:error, :expired_activities_disabled}

@@ -30,7 +30,7 @@ defmodule Pleroma.Activity.Search do
       Activity
       |> Activity.with_preloaded_object()
       |> Activity.restrict_deactivated_users()
-      |> restrict_public()
+      |> restrict_public(user)
       |> query_with(index_type, search_query, search_function)
       |> maybe_restrict_local(user)
       |> maybe_restrict_author(author)
@@ -57,7 +57,19 @@ defmodule Pleroma.Activity.Search do
 
   def maybe_restrict_blocked(query, _), do: query
 
-  defp restrict_public(q) do
+  defp restrict_public(q, user) when not is_nil(user) do
+    intended_recipients = [
+      Pleroma.Constants.as_public(),
+      Pleroma.Web.ActivityPub.Utils.as_local_public()
+    ]
+
+    from([a, o] in q,
+      where: fragment("?->>'type' = 'Create'", a.data),
+      where: fragment("? && ?", ^intended_recipients, a.recipients)
+    )
+  end
+
+  defp restrict_public(q, _user) do
     from([a, o] in q,
       where: fragment("?->>'type' = 'Create'", a.data),
       where: ^Pleroma.Constants.as_public() in a.recipients

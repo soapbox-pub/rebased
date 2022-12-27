@@ -48,7 +48,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           federation: federation(),
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats]),
-          privileged_staff: Config.get([:instance, :privileged_staff]),
           birthday_required: Config.get([:instance, :birthday_required]),
           birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
@@ -69,6 +68,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
+      "editing",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -98,7 +98,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
-      end
+      end,
+      "pleroma:get:main/ostatus"
     ]
     |> Enum.filter(& &1)
   end

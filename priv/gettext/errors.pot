@@ -90,12 +90,12 @@ msgid "must be equal to %{number}"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:523
+#: lib/pleroma/web/common_api.ex:574
 msgid "Account not found"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:316
+#: lib/pleroma/web/common_api.ex:332
 msgid "Already voted"
 msgstr ""
 
@@ -111,7 +111,7 @@ msgid "Can't display this activity"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:325
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:337
 msgid "Can't find user"
 msgstr ""
 
@@ -121,49 +121,49 @@ msgid "Can't get favorites"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api/utils.ex:482
+#: lib/pleroma/web/common_api/utils.ex:457
 msgid "Cannot post an empty status without attachments"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api/utils.ex:441
+#: lib/pleroma/web/common_api/utils.ex:445
 msgid "Comment must be up to %{max_size} characters"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/config_db.ex:200
+#: lib/pleroma/config_db.ex:199
 msgid "Config with params %{params} not found"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:167
-#: lib/pleroma/web/common_api.ex:171
+#: lib/pleroma/web/common_api.ex:183
+#: lib/pleroma/web/common_api.ex:187
 msgid "Could not delete"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:217
+#: lib/pleroma/web/common_api.ex:233
 msgid "Could not favorite"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:254
+#: lib/pleroma/web/common_api.ex:270
 msgid "Could not unfavorite"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:202
+#: lib/pleroma/web/common_api.ex:218
 msgid "Could not unrepeat"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:530
-#: lib/pleroma/web/common_api.ex:539
+#: lib/pleroma/web/common_api.ex:581
+#: lib/pleroma/web/common_api.ex:590
 msgid "Could not update state"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:205
+#: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:207
 msgid "Error."
 msgstr ""
 
@@ -173,7 +173,7 @@ msgid "Invalid CAPTCHA"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:144
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:146
 #: lib/pleroma/web/o_auth/o_auth_controller.ex:631
 msgid "Invalid credentials"
 msgstr ""
@@ -184,7 +184,7 @@ msgid "Invalid credentials."
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:337
+#: lib/pleroma/web/common_api.ex:353
 msgid "Invalid indices"
 msgstr ""
 
@@ -194,12 +194,12 @@ msgid "Invalid parameters"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api/utils.ex:349
+#: lib/pleroma/web/common_api/utils.ex:353
 msgid "Invalid password."
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:255
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:267
 msgid "Invalid request"
 msgstr ""
 
@@ -209,13 +209,8 @@ msgid "Kocaptcha service unavailable"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:140
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:142
 msgid "Missing parameters"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api/utils.ex:477
-msgid "No such conversation"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -226,7 +221,7 @@ msgid "No such permission_group"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:515
+#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:502
 #: lib/pleroma/web/admin_api/controllers/fallback_controller.ex:11
 #: lib/pleroma/web/feed/tag_controller.ex:16
 #: lib/pleroma/web/feed/user_controller.ex:69
@@ -236,16 +231,17 @@ msgid "Not found"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:308
+#: lib/pleroma/web/common_api.ex:324
 msgid "Poll's author can't vote"
 msgstr ""
 
 #, elixir-autogen, elixir-format
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:502
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:20
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:39
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:51
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:52
-#: lib/pleroma/web/mastodon_api/controllers/status_controller.ex:326
+#: lib/pleroma/web/mastodon_api/controllers/status_controller.ex:382
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:71
 msgid "Record not found"
 msgstr ""
@@ -264,7 +260,7 @@ msgid "The message visibility must be direct"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api/utils.ex:492
+#: lib/pleroma/web/common_api/utils.ex:467
 msgid "The status is over the character limit"
 msgstr ""
 
@@ -279,7 +275,7 @@ msgid "Throttled"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:338
+#: lib/pleroma/web/common_api.ex:354
 msgid "Too many choices"
 msgstr ""
 
@@ -301,22 +297,22 @@ msgid "Your login is missing a confirmed e-mail address"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:403
+#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:390
 msgid "can't read inbox of %{nickname} as %{as_nickname}"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:502
+#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:489
 msgid "can't update outbox of %{nickname} as %{as_nickname}"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:475
+#: lib/pleroma/web/common_api.ex:526
 msgid "conversation is already muted"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:521
+#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:508
 msgid "error"
 msgstr ""
 
@@ -423,12 +419,12 @@ msgid "CAPTCHA Error"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:266
+#: lib/pleroma/web/common_api.ex:282
 msgid "Could not add reaction emoji"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api.ex:277
+#: lib/pleroma/web/common_api.ex:293
 msgid "Could not remove reaction emoji"
 msgstr ""
 
@@ -443,7 +439,7 @@ msgid "List not found"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:151
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:153
 msgid "Missing parameter: %{name}"
 msgstr ""
 
@@ -523,6 +519,7 @@ msgstr ""
 #: lib/pleroma/web/pleroma_api/controllers/notification_controller.ex:6
 #: lib/pleroma/web/pleroma_api/controllers/report_controller.ex:6
 #: lib/pleroma/web/pleroma_api/controllers/scrobble_controller.ex:6
+#: lib/pleroma/web/pleroma_api/controllers/settings_controller.ex:6
 #: lib/pleroma/web/pleroma_api/controllers/two_factor_authentication_controller.ex:7
 #: lib/pleroma/web/pleroma_api/controllers/user_import_controller.ex:6
 #: lib/pleroma/web/static_fe/static_fe_controller.ex:6
@@ -551,7 +548,7 @@ msgid "You can't revoke your own admin/moderator status."
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:129
+#: lib/pleroma/web/mastodon_api/controllers/timeline_controller.ex:131
 msgid "authorization required for timeline view"
 msgstr ""
 
@@ -561,7 +558,7 @@ msgid "Access denied"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:322
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:334
 msgid "This API requires an authenticated user"
 msgstr ""
 
@@ -572,29 +569,19 @@ msgid "User is not an admin."
 msgstr ""
 
 #, elixir-format
-#: lib/pleroma/user/backup.ex:75
+#: lib/pleroma/user/backup.ex:73
 msgid "Last export was less than a day ago"
 msgid_plural "Last export was less than %{days} days ago"
 msgstr[0] ""
 msgstr[1] ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/user/backup.ex:93
-msgid "Backups require enabled email"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:434
+#: lib/pleroma/web/activity_pub/activity_pub_controller.ex:421
 msgid "Character limit (%{limit} characters) exceeded, contains %{length} characters"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/user/backup.ex:98
-msgid "Email is required"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/web/common_api/utils.ex:507
+#: lib/pleroma/web/common_api/utils.ex:482
 msgid "Too many attachments"
 msgstr ""
 
@@ -607,4 +594,11 @@ msgstr ""
 #, elixir-autogen, elixir-format
 #: lib/pleroma/web/o_auth/o_auth_controller.ex:366
 msgid "Your account is awaiting approval."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:258
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:261
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:264
+msgid "File is too large"
 msgstr ""

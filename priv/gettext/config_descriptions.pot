@@ -42,12 +42,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack"
-msgid "Quack-related settings"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :cors_plug"
 msgid "CORS plug config"
 msgstr ""
@@ -80,12 +74,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma"
 msgid "Pleroma Authenticator"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack"
-msgid "Quack Logger"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -1722,12 +1710,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :pleroma-:instance > :birthday_min_age"
-msgid "Minimum required age for users to create account. Only used if birthday is required."
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :pleroma-:instance > :birthday_required"
 msgid "Require users to enter their birthday."
 msgstr ""
@@ -2306,12 +2288,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :pleroma-:mrf_mention > :actors"
 msgid "A list of actors for which any post mentioning them will be dropped"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :pleroma-:mrf_object_age > :actions"
-msgid "A list of actions to apply to the post. `:delist` removes the post from public timelines; `:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines; `:reject` rejects the message entirely"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -3302,24 +3278,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :prometheus-Pleroma.Web.Endpoint.MetricsExporter > :path"
 msgid "App metrics endpoint URI path."
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack > :level"
-msgid "Log level"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack > :meta"
-msgid "Configure which metadata you want to report on"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack > :webhook_url"
-msgid "Configure the Slack incoming webhook"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -5964,24 +5922,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack > :level"
-msgid "Level"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack > :meta"
-msgid "Meta"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack > :webhook_url"
-msgid "Webhook URL"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :web_push_encryption-:vapid_details > :private_key"
 msgid "Private key"
 msgstr ""
@@ -5996,4 +5936,88 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :web_push_encryption-:vapid_details > :subject"
 msgid "Subject"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:activitypub > :authorized_fetch_mode"
+msgid "Require HTTP signatures for AP fetches"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :short_description"
+msgid "Shorter version of instance description. It can be seen on `/api/v1/instance`"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:activitypub > :authorized_fetch_mode"
+msgid "Authorized fetch mode"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :short_description"
+msgid "Short description"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:delete_context_objects"
+msgid "`delete_context_objects` background migration settings"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:delete_context_objects > :fault_rate_allowance"
+msgid "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:delete_context_objects > :sleep_interval_ms"
+msgid "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :birthday_min_age"
+msgid "Minimum required age (in days) for users to create account. Only used if birthday is required."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:delete_context_objects"
+msgid "Delete context objects"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:delete_context_objects > :fault_rate_allowance"
+msgid "Fault rate allowance"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:delete_context_objects > :sleep_interval_ms"
+msgid "Sleep interval ms"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :report_strip_status"
+msgid "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:mrf_object_age > :actions"
+msgid "A list of actions to apply to the post. `:delist` removes the post from public timelines; `:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message; `:reject` rejects the message entirely"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :report_strip_status"
+msgid "Report strip status"
 msgstr ""

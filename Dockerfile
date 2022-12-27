@@ -1,18 +1,18 @@
-FROM elixir:1.9-alpine as build
+FROM elixir:1.11.4-alpine as build
 
 COPY . .
 
 ENV MIX_ENV=prod
 
 RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
-	echo "import Mix.Config" > config/prod.secret.exs &&\
+	echo "import Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
 	mix deps.get --only prod &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine:3.14
+FROM alpine
 
 ARG BUILD_DATE
 ARG VCS_REF

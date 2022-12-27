@@ -49,7 +49,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
   defp fix_url(%{"url" => url} = data) when is_map(url), do: Map.put(data, "url", url["href"])
   defp fix_url(data), do: data
 
-  defp fix_tag(%{"tag" => tag} = data) when is_list(tag), do: data
+  defp fix_tag(%{"tag" => tag} = data) when is_list(tag) do
+    Map.put(data, "tag", Enum.filter(tag, &is_map/1))
+  end
+
   defp fix_tag(%{"tag" => tag} = data) when is_map(tag), do: Map.put(data, "tag", [tag])
   defp fix_tag(data), do: Map.drop(data, ["tag"])
 
@@ -60,7 +63,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
   defp fix_replies(%{"replies" => %{"items" => replies}} = data) when is_list(replies),
     do: Map.put(data, "replies", replies)
 
-  defp fix_replies(%{"replies" => replies} = data) when is_bitstring(replies),
+  # TODO: Pleroma does not have any support for Collections at the moment.
+  # If the `replies` field is not something the ObjectID validator can handle,
+  # the activity/object would be rejected, which is bad behavior.
+  defp fix_replies(%{"replies" => replies} = data) when not is_list(replies),
     do: Map.drop(data, ["replies"])
 
   defp fix_replies(data), do: data
@@ -94,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Article", "Note", "Page"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

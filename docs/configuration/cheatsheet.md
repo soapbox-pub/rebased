@@ -50,6 +50,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `autofollowing_nicknames`: Set to nicknames of (local) users that automatically follows every newly registered user.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
+* `report_strip_status`: Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy.
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
@@ -66,6 +67,36 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+* `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
+    * Possible values are:
+      * `:users_read`
+        * Allows admins to fetch users through the admin API.
+      * `:users_manage_invites`
+        * Allows admins to manage invites. This includes sending, resending, revoking and approving invites.
+      * `:users_manage_activation_state`
+        * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
+      * `:users_manage_tags`
+        * Allows admins to set and remove tags for users. This can be useful in combination with MRF policies, such as `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
+      * `:users_manage_credentials`
+        * Allows admins to trigger a password reset and set new credentials for an user.
+      * `:users_delete`
+        * Allows admins to delete accounts. Note that deleting an account is actually deactivating it and removing all data like posts, profile information, etc.
+      * `:messages_read`
+        * Allows admins to read messages through the admin API, including non-public posts and chats.
+      * `:messages_delete`
+        * Allows admins to delete messages from other users.
+      * `:instances_delete,`
+        * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
+      * `:reports_manage_reports`
+        * Allows admins to see and manage reports.
+      * `:moderation_log_read,`
+        * Allows admins to read the entries in the moderation log.
+      * `:emoji_manage_emoji`
+        * Allows admins to manage custom emoji on the instance.
+      * `:statistics_read,`
+        * Allows admins to see some simple statistics about the instance.
+* `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
+    * Possible values are the same as for `admin_privileges`
 
 ## :database
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
@@ -205,7 +236,7 @@ config :pleroma, :mrf_user_allowlist, %{
   e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
-  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message
   * `:reject` rejects the message entirely
 
 #### :mrf_steal_emoji
@@ -778,7 +809,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 * ``private_key``: VAPID private key
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```elixir
@@ -801,10 +832,10 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
-An example of logging info to local syslog, but warn to a Slack channel:
+An example of logging info to local syslog, but debug to console:
 ```elixir
 config :logger,
-  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  backends: [ {ExSyslogger, :ex_syslogger}, :console ],
   level: :info
 
 config :logger, :ex_syslogger,
@@ -812,13 +843,11 @@ config :logger, :ex_syslogger,
   ident: "pleroma",
   format: "$metadata[$level] $message"
 
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+config :logger, :console,
+  level: :debug,
+  format: "\n$time $metadata[$level] $message\n",
+  metadata: [:request_id]
 ```
-
-See the [Quack Github](https://github.com/azohra/quack) for more details
 
 
 

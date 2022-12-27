@@ -28,6 +28,42 @@ defmodule Pleroma.Constants do
       ~w(index.html robots.txt static static-fe finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc embed.js embed.css)
   )
 
+  const(status_updatable_fields,
+    do: [
+      "source",
+      "tag",
+      "updated",
+      "emoji",
+      "content",
+      "summary",
+      "sensitive",
+      "attachment",
+      "generator"
+    ]
+  )
+
+  const(updatable_object_types,
+    do: [
+      "Note",
+      "Question",
+      "Audio",
+      "Video",
+      "Event",
+      "Article",
+      "Page"
+    ]
+  )
+
+  const(actor_types,
+    do: [
+      "Application",
+      "Group",
+      "Organization",
+      "Person",
+      "Service"
+    ]
+  )
+
   # basic regex, just there to weed out potential mistakes
   # https://datatracker.ietf.org/doc/html/rfc2045#section-5.1
   const(mime_regex,

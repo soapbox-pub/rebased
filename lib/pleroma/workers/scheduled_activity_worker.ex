@@ -37,6 +37,9 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
     end
   end
 
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
+
   defp find_scheduled_activity(id) do
     with nil <- Repo.get(ScheduledActivity, id) do
       {:error, :scheduled_activity_not_found}

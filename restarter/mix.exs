@@ -5,7 +5,7 @@ defmodule Restarter.MixProject do
     [
       app: :restarter,
       version: "0.1.0",
-      elixir: "~> 1.8",
+      elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -13,7 +13,8 @@ defmodule Restarter.MixProject do
 
   def application do
     [
-      mod: {Restarter, []}
+      mod: {Restarter, []},
+      extra_applications: [:logger]
     ]
   end
 
