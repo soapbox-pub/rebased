@@ -25,6 +25,8 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
     {:ok, data}
   end
 
+  def cast(_), do: :error
+
   defp is_good_locale_code?(code) do
     code
     |> String.codepoints()
@@ -38,8 +40,6 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
       ("0" <= char and char <= "9") or
       char == "-"
   end
-
-  def cast(_), do: :error
 
   def dump(data), do: {:ok, data}
 
