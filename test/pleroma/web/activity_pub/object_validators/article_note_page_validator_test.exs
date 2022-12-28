@@ -62,6 +62,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
                }
              } = ArticleNotePageValidator.cast_and_validate(note)
     end
+
+    test "Note with empty *Map", %{note: note} do
+      note =
+        note
+        |> Map.put("summaryMap", %{"und" => "mew"})
+        |> Map.put("contentMap", %{})
+
+      assert %{
+               valid?: true,
+               changes: changes
+             } = ArticleNotePageValidator.cast_and_validate(note)
+
+      assert Map.has_key?(changes, :summaryMap)
+      refute Map.has_key?(changes, :contentMap)
+    end
   end
 
   describe "Note with history" do

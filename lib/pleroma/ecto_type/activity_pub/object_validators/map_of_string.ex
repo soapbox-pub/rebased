@@ -22,7 +22,11 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
           acc
       end)
 
-    {:ok, data}
+    if data == %{} do
+      {:ok, nil}
+    else
+      {:ok, data}
+    end
   end
 
   def cast(_), do: :error
