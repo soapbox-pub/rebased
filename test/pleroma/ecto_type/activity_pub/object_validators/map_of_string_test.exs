@@ -35,6 +35,18 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfStringTest do
     assert validated_data == %{"en-US" => "mew mew"}
   end
 
+  test "it ignores bad locale codes" do
+    data = %{
+      "en-US" => "mew mew",
+      "en_GB" => "meow meow",
+      "en<<#@!$#!@%!GB" => "meow meow"
+    }
+
+    assert {:ok, validated_data} = MapOfString.cast(data)
+
+    assert validated_data == %{"en-US" => "mew mew"}
+  end
+
   test "it complains with non-map data" do
     assert :error = MapOfString.cast("mew")
     assert :error = MapOfString.cast(["mew"])

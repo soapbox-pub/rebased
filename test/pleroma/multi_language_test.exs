@@ -38,7 +38,8 @@ defmodule Pleroma.MultiLanguageTest do
         "en-GB" => "meow {code} {content}"
       }
 
-      assert MultiLanguage.map_to_str(data) == "[en-GB] meow {code} {content} | [en-US] mew {code} {content}"
+      assert MultiLanguage.map_to_str(data) ==
+               "[en-GB] meow {code} {content} | [en-US] mew {code} {content}"
     end
   end
 
