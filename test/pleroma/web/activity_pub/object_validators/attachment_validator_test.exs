@@ -40,6 +40,26 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
       assert attachment.mediaType == "application/octet-stream"
     end
 
+    test "works with nameMap" do
+      attachment_data = %{
+        "mediaType" => "",
+        "name" => "",
+        "nameMap" => %{
+          "en-US" => "mew mew",
+          "en-GB" => "meow meow"
+        },
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document",
+        "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment_data)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.nameMap == attachment_data["nameMap"]
+    end
+
     test "works with an unknown but valid mime type" do
       attachment = %{
         "mediaType" => "x-custom/x-type",

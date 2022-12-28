@@ -37,6 +37,31 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
       note = insert(:note)
       %{valid?: true} = ArticleNotePageValidator.cast_and_validate(note.data)
     end
+
+    test "Note with contentMap and summaryMap", %{note: note} do
+      summary_map = %{
+        "en-US" => "mew",
+        "en-GB" => "meow"
+      }
+
+      content_map = %{
+        "en-US" => "mew mew",
+        "en-GB" => "meow meow"
+      }
+
+      note =
+        note
+        |> Map.put("summaryMap", summary_map)
+        |> Map.put("contentMap", content_map)
+
+      assert %{
+               valid?: true,
+               changes: %{
+                 summaryMap: ^summary_map,
+                 contentMap: ^content_map
+               }
+             } = ArticleNotePageValidator.cast_and_validate(note)
+    end
   end
 
   describe "Note with history" do

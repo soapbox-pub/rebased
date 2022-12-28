@@ -7,10 +7,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
 
   import Ecto.Changeset
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
+
   @primary_key false
 
   embedded_schema do
     field(:name, :string)
+    field(:nameMap, ObjectValidators.MapOfString)
 
     embeds_one :replies, Replies, primary_key: false do
       field(:totalItems, :integer)
@@ -22,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
 
   def changeset(struct, data) do
     struct
-    |> cast(data, [:name, :type])
+    |> cast(data, [:name, :nameMap, :type])
     |> cast_embed(:replies, with: &replies_changeset/2)
     |> validate_inclusion(:type, ["Note"])
     |> validate_required([:name, :type])
