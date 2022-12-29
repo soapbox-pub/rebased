@@ -54,9 +54,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
         |> Map.put("summaryMap", summary_map)
         |> Map.put("contentMap", content_map)
 
+      expected_summary = Pleroma.MultiLanguage.map_to_str(summary_map, multiline: false)
+      expected_content = Pleroma.MultiLanguage.map_to_str(content_map, multiline: true)
+
       assert %{
                valid?: true,
                changes: %{
+                 summary: ^expected_summary,
+                 content: ^expected_content,
                  summaryMap: ^summary_map,
                  contentMap: ^content_map
                }
@@ -74,6 +79,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
                changes: changes
              } = ArticleNotePageValidator.cast_and_validate(note)
 
+      assert changes.content == note["content"]
       assert Map.has_key?(changes, :summaryMap)
       refute Map.has_key?(changes, :contentMap)
     end

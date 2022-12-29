@@ -64,6 +64,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> CommonFixes.fix_object_defaults()
     |> Transmogrifier.fix_emoji()
     |> fix_closed()
+    |> CommonFixes.fix_multilang_field("content", "contentMap", multiline: true)
+    |> CommonFixes.fix_multilang_field("summary", "summaryMap", multiline: false)
+    |> CommonFixes.fix_multilang_field("name", "nameMap", multiline: false)
   end
 
   def changeset(struct, data) do

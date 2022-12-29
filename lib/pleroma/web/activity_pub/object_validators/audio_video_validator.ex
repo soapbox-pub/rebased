@@ -96,6 +96,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     |> CommonFixes.fix_object_defaults()
     |> Transmogrifier.fix_emoji()
     |> fix_url()
+    |> CommonFixes.fix_multilang_field("content", "contentMap", multiline: true)
+    |> CommonFixes.fix_multilang_field("summary", "summaryMap", multiline: false)
+    |> CommonFixes.fix_multilang_field("name", "nameMap", multiline: false)
     |> fix_content()
   end
 

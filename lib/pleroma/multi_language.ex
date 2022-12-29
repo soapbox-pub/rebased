@@ -26,7 +26,7 @@ defmodule Pleroma.MultiLanguage do
       |> Enum.join(sep(mode))
     else
       [lang] -> data[lang]
-      _ -> ""
+      _ -> nil
     end
   end
 

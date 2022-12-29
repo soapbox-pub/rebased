@@ -85,7 +85,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_replies()
     |> fix_attachments()
     |> Transmogrifier.fix_emoji()
-    |> Transmogrifier.fix_content_map()
+    |> CommonFixes.fix_multilang_field("content", "contentMap", multiline: true)
+    |> CommonFixes.fix_multilang_field("summary", "summaryMap", multiline: false)
+    |> CommonFixes.fix_multilang_field("name", "nameMap", multiline: false)
   end
 
   def changeset(struct, data) do
