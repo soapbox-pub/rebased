@@ -1453,12 +1453,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @spec upload(Upload.source(), keyword()) :: {:ok, Object.t()} | {:error, any()}
   def upload(file, opts \\ []) do
-    with {:ok, data} <- Upload.store(file, opts) do
+    with {:ok, data} <- Upload.store(sanitize_upload_file(file), opts) do
       obj_data = Maps.put_if_present(data, "actor", opts[:actor])
 
       Repo.insert(%Object{data: obj_data})
     end
   end
+
+  defp sanitize_upload_file(%Plug.Upload{filename: filename} = upload) when is_binary(filename) do
+    %Plug.Upload{
+      upload
+      | filename: Path.basename(filename)
+    }
+  end
+
+  defp sanitize_upload_file(upload), do: upload
 
   @spec get_actor_url(any()) :: binary() | nil
   defp get_actor_url(url) when is_binary(url), do: url
