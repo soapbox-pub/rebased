@@ -68,6 +68,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.TagValidator do
     |> validate_required([:type, :name, :icon])
   end
 
+  # Fallback
+  def changeset(struct, data), do: cast(struct, data, [:type, :name])
+
   def icon_changeset(struct, data) do
     struct
     |> cast(data, [:type, :url])
