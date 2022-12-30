@@ -10,6 +10,11 @@
     "published": "2022-10-01T21:30:05.211215Z",
     "tag": [
       {
+        "name": "@bob@example.net",
+        "type": "Mention",
+        "href": "https://example.net/users/bob"
+      },
+      {
         "name": "https://example.org/objects/9",
         "type": "Link",
         "href": "https://example.org/objects/9",

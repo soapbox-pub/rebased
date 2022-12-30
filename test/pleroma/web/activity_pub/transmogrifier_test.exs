@@ -124,8 +124,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["context"] == object.data["context"]
     end
 
-    # https://codeberg.org/fediverse/fep/src/branch/main/feps/fep-e232.md
-    test "it accepts FEP-e232 link tags" do
+    test "it drops link tags" do
       insert(:user, ap_id: "https://example.org/users/alice")
 
       message = File.read!("test/fixtures/fep-e232.json") |> Jason.decode!()
@@ -136,8 +135,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert length(object.data["tag"]) == 1
 
       tag = object.data["tag"] |> List.first()
-      assert tag["type"] == "Link"
-      assert tag["name"] == "https://example.org/objects/9"
+      assert tag["type"] == "Mention"
     end
   end
 
