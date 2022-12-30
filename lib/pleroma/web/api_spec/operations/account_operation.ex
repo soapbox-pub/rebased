@@ -479,6 +479,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       ],
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
+        401 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Error", "application/json", ApiError)
       }
     }

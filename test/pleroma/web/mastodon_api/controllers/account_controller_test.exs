@@ -2055,6 +2055,50 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       |> json_response_and_validate_schema(404)
   end
 
+  test "account lookup with restrict unauthenticated profiles for local" do
+    clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+    user = insert(:user, local: true)
+    reading_user = insert(:user)
+
+    conn =
+      build_conn()
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert json_response_and_validate_schema(conn, 401)
+
+    conn =
+      build_conn()
+      |> assign(:user, reading_user)
+      |> assign(:token, insert(:oauth_token, user: reading_user, scopes: ["read:accounts"]))
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert %{"id" => id} = json_response_and_validate_schema(conn, 200)
+    assert id == user.id
+  end
+
+  test "account lookup with restrict unauthenticated profiles for remote" do
+    clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+    user = insert(:user, nickname: "user@example.com", local: false)
+    reading_user = insert(:user)
+
+    conn =
+      build_conn()
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert json_response_and_validate_schema(conn, 401)
+
+    conn =
+      build_conn()
+      |> assign(:user, reading_user)
+      |> assign(:token, insert(:oauth_token, user: reading_user, scopes: ["read:accounts"]))
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert %{"id" => id} = json_response_and_validate_schema(conn, 200)
+    assert id == user.id
+  end
+
   test "create a note on a user" do
     %{conn: conn} = oauth_access(["write:accounts", "read:follows"])
     other_user = insert(:user)
