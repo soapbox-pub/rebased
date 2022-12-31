@@ -759,6 +759,7 @@ defmodule Pleroma.Web.Router do
     get("/tags/:id", TagController, :show)
     post("/tags/:id/follow", TagController, :follow)
     post("/tags/:id/unfollow", TagController, :unfollow)
+    get("/followed_tags", TagController, :show_followed)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
