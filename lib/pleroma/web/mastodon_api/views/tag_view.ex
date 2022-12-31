@@ -3,6 +3,10 @@ defmodule Pleroma.Web.MastodonAPI.TagView do
   alias Pleroma.User
   alias Pleroma.Web.Router.Helpers
 
+  def render("index.json", %{tags: tags, for_user: user}) do
+    safe_render_many(tags, __MODULE__, "show.json", %{for_user: user})
+  end
+
   def render("show.json", %{tag: tag, for_user: user}) do
     following =
       with %User{} <- user do

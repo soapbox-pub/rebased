@@ -94,4 +94,66 @@ defmodule Pleroma.Web.MastodonAPI.TagControllerTest do
       assert response["error"] == "Hashtag not found"
     end
   end
+
+  describe "GET /api/v1/followed_tags" do
+    test "should list followed tags" do
+      %{user: user, conn: conn} = oauth_access(["read:follows"])
+
+      response =
+        conn
+        |> get("/api/v1/followed_tags")
+        |> json_response_and_validate_schema(200)
+
+      assert Enum.empty?(response)
+
+      hashtag = insert(:hashtag, name: "jubjub")
+      {:ok, _user} = User.follow_hashtag(user, hashtag)
+
+      response =
+        conn
+        |> get("/api/v1/followed_tags")
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"name" => "jubjub"}] = response
+    end
+
+    test "should include a link header to paginate" do
+      %{user: user, conn: conn} = oauth_access(["read:follows"])
+
+      for i <- 1..21 do
+        hashtag = insert(:hashtag, name: "jubjub#{i}}")
+        {:ok, _user} = User.follow_hashtag(user, hashtag)
+      end
+
+      response =
+        conn
+        |> get("/api/v1/followed_tags")
+
+      json = json_response_and_validate_schema(response, 200)
+      assert Enum.count(json) == 20
+      assert [link_header] = get_resp_header(response, "link")
+      assert link_header =~ "rel=\"next\""
+      next_link = extract_next_link_header(link_header)
+
+      response =
+        conn
+        |> get(next_link)
+        |> json_response_and_validate_schema(200)
+
+      assert Enum.count(response) == 1
+    end
+
+    test "should refuse access without read:follows scope" do
+      %{conn: conn} = oauth_access(["write"])
+
+      conn
+      |> get("/api/v1/followed_tags")
+      |> json_response_and_validate_schema(403)
+    end
+  end
+
+  defp extract_next_link_header(header) do
+    [_, next_link] = Regex.run(~r{<(?<next_link>.*)>; rel="next"}, header)
+    next_link
+  end
 end

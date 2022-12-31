@@ -4,9 +4,24 @@ defmodule Pleroma.Web.MastodonAPI.TagController do
 
   alias Pleroma.User
   alias Pleroma.Hashtag
+  alias Pleroma.Pagination
+
+  import Pleroma.Web.ControllerHelper,
+    only: [
+      add_link_headers: 2
+    ]
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(Pleroma.Web.Plugs.OAuthScopesPlug, %{scopes: ["read"]} when action in [:show])
+
+  plug(
+    Pleroma.Web.Plugs.OAuthScopesPlug,
+    %{scopes: ["read"]} when action in [:show]
+  )
+
+  plug(
+    Pleroma.Web.Plugs.OAuthScopesPlug,
+    %{scopes: ["read:follows"]} when action in [:show_followed]
+  )
 
   plug(
     Pleroma.Web.Plugs.OAuthScopesPlug,
@@ -42,6 +57,21 @@ defmodule Pleroma.Web.MastodonAPI.TagController do
       render(conn, "show.json", tag: hashtag, for_user: user)
     else
       _ -> render_error(conn, :not_found, "Hashtag not found")
+    end
+  end
+
+  def show_followed(conn, params) do
+    with %{assigns: %{user: %User{} = user}} <- conn do
+      params = Map.put(params, :id_type, :integer)
+
+      hashtags =
+        user
+        |> User.HashtagFollow.followed_hashtags_query()
+        |> Pagination.fetch_paginated(params)
+
+      conn
+      |> add_link_headers(hashtags)
+      |> render("index.json", tags: hashtags, for_user: user)
     end
   end
 end

@@ -43,7 +43,13 @@ defmodule Pleroma.User.HashtagFollow do
   end
 
   def get_by_user(%User{} = user) do
-    Ecto.assoc(user, :followed_hashtags)
+    user
+    |> followed_hashtags_query()
     |> Repo.all()
+  end
+
+  def followed_hashtags_query(%User{} = user) do
+    Ecto.assoc(user, :followed_hashtags)
+    |> Ecto.Query.order_by([h], desc: h.id)
   end
 end

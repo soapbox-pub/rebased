@@ -44,11 +44,31 @@ defmodule Pleroma.Web.ApiSpec.TagOperation do
       tags: ["Tags"],
       summary: "Unfollow a hashtag",
       description: "Unfollow a hashtag",
-      security: [%{"oAuth" => ["write:follow"]}],
+      security: [%{"oAuth" => ["write:follows"]}],
       parameters: [id_param()],
       operationId: "TagController.unfollow",
       responses: %{
         200 => Operation.response("Hashtag", "application/json", Tag),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def show_followed_operation do
+    %Operation{
+      tags: ["Tags"],
+      summary: "Followed hashtags",
+      description: "View a list of hashtags the currently authenticated user is following",
+      parameters: pagination_params(),
+      security: [%{"oAuth" => ["read:follows"]}],
+      operationId: "TagController.show_followed",
+      responses: %{
+        200 =>
+          Operation.response("Hashtags", "application/json", %Schema{
+            type: :array,
+            items: Tag
+          }),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
@@ -61,5 +81,23 @@ defmodule Pleroma.Web.ApiSpec.TagOperation do
       %Schema{type: :string},
       "Name of the hashtag"
     )
+  end
+
+  def pagination_params do
+    [
+      Operation.parameter(:max_id, :query, :integer, "Return items older than this ID"),
+      Operation.parameter(
+        :min_id,
+        :query,
+        :integer,
+        "Return the oldest items newer than this ID"
+      ),
+      Operation.parameter(
+        :limit,
+        :query,
+        %Schema{type: :integer, default: 20},
+        "Maximum number of items to return. Will be ignored if it's more than 40"
+      )
+    ]
   end
 end

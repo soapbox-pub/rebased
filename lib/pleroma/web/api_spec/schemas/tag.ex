@@ -21,6 +21,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Tag do
       following: %Schema{
         type: :boolean,
         description: "Whether the authenticated user is following the hashtag"
+      },
+      history: %Schema{
+        type: :array,
+        items: %Schema{type: :string},
+        description:
+          "A list of historical uses of the hashtag (not implemented, for compatibility only)"
       }
     },
     example: %{
