@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Repo.Migrations.UserNotificationSettingsFix do
@@ -7,7 +7,7 @@ defmodule Pleroma.Repo.Migrations.UserNotificationSettingsFix do
 
   def up do
     execute(~s(UPDATE users
-    SET
+    SET 
       notification_settings = '{"followers": true, "follows": true, "non_follows": true, "non_followers": true}'::jsonb WHERE notification_settings IS NULL
 ))
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTMLTest do
@@ -49,8 +49,8 @@ defmodule Pleroma.HTMLTest do
         this is a linebreak
         this is a link with allowed &quot;rel&quot; attribute: example.com
         this is a link with not allowed &quot;rel&quot; attribute: example.com
-        this is an image:
-        this is an inline emoji:
+        this is an image: 
+        this is an inline emoji: 
         alert(&#39;hacked&#39;)
       """
 
