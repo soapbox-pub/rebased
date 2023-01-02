@@ -375,6 +375,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       content: content_html,
       content_map: content_html_map,
       text: opts[:with_source] && get_source_text(object.data["source"]),
+      text_map: opts[:with_source] && get_source_text_map(Map.get(object.data, "source", "")),
       created_at: created_at,
       edited_at: edited_at,
       reblogs_count: announcement_count,
@@ -508,7 +509,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     %{
       id: activity.id,
       text: get_source_text(Map.get(object.data, "source", "")),
+      text_map: get_source_text_map(Map.get(object.data, "source", "")),
       spoiler_text: Map.get(object.data, "summary", ""),
+      spoiler_text_map: Map.get(object.data, "summaryMap", %{}),
       content_type: get_source_content_type(object.data["source"])
     }
   end
@@ -755,6 +758,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_source_text(_) do
     ""
   end
+
+  defp get_source_text_map(%{"contentMap" => %{} = content_map} = _source) do
+    content_map
+  end
+
+  defp get_source_text_map(_), do: %{}
 
   defp get_source_content_type(%{"mediaType" => type} = _source) do
     type

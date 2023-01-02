@@ -247,6 +247,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       content: HTML.filter_tags(object_data["content"]),
       content_map: %{},
       text: nil,
+      text_map: nil,
       created_at: created_at,
       edited_at: nil,
       reblogs_count: 0,
@@ -825,6 +826,39 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert %{
                content: "mew mew",
                content_map: %{"en" => "mew mew", "cmn" => "喵喵"},
+               spoiler_text: "mew",
+               spoiler_text_map: %{"en" => "mew", "cmn" => "喵"}
+             } = status
+    end
+  end
+
+  describe "source" do
+    test "renders multilang" do
+      user = insert(:user)
+
+      note_obj =
+        insert(:note,
+          data: %{
+            "source" => %{
+              "content" => "mew mew",
+              "contentMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+              "mediaType" => "text/plain"
+            },
+            "summary" => "mew",
+            "summaryMap" => %{"en" => "mew", "cmn" => "喵"}
+          }
+        )
+
+      note = insert(:note_activity, note: note_obj, user: user)
+
+      status =
+        StatusView.render("source.json", %{
+          activity: note
+        })
+
+      assert %{
+               text: "mew mew",
+               text_map: %{"en" => "mew mew", "cmn" => "喵喵"},
                spoiler_text: "mew",
                spoiler_text_map: %{"en" => "mew", "cmn" => "喵"}
              } = status

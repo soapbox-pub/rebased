@@ -75,6 +75,14 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         description: "Original unformatted content in plain text",
         nullable: true
       },
+      text_map:
+        Helpers.multilang_map_of(
+          %Schema{
+            type: :string,
+            description: "Original unformatted content in plain text"
+          },
+          nullable: true
+        ),
       created_at: %Schema{
         type: :string,
         format: "date-time",

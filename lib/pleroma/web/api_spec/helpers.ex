@@ -83,17 +83,20 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     Operation.response("No Content", "application/json", %Schema{type: :string, example: ""})
   end
 
-  def multilang_map_of(embedded_schema) do
-    %Schema{
-      type: :object,
-      title:
-        if embedded_schema.title do
-          "MultiLang map of #{embedded_schema.title}"
-        else
-          "MultiLang map"
-        end,
-      additionalProperties: embedded_schema,
-      description: "Map from a BCP47 language tag to a string in that language."
-    }
+  def multilang_map_of(embedded_schema, opts \\ []) do
+    struct(
+      %Schema{
+        type: :object,
+        title:
+          if embedded_schema.title do
+            "MultiLang map of #{embedded_schema.title}"
+          else
+            "MultiLang map"
+          end,
+        additionalProperties: embedded_schema,
+        description: "Map from a BCP47 language tag to a string in that language."
+      },
+      opts
+    )
   end
 end

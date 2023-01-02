@@ -770,11 +770,22 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             type: :string,
             description: "Raw source of status content"
           },
+          text_map:
+            Helpers.multilang_map_of(%Schema{
+              type: :string,
+              description: "Raw source of status content"
+            }),
           spoiler_text: %Schema{
             type: :string,
             description:
               "Subject or summary line, below which status content is collapsed until expanded"
           },
+          spoiler_text_map:
+            Helpers.multilang_map_of(%Schema{
+              type: :string,
+              description:
+                "Subject or summary line, below which status content is collapsed until expanded"
+            }),
           content_type: %Schema{
             type: :string,
             description: "The content type of the source"
