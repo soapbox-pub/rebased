@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidatorTest 
         "nameMap" => name_map
       }
 
-      assert %{valid?: true, changes: %{nameMap: ^name_map}} =
+      assert %{valid?: true, changes: %{nameMap: ^name_map, nameRendered: _}} =
                QuestionOptionsValidator.changeset(%QuestionOptionsValidator{}, data)
     end
   end
