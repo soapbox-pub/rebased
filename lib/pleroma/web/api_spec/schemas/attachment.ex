@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Helpers
 
   require OpenApiSpex
 
@@ -42,6 +43,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
         description:
           "Alternate text that describes what is in the media attachment, to be used for the visually impaired or when media attachments do not load"
       },
+      description_map:
+        Helpers.multilang_map_of(%Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Alternate text that describes what is in the media attachment, to be used for the visually impaired or when media attachments do not load"
+        }),
       type: %Schema{
         type: :string,
         enum: ["image", "video", "audio", "unknown"],
@@ -62,6 +70,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
       preview_url: "someurl",
       text_url: "someurl",
       description: nil,
+      description_map: %{},
       pleroma: %{mime_type: "image/png"}
     }
   })

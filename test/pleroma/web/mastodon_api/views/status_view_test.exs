@@ -517,7 +517,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       description: nil,
       pleroma: %{mime_type: "image/png"},
       meta: %{original: %{width: 200, height: 100, aspect: 2}},
-      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
+      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
+      description_map: %{}
     }
 
     api_spec = Pleroma.Web.ApiSpec.spec()
@@ -531,6 +532,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert %{id: "2"} = result
     assert_schema(result, "Attachment", api_spec)
+  end
+
+  test "attachments with multilang" do
+    object = %{
+      "type" => "Image",
+      "url" => [
+        %{
+          "mediaType" => "image/png",
+          "href" => "someurl",
+          "width" => 200,
+          "height" => 100
+        }
+      ],
+      "name" => "mew mew",
+      "nameMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+      "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
+      "uuid" => 6
+    }
+
+    assert %{description: "mew mew", description_map: %{"en" => "mew mew", "cmn" => "喵喵"}} =
+             StatusView.render("attachment.json", %{attachment: object})
   end
 
   test "put the url advertised in the Activity in to the url attribute" do
