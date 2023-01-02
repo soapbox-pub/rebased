@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
@@ -63,6 +64,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         }
       },
       content: %Schema{type: :string, format: :html, description: "HTML-encoded status content"},
+      content_map:
+        Helpers.multilang_map_of(%Schema{
+          type: :string,
+          format: :html,
+          description: "HTML-encoded status content"
+        }),
       text: %Schema{
         type: :string,
         description: "Original unformatted content in plain text",
@@ -148,6 +155,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             description:
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
           },
+          content_map: %Schema{
+            type: :object,
+            additionalProperties: Helpers.multilang_map_of(%Schema{type: :string}),
+            description:
+              "A map consisting of alternate representations of the `content_map` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
+          },
           context: %Schema{
             type: :string,
             description: "The thread identifier the status is associated with"
@@ -199,6 +212,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             description:
               "A map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
           },
+          spoiler_text_map: %Schema{
+            type: :object,
+            additionalProperties: Helpers.multilang_map_of(%Schema{type: :string}),
+            description:
+              "A map consisting of alternate representations of the `spoiler_text_map` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
+          },
           thread_muted: %Schema{
             type: :boolean,
             description: "`true` if the thread the post belongs to is muted"
@@ -240,6 +259,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         description:
           "Subject or summary line, below which status content is collapsed until expanded"
       },
+      spoiler_text_map:
+        Helpers.multilang_map_of(%Schema{
+          type: :string,
+          description:
+            "Subject or summary line, below which status content is collapsed until expanded"
+        }),
       tags: %Schema{type: :array, items: Tag},
       uri: %Schema{
         type: :string,
@@ -317,6 +342,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       "bookmarked" => false,
       "card" => nil,
       "content" => "foobar",
+      "content_map" => %{
+        "en" => "mew mew",
+        "cmn" => "喵喵"
+      },
       "created_at" => "2020-04-07T19:48:51.000Z",
       "emojis" => [],
       "favourited" => false,
@@ -331,6 +360,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       "pinned" => false,
       "pleroma" => %{
         "content" => %{"text/plain" => "foobar"},
+        "content_map" => %{
+          "text/plain" => %{
+            "en" => "mew mew",
+            "cmn" => "喵喵"
+          }
+        },
         "context" => "http://localhost:4001/objects/8b4c0c80-6a37-4d2a-b1b9-05a19e3875aa",
         "conversation_id" => 345_972,
         "direct_conversation_id" => nil,
@@ -339,6 +374,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "in_reply_to_account_acct" => nil,
         "local" => true,
         "spoiler_text" => %{"text/plain" => ""},
+        "spoiler_text_map" => %{
+          "text/plain" => %{
+            "en" => "",
+            "cmn" => ""
+          }
+        },
         "thread_muted" => false
       },
       "poll" => nil,
@@ -348,6 +389,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       "replies_count" => 0,
       "sensitive" => false,
       "spoiler_text" => "",
+      "spoiler_text_map" => %{
+        "en" => "",
+        "cmn" => ""
+      },
       "tags" => [],
       "uri" => "http://localhost:4001/objects/0f5dad44-0e9e-4610-b377-a2631e499190",
       "url" => "http://localhost:4001/notice/9toJCu5YZW7O7gfvH6",

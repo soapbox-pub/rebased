@@ -245,6 +245,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       card: nil,
       reblog: nil,
       content: HTML.filter_tags(object_data["content"]),
+      content_map: %{},
       text: nil,
       created_at: created_at,
       edited_at: nil,
@@ -259,6 +260,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       sensitive: false,
       poll: nil,
       spoiler_text: HTML.filter_tags(object_data["summary"]),
+      spoiler_text_map: %{},
       visibility: "public",
       media_attachments: [],
       mentions: [],
@@ -284,7 +286,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         context: object_data["context"],
         in_reply_to_account_acct: nil,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
+        content_map: %{"text/plain" => %{}},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
+        spoiler_text_map: %{"text/plain" => %{}},
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
@@ -296,6 +300,37 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert status == expected
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
+  end
+
+  test "a note activity with multiple languages" do
+    user = insert(:user)
+
+    note_obj =
+      insert(:note,
+        data: %{
+          "content" => "mew mew",
+          "contentMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+          "summary" => "mew",
+          "summaryMap" => %{"en" => "mew", "cmn" => "喵"}
+        }
+      )
+
+    note = insert(:note_activity, note: note_obj, user: user)
+
+    status = StatusView.render("show.json", %{activity: note})
+
+    assert %{
+             content: "mew mew",
+             content_map: %{"en" => "mew mew", "cmn" => "喵喵"},
+             spoiler_text: "mew",
+             spoiler_text_map: %{"en" => "mew", "cmn" => "喵"},
+             pleroma: %{
+               content: %{"text/plain" => "mew mew"},
+               content_map: %{"text/plain" => %{"en" => "mew mew", "cmn" => "喵喵"}},
+               spoiler_text: %{"text/plain" => "mew"},
+               spoiler_text_map: %{"text/plain" => %{"en" => "mew", "cmn" => "喵"}}
+             }
+           } = status
   end
 
   test "tells if the message is muted for some reason" do
