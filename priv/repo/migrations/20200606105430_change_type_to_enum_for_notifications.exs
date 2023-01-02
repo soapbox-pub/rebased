@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Repo.Migrations.ChangeTypeToEnumForNotifications do
@@ -21,7 +21,7 @@ defmodule Pleroma.Repo.Migrations.ChangeTypeToEnumForNotifications do
     |> execute()
 
     """
-    alter table notifications 
+    alter table notifications
     alter column type type notification_type using (type::notification_type)
     """
     |> execute()
