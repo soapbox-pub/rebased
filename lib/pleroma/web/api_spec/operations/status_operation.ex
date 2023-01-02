@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
+  alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.Attachment
@@ -710,6 +711,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
               format: :html,
               description: "HTML-encoded status content"
             },
+            content_map:
+              Helpers.multilang_map_of(%Schema{
+                type: :string,
+                format: :html,
+                description: "HTML-encoded status content"
+              }),
             sensitive: %Schema{
               type: :boolean,
               description: "Is this status marked as sensitive content?"
@@ -719,6 +726,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
               description:
                 "Subject or summary line, below which status content is collapsed until expanded"
             },
+            spoiler_text_map:
+              Helpers.multilang_map_of(%Schema{
+                type: :string,
+                description:
+                  "Subject or summary line, below which status content is collapsed until expanded"
+              }),
             created_at: %Schema{
               type: :string,
               format: "date-time",

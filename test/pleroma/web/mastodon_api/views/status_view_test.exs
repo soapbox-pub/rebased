@@ -797,4 +797,37 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert status.content_type == "text/plain"
     end
   end
+
+  describe "history items" do
+    test "renders multilang" do
+      user = insert(:user)
+
+      note_obj =
+        insert(:note,
+          data: %{
+            "content" => "mew mew",
+            "contentMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+            "summary" => "mew",
+            "summaryMap" => %{"en" => "mew", "cmn" => "喵"}
+          }
+        )
+
+      note = insert(:note_activity, note: note_obj, user: user)
+
+      status =
+        StatusView.render("history_item.json", %{
+          activity: note,
+          user: user,
+          hashtags: [],
+          item: %{object: note_obj, chrono_order: 0}
+        })
+
+      assert %{
+               content: "mew mew",
+               content_map: %{"en" => "mew mew", "cmn" => "喵喵"},
+               spoiler_text: "mew",
+               spoiler_text_map: %{"en" => "mew", "cmn" => "喵"}
+             } = status
+    end
+  end
 end

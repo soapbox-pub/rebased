@@ -309,8 +309,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         chrono_order: chrono_order
       })
 
-    content_languages = Map.keys(content_html_map)
-
     summary = object.data["summary"] || ""
     summary_map = object.data["summaryMap"] || %{}
 
@@ -474,19 +472,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     created_at = Utils.to_masto_date(object.data["updated"] || object.data["published"])
 
-    content =
-      object
-      |> render_content()
-
-    content_html =
-      content
-      |> Activity.HTML.get_cached_scrubbed_html_for_activity(
-        User.html_filter_policy(opts[:for]),
-        activity,
-        "mastoapi:content:#{chrono_order}"
-      )
+    {content_html, content_html_map} =
+      get_content_and_map(%{
+        type: :html,
+        user: opts[:for],
+        activity: activity,
+        object: object,
+        chrono_order: chrono_order
+      })
 
     summary = object.data["summary"] || ""
+    summary_map = object.data["summaryMap"] || %{}
 
     %{
       account:
@@ -495,8 +491,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           for: opts[:for]
         }),
       content: content_html,
+      content_map: content_html_map,
       sensitive: sensitive,
       spoiler_text: summary,
+      spoiler_text_map: summary_map,
       created_at: created_at,
       media_attachments: attachments,
       emojis: build_emojis(object.data["emoji"]),
