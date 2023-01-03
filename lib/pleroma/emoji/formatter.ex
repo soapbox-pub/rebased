@@ -48,5 +48,9 @@ defmodule Pleroma.Emoji.Formatter do
     end)
   end
 
+  def get_emoji_map(%{} = map) do
+    Enum.reduce(map, %{}, fn {_, content}, acc -> Map.merge(acc, get_emoji_map(content)) end)
+  end
+
   def get_emoji_map(_), do: %{}
 end

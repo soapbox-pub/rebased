@@ -185,11 +185,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def make_poll_data(%{poll: %{options: options}} = data) when is_list(options) do
-    new_poll = Map.put(data.poll, :options_map, Enum.map(options, &MultiLanguage.str_to_map/1))
+    new_poll =
+      data.poll
+      |> Map.put(:options_map, Enum.map(options, &MultiLanguage.str_to_map/1))
+      |> Map.put(:is_single_language, true)
 
     data
     |> Map.put(:poll, new_poll)
-    |> Map.put(:is_single_language, true)
     |> make_poll_data()
   end
 
