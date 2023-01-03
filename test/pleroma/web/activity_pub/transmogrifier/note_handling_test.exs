@@ -104,6 +104,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
       end
     end
 
+    @tag capture_log: true
     test "it does not crash if the object in inReplyTo can't be fetched" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
@@ -723,6 +724,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     assert modified.data["context"] == object.data["id"]
   end
 
+  @tag capture_log: true
   test "the reply note uses its parent's ID when context is missing and reply is unreachable" do
     insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
 
