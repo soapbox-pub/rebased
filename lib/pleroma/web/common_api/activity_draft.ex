@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.MultiLanguage
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.CommonAPI
@@ -113,11 +114,11 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp full_payload(%{status: status, status_map: nil} = draft) do
-    full_payload(%__MODULE__{draft | status_map: %{"und" => status}})
+    full_payload(%__MODULE__{draft | status_map: MultiLanguage.str_to_map(status)})
   end
 
   defp full_payload(%{summary: summary, summary_map: nil} = draft) do
-    full_payload(%__MODULE__{draft | summary_map: %{"und" => summary}})
+    full_payload(%__MODULE__{draft | summary_map: MultiLanguage.str_to_map(summary)})
   end
 
   defp full_payload(%{status_map: %{} = status_map, summary_map: %{} = summary_map} = draft) do
