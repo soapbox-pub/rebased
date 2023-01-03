@@ -112,18 +112,17 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | summary: Map.get(params, :spoiler_text, "")}
   end
 
-  defp full_payload(%{status_map: status_map, summary_map: summary_map} = draft) do
-    status = status_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> content end)
-    summary = summary_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> content end)
-    full_payload = String.trim(status <> summary)
-
-    case Utils.validate_character_limit(full_payload, draft.attachments) do
-      :ok -> %__MODULE__{draft | full_payload: full_payload}
-      {:error, message} -> add_error(draft, message)
-    end
+  defp full_payload(%{status: status, status_map: nil} = draft) do
+    full_payload(%__MODULE__{draft | status_map: %{"und" => status}})
   end
 
-  defp full_payload(%{status: status, summary: summary} = draft) do
+  defp full_payload(%{summary: summary, summary_map: nil} = draft) do
+    full_payload(%__MODULE__{draft | summary_map: %{"und" => summary}})
+  end
+
+  defp full_payload(%{status_map: %{} = status_map, summary_map: %{} = summary_map} = draft) do
+    status = status_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> content end)
+    summary = summary_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> content end)
     full_payload = String.trim(status <> summary)
 
     case Utils.validate_character_limit(full_payload, draft.attachments) do
@@ -306,7 +305,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp differentiate_string_map(%{} = map), do: {nil, map}
   defp differentiate_string_map(str) when is_binary(str), do: {str, nil}
 
-  defp get_source_map(%{status_map: status_map} = _draft) do
+  defp get_source_map(%{status_map: %{} = status_map} = _draft) do
     %{
       "content" => Pleroma.MultiLanguage.map_to_str(status_map, mutiline: true),
       "contentMap" => status_map

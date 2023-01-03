@@ -125,6 +125,81 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       )
     end
 
+    test "posting a multilang status", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "content" => _content,
+               "content_map" => %{"a" => "mew mew", "b" => "lol lol"},
+               "id" => id,
+               "spoiler_text" => _spoiler_text,
+               "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+               "sensitive" => false
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a multilang status with singlelang summary", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text" => "mewlol",
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "content" => _content,
+               "content_map" => %{"a" => "mew mew", "b" => "lol lol"},
+               "id" => id,
+               "spoiler_text" => "mewlol",
+               "spoiler_text_map" => %{},
+               "sensitive" => false
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a multilang summary with singlelang status", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "spoiler_text_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "status" => "mewlol",
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "content" => "mewlol",
+               "content_map" => %{},
+               "id" => id,
+               "spoiler_text" => _,
+               "spoiler_text_map" => %{"a" => "mew mew", "b" => "lol lol"},
+               "sensitive" => false
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
