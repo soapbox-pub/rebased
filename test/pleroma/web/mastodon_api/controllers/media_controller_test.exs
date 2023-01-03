@@ -44,6 +44,24 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
+    test "/api/v1/media, multilang", %{conn: conn, image: image} do
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/media", %{
+          "file" => image,
+          "description_map" => %{"a" => "mew", "b" => "lol"}
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert media["type"] == "image"
+      assert media["description_map"] == %{"a" => "mew", "b" => "lol"}
+      assert media["id"]
+
+      object = Object.get_by_id(media["id"])
+      assert object.data["actor"] == User.ap_id(conn.assigns[:user])
+    end
+
     test "/api/v2/media", %{conn: conn, user: user, image: image} do
       desc = "Description of the image"
 
@@ -68,6 +86,24 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       object = Object.get_by_id(media["id"])
       assert object.data["actor"] == user.ap_id
+    end
+
+    test "/api/v2/media, multilang", %{conn: conn, image: image} do
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v2/media", %{
+          "file" => image,
+          "description_map" => %{"a" => "mew", "b" => "lol"}
+        })
+        |> json_response_and_validate_schema(202)
+
+      assert media["type"] == "image"
+      assert media["description_map"] == %{"a" => "mew", "b" => "lol"}
+      assert media["id"]
+
+      object = Object.get_by_id(media["id"])
+      assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
     test "/api/v2/media, upload_limit", %{conn: conn, user: user} do

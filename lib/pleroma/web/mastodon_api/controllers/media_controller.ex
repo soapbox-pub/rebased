@@ -25,7 +25,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
            ActivityPub.upload(
              file,
              actor: User.ap_id(user),
-             description: Map.get(data, :description)
+             description: Map.get(data, :description),
+             description_map: Map.get(data, :description_map)
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
@@ -41,7 +42,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
            ActivityPub.upload(
              file,
              actor: User.ap_id(user),
-             description: Map.get(data, :description)
+             description: Map.get(data, :description),
+             description_map: Map.get(data, :description_map)
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
