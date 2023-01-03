@@ -5,44 +5,18 @@
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
   use Ecto.Type
 
+  alias Pleroma.MultiLanguage
+
   def type, do: :map
 
-  def cast(object) when is_map(object) do
-    data =
-      object
-      |> Enum.reduce(%{}, fn
-        {lang, value}, acc when is_binary(lang) and is_binary(value) ->
-          if is_good_locale_code?(lang) do
-            Map.put(acc, lang, value)
-          else
-            acc
-          end
-
-        _, acc ->
-          acc
-      end)
-
-    if data == %{} do
-      {:ok, nil}
-    else
+  def cast(object) do
+    with {status, %{} = data} when status in [:modified, :ok] <- MultiLanguage.validate_map(object) do
       {:ok, data}
+    else
+      {:modified, nil} -> {:ok, nil}
+
+      {:error, _} -> :error
     end
-  end
-
-  def cast(_), do: :error
-
-  defp is_good_locale_code?(code) do
-    code
-    |> String.codepoints()
-    |> Enum.all?(&valid_char?/1)
-  end
-
-  # [a-zA-Z0-9-]
-  defp valid_char?(char) do
-    ("a" <= char and char <= "z") or
-      ("A" <= char and char <= "Z") or
-      ("0" <= char and char <= "9") or
-      char == "-"
   end
 
   def dump(data), do: {:ok, data}

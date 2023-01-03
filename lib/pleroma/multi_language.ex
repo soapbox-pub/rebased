@@ -9,6 +9,44 @@ defmodule Pleroma.MultiLanguage do
   defp sep(:multi), do: Pleroma.Config.get([__MODULE__, :separator])
   defp sep(:single), do: Pleroma.Config.get([__MODULE__, :single_line_separator])
 
+  defp is_good_locale_code?(code) do
+    code
+    |> String.codepoints()
+    |> Enum.all?(&valid_char?/1)
+  end
+
+  # [a-zA-Z0-9-]
+  defp valid_char?(char) do
+    ("a" <= char and char <= "z") or
+      ("A" <= char and char <= "Z") or
+      ("0" <= char and char <= "9") or
+      char == "-"
+  end
+
+  def validate_map(%{} = object) do
+    {status, data} =
+      object
+      |> Enum.reduce({:ok, %{}}, fn
+        {lang, value}, {status, acc} when is_binary(lang) and is_binary(value) ->
+          if is_good_locale_code?(lang) do
+            {status, Map.put(acc, lang, value)}
+          else
+            {:modified, acc}
+          end
+
+        _, {_status, acc} ->
+          {:modified, acc}
+      end)
+
+    if data == %{} do
+      {status, nil}
+    else
+      {status, data}
+    end
+  end
+
+  def validate_map(_), do: {:error, nil}
+
   def map_to_str(data, opts \\ []) do
     map_to_str_impl(data, if(opts[:multiline], do: :multi, else: :single))
   end
