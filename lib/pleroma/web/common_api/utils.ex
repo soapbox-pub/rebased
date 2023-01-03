@@ -141,20 +141,32 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> make_poll_data()
   end
 
-  def make_poll_data(%{poll: %{options: options, expires_in: expires_in}} = data)
-      when is_list(options) do
+  def make_poll_data(%{poll: %{options_map: options_map, expires_in: expires_in}} = data)
+      when is_list(options_map) do
     limits = Config.get([:instance, :poll_limits])
+    is_single_language = data.poll[:is_single_language]
 
     with :ok <- validate_poll_expiration(expires_in, limits),
-         :ok <- validate_poll_options_amount(options, limits),
-         :ok <- validate_poll_options_length(options, limits) do
+         :ok <- validate_poll_options_amount(options_map, limits),
+         :ok <- validate_poll_options_length(options_map, limits) do
       {option_notes, emoji} =
-        Enum.map_reduce(options, %{}, fn option, emoji ->
-          note = %{
-            "name" => option,
-            "type" => "Note",
-            "replies" => %{"type" => "Collection", "totalItems" => 0}
-          }
+        Enum.map_reduce(options_map, %{}, fn option, emoji ->
+          name_attrs =
+            if is_single_language do
+              %{"name" => option["und"]}
+            else
+              %{
+                "name" => Pleroma.MultiLanguage.map_to_str(option, multiline: false),
+                "nameMap" => option
+              }
+            end
+
+          note =
+            %{
+              "type" => "Note",
+              "replies" => %{"type" => "Collection", "totalItems" => 0}
+            }
+            |> Map.merge(name_attrs)
 
           {note, Map.merge(emoji, Pleroma.Emoji.Formatter.get_emoji_map(option))}
         end)
@@ -169,6 +181,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
       {:ok, {poll, emoji}}
     end
+  end
+
+  def make_poll_data(%{poll: %{options: options}} = data) when is_list(options) do
+    new_poll = Map.put(data.poll, :options_map, Enum.map(options, &%{"und" => &1}))
+
+    data
+    |> Map.put(:poll, new_poll)
+    |> Map.put(:is_single_language, true)
+    |> make_poll_data()
   end
 
   def make_poll_data(%{"poll" => poll}) when is_map(poll) do
@@ -187,8 +208,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  defp validate_poll_options_length(options, %{max_option_chars: max_option_chars}) do
-    if Enum.any?(options, &(String.length(&1) > max_option_chars)) do
+  defp validate_poll_options_length(options_map, %{max_option_chars: max_option_chars}) do
+    if Enum.any?(options_map, fn option ->
+         Enum.reduce(option, 0, fn {_lang, cur}, acc -> acc + String.length(cur) end)
+         |> Kernel.>(max_option_chars)
+       end) do
       {:error, "Poll options cannot be longer than #{max_option_chars} characters each"}
     else
       :ok

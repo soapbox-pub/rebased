@@ -705,4 +705,26 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
              }
     end
   end
+
+  describe "make_poll_data/1" do
+    test "multilang support" do
+      {:ok, {poll, _}} =
+        Utils.make_poll_data(%{
+          poll: %{
+            options_map: [
+              %{"a" => "foo", "b" => "1"},
+              %{"a" => "bar", "c" => "2"}
+            ],
+            expires_in: 600
+          }
+        })
+
+      assert %{"oneOf" => choices} = poll
+
+      assert [
+               %{"name" => _, "nameMap" => %{"a" => "foo", "b" => "1"}},
+               %{"name" => _, "nameMap" => %{"a" => "bar", "c" => "2"}}
+             ] = choices
+    end
+  end
 end

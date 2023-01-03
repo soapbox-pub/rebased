@@ -693,6 +693,43 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert question.data["closed"] =~ "Z"
     end
 
+    test "posting a multilang poll", %{conn: conn} do
+      time = NaiveDateTime.utc_now()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options_map" => [
+              %{"a" => "Rei", "b" => "1"},
+              %{"a" => "Asuka", "b" => "2"},
+              %{"a" => "Misato", "b" => "3"}
+            ],
+            "expires_in" => 420
+          }
+        })
+
+      response = json_response_and_validate_schema(conn, 200)
+
+      assert Enum.all?(response["poll"]["options"], fn %{"title_map" => title} ->
+               title in [
+                 %{"a" => "Rei", "b" => "1"},
+                 %{"a" => "Asuka", "b" => "2"},
+                 %{"a" => "Misato", "b" => "3"}
+               ]
+             end)
+
+      assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
+      assert response["poll"]["expired"] == false
+
+      question = Object.get_by_id(response["poll"]["id"])
+
+      # closed contains utc timezone
+      assert question.data["closed"] =~ "Z"
+    end
+
     test "option limit is enforced", %{conn: conn} do
       limit = Config.get([:instance, :poll_limits, :max_options])
 

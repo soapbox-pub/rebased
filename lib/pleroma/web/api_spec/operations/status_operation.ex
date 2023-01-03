@@ -676,18 +676,23 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     %Schema{
       nullable: true,
       type: :object,
-      required: [:options, :expires_in],
+      required: [:expires_in],
       properties: %{
         options: %Schema{
           type: :array,
           items: %Schema{type: :string},
           description: "Array of possible answers. Must be provided with `poll[expires_in]`."
         },
+        options_map: %Schema{
+          type: :array,
+          items: Helpers.multilang_map_of(%Schema{type: :string}),
+          description: "Array of possible answers. Must be provided with `poll[expires_in]`."
+        },
         expires_in: %Schema{
           type: :integer,
           nullable: true,
           description:
-            "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
+            "Duration the poll should be open, in seconds. Must be provided with `poll[options]` or `poll[options_map]`"
         },
         multiple: %Schema{
           allOf: [BooleanLike],
