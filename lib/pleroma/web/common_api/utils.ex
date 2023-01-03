@@ -218,7 +218,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         []
       end
 
-    draft.status
+    draft
     |> format_input(content_type, options)
     |> maybe_add_attachments(draft.attachments, attachment_links)
   end
@@ -240,6 +240,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_add_attachments(parsed, _attachments, false = _no_links), do: parsed
 
+  def maybe_add_attachments({%{} = text_map, mentions, tags}, attachments, _no_links) do
+    text_map =
+      Enum.reduce(text_map, %{}, fn {lang, text}, acc ->
+        Map.put(acc, lang, add_attachments(text, attachments))
+      end)
+
+    {text_map, mentions, tags}
+  end
+
   def maybe_add_attachments({text, mentions, tags}, attachments, _no_links) do
     text = add_attachments(text, attachments)
     {text, mentions, tags}
@@ -259,6 +268,31 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   defp build_attachment_link(_), do: ""
 
   def format_input(text, format, options \\ [])
+
+  def format_input(%ActivityDraft{status_map: status_map} = _draft, format, options)
+      when is_map(status_map) do
+    {content_map, mentions, tags} =
+      Enum.reduce(
+        status_map,
+        {%{}, [], []},
+        fn {lang, status}, {content_map, mentions, tags} ->
+          {cur_content, cur_mentions, cur_tags} = format_input(status, format, options)
+
+          {
+            Map.put(content_map, lang, cur_content),
+            mentions ++ cur_mentions,
+            tags ++ cur_tags
+          }
+        end
+      )
+
+    {content_map, Enum.uniq(mentions), Enum.uniq(tags)}
+  end
+
+  def format_input(%ActivityDraft{status: status} = _draft, format, options)
+      when is_binary(status) do
+    format_input(status, format, options)
+  end
 
   @doc """
   Formatting text to plain text, BBCode, HTML, or Markdown

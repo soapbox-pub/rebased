@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   """
 
   alias Pleroma.Emoji
+  alias Pleroma.MultiLanguage
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
@@ -128,19 +129,39 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec note(ActivityDraft.t()) :: {:ok, map(), keyword()}
   def note(%ActivityDraft{} = draft) do
+    content_fields =
+      if draft.content_html_map do
+        %{
+          "contentMap" => draft.content_html_map,
+          "content" => MultiLanguage.map_to_str(draft.content_html_map, multiline: true)
+        }
+      else
+        %{"content" => draft.content_html}
+      end
+
+    summary_fields =
+      if draft.summary_map do
+        %{
+          "summaryMap" => draft.summary_map,
+          "summary" => MultiLanguage.map_to_str(draft.summary_map, multiline: false)
+        }
+      else
+        %{"summary" => draft.summary}
+      end
+
     data =
       %{
         "type" => "Note",
         "to" => draft.to,
         "cc" => draft.cc,
-        "content" => draft.content_html,
-        "summary" => draft.summary,
         "sensitive" => draft.sensitive,
         "context" => draft.context,
         "attachment" => draft.attachments,
         "actor" => draft.user.ap_id,
         "tag" => Keyword.values(draft.tags) |> Enum.uniq()
       }
+      |> Map.merge(content_fields)
+      |> Map.merge(summary_fields)
       |> add_in_reply_to(draft.in_reply_to)
       |> Map.merge(draft.extra)
 

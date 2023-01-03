@@ -507,6 +507,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           description:
             "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
         },
+        status_map:
+          Helpers.multilang_map_of(%Schema{
+            type: :string,
+            description:
+              "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
+          }),
         media_ids: %Schema{
           nullable: true,
           type: :array,
@@ -530,6 +536,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           description:
             "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
         },
+        spoiler_text_map:
+          Helpers.multilang_map_of(%Schema{
+            type: :string,
+            description:
+              "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
+          }),
         scheduled_at: %Schema{
           type: :string,
           format: :"date-time",
@@ -538,9 +550,20 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             "ISO 8601 Datetime at which to schedule a status. Providing this paramter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
         },
         language: %Schema{
-          type: :string,
-          nullable: true,
-          description: "ISO 639 language code for this status."
+          oneOf: [
+            %Schema{
+              type: :string,
+              nullable: true,
+              description: "ISO 639 language code for this status."
+            },
+            %Schema{
+              type: :array,
+              items: %Schema{
+                type: :string,
+                description: "ISO 639 language code for this status."
+              }
+            }
+          ]
         },
         # Pleroma-specific properties:
         preview: %Schema{

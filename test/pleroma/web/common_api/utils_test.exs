@@ -81,6 +81,47 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert output == expected
     end
 
+    test "works for multilang" do
+      draft = %ActivityDraft{
+        status_map: %{
+          "a" => "mew",
+          "b" => "lol"
+        }
+      }
+
+      expected = %{"a" => "mew", "b" => "lol"}
+
+      {output, [], []} = Utils.format_input(draft, "text/plain")
+
+      assert output == expected
+    end
+
+    test "works for multilang, mentions and tags" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user)
+
+      draft = %ActivityDraft{
+        status_map: %{
+          "a" => "mew, @#{user1.nickname} @#{user2.nickname} #foo #bar",
+          "b" => "lol, @#{user2.nickname} @#{user3.nickname} #bar #lol"
+        }
+      }
+
+      {_, mentions, tags} = Utils.format_input(draft, "text/plain")
+      mentions = Enum.map(mentions, fn {_, user} -> user.ap_id end)
+      tags = Enum.map(tags, fn {_, tag} -> tag end)
+
+      assert [_, _, _] = mentions
+      assert user1.ap_id in mentions
+      assert user2.ap_id in mentions
+      assert user3.ap_id in mentions
+      assert [_, _, _] = tags
+      assert "foo" in tags
+      assert "bar" in tags
+      assert "lol" in tags
+    end
+
     test "works for bare text/html" do
       text = "<p>hello world!</p>"
       expected = "<p>hello world!</p>"
