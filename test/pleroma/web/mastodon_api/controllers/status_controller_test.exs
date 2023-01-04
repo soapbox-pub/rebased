@@ -69,8 +69,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "sensitive" => "0"
         })
 
-      assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
-               json_response_and_validate_schema(conn_one, 200)
+      assert %{
+               "content" => "cofe",
+               "id" => id,
+               "spoiler_text" => "2hu",
+               "sensitive" => false,
+               "language" => nil
+             } = json_response_and_validate_schema(conn_one, 200)
 
       assert Activity.get_by_id(id)
 
@@ -123,6 +128,52 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         args: %{activity_id: fourth_id},
         scheduled_at: expires_at
       )
+    end
+
+    test "posting a single lang status ", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status" => "mew mew",
+          "spoiler_text" => "mew",
+          "sensitive" => "0",
+          "language" => "a"
+        })
+
+      assert %{
+               "content" => "mew mew",
+               "content_map" => %{"a" => "mew mew"},
+               "id" => id,
+               "spoiler_text" => "mew",
+               "spoiler_text_map" => %{"a" => "mew"},
+               "sensitive" => false,
+               "language" => "a"
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a single lang status, bad language code", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status" => "mew mew",
+          "spoiler_text" => "mew",
+          "sensitive" => "0",
+          "language" => "a_"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
     end
 
     test "posting a multilang status", %{conn: conn} do
@@ -763,6 +814,46 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       # closed contains utc timezone
       assert question.data["closed"] =~ "Z"
+    end
+
+    test "posting a single-language poll", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options" => ["Rei", "Asuka", "Misato"],
+            "expires_in" => 420
+          },
+          "language" => "a"
+        })
+
+      response = json_response_and_validate_schema(conn, 200)
+
+      assert Enum.all?(response["poll"]["options"], fn %{"title_map" => title} ->
+               title in [
+                 %{"a" => "Rei"},
+                 %{"a" => "Asuka"},
+                 %{"a" => "Misato"}
+               ]
+             end)
+    end
+
+    test "posting a single-language poll, invalid language code", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options" => ["Rei", "Asuka", "Misato"],
+            "expires_in" => 420
+          },
+          "language" => "a_"
+        })
+
+      json_response_and_validate_schema(conn, 422)
     end
 
     test "posting a multilang poll", %{conn: conn} do

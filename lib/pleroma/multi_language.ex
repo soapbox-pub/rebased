@@ -9,7 +9,7 @@ defmodule Pleroma.MultiLanguage do
   defp sep(:multi), do: Pleroma.Config.get([__MODULE__, :separator])
   defp sep(:single), do: Pleroma.Config.get([__MODULE__, :single_line_separator])
 
-  defp is_good_locale_code?(code) do
+  def is_good_locale_code?(code) do
     code
     |> String.codepoints()
     |> Enum.all?(&valid_char?/1)
@@ -68,8 +68,14 @@ defmodule Pleroma.MultiLanguage do
     end
   end
 
-  def str_to_map(data) do
-    %{"und" => data}
+  def str_to_map(data, opts \\ []) do
+    with lang when is_binary(lang) <- opts[:lang],
+         true <- is_good_locale_code?(lang) do
+      %{lang => data}
+    else
+      _ ->
+        %{"und" => data}
+    end
   end
 
   def format_template(template, %{code: code, content: content}) do

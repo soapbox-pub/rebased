@@ -17,6 +17,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             errors: [],
             user: nil,
             params: %{},
+            language: nil,
             status: nil,
             status_map: nil,
             summary: nil,
@@ -49,6 +50,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   def create(user, params) do
     user
     |> new(params)
+    |> language()
     |> status()
     |> summary()
     |> with_valid(&attachments/1)
@@ -97,6 +99,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | params: params}
   end
 
+  defp language(%{params: %{language: language}} = draft) do
+    if MultiLanguage.is_good_locale_code?(language) do
+      %__MODULE__{draft | language: language}
+    else
+      add_error(draft, dgettext("errors", "language \"%{language}\" is invalid", language: language))
+    end
+  end
+
+  defp language(draft), do: draft
+
   defp status(%{params: %{status_map: %{} = status_map}} = draft) do
     with {:ok, %{}} <- MultiLanguage.validate_map(status_map) do
       %__MODULE__{draft | status_map: status_map}
@@ -122,16 +134,25 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp full_payload(%{status: status, status_map: nil} = draft) do
-    full_payload(%__MODULE__{draft | status_map: MultiLanguage.str_to_map(status)})
+    full_payload(%__MODULE__{
+      draft
+      | status_map: MultiLanguage.str_to_map(status, lang: draft.language)
+    })
   end
 
   defp full_payload(%{summary: summary, summary_map: nil} = draft) do
-    full_payload(%__MODULE__{draft | summary_map: MultiLanguage.str_to_map(summary)})
+    full_payload(%__MODULE__{
+      draft
+      | summary_map: MultiLanguage.str_to_map(summary, lang: draft.language)
+    })
   end
 
   defp full_payload(%{status_map: %{} = status_map, summary_map: %{} = summary_map} = draft) do
-    status = status_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> content end)
-    summary = summary_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> content end)
+    status = status_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> " " <> content end)
+
+    summary =
+      summary_map |> Enum.reduce("", fn {_lang, content}, acc -> acc <> " " <> content end)
+
     full_payload = String.trim(status <> summary)
 
     case Utils.validate_character_limit(full_payload, draft.attachments) do

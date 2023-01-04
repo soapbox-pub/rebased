@@ -131,20 +131,32 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def note(%ActivityDraft{} = draft) do
     content_fields =
       if draft.content_html_map do
-        %{
-          "contentMap" => draft.content_html_map,
-          "content" => MultiLanguage.map_to_str(draft.content_html_map, multiline: true)
-        }
+        case Map.keys(draft.content_html_map) do
+          ["und"] ->
+            %{"content" => MultiLanguage.map_to_str(draft.content_html_map, multiline: true)}
+
+          _ ->
+            %{
+              "contentMap" => draft.content_html_map,
+              "content" => MultiLanguage.map_to_str(draft.content_html_map, multiline: true)
+            }
+        end
       else
         %{"content" => draft.content_html}
       end
 
     summary_fields =
       if draft.summary_map do
-        %{
-          "summaryMap" => draft.summary_map,
-          "summary" => MultiLanguage.map_to_str(draft.summary_map, multiline: false)
-        }
+        case Map.keys(draft.summary_map) do
+          ["und"] ->
+            %{"summary" => MultiLanguage.map_to_str(draft.summary_map, multiline: false)}
+
+          _ ->
+            %{
+              "summaryMap" => draft.summary_map,
+              "summary" => MultiLanguage.map_to_str(draft.summary_map, multiline: false)
+            }
+        end
       else
         %{"summary" => draft.summary}
       end
