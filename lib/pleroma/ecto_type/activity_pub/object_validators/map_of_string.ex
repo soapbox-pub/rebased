@@ -14,7 +14,7 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
            MultiLanguage.validate_map(object) do
       {:ok, data}
     else
-      {:modified, nil} -> {:ok, nil}
+      {_, nil} -> {:ok, nil}
       {:error, _} -> :error
     end
   end
