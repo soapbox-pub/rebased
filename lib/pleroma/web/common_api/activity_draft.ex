@@ -103,7 +103,10 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     if MultiLanguage.is_good_locale_code?(language) do
       %__MODULE__{draft | language: language}
     else
-      add_error(draft, dgettext("errors", "language \"%{language}\" is invalid", language: language))
+      add_error(
+        draft,
+        dgettext("errors", "language \"%{language}\" is invalid", language: language)
+      )
     end
   end
 

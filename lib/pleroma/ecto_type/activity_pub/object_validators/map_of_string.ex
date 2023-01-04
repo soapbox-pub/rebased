@@ -9,7 +9,7 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
 
   def type, do: :map
 
-  def cast(object) do
+  def cast(%{} = object) do
     with {status, %{} = data} when status in [:modified, :ok] <-
            MultiLanguage.validate_map(object) do
       {:ok, data}
@@ -18,6 +18,8 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
       {:error, _} -> :error
     end
   end
+
+  def cast(_), do: :error
 
   def dump(data), do: {:ok, data}
 
