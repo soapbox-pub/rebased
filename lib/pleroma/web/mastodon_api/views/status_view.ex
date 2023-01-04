@@ -395,7 +395,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       mentions: mentions,
       tags: build_tags(tags),
       application: build_application(object.data["generator"]),
-      language: nil,
+      language: get_language(object.data),
       emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
         local: activity.local,
@@ -837,5 +837,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end)
 
     {content_und, content_map}
+  end
+
+  defp get_language(data) do
+    content_langs = get_languages_from_map(data["contentMap"])
+    summary_langs = get_languages_from_map(data["summaryMap"])
+    name_langs = get_languages_from_map(data["nameMap"])
+
+    langs =
+      (content_langs ++ summary_langs ++ name_langs)
+      |> Enum.uniq()
+
+    case langs do
+      [lang] -> lang
+      [] -> nil
+      [_ | _] -> "mul"
+    end
+  end
+
+  defp get_languages_from_map(%{} = map) do
+    Enum.map(map, fn {lang, _} -> lang end)
+  end
+
+  defp get_languages_from_map(nil) do
+    []
   end
 end

@@ -325,11 +325,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
              content_map: %{"en" => "mew mew", "cmn" => "喵喵"},
              spoiler_text: "mew",
              spoiler_text_map: %{"en" => "mew", "cmn" => "喵"},
+             language: "mul",
              pleroma: %{
                content: %{"text/plain" => "mew mew"},
                content_map: %{"text/plain" => %{"en" => "mew mew", "cmn" => "喵喵"}},
                spoiler_text: %{"text/plain" => "mew"},
                spoiler_text_map: %{"text/plain" => %{"en" => "mew", "cmn" => "喵"}}
+             }
+           } = status
+  end
+
+  test "a note activity with single language" do
+    user = insert(:user)
+
+    note_obj =
+      insert(:note,
+        data: %{
+          "content" => "mew mew",
+          "contentMap" => %{"en" => "mew mew"},
+          "summary" => "mew",
+          "summaryMap" => %{"en" => "mew"}
+        }
+      )
+
+    note = insert(:note_activity, note: note_obj, user: user)
+
+    status = StatusView.render("show.json", %{activity: note})
+
+    assert %{
+             content: "mew mew",
+             content_map: %{"en" => "mew mew"},
+             spoiler_text: "mew",
+             spoiler_text_map: %{"en" => "mew"},
+             language: "en",
+             pleroma: %{
+               content: %{"text/plain" => "mew mew"},
+               content_map: %{"text/plain" => %{"en" => "mew mew"}},
+               spoiler_text: %{"text/plain" => "mew"},
+               spoiler_text_map: %{"text/plain" => %{"en" => "mew"}}
              }
            } = status
   end
