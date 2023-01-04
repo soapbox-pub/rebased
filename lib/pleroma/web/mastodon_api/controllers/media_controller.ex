@@ -31,6 +31,11 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
       attachment_data = Map.put(object.data, "id", object.id)
 
       render(conn, "attachment.json", %{attachment: attachment_data})
+    else
+      {:error, e} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: e})
     end
   end
 
@@ -50,6 +55,11 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
       conn
       |> put_status(202)
       |> render("attachment.json", %{attachment: attachment_data})
+    else
+      {:error, e} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: e})
     end
   end
 

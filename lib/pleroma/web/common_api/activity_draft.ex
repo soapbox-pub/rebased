@@ -52,13 +52,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> status()
     |> summary()
     |> with_valid(&attachments/1)
-    |> full_payload()
+    |> with_valid(&full_payload/1)
     |> expires_at()
     |> poll()
     |> with_valid(&in_reply_to/1)
     |> with_valid(&in_reply_to_conversation/1)
     |> with_valid(&visibility/1)
-    |> content()
+    |> with_valid(&content/1)
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
     |> sensitive()
@@ -97,16 +97,24 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | params: params}
   end
 
-  defp status(%{params: %{status_map: status_map}} = draft) do
-    %__MODULE__{draft | status_map: status_map}
+  defp status(%{params: %{status_map: %{} = status_map}} = draft) do
+    with {:ok, %{}} <- MultiLanguage.validate_map(status_map) do
+      %__MODULE__{draft | status_map: status_map}
+    else
+      _ -> add_error(draft, dgettext("errors", "status_map is not a valid multilang map"))
+    end
   end
 
   defp status(%{params: %{status: status}} = draft) do
     %__MODULE__{draft | status: String.trim(status)}
   end
 
-  defp summary(%{params: %{spoiler_text_map: spoiler_text_map}} = draft) do
-    %__MODULE__{draft | summary_map: spoiler_text_map}
+  defp summary(%{params: %{spoiler_text_map: %{} = spoiler_text_map}} = draft) do
+    with {:ok, %{}} <- MultiLanguage.validate_map(spoiler_text_map) do
+      %__MODULE__{draft | summary_map: spoiler_text_map}
+    else
+      _ -> add_error(draft, dgettext("errors", "spoiler_text_map is not a valid multilang map"))
+    end
   end
 
   defp summary(%{params: params} = draft) do

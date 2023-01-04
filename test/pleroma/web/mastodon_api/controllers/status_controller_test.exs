@@ -150,6 +150,78 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_by_id(id)
     end
 
+    test "posting a multilang status, invalid language code in status_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b_" => "lol lol"},
+          "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status, empty status_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{},
+          "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status, invalid language code in spoiler_text_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text_map" => %{"a" => "mew", "b_" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status, empty spoiler_text_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text_map" => %{},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
     test "posting a multilang status with singlelang summary", %{conn: conn} do
       idempotency_key = "Pikachu rocks!"
 
@@ -728,6 +800,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       # closed contains utc timezone
       assert question.data["closed"] =~ "Z"
+    end
+
+    test "posting a multilang poll, invalid lang code", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options_map" => [
+              %{"a" => "Rei", "b" => "1"},
+              %{"a" => "Asuka", "b_" => "2"},
+              %{"a" => "Misato", "b" => "3"}
+            ],
+            "expires_in" => 420
+          }
+        })
+
+      assert %{"error" => _} = json_response_and_validate_schema(conn, 422)
+    end
+
+    test "posting a multilang poll, empty map", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options_map" => [
+              %{"a" => "Rei", "b" => "1"},
+              %{},
+              %{"a" => "Misato", "b" => "3"}
+            ],
+            "expires_in" => 420
+          }
+        })
+
+      assert %{"error" => _} = json_response_and_validate_schema(conn, 422)
     end
 
     test "option limit is enforced", %{conn: conn} do

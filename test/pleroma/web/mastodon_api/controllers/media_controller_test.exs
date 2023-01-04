@@ -62,6 +62,26 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
+    test "/api/v1/media, multilang, invalid description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v1/media", %{
+        "file" => image,
+        "description_map" => %{"a" => "mew", "b_" => "lol"}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
+    test "/api/v1/media, multilang, empty description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v1/media", %{
+        "file" => image,
+        "description_map" => %{}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
     test "/api/v2/media", %{conn: conn, user: user, image: image} do
       desc = "Description of the image"
 
@@ -106,6 +126,26 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
+    test "/api/v2/media, multilang, invalid description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v2/media", %{
+        "file" => image,
+        "description_map" => %{"a" => "mew", "b_" => "lol"}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
+    test "/api/v2/media, multilang, empty description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v2/media", %{
+        "file" => image,
+        "description_map" => %{}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
     test "/api/v2/media, upload_limit", %{conn: conn, user: user} do
       desc = "Description of the binary"
 
@@ -128,7 +168,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
                           "file" => large_binary,
                           "description" => desc
                         })
-                        |> json_response_and_validate_schema(400)
+                        |> json_response_and_validate_schema(422)
              end) =~
                "[error] Elixir.Pleroma.Upload store (using Pleroma.Uploaders.Local) failed: :file_too_large"
 

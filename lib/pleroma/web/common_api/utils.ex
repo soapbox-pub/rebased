@@ -148,6 +148,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     is_single_language = data.poll[:is_single_language]
 
     with :ok <- validate_poll_expiration(expires_in, limits),
+         :ok <- validate_poll_options_map(options_map),
          :ok <- validate_poll_options_amount(options_map, limits),
          :ok <- validate_poll_options_length(options_map, limits) do
       {option_notes, emoji} =
@@ -201,6 +202,20 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def make_poll_data(_data) do
     {:ok, {%{}, %{}}}
+  end
+
+  defp validate_poll_options_map(options) do
+    if Enum.all?(options, fn opt ->
+         with {:ok, %{}} <- MultiLanguage.validate_map(opt) do
+           true
+         else
+           _ -> false
+         end
+       end) do
+      :ok
+    else
+      {:error, dgettext("errors", "Poll option map not valid")}
+    end
   end
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
