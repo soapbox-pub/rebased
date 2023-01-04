@@ -76,7 +76,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
     note =
       insert(:note,
         user: user,
-        data: %{"reactions" => [["wow", [other_user.ap_id], "https://remote/emoji/wow"]]}
+        data: %{
+          "reactions" => [
+            ["👍", [other_user.ap_id], nil],
+            ["wow", [other_user.ap_id], "https://remote/emoji/wow"]
+          ]
+        }
       )
 
     activity = insert(:note_activity, note: note, user: user)
@@ -89,6 +94,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
       |> json_response(200)
 
     assert result["pleroma"]["emoji_reactions"] == [
+             %{
+               "account_ids" => [other_user.id],
+               "count" => 1,
+               "me" => false,
+               "name" => "👍",
+               "url" => nil
+             },
              %{
                "name" => "wow@remote",
                "count" => 2,

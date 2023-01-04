@@ -14,10 +14,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
   defp object_id_for(%{data: %{"object" => %{"id" => id}}}) when is_binary(id), do: id
