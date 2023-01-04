@@ -230,6 +230,35 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert media["description"] == "test-media"
       assert refresh_record(object).data["name"] == "test-media"
     end
+
+    test "/api/v1/media/:id description_map", %{conn: conn, object: object} do
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put("/api/v1/media/#{object.id}", %{
+          "description_map" => %{"a" => "test-media", "b" => "xxx"}
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert media["description_map"] == %{"a" => "test-media", "b" => "xxx"}
+      assert refresh_record(object).data["nameMap"] == %{"a" => "test-media", "b" => "xxx"}
+    end
+
+    test "/api/v1/media/:id description_map, invalid", %{conn: conn, object: object} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/media/#{object.id}", %{
+        "description_map" => %{"a" => "test-media", "b_" => "xxx"}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
+    test "/api/v1/media/:id description_map, empty", %{conn: conn, object: object} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/media/#{object.id}", %{"description_map" => %{}})
+      |> json_response_and_validate_schema(422)
+    end
   end
 
   describe "Get media by id (/api/v1/media/:id)" do
