@@ -527,6 +527,16 @@ defmodule Pleroma.Web.CommonAPITest do
     assert Object.tags(object) == ["ساٴين‌س"]
   end
 
+  test "double dot in link is allowed" do
+    user = insert(:user)
+    text = "https://example.to/something..mp3"
+    {:ok, activity} = CommonAPI.post(user, %{status: text})
+
+    object = Object.normalize(activity, fetch: false)
+
+    assert object.data["content"] == "<a href=\"#{text}\" rel=\"ugc\">#{text}</a>"
+  end
+
   test "it adds emoji in the object" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: ":firefox:"})
