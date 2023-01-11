@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
 
   import Pleroma.Web.ApiSpec.Helpers
 
@@ -88,7 +89,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
           }
         ),
       responses: %{
-        200 => Operation.response("Webhook", "application/json", webhook())
+        200 => Operation.response("Webhook", "application/json", webhook()),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
   end
@@ -101,7 +103,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
       security: [%{"oAuth" => ["admin:write"]}],
       parameters: [id_param()],
       responses: %{
-        200 => Operation.response("Webhook", "application/json", webhook())
+        200 => Operation.response("Webhook", "application/json", webhook()),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
   end
@@ -114,7 +117,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
       security: [%{"oAuth" => ["admin:write"]}],
       parameters: [id_param()],
       responses: %{
-        200 => Operation.response("Webhook", "application/json", webhook())
+        200 => Operation.response("Webhook", "application/json", webhook()),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
   end
@@ -127,7 +131,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
       security: [%{"oAuth" => ["admin:write"]}],
       parameters: [id_param()],
       responses: %{
-        200 => Operation.response("Webhook", "application/json", webhook())
+        200 => Operation.response("Webhook", "application/json", webhook()),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
   end
@@ -140,7 +145,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
       security: [%{"oAuth" => ["admin:write"]}],
       parameters: [id_param()],
       responses: %{
-        200 => Operation.response("Webhook", "application/json", webhook())
+        200 => Operation.response("Webhook", "application/json", webhook()),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
   end
@@ -156,6 +162,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
         events: event_type(),
         secret: %Schema{type: :string},
         enabled: %Schema{type: :boolean},
+        internal: %Schema{type: :boolean},
         created_at: %Schema{type: :string, format: :"date-time"},
         updated_at: %Schema{type: :string, format: :"date-time"}
       },
@@ -165,6 +172,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
         "events" => ["report.created"],
         "secret" => "D3D8CF4BC11FD9C41FD34DCC38D282E451C8BD34",
         "enabled" => true,
+        "internal" => false,
         "created_at" => "2022-06-24T16:19:38.523Z",
         "updated_at" => "2022-06-24T16:19:38.523Z"
       }

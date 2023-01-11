@@ -18,6 +18,7 @@ defmodule Pleroma.Web.AdminAPI.WebhookView do
       events: webhook.events,
       secret: webhook.secret,
       enabled: webhook.enabled,
+      internal: webhook.internal,
       created_at: Utils.to_masto_date(webhook.inserted_at),
       updated_at: Utils.to_masto_date(webhook.updated_at)
     }

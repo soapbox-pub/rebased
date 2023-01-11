@@ -64,6 +64,20 @@ defmodule Pleroma.Web.AdminAPI.WebhookControllerTest do
 
       assert %{events: [:"report.created", :"account.created"]} = Webhook.get(id)
     end
+
+    test "can't edit an internal webhook", %{conn: conn} do
+      %{id: id} =
+        Webhook.create(%{url: "https://example.com/webhook1", events: [], internal: true})
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/pleroma/admin/webhooks/#{id}", %{
+        events: ["report.created", "account.created"]
+      })
+      |> json_response_and_validate_schema(:forbidden)
+
+      assert %{events: []} = Webhook.get(id)
+    end
   end
 
   describe "DELETE /api/pleroma/admin/webhooks" do
