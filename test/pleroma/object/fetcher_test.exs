@@ -166,7 +166,7 @@ defmodule Pleroma.Object.FetcherTest do
       Instances.set_consistently_unreachable(id)
       refute Instances.reachable?(id)
 
-      {:ok, object} =
+      {:ok, _object} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
       assert Instances.reachable?(id)

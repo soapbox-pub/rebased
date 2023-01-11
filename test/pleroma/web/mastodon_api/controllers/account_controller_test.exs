@@ -896,6 +896,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: true})
                |> json_response_and_validate_schema(200)
 
+      assert %{"showing_reblogs" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: "1"})
+               |> json_response_and_validate_schema(200)
+
       assert [%{"id" => ^reblog_id}] =
                conn
                |> get("/api/v1/timelines/home")
@@ -925,6 +931,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: false})
                |> json_response_and_validate_schema(200)
 
+      assert %{"showing_reblogs" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: "0"})
+               |> json_response_and_validate_schema(200)
+
       assert [] ==
                conn
                |> get("/api/v1/timelines/home")
@@ -935,21 +947,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       %{conn: conn} = oauth_access(["follow"])
       followed = insert(:user)
 
-      ret_conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: true})
+      assert %{"subscribing" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: true})
+               |> json_response_and_validate_schema(200)
 
-      assert %{"id" => _id, "subscribing" => true} =
-               json_response_and_validate_schema(ret_conn, 200)
+      assert %{"subscribing" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: "1"})
+               |> json_response_and_validate_schema(200)
 
-      ret_conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: false})
-
-      assert %{"id" => _id, "subscribing" => false} =
-               json_response_and_validate_schema(ret_conn, 200)
+      assert %{"subscribing" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: false})
+               |> json_response_and_validate_schema(200)
     end
 
     test "following / unfollowing errors", %{user: user, conn: conn} do
@@ -2053,6 +2067,50 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       conn
       |> get("/api/v1/accounts/lookup?acct=unexisting_nickname")
       |> json_response_and_validate_schema(404)
+  end
+
+  test "account lookup with restrict unauthenticated profiles for local" do
+    clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+    user = insert(:user, local: true)
+    reading_user = insert(:user)
+
+    conn =
+      build_conn()
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert json_response_and_validate_schema(conn, 401)
+
+    conn =
+      build_conn()
+      |> assign(:user, reading_user)
+      |> assign(:token, insert(:oauth_token, user: reading_user, scopes: ["read:accounts"]))
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert %{"id" => id} = json_response_and_validate_schema(conn, 200)
+    assert id == user.id
+  end
+
+  test "account lookup with restrict unauthenticated profiles for remote" do
+    clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+    user = insert(:user, nickname: "user@example.com", local: false)
+    reading_user = insert(:user)
+
+    conn =
+      build_conn()
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert json_response_and_validate_schema(conn, 401)
+
+    conn =
+      build_conn()
+      |> assign(:user, reading_user)
+      |> assign(:token, insert(:oauth_token, user: reading_user, scopes: ["read:accounts"]))
+      |> get("/api/v1/accounts/lookup?acct=#{user.nickname}")
+
+    assert %{"id" => id} = json_response_and_validate_schema(conn, 200)
+    assert id == user.id
   end
 
   test "create a note on a user" do

@@ -170,8 +170,9 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       ]
       |> Enum.map(&Config.get/1)
 
-    [captcha_endpoint, map_tile_server_endpoint | base_endpoints]
+    [captcha_endpoint | base_endpoints]
     |> Enum.map(&build_csp_param/1)
+    |> List.insert_at(-1, map_tile_server_endpoint)
     |> Enum.reduce([], &add_source(&2, &1))
     |> add_source(media_proxy_whitelist)
   end
@@ -180,9 +181,9 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     with tile_server when is_binary(tile_server) <-
            Config.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
          %{host: host} <- URI.parse(tile_server) do
-      "*.#{host}"
+      ["*.#{host}"]
     else
-      _ -> nil
+      _ -> []
     end
   end
 

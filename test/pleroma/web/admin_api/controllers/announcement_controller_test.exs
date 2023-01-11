@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
   setup do
+    clear_config([:instance, :admin_privileges], [:announcements_manage_announcements])
     admin = insert(:user, is_admin: true)
     token = insert(:oauth_admin_token, user: admin)
 
@@ -29,6 +30,18 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
         |> json_response_and_validate_schema(:ok)
 
       assert [%{"id" => ^id}] = response
+    end
+
+    test "it requires privileged role :announcements_manage_announcements", %{conn: conn} do
+      conn
+      |> get("/api/v1/pleroma/admin/announcements")
+      |> json_response_and_validate_schema(:ok)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      conn
+      |> get("/api/v1/pleroma/admin/announcements")
+      |> json_response(:forbidden)
     end
 
     test "it paginates announcements", %{conn: conn} do
@@ -92,6 +105,20 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
       assert %{"id" => ^id} = response
     end
 
+    test "it requires privileged role :announcements_manage_announcements", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      conn
+      |> get("/api/v1/pleroma/admin/announcements/#{id}")
+      |> json_response_and_validate_schema(:ok)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      conn
+      |> get("/api/v1/pleroma/admin/announcements/#{id}")
+      |> json_response(:forbidden)
+    end
+
     test "it returns not found for non-existent id", %{conn: conn} do
       %{id: id} = insert(:announcement)
 
@@ -110,6 +137,20 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
         conn
         |> delete("/api/v1/pleroma/admin/announcements/#{id}")
         |> json_response_and_validate_schema(:ok)
+    end
+
+    test "it requires privileged role :announcements_manage_announcements", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      conn
+      |> delete("/api/v1/pleroma/admin/announcements/#{id}")
+      |> json_response_and_validate_schema(:ok)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      conn
+      |> delete("/api/v1/pleroma/admin/announcements/#{id}")
+      |> json_response(:forbidden)
     end
 
     test "it returns not found for non-existent id", %{conn: conn} do
@@ -154,6 +195,29 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
       new = Pleroma.Announcement.get_by_id(id)
 
       assert NaiveDateTime.compare(new.starts_at, starts_at) == :eq
+    end
+
+    test "it requires privileged role :announcements_manage_announcements", %{conn: conn} do
+      %{id: id} = insert(:announcement)
+
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      starts_at = NaiveDateTime.add(now, -10, :second)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/v1/pleroma/admin/announcements/#{id}", %{
+        starts_at: NaiveDateTime.to_iso8601(starts_at)
+      })
+      |> json_response_and_validate_schema(:ok)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/v1/pleroma/admin/announcements/#{id}", %{
+        starts_at: NaiveDateTime.to_iso8601(starts_at)
+      })
+      |> json_response(:forbidden)
     end
 
     test "it updates with time with utc timezone", %{conn: conn} do
@@ -248,6 +312,36 @@ defmodule Pleroma.Web.AdminAPI.AnnouncementControllerTest do
 
       assert NaiveDateTime.compare(announcement.starts_at, starts_at) == :eq
       assert NaiveDateTime.compare(announcement.ends_at, ends_at) == :eq
+    end
+
+    test "it requires privileged role :announcements_manage_announcements", %{conn: conn} do
+      content = "test post announcement api"
+
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      starts_at = NaiveDateTime.add(now, -10, :second)
+      ends_at = NaiveDateTime.add(now, 10, :second)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/pleroma/admin/announcements", %{
+        "content" => content,
+        "starts_at" => NaiveDateTime.to_iso8601(starts_at),
+        "ends_at" => NaiveDateTime.to_iso8601(ends_at),
+        "all_day" => true
+      })
+      |> json_response_and_validate_schema(:ok)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/pleroma/admin/announcements", %{
+        "content" => content,
+        "starts_at" => NaiveDateTime.to_iso8601(starts_at),
+        "ends_at" => NaiveDateTime.to_iso8601(ends_at),
+        "all_day" => true
+      })
+      |> json_response(:forbidden)
     end
 
     test "creating with time with utc timezones", %{conn: conn} do

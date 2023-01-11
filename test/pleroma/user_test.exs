@@ -5,7 +5,6 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -14,7 +13,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Webhook.Notify
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
@@ -475,12 +474,7 @@ defmodule Pleroma.UserTest do
               reject_deletes: []
             )
 
-    setup do:
-            clear_config(:mrf,
-              policies: [
-                Pleroma.Web.ActivityPub.MRF.SimplePolicy
-              ]
-            )
+    setup do: clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
 
     test "it sends a welcome chat message when Simple policy applied to local instance" do
       clear_config([:mrf_simple, :media_nsfw], [{"localhost", ""}])
@@ -584,6 +578,21 @@ defmodule Pleroma.UserTest do
       clear_config([:instance, :account_approval_required], true)
       clear_config([:welcome, :email, :enabled], true)
       clear_config([:welcome, :email, :sender], "lain@lain.com")
+
+      # The user is still created
+      assert {:ok, %User{nickname: "nick"}} = User.register(cng)
+
+      # No emails are sent
+      ObanHelpers.perform_all()
+      refute_email_sent()
+    end
+
+    test "it works when the registering user does not provide an email" do
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([:instance, :account_approval_required], true)
+
+      cng = User.register_changeset(%User{}, @full_user_data |> Map.put(:email, ""))
 
       # The user is still created
       assert {:ok, %User{nickname: "nick"}} = User.register(cng)
@@ -2056,31 +2065,82 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "superuser?/1" do
+  describe "privileged?/1" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:cofe, :suya])
+      clear_config([:instance, :moderator_privileges], [:cofe, :suya])
+    end
+
     test "returns false for unprivileged users" do
       user = insert(:user, local: true)
 
-      refute User.superuser?(user)
+      refute User.privileged?(user, :cofe)
     end
 
     test "returns false for remote users" do
       user = insert(:user, local: false)
       remote_admin_user = insert(:user, local: false, is_admin: true)
 
-      refute User.superuser?(user)
-      refute User.superuser?(remote_admin_user)
+      refute User.privileged?(user, :cofe)
+      refute User.privileged?(remote_admin_user, :cofe)
     end
 
-    test "returns true for local moderators" do
+    test "returns true for local moderators if, and only if, they are privileged" do
       user = insert(:user, local: true, is_moderator: true)
 
-      assert User.superuser?(user)
+      assert User.privileged?(user, :cofe)
+
+      clear_config([:instance, :moderator_privileges], [])
+
+      refute User.privileged?(user, :cofe)
     end
 
-    test "returns true for local admins" do
+    test "returns true for local admins if, and only if, they are privileged" do
       user = insert(:user, local: true, is_admin: true)
 
-      assert User.superuser?(user)
+      assert User.privileged?(user, :cofe)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      refute User.privileged?(user, :cofe)
+    end
+  end
+
+  describe "privileges/1" do
+    setup do
+      clear_config([:instance, :moderator_privileges], [:cofe, :only_moderator])
+      clear_config([:instance, :admin_privileges], [:cofe, :only_admin])
+    end
+
+    test "returns empty list for users without roles" do
+      user = insert(:user, local: true)
+
+      assert [] == User.privileges(user)
+    end
+
+    test "returns list of privileges for moderators" do
+      moderator = insert(:user, is_moderator: true, local: true)
+
+      assert [:cofe, :only_moderator] == User.privileges(moderator) |> Enum.sort()
+    end
+
+    test "returns list of privileges for admins" do
+      admin = insert(:user, is_admin: true, local: true)
+
+      assert [:cofe, :only_admin] == User.privileges(admin) |> Enum.sort()
+    end
+
+    test "returns list of unique privileges for users who are both moderator and admin" do
+      moderator_admin = insert(:user, is_moderator: true, is_admin: true, local: true)
+
+      assert [:cofe, :only_admin, :only_moderator] ==
+               User.privileges(moderator_admin) |> Enum.sort()
+    end
+
+    test "returns empty list for remote users" do
+      remote_moderator_admin = insert(:user, is_moderator: true, is_admin: true, local: false)
+
+      assert [] == User.privileges(remote_moderator_admin)
     end
   end
 
@@ -2123,13 +2183,77 @@ defmodule Pleroma.UserTest do
       assert User.visible_for(user, other_user) == :visible
     end
 
-    test "returns true when the account is unconfirmed and being viewed by a privileged account (confirmation required)" do
+    test "returns true when the account is unconfirmed and being viewed by a privileged account (privilege :users_manage_activation_state, confirmation required)" do
       clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
 
       user = insert(:user, local: true, is_confirmed: false)
       other_user = insert(:user, local: true, is_admin: true)
 
       assert User.visible_for(user, other_user) == :visible
+
+      clear_config([:instance, :admin_privileges], [])
+
+      refute User.visible_for(user, other_user) == :visible
+    end
+  end
+
+  describe "all_users_with_privilege/1" do
+    setup do
+      %{
+        user: insert(:user, local: true, is_admin: false, is_moderator: false),
+        moderator_user: insert(:user, local: true, is_admin: false, is_moderator: true),
+        admin_user: insert(:user, local: true, is_admin: true, is_moderator: false),
+        admin_moderator_user: insert(:user, local: true, is_admin: true, is_moderator: true),
+        remote_user: insert(:user, local: false, is_admin: true, is_moderator: true),
+        non_active_user:
+          insert(:user, local: true, is_admin: true, is_moderator: true, is_active: false)
+      }
+    end
+
+    test "doesn't return any users when there are no privileged roles" do
+      clear_config([:instance, :admin_privileges], [])
+      clear_config([:instance, :moderator_privileges], [])
+
+      assert [] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+    end
+
+    test "returns moderator users if they are privileged", %{
+      moderator_user: moderator_user,
+      admin_moderator_user: admin_moderator_user
+    } do
+      clear_config([:instance, :admin_privileges], [])
+      clear_config([:instance, :moderator_privileges], [:cofe])
+
+      assert [_, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+      assert moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns admin users if they are privileged", %{
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user
+    } do
+      clear_config([:instance, :admin_privileges], [:cofe])
+      clear_config([:instance, :moderator_privileges], [])
+
+      assert [_, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+      assert admin_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns admin and moderator users if they are both privileged", %{
+      moderator_user: moderator_user,
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user
+    } do
+      clear_config([:instance, :admin_privileges], [:cofe])
+      clear_config([:instance, :moderator_privileges], [:cofe])
+
+      assert [_, _, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+      assert admin_user in User.all_users_with_privilege(:cofe)
+      assert moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
     end
   end
 
@@ -2370,26 +2494,6 @@ defmodule Pleroma.UserTest do
       assert {:ok, %User{bio: "test-bio"} = user} = User.update_and_set_cache(changeset)
       assert {:ok, user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
-    end
-
-    test "removes report notifs when user isn't superuser any more" do
-      report_activity = insert(:report_activity)
-      user = insert(:user, is_moderator: true, is_admin: true)
-      {:ok, _} = Notification.create_notifications(report_activity)
-
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
-
-      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
-      # is still superuser because still admin
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
-
-      {:ok, user} = user |> User.admin_api_update(%{is_moderator: true, is_admin: false})
-      # is still superuser because still moderator
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
-
-      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
-      # is not a superuser any more
-      assert [] = Notification.for_user(user)
     end
   end
 

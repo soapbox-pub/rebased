@@ -42,12 +42,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack"
-msgid "Quack-related settings"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :cors_plug"
 msgid "CORS plug config"
 msgstr ""
@@ -80,12 +74,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma"
 msgid "Pleroma Authenticator"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack"
-msgid "Quack Logger"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -1926,12 +1914,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :pleroma-:instance > :privileged_staff"
-msgid "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :pleroma-:instance > :profile_directory"
 msgid "Enable profile directory."
 msgstr ""
@@ -2300,12 +2282,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :pleroma-:mrf_mention > :actors"
 msgid "A list of actors for which any post mentioning them will be dropped"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :pleroma-:mrf_object_age > :actions"
-msgid "A list of actions to apply to the post. `:delist` removes the post from public timelines; `:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines; `:reject` rejects the message entirely"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -3296,24 +3272,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config description at :prometheus-Pleroma.Web.Endpoint.MetricsExporter > :path"
 msgid "App metrics endpoint URI path."
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack > :level"
-msgid "Log level"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack > :meta"
-msgid "Configure which metadata you want to report on"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config description at :quack > :webhook_url"
-msgid "Configure the Slack incoming webhook"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -4358,12 +4316,6 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma-:instance > :poll_limits > :min_expiration"
 msgid "Min expiration"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :pleroma-:instance > :privileged_staff"
-msgid "Privileged staff"
 msgstr ""
 
 #, elixir-autogen, elixir-format
@@ -5958,24 +5910,6 @@ msgstr ""
 
 #, elixir-autogen, elixir-format
 #: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack > :level"
-msgid "Level"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack > :meta"
-msgid "Meta"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
-msgctxt "config label at :quack > :webhook_url"
-msgid "Webhook URL"
-msgstr ""
-
-#, elixir-autogen, elixir-format
-#: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :web_push_encryption-:vapid_details > :private_key"
 msgid "Private key"
 msgstr ""
@@ -6056,4 +5990,46 @@ msgstr ""
 #: lib/pleroma/docs/translator.ex:5
 msgctxt "config label at :pleroma-:delete_context_objects > :sleep_interval_ms"
 msgid "Sleep interval ms"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :report_strip_status"
+msgid "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:mrf_object_age > :actions"
+msgid "A list of actions to apply to the post. `:delist` removes the post from public timelines; `:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message; `:reject` rejects the message entirely"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :report_strip_status"
+msgid "Report strip status"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :admin_privileges"
+msgid "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :moderator_privileges"
+msgid "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :admin_privileges"
+msgid "Admin privileges"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :moderator_privileges"
+msgid "Moderator privileges"
 msgstr ""

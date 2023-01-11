@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity.data["id"],
+        "id" => activity.object.data["id"],
         "content" => "test post",
         "published" => object.data["published"],
         "actor" => AccountView.render("show.json", %{user: user, skip_visibility_check: true})

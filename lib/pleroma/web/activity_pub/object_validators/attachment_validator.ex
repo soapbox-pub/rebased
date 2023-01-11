@@ -89,6 +89,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
   defp validate_data(cng) do
     cng
     |> validate_inclusion(:type, ~w[Link Document Audio Image Video])
-    |> validate_required([:type, :mediaType])
+    |> validate_required([:mediaType, :type])
   end
 end

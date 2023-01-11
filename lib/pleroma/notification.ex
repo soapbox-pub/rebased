@@ -345,14 +345,6 @@ defmodule Pleroma.Notification do
     |> Repo.delete_all()
   end
 
-  def destroy_multiple_from_types(%{id: user_id}, types) do
-    from(n in Notification,
-      where: n.user_id == ^user_id,
-      where: n.type in ^types
-    )
-    |> Repo.delete_all()
-  end
-
   def dismiss(%Pleroma.Activity{} = activity) do
     Notification
     |> where([n], n.activity_id == ^activity.id)
@@ -697,7 +689,9 @@ defmodule Pleroma.Notification do
   end
 
   def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
-    (User.all_superusers() |> Enum.map(fn user -> user.ap_id end)) -- [actor]
+    (User.all_users_with_privilege(:reports_manage_reports)
+     |> Enum.map(fn user -> user.ap_id end)) --
+      [actor]
   end
 
   # Update activity: notify all who repeated this

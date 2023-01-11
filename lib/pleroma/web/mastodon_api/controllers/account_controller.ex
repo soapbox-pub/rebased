@@ -32,14 +32,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action in [:create, :lookup])
+  plug(:skip_auth when action in [:create])
 
   plug(:skip_public_check when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action in [:show, :followers, :following]
+    when action in [:show, :followers, :following, :lookup]
   )
 
   plug(
@@ -253,7 +253,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         with_pleroma_settings: true
       )
     else
-      _e -> render_error(conn, :forbidden, "Invalid request")
+      {:error, %Ecto.Changeset{errors: [avatar: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [banner: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [background: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      _e ->
+        render_error(conn, :forbidden, "Invalid request")
     end
   end
 
@@ -538,8 +548,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/accounts/lookup"
-  def lookup(conn, %{acct: nickname} = _params) do
-    with %User{} = user <- User.get_by_nickname(nickname) do
+  def lookup(%{assigns: %{user: for_user}} = conn, %{acct: nickname} = _params) do
+    with %User{} = user <- User.get_by_nickname(nickname),
+         :visible <- User.visible_for(user, for_user) do
       render(conn, "show.json",
         user: user,
         skip_visibility_check: true
