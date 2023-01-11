@@ -11,7 +11,6 @@ defmodule Pleroma.Config.LoaderTest do
     config = Loader.read("test/fixtures/config/temp.secret.exs")
     assert config[:pleroma][:first_setting][:key] == "value"
     assert config[:pleroma][:first_setting][:key2] == [Pleroma.Repo]
-    assert config[:quack][:level] == :info
   end
 
   test "filter_group/2" do

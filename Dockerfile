@@ -30,7 +30,7 @@ LABEL maintainer="hello@soapbox.pub" \
     org.opencontainers.image.description="Rebased" \
     org.opencontainers.image.authors="hello@soapbox.pub" \
     org.opencontainers.image.vendor="soapbox.pub" \
-    org.opencontainers.image.documentation="https://gitlab.com/soapbox-pub/soapbox-be" \
+    org.opencontainers.image.documentation="https://gitlab.com/soapbox-pub/rebased" \
     org.opencontainers.image.licenses="AGPL-3.0" \
     org.opencontainers.image.url="https://soapbox.pub" \
     org.opencontainers.image.revision=$VCS_REF \
@@ -40,13 +40,16 @@ ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
 
 RUN apt-get update &&\
-    apt-get install -y --no-install-recommends imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client &&\
+    apt-get install -y --no-install-recommends curl ca-certificates imagemagick libmagic-dev ffmpeg libimage-exiftool-perl libncurses5 postgresql-client fasttext &&\
     adduser --system --shell /bin/false --home ${HOME} pleroma &&\
     mkdir -p ${DATA}/uploads &&\
     mkdir -p ${DATA}/static &&\
     chown -R pleroma ${DATA} &&\
     mkdir -p /etc/pleroma &&\
-    chown -R pleroma /etc/pleroma
+    chown -R pleroma /etc/pleroma &&\
+    mkdir -p /usr/share/fasttext &&\
+    curl -L https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz -o /usr/share/fasttext/lid.176.ftz &&\
+    chmod 0644 /usr/share/fasttext/lid.176.ftz
 
 USER pleroma
 

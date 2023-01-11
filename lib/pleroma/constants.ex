@@ -22,7 +22,12 @@ defmodule Pleroma.Constants do
       "generator",
       "assigned_account",
       "rules",
-      "content_type"
+      "content_type",
+      "language",
+      "participations",
+      "participation_count",
+      "participation_request_count",
+      "location_id"
     ]
   )
 
@@ -41,7 +46,14 @@ defmodule Pleroma.Constants do
       "summary",
       "sensitive",
       "attachment",
-      "generator"
+      "generator",
+      "language",
+      "startTime",
+      "endTime",
+      "location",
+      "location_id",
+      "location_provider",
+      "name"
     ]
   )
 

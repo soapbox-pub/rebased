@@ -14,11 +14,11 @@ defmodule Pleroma.Webhook do
   @event_types [:"account.created", :"report.created"]
 
   schema "webhooks" do
-    field(:url, ObjectValidators.Uri, null: false)
-    field(:events, {:array, Ecto.Enum}, values: @event_types, null: false, default: [])
-    field(:secret, :string, null: false, default: "")
-    field(:enabled, :boolean, null: false, default: true)
-    field(:internal, :boolean, null: false, default: false)
+    field(:url, ObjectValidators.Uri)
+    field(:events, {:array, Ecto.Enum}, values: @event_types, default: [])
+    field(:secret, :string, default: "")
+    field(:enabled, :boolean, default: true)
+    field(:internal, :boolean, default: false)
 
     timestamps()
   end
@@ -95,7 +95,6 @@ defmodule Pleroma.Webhook do
   end
 
   defp generate_secret do
-    Base.encode16(:crypto.strong_rand_bytes(20))
-    |> String.downcase()
+    Base.encode16(:crypto.strong_rand_bytes(20), case: :lower)
   end
 end

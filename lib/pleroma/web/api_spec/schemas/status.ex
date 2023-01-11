@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
+  alias Pleroma.Web.ApiSpec.Schemas.Event
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.Tag
@@ -237,6 +238,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             type: :string,
             nullable: true,
             description: "A MIME type of the status"
+          },
+          event: %Schema{
+            allOf: [Event],
+            nullable: true,
+            description: "The event attached to the status"
           }
         }
       },

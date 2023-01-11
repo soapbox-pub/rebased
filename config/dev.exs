@@ -58,6 +58,13 @@ config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
 
+config :pleroma, Pleroma.PromEx,
+  disabled: false,
+  manual_metrics_start_delay: :no_delay,
+  drop_metrics_groups: [],
+  grafana: :disabled,
+  metrics_server: :disabled
+
 if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
 else

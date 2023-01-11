@@ -53,7 +53,7 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted chat message ##{cm_ref.id}"
+               "@#{admin.nickname} deleted chat message ##{message.id}"
 
       assert result["id"] == cm_ref.id
       refute MessageReference.get_by_id(cm_ref.id)

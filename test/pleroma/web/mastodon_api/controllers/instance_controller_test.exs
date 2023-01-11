@@ -43,7 +43,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "background_upload_limit" => _,
              "banner_upload_limit" => _,
              "background_image" => from_config_background,
-             "shout_limit" => _,
              "description_limit" => _,
              "rules" => _,
              "pleroma" => %{
@@ -137,5 +136,49 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     assert result = json_response_and_validate_schema(conn, 200)
 
     assert result["pleroma"]["oauth_consumer_strategies"] == ["keycloak"]
+  end
+
+  test "get instance contact information", %{conn: conn} do
+    user = insert(:user, %{local: true})
+
+    clear_config([:instance, :contact_username], user.nickname)
+
+    conn = get(conn, "/api/v1/instance")
+
+    assert result = json_response_and_validate_schema(conn, 200)
+
+    assert result["contact_account"]["id"] == user.id
+  end
+
+  test "get instance information v2", %{conn: conn} do
+    assert get(conn, "/api/v2/instance")
+           |> json_response_and_validate_schema(200)
+  end
+
+  describe "instance domain blocks" do
+    setup do
+      clear_config([:mrf_simple, :reject], [{"fediverse.pl", "uses Soapbox"}])
+    end
+
+    test "get instance domain blocks", %{conn: conn} do
+      conn = get(conn, "/api/v1/instance/domain_blocks")
+
+      assert [
+               %{
+                 "comment" => "uses Soapbox",
+                 "digest" => "55e3f44aefe7eb022d3b1daaf7396cabf7f181bf6093c8ea841e30c9fc7d8226",
+                 "domain" => "fediverse.pl",
+                 "severity" => "suspend"
+               }
+             ] == json_response_and_validate_schema(conn, 200)
+    end
+
+    test "returns empty array if mrf transparency is disabled", %{conn: conn} do
+      clear_config([:mrf, :transparency], false)
+
+      conn = get(conn, "/api/v1/instance/domain_blocks")
+
+      assert [] == json_response_and_validate_schema(conn, 200)
+    end
   end
 end

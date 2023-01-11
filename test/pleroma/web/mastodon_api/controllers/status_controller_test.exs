@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -992,30 +993,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert Activity.get_by_id(activity.id) == activity
     end
 
-    test "when you're an admin or moderator", %{conn: conn} do
-      activity1 = insert(:note_activity)
-      activity2 = insert(:note_activity)
-      admin = insert(:user, is_admin: true)
-      moderator = insert(:user, is_moderator: true)
+    test "when you're an admin", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user, is_admin: true)
 
       res_conn =
         conn
-        |> assign(:user, admin)
-        |> assign(:token, insert(:oauth_token, user: admin, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity1.id}")
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
 
       assert %{} = json_response_and_validate_schema(res_conn, 200)
+
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
+
+      refute Activity.get_by_id(activity.id)
+    end
+
+    test "when you're a moderator", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user, is_moderator: true)
 
       res_conn =
         conn
-        |> assign(:user, moderator)
-        |> assign(:token, insert(:oauth_token, user: moderator, scopes: ["write:statuses"]))
-        |> delete("/api/v1/statuses/#{activity2.id}")
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
 
       assert %{} = json_response_and_validate_schema(res_conn, 200)
 
-      refute Activity.get_by_id(activity1.id)
-      refute Activity.get_by_id(activity2.id)
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
+
+      refute Activity.get_by_id(activity.id)
     end
   end
 
@@ -2193,6 +2204,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       |> json_response_and_validate_schema(:forbidden)
     end
 
+    test "it refuses to update an event", %{conn: conn, user: user} do
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "I'm not a regular status",
+          status: "",
+          join_mode: "free",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/statuses/#{activity.id}", %{
+        "status" => "edited"
+      })
+      |> json_response_and_validate_schema(:unprocessable_entity)
+    end
+
     test "it returns 404 if the user cannot see the post", %{conn: conn} do
       another_user = insert(:user)
 
@@ -2210,6 +2238,66 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         "spoiler_text" => "lol"
       })
       |> json_response_and_validate_schema(:not_found)
+    end
+  end
+
+  describe "translating statuses" do
+    setup do: clear_config([Pleroma.Language.Translation, :provider], TranslationMock)
+
+    test "it translates a status to user language" do
+      user = insert(:user, language: "fr")
+      %{conn: conn, user: user} = oauth_access(["read:statuses"], user: user)
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{
+          status: "Cześć!",
+          visibility: "public",
+          language: "pl"
+        })
+
+      response =
+        conn
+        |> post("/api/v1/statuses/#{activity.id}/translate")
+        |> json_response_and_validate_schema(200)
+
+      assert response == %{
+               "content" => "!ćśezC",
+               "detected_source_language" => "pl",
+               "provider" => "TranslationMock"
+             }
+    end
+
+    test "it returns an error if no target language provided" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(another_user, %{
+          status: "Cześć!",
+          language: "pl"
+        })
+
+      response =
+        conn
+        |> post("/api/v1/statuses/#{activity.id}/translate")
+        |> json_response_and_validate_schema(400)
+    end
+
+    test "it doesn't translate non-public statuses" do
+      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status: "Cześć!",
+          visibility: "private",
+          language: "pl"
+        })
+
+      response =
+        conn
+        |> post("/api/v1/statuses/#{activity.id}/translate")
+        |> json_response_and_validate_schema(404)
     end
   end
 end

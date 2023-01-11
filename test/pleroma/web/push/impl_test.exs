@@ -202,6 +202,21 @@ defmodule Pleroma.Web.Push.ImplTest do
              "New Reaction"
   end
 
+  test "renders title and body for update activity" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "lorem ipsum"})
+
+    {:ok, activity} = CommonAPI.update(user, activity, %{status: "edited status"})
+    object = Object.normalize(activity, fetch: false)
+
+    assert Impl.format_body(%{activity: activity, type: "update"}, user, object) ==
+             "@#{user.nickname} edited a status"
+
+    assert Impl.format_title(%{activity: activity, type: "update"}) ==
+             "New Update"
+  end
+
   test "renders title for create activity with direct visibility" do
     user = insert(:user, nickname: "Bob")
 

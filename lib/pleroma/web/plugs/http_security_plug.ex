@@ -68,7 +68,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
         ]
       }
 
-      [{"reply-to", Jason.encode!(report_group)} | headers]
+      [{"report-to", Jason.encode!(report_group)} | headers]
     else
       headers
     end
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       if Config.get(:env) == :dev do
         "script-src 'self' 'unsafe-eval'"
       else
-        "script-src 'self'"
+        "script-src 'self' 'wasm-unsafe-eval'"
       end
 
     report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
@@ -160,6 +160,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     captcha_method = Config.get([Pleroma.Captcha, :method])
     captcha_endpoint = Config.get([captcha_method, :endpoint])
 
+    map_tile_server_endpoint = map_tile_server()
+
     base_endpoints =
       [
         [:media_proxy, :base_url],
@@ -170,8 +172,19 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     [captcha_endpoint | base_endpoints]
     |> Enum.map(&build_csp_param/1)
+    |> List.insert_at(-1, map_tile_server_endpoint)
     |> Enum.reduce([], &add_source(&2, &1))
     |> add_source(media_proxy_whitelist)
+  end
+
+  defp map_tile_server do
+    with tile_server when is_binary(tile_server) <-
+           Config.get([:frontend_configurations, :soapbox_fe, "tileServer"]),
+         %{host: host} <- URI.parse(tile_server) do
+      ["*.#{host}"]
+    else
+      _ -> []
+    end
   end
 
   defp add_source(iodata, nil), do: iodata

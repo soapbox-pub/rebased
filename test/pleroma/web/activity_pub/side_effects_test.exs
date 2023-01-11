@@ -486,6 +486,33 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "Event objects" do
+    setup do
+      user = insert(:user)
+      event = build(:event, user: user)
+      event_activity = build(:event_activity, event: event)
+      activity_data = Map.put(event_activity.data, "object", event.data["id"])
+      meta = [object_data: event.data, local: false]
+
+      {:ok, activity, meta} = ActivityPub.persist(activity_data, meta)
+
+      %{activity: activity, meta: meta}
+    end
+
+    test "enqueues event reminder notification worker", %{activity: activity, meta: meta} do
+      {:ok, activity, meta} = SideEffects.handle(activity, meta)
+
+      assert_enqueued(
+        worker: Pleroma.Workers.EventReminderWorker,
+        args: %{op: "event_reminder", activity_id: activity.id},
+        scheduled_at:
+          DateTime.from_iso8601(meta[:object_data]["startTime"])
+          |> elem(1)
+          |> DateTime.add(60 * 60 * -2, :second)
+      )
+    end
+  end
+
   describe "delete users with confirmation pending" do
     setup do
       user = insert(:user, is_confirmed: false)

@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Language.Translation
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -21,7 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
 
@@ -40,7 +40,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
            :card,
            :context,
            :show_history,
-           :show_source
+           :show_source,
+           :translate
          ]
   )
 
@@ -85,7 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     %{scopes: ["write:bookmarks"]} when action in [:bookmark, :unbookmark]
   )
 
-  @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete)a
+  @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete translate)a
 
   plug(
     RateLimiter,
@@ -100,6 +101,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   )
 
   plug(RateLimiter, [name: :statuses_actions] when action in @rate_limited_status_actions)
+
+  plug(Pleroma.Web.Plugs.SetApplicationPlug, [] when action in [:create, :update])
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
@@ -140,8 +143,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       )
       when not is_nil(scheduled_at) do
     params =
-      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
-      |> put_application(conn)
+      params
+      |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
+      |> Map.put(:generator, conn.assigns.application)
 
     attrs = %{
       params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
@@ -166,8 +170,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   # Creates a regular status
   def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
     params =
-      Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
-      |> put_application(conn)
+      params
+      |> Map.put(:in_reply_to_status_id, params[:in_reply_to_id])
+      |> Map.put(:generator, conn.assigns.application)
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -231,7 +236,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
          {_, true} <- {:is_create, activity.data["type"] == "Create"},
          actor <- Activity.user_actor(activity),
          {_, true} <- {:own_status, actor.id == user.id},
-         changes <- body_params |> put_application(conn),
+         {_, true} <- {:not_event, activity.object.data["type"] != "Event"},
+         changes <- body_params |> Map.put(:generator, conn.assigns.application),
          {_, {:ok, _update_activity}} <- {:pipeline, CommonAPI.update(user, activity, changes)},
          {_, %Activity{}} = {_, activity} <- {:refetched, Activity.get_by_id_with_object(id)} do
       try_render(conn, "show.json",
@@ -242,6 +248,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       )
     else
       {:own_status, _} -> {:error, :forbidden}
+      {:not_event, _} -> {:error, :unprocessable_entity, "Use event update route"}
       {:pipeline, _} -> {:error, :internal_server_error}
       _ -> {:error, :not_found}
     end
@@ -450,6 +457,52 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
+  @doc "POST /api/v1/statuses/:id/translate"
+  def translate(%{body_params: params, assigns: %{user: user}} = conn, %{id: status_id}) do
+    with {:authentication, true} <-
+           {:authentication,
+            !is_nil(user) ||
+              Pleroma.Config.get([Pleroma.Language.Translation, :allow_unauthenticated])},
+         %Activity{object: object} <- Activity.get_by_id_with_object(status_id),
+         {:visibility, visibility} when visibility in ["public", "unlisted"] <-
+           {:visibility, Visibility.get_visibility(object)},
+         {:allow_remote, true} <-
+           {:allow_remote,
+            Object.local?(object) ||
+              Pleroma.Config.get([Pleroma.Language.Translation, :allow_remote])},
+         {:language, language} when is_binary(language) <-
+           {:language, Map.get(params, :target_language) || user.language},
+         {:ok, result} <-
+           Translation.translate(
+             object.data["content"],
+             object.data["language"],
+             language
+           ) do
+      render(conn, "translation.json", result)
+    else
+      {:authentication, false} ->
+        render_error(conn, :unauthorized, "Authorization is required to translate statuses")
+
+      {:allow_remote, false} ->
+        render_error(conn, :bad_request, "You can't translate remote posts")
+
+      {:language, nil} ->
+        render_error(conn, :bad_request, "Language not specified")
+
+      {:visibility, _} ->
+        render_error(conn, :not_found, "Record not found")
+
+      {:error, :not_found} ->
+        render_error(conn, :not_found, "Translation service not configured")
+
+      {:error, error} when error in [:unexpected_response, :quota_exceeded, :too_many_requests] ->
+        render_error(conn, :service_unavailable, "Translation service not available")
+
+      nil ->
+        render_error(conn, :not_found, "Record not found")
+    end
+  end
+
   @doc "GET /api/v1/favourites"
   def favourites(%{assigns: %{user: %User{} = user}} = conn, params) do
     activities = ActivityPub.fetch_favourites(user, params)
@@ -484,15 +537,4 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       as: :activity
     )
   end
-
-  defp put_application(params, %{assigns: %{token: %Token{user: %User{} = user} = token}} = _conn) do
-    if user.disclose_client do
-      %{client_name: client_name, website: website} = Repo.preload(token, :app).app
-      Map.put(params, :generator, %{type: "Application", name: client_name, url: website})
-    else
-      Map.put(params, :generator, nil)
-    end
-  end
-
-  defp put_application(params, _), do: Map.put(params, :generator, nil)
 end

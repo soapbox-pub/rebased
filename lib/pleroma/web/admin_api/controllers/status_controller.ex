@@ -65,12 +65,6 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
 
   def delete(%{assigns: %{user: user}} = conn, %{id: id}) do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
-      ModerationLog.insert_log(%{
-        action: "status_delete",
-        actor: user,
-        subject_id: id
-      })
-
       json(conn, %{})
     end
   end

@@ -138,16 +138,30 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     end
   end
 
-  test "make_json_ld_header/0" do
-    assert Utils.make_json_ld_header() == %{
-             "@context" => [
-               "https://www.w3.org/ns/activitystreams",
-               "http://localhost:4001/schemas/litepub-0.1.jsonld",
-               %{
-                 "@language" => "und"
-               }
-             ]
-           }
+  describe "make_json_ld_header/1" do
+    test "makes jsonld header" do
+      assert Utils.make_json_ld_header() == %{
+               "@context" => [
+                 "https://www.w3.org/ns/activitystreams",
+                 "http://localhost:4001/schemas/litepub-0.1.jsonld",
+                 %{
+                   "@language" => "und"
+                 }
+               ]
+             }
+    end
+
+    test "includes language if specified" do
+      assert Utils.make_json_ld_header(%{"language" => "pl"}) == %{
+               "@context" => [
+                 "https://www.w3.org/ns/activitystreams",
+                 "http://localhost:4001/schemas/litepub-0.1.jsonld",
+                 %{
+                   "@language" => "pl"
+                 }
+               ]
+             }
+    end
   end
 
   describe "get_existing_votes" do
@@ -560,16 +574,60 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "assigns report to an account" do
       reporter = insert(:user)
       target_account = insert(:user)
-      %{id: assigned_id} = assigned = insert(:user)
-      context = Utils.generate_context_id()
-
-      target_ap_id = target_account.ap_id
+      %{id: assigned_id} = insert(:user)
 
       {:ok, report} = CommonAPI.report(reporter, %{account_id: target_account.id})
 
       {:ok, report} = Utils.assign_report_to_account(report, assigned_id)
 
       assert %{data: %{"assigned_account" => ^assigned_id}} = report
+    end
+  end
+
+  describe "add_participation_to_object/2" do
+    test "add actor to participations" do
+      user = insert(:user)
+      user2 = insert(:user)
+      object = insert(:event)
+
+      assert {:ok, updated_object} =
+               Utils.add_participation_to_object(
+                 %Activity{data: %{"actor" => user.ap_id}},
+                 object
+               )
+
+      assert updated_object.data["participations"] == [user.ap_id]
+      assert updated_object.data["participation_count"] == 1
+
+      assert {:ok, updated_object2} =
+               Utils.add_participation_to_object(
+                 %Activity{data: %{"actor" => user2.ap_id}},
+                 updated_object
+               )
+
+      assert updated_object2.data["participations"] == [user2.ap_id, user.ap_id]
+      assert updated_object2.data["participation_count"] == 2
+    end
+  end
+
+  describe "remove_participation_from_object/2" do
+    test "removes ap_id from participations" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      object =
+        insert(:event,
+          data: %{"participations" => [user.ap_id, user2.ap_id], "participation_count" => 2}
+        )
+
+      assert {:ok, updated_object} =
+               Utils.remove_participation_from_object(
+                 %Activity{data: %{"actor" => user.ap_id}},
+                 object
+               )
+
+      assert updated_object.data["participations"] == [user2.ap_id]
+      assert updated_object.data["participation_count"] == 1
     end
   end
 end

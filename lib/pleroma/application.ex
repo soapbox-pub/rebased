@@ -94,6 +94,7 @@ defmodule Pleroma.Application do
     # Define workers and child supervisors to be supervised
     children =
       [
+        Pleroma.PromEx,
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
@@ -107,11 +108,11 @@ defmodule Pleroma.Application do
           Pleroma.JobQueueMonitor,
           {Majic.Pool, [name: Pleroma.MajicPool, pool_size: Config.get([:majic_pool, :size], 2)]},
           {Oban, Config.get(Oban)},
-          Pleroma.Web.Endpoint
+          Pleroma.Web.Endpoint,
+          TzWorld.Backend.DetsWithIndexCache
         ] ++
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++
-        shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -212,7 +213,9 @@ defmodule Pleroma.Application do
       build_cachex("chat_message_id_idempotency_key",
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
-      )
+      ),
+      build_cachex("translations", default_ttl: :timer.hours(24), limit: 5_000),
+      build_cachex("rel_me", default_ttl: :timer.minutes(30), limit: 2_500)
     ]
   end
 
@@ -236,8 +239,6 @@ defmodule Pleroma.Application do
       type: :worker
     }
 
-  defp shout_enabled?, do: Config.get([:shout, :enabled])
-
   defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
   defp dont_run_in_test(_) do
@@ -257,15 +258,6 @@ defmodule Pleroma.Application do
       Pleroma.Migrators.ContextObjectsDeletionMigrator
     ]
   end
-
-  defp shout_child(true) do
-    [
-      Pleroma.Web.ShoutChannel.ShoutChannelState,
-      {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
-    ]
-  end
-
-  defp shout_child(_), do: []
 
   defp task_children(:test) do
     [

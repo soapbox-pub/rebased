@@ -8,11 +8,6 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
-## :shout
-
-* `enabled` - Enables the backend Shoutbox chat feature. Defaults to `true`.
-* `limit` - Shout character limit. Defaults to `5_000`
-
 ## :instance
 * `name`: The instance’s name.
 * `email`: Email used to reach an Administrator/Moderator of the instance.
@@ -49,6 +44,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `autofollowing_nicknames`: Set to nicknames of (local) users that automatically follows every newly registered user.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
+* `report_strip_status`: Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy.
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/v1/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
@@ -206,7 +202,7 @@ config :pleroma, :mrf_user_allowlist, %{
   e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
-  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines, additionally for followers-only it degrades to a direct message
   * `:reject` rejects the message entirely
 
 #### :mrf_steal_emoji
@@ -481,6 +477,7 @@ Supported rate limiters:
 * `:relation_id_action` - Following/Unfollowing for a specific user.
 * `:statuses_actions` - Status actions such as: (un)repeating, (un)favouriting, creating, deleting.
 * `:status_id_action` - (un)Repeating/(un)Favouriting a particular status.
+* `:events_actions` - Events actions such as: creating, joining, leaving.
 * `:authentication` - Authentication actions, i.e getting an OAuth token.
 * `:password_reset` - Requesting password reset emails.
 * `:account_confirmation_resend` - Requesting resending account confirmation emails.
@@ -782,7 +779,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 * ``private_key``: VAPID private key
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```elixir
@@ -805,10 +802,10 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
-An example of logging info to local syslog, but warn to a Slack channel:
+An example of logging info to local syslog, but debug to console:
 ```elixir
 config :logger,
-  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  backends: [ {ExSyslogger, :ex_syslogger}, :console ],
   level: :info
 
 config :logger, :ex_syslogger,
@@ -816,13 +813,11 @@ config :logger, :ex_syslogger,
   ident: "pleroma",
   format: "$metadata[$level] $message"
 
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+config :logger, :console,
+  level: :debug,
+  format: "\n$time $metadata[$level] $message\n",
+  metadata: [:request_id]
 ```
-
-See the [Quack Github](https://github.com/azohra/quack) for more details
 
 
 
