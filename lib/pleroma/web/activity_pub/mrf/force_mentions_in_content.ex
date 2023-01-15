@@ -78,23 +78,55 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
   def filter(
         %{
           "type" => type,
-          "object" => %{"type" => "Note", "to" => to, "inReplyTo" => in_reply_to}
-        } = object
+          "object" => %{"type" => "Note", "to" => to, "inReplyTo" => in_reply_to} = object
+        } = activity
       )
       when type in ["Create", "Update"] and is_list(to) and is_binary(in_reply_to) do
-    # image-only posts from pleroma apparently reach this MRF without the content field
-    content = object["object"]["content"] || ""
-
     # Get the replied-to user for sorting
-    replied_to_user = get_replied_to_user(object["object"])
+    replied_to_user = get_replied_to_user(object)
 
     mention_users =
       to
-      |> clean_recipients(object)
+      |> clean_recipients(activity)
       |> Enum.map(&User.get_cached_by_ap_id/1)
       |> Enum.reject(&is_nil/1)
       |> sort_replied_user(replied_to_user)
 
+    fixed_object =
+      with %{} = content_map <- object["contentMap"] do
+        fixed_content_map =
+          Enum.reduce(content_map, %{}, fn {lang, content}, acc ->
+            fixed_content = fix_content(content, mention_users)
+
+            Map.put(acc, lang, fixed_content)
+          end)
+
+        object
+        |> Map.put("contentMap", fixed_content_map)
+        |> Map.put(
+          "content",
+          Pleroma.MultiLanguage.map_to_str(fixed_content_map, multiline: true)
+        )
+      else
+        _ ->
+          # image-only posts from pleroma apparently reach this MRF without the content field
+          content = object["content"] || ""
+
+          fixed_content = fix_content(content, mention_users)
+
+          Map.put(object, "content", fixed_content)
+      end
+
+    {:ok, put_in(activity["object"], fixed_object)}
+  end
+
+  @impl true
+  def filter(object), do: {:ok, object}
+
+  @impl true
+  def describe, do: {:ok, %{}}
+
+  defp fix_content(content, mention_users) do
     explicitly_mentioned_uris = extract_mention_uris_from_content(content)
 
     added_mentions =
@@ -111,25 +143,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
         do: "<span class=\"recipients-inline\">#{added_mentions}</span>",
         else: ""
 
-    content =
-      cond do
-        # For Markdown posts, insert the mentions inside the first <p> tag
-        recipients_inline != "" && String.starts_with?(content, "<p>") ->
-          "<p>" <> recipients_inline <> String.trim_leading(content, "<p>")
+    cond do
+      # For Markdown posts, insert the mentions inside the first <p> tag
+      recipients_inline != "" && String.starts_with?(content, "<p>") ->
+        "<p>" <> recipients_inline <> String.trim_leading(content, "<p>")
 
-        recipients_inline != "" ->
-          recipients_inline <> content
+      recipients_inline != "" ->
+        recipients_inline <> content
 
-        true ->
-          content
-      end
-
-    {:ok, put_in(object["object"]["content"], content)}
+      true ->
+        content
+    end
   end
-
-  @impl true
-  def filter(object), do: {:ok, object}
-
-  @impl true
-  def describe, do: {:ok, %{}}
 end
