@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve instance information",
       description: "Information about the server",
       operationId: "InstanceController.show",
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
 
   def peers_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve list of known instances",
       operationId: "InstanceController.peers",
       responses: %{

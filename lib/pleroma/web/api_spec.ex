@@ -95,7 +95,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Relays",
               "Report managment",
               "Status administration",
-              "User administration"
+              "User administration",
+              "Announcement management"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
@@ -110,10 +111,12 @@ defmodule Pleroma.Web.ApiSpec do
               "Follow requests",
               "Mascot",
               "Markers",
-              "Notifications"
+              "Notifications",
+              "Filters",
+              "Settings"
             ]
           },
-          %{"name" => "Instance", "tags" => ["Custom emojis"]},
+          %{"name" => "Instance", "tags" => ["Custom emojis", "Instance misc"]},
           %{"name" => "Messaging", "tags" => ["Chats", "Conversations"]},
           %{
             "name" => "Statuses",
@@ -125,10 +128,21 @@ defmodule Pleroma.Web.ApiSpec do
               "Retrieve status information",
               "Scheduled statuses",
               "Search",
-              "Status actions"
+              "Status actions",
+              "Media attachments"
             ]
           },
-          %{"name" => "Miscellaneous", "tags" => ["Emoji packs", "Reports", "Suggestions"]}
+          %{
+            "name" => "Miscellaneous",
+            "tags" => [
+              "Emoji packs",
+              "Reports",
+              "Suggestions",
+              "Announcements",
+              "Remote interaction",
+              "Others"
+            ]
+          }
         ]
       }
     }
