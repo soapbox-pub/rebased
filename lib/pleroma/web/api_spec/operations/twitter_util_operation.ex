@@ -30,7 +30,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
               properties: %{
                 image_url: %Schema{type: :string},
                 tags: %Schema{type: :array, items: %Schema{type: :string}}
-              }
+              },
+              extensions: %{"x-additionalPropertiesName": "Emoji name"}
             },
             example: %{
               "firefox" => %{
@@ -53,7 +54,12 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
         200 =>
           Operation.response("List", "application/json", %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :object}
+            additionalProperties: %Schema{
+              type: :object,
+              description:
+                "Opaque object representing the instance-wide configuration for the frontend",
+              extensions: %{"x-additionalPropertiesName": "Frontend name"}
+            }
           })
       }
     }

@@ -231,7 +231,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       "application/json",
       %Schema{
         type: :object,
-        additionalProperties: emoji_pack(),
+        additionalProperties: %Schema{
+          emoji_pack()
+          | extensions: %{"x-additionalPropertiesName": "Pack name"}
+        },
         example: %{
           "emojos" => emoji_pack().example
         }
@@ -274,7 +277,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
   defp files_object do
     %Schema{
       type: :object,
-      additionalProperties: %Schema{type: :string},
+      additionalProperties: %Schema{
+        type: :string,
+        description: "Filename",
+        extensions: %{"x-additionalPropertiesName": "Emoji name"}
+      },
       description: "Object with emoji names as keys and filenames as values"
     }
   end
