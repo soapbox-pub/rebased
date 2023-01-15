@@ -129,6 +129,66 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicyTest do
     assert NoEmptyPolicy.filter(message) == {:reject, "[NoEmptyPolicy]"}
   end
 
+  test "Notes with only mentions in source.contentMap are denied" do
+    message = %{
+      "actor" => "http://localhost:4001/users/testuser",
+      "cc" => ["http://localhost:4001/users/testuser/followers"],
+      "object" => %{
+        "actor" => "http://localhost:4001/users/testuser",
+        "attachment" => [],
+        "cc" => ["http://localhost:4001/users/testuser/followers"],
+        "source" => %{
+          "contentMap" => %{
+            "a" => "@user2",
+            "b" => "@user2"
+          }
+        },
+        "to" => [
+          "https://www.w3.org/ns/activitystreams#Public",
+          "http://localhost:4001/users/user2"
+        ],
+        "type" => "Note"
+      },
+      "to" => [
+        "https://www.w3.org/ns/activitystreams#Public",
+        "http://localhost:4001/users/user2"
+      ],
+      "type" => "Create"
+    }
+
+    assert NoEmptyPolicy.filter(message) == {:reject, "[NoEmptyPolicy]"}
+  end
+
+  test "Notes with mentions and other content in source.contentMap are allowed" do
+    message = %{
+      "actor" => "http://localhost:4001/users/testuser",
+      "cc" => ["http://localhost:4001/users/testuser/followers"],
+      "object" => %{
+        "actor" => "http://localhost:4001/users/testuser",
+        "attachment" => [],
+        "cc" => ["http://localhost:4001/users/testuser/followers"],
+        "source" => %{
+          "contentMap" => %{
+            "a" => "@user2",
+            "b" => "@user2 lol"
+          }
+        },
+        "to" => [
+          "https://www.w3.org/ns/activitystreams#Public",
+          "http://localhost:4001/users/user2"
+        ],
+        "type" => "Note"
+      },
+      "to" => [
+        "https://www.w3.org/ns/activitystreams#Public",
+        "http://localhost:4001/users/user2"
+      ],
+      "type" => "Create"
+    }
+
+    assert {:ok, _} = NoEmptyPolicy.filter(message)
+  end
+
   test "Notes with no content are denied" do
     message = %{
       "actor" => "http://localhost:4001/users/testuser",

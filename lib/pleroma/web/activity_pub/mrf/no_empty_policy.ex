@@ -43,8 +43,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoEmptyPolicy do
   defp only_mentions?(%{"object" => %{"type" => "Note", "source" => source}}) do
     source =
       case source do
-        %{"content" => text} -> text
-        _ -> source
+        %{"contentMap" => %{} = text_map} ->
+          text_map
+          |> Enum.map(fn {_, content} -> content end)
+          |> Enum.join("\n")
+
+        %{"content" => text} ->
+          text
+
+        _ ->
+          source
       end
 
     non_mentions =
