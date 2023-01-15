@@ -21,6 +21,30 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicyTest do
     assert res["object"]["content"] == ""
   end
 
+  test "multilang aware" do
+    message = %{
+      "type" => "Create",
+      "object" => %{
+        "content" => ".",
+        "contentMap" => %{"a" => ".", "b" => "lol"},
+        "attachment" => "image"
+      }
+    }
+
+    assert {:ok, res} = NoPlaceholderTextPolicy.filter(message)
+    assert res["object"]["content"] == "lol"
+    assert res["object"]["contentMap"] == %{"b" => "lol"}
+
+    message = %{
+      "type" => "Create",
+      "object" => %{"content" => ".", "contentMap" => %{"a" => "."}, "attachment" => "image"}
+    }
+
+    assert {:ok, res} = NoPlaceholderTextPolicy.filter(message)
+    assert res["object"]["content"] == ""
+    assert res["object"]["contentMap"] == nil
+  end
+
   test "history-aware" do
     message = %{
       "type" => "Create",
