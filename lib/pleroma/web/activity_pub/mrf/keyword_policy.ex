@@ -86,18 +86,36 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   end
 
   defp check_replace(%{"object" => %{} = object} = message) do
-    replace_kw = fn object ->
-      ["content", "name", "summary"]
-      |> Enum.filter(fn field -> Map.has_key?(object, field) && object[field] end)
-      |> Enum.reduce(object, fn field, object ->
-        data =
-          Enum.reduce(
-            Pleroma.Config.get([:mrf_keyword, :replace]),
-            object[field],
-            fn {pat, repl}, acc -> String.replace(acc, pat, repl) end
-          )
+    config = Pleroma.Config.get([:mrf_keyword, :replace])
 
-        Map.put(object, field, data)
+    replace_kw = fn object ->
+      [
+        {"content", [multiline: true]},
+        {"name", [multiline: false]},
+        {"summary", [multiline: false]}
+      ]
+      |> Enum.filter(fn {field, _} ->
+        is_map(object[field <> "Map"]) or
+          (Map.has_key?(object, field) && object[field])
+      end)
+      |> Enum.reduce(object, fn {field, opts}, object ->
+        field_name_map = field <> "Map"
+
+        with %{} = data_map <- object[field_name_map] do
+          fixed_data_map =
+            Enum.reduce(data_map, %{}, fn {lang, content}, acc ->
+              Map.put(acc, lang, replace_keyword(content, config))
+            end)
+
+          object
+          |> Map.put(field_name_map, fixed_data_map)
+          |> Map.put(field, Pleroma.MultiLanguage.map_to_str(fixed_data_map, opts))
+        else
+          _ ->
+            data = replace_keyword(object[field], config)
+
+            Map.put(object, field, data)
+        end
       end)
       |> (fn object -> {:ok, object} end).()
     end
@@ -107,6 +125,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     message = Map.put(message, "object", object)
 
     {:ok, message}
+  end
+
+  defp replace_keyword(data, config) do
+    Enum.reduce(
+      config,
+      data,
+      fn {pat, repl}, acc -> String.replace(acc, pat, repl) end
+    )
   end
 
   @impl true
