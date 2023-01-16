@@ -227,16 +227,29 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
 
   defp emoji_packs_response do
     Operation.response(
-      "Object with pack names as keys and pack contents as values",
+      "Emoji packs and the count",
       "application/json",
       %Schema{
         type: :object,
-        additionalProperties: %Schema{
-          emoji_pack()
-          | extensions: %{"x-additionalPropertiesName": "Pack name"}
+        properties: %{
+          packs: %Schema{
+            type: :object,
+            description: "Object with pack names as keys and pack contents as values",
+            additionalProperties: %Schema{
+              emoji_pack()
+              | extensions: %{"x-additionalPropertiesName": "Pack name"}
+            }
+          },
+          count: %Schema{
+            type: :integer,
+            description: "Number of emoji packs"
+          }
         },
         example: %{
-          "emojos" => emoji_pack().example
+          "packs" => %{
+            "emojos" => emoji_pack().example
+          },
+          "count" => 1
         }
       }
     )
