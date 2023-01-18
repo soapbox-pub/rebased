@@ -334,6 +334,32 @@ defmodule Pleroma.NotificationTest do
       refute Notification.create_notification(activity, followed)
     end
 
+    test "it disables notifications from non-followees" do
+      follower = insert(:user)
+
+      followed =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(follower, followed)
+      {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
+      refute Notification.create_notification(activity, followed)
+    end
+
+    test "it allows notifications from followees" do
+      poster = insert(:user)
+
+      receiver =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(receiver, poster)
+      {:ok, activity} = CommonAPI.post(poster, %{status: "hey @#{receiver.nickname}"})
+      assert Notification.create_notification(activity, receiver)
+    end
+
     test "it doesn't create a notification for user if he is the activity author" do
       activity = insert(:note_activity)
       author = User.get_cached_by_ap_id(activity.data["actor"])
