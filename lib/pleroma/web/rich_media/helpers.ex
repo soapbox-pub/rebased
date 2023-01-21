@@ -16,18 +16,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     recv_timeout: 2_000
   ]
 
-  defp headers do
-    user_agent =
-      case Config.get([:rich_media, :user_agent], :default) do
-        :default ->
-          Pleroma.Application.user_agent() <> "; Bot"
-
-        custom ->
-          custom
-      end
-
-    [{"user-agent", user_agent}]
-  end
+  defp headers, do: [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
