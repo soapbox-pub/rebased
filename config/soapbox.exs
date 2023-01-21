@@ -53,3 +53,6 @@ config :pleroma, :instance,
 
 # Background migration performance
 config :pleroma, :delete_context_objects, sleep_interval_ms: 3_000
+
+# Pretend to be WhatsApp because some sites don't generate link previews otherwise
+config :pleroma, :rich_media, user_agent: "WhatsApp/2.19.81 A"

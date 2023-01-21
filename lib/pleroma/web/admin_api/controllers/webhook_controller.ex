@@ -46,42 +46,49 @@ defmodule Pleroma.Web.AdminAPI.WebhookController do
   end
 
   def update(%{body_params: params} = conn, %{id: id}) do
-    with %Webhook{} = webhook <- Webhook.get(id),
+    with %Webhook{internal: false} = webhook <- Webhook.get(id),
          webhook <- Webhook.update(webhook, params) do
       render(conn, "show.json", webhook: webhook)
+    else
+      %Webhook{internal: true} -> {:error, :forbidden}
     end
   end
 
   def delete(conn, %{id: id}) do
-    with %Webhook{} = webhook <- Webhook.get(id),
+    with %Webhook{internal: false} = webhook <- Webhook.get(id),
          {:ok, webhook} <- Webhook.delete(webhook) do
       render(conn, "show.json", webhook: webhook)
+    else
+      %Webhook{internal: true} -> {:error, :forbidden}
     end
   end
 
   def enable(conn, %{id: id}) do
-    with %Webhook{} = webhook <- Webhook.get(id),
+    with %Webhook{internal: false} = webhook <- Webhook.get(id),
          {:ok, webhook} <- Webhook.set_enabled(webhook, true) do
       render(conn, "show.json", webhook: webhook)
     else
+      %Webhook{internal: true} -> {:error, :forbidden}
       nil -> {:error, :not_found}
     end
   end
 
   def disable(conn, %{id: id}) do
-    with %Webhook{} = webhook <- Webhook.get(id),
+    with %Webhook{internal: false} = webhook <- Webhook.get(id),
          {:ok, webhook} <- Webhook.set_enabled(webhook, false) do
       render(conn, "show.json", webhook: webhook)
     else
+      %Webhook{internal: true} -> {:error, :forbidden}
       nil -> {:error, :not_found}
     end
   end
 
   def rotate_secret(conn, %{id: id}) do
-    with %Webhook{} = webhook <- Webhook.get(id),
+    with %Webhook{internal: false} = webhook <- Webhook.get(id),
          {:ok, webhook} <- Webhook.rotate_secret(webhook) do
       render(conn, "show.json", webhook: webhook)
     else
+      %Webhook{internal: true} -> {:error, :forbidden}
       nil -> {:error, :not_found}
     end
   end
