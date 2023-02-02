@@ -302,6 +302,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       }
     }
     |> maybe_put_role(user, opts[:for])
+    |> maybe_put_privileges(user, opts[:for])
     |> maybe_put_settings(user, opts[:for], opts)
     |> maybe_put_notification_settings(user, opts[:for])
     |> maybe_put_settings_store(user, opts[:for], opts)
@@ -375,7 +376,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     data
     |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
     |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
-    |> Kernel.put_in([:pleroma, :privileges], User.privileges(user))
+  end
+
+  defp maybe_put_privileges(data, %User{id: user_id} = user, %User{id: user_id}) do
+    put_privileges(data, user)
+  end
+
+  defp maybe_put_privileges(data, _, _), do: data
+
+  defp put_privileges(data, user) do
+    Kernel.put_in(data, [:pleroma, :privileges], User.privileges(user))
   end
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
