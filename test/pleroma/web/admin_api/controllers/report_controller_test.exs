@@ -366,6 +366,34 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
                |> json_response_and_validate_schema(:ok)
     end
 
+    test "renders content correctly", %{conn: conn} do
+      [reporter, target_user] = insert_pair(:user)
+      note = insert(:note, user: target_user, data: %{"content" => "mew 1"})
+      note2 = insert(:note, user: target_user, data: %{"content" => "mew 2"})
+      activity = insert(:note_activity, user: target_user, note: note)
+      activity2 = insert(:note_activity, user: target_user, note: note2)
+
+      {:ok, _report} =
+        CommonAPI.report(reporter, %{
+          account_id: target_user.id,
+          comment: "I feel offended",
+          status_ids: [activity.id, activity2.id]
+        })
+
+      CommonAPI.delete(activity.id, target_user)
+      CommonAPI.delete(activity2.id, target_user)
+
+      response =
+        conn
+        |> get(report_path(conn, :index))
+        |> json_response_and_validate_schema(:ok)
+
+      assert [open_report] = response["reports"]
+      assert %{"statuses" => [s1, s2]} = open_report
+      assert "mew 1" in [s1["content"], s2["content"]]
+      assert "mew 2" in [s1["content"], s2["content"]]
+    end
+
     test "returns 403 when requested by a non-admin" do
       user = insert(:user)
       token = insert(:oauth_token, user: user)
