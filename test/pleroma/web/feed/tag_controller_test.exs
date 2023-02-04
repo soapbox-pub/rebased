@@ -63,7 +63,6 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
            ]
 
     assert xpath(xml, ~x"//feed/entry/author/name/text()"ls) == [user.nickname, user.nickname]
-    assert xpath(xml, ~x"//feed/entry/author/id/text()"ls) == [user.ap_id, user.ap_id]
 
     conn =
       conn
@@ -138,8 +137,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
            ]
 
     assert xpath(xml, ~x"//channel/item/pubDate/text()"sl) == [
-             FeedView.pub_date(activity2.data["published"]),
-             FeedView.pub_date(activity1.data["published"])
+             FeedView.to_rfc2822(activity2.data["published"]),
+             FeedView.to_rfc2822(activity1.data["published"])
            ]
 
     assert xpath(xml, ~x"//channel/item/enclosure/@url"sl) == [

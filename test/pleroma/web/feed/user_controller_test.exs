@@ -74,7 +74,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert activity_titles == ['2hu', '2hu & as']
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['This &amp; t...']
+      assert activity_titles == ['2hu & as']
     end
 
     test "gets a rss feed", %{conn: conn, user: user, object: object, max_id: max_id} do
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['42 &amp; Thi...', 'This &amp; t...']
+      assert activity_titles == ['2hu', '2hu & as']
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['This &amp; t...']
+      assert activity_titles == ['2hu & as']
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do

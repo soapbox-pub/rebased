@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -27,7 +27,10 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
   end
 
   describe "DELETE /api/pleroma/admin/chats/:id/messages/:message_id" do
-    setup do: admin_setup()
+    setup do
+      clear_config([:instance, :admin_privileges], [:messages_delete])
+      admin_setup()
+    end
 
     test "it deletes a message from the chat", %{conn: conn, admin: admin} do
       user = insert(:user)
@@ -60,10 +63,22 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       refute MessageReference.get_by_id(recipient_cm_ref.id)
       assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
     end
+
+    test "it requires privileged role :messages_delete", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> delete("/api/pleroma/admin/chats/some_id/messages/some_ref_id")
+             |> json_response(:forbidden)
+    end
   end
 
   describe "GET /api/pleroma/admin/chats/:id/messages" do
-    setup do: admin_setup()
+    setup do
+      clear_config([:instance, :admin_privileges], [:messages_read])
+      admin_setup()
+    end
 
     test "it paginates", %{conn: conn} do
       user = insert(:user)
@@ -114,10 +129,21 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
 
       assert length(result) == 3
     end
+
+    test "it requires privileged role :messages_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/chats/some_id/messages")
+
+      assert json_response(conn, :forbidden)
+    end
   end
 
   describe "GET /api/pleroma/admin/chats/:id" do
-    setup do: admin_setup()
+    setup do
+      clear_config([:instance, :admin_privileges], [:messages_read])
+      admin_setup()
+    end
 
     test "it returns a chat", %{conn: conn} do
       user = insert(:user)
@@ -134,6 +160,14 @@ defmodule Pleroma.Web.AdminAPI.ChatControllerTest do
       assert %{} = result["sender"]
       assert %{} = result["receiver"]
       refute result["account"]
+    end
+
+    test "it requires privileged role :messages_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/chats/some_id")
+
+      assert json_response(conn, :forbidden)
     end
   end
 

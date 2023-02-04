@@ -302,6 +302,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       }
     }
     |> maybe_put_role(user, opts[:for])
+    |> maybe_put_privileges(user, opts[:for])
     |> maybe_put_settings(user, opts[:for], opts)
     |> maybe_put_notification_settings(user, opts[:for])
     |> maybe_put_settings_store(user, opts[:for], opts)
@@ -362,18 +363,30 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_settings_store(data, _, _, _), do: data
 
   defp maybe_put_role(data, %User{show_role: true} = user, _) do
-    data
-    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
-    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    put_role(data, user)
   end
 
   defp maybe_put_role(data, %User{id: user_id} = user, %User{id: user_id}) do
+    put_role(data, user)
+  end
+
+  defp maybe_put_role(data, _, _), do: data
+
+  defp put_role(data, user) do
     data
     |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
     |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
   end
 
-  defp maybe_put_role(data, _, _), do: data
+  defp maybe_put_privileges(data, %User{id: user_id} = user, %User{id: user_id}) do
+    put_privileges(data, user)
+  end
+
+  defp maybe_put_privileges(data, _, _), do: data
+
+  defp put_privileges(data, user) do
+    Kernel.put_in(data, [:pleroma, :privileges], User.privileges(user))
+  end
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
     Kernel.put_in(
@@ -391,11 +404,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_allow_following_move(data, _, _), do: data
 
-  defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
-    Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active)
+  defp maybe_put_activation_status(data, user, user_for) do
+    if User.privileged?(user_for, :users_manage_activation_state),
+      do: Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active),
+      else: data
   end
-
-  defp maybe_put_activation_status(data, _, _), do: data
 
   defp maybe_put_unread_conversation_count(data, %User{id: user_id} = user, %User{id: user_id}) do
     data

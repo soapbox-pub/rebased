@@ -896,6 +896,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: true})
                |> json_response_and_validate_schema(200)
 
+      assert %{"showing_reblogs" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: "1"})
+               |> json_response_and_validate_schema(200)
+
       assert [%{"id" => ^reblog_id}] =
                conn
                |> get("/api/v1/timelines/home")
@@ -925,6 +931,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: false})
                |> json_response_and_validate_schema(200)
 
+      assert %{"showing_reblogs" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: "0"})
+               |> json_response_and_validate_schema(200)
+
       assert [] ==
                conn
                |> get("/api/v1/timelines/home")
@@ -935,21 +947,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       %{conn: conn} = oauth_access(["follow"])
       followed = insert(:user)
 
-      ret_conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: true})
+      assert %{"subscribing" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: true})
+               |> json_response_and_validate_schema(200)
 
-      assert %{"id" => _id, "subscribing" => true} =
-               json_response_and_validate_schema(ret_conn, 200)
+      assert %{"subscribing" => true} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: "1"})
+               |> json_response_and_validate_schema(200)
 
-      ret_conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: false})
-
-      assert %{"id" => _id, "subscribing" => false} =
-               json_response_and_validate_schema(ret_conn, 200)
+      assert %{"subscribing" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{notify: false})
+               |> json_response_and_validate_schema(200)
     end
 
     test "following / unfollowing errors", %{user: user, conn: conn} do
