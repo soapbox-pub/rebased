@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidationTest do
 
   describe "blocks" do
     setup do
+      clear_config([:activitypub, :outgoing_blocks], true)
       user = insert(:user, local: false)
       blocked = insert(:user)
 

@@ -93,6 +93,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "it blocks and federates", %{blocker: blocker, blocked: blocked} do
       clear_config([:instance, :federating], true)
+      clear_config([:activitypub, :outgoing_blocks], true)
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
