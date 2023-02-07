@@ -1251,5 +1251,32 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
     end
+
+    test "it returns notifications when related object is without content and filters are defined",
+         %{user: user} do
+      followed_user = insert(:user, is_locked: true)
+
+      insert(:filter, user: followed_user, phrase: "test", hide: true)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      refute FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow_request"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
+
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
+
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
+    end
   end
 end
