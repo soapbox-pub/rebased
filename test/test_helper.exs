@@ -2,6 +2,8 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
+Code.put_compiler_option(:warnings_as_errors, true)
+
 os_exclude = if :os.type() == {:unix, :darwin}, do: [skip_on_mac: true], else: []
 ExUnit.start(exclude: [:federated, :erratic] ++ os_exclude)
 
