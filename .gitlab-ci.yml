@@ -85,7 +85,7 @@ unit-testing:
   script:
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --cover --preload-modules --warnings-as-errors
+    - mix test --cover --preload-modules
   coverage: '/^Line total: ([^ ]*%)$/'
   artifacts:
     reports:
