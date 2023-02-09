@@ -679,7 +679,7 @@ defmodule Pleroma.Notification do
     cond do
       opts[:type] == "poll" -> false
       user.ap_id == actor -> false
-      !User.following?(follower, user) -> true
+      !User.following?(user, follower) -> true
       true -> false
     end
   end
