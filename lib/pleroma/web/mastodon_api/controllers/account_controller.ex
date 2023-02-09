@@ -269,14 +269,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   defp normalize_fields_attributes(fields) do
-    if Enum.all?(fields, &is_tuple/1) do
-      Enum.map(fields, fn {_, v} -> v end)
-    else
-      Enum.map(fields, fn
-        %{} = field -> %{"name" => field.name, "value" => field.value}
-        field -> field
-      end)
-    end
+    if(Enum.all?(fields, &is_tuple/1), do: Enum.map(fields, fn {_, v} -> v end), else: fields)
+    |> Enum.map(fn
+      %{} = field -> %{"name" => field.name, "value" => field.value}
+      field -> field
+    end)
   end
 
   @doc "GET /api/v1/accounts/relationships"
