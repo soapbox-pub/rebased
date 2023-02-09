@@ -1222,8 +1222,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     cond do
       local and remote ->
-        # is there a better way to handle this?
-        from(activity in query, where: 1 == 0)
+        from(activity in query, where: false)
 
       local ->
         from(activity in query, where: activity.local == false)
