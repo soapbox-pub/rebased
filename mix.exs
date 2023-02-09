@@ -162,7 +162,7 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.5.2"},
+      {:linkify, "~> 0.5.3"},
       {:http_signatures, "~> 0.1.1"},
       {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
