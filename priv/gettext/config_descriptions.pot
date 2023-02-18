@@ -6033,3 +6033,15 @@ msgstr ""
 msgctxt "config label at :pleroma-:instance > :moderator_privileges"
 msgid "Moderator privileges"
 msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config description at :pleroma-:instance > :languages"
+msgid "Languages to be exposed in /api/v1/instance. Should be in the format of BCP47 language codes."
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/docs/translator.ex:5
+msgctxt "config label at :pleroma-:instance > :languages"
+msgid "Languages"
+msgstr ""

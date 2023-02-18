@@ -111,7 +111,7 @@ msgid "Can't display this activity"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:337
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:334
 msgid "Can't find user"
 msgstr ""
 
@@ -236,7 +236,7 @@ msgid "Poll's author can't vote"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:502
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:499
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:20
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:39
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:51
@@ -558,7 +558,7 @@ msgid "Access denied"
 msgstr ""
 
 #, elixir-autogen, elixir-format
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:334
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:331
 msgid "This API requires an authenticated user"
 msgstr ""
 
