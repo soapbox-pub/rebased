@@ -11,6 +11,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
+  @impl true
+  def history_awareness, do: :auto
+
   defp do_extract({:a, attrs, _}, acc) do
     if Enum.find(attrs, fn {name, value} ->
          name == "class" && value in ["mention", "u-url mention", "mention u-url"]
@@ -74,11 +77,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent do
   @impl true
   def filter(
         %{
-          "type" => "Create",
+          "type" => type,
           "object" => %{"type" => "Note", "to" => to, "inReplyTo" => in_reply_to}
         } = object
       )
-      when is_list(to) and is_binary(in_reply_to) do
+      when type in ["Create", "Update"] and is_list(to) and is_binary(in_reply_to) do
     # image-only posts from pleroma apparently reach this MRF without the content field
     content = object["object"]["content"] || ""
 

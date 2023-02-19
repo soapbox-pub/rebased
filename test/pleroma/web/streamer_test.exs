@@ -442,6 +442,31 @@ defmodule Pleroma.Web.StreamerTest do
                "state" => "follow_accept"
              } = Jason.decode!(payload)
     end
+
+    test "it streams edits in the 'user' stream", %{user: user, token: oauth_token} do
+      sender = insert(:user)
+      {:ok, _, _, _} = CommonAPI.follow(user, sender)
+
+      {:ok, activity} = CommonAPI.post(sender, %{status: "hey"})
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew"})
+      create = Pleroma.Activity.get_create_by_object_ap_id_with_object(activity.object.data["id"])
+
+      assert_receive {:render_with_user, _, "status_update.json", ^create}
+      refute Streamer.filtered_by_user?(user, edited)
+    end
+
+    test "it streams own edits in the 'user' stream", %{user: user, token: oauth_token} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
+
+      Streamer.get_topic_and_add_socket("user", user, oauth_token)
+      {:ok, edited} = CommonAPI.update(user, activity, %{status: "mew mew"})
+      create = Pleroma.Activity.get_create_by_object_ap_id_with_object(activity.object.data["id"])
+
+      assert_receive {:render_with_user, _, "status_update.json", ^create}
+      refute Streamer.filtered_by_user?(user, edited)
+    end
   end
 
   describe "public streams" do
@@ -483,6 +508,54 @@ defmodule Pleroma.Web.StreamerTest do
       activity_id = activity.id
       assert_receive {:text, event}
       assert %{"event" => "delete", "payload" => ^activity_id} = Jason.decode!(event)
+    end
+
+    test "it streams edits in the 'public' stream" do
+      sender = insert(:user)
+
+      Streamer.get_topic_and_add_socket("public", nil, nil)
+      {:ok, activity} = CommonAPI.post(sender, %{status: "hey"})
+      assert_receive {:text, _}
+
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew"})
+
+      edited = Pleroma.Activity.normalize(edited)
+
+      %{id: activity_id} = Pleroma.Activity.get_create_by_object_ap_id(edited.object.data["id"])
+
+      assert_receive {:text, event}
+      assert %{"event" => "status.update", "payload" => payload} = Jason.decode!(event)
+      assert %{"id" => ^activity_id} = Jason.decode!(payload)
+      refute Streamer.filtered_by_user?(sender, edited)
+    end
+
+    test "it streams multiple edits in the 'public' stream correctly" do
+      sender = insert(:user)
+
+      Streamer.get_topic_and_add_socket("public", nil, nil)
+      {:ok, activity} = CommonAPI.post(sender, %{status: "hey"})
+      assert_receive {:text, _}
+
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew"})
+
+      edited = Pleroma.Activity.normalize(edited)
+
+      %{id: activity_id} = Pleroma.Activity.get_create_by_object_ap_id(edited.object.data["id"])
+
+      assert_receive {:text, event}
+      assert %{"event" => "status.update", "payload" => payload} = Jason.decode!(event)
+      assert %{"id" => ^activity_id} = Jason.decode!(payload)
+      refute Streamer.filtered_by_user?(sender, edited)
+
+      {:ok, edited} = CommonAPI.update(sender, activity, %{status: "mew mew 2"})
+
+      edited = Pleroma.Activity.normalize(edited)
+
+      %{id: activity_id} = Pleroma.Activity.get_create_by_object_ap_id(edited.object.data["id"])
+      assert_receive {:text, event}
+      assert %{"event" => "status.update", "payload" => payload} = Jason.decode!(event)
+      assert %{"id" => ^activity_id, "content" => "mew mew 2"} = Jason.decode!(payload)
+      refute Streamer.filtered_by_user?(sender, edited)
     end
   end
 
@@ -812,6 +885,107 @@ defmodule Pleroma.Web.StreamerTest do
 
       assert %{"last_status" => last_status} = Jason.decode!(received_payload)
       assert last_status["id"] == to_string(create_activity.id)
+    end
+  end
+
+  describe "stop streaming if token got revoked" do
+    setup do
+      child_proc = fn start, finalize ->
+        fn ->
+          start.()
+
+          receive do
+            {StreamerTest, :ready} ->
+              assert_receive {:render_with_user, _, "update.json", _}
+
+              receive do
+                {StreamerTest, :revoked} -> finalize.()
+              end
+          end
+        end
+      end
+
+      starter = fn user, token ->
+        fn -> Streamer.get_topic_and_add_socket("user", user, token) end
+      end
+
+      hit = fn -> assert_receive :close end
+      miss = fn -> refute_receive :close end
+
+      send_all = fn tasks, thing -> Enum.each(tasks, &send(&1.pid, thing)) end
+
+      %{
+        child_proc: child_proc,
+        starter: starter,
+        hit: hit,
+        miss: miss,
+        send_all: send_all
+      }
+    end
+
+    test "do not revoke other tokens", %{
+      child_proc: child_proc,
+      starter: starter,
+      hit: hit,
+      miss: miss,
+      send_all: send_all
+    } do
+      %{user: user, token: token} = oauth_access(["read"])
+      %{token: token2} = oauth_access(["read"], user: user)
+      %{user: user2, token: user2_token} = oauth_access(["read"])
+
+      post_user = insert(:user)
+      CommonAPI.follow(user, post_user)
+      CommonAPI.follow(user2, post_user)
+
+      tasks = [
+        Task.async(child_proc.(starter.(user, token), hit)),
+        Task.async(child_proc.(starter.(user, token2), miss)),
+        Task.async(child_proc.(starter.(user2, user2_token), miss))
+      ]
+
+      {:ok, _} =
+        CommonAPI.post(post_user, %{
+          status: "hi"
+        })
+
+      send_all.(tasks, {StreamerTest, :ready})
+
+      Pleroma.Web.OAuth.Token.Strategy.Revoke.revoke(token)
+
+      send_all.(tasks, {StreamerTest, :revoked})
+
+      Enum.each(tasks, &Task.await/1)
+    end
+
+    test "revoke all streams for this token", %{
+      child_proc: child_proc,
+      starter: starter,
+      hit: hit,
+      send_all: send_all
+    } do
+      %{user: user, token: token} = oauth_access(["read"])
+
+      post_user = insert(:user)
+      CommonAPI.follow(user, post_user)
+
+      tasks = [
+        Task.async(child_proc.(starter.(user, token), hit)),
+        Task.async(child_proc.(starter.(user, token), hit))
+      ]
+
+      {:ok, _} =
+        CommonAPI.post(post_user, %{
+          status: "hi"
+        })
+
+      send_all.(tasks, {StreamerTest, :ready})
+
+      Pleroma.Web.OAuth.Token.Strategy.Revoke.revoke(token)
+
+      send_all.(tasks, {StreamerTest, :revoked})
+
+      Enum.each(tasks, &Task.await/1)
     end
   end
 end

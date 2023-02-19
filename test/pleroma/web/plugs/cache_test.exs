@@ -179,4 +179,22 @@ defmodule Pleroma.Web.Plugs.CacheTest do
              |> send_resp(:im_a_teapot, "🥤")
              |> sent_resp()
   end
+
+  test "ignores if skip_cache is assigned" do
+    assert @miss_resp ==
+             conn(:get, "/")
+             |> assign(:skip_cache, true)
+             |> Cache.call(%{query_params: false, ttl: nil})
+             |> put_resp_content_type("cofe/hot")
+             |> send_resp(:ok, "cofe")
+             |> sent_resp()
+
+    assert @miss_resp ==
+             conn(:get, "/")
+             |> assign(:skip_cache, true)
+             |> Cache.call(%{query_params: false, ttl: nil})
+             |> put_resp_content_type("cofe/hot")
+             |> send_resp(:ok, "cofe")
+             |> sent_resp()
+  end
 end

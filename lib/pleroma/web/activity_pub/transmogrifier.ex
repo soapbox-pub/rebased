@@ -203,13 +203,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && MIME.extensions(url["mediaType"]) != [] ->
+            is_map(url) && url =~ Pleroma.Constants.mime_regex() ->
               url["mediaType"]
 
-            is_bitstring(data["mediaType"]) && MIME.extensions(data["mediaType"]) != [] ->
+            is_bitstring(data["mediaType"]) && data["mediaType"] =~ Pleroma.Constants.mime_regex() ->
               data["mediaType"]
 
-            is_bitstring(data["mimeType"]) && MIME.extensions(data["mimeType"]) != [] ->
+            is_bitstring(data["mimeType"]) && data["mimeType"] =~ Pleroma.Constants.mime_regex() ->
               data["mimeType"]
 
             true ->
@@ -687,6 +687,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type
+    |> maybe_process_history
+  end
+
+  defp maybe_process_history(%{"formerRepresentations" => %{"orderedItems" => history}} = object) do
+    processed_history =
+      Enum.map(
+        history,
+        fn
+          item when is_map(item) -> prepare_object(item)
+          item -> item
+        end
+      )
+
+    put_in(object, ["formerRepresentations", "orderedItems"], processed_history)
+  end
+
+  defp maybe_process_history(object) do
+    object
   end
 
   #  @doc
@@ -700,6 +718,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object_id
       |> Object.normalize(fetch: false)
       |> Map.get(:data)
+      |> prepare_object
+
+    data =
+      data
+      |> Map.put("object", object)
+      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.delete("bcc")
+
+    {:ok, data}
+  end
+
+  def prepare_outgoing(%{"type" => "Update", "object" => %{"type" => objtype} = object} = data)
+      when objtype in Pleroma.Constants.updatable_object_types() do
+    object =
+      object
       |> prepare_object
 
     data =

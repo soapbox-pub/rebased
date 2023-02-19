@@ -6,19 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+### Added
+
+### Fixed
+
+- rel="me" was missing its cache
+
+### Removed
+
+## 2.5.0 - 2022-12-23
+
 ### Removed
 
 - MastoFE
+- Quack, the logging backend that pushes to Slack channels
 
 ### Changed
+- **Breaking:** Elixir >=1.11 is now required (was >= 1.9)
 - Allow users to remove their emails if instance does not need email to register
+- Uploadfilter `Pleroma.Upload.Filter.Exiftool` has been renamed to `Pleroma.Upload.Filter.Exiftool.StripLocation`
+- **Breaking**: `/api/v1/pleroma/backups` endpoints now requires `read:backups` scope instead of `read:accounts`
+- Updated the recommended pleroma.vcl configuration for Varnish to target Varnish 7.0+
+- Set timeout values for Oban queues. The default is infinity and some operations may not time out on their own.
+- Delete activities are federated at lowest priority
+- CSP now includes wasm-unsafe-eval
 
 ### Added
 - `activeMonth` and `activeHalfyear` fields in NodeInfo usage.users object
 - Experimental support for Finch. Put `config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}` in your secrets file to use it. Reverse Proxy will still use Hackney.
 - `ForceMentionsInPostContent` MRF policy
-- AdminAPI: allow moderators to manage reports, users, invites, and custom emojis
-- AdminAPI: restrict moderators to access sensitive data: change user credentials, get password reset token, read private statuses and chats, etc
 - PleromaAPI: Add remote follow API endpoint at `POST /api/v1/pleroma/remote_interaction`
 - MastoAPI: Add `GET /api/v1/accounts/lookup`
 - MastoAPI: Profile Directory support
@@ -30,6 +48,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: Add `birthday_required` and `birthday_min_age` settings to provide a way to require users to enter their birth date.
 - PleromaAPI: Add `GET /api/v1/pleroma/birthdays` API endpoint
 - Make backend-rendered pages translatable. This includes emails. Pages returned as a HTTP response are translated using the language specified in the `userLanguage` cookie, or the `Accept-Language` header. Emails are translated using the `language` field when registering. This language can be changed by `PATCH /api/v1/accounts/update_credentials` with the `language` field.
+- Add fine grained options to provide privileges to moderators and admins (e.g. delete messages, manage reports...)
+- Uploadfilter `Pleroma.Upload.Filter.Exiftool.ReadDescription` returns description values to the FE so they can pre fill the image description field
+- Added move account API
+- Enable remote users to interact with posts
+- Possibility to discover users like `user@example.org`, while Pleroma is working on `pleroma.example.org`. Additional configuration required.
 
 ### Fixed
 - Subscription(Bell) Notifications: Don't create from Pipeline Ingested replies
@@ -45,8 +68,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed crash when pinned_objects is nil
 - Fixed slow timelines when there are a lot of deactivated users
 - Fixed account deletion API
+- Fixed lowercase HTTP HEAD method in the Media Proxy Preview code
+- Removed useless notification call on Delete activities
+- Improved performance for filtering out deactivated and invisible users
+- RSS and Atom feeds for users work again
+- TwitterCard meta tags conformance
 
-### Removed
+## 2.4.5 - 2022-11-27
+
+## Fixed
+- Image `class` attributes not being scrubbed, allowing to exploit frontend special classes [!3792](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3792)
+- Delete report notifs when demoting from superuser [!3642](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3642)
+- Validate `mediaType` only by it's format rather than using a list [!3597](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3597)
+- Pagination: Make mutes and blocks lists behave the same as other lists [!3693](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3693)
+- Compatibility with Elixir 1.14 [!3740](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3740)
+- Frontend installer: FediFE build URL [!3736](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3736)
+- Streaming: Don't stream ChatMessage into the home timeline [!3738](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3738)
+- Streaming: Stream local-only posts in the local timeline [!3738](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3738)
+- Signatures: Fix `keyId` lookup for GoToSocial [!3725](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3725)
+- Validator: Fix `replies` handling for GoToSocial [!3725](https://git.pleroma.social/pleroma/pleroma/-/merge_requests/3725)
+
+## 2.4.4 - 2022-08-19
+
+### Security
+- Streaming API sessions will now properly disconnect if the corresponding token is revoked
+
+## 2.4.3 - 2022-05-06
+
+### Security
+- Private `/objects/` and `/activities/` leaking if cached by authenticated user
+- SweetXML library DTD bomb
 
 ## 2.4.2 - 2022-01-10
 
@@ -91,6 +142,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improved Twittercard and OpenGraph meta tag generation including thumbnails and image dimension metadata when available.
 - AdminAPI: sort users so the newest are at the top.
 - ActivityPub Client-to-Server(C2S): Limitation on the type of Activity/Object are lifted as they are now passed through ObjectValidators
+- MRF (`AntiFollowbotPolicy`): Bot accounts are now also considered followbots. Users can still allow bots to follow them by first following the bot.
 
 ### Added
 

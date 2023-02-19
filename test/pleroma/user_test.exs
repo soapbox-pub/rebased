@@ -5,7 +5,6 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -13,7 +12,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
@@ -311,7 +310,7 @@ defmodule Pleroma.UserTest do
   describe "unfollow/2" do
     setup do: clear_config([:instance, :external_user_synchronization])
 
-    test "unfollow with syncronizes external user" do
+    test "unfollow with synchronizes external user" do
       clear_config([:instance, :external_user_synchronization], true)
 
       followed =
@@ -473,12 +472,7 @@ defmodule Pleroma.UserTest do
               reject_deletes: []
             )
 
-    setup do:
-            clear_config(:mrf,
-              policies: [
-                Pleroma.Web.ActivityPub.MRF.SimplePolicy
-              ]
-            )
+    setup do: clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
 
     test "it sends a welcome chat message when Simple policy applied to local instance" do
       clear_config([:mrf_simple, :media_nsfw], [{"localhost", ""}])
@@ -591,6 +585,21 @@ defmodule Pleroma.UserTest do
       refute_email_sent()
     end
 
+    test "it works when the registering user does not provide an email" do
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([:instance, :account_approval_required], true)
+
+      cng = User.register_changeset(%User{}, @full_user_data |> Map.put(:email, ""))
+
+      # The user is still created
+      assert {:ok, %User{nickname: "nick"}} = User.register(cng)
+
+      # No emails are sent
+      ObanHelpers.perform_all()
+      refute_email_sent()
+    end
+
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       clear_config([:instance, :account_activation_required], true)
 
@@ -618,13 +627,31 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
+      clear_config([User, :restricted_nicknames], ["about"])
       [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
-      assert is_bitstring(restricted_name)
+      assert is_binary(restricted_name)
 
       params =
         @full_user_data
         |> Map.put(:nickname, restricted_name)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+
+    test "it is case-insensitive when restricting nicknames" do
+      clear_config([User, :restricted_nicknames], ["about"])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
+
+      assert is_binary(restricted_name)
+
+      restricted_upcase_name = String.upcase(restricted_name)
+
+      params =
+        @full_user_data
+        |> Map.put(:nickname, restricted_upcase_name)
 
       changeset = User.register_changeset(%User{}, params)
 
@@ -636,6 +663,11 @@ defmodule Pleroma.UserTest do
 
       # Block with match
       params = Map.put(@full_user_data, :email, "troll@trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Block with case-insensitive match
+      params = Map.put(@full_user_data, :email, "troll@TrOlLing.wOrld")
       changeset = User.register_changeset(%User{}, params)
       refute changeset.valid?
 
@@ -654,14 +686,14 @@ defmodule Pleroma.UserTest do
       assert changeset.valid?
     end
 
-    test "it sets the password_hash and ap_id" do
+    test "it sets the password_hash, ap_id, private key and followers collection address" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 
       assert changeset.valid?
 
       assert is_binary(changeset.changes[:password_hash])
+      assert is_binary(changeset.changes[:keys])
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
-
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
 
@@ -826,6 +858,123 @@ defmodule Pleroma.UserTest do
       {:ok, fetched_user} = User.get_or_fetch(ap_id)
       freshed_user = refresh_record(user)
       assert freshed_user == fetched_user
+    end
+
+    test "gets an existing user by nickname starting with http" do
+      user = insert(:user, nickname: "httpssome")
+      {:ok, fetched_user} = User.get_or_fetch("httpssome")
+
+      assert user == fetched_user
+    end
+  end
+
+  describe "get_or_fetch/1 remote users with tld, while BE is runned on subdomain" do
+    setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
+
+    test "for mastodon" do
+      Tesla.Mock.mock(fn
+        %{url: "https://example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 302,
+            headers: [{"location", "https://sub.example.com/.well-known/host-meta"}]
+          }
+
+        %{url: "https://sub.example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/masto-host-meta.xml"
+              |> File.read!()
+              |> String.replace("{{domain}}", "sub.example.com")
+          }
+
+        %{url: "https://sub.example.com/.well-known/webfinger?resource=acct:a@example.com"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/masto-webfinger.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{subdomain}}", "sub.example.com"),
+            headers: [{"content-type", "application/jrd+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/masto-user.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "sub.example.com"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "sub.example.com")
+              |> String.replace("{{nickname}}", "a"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      ap_id = "a@example.com"
+      {:ok, fetched_user} = User.get_or_fetch(ap_id)
+
+      assert fetched_user.ap_id == "https://sub.example.com/users/a"
+      assert fetched_user.nickname == "a@example.com"
+    end
+
+    test "for pleroma" do
+      Tesla.Mock.mock(fn
+        %{url: "https://example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 302,
+            headers: [{"location", "https://sub.example.com/.well-known/host-meta"}]
+          }
+
+        %{url: "https://sub.example.com/.well-known/host-meta"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/pleroma-host-meta.xml"
+              |> File.read!()
+              |> String.replace("{{domain}}", "sub.example.com")
+          }
+
+        %{url: "https://sub.example.com/.well-known/webfinger?resource=acct:a@example.com"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/pleroma-webfinger.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "example.com")
+              |> String.replace("{{subdomain}}", "sub.example.com"),
+            headers: [{"content-type", "application/jrd+json"}]
+          }
+
+        %{url: "https://sub.example.com/users/a"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "test/fixtures/webfinger/pleroma-user.json"
+              |> File.read!()
+              |> String.replace("{{nickname}}", "a")
+              |> String.replace("{{domain}}", "sub.example.com"),
+            headers: [{"content-type", "application/activity+json"}]
+          }
+      end)
+
+      ap_id = "a@example.com"
+      {:ok, fetched_user} = User.get_or_fetch(ap_id)
+
+      assert fetched_user.ap_id == "https://sub.example.com/users/a"
+      assert fetched_user.nickname == "a@example.com"
     end
   end
 
@@ -1123,7 +1272,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       muted_user = insert(:user)
 
-      {:ok, _user_relationships} = User.mute(user, muted_user, %{expires_in: 60})
+      {:ok, _user_relationships} = User.mute(user, muted_user, %{duration: 60})
       assert User.mutes?(user, muted_user)
 
       worker = Pleroma.Workers.MuteExpireWorker
@@ -1883,31 +2032,82 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "superuser?/1" do
+  describe "privileged?/1" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:cofe, :suya])
+      clear_config([:instance, :moderator_privileges], [:cofe, :suya])
+    end
+
     test "returns false for unprivileged users" do
       user = insert(:user, local: true)
 
-      refute User.superuser?(user)
+      refute User.privileged?(user, :cofe)
     end
 
     test "returns false for remote users" do
       user = insert(:user, local: false)
       remote_admin_user = insert(:user, local: false, is_admin: true)
 
-      refute User.superuser?(user)
-      refute User.superuser?(remote_admin_user)
+      refute User.privileged?(user, :cofe)
+      refute User.privileged?(remote_admin_user, :cofe)
     end
 
-    test "returns true for local moderators" do
+    test "returns true for local moderators if, and only if, they are privileged" do
       user = insert(:user, local: true, is_moderator: true)
 
-      assert User.superuser?(user)
+      assert User.privileged?(user, :cofe)
+
+      clear_config([:instance, :moderator_privileges], [])
+
+      refute User.privileged?(user, :cofe)
     end
 
-    test "returns true for local admins" do
+    test "returns true for local admins if, and only if, they are privileged" do
       user = insert(:user, local: true, is_admin: true)
 
-      assert User.superuser?(user)
+      assert User.privileged?(user, :cofe)
+
+      clear_config([:instance, :admin_privileges], [])
+
+      refute User.privileged?(user, :cofe)
+    end
+  end
+
+  describe "privileges/1" do
+    setup do
+      clear_config([:instance, :moderator_privileges], [:cofe, :only_moderator])
+      clear_config([:instance, :admin_privileges], [:cofe, :only_admin])
+    end
+
+    test "returns empty list for users without roles" do
+      user = insert(:user, local: true)
+
+      assert [] == User.privileges(user)
+    end
+
+    test "returns list of privileges for moderators" do
+      moderator = insert(:user, is_moderator: true, local: true)
+
+      assert [:cofe, :only_moderator] == User.privileges(moderator) |> Enum.sort()
+    end
+
+    test "returns list of privileges for admins" do
+      admin = insert(:user, is_admin: true, local: true)
+
+      assert [:cofe, :only_admin] == User.privileges(admin) |> Enum.sort()
+    end
+
+    test "returns list of unique privileges for users who are both moderator and admin" do
+      moderator_admin = insert(:user, is_moderator: true, is_admin: true, local: true)
+
+      assert [:cofe, :only_admin, :only_moderator] ==
+               User.privileges(moderator_admin) |> Enum.sort()
+    end
+
+    test "returns empty list for remote users" do
+      remote_moderator_admin = insert(:user, is_moderator: true, is_admin: true, local: false)
+
+      assert [] == User.privileges(remote_moderator_admin)
     end
   end
 
@@ -1950,13 +2150,77 @@ defmodule Pleroma.UserTest do
       assert User.visible_for(user, other_user) == :visible
     end
 
-    test "returns true when the account is unconfirmed and being viewed by a privileged account (confirmation required)" do
+    test "returns true when the account is unconfirmed and being viewed by a privileged account (privilege :users_manage_activation_state, confirmation required)" do
       clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :admin_privileges], [:users_manage_activation_state])
 
       user = insert(:user, local: true, is_confirmed: false)
       other_user = insert(:user, local: true, is_admin: true)
 
       assert User.visible_for(user, other_user) == :visible
+
+      clear_config([:instance, :admin_privileges], [])
+
+      refute User.visible_for(user, other_user) == :visible
+    end
+  end
+
+  describe "all_users_with_privilege/1" do
+    setup do
+      %{
+        user: insert(:user, local: true, is_admin: false, is_moderator: false),
+        moderator_user: insert(:user, local: true, is_admin: false, is_moderator: true),
+        admin_user: insert(:user, local: true, is_admin: true, is_moderator: false),
+        admin_moderator_user: insert(:user, local: true, is_admin: true, is_moderator: true),
+        remote_user: insert(:user, local: false, is_admin: true, is_moderator: true),
+        non_active_user:
+          insert(:user, local: true, is_admin: true, is_moderator: true, is_active: false)
+      }
+    end
+
+    test "doesn't return any users when there are no privileged roles" do
+      clear_config([:instance, :admin_privileges], [])
+      clear_config([:instance, :moderator_privileges], [])
+
+      assert [] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+    end
+
+    test "returns moderator users if they are privileged", %{
+      moderator_user: moderator_user,
+      admin_moderator_user: admin_moderator_user
+    } do
+      clear_config([:instance, :admin_privileges], [])
+      clear_config([:instance, :moderator_privileges], [:cofe])
+
+      assert [_, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+      assert moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns admin users if they are privileged", %{
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user
+    } do
+      clear_config([:instance, :admin_privileges], [:cofe])
+      clear_config([:instance, :moderator_privileges], [])
+
+      assert [_, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+      assert admin_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
+    end
+
+    test "returns admin and moderator users if they are both privileged", %{
+      moderator_user: moderator_user,
+      admin_user: admin_user,
+      admin_moderator_user: admin_moderator_user
+    } do
+      clear_config([:instance, :admin_privileges], [:cofe])
+      clear_config([:instance, :moderator_privileges], [:cofe])
+
+      assert [_, _, _] = User.Query.build(%{is_privileged: :cofe}) |> Repo.all()
+      assert admin_user in User.all_users_with_privilege(:cofe)
+      assert moderator_user in User.all_users_with_privilege(:cofe)
+      assert admin_moderator_user in User.all_users_with_privilege(:cofe)
     end
   end
 
@@ -2108,21 +2372,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "ensure_keys_present" do
-    test "it creates keys for a user and stores them in info" do
-      user = insert(:user)
-      refute is_binary(user.keys)
-      {:ok, user} = User.ensure_keys_present(user)
-      assert is_binary(user.keys)
-    end
-
-    test "it doesn't create keys if there already are some" do
-      user = insert(:user, keys: "xxx")
-      {:ok, user} = User.ensure_keys_present(user)
-      assert user.keys == "xxx"
-    end
-  end
-
   describe "get_ap_ids_by_nicknames" do
     test "it returns a list of AP ids for a given set of nicknames" do
       user = insert(:user)
@@ -2211,26 +2460,6 @@ defmodule Pleroma.UserTest do
       assert {:ok, user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
     end
-
-    test "removes report notifs when user isn't superuser any more" do
-      report_activity = insert(:report_activity)
-      user = insert(:user, is_moderator: true, is_admin: true)
-      {:ok, _} = Notification.create_notifications(report_activity)
-
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
-
-      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
-      # is still superuser because still admin
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
-
-      {:ok, user} = user |> User.admin_api_update(%{is_moderator: true, is_admin: false})
-      # is still superuser because still moderator
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user)
-
-      {:ok, user} = user |> User.admin_api_update(%{is_moderator: false})
-      # is not a superuser any more
-      assert [] = Notification.for_user(user)
-    end
   end
 
   describe "following/followers synchronization" do
@@ -2257,7 +2486,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 1
     end
 
-    test "syncronizes the counters with the remote instance for the followed when enabled" do
+    test "synchronizes the counters with the remote instance for the followed when enabled" do
       clear_config([:instance, :external_user_synchronization], false)
 
       user = insert(:user)
@@ -2279,7 +2508,7 @@ defmodule Pleroma.UserTest do
       assert other_user.follower_count == 437
     end
 
-    test "syncronizes the counters with the remote instance for the follower when enabled" do
+    test "synchronizes the counters with the remote instance for the follower when enabled" do
       clear_config([:instance, :external_user_synchronization], false)
 
       user = insert(:user)
@@ -2577,6 +2806,82 @@ defmodule Pleroma.UserTest do
     %{id: id} = insert(:note_activity, user: user)
     %{object: %{data: %{"id" => object_id}}} = Activity.get_by_id_with_object(id)
     object_id
+  end
+
+  describe "add_alias/2" do
+    test "should add alias for another user" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user_updated} = user |> User.add_alias(user2)
+
+      assert user_updated.also_known_as |> length() == 1
+      assert user2.ap_id in user_updated.also_known_as
+    end
+
+    test "should add multiple aliases" do
+      user = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+      assert {:ok, user_updated} = user |> User.add_alias(user3)
+
+      assert user_updated.also_known_as |> length() == 2
+      assert user2.ap_id in user_updated.also_known_as
+      assert user3.ap_id in user_updated.also_known_as
+    end
+
+    test "should not add duplicate aliases" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      assert {:ok, user} = user |> User.add_alias(user2)
+
+      assert {:ok, user_updated} = user |> User.add_alias(user2)
+
+      assert user_updated.also_known_as |> length() == 1
+      assert user2.ap_id in user_updated.also_known_as
+    end
+  end
+
+  describe "alias_users/1" do
+    test "should get aliases for a user" do
+      user = insert(:user)
+      user2 = insert(:user, also_known_as: [user.ap_id])
+
+      aliases = user2 |> User.alias_users()
+
+      assert aliases |> length() == 1
+
+      alias_user = aliases |> Enum.at(0)
+
+      assert alias_user.ap_id == user.ap_id
+    end
+  end
+
+  describe "delete_alias/2" do
+    test "should delete existing alias" do
+      user = insert(:user)
+      user2 = insert(:user, also_known_as: [user.ap_id])
+
+      assert {:ok, user_updated} = user2 |> User.delete_alias(user)
+
+      assert user_updated.also_known_as == []
+    end
+
+    test "should report error on non-existing alias" do
+      user = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user, also_known_as: [user.ap_id])
+
+      assert {:error, :no_such_alias} = user3 |> User.delete_alias(user2)
+
+      user3_updated = User.get_cached_by_ap_id(user3.ap_id)
+
+      assert user3_updated.also_known_as |> length() == 1
+      assert user.ap_id in user3_updated.also_known_as
+    end
   end
 
   describe "account endorsements" do

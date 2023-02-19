@@ -133,7 +133,11 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
   defp files_object do
     %Schema{
       type: :object,
-      additionalProperties: %Schema{type: :string},
+      additionalProperties: %Schema{
+        type: :string,
+        description: "Filename of the emoji",
+        extensions: %{"x-additionalPropertiesName": "Emoji name"}
+      },
       description: "Object with emoji names as keys and filenames as values"
     }
   end

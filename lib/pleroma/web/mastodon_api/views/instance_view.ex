@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       uri: Pleroma.Web.Endpoint.url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
+      short_description: Keyword.get(instance, :short_description),
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
@@ -26,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       thumbnail:
         URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
         |> to_string,
-      languages: ["en"],
+      languages: Keyword.get(instance, :languages, ["en"]),
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
       # Extra (not present in Mastodon):
@@ -47,7 +48,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           federation: federation(),
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats]),
-          privileged_staff: Config.get([:instance, :privileged_staff]),
           birthday_required: Config.get([:instance, :birthday_required]),
           birthday_min_age: Config.get([:instance, :birthday_min_age])
         },
@@ -68,6 +68,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
+      "editing",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -97,7 +98,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       end,
       if Config.get([:instance, :profile_directory]) do
         "profile_directory"
-      end
+      end,
+      "pleroma:get:main/ostatus"
     ]
     |> Enum.filter(& &1)
   end

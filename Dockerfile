@@ -1,18 +1,22 @@
-FROM elixir:1.9-alpine as build
+ARG ELIXIR_VER=1.11.4
+ARG ERLANG_VER=24.2.1
+ARG ALPINE_VER=3.17.0
+
+FROM hexpm/elixir:${ELIXIR_VER}-erlang-${ERLANG_VER}-alpine-${ALPINE_VER} as build
 
 COPY . .
 
 ENV MIX_ENV=prod
 
 RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
-	echo "import Mix.Config" > config/prod.secret.exs &&\
+	echo "import Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
 	mix deps.get --only prod &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine:3.14
+FROM alpine:${ALPINE_VER}
 
 ARG BUILD_DATE
 ARG VCS_REF

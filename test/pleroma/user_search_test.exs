@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserSearchTest do
-  alias Pleroma.Repo
   alias Pleroma.User
   use Pleroma.DataCase
 
@@ -60,6 +59,14 @@ defmodule Pleroma.UserSearchTest do
     test "excludes invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})
+
+      [found_user] = User.search("john")
+      assert found_user.id == user.id
+    end
+
+    test "excludes deactivated users from results" do
+      user = insert(:user, %{nickname: "john t1000"})
+      insert(:user, %{is_active: false, nickname: "john t800"})
 
       [found_user] = User.search("john")
       assert found_user.id == user.id

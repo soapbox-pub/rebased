@@ -4,8 +4,8 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.4.51"),
-      elixir: "~> 1.9",
+      version: version("2.5.50"),
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
@@ -13,8 +13,7 @@ defmodule Pleroma.Mixfile do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: ["coveralls.html": :test],
+      test_coverage: [tool: :covertool, summary: true],
       # Docs
       name: "Pleroma",
       homepage_url: "https://pleroma.social/",
@@ -77,10 +76,10 @@ defmodule Pleroma.Mixfile do
         :logger,
         :runtime_tools,
         :comeonin,
-        :quack,
         :fast_sanitize,
         :os_mon,
-        :ssl
+        :ssl,
+        :esshd
       ],
       included_applications: [:ex_syslogger]
     ]
@@ -115,15 +114,19 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.5.5"},
+      {:phoenix, "~> 1.6.0"},
+      {:phoenix_ecto, "~> 4.4.0"},
+      {:ecto_enum, "~> 1.4"},
+      {:postgrex, ">= 0.0.0"},
+      {:phoenix_html, "~> 3.1"},
+      {:phoenix_live_reload, "~> 1.3.3", only: :dev},
+      {:phoenix_live_view, "~> 0.17.1"},
+      {:phoenix_live_dashboard, "~> 0.6.2"},
+      {:telemetry_metrics, "~> 0.6.1"},
+      {:telemetry_poller, "~> 1.0"},
       {:tzdata, "~> 1.0.3"},
       {:plug_cowboy, "~> 2.3"},
-      {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_ecto, "~> 4.0"},
-      {:ecto_enum, "~> 1.4"},
-      {:ecto_sql, "~> 3.6.2"},
-      {:postgrex, ">= 0.15.5"},
-      {:oban, "~> 2.3.4"},
+      {:oban, "~> 2.13"},
       {:gettext,
        git: "https://github.com/tusooa/gettext.git",
        ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
@@ -132,7 +135,6 @@ defmodule Pleroma.Mixfile do
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
       {:html_entities, "~> 0.5", override: true},
-      {:phoenix_html, "~> 3.1", override: true},
       {:calendar, "~> 1.0"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
@@ -145,29 +147,27 @@ defmodule Pleroma.Mixfile do
       {:mogrify, "~> 0.9.1"},
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
-      {:sweet_xml, "~> 0.6.6"},
-      {:earmark, "~> 1.4.15"},
+      {:sweet_xml, "~> 0.7.2"},
+      {:earmark, "~> 1.4.22"},
       {:bbcode_pleroma, "~> 0.2.0"},
-      {:crypt,
-       git: "https://github.com/msantos/crypt.git",
-       ref: "f75cd55325e33cbea198fb41fe41871392f8fb76"},
+      {:crypt, "~> 1.0"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3.1"},
       {:swoosh, "~> 1.0"},
-      {:phoenix_swoosh, "~> 0.3"},
+      {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.5.2"},
+      {:linkify, "~> 0.5.3"},
       {:http_signatures, "~> 0.1.1"},
-      {:telemetry, "~> 0.3"},
+      {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
       {:prometheus, "~> 4.6"},
       {:prometheus_ex,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/prometheus.ex.git",
-       ref: "a4e9beb3c1c479d14b352fd9d6dd7b1f6d7deee5",
+       git: "https://github.com/lanodan/prometheus.ex.git",
+       branch: "fix/elixir-1.14",
        override: true},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
@@ -177,7 +177,6 @@ defmodule Pleroma.Mixfile do
        branch: "no-logging"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
-      {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
@@ -194,9 +193,8 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
-      {:eblurhash, "~> 1.1.0"},
-      {:open_api_spex, "~> 3.10"},
-      {:phoenix_live_dashboard, "~> 0.6.2"},
+      {:eblurhash, "~> 1.2.2"},
+      {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
 
       # indirect dependency version override
@@ -205,13 +203,12 @@ defmodule Pleroma.Mixfile do
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:ex_machina, "~> 2.4", only: :test},
-      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.5", only: :test},
-      # temporary downgrade for excoveralls, hackney until hackney max_connections bug will be fixed
-      {:excoveralls, "0.12.3", only: :test},
+      {:covertool, "~> 2.0", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
+      {:websockex, "~> 0.4.3", only: :test}
     ] ++ oauth_deps()
   end
 

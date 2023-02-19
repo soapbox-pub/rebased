@@ -60,13 +60,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
            |> File.exists?()
   end
 
-  test "reject shortcode", %{message: message} do
+  test "reject regex shortcode", %{message: message} do
     refute "firedfox" in installed()
 
     clear_config(:mrf_steal_emoji,
       hosts: ["example.org"],
       size_limit: 284_468,
       rejected_shortcodes: [~r/firedfox/]
+    )
+
+    assert {:ok, _message} = StealEmojiPolicy.filter(message)
+
+    refute "firedfox" in installed()
+  end
+
+  test "reject string shortcode", %{message: message} do
+    refute "firedfox" in installed()
+
+    clear_config(:mrf_steal_emoji,
+      hosts: ["example.org"],
+      size_limit: 284_468,
+      rejected_shortcodes: ["firedfox"]
     )
 
     assert {:ok, _message} = StealEmojiPolicy.filter(message)

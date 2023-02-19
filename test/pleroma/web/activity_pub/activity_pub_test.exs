@@ -554,7 +554,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["ok"] == data["ok"]
       assert activity.data["id"] == given_id
       assert activity.data["context"] == "blabla"
-      assert activity.data["context_id"]
     end
 
     test "adds a context when none is there" do
@@ -576,8 +575,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
-      assert activity.data["context_id"]
-      assert object.data["context_id"]
     end
 
     test "adds an id to a given object if it lacks one and is a note and inserts it to the object database" do
@@ -1507,6 +1504,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       reporter_ap_id = reporter.ap_id
       target_ap_id = target_account.ap_id
       activity_ap_id = activity.data["id"]
+      object_ap_id = activity.object.data["id"]
 
       activity_with_object = Activity.get_by_ap_id_with_object(activity_ap_id)
 
@@ -1518,6 +1516,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
          reported_activity: activity,
          content: content,
          activity_ap_id: activity_ap_id,
+         object_ap_id: object_ap_id,
          activity_with_object: activity_with_object,
          reporter_ap_id: reporter_ap_id,
          target_ap_id: target_ap_id
@@ -1531,7 +1530,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
            target_account: target_account,
            reported_activity: reported_activity,
            content: content,
-           activity_ap_id: activity_ap_id,
+           object_ap_id: object_ap_id,
            activity_with_object: activity_with_object,
            reporter_ap_id: reporter_ap_id,
            target_ap_id: target_ap_id
@@ -1547,7 +1546,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => object_ap_id,
         "content" => content,
         "published" => activity_with_object.object.data["published"],
         "actor" =>
@@ -1571,6 +1570,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                      context: context,
                      target_account: target_account,
                      reported_activity: reported_activity,
+                     object_ap_id: object_ap_id,
                      content: content
                    },
                    Utils,
@@ -1585,8 +1585,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           content: content
         })
 
-      new_data =
-        put_in(activity.data, ["object"], [target_account.ap_id, reported_activity.data["id"]])
+      new_data = put_in(activity.data, ["object"], [target_account.ap_id, object_ap_id])
 
       assert_called(Utils.maybe_federate(%{activity | data: new_data}))
     end
@@ -1612,7 +1611,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                })
 
       assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 2
+      assert Repo.aggregate(Object, :count, :id) == 1
       assert Repo.aggregate(Notification, :count, :id) == 0
     end
   end
@@ -1665,7 +1664,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "fetch_follow_information_for_user" do
-    test "syncronizes following/followers counters" do
+    test "synchronizes following/followers counters" do
       user =
         insert(:user,
           local: false,
@@ -1836,8 +1835,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                  "target" => ^new_ap_id,
                  "type" => "Move"
                },
-               local: true
+               local: true,
+               recipients: recipients
              } = activity
+
+      assert old_user.follower_address in recipients
 
       params = %{
         "op" => "move_following",
@@ -1868,6 +1870,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert {:error, "Target account must have the origin in `alsoKnownAs`"} =
                ActivityPub.move(old_user, new_user)
+    end
+
+    test "do not move remote user following relationships" do
+      %{ap_id: old_ap_id} = old_user = insert(:user)
+      %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+      follower_remote = insert(:user, local: false)
+
+      User.follow(follower_remote, old_user)
+
+      assert User.following?(follower_remote, old_user)
+
+      assert {:ok, activity} = ActivityPub.move(old_user, new_user)
+
+      assert %Activity{
+               actor: ^old_ap_id,
+               data: %{
+                 "actor" => ^old_ap_id,
+                 "object" => ^old_ap_id,
+                 "target" => ^new_ap_id,
+                 "type" => "Move"
+               },
+               local: true
+             } = activity
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => old_user.id,
+        "target_id" => new_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+
+      assert User.following?(follower_remote, old_user)
+      refute User.following?(follower_remote, new_user)
     end
   end
 

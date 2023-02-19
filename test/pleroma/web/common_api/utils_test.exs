@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.CommonAPI.Utils
@@ -179,6 +178,10 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       code = "https://github.com/pragdave/earmark/"
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+
+      code = "https://github.com/~foo/bar"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
     end
 
     test "link with local mention" do
@@ -270,22 +273,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       code = ~s[~~aaaa~~~]
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><del>aaaa</del>~</p>]
-    end
-  end
-
-  describe "context_to_conversation_id" do
-    test "creates a mapping object" do
-      conversation_id = Utils.context_to_conversation_id("random context")
-      object = Object.get_by_ap_id("random context")
-
-      assert conversation_id == object.id
-    end
-
-    test "returns an existing mapping for an existing object" do
-      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
-      conversation_id = Utils.context_to_conversation_id("random context")
-
-      assert conversation_id == object.id
     end
   end
 
@@ -514,17 +501,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "returns empty string when date invalid" do
       assert Utils.to_masto_date("2015-01?23T23:50:07.123Z") == ""
-    end
-  end
-
-  describe "conversation_id_to_context/1" do
-    test "returns id" do
-      object = insert(:note)
-      assert Utils.conversation_id_to_context(object.id) == object.data["id"]
-    end
-
-    test "returns error if object not found" do
-      assert Utils.conversation_id_to_context("123") == {:error, "No such conversation"}
     end
   end
 

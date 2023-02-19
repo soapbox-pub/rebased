@@ -18,6 +18,23 @@ defmodule Pleroma.Activity.SearchTest do
     assert result.id == post.id
   end
 
+  test "it finds local-only posts for authenticated users" do
+    user = insert(:user)
+    reader = insert(:user)
+    {:ok, post} = CommonAPI.post(user, %{status: "it's wednesday my dudes", visibility: "local"})
+
+    [result] = Search.search(reader, "wednesday")
+
+    assert result.id == post.id
+  end
+
+  test "it does not find local-only posts for anonymous users" do
+    user = insert(:user)
+    {:ok, _post} = CommonAPI.post(user, %{status: "it's wednesday my dudes", visibility: "local"})
+
+    assert [] = Search.search(nil, "wednesday")
+  end
+
   test "using plainto_tsquery on postgres < 11" do
     old_version = :persistent_term.get({Pleroma.Repo, :postgres_version})
     :persistent_term.put({Pleroma.Repo, :postgres_version}, 10.0)

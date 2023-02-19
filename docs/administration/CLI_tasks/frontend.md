@@ -22,7 +22,7 @@ Currently, known `<frontend>` values are:
 - [kenoma](http://git.pleroma.social/lambadalambda/kenoma)
 - [pleroma-fe](http://git.pleroma.social/pleroma/pleroma-fe)
 - [fedi-fe](https://git.pleroma.social/pleroma/fedi-fe)
-- [soapbox-fe](https://gitlab.com/soapbox-pub/soapbox-fe)
+- [soapbox](https://gitlab.com/soapbox-pub/soapbox)
 
 You can still install frontends that are not configured, see below.
 
