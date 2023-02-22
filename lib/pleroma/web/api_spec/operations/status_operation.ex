@@ -620,6 +620,11 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           nullable: true,
           allOf: [FlakeID],
           description: "ID of the status being quoted, if any"
+        },
+        group_id: %Schema{
+          nullable: true,
+          allOf: [FlakeID],
+          description: "ID of the group the status is being posted to, if any"
         }
       },
       example: %{
