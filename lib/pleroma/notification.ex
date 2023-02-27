@@ -178,6 +178,7 @@ defmodule Pleroma.Notification do
         from([_n, a, o] in query,
           where:
             fragment("not(?->>'content' ~* ?)", o.data, ^regex) or
+              fragment("?->>'content' is null", o.data) or
               fragment("?->>'actor' = ?", o.data, ^user.ap_id)
         )
     end
@@ -679,7 +680,7 @@ defmodule Pleroma.Notification do
     cond do
       opts[:type] == "poll" -> false
       user.ap_id == actor -> false
-      !User.following?(follower, user) -> true
+      !User.following?(user, follower) -> true
       true -> false
     end
   end

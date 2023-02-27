@@ -461,7 +461,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def lookup_operation do
     %Operation{
-      tags: ["Account lookup"],
+      tags: ["Retrieve account information"],
       summary: "Find a user by nickname",
       operationId: "AccountController.lookup",
       parameters: [

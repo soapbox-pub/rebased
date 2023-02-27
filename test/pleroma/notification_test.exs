@@ -334,6 +334,32 @@ defmodule Pleroma.NotificationTest do
       refute Notification.create_notification(activity, followed)
     end
 
+    test "it disables notifications from non-followees" do
+      follower = insert(:user)
+
+      followed =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(follower, followed)
+      {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
+      refute Notification.create_notification(activity, followed)
+    end
+
+    test "it allows notifications from followees" do
+      poster = insert(:user)
+
+      receiver =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(receiver, poster)
+      {:ok, activity} = CommonAPI.post(poster, %{status: "hey @#{receiver.nickname}"})
+      assert Notification.create_notification(activity, receiver)
+    end
+
     test "it doesn't create a notification for user if he is the activity author" do
       activity = insert(:note_activity)
       author = User.get_cached_by_ap_id(activity.data["actor"])
@@ -1224,6 +1250,33 @@ defmodule Pleroma.NotificationTest do
       {:ok, _} = CommonAPI.favorite(another_user, activity.id)
 
       assert length(Notification.for_user(user)) == 1
+    end
+
+    test "it returns notifications when related object is without content and filters are defined",
+         %{user: user} do
+      followed_user = insert(:user, is_locked: true)
+
+      insert(:filter, user: followed_user, phrase: "test", hide: true)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      refute FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow_request"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
+
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
+
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
     end
   end
 end

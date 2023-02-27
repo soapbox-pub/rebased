@@ -31,7 +31,7 @@ defmodule Pleroma.Web.AdminAPI.Report do
 
   defp make_fake_activity(act, user) do
     %Activity{
-      id: "pleroma:fake",
+      id: "pleroma:fake:#{act["id"]}",
       data: %{
         "actor" => user.ap_id,
         "type" => "Create",
