@@ -231,7 +231,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
-          suggestions: ["foo", ~r/foo/iu]
+          suggestions: ["https://example.org/foo.png", ~r/example.org\/foo/iu]
         },
         %{
           key: :remove_shortcode,
@@ -251,7 +251,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
-          suggestions: ["foo", ~r/foo/iu]
+          suggestions: ["https://example.org/foo.png", ~r/example.org\/foo/iu]
         },
         %{
           key: :federated_timeline_removal_shortcode,
