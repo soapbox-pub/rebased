@@ -120,4 +120,37 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
       assert %{"object" => %{"tag" => ^expected_tags, "emoji" => ^expected_emoji}} = filtered
     end
   end
+
+  describe "remove_shortcode" do
+    setup do
+      clear_config([:mrf_emoji, :remove_shortcode], [
+        "test",
+        ~r{mikoto_s},
+        "nekomimi_girl_emoji"
+      ])
+
+      :ok
+    end
+
+    test "processes user" do
+      {:ok, filtered} = MRF.filter_one(EmojiPolicy, @user_data)
+
+      expected_tags = [@emoji_tags |> Enum.at(2)] ++ @misc_tags
+
+      assert %{"tag" => ^expected_tags} = filtered
+    end
+
+    test "processes status" do
+      {:ok, filtered} = MRF.filter_one(EmojiPolicy, @status_data)
+
+      expected_tags = [@emoji_tags |> Enum.at(2)] ++ @misc_tags
+
+      expected_emoji = %{
+        "nekomimi_girl_emoji_007" =>
+          "https://example.org/emoji/nekomimi_girl_emoji/nekomimi_girl_emoji_007.png"
+      }
+
+      assert %{"object" => %{"tag" => ^expected_tags, "emoji" => ^expected_emoji}} = filtered
+    end
+  end
 end

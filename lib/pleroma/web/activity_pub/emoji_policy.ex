@@ -13,17 +13,23 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     Pleroma.Config.get([:mrf_emoji, :remove_url], [])
   end
 
+  defp config_remove_shortcode do
+    Pleroma.Config.get([:mrf_emoji, :remove_shortcode], [])
+  end
+
   @impl Pleroma.Web.ActivityPub.MRF.Policy
   def filter(%{"type" => type, "object" => %{} = object} = message)
       when type in ["Create", "Update"] do
-    with object <- process_remove(object, :url, config_remove_url()) do
+    with object <- process_remove(object, :url, config_remove_url()),
+         object <- process_remove(object, :shortcode, config_remove_shortcode()) do
       {:ok, Map.put(message, "object", object)}
     end
   end
 
   @impl Pleroma.Web.ActivityPub.MRF.Policy
   def filter(%{"type" => type} = object) when type in Pleroma.Constants.actor_types() do
-    with object <- process_remove(object, :url, config_remove_url()) do
+    with object <- process_remove(object, :url, config_remove_url()),
+         object <- process_remove(object, :shortcode, config_remove_shortcode()) do
       {:ok, object}
     end
   end
@@ -46,12 +52,42 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   end
 
   defp process_remove(object, :url, patterns) do
+    process_remove_impl(
+      object,
+      fn
+        %{"icon" => %{"url" => url}} -> url
+        _ -> nil
+      end,
+      fn {_name, url} -> url end,
+      patterns
+    )
+  end
+
+  defp process_remove(object, :shortcode, patterns) do
+    process_remove_impl(
+      object,
+      fn
+        %{"name" => name} when is_binary(name) -> String.trim(name, ":")
+        _ -> nil
+      end,
+      fn {name, _url} -> name end,
+      patterns
+    )
+  end
+
+  defp process_remove_impl(object, extract_from_tag, extract_from_emoji, patterns) do
     processed_tag =
       Enum.filter(
         object["tag"],
         fn
-          %{"type" => "Emoji", "icon" => %{"url" => url}} when is_binary(url) ->
-            not match_any?(url, patterns)
+          %{"type" => "Emoji"} = tag ->
+            str = extract_from_tag.(tag)
+
+            if is_binary(str) do
+              not match_any?(str, patterns)
+            else
+              true
+            end
 
           _ ->
             true
@@ -61,8 +97,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     processed_emoji =
       if object["emoji"] do
         object["emoji"]
-        |> Enum.reduce(%{}, fn {name, url}, acc ->
-          if not match_any?(url, patterns) do
+        |> Enum.reduce(%{}, fn {name, url} = emoji, acc ->
+          if not match_any?(extract_from_emoji.(emoji), patterns) do
             Map.put(acc, name, url)
           else
             acc
