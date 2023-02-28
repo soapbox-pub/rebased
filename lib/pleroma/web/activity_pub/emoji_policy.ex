@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   require Pleroma.Constants
 
+  alias Pleroma.Object.Updater
+
   @moduledoc "Reject or force-unlisted emojis with certain URLs or names"
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
@@ -17,12 +19,31 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     Pleroma.Config.get([:mrf_emoji, :remove_shortcode], [])
   end
 
+  defp config_unlist_url do
+    Pleroma.Config.get([:mrf_emoji, :federated_timeline_removal_url], [])
+  end
+
+  defp config_unlist_shortcode do
+    Pleroma.Config.get([:mrf_emoji, :federated_timeline_removal_shortcode], [])
+  end
+
+  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  def history_awareness, do: :manual
+
   @impl Pleroma.Web.ActivityPub.MRF.Policy
   def filter(%{"type" => type, "object" => %{} = object} = message)
       when type in ["Create", "Update"] do
-    with object <- process_remove(object, :url, config_remove_url()),
-         object <- process_remove(object, :shortcode, config_remove_shortcode()) do
-      {:ok, Map.put(message, "object", object)}
+    with {:ok, object} <-
+           Updater.do_with_history(object, fn object ->
+             {:ok, process_remove(object, :url, config_remove_url())}
+           end),
+         {:ok, object} <-
+           Updater.do_with_history(object, fn object ->
+             {:ok, process_remove(object, :shortcode, config_remove_shortcode())}
+           end),
+         activity <- Map.put(message, "object", object),
+         activity <- maybe_delist(activity) do
+      {:ok, activity}
     end
   end
 
@@ -51,28 +72,22 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     Enum.any?(patterns, &match_string?(string, &1))
   end
 
+  defp url_from_tag(%{"icon" => %{"url" => url}}), do: url
+  defp url_from_tag(_), do: nil
+
+  defp url_from_emoji({_name, url}), do: url
+
+  defp shortcode_from_tag(%{"name" => name}) when is_binary(name), do: String.trim(name, ":")
+  defp shortcode_from_tag(_), do: nil
+
+  defp shortcode_from_emoji({name, _url}), do: name
+
   defp process_remove(object, :url, patterns) do
-    process_remove_impl(
-      object,
-      fn
-        %{"icon" => %{"url" => url}} -> url
-        _ -> nil
-      end,
-      fn {_name, url} -> url end,
-      patterns
-    )
+    process_remove_impl(object, &url_from_tag/1, &url_from_emoji/1, patterns)
   end
 
   defp process_remove(object, :shortcode, patterns) do
-    process_remove_impl(
-      object,
-      fn
-        %{"name" => name} when is_binary(name) -> String.trim(name, ":")
-        _ -> nil
-      end,
-      fn {name, _url} -> name end,
-      patterns
-    )
+    process_remove_impl(object, &shortcode_from_tag/1, &shortcode_from_emoji/1, patterns)
   end
 
   defp process_remove_impl(object, extract_from_tag, extract_from_emoji, patterns) do
@@ -116,6 +131,66 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
       object
       |> Map.put("tag", processed_tag)
     end
+  end
+
+  defp maybe_delist(%{"object" => object, "to" => to, "type" => "Create"} = activity) do
+    check = fn object ->
+      if any_emoji_match?(object, &url_from_tag/1, &url_from_emoji/1, config_unlist_url()) or
+           any_emoji_match?(
+             object,
+             &shortcode_from_tag/1,
+             &shortcode_from_emoji/1,
+             config_unlist_shortcode()
+           ) do
+        {:should_delist, nil}
+      else
+        {:ok, %{}}
+      end
+    end
+
+    should_delist? = fn object ->
+      with {:ok, _} <- Pleroma.Object.Updater.do_with_history(object, check) do
+        false
+      else
+        _ -> true
+      end
+    end
+
+    if Pleroma.Constants.as_public() in to and should_delist?.(object) do
+      to = List.delete(to, Pleroma.Constants.as_public())
+      cc = [Pleroma.Constants.as_public() | activity["cc"] || []]
+
+      activity
+      |> Map.put("to", to)
+      |> Map.put("cc", cc)
+    else
+      activity
+    end
+  end
+
+  defp maybe_delist(activity), do: activity
+
+  defp any_emoji_match?(object, extract_from_tag, extract_from_emoji, patterns) do
+    Kernel.||(
+      Enum.any?(
+        object["tag"],
+        fn
+          %{"type" => "Emoji"} = tag ->
+            str = extract_from_tag.(tag)
+
+            if is_binary(str) do
+              match_any?(str, patterns)
+            else
+              false
+            end
+
+          _ ->
+            false
+        end
+      ),
+      object["emoji"]
+      |> Enum.any?(fn emoji -> match_any?(extract_from_emoji.(emoji), patterns) end)
+    )
   end
 
   @impl Pleroma.Web.ActivityPub.MRF.Policy
