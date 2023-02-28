@@ -408,6 +408,12 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
+config :pleroma, :mrf_emoji,
+  remove_url: [],
+  remove_shortcode: [],
+  federated_timeline_removal_url: [],
+  federated_timeline_removal_shortcode: []
+
 config :pleroma, :mrf_hashtag,
   sensitive: ["nsfw"],
   reject: [],
