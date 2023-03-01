@@ -540,7 +540,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(users)
-    |> render("index.json", users: users, for: user, as: :user)
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/lookup"
