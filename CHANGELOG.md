@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow customizing instance languages
 
 ### Fixed
+- Security: uploading HTTP endpoint can no longer create directories in the upload dir (internal APIs, like backup, still can do it.)
 - ~ character in urls in Markdown posts are handled properly
 - Exiftool upload filter will now ignore SVG files
 - Fix `block_from_stranger` setting
