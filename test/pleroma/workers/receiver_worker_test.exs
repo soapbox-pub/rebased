@@ -22,4 +22,31 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
                })
     end
   end
+
+  test "it ignores ObjectValidator reject" do
+    params =
+      insert(:note_activity).data
+      |> Map.put("id", Pleroma.Web.ActivityPub.Utils.generate_activity_id())
+      |> Map.put("object", %{
+        "type" => "Note",
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id()
+      })
+
+    with_mock Pleroma.Web.ActivityPub.ObjectValidator, [:passthrough],
+      validate: fn _, _ -> {:error, %Ecto.Changeset{}} end do
+      assert {:cancel, {:error, %Ecto.Changeset{}}} =
+               ReceiverWorker.perform(%Oban.Job{
+                 args: %{"op" => "incoming_ap_doc", "params" => params}
+               })
+    end
+  end
+
+  test "it ignores duplicates" do
+    params = insert(:note_activity).data
+
+    assert {:cancel, :already_present} =
+             ReceiverWorker.perform(%Oban.Job{
+               args: %{"op" => "incoming_ap_doc", "params" => params}
+             })
+  end
 end
