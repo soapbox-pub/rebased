@@ -8,12 +8,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
+  alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   @primary_key false
-  @emoji_regex ~r/:[A-Za-z0-9_-]+(@.+)?:/
 
   embedded_schema do
     quote do
@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
         import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
         message_fields()
         activity_fields()
-        tag_fields()
+        embeds_many(:tag, TagValidator)
       end
     end
 
@@ -57,12 +57,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
       |> CommonFixes.fix_actor()
       |> CommonFixes.fix_activity_addressing()
 
-    data =
-      if Map.has_key?(data, "tag") do
-        data
-      else
-        Map.put(data, "tag", [])
-      end
+    data = Map.put_new(data, "tag", [])
 
     case Object.normalize(data["object"]) do
       %Object{} = object ->
@@ -92,13 +87,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
 
   defp fix_emoji_qualification(data), do: data
 
-  defp matches_shortcode?(nil), do: false
-  defp matches_shortcode?(s), do: Regex.match?(@emoji_regex, s)
-
   defp validate_emoji(cng) do
     content = get_field(cng, :content)
 
-    if Emoji.is_unicode_emoji?(content) || matches_shortcode?(content) do
+    if Emoji.is_unicode_emoji?(content) || Emoji.is_custom_emoji?(content) do
       cng
     else
       cng
@@ -113,7 +105,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
       cng
     else
       tag = get_field(cng, :tag)
-      emoji_name = Emoji.stripped_name(content)
+      emoji_name = Emoji.maybe_strip_name(content)
 
       case tag do
         [%{name: ^emoji_name, type: "Emoji", icon: %{url: _}}] ->

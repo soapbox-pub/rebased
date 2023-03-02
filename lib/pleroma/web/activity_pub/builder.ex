@@ -62,21 +62,22 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   end
 
   defp add_emoji_content(data, emoji, url) do
+    tag = [
+      %{
+        "id" => url,
+        "type" => "Emoji",
+        "name" => Emoji.maybe_quote(emoji),
+        "icon" => %{
+          "type" => "Image",
+          "url" => url
+        }
+      }
+    ]
+
     data
     |> Map.put("content", Emoji.maybe_quote(emoji))
     |> Map.put("type", "EmojiReact")
-    |> Map.put("tag", [
-      %{}
-      |> Map.put("id", url)
-      |> Map.put("type", "Emoji")
-      |> Map.put("name", Emoji.maybe_quote(emoji))
-      |> Map.put(
-        "icon",
-        %{}
-        |> Map.put("type", "Image")
-        |> Map.put("url", url)
-      )
-    ])
+    |> Map.put("tag", tag)
   end
 
   defp remote_custom_emoji_react(
@@ -84,7 +85,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
          data,
          emoji
        ) do
-    [emoji_code, instance] = String.split(Emoji.stripped_name(emoji), "@")
+    [emoji_code, instance] = String.split(Emoji.maybe_strip_name(emoji), "@")
 
     matching_reaction =
       Enum.find(
@@ -110,8 +111,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   end
 
   defp local_custom_emoji_react(data, emoji) do
-    with %{} = emojo <- Emoji.get(emoji) do
-      path = emojo |> Map.get(:file)
+    with %{file: path} = emojo <- Emoji.get(emoji) do
       url = "#{Endpoint.url()}#{path}"
       add_emoji_content(data, emojo.code, url)
     else

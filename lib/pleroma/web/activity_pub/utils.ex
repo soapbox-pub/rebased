@@ -329,8 +329,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         object
       ) do
     reactions = get_cached_emoji_reactions(object)
-    emoji = Pleroma.Emoji.stripped_name(emoji)
-    url = emoji_url(emoji, activity)
+    emoji = Pleroma.Emoji.maybe_strip_name(emoji)
+    url = maybe_emoji_url(emoji, activity)
 
     new_reactions =
       case Enum.find_index(reactions, fn [candidate, _, candidate_url] ->
@@ -356,7 +356,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     update_element_in_object("reaction", new_reactions, object, count)
   end
 
-  defp emoji_url(
+  defp maybe_emoji_url(
          name,
          %Activity{
            data: %{
@@ -368,7 +368,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
        ),
        do: url
 
-  defp emoji_url(_, _), do: nil
+  defp maybe_emoji_url(_, _), do: nil
 
   def emoji_count(reactions_list) do
     Enum.reduce(reactions_list, 0, fn [_, users, _], acc -> acc + length(users) end)
@@ -378,9 +378,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"content" => emoji, "actor" => actor}} = activity,
         object
       ) do
-    emoji = Pleroma.Emoji.stripped_name(emoji)
+    emoji = Pleroma.Emoji.maybe_strip_name(emoji)
     reactions = get_cached_emoji_reactions(object)
-    url = emoji_url(emoji, activity)
+    url = maybe_emoji_url(emoji, activity)
 
     new_reactions =
       case Enum.find_index(reactions, fn [candidate, _, candidate_url] ->
@@ -533,9 +533,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   defp custom_emoji_discriminator(query, emoji) do
     if String.contains?(emoji, "@") do
-      stripped = Pleroma.Emoji.stripped_name(emoji)
+      stripped = Pleroma.Emoji.maybe_strip_name(emoji)
       [name, domain] = String.split(stripped, "@")
-      domain_pattern = "%" <> domain <> "%"
+      domain_pattern = "%/" <> domain <> "/%"
       emoji_pattern = Pleroma.Emoji.maybe_quote(name)
 
       query

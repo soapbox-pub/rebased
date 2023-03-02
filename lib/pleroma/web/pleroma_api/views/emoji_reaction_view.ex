@@ -8,7 +8,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
   alias Pleroma.Web.MastodonAPI.AccountView
 
   def emoji_name(emoji, nil), do: emoji
-  alias Pleroma.Web.MediaProxy
 
   def emoji_name(emoji, url) do
     url = URI.parse(url)
@@ -31,7 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
       name: emoji_name(emoji, url),
       count: length(users),
       accounts: render(AccountView, "index.json", users: users, for: user),
-      url: MediaProxy.url(url),
+      url: Pleroma.Web.MediaProxy.url(url),
       me: !!(user && user.ap_id in user_ap_ids)
     }
   end

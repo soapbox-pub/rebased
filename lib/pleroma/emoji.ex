@@ -51,14 +51,7 @@ defmodule Pleroma.Emoji do
   @doc "Returns the path of the emoji `name`."
   @spec get(String.t()) :: String.t() | nil
   def get(name) do
-    name =
-      if String.starts_with?(name, ":") do
-        name
-        |> String.replace_leading(":", "")
-        |> String.replace_trailing(":", "")
-      else
-        name
-      end
+    name = maybe_strip_name(name)
 
     case :ets.lookup(@ets, name) do
       [{_, path}] -> path
@@ -148,13 +141,15 @@ defmodule Pleroma.Emoji do
 
   def is_unicode_emoji?(_), do: false
 
-  def stripped_name(name) when is_binary(name) do
-    name
-    |> String.replace_leading(":", "")
-    |> String.replace_trailing(":", "")
-  end
+  @emoji_regex ~r/:[A-Za-z0-9_-]+(@.+)?:/
 
-  def stripped_name(name), do: name
+  def is_custom_emoji?(s) when is_binary(s), do: Regex.match?(@emoji_regex, s)
+
+  def is_custom_emoji?(_), do: false
+
+  def maybe_strip_name(name) when is_binary(name), do: String.trim(name, ":")
+
+  def maybe_strip_name(name), do: name
 
   def maybe_quote(name) when is_binary(name) do
     if is_unicode_emoji?(name) do
@@ -173,9 +168,13 @@ defmodule Pleroma.Emoji do
   def emoji_url(%{"type" => "EmojiReact", "content" => _, "tag" => []}), do: nil
 
   def emoji_url(%{"type" => "EmojiReact", "content" => emoji, "tag" => tags}) do
+    emoji = maybe_strip_name(emoji)
+
     tag =
       tags
-      |> Enum.find(fn tag -> tag["type"] == "Emoji" && tag["name"] == stripped_name(emoji) end)
+      |> Enum.find(fn tag ->
+        tag["type"] == "Emoji" && !is_nil(tag["name"]) && tag["name"] == emoji
+      end)
 
     if is_nil(tag) do
       nil
