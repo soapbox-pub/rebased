@@ -1052,6 +1052,15 @@ config :pleroma, :config_description, [
         description:
           "Minimum required age (in days) for users to create account. Only used if birthday is required.",
         suggestions: [6570]
+      },
+      %{
+        key: :languages,
+        type: {:list, :string},
+        description:
+          "Languages to be exposed in /api/v1/instance. Should be in the format of BCP47 language codes.",
+        suggestions: [
+          "en"
+        ]
       }
     ]
   },

@@ -14,6 +14,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+## 2.5.1
+
+### Added
+- Allow customizing instance languages
+
+### Fixed
+- Security: uploading HTTP endpoint can no longer create directories in the upload dir (internal APIs, like backup, still can do it.)
+- ~ character in urls in Markdown posts are handled properly
+- Exiftool upload filter will now ignore SVG files
+- Fix `block_from_stranger` setting
+- Fix rel="me"
+- Docker images will now run properly
+- Fix inproper content being cached in report content
+- Notification filter on object content will not operate on the ones that inherently have no content
+- ZWNJ and double dots in links are parsed properly for Plain-text posts
+- OTP releases will work on systems with a newer libcrypt
+- Errors when running Exiftool.ReadDescription filter will not be filled into the image description
+
 ## 2.5.0 - 2022-12-23
 
 ### Removed
