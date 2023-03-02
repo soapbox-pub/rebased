@@ -1342,6 +1342,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       %{test_file: test_file}
     end
 
+    test "strips / from filename", %{test_file: file} do
+      file = %Plug.Upload{file | filename: "../../../../../nested/bad.jpg"}
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      [%{"href" => href}] = object.data["url"]
+      assert Regex.match?(~r"/bad.jpg$", href)
+      refute Regex.match?(~r"/nested/", href)
+    end
+
     test "sets a description if given", %{test_file: file} do
       {:ok, %Object{} = object} = ActivityPub.upload(file, description: "a cool file")
       assert object.data["name"] == "a cool file"

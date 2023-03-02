@@ -385,6 +385,34 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
     end
 
+    test "Strip / from upload files", %{user: user, conn: conn} do
+      new_image = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "../../../../nested/an_image.jpg"
+      }
+
+      assert user.avatar == %{}
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "avatar" => new_image,
+          "header" => new_image,
+          "pleroma_background_image" => new_image
+        })
+
+      assert user_response = json_response_and_validate_schema(res, 200)
+      assert user_response["avatar"]
+      assert user_response["header"]
+      assert user_response["pleroma"]["background_image"]
+      refute Regex.match?(~r"/nested/", user_response["avatar"])
+      refute Regex.match?(~r"/nested/", user_response["header"])
+      refute Regex.match?(~r"/nested/", user_response["pleroma"]["background_image"])
+
+      user = User.get_by_id(user.id)
+      refute user.avatar == %{}
+    end
+
     test "requires 'write:accounts' permission" do
       token1 = insert(:oauth_token, scopes: ["read"])
       token2 = insert(:oauth_token, scopes: ["write", "follow"])
