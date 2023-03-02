@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
 
   alias Pleroma.Workers.ReceiverWorker
 
-  test "it ignores MRF reject" do
+  test "it does not retry MRF reject" do
     params = insert(:note).data
 
     with_mock Pleroma.Web.ActivityPub.Transmogrifier,
@@ -23,7 +23,7 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
     end
   end
 
-  test "it ignores ObjectValidator reject" do
+  test "it does not retry ObjectValidator reject" do
     params =
       insert(:note_activity).data
       |> Map.put("id", Pleroma.Web.ActivityPub.Utils.generate_activity_id())
@@ -41,7 +41,7 @@ defmodule Pleroma.Workers.ReceiverWorkerTest do
     end
   end
 
-  test "it ignores duplicates" do
+  test "it does not retry duplicates" do
     params = insert(:note_activity).data
 
     assert {:cancel, :already_present} =
