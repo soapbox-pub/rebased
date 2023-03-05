@@ -6,7 +6,6 @@ defmodule Pleroma.Web.Feed.FeedView do
   use Phoenix.HTML
   use Pleroma.Web, :view
 
-  alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.Gettext
