@@ -72,7 +72,8 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def last_activity(activities), do: List.last(activities)
 
-  def activity_title(%{"content" => content, "summary" => summary} = data, opts \\ %{}) do
+  def activity_title(%{"content" => content} = data, opts \\ %{}) do
+    summary = Map.get(data, "summary", "")
     title =
       cond do
         summary != "" -> summary
