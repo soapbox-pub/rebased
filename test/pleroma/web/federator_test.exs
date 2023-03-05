@@ -133,7 +133,7 @@ defmodule Pleroma.Web.FederatorTest do
       assert {:ok, _activity} = ObanHelpers.perform(job)
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, :already_present} = ObanHelpers.perform(job)
+      assert {:cancel, :already_present} = ObanHelpers.perform(job)
     end
 
     test "rejects incoming AP docs with incorrect origin" do
