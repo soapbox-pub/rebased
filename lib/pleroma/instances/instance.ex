@@ -7,6 +7,7 @@ defmodule Pleroma.Instances.Instance do
 
   alias Pleroma.Instances
   alias Pleroma.Instances.Instance
+  alias Pleroma.Maps
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Workers.BackgroundWorker
@@ -24,6 +25,14 @@ defmodule Pleroma.Instances.Instance do
     field(:favicon, :string)
     field(:favicon_updated_at, :naive_datetime)
 
+    embeds_one :metadata, Pleroma.Instances.Metadata, primary_key: false do
+      field(:software_name, :string)
+      field(:software_version, :string)
+      field(:software_repository, :string)
+    end
+
+    field(:metadata_updated_at, :utc_datetime)
+
     timestamps()
   end
 
@@ -31,9 +40,15 @@ defmodule Pleroma.Instances.Instance do
 
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:host, :unreachable_since, :favicon, :favicon_updated_at])
+    |> cast(params, __schema__(:fields) -- [:metadata])
+    |> cast_embed(:metadata, with: &metadata_changeset/2)
     |> validate_required([:host])
     |> unique_constraint(:host)
+  end
+
+  def metadata_changeset(struct, params \\ %{}) do
+    struct
+    |> cast(params, [:software_name, :software_version, :software_repository])
   end
 
   def filter_reachable([]), do: %{}
@@ -192,6 +207,89 @@ defmodule Pleroma.Instances.Instance do
       e ->
         Logger.warn(
           "Instance.scrape_favicon(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
+        )
+
+        nil
+    end
+  end
+
+  def get_or_update_metadata(%URI{host: host} = instance_uri) do
+    existing_record = Repo.get_by(Instance, %{host: host})
+    now = NaiveDateTime.utc_now()
+
+    if existing_record && existing_record.metadata_updated_at &&
+         NaiveDateTime.diff(now, existing_record.metadata_updated_at) < 86_400 do
+      existing_record.metadata
+    else
+      metadata = scrape_metadata(instance_uri)
+
+      if existing_record do
+        existing_record
+        |> changeset(%{metadata: metadata, metadata_updated_at: now})
+        |> Repo.update()
+      else
+        %Instance{}
+        |> changeset(%{host: host, metadata: metadata, metadata_updated_at: now})
+        |> Repo.insert()
+      end
+
+      metadata
+    end
+  end
+
+  defp get_nodeinfo_uri(well_known) do
+    links = Map.get(well_known, "links", [])
+
+    nodeinfo21 =
+      Enum.find(links, &(&1["rel"] == "http://nodeinfo.diaspora.software/ns/schema/2.1"))["href"]
+
+    nodeinfo20 =
+      Enum.find(links, &(&1["rel"] == "http://nodeinfo.diaspora.software/ns/schema/2.0"))["href"]
+
+    cond do
+      is_binary(nodeinfo21) -> {:ok, nodeinfo21}
+      is_binary(nodeinfo20) -> {:ok, nodeinfo20}
+      true -> {:error, :no_links}
+    end
+  end
+
+  defp scrape_metadata(%URI{} = instance_uri) do
+    try do
+      with {_, true} <- {:reachable, reachable?(instance_uri.host)},
+           {:ok, %Tesla.Env{body: well_known_body}} <-
+             instance_uri
+             |> URI.merge("/.well-known/nodeinfo")
+             |> to_string()
+             |> Pleroma.HTTP.get([{"accept", "application/json"}]),
+           {:ok, well_known_json} <- Jason.decode(well_known_body),
+           {:ok, nodeinfo_uri} <- get_nodeinfo_uri(well_known_json),
+           {:ok, %Tesla.Env{body: nodeinfo_body}} <-
+             Pleroma.HTTP.get(nodeinfo_uri, [{"accept", "application/json"}]),
+           {:ok, nodeinfo} <- Jason.decode(nodeinfo_body) do
+        # Can extract more metadata from NodeInfo but need to be careful about it's size,
+        # can't just dump the entire thing
+        software = Map.get(nodeinfo, "software", %{})
+
+        %{
+          software_name: software["name"],
+          software_version: software["version"]
+        }
+        |> Maps.put_if_present(:software_repository, software["repository"])
+      else
+        {:reachable, false} ->
+          Logger.debug(
+            "Instance.scrape_metadata(\"#{to_string(instance_uri)}\") ignored unreachable host"
+          )
+
+          nil
+
+        _ ->
+          nil
+      end
+    rescue
+      e ->
+        Logger.warn(
+          "Instance.scrape_metadata(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
         )
 
         nil
