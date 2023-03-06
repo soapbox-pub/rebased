@@ -835,8 +835,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
-    # Note: html format is supported only if static FE is enabled
-    pipe_through([:accepts_html_xml, :static_fe])
+    pipe_through([:accepts_html_xml])
 
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
   end
