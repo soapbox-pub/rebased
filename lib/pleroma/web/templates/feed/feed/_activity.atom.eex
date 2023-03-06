@@ -4,8 +4,8 @@
   <id><%= @data["id"] %></id>
   <title><%= activity_title(@data, Keyword.get(@feed_config, :post_title, %{})) %></title>
   <content type="html"><%= activity_description(@data) %></content>
-  <published><%= to_rfc3339(@activity.data["published"]) %></published>
-  <updated><%= to_rfc3339(@activity.data["published"]) %></updated>
+  <published><%= to_rfc3339(@data["published"]) %></published>
+  <updated><%= to_rfc3339(@data["published"]) %></updated>
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>

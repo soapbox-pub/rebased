@@ -72,7 +72,7 @@ defmodule Pleroma.Web.Metadata.UtilsTest do
     end
   end
 
-  describe "scrub_html_and_truncate/2" do
+  describe "scrub_html_and_truncate/3" do
     test "it returns text without encode HTML" do
       assert Utils.scrub_html_and_truncate("Pleroma's really cool!") == "Pleroma's really cool!"
     end
