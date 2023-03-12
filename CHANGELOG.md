@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - rel="me" was missing its cache
 
 ### Removed
+- BREAKING: Support for passwords generated with `crypt(3)` (Gnu Social migration artifact)
 
 ## 2.5.1
 
