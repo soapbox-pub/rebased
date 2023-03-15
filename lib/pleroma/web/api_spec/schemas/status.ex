@@ -145,7 +145,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         properties: %{
           content: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
           },
@@ -215,7 +219,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           },
           spoiler_text: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
           },
