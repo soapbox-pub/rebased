@@ -9,8 +9,9 @@ defmodule Pleroma.Web.Metadata.Providers.RelMe do
   @impl Provider
   def build_tags(%{user: user}) do
     profile_tree =
-      Floki.parse_fragment!(user.bio)
-      |> prepend_fields_tag(user.fields)
+      user.bio
+      |> append_fields_tag(user.fields)
+      |> Floki.parse_fragment!()
 
     (Floki.attribute(profile_tree, "link[rel~=me]", "href") ++
        Floki.attribute(profile_tree, "a[rel~=me]", "href"))
@@ -19,13 +20,8 @@ defmodule Pleroma.Web.Metadata.Providers.RelMe do
     end)
   end
 
-  defp prepend_fields_tag(bio_tree, fields) do
+  defp append_fields_tag(bio, fields) do
     fields
-    |> Enum.reduce(bio_tree, fn %{"value" => v}, tree ->
-      case Floki.parse_fragment(v) do
-        {:ok, [a | _]} -> [a | tree]
-        _ -> tree
-      end
-    end)
+    |> Enum.reduce(bio, fn %{"value" => v}, res -> res <> v end)
   end
 end

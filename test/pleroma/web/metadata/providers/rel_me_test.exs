@@ -27,8 +27,8 @@ defmodule Pleroma.Web.Metadata.Providers.RelMeTest do
 
     assert RelMe.build_tags(%{user: user}) == [
              {:link, [rel: "me", href: "http://some3.com"], []},
-             {:link, [rel: "me", href: "http://profile.com"], []},
-             {:link, [rel: "me", href: "https://another-link.com"], []}
+             {:link, [rel: "me", href: "https://another-link.com"], []},
+             {:link, [rel: "me", href: "http://profile.com"], []}
            ]
   end
 end
