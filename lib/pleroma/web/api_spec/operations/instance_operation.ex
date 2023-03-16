@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
 
   def show2_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve instance information",
       description: "Information about the server",
       operationId: "InstanceController.show2",
@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
 
   def rules_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve list of instance rules",
       operationId: "InstanceController.rules",
       responses: %{
@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
 
   def domain_blocks_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve instance domain blocks",
       operationId: "InstanceController.domain_blocks",
       responses: %{

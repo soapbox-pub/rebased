@@ -96,7 +96,16 @@ defmodule Pleroma.Web.ApiSpec do
               "Report managment",
               "Status administration",
               "User administration",
-              "Announcement management"
+              "Announcement management",
+              "Instance rule managment",
+              "Webhooks"
+            ]
+          },
+          %{
+            "name" => "Administration (MastoAPI)",
+            "tags" => [
+              "User administration",
+              "Report methods"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
@@ -129,7 +138,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Scheduled statuses",
               "Search",
               "Status actions",
-              "Media attachments"
+              "Media attachments",
+              "Event actions"
             ]
           },
           %{

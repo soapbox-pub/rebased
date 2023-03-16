@@ -224,7 +224,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["chat"],
+      tags: ["Chats"],
       summary: "delete",
       operationId: "ChatController.delete",
       parameters: [
