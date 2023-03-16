@@ -162,6 +162,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
+      "pleroma_custom_emoji_reactions",
       "pleroma_chat_messages",
       "email_list",
       if Config.get([:instance, :show_reactions]) do

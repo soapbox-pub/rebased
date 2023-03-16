@@ -453,7 +453,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       object = Object.get_by_ap_id(emoji_react.data["object"])
 
       assert object.data["reaction_count"] == 1
-      assert ["👌", [user.ap_id]] in object.data["reactions"]
+      assert ["👌", [user.ap_id], nil] in object.data["reactions"]
     end
 
     test "creates a notification", %{emoji_react: emoji_react, poster: poster} do
