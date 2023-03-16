@@ -2,15 +2,16 @@
 
 {! backend/installation/otp_vs_from_source.include !}
 
-This guide covers a installation using an OTP release. To install Pleroma from source, please check out the corresponding guide for your distro.
+This guide covers a installation using OTP releases as built by the Pleroma project, it is meant as a fallback to distribution packages/recipes which are the preferred installation method.  
+To install Pleroma from source, please check out the corresponding guide for your distro.
 
 ## Pre-requisites
-* A machine running Linux with GNU (e.g. Debian, Ubuntu) or musl (e.g. Alpine) libc and `x86_64`, `aarch64` or `armv7l` CPU, you have root access to. If you are not sure if it's compatible see [Detecting flavour section](#detecting-flavour) below
+* A machine you have root access to running Debian GNU/Linux or compatible (eg. Ubuntu), or Alpine on `x86_64`, `aarch64` or `armv7l` CPU. If you are not sure what you are running see [Detecting flavour section](#detecting-flavour) below
 * A (sub)domain pointed to the machine
 
-You will be running commands as root. If you aren't root already, please elevate your privileges by executing `sudo su`/`su`.
+You will be running commands as root. If you aren't root already, please elevate your privileges by executing `sudo -i`/`su`.
 
-While in theory OTP releases are possbile to install on any compatible machine, for the sake of simplicity this guide focuses only on Debian/Ubuntu and Alpine.
+Similarly to other binaries, OTP releases tend to be only compatible with the distro they are built on, as such this guide focuses only on Debian/Ubuntu and Alpine.
 
 ### Detecting flavour
 
@@ -19,7 +20,7 @@ Paste the following into the shell:
 arch="$(uname -m)";if [ "$arch" = "x86_64" ];then arch="amd64";elif [ "$arch" = "armv7l" ];then arch="arm";elif [ "$arch" = "aarch64" ];then arch="arm64";else echo "Unsupported arch: $arch">&2;fi;if getconf GNU_LIBC_VERSION>/dev/null;then libc_postfix="";elif [ "$(ldd 2>&1|head -c 9)" = "musl libc" ];then libc_postfix="-musl";elif [ "$(find /lib/libc.musl*|wc -l)" ];then libc_postfix="-musl";else echo "Unsupported libc">&2;fi;echo "$arch$libc_postfix"
 ```
 
-If your platform is supported the output will contain the flavour string, you will need it later. If not, this just means that we don't build releases for your platform, you can still try installing from source.
+This should give your flavour string. If not this just means that we don't build releases for your platform, you can still try installing from source.
 
 ### Installing the required packages
 
