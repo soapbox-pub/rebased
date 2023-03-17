@@ -183,7 +183,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
     %Schema{
       type: :array,
       items: %Schema{
-        title: "Event",
+        title: "Webhook event",
         description: "Event type",
         type: :string,
         enum: ["account.created", "report.created"],
