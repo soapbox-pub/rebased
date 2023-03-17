@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:skip_public_check when action in [:public, :hashtag])
+  plug(:skip_public_check when action in [:public, :hashtag, :bubble])
 
   # TODO: Replace with a macro when there is a Phoenix release with the following commit in it:
   # https://github.com/phoenixframework/phoenix/commit/2e8c63c01fec4dde5467dbbbf9705ff9e780735e
@@ -28,13 +28,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   plug(RateLimiter, [name: :timeline, bucket_name: :list_timeline] when action == :list)
   plug(RateLimiter, [name: :timeline, bucket_name: :bubble_timeline] when action == :bubble)
 
-  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct, :bubble])
+  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
-    when action in [:public, :hashtag]
+    when action in [:public, :hashtag, :bubble]
   )
 
   plug(Pleroma.Web.Plugs.SetDomainPlug when action in [:public, :hashtag])
@@ -98,21 +98,19 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     )
   end
 
-  defp restrict_unauthenticated?(true = _local_only) do
-    Config.restrict_unauthenticated_access?(:timelines, :local)
-  end
-
-  defp restrict_unauthenticated?(_) do
-    Config.restrict_unauthenticated_access?(:timelines, :federated)
+  defp restrict_unauthenticated?(type) do
+    Config.restrict_unauthenticated_access?(:timelines, type)
   end
 
   # GET /api/v1/timelines/public
   def public(%{assigns: %{user: user}} = conn, params) do
     local_only = params[:local]
+    timeline_type = if local_only, do: :local, else: :federated
 
-    if is_nil(user) and restrict_unauthenticated?(local_only) do
-      fail_on_bad_auth(conn)
-    else
+    with {:enabled, true} <-
+           {:enabled, local_only || Config.get([:instance, :federated_timeline_available], true)},
+         {:authenticated, true} <-
+           {:authenticated, !(is_nil(user) and restrict_unauthenticated?(timeline_type))} do
       activities =
         params
         |> Map.put(:type, ["Create"])
@@ -134,16 +132,28 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         as: :activity,
         with_muted: Map.get(params, :with_muted, false)
       )
+    else
+      {:enabled, false} ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Federated timeline is disabled"})
+
+      {:authenticated, false} ->
+        fail_on_bad_auth(conn)
     end
   end
 
   # GET /api/v1/timelines/bubble
   def bubble(%{assigns: %{user: user}} = conn, params) do
-    bubble_instances = Config.get([:instance, :local_bubble], [])
-
-    if is_nil(user) do
+    if is_nil(user) and restrict_unauthenticated?(:bubble) do
       fail_on_bad_auth(conn)
     else
+      bubble_instances =
+        Enum.uniq(
+          Config.get([:instance, :local_bubble], []) ++
+            [Pleroma.Web.Endpoint.host()]
+        )
+
       activities =
         params
         |> Map.put(:type, ["Create"])
@@ -195,7 +205,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   def hashtag(%{assigns: %{user: user}} = conn, params) do
     local_only = params[:local]
 
-    if is_nil(user) and restrict_unauthenticated?(local_only) do
+    if is_nil(user) and restrict_unauthenticated?(if local_only, do: :local, else: :federated) do
       fail_on_bad_auth(conn)
     else
       activities = hashtag_fetching(conn, params, user, local_only)

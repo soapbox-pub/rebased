@@ -444,6 +444,26 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                |> get("http://pleroma.example.org/api/v1/timelines/public?local=true")
                |> json_response_and_validate_schema(200)
     end
+
+    test "should return 404 if disabled" do
+      clear_config([:instance, :federated_timeline_available], false)
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(404)
+
+      assert %{"error" => "Federated timeline is disabled"} = result
+    end
+
+    test "should not return 404 if local is specified" do
+      clear_config([:instance, :federated_timeline_available], false)
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public?local=true")
+        |> json_response_and_validate_schema(200)
+    end
   end
 
   defp local_and_remote_activities do
@@ -1110,7 +1130,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert local_activity.id in one_instance
 
-      clear_config([:instance, :local_bubble], ["localhost:4001", "example.com"])
+      # If we have others, also include theirs
+      clear_config([:instance, :local_bubble], ["example.com"])
 
       two_instances =
         conn
@@ -1120,6 +1141,20 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       assert local_activity.id in two_instances
       assert remote_activity.id in two_instances
+    end
+
+    test "restrict_unauthenticated with bubble timeline", %{conn: conn} do
+      clear_config([:restrict_unauthenticated, :timelines, :bubble], true)
+
+      conn
+      |> get("/api/v1/timelines/bubble")
+      |> json_response_and_validate_schema(:unauthorized)
+
+      clear_config([:restrict_unauthenticated, :timelines, :bubble], false)
+
+      conn
+      |> get("/api/v1/timelines/bubble")
+      |> json_response_and_validate_schema(200)
     end
   end
 

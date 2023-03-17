@@ -887,7 +887,6 @@ defmodule Pleroma.Web.Router do
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
     get("/timelines/list/:list_id", TimelineController, :list)
-    get("/timelines/bubble", TimelineController, :bubble)
 
     get("/announcements", AnnouncementController, :index)
     post("/announcements/:id/dismiss", AnnouncementController, :mark_read)
@@ -944,6 +943,7 @@ defmodule Pleroma.Web.Router do
 
     get("/timelines/public", TimelineController, :public)
     get("/timelines/tag/:tag", TimelineController, :hashtag)
+    get("/timelines/bubble", TimelineController, :bubble)
 
     get("/polls/:id", PollController, :show)
 

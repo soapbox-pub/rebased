@@ -1156,6 +1156,12 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description:
           "List of instances that make up your local bubble (closely-related instances). Used to populate the 'bubble' timeline (domain only)."
+      },
+      %{
+        key: :federated_timeline_available,
+        type: :boolean,
+        description:
+          "Let people view the 'firehose' feed of all public statuses from all instances."
       }
     ]
   },

@@ -73,7 +73,15 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
-        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
+        federatedTimelineAvailable: Config.get([:instance, :federated_timeline_available], true),
+        publicTimelineVisibility: %{
+          federated:
+            !Config.restrict_unauthenticated_access?(:timelines, :federated) &&
+              Config.get([:instance, :federated_timeline_available], true),
+          local: !Config.restrict_unauthenticated_access?(:timelines, :local),
+          bubble: !Config.restrict_unauthenticated_access?(:timelines, :bubble)
+        }
       },
       operations: %{
         "com.shinolabs.api.bite": ["1.0.0"],

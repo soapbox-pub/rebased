@@ -263,7 +263,8 @@ config :pleroma, :instance,
   multitenancy: %{
     enabled: false
   },
-  local_bubble: []
+  local_bubble: [],
+  federated_timeline_available: true
 
 config :pleroma, :welcome,
   direct_message: [
@@ -894,7 +895,7 @@ config :pleroma, :majic_pool, size: 2
 private_instance? = :if_instance_is_private
 
 config :pleroma, :restrict_unauthenticated,
-  timelines: %{local: private_instance?, federated: private_instance?},
+  timelines: %{local: private_instance?, federated: private_instance?, bubble: true},
   profiles: %{local: private_instance?, remote: private_instance?},
   activities: %{local: private_instance?, remote: private_instance?}
 
