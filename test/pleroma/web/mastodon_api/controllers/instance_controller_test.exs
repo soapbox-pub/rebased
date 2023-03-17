@@ -181,4 +181,18 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
       assert [] == json_response_and_validate_schema(conn, 200)
     end
   end
+
+  test "instance languages", %{conn: conn} do
+    assert %{"languages" => ["en"]} =
+             conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+
+    clear_config([:instance, :languages], ["aa", "bb"])
+
+    assert %{"languages" => ["aa", "bb"]} =
+             conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+  end
 end

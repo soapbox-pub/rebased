@@ -42,6 +42,33 @@ defmodule Pleroma.Upload.Filter.Exiftool.ReadDescriptionTest do
              {:ok, :filtered, uploads_after}
   end
 
+  test "Ignores warnings" do
+    uploads = %Pleroma.Upload{
+      name: "image_with_imagedescription_and_caption-abstract_and_stray_data_after.png",
+      content_type: "image/png",
+      path:
+        Path.absname(
+          "test/fixtures/image_with_imagedescription_and_caption-abstract_and_stray_data_after.png"
+        ),
+      tempfile:
+        Path.absname(
+          "test/fixtures/image_with_imagedescription_and_caption-abstract_and_stray_data_after.png"
+        )
+    }
+
+    assert {:ok, :filtered, %{description: "a descriptive white pixel"}} =
+             Filter.Exiftool.ReadDescription.filter(uploads)
+
+    uploads = %Pleroma.Upload{
+      name: "image_with_stray_data_after.png",
+      content_type: "image/png",
+      path: Path.absname("test/fixtures/image_with_stray_data_after.png"),
+      tempfile: Path.absname("test/fixtures/image_with_stray_data_after.png")
+    }
+
+    assert {:ok, :filtered, %{description: nil}} = Filter.Exiftool.ReadDescription.filter(uploads)
+  end
+
   test "otherwise returns iptc:Caption-Abstract when present" do
     upload = %Pleroma.Upload{
       name: "image_with_caption-abstract.jpg",

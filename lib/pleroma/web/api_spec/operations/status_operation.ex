@@ -473,7 +473,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def show_history_operation do
     %Operation{
-      tags: ["Retrieve status history"],
+      tags: ["Retrieve status information"],
       summary: "Status history",
       description: "View history of a status",
       operationId: "StatusController.show_history",
@@ -490,7 +490,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def show_source_operation do
     %Operation{
-      tags: ["Retrieve status source"],
+      tags: ["Retrieve status information"],
       summary: "Status source",
       description: "View source of a status",
       operationId: "StatusController.show_source",
@@ -507,7 +507,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Update status"],
+      tags: ["Status actions"],
       summary: "Update status",
       description: "Change the content of a status",
       operationId: "StatusController.update",

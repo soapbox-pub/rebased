@@ -270,7 +270,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   defp normalize_fields_attributes(fields) do
     if Enum.all?(fields, &is_tuple/1) do
       Enum.map(fields, fn {_, %{} = field} ->
-        %{"name" => field["name"], "value" => field["value"]}
+        %{"name" => field.name, "value" => field.value}
       end)
     else
       Enum.map(fields, fn
@@ -544,7 +544,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(users)
-    |> render("index.json", users: users, for: user, as: :user)
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/lookup"

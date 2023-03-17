@@ -5,7 +5,6 @@
 defmodule Pleroma.WebhookTest do
   use Pleroma.DataCase, async: true
 
-  alias Pleroma.Repo
   alias Pleroma.Webhook
 
   test "creating a webhook" do

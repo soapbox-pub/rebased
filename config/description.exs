@@ -1080,6 +1080,15 @@ config :pleroma, :config_description, [
         description:
           "Number of days for which users won't be able to migrate account again after successful migration.",
         suggestions: [30]
+      },
+      %{
+        key: :languages,
+        type: {:list, :string},
+        description:
+          "Languages to be exposed in /api/v1/instance. Should be in the format of BCP47 language codes.",
+        suggestions: [
+          "en"
+        ]
       }
     ]
   },

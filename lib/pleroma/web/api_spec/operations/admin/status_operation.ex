@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Status adminitration)"],
+      tags: ["Status administration"],
       summary: "Get status",
       operationId: "AdminAPI.StatusController.show",
       parameters: [id_param() | admin_api_params()],
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def update_operation do
     %Operation{
-      tags: ["Status adminitration)"],
+      tags: ["Status administration"],
       summary: "Change the scope of a status",
       operationId: "AdminAPI.StatusController.update",
       parameters: [id_param() | admin_api_params()],
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
 
   def delete_operation do
     %Operation{
-      tags: ["Status adminitration)"],
+      tags: ["Status administration"],
       summary: "Delete status",
       operationId: "AdminAPI.StatusController.delete",
       parameters: [id_param() | admin_api_params()],
@@ -143,7 +143,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
           }
         },
         tags: %Schema{type: :string},
-        is_confirmed: %Schema{type: :string}
+        is_confirmed: %Schema{type: :boolean}
       }
     }
   end

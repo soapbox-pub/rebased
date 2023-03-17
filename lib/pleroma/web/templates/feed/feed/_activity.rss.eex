@@ -4,7 +4,7 @@
   <guid><%= @data["id"] %></guid>
   <title><%= activity_title(@data, Keyword.get(@feed_config, :post_title, %{})) %></title>
   <description><%= activity_description(@data) %></description>
-  <pubDate><%= to_rfc2822(@activity.data["published"]) %></pubDate>
+  <pubDate><%= to_rfc2822(@data["published"]) %></pubDate>
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>

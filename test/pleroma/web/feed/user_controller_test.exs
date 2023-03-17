@@ -57,9 +57,23 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         )
 
       note_activity2 = insert(:note_activity, note: note2)
+
+      note3 =
+        insert(:note,
+          user: user,
+          data: %{
+            "content" => "This note tests whether HTML entities are truncated properly",
+            "summary" => "Won't, didn't fail",
+            "inReplyTo" => note_activity2.id
+          }
+        )
+
+      _note_activity3 = insert(:note_activity, note: note3)
       object = Object.normalize(note_activity, fetch: false)
 
-      [user: user, object: object, max_id: note_activity2.id]
+      encoded_title = FeedView.activity_title(note3.data)
+
+      [user: user, object: object, max_id: note_activity2.id, encoded_title: encoded_title]
     end
 
     test "gets an atom feed", %{conn: conn, user: user, object: object, max_id: max_id} do
@@ -74,7 +88,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//entry/title/text()"l)
 
-      assert activity_titles == ['2hu', '2hu & as']
+      assert activity_titles == ['Won\'t, didn\'...', '2hu', '2hu & as']
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -105,7 +119,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> SweetXml.parse()
         |> SweetXml.xpath(~x"//item/title/text()"l)
 
-      assert activity_titles == ['2hu', '2hu & as']
+      assert activity_titles == ['Won\'t, didn\'...', '2hu', '2hu & as']
       assert resp =~ FeedView.escape(object.data["content"])
       assert resp =~ FeedView.escape(object.data["summary"])
       assert resp =~ FeedView.escape(object.data["context"])
@@ -175,6 +189,30 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
       |> put_req_header("accept", "application/rss+xml")
       |> get("/users/#{user.nickname}/feed.rss")
       |> response(200)
+    end
+
+    test "does not mangle HTML entities midway", %{
+      conn: conn,
+      user: user,
+      object: object,
+      encoded_title: encoded_title
+    } do
+      resp =
+        conn
+        |> put_req_header("accept", "application/atom+xml")
+        |> get(user_feed_path(conn, :feed, user.nickname))
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//entry/title/text()"l)
+
+      assert activity_titles == ['Won\'t, didn\'...', '2hu', '2hu & as']
+      assert resp =~ FeedView.escape(object.data["content"])
+      assert resp =~ FeedView.escape(object.data["summary"])
+      assert resp =~ FeedView.escape(object.data["context"])
+      assert resp =~ encoded_title
     end
   end
 

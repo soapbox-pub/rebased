@@ -30,12 +30,13 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> scrub_html_and_truncate_object_field(object)
   end
 
-  def scrub_html_and_truncate(content, max_length \\ 200) when is_binary(content) do
+  def scrub_html_and_truncate(content, max_length \\ 200, omission \\ "...")
+      when is_binary(content) do
     content
     |> scrub_html
     |> Emoji.Formatter.demojify()
     |> HtmlEntities.decode()
-    |> Formatter.truncate(max_length)
+    |> Formatter.truncate(max_length, omission)
   end
 
   def scrub_html(content) when is_binary(content) do

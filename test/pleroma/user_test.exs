@@ -2727,8 +2727,6 @@ defmodule Pleroma.UserTest do
     test "returns fully qualified nickname for local users when using different domain for webfinger" do
       clear_config([Pleroma.Web.WebFinger, :domain], "plemora.dev")
 
-      host = Pleroma.Web.Endpoint.host()
-
       local_user = insert(:user, nickname: "local_user")
 
       assert User.full_nickname(local_user) == "local_user@plemora.dev"
