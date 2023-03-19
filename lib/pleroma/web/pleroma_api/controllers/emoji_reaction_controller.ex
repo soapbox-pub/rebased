@@ -50,29 +50,35 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
           if not with_muted, do: User.cached_muted_users_ap_ids(user), else: []
       end
 
-    filter_emoji = fn emoji, users ->
+    filter_emoji = fn emoji, users, url ->
       case Enum.reject(users, &(&1 in exclude_ap_ids)) do
         [] -> nil
-        users -> {emoji, users}
+        users -> {emoji, users, url}
       end
     end
 
     reactions
     |> Stream.map(fn
-      [emoji, users] when is_list(users) -> filter_emoji.(emoji, users)
-      {emoji, users} when is_list(users) -> filter_emoji.(emoji, users)
+      [emoji, users, url] when is_list(users) -> filter_emoji.(emoji, users, url)
+      {emoji, users, url} when is_list(users) -> filter_emoji.(emoji, users, url)
+      {emoji, users} when is_list(users) -> filter_emoji.(emoji, users, nil)
       _ -> nil
     end)
     |> Stream.reject(&is_nil/1)
   end
 
   defp filter(reactions, %{emoji: emoji}) when is_binary(emoji) do
-    Enum.filter(reactions, fn [e, _] -> e == emoji end)
+    Enum.filter(reactions, fn [e, _, _] -> e == emoji end)
   end
 
   defp filter(reactions, _), do: reactions
 
   def create(%{assigns: %{user: user}} = conn, %{id: activity_id, emoji: emoji}) do
+    emoji =
+      emoji
+      |> Pleroma.Emoji.fully_qualify_emoji()
+      |> Pleroma.Emoji.maybe_quote()
+
     with {:ok, _activity} <- CommonAPI.react_with_emoji(activity_id, user, emoji) do
       activity = Activity.get_by_id(activity_id)
 
@@ -83,6 +89,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
   end
 
   def delete(%{assigns: %{user: user}} = conn, %{id: activity_id, emoji: emoji}) do
+    emoji =
+      emoji
+      |> Pleroma.Emoji.fully_qualify_emoji()
+      |> Pleroma.Emoji.maybe_quote()
+
     with {:ok, _activity} <- CommonAPI.unreact_with_emoji(activity_id, user, emoji) do
       activity = Activity.get_by_id(activity_id)
 

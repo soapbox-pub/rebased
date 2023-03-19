@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaInstancesOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve federation status",
       description: "Information about instances deemed unreachable by the server",
       operationId: "PleromaInstances.show",

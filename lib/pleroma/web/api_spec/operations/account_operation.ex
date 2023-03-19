@@ -458,7 +458,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.blocks",
       description: "View your blocks. See also accounts/:id/{block,unblock}",
       security: [%{"oAuth" => ["read:blocks"]}],
-      parameters: pagination_params(),
+      parameters: [with_relationships_param() | pagination_params()],
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -467,7 +467,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
   def lookup_operation do
     %Operation{
-      tags: ["Account lookup"],
+      tags: ["Retrieve account information"],
       summary: "Find a user by nickname",
       operationId: "AccountController.lookup",
       parameters: [

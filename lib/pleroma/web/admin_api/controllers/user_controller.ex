@@ -60,19 +60,34 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def delete(%{assigns: %{user: admin}, body_params: %{nicknames: nicknames}} = conn, _) do
     users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
-    Enum.each(users, fn user ->
-      {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
-      Pipeline.common_pipeline(delete_data, local: true)
-    end)
+    if Enum.all?(users, &is_higher_role(admin, &1)) do
+      Enum.each(users, fn user ->
+        {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
+        Pipeline.common_pipeline(delete_data, local: true)
+      end)
 
-    ModerationLog.insert_log(%{
-      actor: admin,
-      subject: users,
-      action: "delete"
-    })
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: users,
+        action: "delete"
+      })
 
-    json(conn, nicknames)
+      json(conn, nicknames)
+    else
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: dgettext("errors", "Forbidden")})
+    end
   end
+
+  # true if actor is greater OR EQUAL in role to target
+  defp is_higher_role(%User{} = actor, %User{} = target) do
+    role_weight(actor) >= role_weight(target)
+  end
+
+  defp role_weight(%User{is_admin: true}), do: 2
+  defp role_weight(%User{is_moderator: true}), do: 1
+  defp role_weight(_), do: 0
 
   def follow(
         %{

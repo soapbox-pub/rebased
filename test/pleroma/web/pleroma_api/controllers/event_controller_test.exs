@@ -175,7 +175,7 @@ defmodule Pleroma.Web.PleromaAPI.EventControllerTest do
       [user: user, conn: conn]
     end
 
-    test "joins an event", %{conn: conn, user: user} do
+    test "joins an event", %{conn: conn} do
       other_user = insert(:user)
 
       {:ok, activity} =

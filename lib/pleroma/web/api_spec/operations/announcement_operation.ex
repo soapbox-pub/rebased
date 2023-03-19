@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ApiSpec.AnnouncementOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Announcement"],
+      tags: ["Announcements"],
       summary: "Retrieve a list of announcements",
       operationId: "MastodonAPI.AnnouncementController.index",
       security: [%{"oAuth" => []}],
@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ApiSpec.AnnouncementOperation do
 
   def mark_read_operation do
     %Operation{
-      tags: ["Announcement"],
+      tags: ["Announcements"],
       summary: "Mark one announcement as read",
       operationId: "MastodonAPI.AnnouncementController.mark_read",
       security: [%{"oAuth" => ["write:accounts"]}],

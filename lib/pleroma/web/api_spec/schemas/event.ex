@@ -102,11 +102,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Event do
       }
     },
     example: %{
-      name: "Example event"
-      # start_time: "2022-02-21T22:00:00.000Z",
-      # end_time: "2022-02-21T23:00:00.000Z",
-      # join_mode: "free",
-      # participants_count: 0
+      name: "Example event",
+      start_time: "2022-02-21T22:00:00.000Z",
+      end_time: "2022-02-21T23:00:00.000Z",
+      join_mode: "free",
+      participants_count: 0
     }
   })
 end

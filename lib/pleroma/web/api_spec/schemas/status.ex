@@ -145,9 +145,18 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         properties: %{
           content: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
+          },
+          content_type: %Schema{
+            type: :string,
+            nullable: true,
+            description: "A MIME type of the status"
           },
           context: %Schema{
             type: :string,
@@ -177,6 +186,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
                 me: %Schema{type: :boolean}
               }
             }
+          },
+          event: %Schema{
+            allOf: [Event],
+            nullable: true,
+            description: "The event attached to the status"
           },
           expires_at: %Schema{
             type: :string,
@@ -215,7 +229,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           },
           spoiler_text: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
           },
@@ -233,16 +251,6 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description:
               "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
-          },
-          content_type: %Schema{
-            type: :string,
-            nullable: true,
-            description: "A MIME type of the status"
-          },
-          event: %Schema{
-            allOf: [Event],
-            nullable: true,
-            description: "The event attached to the status"
           }
         }
       },

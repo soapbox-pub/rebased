@@ -316,6 +316,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
     end
 
+    @tag capture_log: true
     test "save configs setting without explicit key", %{conn: conn} do
       adapter = Application.get_env(:http, :adapter)
       send_user_agent = Application.get_env(:http, :send_user_agent)

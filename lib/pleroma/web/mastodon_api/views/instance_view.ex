@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       thumbnail:
         URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
         |> to_string,
-      languages: ["en"],
+      languages: Keyword.get(instance, :languages, ["en"]),
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
       configuration: configuration(),
@@ -162,6 +162,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
+      "pleroma_custom_emoji_reactions",
       "pleroma_chat_messages",
       "email_list",
       if Config.get([:instance, :show_reactions]) do

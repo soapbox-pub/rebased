@@ -2229,7 +2229,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "it translates a status to user language" do
       user = insert(:user, language: "fr")
-      %{conn: conn, user: user} = oauth_access(["read:statuses"], user: user)
+      %{conn: conn} = oauth_access(["read:statuses"], user: user)
       another_user = insert(:user)
 
       {:ok, activity} =
@@ -2252,7 +2252,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "it returns an error if no target language provided" do
-      %{conn: conn, user: user} = oauth_access(["read:statuses"])
+      %{conn: conn} = oauth_access(["read:statuses"])
       another_user = insert(:user)
 
       {:ok, activity} =
@@ -2261,10 +2261,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           language: "pl"
         })
 
-      response =
-        conn
-        |> post("/api/v1/statuses/#{activity.id}/translate")
-        |> json_response_and_validate_schema(400)
+      conn
+      |> post("/api/v1/statuses/#{activity.id}/translate")
+      |> json_response_and_validate_schema(400)
     end
 
     test "it doesn't translate non-public statuses" do
@@ -2277,10 +2276,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           language: "pl"
         })
 
-      response =
-        conn
-        |> post("/api/v1/statuses/#{activity.id}/translate")
-        |> json_response_and_validate_schema(404)
+      conn
+      |> post("/api/v1/statuses/#{activity.id}/translate")
+      |> json_response_and_validate_schema(404)
     end
   end
 end
