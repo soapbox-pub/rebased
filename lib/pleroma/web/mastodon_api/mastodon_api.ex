@@ -62,7 +62,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
   def get_notifications(user, params \\ %{}) do
     options =
-      cast_params(params) |> Map.update(:include_types, [], fn include_types -> include_types end)
+      params
+      |> Map.delete(:total)
+      |> cast_params()
+      |> Map.update(:include_types, [], fn include_types -> include_types end)
 
     options =
       if ("pleroma:report" not in options.include_types and

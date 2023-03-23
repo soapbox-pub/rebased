@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+- Return `X-Total-Count` on GET `/api/v1/notifications`.
+
 ### Fixed
 - Link previews not working for some websites. Let rich media user-agent be configurable (with `:pleroma, :rich_media, user_agent: "whatever"`).
 

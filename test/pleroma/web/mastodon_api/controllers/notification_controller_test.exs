@@ -49,7 +49,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [%{"status" => %{"content" => response}} | _rest] =
              json_response_and_validate_schema(conn, 200)
 
+    headers = Enum.into(conn.resp_headers, %{})
+
     assert response == expected_response
+    assert headers["x-total-count"] == "1"
   end
 
   test "by default, does not contain pleroma:chat_mention" do

@@ -62,11 +62,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     params =
       Map.new(params, fn {k, v} -> {to_string(k), v} end)
       |> Map.put_new("types", Map.get(params, :include_types, @default_notification_types))
+      |> Map.put(:total, true)
 
-    notifications = MastodonAPI.get_notifications(user, params)
+    %{items: notifications, total: total} = MastodonAPI.get_notifications(user, params)
 
     conn
     |> add_link_headers(notifications)
+    |> put_resp_header("x-total-count", to_string(total))
     |> render("index.json",
       notifications: notifications,
       for: user
