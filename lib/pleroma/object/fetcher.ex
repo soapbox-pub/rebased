@@ -145,6 +145,7 @@ defmodule Pleroma.Object.Fetcher do
     Logger.debug("Fetching object #{id} via AP")
 
     with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
+         {_, true} <- {:mrf, MRF.id_filter(id)},
          {:ok, body} <- get_object(id),
          {:ok, data} <- safe_json_decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
@@ -159,6 +160,9 @@ defmodule Pleroma.Object.Fetcher do
 
       {:error, e} ->
         {:error, e}
+
+      {:mrf, false} ->
+        {:error, {:reject, "Filtered by id"}}
 
       e ->
         {:error, e}
