@@ -145,6 +145,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       when is_list(options) do
     limits = Config.get([:instance, :poll_limits])
 
+    options = options |> Enum.uniq()
+
     with :ok <- validate_poll_expiration(expires_in, limits),
          :ok <- validate_poll_options_amount(options, limits),
          :ok <- validate_poll_options_length(options, limits) do
@@ -180,10 +182,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
-    if Enum.count(options) > max_options do
-      {:error, "Poll can't contain more than #{max_options} options"}
-    else
-      :ok
+    cond do
+      Enum.count(options) < 2 ->
+        {:error, "Poll must contain at least 2 options"}
+
+      Enum.count(options) > max_options ->
+        {:error, "Poll can't contain more than #{max_options} options"}
+
+      true ->
+        :ok
     end
   end
 
