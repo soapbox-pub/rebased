@@ -28,8 +28,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
   def index(%{assigns: %{user: user}} = conn, %{id: activity_id} = params) do
     with true <- Pleroma.Config.get([:instance, :show_reactions]),
          %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
-         %Object{data: %{"reactions" => reactions}} when is_list(reactions) <-
-           Object.normalize(activity, fetch: false) do
+         %Object{} = object <- Object.normalize(activity, fetch: false),
+         reactions <- Object.get_emoji_reactions(object) do
       reactions =
         reactions
         |> filter(params)
@@ -60,9 +60,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
     reactions
     |> Stream.map(fn
       [emoji, users, url] when is_list(users) -> filter_emoji.(emoji, users, url)
-      {emoji, users, url} when is_list(users) -> filter_emoji.(emoji, users, url)
-      {emoji, users} when is_list(users) -> filter_emoji.(emoji, users, nil)
-      _ -> nil
     end)
     |> Stream.reject(&is_nil/1)
   end

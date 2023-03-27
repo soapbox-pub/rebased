@@ -408,11 +408,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def get_cached_emoji_reactions(object) do
-    if is_list(object.data["reactions"]) do
-      object.data["reactions"]
-    else
-      []
-    end
+    Object.get_emoji_reactions(object)
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::

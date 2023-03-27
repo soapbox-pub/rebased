@@ -425,4 +425,30 @@ defmodule Pleroma.Object do
   end
 
   def object_data_hashtags(_), do: []
+
+  def get_emoji_reactions(object) do
+    reactions = object.data["reactions"]
+
+    if is_list(reactions) or is_map(reactions) do
+      reactions
+      |> Enum.map(fn
+        [_emoji, users, _maybe_url] = item when is_list(users) ->
+          item
+
+        [emoji, users] when is_list(users) ->
+          [emoji, users, nil]
+
+        # This case is here to process the Map situation, which will happen
+        # only with the legacy two-value format.
+        {emoji, users} when is_list(users) ->
+          [emoji, users, nil]
+
+        _ ->
+          nil
+      end)
+      |> Enum.reject(&is_nil/1)
+    else
+      []
+    end
+  end
 end

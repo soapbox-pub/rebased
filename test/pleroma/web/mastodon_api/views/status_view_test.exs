@@ -74,6 +74,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
            ]
   end
 
+  test "works with legacy-formatted reactions" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    note =
+      insert(:note,
+        user: user,
+        data: %{
+          "reactions" => [["😿", [other_user.ap_id]]]
+        }
+      )
+
+    activity = insert(:note_activity, user: user, note: note)
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "😿", count: 1, me: false, url: nil, account_ids: [other_user.id]}
+           ]
+  end
+
   test "works correctly with badly formatted emojis" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{status: "yo"})
