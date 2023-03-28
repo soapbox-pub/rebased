@@ -32,7 +32,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "Page",
     "Question",
     "Answer",
-    "Audio"
+    "Audio",
+    "Image"
   ]
   @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
@@ -414,11 +415,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def get_cached_emoji_reactions(object) do
-    if is_list(object.data["reactions"]) do
-      object.data["reactions"]
-    else
-      []
-    end
+    Object.get_emoji_reactions(object)
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::

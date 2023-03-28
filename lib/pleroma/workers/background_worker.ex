@@ -50,5 +50,5 @@ defmodule Pleroma.Workers.BackgroundWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(5)
+  def timeout(_job), do: :timer.seconds(900)
 end
