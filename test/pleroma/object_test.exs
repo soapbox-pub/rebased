@@ -444,4 +444,42 @@ defmodule Pleroma.ObjectTest do
                Enum.sort_by(object.hashtags, & &1.name)
     end
   end
+
+  describe "get_emoji_reactions/1" do
+    test "3-tuple current format" do
+      object = %Object{
+        data: %{
+          "reactions" => [
+            ["x", ["https://some/user"], "https://some/emoji"]
+          ]
+        }
+      }
+
+      assert Object.get_emoji_reactions(object) == object.data["reactions"]
+    end
+
+    test "2-tuple legacy format" do
+      object = %Object{
+        data: %{
+          "reactions" => [
+            ["x", ["https://some/user"]]
+          ]
+        }
+      }
+
+      assert Object.get_emoji_reactions(object) == [["x", ["https://some/user"], nil]]
+    end
+
+    test "Map format" do
+      object = %Object{
+        data: %{
+          "reactions" => %{
+            "x" => ["https://some/user"]
+          }
+        }
+      }
+
+      assert Object.get_emoji_reactions(object) == [["x", ["https://some/user"], nil]]
+    end
+  end
 end
