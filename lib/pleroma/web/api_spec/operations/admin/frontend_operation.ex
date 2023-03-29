@@ -52,7 +52,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.FrontendOperation do
           git: %Schema{type: :string, format: :uri, nullable: true},
           build_url: %Schema{type: :string, format: :uri, nullable: true},
           ref: %Schema{type: :string},
-          installed: %Schema{type: :boolean}
+          installed: %Schema{type: :boolean},
+          installed_refs: %Schema{type: :array, items: %Schema{type: :string}}
         }
       }
     }
