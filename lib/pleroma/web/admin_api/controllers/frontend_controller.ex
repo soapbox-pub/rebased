@@ -18,14 +18,23 @@ defmodule Pleroma.Web.AdminAPI.FrontendController do
   def index(conn, _params) do
     installed = installed()
 
+    # FIrst get frontends from config,
+    # then add frontends that are installed but not in the config
     frontends =
-      [:frontends, :available]
-      |> Config.get([])
+      Config.get([:frontends, :available], [])
       |> Enum.map(fn {name, desc} ->
         desc
         |> Map.put("installed", name in installed)
         |> Map.put("installed_refs", installed_refs(name))
       end)
+
+    frontends =
+      frontends ++
+        (installed
+         |> Enum.filter(fn n -> not Enum.any?(frontends, fn f -> f["name"] == n end) end)
+         |> Enum.map(fn name ->
+           %{"name" => name, "installed" => true, "installed_refs" => installed_refs(name)}
+         end))
 
     render(conn, "index.json", frontends: frontends)
   end
