@@ -6,12 +6,13 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Response
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.NotificationOperation
   alias Pleroma.Web.ApiSpec.Schemas.Chat
   alias Pleroma.Web.ApiSpec.Schemas.Conversation
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Status
+
+  require Pleroma.Constants
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -49,6 +50,7 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
           required: true
         )
       ],
+      requestBody: request_body("Client-sent events", client_sent_events()),
       responses: %{
         101 => switching_protocols_response(),
         200 =>
@@ -288,5 +290,127 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
         example: %{"result" => "success"}
       }
     )
+  end
+
+  defp client_sent_events do
+    %Schema{
+      oneOf: [
+        subscribe_event(),
+        unsubscribe_event(),
+        authenticate_event()
+      ]
+    }
+  end
+
+  defp request_body(description, schema, opts \\ []) do
+    %OpenApiSpex.RequestBody{
+      description: description,
+      content: %{
+        "application/json" => %OpenApiSpex.MediaType{
+          schema: schema,
+          example: opts[:example],
+          examples: opts[:examples]
+        }
+      }
+    }
+  end
+
+  defp client_sent_event_helper(name, description, type, properties, opts) do
+    required = opts[:required] || []
+
+    %Schema{
+      type: :object,
+      title: name,
+      required: [:type] ++ required,
+      description: description,
+      properties:
+        %{
+          type: %Schema{type: :string, enum: [type], description: "Type of the event."}
+        }
+        |> Map.merge(properties),
+      example: opts[:example]
+    }
+  end
+
+  defp subscribe_event do
+    client_sent_event_helper(
+      "Subscribe",
+      "Subscribe to a stream.",
+      "subscribe",
+      stream_specifier(),
+      required: [:stream],
+      example: %{"type" => "subscribe", "stream" => "list", "list" => "1"}
+    )
+  end
+
+  defp unsubscribe_event do
+    client_sent_event_helper(
+      "Unsubscribe",
+      "Unsubscribe from a stream.",
+      "subscribe",
+      stream_specifier(),
+      required: [:stream],
+      example: %{
+        "type" => "unsubscribe",
+        "stream" => "public:remote:media",
+        "instance" => "example.org"
+      }
+    )
+  end
+
+  defp authenticate_event do
+    client_sent_event_helper(
+      "Authenticate",
+      "Authenticate via an access token.",
+      "pleroma:authenticate",
+      %{
+        token: %Schema{
+          type: :string,
+          description: "An OAuth access token with corresponding permissions.",
+          example: "some token"
+        }
+      },
+      required: [:token]
+    )
+  end
+
+  defp stream_specifier do
+    %{
+      stream: %Schema{
+        type: :string,
+        description: "The name of the stream.",
+        enum:
+          Pleroma.Constants.public_streams() ++
+            [
+              "public:remote",
+              "public:remote:media",
+              "user",
+              "user:pleroma_chat",
+              "user:notification",
+              "direct",
+              "list",
+              "hashtag"
+            ]
+      },
+      list: %Schema{
+        type: :string,
+        title: "List id",
+        description: "The id of the list. Required when `stream` is `list`.",
+        example: "some-id"
+      },
+      tag: %Schema{
+        type: :string,
+        title: "Hashtag name",
+        description: "The name of the hashtag. Required when `stream` is `hashtag`.",
+        example: "mew"
+      },
+      instance: %Schema{
+        type: :string,
+        title: "Domain name",
+        description:
+          "Domain name of the instance. Required when `stream` is `public:remote` or `public:remote:media`.",
+        example: "example.org"
+      }
+    }
   end
 end
