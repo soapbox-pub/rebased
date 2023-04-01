@@ -3,12 +3,6 @@ Note: Additional clients may be working but theses are officially supporting Ple
 Feel free to contact us to be added to this list!
 
 ## Desktop
-### Roma for Desktop
-- Homepage: <https://www.pleroma.com/#desktopApp>
-- Source Code: <https://github.com/roma-apps/roma-desktop>
-- Platforms: Windows, Mac, Linux
-- Features: MastoAPI, Streaming Ready
-
 ### Social
 - Source Code: <https://gitlab.gnome.org/World/Social>
 - Contact: [@brainblasted@social.libre.fi](https://social.libre.fi/users/brainblasted)
