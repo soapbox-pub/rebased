@@ -59,9 +59,13 @@ defmodule Pleroma.Web.Streamer do
   end
 
   @doc "Expand and authorizes a stream"
-  @spec get_topic(stream :: String.t(), User.t() | nil, Token.t() | nil, Map.t()) ::
-          {:ok, topic :: String.t()} | {:error, :bad_topic}
+  @spec get_topic(stream :: String.t() | nil, User.t() | nil, Token.t() | nil, Map.t()) ::
+          {:ok, topic :: String.t() | nil} | {:error, :bad_topic}
   def get_topic(stream, user, oauth_token, params \\ %{})
+
+  def get_topic(nil = _stream, _user, _oauth_token, _params) do
+    {:ok, nil}
+  end
 
   # Allow all public steams if the instance allows unauthenticated access.
   # Otherwise, only allow users with valid oauth tokens.

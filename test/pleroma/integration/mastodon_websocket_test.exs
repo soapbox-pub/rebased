@@ -33,7 +33,6 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
   test "refuses invalid requests" do
     capture_log(fn ->
-      assert {:error, %WebSockex.RequestError{code: 404}} = start_socket()
       assert {:error, %WebSockex.RequestError{code: 404}} = start_socket("?stream=ncjdk")
       Process.sleep(30)
     end)
@@ -47,6 +46,10 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:error, %WebSockex.RequestError{code: 401}} = start_socket("?stream=user")
       Process.sleep(30)
     end)
+  end
+
+  test "allows unified stream" do
+    assert {:ok, _} = start_socket()
   end
 
   test "allows public streams without authentication" do

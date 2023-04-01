@@ -32,8 +32,15 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
           req
         end
 
+      topics =
+        if topic do
+          [topic]
+        else
+          []
+        end
+
       {:cowboy_websocket, req,
-       %{user: user, topic: topic, oauth_token: oauth_token, count: 0, timer: nil},
+       %{user: user, topics: topics, oauth_token: oauth_token, count: 0, timer: nil},
        %{idle_timeout: @timeout}}
     else
       {:error, :bad_topic} ->
@@ -50,10 +57,10 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def websocket_init(state) do
     Logger.debug(
-      "#{__MODULE__} accepted websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic}"
+      "#{__MODULE__} accepted websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topics #{state.topics}"
     )
 
-    Streamer.add_socket(state.topic, state.oauth_token)
+    Enum.each(state.topics, fn topic -> Streamer.add_socket(topic, state.oauth_token) end)
     {:ok, %{state | timer: timer()}}
   end
 
@@ -109,10 +116,10 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def terminate(reason, _req, state) do
     Logger.debug(
-      "#{__MODULE__} terminating websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topic #{state.topic || "?"}: #{inspect(reason)}"
+      "#{__MODULE__} terminating websocket connection for user #{(state.user || %{id: "anonymous"}).id}, topics #{state.topics || "?"}: #{inspect(reason)}"
     )
 
-    Streamer.remove_socket(state.topic)
+    Enum.each(state.topics, fn topic -> Streamer.remove_socket(topic) end)
     :ok
   end
 

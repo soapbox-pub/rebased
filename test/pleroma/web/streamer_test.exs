@@ -22,6 +22,10 @@ defmodule Pleroma.Web.StreamerTest do
   setup do: clear_config([:instance, :skip_thread_containment])
 
   describe "get_topic/_ (unauthenticated)" do
+    test "allows no stream" do
+      assert {:ok, nil} = Streamer.get_topic(nil, nil, nil)
+    end
+
     test "allows public" do
       assert {:ok, "public"} = Streamer.get_topic("public", nil, nil)
       assert {:ok, "public:local"} = Streamer.get_topic("public:local", nil, nil)
