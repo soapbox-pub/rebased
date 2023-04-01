@@ -281,7 +281,7 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
 
   defp conversation_event do
     server_sent_event_helper(
-      "Conversation",
+      "Conversation update",
       "An update about a conversation",
       "conversation",
       Conversation
