@@ -421,7 +421,7 @@ The value of the attribute is an array containing one or two elements. The first
 
 For the following stream types, there is a second element in the array:
 
-- `list`: The second element is the id of the list.
+- `list`: The second element is the id of the list, as a string.
 - `hashtag`: The second element is the name of the hashtag.
 - `public:remote:media` and `public:remote`: The second element is the domain of the corresponding instance.
 
@@ -429,11 +429,11 @@ For all other stream types, there is no second element.
 
 Some examples of valid `stream` values:
 
-- `list:1`: List of id 1.
-- `hashtag:mew`: The hashtag #mew.
-- `user:notifications`: Notifications for the current user.
-- `user`: Home timeline.
-- `public:remote:mew.moe`: Public posts from the instance mew.moe .
+- `["list", "1"]`: List of id 1.
+- `["hashtag", "mew"]`: The hashtag #mew.
+- `["user:notifications"]`: Notifications for the current user.
+- `["user"]`: Home timeline.
+- `["public:remote", "mew.moe"]`: Public posts from the instance mew.moe .
 
 ### The unified streaming endpoint
 
@@ -447,7 +447,7 @@ To subscribe to a stream after the connection is established, merge the JSON obj
 For example, to receive updates on the list 1, you can connect to `/api/v1/streaming/?stream=list&list=1`, or send
 
 ```
-{"type": "subscribe", "stream": "list", "list": 1}
+{"type": "subscribe", "stream": "list", "list": "1"}
 ```
 
 upon establishing the websocket connection.
@@ -455,14 +455,14 @@ upon establishing the websocket connection.
 To unsubscribe to list 1, send
 
 ```
-{"type": "unsubscribe", "stream": "list", "list": 1}
+{"type": "unsubscribe", "stream": "list", "list": "1"}
 ```
 
 Note that if you specify a stream that requires a logged-in user in the query string (for example, `user` or `list`), you have to specify the access token when you are trying to establish the connection, i.e. in the query string or via the `sec-websocket-protocol` header.
 
 - `list`
   - Query style: `?stream=list&list=<id>`
-  - Subscribe style: `{"stream": "list", "list": <id>}`
+  - Subscribe style: `{"stream": "list", "list": "<id>"}`
 - `public`, `public:local`, `public:media`, `public:local:media`, `user`, `user:pleroma_chat`, `user:notifications`, `direct`
   - Query style: `?stream=<stream name>`
   - Subscribe style: `{"stream": "<stream name>"}`
