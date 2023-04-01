@@ -180,6 +180,18 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       refute_receive {:text, _}, 1_000
     end
 
+    test "rejects invalid streams" do
+      {:ok, pid} = start_socket()
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "nonsense"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma:respond",
+                "payload" => %{"type" => "subscribe", "result" => "error", "error" => "bad_topic"}
+              }} = decode_json(raw_json)
+    end
+
     test "can unsubscribe" do
       user = insert(:user)
       {:ok, pid} = start_socket()
