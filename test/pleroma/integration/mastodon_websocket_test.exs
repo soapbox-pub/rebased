@@ -433,5 +433,30 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert json == view_json
     end
+
+    test "receives notifications", %{user: reading_user, token: token} do
+      user = insert(:user)
+      CommonAPI.follow(reading_user, user)
+
+      {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
+
+      {:ok, %Pleroma.Activity{id: activity_id} = _activity} =
+        CommonAPI.post(user, %{
+          status: "nice echo chamber @#{reading_user.nickname}",
+          visibility: "private"
+        })
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "notification",
+                "payload" => %{
+                  "status" => %{
+                    "id" => ^activity_id
+                  }
+                }
+              }} = decode_json(raw_json)
+    end
   end
 end
