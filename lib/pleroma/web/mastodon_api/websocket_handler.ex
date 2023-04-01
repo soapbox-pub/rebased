@@ -215,7 +215,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   end
 
   defp handle_client_event(
-         %{"type" => "pleroma.authenticate", "token" => access_token} = _params,
+         %{"type" => "pleroma:authenticate", "token" => access_token} = _params,
          state
        ) do
     with {:auth, nil, nil} <- {:auth, state.user, state.oauth_token},
@@ -223,7 +223,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
       {[
          {:text,
           StreamerView.render("pleroma_respond.json", %{
-            type: "pleroma.authenticate",
+            type: "pleroma:authenticate",
             result: "success"
           })}
        ], %{state | user: user, oauth_token: oauth_token}}
@@ -232,7 +232,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
         {[
            {:text,
             StreamerView.render("pleroma_respond.json", %{
-              type: "pleroma.authenticate",
+              type: "pleroma:authenticate",
               result: "error",
               error: :already_authenticated
             })}
@@ -242,7 +242,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
         {[
            {:text,
             StreamerView.render("pleroma_respond.json", %{
-              type: "pleroma.authenticate",
+              type: "pleroma:authenticate",
               result: "error",
               error: :unauthorized
             })}

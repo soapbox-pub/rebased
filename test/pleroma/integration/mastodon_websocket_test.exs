@@ -95,7 +95,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "success"}
               }} = decode_json(raw_json)
 
@@ -124,16 +124,20 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "success"}
               }} = decode_json(raw_json)
 
-      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "hashtag", tag: "mew"} |> Jason.encode!())
+      WebsocketClient.send_text(
+        pid,
+        %{type: "subscribe", stream: "hashtag", tag: "mew"} |> Jason.encode!()
+      )
+
       assert_receive {:text, raw_json}, 1_000
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "success"}
               }} = decode_json(raw_json)
 
@@ -157,7 +161,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "success"}
               }} = decode_json(raw_json)
 
@@ -166,7 +170,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "ignored"}
               }} = decode_json(raw_json)
 
@@ -184,7 +188,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "success"}
               }} = decode_json(raw_json)
 
@@ -193,7 +197,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "unsubscribe", "result" => "success"}
               }} = decode_json(raw_json)
 
@@ -262,15 +266,15 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       WebsocketClient.send_text(
         pid,
-        %{type: "pleroma.authenticate", token: token.token} |> Jason.encode!()
+        %{type: "pleroma:authenticate", token: token.token} |> Jason.encode!()
       )
 
       assert_receive {:text, raw_json}, 1_000
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
-                "payload" => %{"type" => "pleroma.authenticate", "result" => "success"}
+                "event" => "pleroma:respond",
+                "payload" => %{"type" => "pleroma:authenticate", "result" => "success"}
               }} = decode_json(raw_json)
 
       WebsocketClient.send_text(pid, %{type: "subscribe", stream: "user"} |> Jason.encode!())
@@ -278,7 +282,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{"type" => "subscribe", "result" => "success"}
               }} = decode_json(raw_json)
     end
@@ -288,16 +292,16 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       WebsocketClient.send_text(
         pid,
-        %{type: "pleroma.authenticate", token: "Something else"} |> Jason.encode!()
+        %{type: "pleroma:authenticate", token: "Something else"} |> Jason.encode!()
       )
 
       assert_receive {:text, raw_json}, 1_000
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{
-                  "type" => "pleroma.authenticate",
+                  "type" => "pleroma:authenticate",
                   "result" => "error",
                   "error" => "unauthorized"
                 }
@@ -309,29 +313,29 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       WebsocketClient.send_text(
         pid,
-        %{type: "pleroma.authenticate", token: token.token} |> Jason.encode!()
+        %{type: "pleroma:authenticate", token: token.token} |> Jason.encode!()
       )
 
       assert_receive {:text, raw_json}, 1_000
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
-                "payload" => %{"type" => "pleroma.authenticate", "result" => "success"}
+                "event" => "pleroma:respond",
+                "payload" => %{"type" => "pleroma:authenticate", "result" => "success"}
               }} = decode_json(raw_json)
 
       WebsocketClient.send_text(
         pid,
-        %{type: "pleroma.authenticate", token: "Something else"} |> Jason.encode!()
+        %{type: "pleroma:authenticate", token: "Something else"} |> Jason.encode!()
       )
 
       assert_receive {:text, raw_json}, 1_000
 
       assert {:ok,
               %{
-                "event" => "pleroma.respond",
+                "event" => "pleroma:respond",
                 "payload" => %{
-                  "type" => "pleroma.authenticate",
+                  "type" => "pleroma:authenticate",
                   "result" => "error",
                   "error" => "already_authenticated"
                 }

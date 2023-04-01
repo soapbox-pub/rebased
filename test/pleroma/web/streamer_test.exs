@@ -355,7 +355,12 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.get_topic_and_add_socket("user:pleroma_chat", user, oauth_token)
       Streamer.stream("user:pleroma_chat", {user, cm_ref})
 
-      text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref}, "user:pleroma_chat:#{user.id}")
+      text =
+        StreamerView.render(
+          "chat_update.json",
+          %{chat_message_reference: cm_ref},
+          "user:pleroma_chat:#{user.id}"
+        )
 
       assert text =~ "hey cirno"
       assert_receive {:text, ^text}
@@ -373,7 +378,12 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.get_topic_and_add_socket("user", user, oauth_token)
       Streamer.stream("user", {user, cm_ref})
 
-      text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref}, "user:#{user.id}")
+      text =
+        StreamerView.render(
+          "chat_update.json",
+          %{chat_message_reference: cm_ref},
+          "user:#{user.id}"
+        )
 
       assert text =~ "hey cirno"
       assert_receive {:text, ^text}

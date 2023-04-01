@@ -148,7 +148,7 @@ defmodule Pleroma.Web.StreamerView do
 
   def render("pleroma_respond.json", %{type: type, result: result} = params) do
     %{
-      event: "pleroma.respond",
+      event: "pleroma:respond",
       payload:
         %{
           result: result,
