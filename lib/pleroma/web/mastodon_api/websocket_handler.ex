@@ -214,6 +214,42 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     end
   end
 
+  defp handle_client_event(
+         %{"type" => "pleroma.authenticate", "token" => access_token} = _params,
+         state
+       ) do
+    with {:auth, nil, nil} <- {:auth, state.user, state.oauth_token},
+         {:ok, user, oauth_token} <- authenticate_request(access_token, nil) do
+      {[
+         {:text,
+          StreamerView.render("pleroma_respond.json", %{
+            type: "pleroma.authenticate",
+            result: "success"
+          })}
+       ], %{state | user: user, oauth_token: oauth_token}}
+    else
+      {:auth, _, _} ->
+        {[
+           {:text,
+            StreamerView.render("pleroma_respond.json", %{
+              type: "pleroma.authenticate",
+              result: "error",
+              error: :already_authenticated
+            })}
+         ], state}
+
+      _ ->
+        {[
+           {:text,
+            StreamerView.render("pleroma_respond.json", %{
+              type: "pleroma.authenticate",
+              result: "error",
+              error: :unauthorized
+            })}
+         ], state}
+    end
+  end
+
   defp handle_client_event(params, state) do
     Logger.error("#{__MODULE__} received unknown event: #{inspect(params)}")
     {[], state}

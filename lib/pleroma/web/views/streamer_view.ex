@@ -152,5 +152,6 @@ defmodule Pleroma.Web.StreamerView do
 
   defp maybe_error(%{error: :bad_topic}), do: %{error: "bad_topic"}
   defp maybe_error(%{error: :unauthorized}), do: %{error: "unauthorized"}
+  defp maybe_error(%{error: :already_authenticated}), do: %{error: "already_authenticated"}
   defp maybe_error(_), do: %{}
 end

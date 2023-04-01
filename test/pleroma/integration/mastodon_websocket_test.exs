@@ -224,6 +224,87 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       end)
     end
 
+    test "accepts valid token on client-sent event", %{token: token} do
+      assert {:ok, pid} = start_socket()
+
+      WebsocketClient.send_text(
+        pid,
+        %{type: "pleroma.authenticate", token: token.token} |> Jason.encode!()
+      )
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "pleroma.authenticate", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "user"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+    end
+
+    test "rejects invalid token on client-sent event" do
+      assert {:ok, pid} = start_socket()
+
+      WebsocketClient.send_text(
+        pid,
+        %{type: "pleroma.authenticate", token: "Something else"} |> Jason.encode!()
+      )
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{
+                  "type" => "pleroma.authenticate",
+                  "result" => "error",
+                  "error" => "unauthorized"
+                }
+              }} = decode_json(raw_json)
+    end
+
+    test "rejects new authenticate request if already logged-in", %{token: token} do
+      assert {:ok, pid} = start_socket()
+
+      WebsocketClient.send_text(
+        pid,
+        %{type: "pleroma.authenticate", token: token.token} |> Jason.encode!()
+      )
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "pleroma.authenticate", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      WebsocketClient.send_text(
+        pid,
+        %{type: "pleroma.authenticate", token: "Something else"} |> Jason.encode!()
+      )
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{
+                  "type" => "pleroma.authenticate",
+                  "result" => "error",
+                  "error" => "already_authenticated"
+                }
+              }} = decode_json(raw_json)
+    end
+
     test "disconnect when token is revoked", %{app: app, user: user, token: token} do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
