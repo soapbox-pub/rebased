@@ -116,6 +116,39 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert json == view_json
     end
 
+    test "can subscribe to multiple streams" do
+      user = insert(:user)
+      {:ok, pid} = start_socket()
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "public"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "hashtag", tag: "mew"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "nice echo chamber #mew"})
+
+      assert_receive {:text, raw_json}, 1_000
+      assert {:ok, %{"stream" => stream1}} = Jason.decode(raw_json)
+      assert_receive {:text, raw_json}, 1_000
+      assert {:ok, %{"stream" => stream2}} = Jason.decode(raw_json)
+
+      streams = [stream1, stream2]
+      assert ["hashtag", "mew"] in streams
+      assert ["public"] in streams
+    end
+
     test "won't double subscribe" do
       user = insert(:user)
       {:ok, pid} = start_socket()

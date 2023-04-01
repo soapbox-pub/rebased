@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Streamer do
   require Logger
+  require Pleroma.Constants
 
   alias Pleroma.Activity
   alias Pleroma.Chat.MessageReference
@@ -24,7 +25,7 @@ defmodule Pleroma.Web.Streamer do
 
   def registry, do: @registry
 
-  @public_streams ["public", "public:local", "public:media", "public:local:media"]
+  @public_streams Pleroma.Constants.public_streams()
   @local_streams ["public:local", "public:local:media"]
   @user_streams ["user", "user:notification", "direct", "user:pleroma_chat"]
 
@@ -223,8 +224,8 @@ defmodule Pleroma.Web.Streamer do
   end
 
   defp do_stream("follow_relationship", item) do
-    text = StreamerView.render("follow_relationships_update.json", item)
     user_topic = "user:#{item.follower.id}"
+    text = StreamerView.render("follow_relationships_update.json", item, user_topic)
 
     Logger.debug("Trying to push follow relationship update to #{user_topic}\n\n")
 
@@ -270,9 +271,11 @@ defmodule Pleroma.Web.Streamer do
 
   defp do_stream(topic, %Notification{} = item)
        when topic in ["user", "user:notification"] do
-    Registry.dispatch(@registry, "#{topic}:#{item.user_id}", fn list ->
+    user_topic = "#{topic}:#{item.user_id}"
+
+    Registry.dispatch(@registry, user_topic, fn list ->
       Enum.each(list, fn {pid, _auth} ->
-        send(pid, {:render_with_user, StreamerView, "notification.json", item})
+        send(pid, {:render_with_user, StreamerView, "notification.json", item, user_topic})
       end)
     end)
   end
@@ -281,7 +284,7 @@ defmodule Pleroma.Web.Streamer do
        when topic in ["user", "user:pleroma_chat"] do
     topic = "#{topic}:#{user.id}"
 
-    text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref})
+    text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref}, topic)
 
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, _auth} ->
@@ -309,7 +312,7 @@ defmodule Pleroma.Web.Streamer do
   end
 
   defp push_to_socket(topic, %Participation{} = participation) do
-    rendered = StreamerView.render("conversation.json", participation)
+    rendered = StreamerView.render("conversation.json", participation, topic)
 
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, _} ->
@@ -337,12 +340,15 @@ defmodule Pleroma.Web.Streamer do
       Pleroma.Activity.get_create_by_object_ap_id(item.object.data["id"])
       |> Map.put(:object, item.object)
 
-    anon_render = StreamerView.render("status_update.json", create_activity)
+    anon_render = StreamerView.render("status_update.json", create_activity, topic)
 
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, auth?} ->
         if auth? do
-          send(pid, {:render_with_user, StreamerView, "status_update.json", create_activity})
+          send(
+            pid,
+            {:render_with_user, StreamerView, "status_update.json", create_activity, topic}
+          )
         else
           send(pid, {:text, anon_render})
         end
@@ -351,12 +357,13 @@ defmodule Pleroma.Web.Streamer do
   end
 
   defp push_to_socket(topic, item) do
-    anon_render = StreamerView.render("update.json", item)
+    Logger.debug("topic=#{topic}")
+    anon_render = StreamerView.render("update.json", item, topic)
 
     Registry.dispatch(@registry, topic, fn list ->
       Enum.each(list, fn {pid, auth?} ->
         if auth? do
-          send(pid, {:render_with_user, StreamerView, "update.json", item})
+          send(pid, {:render_with_user, StreamerView, "update.json", item, topic})
         else
           send(pid, {:text, anon_render})
         end
