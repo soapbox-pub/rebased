@@ -342,6 +342,43 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
               }} = decode_json(raw_json)
     end
 
+    test "accepts the 'list' stream", %{token: token, user: user} do
+      posting_user = insert(:user)
+
+      {:ok, list} = Pleroma.List.create("test", user)
+      Pleroma.List.follow(list, posting_user)
+
+      assert {:ok, _} = start_socket("?stream=list&access_token=#{token.token}&list=#{list.id}")
+
+      assert {:ok, pid} = start_socket("?access_token=#{token.token}")
+
+      WebsocketClient.send_text(
+        pid,
+        %{type: "subscribe", stream: "list", list: list.id} |> Jason.encode!()
+      )
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma:respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      WebsocketClient.send_text(
+        pid,
+        %{type: "subscribe", stream: "list", list: to_string(list.id)} |> Jason.encode!()
+      )
+
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma:respond",
+                "payload" => %{"type" => "subscribe", "result" => "ignored"}
+              }} = decode_json(raw_json)
+    end
+
     test "disconnect when token is revoked", %{app: app, user: user, token: token} do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
