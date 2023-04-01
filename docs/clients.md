@@ -23,6 +23,13 @@ Feel free to contact us to be added to this list!
 - Platforms: Windows, Mac, Linux
 - Features: MastoAPI, Streaming Ready
 
+### Fedistar
+- Homepage: <https://fedistar.net>
+- Source Code: <https://github.com/h3poteto/fedistar>
+- Contact: [@h3poteto@pleroma.io](https://pleroma.io/users/h3poteto)
+- Platforms: Windows, Mac, Linux
+- Features: MastoAPI, Streaming Ready
+
 ## Handheld
 ### AndStatus
 - Homepage: <http://andstatus.org/>
