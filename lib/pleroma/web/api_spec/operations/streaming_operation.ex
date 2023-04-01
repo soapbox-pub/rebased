@@ -113,8 +113,8 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
   defp get_schema(schema), do: schema.schema
 
   defp server_sent_event_helper(name, description, type, payload, opts \\ []) do
-    payload_type = opts[:payload_type] || :json
-    has_stream = opts[:has_stream] || true
+    payload_type = Keyword.get(opts, :payload_type, :json)
+    has_stream = Keyword.get(opts, :has_stream, true)
 
     stream_properties =
       if has_stream do
@@ -126,6 +126,24 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
     stream_example = if has_stream, do: %{"stream" => get_schema(stream()).example}, else: %{}
 
     stream_required = if has_stream, do: [:stream], else: []
+
+    payload_schema =
+      if payload_type == :json do
+        %Schema{
+          title: "Event payload",
+          description: "JSON-encoded string of #{get_schema(payload).title}",
+          allOf: [payload]
+        }
+      else
+        payload
+      end
+
+    payload_example =
+      if payload_type == :json do
+        get_schema(payload).example |> Jason.encode!()
+      else
+        get_schema(payload).example
+      end
 
     %Schema{
       type: :object,
@@ -141,22 +159,13 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
             required: true,
             enum: [type]
           },
-          payload:
-            if payload_type == :json do
-              %Schema{
-                title: "Event payload",
-                description: "JSON-encoded string of #{get_schema(payload).title}",
-                allOf: [payload]
-              }
-            else
-              payload
-            end
+          payload: payload_schema
         }
         |> Map.merge(stream_properties),
       example:
         %{
           "event" => type,
-          "payload" => get_schema(payload).example |> Jason.encode!()
+          "payload" => payload_example
         }
         |> Map.merge(stream_example)
     }
@@ -262,7 +271,8 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
         allOf: [FlakeID],
         example: "some-opaque-id"
       },
-      payload_type: :string
+      payload_type: :string,
+      has_stream: false
     )
   end
 
@@ -274,7 +284,7 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
       %Schema{
         type: :object,
         title: "Results",
-        required: [:result],
+        required: [:result, :type],
         properties: %{
           result: %Schema{
             type: :string,
@@ -285,10 +295,15 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
             type: :string,
             title: "Error code",
             description: "An error identifier. Only appears if `result` is `error`."
+          },
+          type: %Schema{
+            type: :string,
+            description: "Type of the request."
           }
         },
-        example: %{"result" => "success"}
-      }
+        example: %{"result" => "success", "type" => "pleroma:authenticate"}
+      },
+      has_stream: false
     )
   end
 
