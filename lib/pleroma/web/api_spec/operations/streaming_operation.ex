@@ -391,7 +391,7 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
     client_sent_event_helper(
       "Unsubscribe",
       "Unsubscribe from a stream.",
-      "subscribe",
+      "unsubscribe",
       stream_specifier(),
       required: [:stream],
       example: %{
