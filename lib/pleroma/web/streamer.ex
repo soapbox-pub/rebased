@@ -357,7 +357,6 @@ defmodule Pleroma.Web.Streamer do
   end
 
   defp push_to_socket(topic, item) do
-    Logger.debug("topic=#{topic}")
     anon_render = StreamerView.render("update.json", item, topic)
 
     Registry.dispatch(@registry, topic, fn list ->
