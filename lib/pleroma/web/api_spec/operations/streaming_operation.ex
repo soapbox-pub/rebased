@@ -25,31 +25,46 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
     %Operation{
       tags: ["Timelines"],
       summary: "Establish streaming connection",
-      description: "Receive statuses in real-time via WebSocket.",
+      description: """
+      Receive statuses in real-time via WebSocket.
+
+      You can specify the access token on the query string or through the `sec-websocket-protocol` header. Using
+      the query string to authenticate is considered unsafe and should not be used unless you have to (e.g. to maintain
+      your client's compatibility with Mastodon).
+
+      You may specify a stream on the query string. If you do so and you are connecting to a stream that requires logged-in users,
+      you must specify the access token at the time of the connection (i.e. via query string or header).
+
+      Otherwise, you have the option to authenticate after you have established the connection through client-sent events.
+
+      The "Request body" section below describes what events clients can send through WebSocket, and the "Responses" section
+      describes what events server will send through WebSocket.
+      """,
       security: [%{"oAuth" => ["read:statuses", "read:notifications"]}],
       operationId: "WebsocketHandler.streaming",
-      parameters: [
-        Operation.parameter(:connection, :header, %Schema{type: :string}, "connection header",
-          required: true
-        ),
-        Operation.parameter(:upgrade, :header, %Schema{type: :string}, "upgrade header",
-          required: true
-        ),
-        Operation.parameter(
-          :"sec-websocket-key",
-          :header,
-          %Schema{type: :string},
-          "sec-websocket-key header",
-          required: true
-        ),
-        Operation.parameter(
-          :"sec-websocket-version",
-          :header,
-          %Schema{type: :string},
-          "sec-websocket-version header",
-          required: true
-        )
-      ],
+      parameters:
+        [
+          Operation.parameter(:connection, :header, %Schema{type: :string}, "connection header",
+            required: true
+          ),
+          Operation.parameter(:upgrade, :header, %Schema{type: :string}, "upgrade header",
+            required: true
+          ),
+          Operation.parameter(
+            :"sec-websocket-key",
+            :header,
+            %Schema{type: :string},
+            "sec-websocket-key header",
+            required: true
+          ),
+          Operation.parameter(
+            :"sec-websocket-version",
+            :header,
+            %Schema{type: :string},
+            "sec-websocket-version header",
+            required: true
+          )
+        ] ++ stream_params() ++ access_token_params(),
       requestBody: request_body("Client-sent events", client_sent_events()),
       responses: %{
         101 => switching_protocols_response(),
@@ -61,6 +76,20 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
           )
       }
     }
+  end
+
+  defp stream_params do
+    stream_specifier()
+    |> Enum.map(fn {name, schema} ->
+      Operation.parameter(name, :query, schema, get_schema(schema).description)
+    end)
+  end
+
+  defp access_token_params do
+    [
+      Operation.parameter(:access_token, :query, token(), token().description),
+      Operation.parameter(:"sec-websocket-protocol", :header, token(), token().description)
+    ]
   end
 
   defp switching_protocols_response do
@@ -379,14 +408,18 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
       "Authenticate via an access token.",
       "pleroma:authenticate",
       %{
-        token: %Schema{
-          type: :string,
-          description: "An OAuth access token with corresponding permissions.",
-          example: "some token"
-        }
+        token: token()
       },
       required: [:token]
     )
+  end
+
+  defp token do
+    %Schema{
+      type: :string,
+      description: "An OAuth access token with corresponding permissions.",
+      example: "some token"
+    }
   end
 
   defp stream_specifier do
