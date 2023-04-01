@@ -7,6 +7,10 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
   alias OpenApiSpex.Response
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
+  alias Pleroma.Web.ApiSpec.NotificationOperation
+  alias Pleroma.Web.ApiSpec.Schemas.Chat
+  alias Pleroma.Web.ApiSpec.Schemas.Conversation
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Status
 
   @spec open_api_operation(atom) :: Operation.t()
@@ -22,6 +26,7 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
       summary: "Establish streaming connection",
       description: "Receive statuses in real-time via WebSocket.",
       security: [%{"oAuth" => ["read:statuses", "read:notifications"]}],
+      operationId: "WebsocketHandler.streaming",
       parameters: [
         Operation.parameter(:connection, :header, %Schema{type: :string}, "connection header",
           required: true
@@ -72,6 +77,11 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
       oneOf: [
         update_event(),
         status_update_event(),
+        notification_event(),
+        chat_update_event(),
+        follow_relationships_update_event(),
+        conversation_event(),
+        delete_event(),
         pleroma_respond_event()
       ]
     }
@@ -156,6 +166,102 @@ defmodule Pleroma.Web.ApiSpec.StreamingOperation do
 
   defp status_update_event do
     server_sent_event_helper("Edit", "A status that was just edited", "status.update", Status)
+  end
+
+  defp notification_event do
+    server_sent_event_helper(
+      "Notification",
+      "A new notification.",
+      "notification",
+      NotificationOperation.notification()
+    )
+  end
+
+  defp follow_relationships_update_event do
+    server_sent_event_helper(
+      "Follow relationships update",
+      "An update to follow relationships.",
+      "pleroma:follow_relationships_update",
+      %Schema{
+        type: :object,
+        title: "Follow relationships update",
+        required: [:state, :follower, :following],
+        properties: %{
+          state: %Schema{
+            type: :string,
+            description: "Follow state of the relationship.",
+            enum: ["follow_pending", "follow_accept", "follow_reject", "unfollow"]
+          },
+          follower: %Schema{
+            type: :object,
+            description: "Information about the follower.",
+            required: [:id, :follower_count, :following_count],
+            properties: %{
+              id: FlakeID,
+              follower_count: %Schema{type: :integer},
+              following_count: %Schema{type: :integer}
+            }
+          },
+          following: %Schema{
+            type: :object,
+            description: "Information about the following person.",
+            required: [:id, :follower_count, :following_count],
+            properties: %{
+              id: FlakeID,
+              follower_count: %Schema{type: :integer},
+              following_count: %Schema{type: :integer}
+            }
+          }
+        },
+        example: %{
+          "state" => "follow_pending",
+          "follower" => %{
+            "id" => "someUser1",
+            "follower_count" => 1,
+            "following_count" => 1
+          },
+          "following" => %{
+            "id" => "someUser2",
+            "follower_count" => 1,
+            "following_count" => 1
+          }
+        }
+      }
+    )
+  end
+
+  defp chat_update_event do
+    server_sent_event_helper(
+      "Chat update",
+      "A new chat message.",
+      "pleroma:chat_update",
+      Chat
+    )
+  end
+
+  defp conversation_event do
+    server_sent_event_helper(
+      "Conversation",
+      "An update about a conversation",
+      "conversation",
+      Conversation
+    )
+  end
+
+  defp delete_event do
+    server_sent_event_helper(
+      "Delete",
+      "A status that was just deleted.",
+      "delete",
+      %Schema{
+        type: :string,
+        title: "Status id",
+        description: "Id of the deleted status",
+        allOf: [FlakeID],
+        example: "some-opaque-id"
+      },
+      payload_type: :string
+    )
   end
 
   defp pleroma_respond_event do
