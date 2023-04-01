@@ -31,6 +31,13 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     WebsocketClient.start_link(self(), path, headers)
   end
 
+  defp decode_json(json) do
+    with {:ok, %{"event" => event, "payload" => payload_text}} <- Jason.decode(json),
+         {:ok, payload} <- Jason.decode(payload_text) do
+      {:ok, %{"event" => event, "payload" => payload}}
+    end
+  end
+
   test "refuses invalid requests" do
     capture_log(fn ->
       assert {:error, %WebSockex.RequestError{code: 404}} = start_socket("?stream=ncjdk")
@@ -77,6 +84,89 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       |> Jason.decode!()
 
     assert json == view_json
+  end
+
+  describe "subscribing via WebSocket" do
+    test "can subscribe" do
+      user = insert(:user)
+      {:ok, pid} = start_socket()
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "public"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "nice echo chamber"})
+
+      assert_receive {:text, raw_json}, 1_000
+      assert {:ok, json} = Jason.decode(raw_json)
+
+      assert "update" == json["event"]
+      assert json["payload"]
+      assert {:ok, json} = Jason.decode(json["payload"])
+
+      view_json =
+        Pleroma.Web.MastodonAPI.StatusView.render("show.json", activity: activity, for: nil)
+        |> Jason.encode!()
+        |> Jason.decode!()
+
+      assert json == view_json
+    end
+
+    test "won't double subscribe" do
+      user = insert(:user)
+      {:ok, pid} = start_socket()
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "public"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "public"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "ignored"}
+              }} = decode_json(raw_json)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "nice echo chamber"})
+
+      assert_receive {:text, _}, 1_000
+      refute_receive {:text, _}, 1_000
+    end
+
+    test "can unsubscribe" do
+      user = insert(:user)
+      {:ok, pid} = start_socket()
+      WebsocketClient.send_text(pid, %{type: "subscribe", stream: "public"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "subscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      WebsocketClient.send_text(pid, %{type: "unsubscribe", stream: "public"} |> Jason.encode!())
+      assert_receive {:text, raw_json}, 1_000
+
+      assert {:ok,
+              %{
+                "event" => "pleroma.respond",
+                "payload" => %{"type" => "unsubscribe", "result" => "success"}
+              }} = decode_json(raw_json)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "nice echo chamber"})
+      refute_receive {:text, _}, 1_000
+    end
   end
 
   describe "with a valid user token" do

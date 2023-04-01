@@ -135,4 +135,22 @@ defmodule Pleroma.Web.StreamerView do
     }
     |> Jason.encode!()
   end
+
+  def render("pleroma_respond.json", %{type: type, result: result} = params) do
+    %{
+      event: "pleroma.respond",
+      payload:
+        %{
+          result: result,
+          type: type
+        }
+        |> Map.merge(maybe_error(params))
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  defp maybe_error(%{error: :bad_topic}), do: %{error: "bad_topic"}
+  defp maybe_error(%{error: :unauthorized}), do: %{error: "unauthorized"}
+  defp maybe_error(_), do: %{}
 end
