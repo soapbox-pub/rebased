@@ -8,12 +8,12 @@ for i in add remove fix security skip; do
     retcode=$?
     if [ $retcode -eq 0 ]; then
         echo "found $CI_MERGE_REQUEST_IID.$i"
+        count=$(( count++ ))
     else
         echo "no $CI_MERGE_REQUEST_IID.$i"
     fi
-    count=$(( $count + 1 - $retcode ))
 done
-if [ $count -eq 1 ]; then
+if [ $count -gt 0 ]; then
     echo "ok"
     exit 0
 else
