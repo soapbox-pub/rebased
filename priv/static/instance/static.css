@@ -249,7 +249,7 @@ button:hover {
   height: 0;
   width: calc(100% + 32px);
   margin: -16px;
-  padding-bottom: calc(100% / 3);
+  padding-bottom: calc((100% + 32px) / 3);
   background-size: cover;
   background-position: center;
 }
@@ -337,6 +337,7 @@ button:hover {
   .account-header__banner {
     width: calc(100% + 80px);
     margin: -40px;
+    padding-bottom: calc((100% + 80px) / 3);
   }
 }
 
