@@ -1,0 +1,22 @@
+#!/bin/sh
+
+echo "looking for change log of $CI_MERGE_REQUEST_IID"
+
+count=0
+for i in add remove fix security skip; do
+    [ -f changelog.d/"$CI_MERGE_REQUEST_IID"."$i" ]
+    retcode=$?
+    if [ $retcode -eq 0 ]; then
+        echo "found $CI_MERGE_REQUEST_IID.$i"
+        count=$(( count + 1 ))
+    else
+        echo "no $CI_MERGE_REQUEST_IID.$i"
+    fi
+done
+if [ $count -gt 0 ]; then
+    echo "ok"
+    exit 0
+else
+    echo "must have a changelog entry or explicitly skip it"
+    exit 1
+fi

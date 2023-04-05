@@ -8,6 +8,13 @@ variables: &global_variables
   DB_PORT: 5432
   MIX_ENV: test
 
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
 cache: &global_cache_policy
   key:
     files:
@@ -17,6 +24,7 @@ cache: &global_cache_policy
     - _build
 
 stages:
+  - check-changelog
   - build
   - test
   - benchmark
@@ -31,6 +39,17 @@ before_script:
 
 after_script:
   - rm -rf _build/*/lib/pleroma
+
+check-changelog:
+  stage: check-changelog
+  image: alpine
+  rules:
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+  before_script: ''
+  after_script: ''
+  cache: {}
+  script:
+    - sh ./tools/check-changelog
 
 build:
   stage: build
