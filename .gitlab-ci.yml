@@ -31,6 +31,7 @@ stages:
   - deploy
   - release
   - docker
+  - docker-combine
 
 before_script:
   - echo $MIX_ENV
@@ -380,6 +381,14 @@ arm64-musl:
     entrypoint: [""]
   cache: {}
   dependencies: []
+  needs:
+    - spec-build
+    - unit-testing
+    - unit-testing-erratic
+    - unit-testing-rum
+    - lint
+    - analysis
+    - cycles
   before_script: &before-kaniko
     - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
     - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
@@ -480,3 +489,65 @@ kaniko-release:linux/arm:
   extends:
     - .kaniko-release
     - .kaniko:linux/arm
+
+.docker-combine:
+  stage: docker-combine
+  image: docker:cli
+  cache: {}
+  before_script:
+    - 'BUILD_ARCHES="linux/amd64 linux/arm64/v8 linux/arm/v7"'
+    - export IMAGE_TAG=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - export IMAGE_TAG_SLUG=$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - export IMAGE_TAG_LATEST=$CI_REGISTRY_IMAGE:latest
+    - export IMAGE_TAG_LATEST_STABLE=$CI_REGISTRY_IMAGE:latest-stable
+    - 'IMAGES=; for arch in $BUILD_ARCHES; do IMAGES="$IMAGES $CI_REGISTRY_IMAGE/$arch:$CI_COMMIT_SHORT_SHA"; done'
+    - 'IMAGES_SLUG=; for arch in $BUILD_ARCHES; do IMAGES_SLUG="$IMAGES_SLUG $CI_REGISTRY_IMAGE/$arch:$CI_COMMIT_REF_SLUG"; done'
+    - 'IMAGES_LATEST=; for arch in $BUILD_ARCHES; do IMAGES_LATEST="$IMAGES_LATEST $CI_REGISTRY_IMAGE/$arch:latest"; done'
+    - 'IMAGES_LATEST_STABLE=; for arch in $BUILD_ARCHES; do IMAGES_LATEST_STABLE="$IMAGES_LATEST_STABLE $CI_REGISTRY_IMAGE/$arch:latest"; done'
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin
+
+docker-combine:latest:
+  extends: .docker-combine
+  only:
+    - develop@pleroma/pleroma
+  needs:
+    - 'kaniko-latest:linux/amd64'
+    - 'kaniko-latest:linux/arm64'
+    - 'kaniko-latest:linux/arm'
+  script:
+    - 'docker manifest create $IMAGE_TAG $IMAGES'
+    - 'docker manifest push $IMAGE_TAG'
+    - 'docker manifest create $IMAGE_TAG_SLUG $IMAGES_SLUG'
+    - 'docker manifest push $IMAGE_TAG_SLUG'
+    - 'docker manifest create $IMAGE_TAG_LATEST $IMAGES_LATEST'
+    - 'docker manifest push $IMAGE_TAG_LATEST'
+
+docker-combine:stable:
+  extends: .docker-combine
+  only:
+    - stable@pleroma/pleroma
+  needs:
+    - 'kaniko-stable:linux/amd64'
+    - 'kaniko-stable:linux/arm64'
+    - 'kaniko-stable:linux/arm'
+  script:
+    - 'docker manifest create $IMAGE_TAG $IMAGES'
+    - 'docker manifest push $IMAGE_TAG'
+    - 'docker manifest create $IMAGE_TAG_SLUG $IMAGES_SLUG'
+    - 'docker manifest push $IMAGE_TAG_SLUG'
+    - 'docker manifest create $IMAGE_TAG_LATEST_STABLE $IMAGES_LATEST_STABLE'
+    - 'docker manifest push $IMAGE_TAG_LATEST_STABLE'
+
+docker-combine:release:
+  extends: .docker-combine
+  only:
+    - /^release/.*$/@pleroma/pleroma
+  needs:
+    - 'kaniko-release:linux/amd64'
+    - 'kaniko-release:linux/arm64'
+    - 'kaniko-release:linux/arm'
+  script:
+    - 'docker manifest create $IMAGE_TAG $IMAGES'
+    - 'docker manifest push $IMAGE_TAG'
+    - 'docker manifest create $IMAGE_TAG_SLUG $IMAGES_SLUG'
+    - 'docker manifest push $IMAGE_TAG_SLUG'
