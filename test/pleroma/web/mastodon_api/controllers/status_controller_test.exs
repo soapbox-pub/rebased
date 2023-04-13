@@ -626,7 +626,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/statuses", %{
           "status" => "desu~",
-          "poll" => %{"options" => Enum.map(0..limit, fn _ -> "desu" end), "expires_in" => 1}
+          "poll" => %{
+            "options" => Enum.map(0..limit, fn num -> "desu #{num}" end),
+            "expires_in" => 1
+          }
         })
 
       %{"error" => error} = json_response_and_validate_schema(conn, 422)
@@ -642,7 +645,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "...",
           "poll" => %{
-            "options" => [Enum.reduce(0..limit, "", fn _, acc -> acc <> "." end)],
+            "options" => [String.duplicate(".", limit + 1), "lol"],
             "expires_in" => 1
           }
         })
@@ -723,6 +726,32 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert object.data["content"] == "very cool poll"
       assert object.data["type"] == "Question"
       assert length(object.data["oneOf"]) == 3
+    end
+
+    test "cannot have only one option", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "desu~",
+          "poll" => %{"options" => ["mew"], "expires_in" => 1}
+        })
+
+      %{"error" => error} = json_response_and_validate_schema(conn, 422)
+      assert error == "Poll must contain at least 2 options"
+    end
+
+    test "cannot have only duplicated options", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "desu~",
+          "poll" => %{"options" => ["mew", "mew"], "expires_in" => 1}
+        })
+
+      %{"error" => error} = json_response_and_validate_schema(conn, 422)
+      assert error == "Poll must contain at least 2 options"
     end
   end
 
