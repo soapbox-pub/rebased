@@ -2629,45 +2629,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :esshd,
-    label: "ESSHD",
-    type: :group,
-    description:
-      "Before enabling this you must add :esshd to mix.exs as one of the extra_applications " <>
-        "and generate host keys in your priv dir with ssh-keygen -m PEM -N \"\" -b 2048 -t rsa -f ssh_host_rsa_key",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables SSH"
-      },
-      %{
-        key: :priv_dir,
-        type: :string,
-        description: "Dir with SSH keys",
-        suggestions: ["/some/path/ssh_keys"]
-      },
-      %{
-        key: :handler,
-        type: :string,
-        description: "Handler module",
-        suggestions: ["Pleroma.BBS.Handler"]
-      },
-      %{
-        key: :port,
-        type: :integer,
-        description: "Port to connect",
-        suggestions: [10_022]
-      },
-      %{
-        key: :password_authenticator,
-        type: :string,
-        description: "Authenticator module",
-        suggestions: ["Pleroma.BBS.Authenticator"]
-      }
-    ]
-  },
-  %{
     group: :mime,
     label: "Mime Types",
     type: :group,

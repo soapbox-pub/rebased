@@ -1502,8 +1502,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       clear_config(:database_config_whitelist, [
         {:pleroma, :instance},
         {:pleroma, :activitypub},
-        {:pleroma, Pleroma.Upload},
-        {:esshd}
+        {:pleroma, Pleroma.Upload}
       ])
 
       conn = get(conn, "/api/pleroma/admin/config/descriptions")
@@ -1522,9 +1521,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
       web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
       assert web_endpoint["children"]
-
-      esshd = Enum.find(children, fn c -> c["group"] == ":esshd" end)
-      assert esshd["children"]
     end
   end
 end
