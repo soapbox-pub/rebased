@@ -1509,7 +1509,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
       children = json_response_and_validate_schema(conn, 200)
 
-      assert length(children) == 4
+      assert length(children) == 3
 
       assert Enum.count(children, fn c -> c["group"] == ":pleroma" end) == 3
 
