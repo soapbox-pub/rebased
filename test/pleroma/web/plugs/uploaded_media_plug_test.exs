@@ -37,7 +37,7 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
 
     assert Enum.any?(
              conn.resp_headers,
-             &(&1 == {"content-disposition", "filename=\"\\\"cofe\\\".gif\""})
+             &(&1 == {"content-disposition", "inline; filename=\"\\\"cofe\\\".gif\""})
            )
   end
 end

@@ -37,7 +37,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
         %{query_params: %{"name" => name}} = conn ->
           name = String.replace(name, "\"", "\\\"")
 
-          put_resp_header(conn, "content-disposition", "filename=\"#{name}\"")
+          put_resp_header(conn, "content-disposition", "inline; filename=\"#{name}\"")
 
         conn ->
           conn
