@@ -2,7 +2,10 @@
 
 echo "looking for change log"
 
-git diff --raw $CI_MERGE_REQUEST_TARGET_BRANCH_NAME HEAD -- changelog.d | \
+git remote add upstream https://git.pleroma.social/pleroma/pleroma.git
+git fetch upstream ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:refs/remotes/upstream/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+
+git diff --raw upstream/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME HEAD -- changelog.d | \
     grep ' A\t' | grep '\.\(skip\|add\|remove\|fix\|security\)$'
 ret=$?
 
