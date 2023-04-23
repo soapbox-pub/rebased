@@ -49,6 +49,7 @@ check-changelog:
   after_script: ''
   cache: {}
   script:
+    - apk add git
     - sh ./tools/check-changelog
 
 build:
