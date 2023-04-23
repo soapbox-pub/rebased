@@ -44,6 +44,10 @@ check-changelog:
   stage: check-changelog
   image: alpine
   rules:
+    - if: $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == 'pleroma/pleroma' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == 'weblate-extract'
+      when: never
+    - if: $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == 'pleroma/pleroma' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == 'weblate'
+      when: never
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
   before_script: ''
   after_script: ''
