@@ -404,28 +404,28 @@ arm64-musl:
   only:
     - develop@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --customPlatform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST
 
 .kaniko-stable:
   extends: .kaniko
   only:
     - stable@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --customPlatform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST_STABLE
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST_STABLE
 
 .kaniko-release:
   extends: .kaniko
   only:
     - /^release/.*$/@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --customPlatform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
 
 .kaniko-adhoc:
   extends: .kaniko
   only:
     - /^build-docker/.*$/@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --customPlatform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
 
 .kaniko:linux/amd64:
   variables:
