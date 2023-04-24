@@ -392,10 +392,10 @@ arm64-musl:
   before_script: &before-kaniko
     - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
     - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
-    - export IMAGE_TAG=$CI_REGISTRY_IMAGE/$BUILD_ARCH:$CI_COMMIT_SHORT_SHA
-    - export IMAGE_TAG_SLUG=$CI_REGISTRY_IMAGE/$BUILD_ARCH:$CI_COMMIT_REF_SLUG
-    - export IMAGE_TAG_LATEST=$CI_REGISTRY_IMAGE/$BUILD_ARCH:latest
-    - export IMAGE_TAG_LATEST_STABLE=$CI_REGISTRY_IMAGE/$BUILD_ARCH:latest-stable
+    - export IMAGE_TAG=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:$CI_COMMIT_SHORT_SHA
+    - export IMAGE_TAG_SLUG=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:$CI_COMMIT_REF_SLUG
+    - export IMAGE_TAG_LATEST=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:latest
+    - export IMAGE_TAG_LATEST_STABLE=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:latest-stable
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
 
@@ -430,18 +430,21 @@ arm64-musl:
 .kaniko:linux/amd64:
   variables:
     BUILD_ARCH: linux/amd64
+    BUILD_ARCH_IMG_SUFFIX: linux-amd64
   tags:
     - amd64
 
 .kaniko:linux/arm64:
   variables:
-    BUILD_ARCH: linux/arm64
+    BUILD_ARCH: linux/arm64/v8
+    BUILD_ARCH_IMG_SUFFIX: linux-arm64-v8
   tags:
     - arm
 
 .kaniko:linux/arm:
   variables:
-    BUILD_ARCH: linux/arm
+    BUILD_ARCH: linux/arm/v7
+    BUILD_ARCH_IMG_SUFFIX: linux-arm-v7
   tags:
     - arm32-specified
 
@@ -495,7 +498,7 @@ kaniko-release:linux/arm:
   image: docker:cli
   cache: {}
   before_script:
-    - 'BUILD_ARCHES="linux/amd64 linux/arm64/v8 linux/arm/v7"'
+    - 'BUILD_ARCHES="linux-amd64 linux-arm64-v8 linux-arm-v7"'
     - export IMAGE_TAG=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
     - export IMAGE_TAG_SLUG=$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
     - export IMAGE_TAG_LATEST=$CI_REGISTRY_IMAGE:latest
