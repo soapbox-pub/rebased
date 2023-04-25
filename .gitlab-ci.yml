@@ -31,6 +31,7 @@ stages:
   - deploy
   - release
   - docker
+  - docker-combine
 
 before_script:
   - echo $MIX_ENV
@@ -373,104 +374,186 @@ arm64-musl:
   before_script: *before-release-musl
   script: *release
 
-docker:
+.kaniko:
   stage: docker
-  image: docker:latest
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   cache: {}
   dependencies: []
-  variables: &docker-variables
-    DOCKER_DRIVER: overlay2
-    DOCKER_HOST: unix:///var/run/docker.sock
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-    IMAGE_TAG_SLUG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
-    IMAGE_TAG_LATEST_STABLE: $CI_REGISTRY_IMAGE:latest-stable
-    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.6.3/buildx-v0.6.3.linux-amd64
-    DOCKER_BUILDX_HASH: 980e6b9655f971991fbbb5fd6cd19f1672386195
-  before_script: &before-docker
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $IMAGE_TAG_SLUG || true
+  needs:
+    - spec-build
+    - unit-testing
+    - unit-testing-erratic
+    - unit-testing-rum
+    - lint
+    - analysis
+    - cycles
+  before_script: &before-kaniko
     - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
     - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
-  allow_failure: true
-  script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
-  tags:
-    - dind
+    - export IMAGE_TAG=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:$CI_COMMIT_SHORT_SHA
+    - export IMAGE_TAG_SLUG=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:$CI_COMMIT_REF_SLUG
+    - export IMAGE_TAG_LATEST=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:latest
+    - export IMAGE_TAG_LATEST_STABLE=$CI_REGISTRY_IMAGE/$BUILD_ARCH_IMG_SUFFIX:latest-stable
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+
+.kaniko-latest:
+  extends: .kaniko
   only:
     - develop@pleroma/pleroma
-
-docker-stable:
-  stage: docker
-  image: docker:latest
-  cache: {}
-  dependencies: []
-  variables: *docker-variables
-  before_script: *before-docker
-  allow_failure: true
   script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
-  tags:
-    - dind
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST
+
+.kaniko-stable:
+  extends: .kaniko
   only:
     - stable@pleroma/pleroma
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST_STABLE
 
-docker-release:
-  stage: docker
-  image: docker:latest
-  cache: {}
-  dependencies: []
-  variables: *docker-variables
-  before_script: *before-docker
-  allow_failure: true
-  script:
-  script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
-  tags:
-    - dind
+.kaniko-release:
+  extends: .kaniko
   only:
     - /^release/.*$/@pleroma/pleroma
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
 
-docker-adhoc:
-  stage: docker
-  image: docker:latest
-  cache: {}
-  dependencies: []
-  variables: *docker-variables
-  before_script: *before-docker
-  allow_failure: true
-  script:
-  script:
-    - mkdir -p /root/.docker/cli-plugins
-    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
-    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
-    - chmod +x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name mbuilder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
-  tags:
-    - dind
+.kaniko-adhoc:
+  extends: .kaniko
   only:
     - /^build-docker/.*$/@pleroma/pleroma
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
+
+.kaniko:linux/amd64:
+  variables:
+    BUILD_ARCH: linux/amd64
+    BUILD_ARCH_IMG_SUFFIX: linux-amd64
+    ELIXIR_IMG: hexpm/elixir
+  tags:
+    - amd64
+
+.kaniko:linux/arm64:
+  variables:
+    BUILD_ARCH: linux/arm64/v8
+    BUILD_ARCH_IMG_SUFFIX: linux-arm64-v8
+    ELIXIR_IMG: hexpm/elixir
+  tags:
+    - arm
+
+.kaniko:linux/arm:
+  variables:
+    BUILD_ARCH: linux/arm/v7
+    BUILD_ARCH_IMG_SUFFIX: linux-arm-v7
+    ELIXIR_IMG: git.pleroma.social:5050/pleroma/ci-image/elixir-linux-arm-v7
+  tags:
+    - arm32-specified
+
+kaniko-latest:linux/amd64:
+  extends:
+    - .kaniko-latest
+    - .kaniko:linux/amd64
+
+kaniko-latest:linux/arm64:
+  extends:
+    - .kaniko-latest
+    - .kaniko:linux/arm64
+
+kaniko-latest:linux/arm:
+  extends:
+    - .kaniko-latest
+    - .kaniko:linux/arm
+
+kaniko-stable:linux/amd64:
+  extends:
+    - .kaniko-stable
+    - .kaniko:linux/amd64
+
+kaniko-stable:linux/arm64:
+  extends:
+    - .kaniko-stable
+    - .kaniko:linux/arm64
+
+kaniko-stable:linux/arm:
+  extends:
+    - .kaniko-stable
+    - .kaniko:linux/arm
+
+kaniko-release:linux/amd64:
+  extends:
+    - .kaniko-release
+    - .kaniko:linux/amd64
+
+kaniko-release:linux/arm64:
+  extends:
+    - .kaniko-release
+    - .kaniko:linux/arm64
+
+kaniko-release:linux/arm:
+  extends:
+    - .kaniko-release
+    - .kaniko:linux/arm
+
+.docker-combine:
+  stage: docker-combine
+  image: docker:cli
+  cache: {}
+  before_script:
+    - 'BUILD_ARCHES="linux-amd64 linux-arm64-v8 linux-arm-v7"'
+    - export IMAGE_TAG=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - export IMAGE_TAG_SLUG=$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - export IMAGE_TAG_LATEST=$CI_REGISTRY_IMAGE:latest
+    - export IMAGE_TAG_LATEST_STABLE=$CI_REGISTRY_IMAGE:latest-stable
+    - 'IMAGES=; for arch in $BUILD_ARCHES; do IMAGES="$IMAGES $CI_REGISTRY_IMAGE/$arch:$CI_COMMIT_SHORT_SHA"; done'
+    - 'IMAGES_SLUG=; for arch in $BUILD_ARCHES; do IMAGES_SLUG="$IMAGES_SLUG $CI_REGISTRY_IMAGE/$arch:$CI_COMMIT_REF_SLUG"; done'
+    - 'IMAGES_LATEST=; for arch in $BUILD_ARCHES; do IMAGES_LATEST="$IMAGES_LATEST $CI_REGISTRY_IMAGE/$arch:latest"; done'
+    - 'IMAGES_LATEST_STABLE=; for arch in $BUILD_ARCHES; do IMAGES_LATEST_STABLE="$IMAGES_LATEST_STABLE $CI_REGISTRY_IMAGE/$arch:latest"; done'
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin
+
+docker-combine:latest:
+  extends: .docker-combine
+  only:
+    - develop@pleroma/pleroma
+  needs:
+    - 'kaniko-latest:linux/amd64'
+    - 'kaniko-latest:linux/arm64'
+    - 'kaniko-latest:linux/arm'
+  script:
+    - 'docker manifest create $IMAGE_TAG $IMAGES'
+    - 'docker manifest push $IMAGE_TAG'
+    - 'docker manifest create $IMAGE_TAG_SLUG $IMAGES_SLUG'
+    - 'docker manifest push $IMAGE_TAG_SLUG'
+    - 'docker manifest create $IMAGE_TAG_LATEST $IMAGES_LATEST'
+    - 'docker manifest push $IMAGE_TAG_LATEST'
+
+docker-combine:stable:
+  extends: .docker-combine
+  only:
+    - stable@pleroma/pleroma
+  needs:
+    - 'kaniko-stable:linux/amd64'
+    - 'kaniko-stable:linux/arm64'
+    - 'kaniko-stable:linux/arm'
+  script:
+    - 'docker manifest create $IMAGE_TAG $IMAGES'
+    - 'docker manifest push $IMAGE_TAG'
+    - 'docker manifest create $IMAGE_TAG_SLUG $IMAGES_SLUG'
+    - 'docker manifest push $IMAGE_TAG_SLUG'
+    - 'docker manifest create $IMAGE_TAG_LATEST_STABLE $IMAGES_LATEST_STABLE'
+    - 'docker manifest push $IMAGE_TAG_LATEST_STABLE'
+
+docker-combine:release:
+  extends: .docker-combine
+  only:
+    - /^release/.*$/@pleroma/pleroma
+  needs:
+    - 'kaniko-release:linux/amd64'
+    - 'kaniko-release:linux/arm64'
+    - 'kaniko-release:linux/arm'
+  script:
+    - 'docker manifest create $IMAGE_TAG $IMAGES'
+    - 'docker manifest push $IMAGE_TAG'
+    - 'docker manifest create $IMAGE_TAG_SLUG $IMAGES_SLUG'
+    - 'docker manifest push $IMAGE_TAG_SLUG'
