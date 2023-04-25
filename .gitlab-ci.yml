@@ -411,26 +411,27 @@ arm64-musl:
   only:
     - stable@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST_STABLE
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST_STABLE
 
 .kaniko-release:
   extends: .kaniko
   only:
     - /^release/.*$/@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
 
 .kaniko-adhoc:
   extends: .kaniko
   only:
     - /^build-docker/.*$/@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG
 
 .kaniko:linux/amd64:
   variables:
     BUILD_ARCH: linux/amd64
     BUILD_ARCH_IMG_SUFFIX: linux-amd64
+    ELIXIR_IMG: hexpm/elixir
   tags:
     - amd64
 
@@ -438,6 +439,7 @@ arm64-musl:
   variables:
     BUILD_ARCH: linux/arm64/v8
     BUILD_ARCH_IMG_SUFFIX: linux-arm64-v8
+    ELIXIR_IMG: hexpm/elixir
   tags:
     - arm
 
@@ -445,6 +447,7 @@ arm64-musl:
   variables:
     BUILD_ARCH: linux/arm/v7
     BUILD_ARCH_IMG_SUFFIX: linux-arm-v7
+    ELIXIR_IMG: git.pleroma.social:5050/pleroma/ci-image/elixir-linux-arm-v7
   tags:
     - arm32-specified
 
