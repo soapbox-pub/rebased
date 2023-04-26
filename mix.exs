@@ -78,8 +78,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :fast_sanitize,
         :os_mon,
-        :ssl,
-        :esshd
+        :ssl
       ],
       included_applications: [:ex_syslogger]
     ]
@@ -181,7 +180,6 @@ defmodule Pleroma.Mixfile do
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
-      {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:flake_id, "~> 0.1.0"},
