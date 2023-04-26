@@ -35,9 +35,9 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn =
       case fetch_query_params(conn) do
         %{query_params: %{"name" => name}} = conn ->
-          name = String.replace(name, "\"", "\\\"")
+          name = String.replace(name, ~s["], ~s[\\"])
 
-          put_resp_header(conn, "content-disposition", "filename=\"#{name}\"")
+          put_resp_header(conn, "content-disposition", ~s[inline; filename="#{name}"])
 
         conn ->
           conn
