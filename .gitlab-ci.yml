@@ -404,7 +404,7 @@ arm64-musl:
   only:
     - develop@pleroma/pleroma
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --custom-platform=$BUILD_ARCH --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP --build-arg ELIXIR_IMG=$ELIXIR_IMG --destination $IMAGE_TAG --destination $IMAGE_TAG_SLUG --destination $IMAGE_TAG_LATEST
 
 .kaniko-stable:
   extends: .kaniko
