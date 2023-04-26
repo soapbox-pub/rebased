@@ -510,7 +510,8 @@ kaniko-release:linux/arm:
     - 'IMAGES_SLUG=; for arch in $BUILD_ARCHES; do IMAGES_SLUG="$IMAGES_SLUG $CI_REGISTRY_IMAGE/$arch:$CI_COMMIT_REF_SLUG"; done'
     - 'IMAGES_LATEST=; for arch in $BUILD_ARCHES; do IMAGES_LATEST="$IMAGES_LATEST $CI_REGISTRY_IMAGE/$arch:latest"; done'
     - 'IMAGES_LATEST_STABLE=; for arch in $BUILD_ARCHES; do IMAGES_LATEST_STABLE="$IMAGES_LATEST_STABLE $CI_REGISTRY_IMAGE/$arch:latest"; done'
-    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin
+    - mkdir -p ~/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > ~/.docker/config.json
 
 docker-combine:latest:
   extends: .docker-combine
