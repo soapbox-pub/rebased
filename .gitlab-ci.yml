@@ -381,14 +381,6 @@ arm64-musl:
     entrypoint: [""]
   cache: {}
   dependencies: []
-  needs:
-    - spec-build
-    - unit-testing
-    - unit-testing-erratic
-    - unit-testing-rum
-    - lint
-    - analysis
-    - cycles
   before_script: &before-kaniko
     - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
     - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
@@ -517,10 +509,6 @@ docker-combine:latest:
   extends: .docker-combine
   only:
     - develop@pleroma/pleroma
-  needs:
-    - 'kaniko-latest:linux/amd64'
-    - 'kaniko-latest:linux/arm64'
-    - 'kaniko-latest:linux/arm'
   script:
     - 'docker manifest create $IMAGE_TAG $IMAGES'
     - 'docker manifest push $IMAGE_TAG'
@@ -533,10 +521,6 @@ docker-combine:stable:
   extends: .docker-combine
   only:
     - stable@pleroma/pleroma
-  needs:
-    - 'kaniko-stable:linux/amd64'
-    - 'kaniko-stable:linux/arm64'
-    - 'kaniko-stable:linux/arm'
   script:
     - 'docker manifest create $IMAGE_TAG $IMAGES'
     - 'docker manifest push $IMAGE_TAG'
@@ -549,10 +533,6 @@ docker-combine:release:
   extends: .docker-combine
   only:
     - /^release/.*$/@pleroma/pleroma
-  needs:
-    - 'kaniko-release:linux/amd64'
-    - 'kaniko-release:linux/arm64'
-    - 'kaniko-release:linux/arm'
   script:
     - 'docker manifest create $IMAGE_TAG $IMAGES'
     - 'docker manifest push $IMAGE_TAG'
