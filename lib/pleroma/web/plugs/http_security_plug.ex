@@ -104,7 +104,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
         {[img_src, " https:"], [media_src, " https:"]}
       end
 
-    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
+    connect_src = ["connect-src 'self' blob: https: ", static_url, ?\s, websocket_url]
 
     connect_src =
       if Config.get(:env) == :dev do
