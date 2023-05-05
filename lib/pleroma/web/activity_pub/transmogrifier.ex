@@ -20,7 +20,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
-  alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
 
@@ -966,25 +965,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ]
     )
     |> Repo.update_all([])
-  end
-
-  def upgrade_user_from_ap_id(ap_id) do
-    with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
-         {:ok, user} <- update_user(user, data) do
-      {:ok, _pid} = Task.start(fn -> ActivityPub.pinned_fetch_task(user) end)
-      TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
-      {:ok, user}
-    else
-      %User{} = user -> {:ok, user}
-      e -> e
-    end
-  end
-
-  defp update_user(user, data) do
-    user
-    |> User.remote_user_changeset(data)
-    |> User.update_and_set_cache()
   end
 
   def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do
