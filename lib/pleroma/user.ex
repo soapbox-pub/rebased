@@ -2147,10 +2147,6 @@ defmodule Pleroma.User do
     end
   end
 
-  def ap_enabled?(%User{local: true}), do: true
-  def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
-  def ap_enabled?(_), do: false
-
   @doc "Gets or fetch a user by uri or nickname."
   @spec get_or_fetch(String.t()) :: {:ok, User.t()} | {:error, String.t()}
   def get_or_fetch("http://" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
