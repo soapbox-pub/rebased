@@ -1328,7 +1328,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "cancels a pending follow for a remote user" do
       follower = insert(:user)
-      followed = insert(:user, is_locked: true, local: false, ap_enabled: true)
+      followed = insert(:user, is_locked: true, local: false)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
