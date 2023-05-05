@@ -73,6 +73,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
   end
 
   defp maybe_refetch_user(%User{ap_id: ap_id}) do
-    Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(ap_id)
+    # Maybe it could use User.get_or_fetch_by_ap_id to avoid refreshing too often
+    User.fetch_by_ap_id(ap_id)
   end
 end
