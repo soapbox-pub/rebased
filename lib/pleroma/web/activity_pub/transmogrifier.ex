@@ -945,28 +945,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp strip_internal_tags(object), do: object
 
-  def perform(:user_upgrade, user) do
-    # we pass a fake user so that the followers collection is stripped away
-    old_follower_address = User.ap_followers(%User{nickname: user.nickname})
-
-    from(
-      a in Activity,
-      where: ^old_follower_address in a.recipients,
-      update: [
-        set: [
-          recipients:
-            fragment(
-              "array_replace(?,?,?)",
-              a.recipients,
-              ^old_follower_address,
-              ^user.follower_address
-            )
-        ]
-      ]
-    )
-    |> Repo.update_all([])
-  end
-
   def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do
     Map.put(data, "url", url["href"])
   end
