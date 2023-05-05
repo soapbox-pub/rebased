@@ -1668,7 +1668,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id, additional \\ []) do
+  defp fetch_and_prepare_user_from_ap_id(ap_id, additional) do
     with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
          {:ok, data} <- user_data_from_user_object(data, additional) do
       {:ok, maybe_update_follow_information(data)}
