@@ -93,7 +93,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
-    connect_src = ["connect-src 'self' blob:", static_url, ?\s, websocket_url]
+    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     # Strict multimedia CSP enforcement only when MediaProxy is enabled
     {img_src, media_src, connect_src} =
