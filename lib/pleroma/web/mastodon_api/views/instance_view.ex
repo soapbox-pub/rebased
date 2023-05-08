@@ -328,7 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     end
   end
 
-  defp markup() do
+  defp markup do
     %{
       allow_inline_images: Config.get([:markup, :allow_inline_images]),
       allow_headings: Config.get([:markup, :allow_headings]),
