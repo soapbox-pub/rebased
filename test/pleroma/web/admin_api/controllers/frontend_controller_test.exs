@@ -89,6 +89,7 @@ defmodule Pleroma.Web.AdminAPI.FrontendControllerTest do
                  "build_url" => "http://gensokyo.2hu/builds/${ref}",
                  "git" => nil,
                  "installed" => true,
+                 "installed_refs" => ["fantasy"],
                  "name" => "pleroma",
                  "ref" => "fantasy"
                }
