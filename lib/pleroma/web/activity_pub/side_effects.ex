@@ -428,37 +428,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if orig_object_data["type"] in Pleroma.Constants.updatable_object_types() do
-      %{
-        updated_data: updated_object_data,
-        updated: updated,
-        used_history_in_new_object?: used_history_in_new_object?
-      } = Object.Updater.make_new_object_data_from_update_object(orig_object_data, updated_object)
+      {:ok, _, updated} =
+        Object.Updater.do_update_and_invalidate_cache(orig_object, updated_object)
 
-      changeset =
-        orig_object
-        |> Repo.preload(:hashtags)
-        |> Object.change(%{data: updated_object_data})
-
-      with {:ok, new_object} <- Repo.update(changeset),
-           {:ok, _} <- Object.invalid_object_cache(new_object),
-           {:ok, _} <- Object.set_cache(new_object),
-           # The metadata/utils.ex uses the object id for the cache.
-           {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(new_object.id) do
-        if used_history_in_new_object? do
-          with create_activity when not is_nil(create_activity) <-
-                 Pleroma.Activity.get_create_by_object_ap_id(orig_object_ap_id),
-               {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(create_activity.id) do
-            nil
-          else
-            _ -> nil
-          end
-        end
-
-        if updated do
-          object
-          |> Activity.normalize()
-          |> ActivityPub.notify_and_stream()
-        end
+      if updated do
+        object
+        |> Activity.normalize()
+        |> ActivityPub.notify_and_stream()
       end
     end
 
