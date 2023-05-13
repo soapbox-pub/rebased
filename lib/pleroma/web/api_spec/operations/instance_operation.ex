@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
               additionalProperties: %Schema{
                 type: :array,
                 items: %Schema{type: :string},
-                description: "Supportede target languages for a source language"
+                description: "Supported target languages for a source language"
               }
             }
           )
