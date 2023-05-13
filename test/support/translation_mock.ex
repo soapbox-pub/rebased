@@ -24,7 +24,16 @@ defmodule TranslationMock do
 
   @impl Provider
   def supported_languages(_) do
-    ["en", "pl"]
+    {:ok, ["en", "pl"]}
+  end
+
+  @impl Provider
+  def languages_matrix do
+    {:ok,
+     %{
+       "en" => ["pl"],
+       "pl" => ["en"]
+     }}
   end
 
   @impl Provider

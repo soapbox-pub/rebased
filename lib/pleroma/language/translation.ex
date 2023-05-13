@@ -63,6 +63,32 @@ defmodule Pleroma.Language.Translation do
     end
   end
 
+  def languages_matrix do
+    provider = get_provider()
+
+    cache_key = "languages_matrix/#{provider.name()}"
+
+    case @cachex.get(:translations_cache, cache_key) do
+      {:ok, nil} ->
+        result =
+          if !configured?() do
+            {:error, :not_found}
+          else
+            provider.languages_matrix()
+          end
+
+        store_result(result, cache_key)
+
+        result
+
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   defp get_provider, do: Pleroma.Config.get([__MODULE__, :provider])
 
   defp get_cache_key(text, source_language, target_language) do

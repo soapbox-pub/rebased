@@ -133,6 +133,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     end
   end
 
+  def render("translation_languages.json", _) do
+    with true <- Pleroma.Language.Translation.configured?(),
+         {:ok, languages} <- Pleroma.Language.Translation.languages_matrix() do
+      languages
+    else
+      _ -> %{}
+    end
+  end
+
   def features do
     [
       "pleroma_api",
