@@ -73,6 +73,29 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
     }
   end
 
+  def translation_languages_operation do
+    %Operation{
+      tags: ["Instance misc"],
+      summary: "Retrieve supported languages matrix",
+      operationId: "InstanceController.translation_languages",
+      responses: %{
+        200 =>
+          Operation.response(
+            "Translation languages matrix",
+            "application/json",
+            %Schema{
+              type: :object,
+              additionalProperties: %Schema{
+                type: :array,
+                items: %Schema{type: :string},
+                description: "Supported target languages for a source language"
+              }
+            }
+          )
+      }
+    }
+  end
+
   defp instance do
     %Schema{
       type: :object,
