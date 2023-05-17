@@ -1,0 +1,31 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "type": "Create",
+  "actor": "https://example.org/users/alice",
+  "object": {
+    "id": "https://example.org/objects/10",
+    "type": "Note",
+    "attributedTo": "https://example.org/users/alice",
+    "content": "<p>test <a href=\"https://example.org/objects/9\">https://example.org/objects/9</a></p>",
+    "published": "2022-10-01T21:30:05.211215Z",
+    "tag": [
+      {
+        "name": "@bob@example.net",
+        "type": "Mention",
+        "href": "https://example.net/users/bob"
+      },
+      {
+        "name": "https://example.org/objects/9",
+        "type": "Link",
+        "href": "https://example.org/objects/9",
+        "mediaType": "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+      }
+    ],
+    "to": [
+      "https://www.w3.org/ns/activitystreams#Public"
+    ],
+    "cc": [
+      "https://example.org/users/alice/followers"
+    ]
+  }
+}
