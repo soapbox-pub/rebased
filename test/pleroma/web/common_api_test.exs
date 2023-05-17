@@ -527,6 +527,17 @@ defmodule Pleroma.Web.CommonAPITest do
     assert Object.tags(object) == ["ساٴين‌س"]
   end
 
+  test "allows lang attribute" do
+    user = insert(:user)
+    text = ~s{<span lang="en">something</span><p lang="diaetuitech_rpyhpgc">random</p>}
+
+    {:ok, activity} = CommonAPI.post(user, %{status: text, content_type: "text/html"})
+
+    object = Object.normalize(activity, fetch: false)
+
+    assert object.data["content"] == text
+  end
+
   test "double dot in link is allowed" do
     user = insert(:user)
     text = "https://example.to/something..mp3"
