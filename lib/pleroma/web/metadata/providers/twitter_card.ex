@@ -79,8 +79,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                    name: "twitter:image",
                    content: MediaProxy.url(url["href"])
                  ], []},
-                {:meta, [property: "twitter:image:alt", content: truncate(attachment["name"])],
-                 []}
+                {:meta, [name: "twitter:image:alt", content: truncate(attachment["name"])], []}
                 | acc
               ]
               |> maybe_add_dimensions(url)
@@ -132,6 +131,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
         metadata
     end
   end
+
+  defp truncate(nil), do: ""
 
   defp truncate(text) do
     # truncate to 420 characters
