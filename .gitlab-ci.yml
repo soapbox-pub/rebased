@@ -45,31 +45,39 @@ check-changelog:
   stage: check-changelog
   image: alpine
   rules:
+    - if: $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == 'pleroma/pleroma' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == 'weblate-extract'
+      when: never
+    - if: $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH == 'pleroma/pleroma' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == 'weblate'
+      when: never
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
   before_script: ''
   after_script: ''
   cache: {}
   script:
+    - apk add git
     - sh ./tools/check-changelog
 
+.build_changes_policy:
+  rules:
+    - changes:
+        - ".gitlab-ci.yml"
+        - "**/*.ex"
+        - "**/*.exs"
+        - "mix.lock"
+
 build:
+  extends: .build_changes_policy
   stage: build
-  only:
-    changes: &build_changes_policy
-      - ".gitlab-ci.yml"
-      - "**/*.ex"
-      - "**/*.exs"
-      - "mix.lock"
   script:
   - mix compile --force
 
 spec-build:
   stage: test
-  only:
-    changes:
-      - ".gitlab-ci.yml"
-      - "lib/pleroma/web/api_spec/**/*.ex"
-      - "lib/pleroma/web/api_spec.ex"
+  rules:
+    - changes:
+        - ".gitlab-ci.yml"
+        - "lib/pleroma/web/api_spec/**/*.ex"
+        - "lib/pleroma/web/api_spec.ex"
   artifacts:
     paths:
     - spec.json
@@ -91,9 +99,8 @@ benchmark:
     - mix pleroma.load_testing
 
 unit-testing:
+  extends: .build_changes_policy
   stage: test
-  only:
-    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
@@ -114,11 +121,10 @@ unit-testing:
         path: coverage.xml
 
 unit-testing-erratic:
+  extends: .build_changes_policy
   stage: test
   retry: 2
   allow_failure: true
-  only:
-    changes: *build_changes_policy
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
@@ -149,9 +155,8 @@ unit-testing-erratic:
 #     - mix test --trace --only federated
 
 unit-testing-rum:
+  extends: .build_changes_policy
   stage: test
-  only:
-    changes: *build_changes_policy
   cache: *testing_cache_policy
   services:
   - name: minibikini/postgres-with-rum:12
@@ -167,10 +172,9 @@ unit-testing-rum:
     - mix test --preload-modules
 
 lint:
+  extends: .build_changes_policy
   image: &current_elixir elixir:1.12-alpine
   stage: test
-  only:
-    changes: *build_changes_policy
   cache: *testing_cache_policy
   before_script: &current_bfr_script
     - apk update
@@ -182,18 +186,16 @@ lint:
     - mix format --check-formatted
 
 analysis:
+  extends: .build_changes_policy
   stage: test
-  only:
-    changes: *build_changes_policy
   cache: *testing_cache_policy
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
+  extends: .build_changes_policy
   image: *current_elixir
   stage: test
-  only:
-    changes: *build_changes_policy
   cache: {}
   before_script: *current_bfr_script
   script:
