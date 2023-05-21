@@ -97,6 +97,42 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user.raw_bio == raw_bio
     end
 
+    test "updating bio honours bio limit", %{conn: conn} do
+      bio_limit = Config.get([:instance, :user_bio_length], 5000)
+
+      raw_bio = String.duplicate(".", bio_limit + 1)
+
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"note" => raw_bio})
+
+      assert %{"error" => "Bio is too long"} = json_response_and_validate_schema(conn, 413)
+    end
+
+    test "updating name honours name limit", %{conn: conn} do
+      name_limit = Config.get([:instance, :user_name_length], 100)
+
+      name = String.duplicate(".", name_limit + 1)
+
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"display_name" => name})
+
+      assert %{"error" => "Name is too long"} = json_response_and_validate_schema(conn, 413)
+    end
+
+    test "when both name and bio exceeds the limit, display name error", %{conn: conn} do
+      name_limit = Config.get([:instance, :user_name_length], 100)
+      bio_limit = Config.get([:instance, :user_bio_length], 5000)
+
+      name = String.duplicate(".", name_limit + 1)
+      raw_bio = String.duplicate(".", bio_limit + 1)
+
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "display_name" => name,
+          "note" => raw_bio
+        })
+
+      assert %{"error" => "Name is too long"} = json_response_and_validate_schema(conn, 413)
+    end
+
     test "updates the user's locking status", %{conn: conn} do
       conn = patch(conn, "/api/v1/accounts/update_credentials", %{locked: "true"})
 
@@ -595,17 +631,17 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       fields = [%{"name" => "foo", "value" => long_value}]
 
-      assert %{"error" => "Invalid request"} ==
+      assert %{"error" => "One or more field entries are too long"} ==
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
-               |> json_response_and_validate_schema(403)
+               |> json_response_and_validate_schema(413)
 
       fields = [%{"name" => long_name, "value" => "bar"}]
 
-      assert %{"error" => "Invalid request"} ==
+      assert %{"error" => "One or more field entries are too long"} ==
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
-               |> json_response_and_validate_schema(403)
+               |> json_response_and_validate_schema(413)
 
       clear_config([:instance, :max_account_fields], 1)
 
@@ -614,10 +650,10 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         %{"name" => "link", "value" => "cofe.io"}
       ]
 
-      assert %{"error" => "Invalid request"} ==
+      assert %{"error" => "Too many field entries"} ==
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
-               |> json_response_and_validate_schema(403)
+               |> json_response_and_validate_schema(413)
     end
   end
 
