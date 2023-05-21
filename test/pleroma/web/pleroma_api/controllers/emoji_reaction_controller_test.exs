@@ -245,6 +245,38 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
              result
   end
 
+  test "GET /api/v1/pleroma/statuses/:id/reactions with legacy format", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    note =
+      insert(:note,
+        user: user,
+        data: %{
+          "reactions" => [["😿", [other_user.ap_id]]]
+        }
+      )
+
+    activity = insert(:note_activity, user: user, note: note)
+
+    result =
+      conn
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
+      |> json_response_and_validate_schema(200)
+
+    other_user_id = other_user.id
+
+    assert [
+             %{
+               "name" => "😿",
+               "count" => 1,
+               "me" => false,
+               "url" => nil,
+               "accounts" => [%{"id" => ^other_user_id}]
+             }
+           ] = result
+  end
+
   test "GET /api/v1/pleroma/statuses/:id/reactions?with_muted=true", %{conn: conn} do
     user = insert(:user)
     user2 = insert(:user)

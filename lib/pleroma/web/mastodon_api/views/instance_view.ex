@@ -133,6 +133,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     end
   end
 
+  def render("translation_languages.json", _) do
+    with true <- Pleroma.Language.Translation.configured?(),
+         {:ok, languages} <- Pleroma.Language.Translation.languages_matrix() do
+      languages
+    else
+      _ -> %{}
+    end
+  end
+
   def features do
     [
       "pleroma_api",
@@ -255,7 +264,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         birthday_required: Config.get([:instance, :birthday_required]),
         birthday_min_age: Config.get([:instance, :birthday_min_age]),
         migration_cooldown_period: Config.get([:instance, :migration_cooldown_period]),
-        translation: translation_configuration()
+        translation: translation_configuration(),
+        markup: markup()
       },
       stats: %{mau: Pleroma.User.active_user_count()},
       vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key),
@@ -325,5 +335,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     else
       nil
     end
+  end
+
+  defp markup do
+    %{
+      allow_inline_images: Config.get([:markup, :allow_inline_images]),
+      allow_headings: Config.get([:markup, :allow_headings]),
+      allow_tables: Config.get([:markup, :allow_tables])
+    }
   end
 end

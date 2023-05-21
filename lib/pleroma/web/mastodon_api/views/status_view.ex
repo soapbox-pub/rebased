@@ -355,8 +355,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     emoji_reactions =
-      object.data
-      |> Map.get("reactions", [])
+      object
+      |> Object.get_emoji_reactions()
       |> EmojiReactionController.filter_allowed_users(
         opts[:for],
         Map.get(opts, :with_muted, false)

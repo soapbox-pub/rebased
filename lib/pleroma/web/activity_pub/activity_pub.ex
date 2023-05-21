@@ -112,7 +112,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_quotes_count_if_quote(_create_data), do: :noop
 
-  @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Page]
+  @object_types ~w[ChatMessage Question Answer Audio Video Image Event Article Note Page]
   @impl true
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do

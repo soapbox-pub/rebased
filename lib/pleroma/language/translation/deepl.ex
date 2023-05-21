@@ -98,6 +98,17 @@ defmodule Pleroma.Language.Translation.Deepl do
   end
 
   @impl Provider
+  def languages_matrix do
+    with {:ok, source_languages} <- supported_languages(:source),
+         {:ok, target_languages} <- supported_languages(:target) do
+      {:ok,
+       Map.new(source_languages, fn language -> {language, target_languages -- [language]} end)}
+    else
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  @impl Provider
   def name, do: @name
 
   defp base_url do

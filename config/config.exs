@@ -444,6 +444,10 @@ config :pleroma, :mrf_remote_report,
   reject_anonymous: true,
   reject_empty_message: true
 
+config :pleroma, :mrf_anti_duplication,
+  ttl: 60_000,
+  min_length: 50
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
