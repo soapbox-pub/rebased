@@ -34,6 +34,9 @@ defmodule Pleroma.NullCache do
   end
 
   @impl true
+  def expire(_, _, _), do: {:ok, true}
+
+  @impl true
   def expire_at(_, _, _), do: {:ok, true}
 
   @impl true

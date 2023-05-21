@@ -11,6 +11,7 @@ defmodule Pleroma.Caching do
   # @callback del(Cachex.cache(), any(), Keyword.t()) :: {Cachex.status(), boolean()}
   @callback del(Cachex.cache(), any()) :: {Cachex.status(), boolean()}
   @callback stream!(Cachex.cache(), any()) :: Enumerable.t()
+  @callback expire(Cachex.cache(), binary(), number()) :: {Cachex.status(), boolean()}
   @callback expire_at(Cachex.cache(), binary(), number()) :: {Cachex.status(), boolean()}
   @callback exists?(Cachex.cache(), any()) :: {Cachex.status(), boolean()}
   @callback execute!(Cachex.cache(), function()) :: any()
