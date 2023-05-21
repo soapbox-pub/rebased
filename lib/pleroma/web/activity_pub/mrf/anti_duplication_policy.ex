@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiDuplicationPolicy do
   @cache :anti_duplication_mrf_cache
 
   @impl true
-  def filter(%{"type" => "Create", "object" => %{"content" => content} = object})
+  def filter(%{"type" => "Create", "object" => %{"content" => content}} = activity)
       when is_binary(content) do
     ttl = Pleroma.Config.get([:mrf_anti_duplication, :ttl], :timer.minutes(1))
     min_length = Pleroma.Config.get([:mrf_anti_duplication, :min_length], 50)
@@ -20,12 +20,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiDuplicationPolicy do
           @cachex.expire(@cache, key, ttl)
           {:reject, "[AntiDuplicationPolicy] Message is a duplicate"}
 
-        _ ->
+        {:ok, false} ->
           @cachex.put(@cache, key, true, ttl: ttl)
-          {:ok, object}
+          {:ok, activity}
       end
     else
-      {:ok, object}
+      {:ok, activity}
     end
   end
 
