@@ -12,9 +12,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
   defp user_has_posted?(%User{} = u), do: u.note_count > 0
 
   defp user_has_age?(%User{} = u) do
-    now = NaiveDateTime.utc_now()
-    diff = u.inserted_at |> NaiveDateTime.diff(now, :second)
-    diff > :timer.seconds(30)
+    diff = NaiveDateTime.utc_now() |> NaiveDateTime.diff(u.inserted_at, :second)
+    diff >= :timer.seconds(30)
   end
 
   defp good_reputation?(%User{} = u) do
