@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
 
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
-  defp user_has_followers?(%User{} = u), do: u.follower_count > 0
   defp user_has_posted?(%User{} = u), do: u.note_count > 0
 
   defp user_has_age?(%User{} = u) do
@@ -17,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiMentionSpamPolicy do
   end
 
   defp good_reputation?(%User{} = u) do
-    user_has_age?(u) and user_has_followers?(u) and user_has_posted?(u)
+    user_has_age?(u) and user_has_posted?(u)
   end
 
   # copied from HellthreadPolicy
