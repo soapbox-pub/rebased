@@ -100,12 +100,14 @@ defmodule Pleroma.Object.Updater do
   end
 
   defp maybe_update_poll(to_be_updated, updated_object) do
-    choice_key = fn data ->
-      if Map.has_key?(data, "anyOf"), do: "anyOf", else: "oneOf"
+    choice_key = fn
+      %{"anyOf" => [_ | _]} = data -> "anyOf"
+      %{"oneOf" => [_ | _]} = data -> "oneOf"
+      _ -> nil
     end
 
     with true <- to_be_updated["type"] == "Question",
-         key <- choice_key.(updated_object),
+         key when not is_nil(key) <- choice_key.(updated_object),
          true <- key == choice_key.(to_be_updated),
          orig_choices <- to_be_updated[key] |> Enum.map(&Map.drop(&1, ["replies"])),
          new_choices <- updated_object[key] |> Enum.map(&Map.drop(&1, ["replies"])),
