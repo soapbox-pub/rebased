@@ -101,8 +101,8 @@ defmodule Pleroma.Object.Updater do
 
   defp maybe_update_poll(to_be_updated, updated_object) do
     choice_key = fn
-      %{"anyOf" => [_ | _]} = data -> "anyOf"
-      %{"oneOf" => [_ | _]} = data -> "oneOf"
+      %{"anyOf" => [_ | _]} -> "anyOf"
+      %{"oneOf" => [_ | _]} -> "oneOf"
       _ -> nil
     end
 
