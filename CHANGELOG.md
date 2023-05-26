@@ -18,6 +18,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - BREAKING: Support for passwords generated with `crypt(3)` (Gnu Social migration artifact)
 
+## 2.5.2
+
+### Security
+- `/proxy` endpoint now sets a Content-Security-Policy (sandbox)
+- WebSocket endpoint now respects unauthenticated restrictions for streams of public posts
+- OEmbed HTML tags are now filtered
+
+### Changed
+- docs: Be more explicit about the level of compatibility of OTP releases
+- Set default background worker timeout to 15 minutes
+
+### Fixed
+- Atom/RSS formatting (HTML truncation, published, missing summary)
+- Remove `static_fe` pipeline for `/users/:nickname/feed`
+- Stop oban from retrying if validating errors occur when processing incoming data
+- Make sure object refetching as used by already received polls follows MRF rules
+
+### Removed
+- BREAKING: Support for passwords generated with `crypt(3)` (Gnu Social migration artifact)
+
 ## 2.5.1
 
 ### Added

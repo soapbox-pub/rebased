@@ -25,6 +25,7 @@ defmodule Pleroma.Web.Streamer do
   def registry, do: @registry
 
   @public_streams ["public", "public:local", "public:media", "public:local:media"]
+  @local_streams ["public:local", "public:local:media"]
   @user_streams ["user", "user:notification", "direct", "user:pleroma_chat"]
 
   @doc "Expands and authorizes a stream, and registers the process for streaming."
@@ -41,14 +42,37 @@ defmodule Pleroma.Web.Streamer do
     end
   end
 
+  defp can_access_stream(user, oauth_token, kind) do
+    with {_, true} <- {:restrict?, Config.restrict_unauthenticated_access?(:timelines, kind)},
+         {_, %User{id: user_id}, %Token{user_id: user_id}} <- {:user, user, oauth_token},
+         {_, true} <-
+           {:scopes,
+            OAuthScopesPlug.filter_descendants(["read:statuses"], oauth_token.scopes) != []} do
+      true
+    else
+      {:restrict?, _} ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
   @doc "Expand and authorizes a stream"
   @spec get_topic(stream :: String.t(), User.t() | nil, Token.t() | nil, Map.t()) ::
           {:ok, topic :: String.t()} | {:error, :bad_topic}
   def get_topic(stream, user, oauth_token, params \\ %{})
 
-  # Allow all public steams.
-  def get_topic(stream, _user, _oauth_token, _params) when stream in @public_streams do
-    {:ok, stream}
+  # Allow all public steams if the instance allows unauthenticated access.
+  # Otherwise, only allow users with valid oauth tokens.
+  def get_topic(stream, user, oauth_token, _params) when stream in @public_streams do
+    kind = if stream in @local_streams, do: :local, else: :federated
+
+    if can_access_stream(user, oauth_token, kind) do
+      {:ok, stream}
+    else
+      {:error, :unauthorized}
+    end
   end
 
   # Allow all hashtags streams.
@@ -57,12 +81,20 @@ defmodule Pleroma.Web.Streamer do
   end
 
   # Allow remote instance streams.
-  def get_topic("public:remote", _user, _oauth_token, %{"instance" => instance} = _params) do
-    {:ok, "public:remote:" <> instance}
+  def get_topic("public:remote", user, oauth_token, %{"instance" => instance} = _params) do
+    if can_access_stream(user, oauth_token, :federated) do
+      {:ok, "public:remote:" <> instance}
+    else
+      {:error, :unauthorized}
+    end
   end
 
-  def get_topic("public:remote:media", _user, _oauth_token, %{"instance" => instance} = _params) do
-    {:ok, "public:remote:media:" <> instance}
+  def get_topic("public:remote:media", user, oauth_token, %{"instance" => instance} = _params) do
+    if can_access_stream(user, oauth_token, :federated) do
+      {:ok, "public:remote:media:" <> instance}
+    else
+      {:error, :unauthorized}
+    end
   end
 
   # Expand user streams.
