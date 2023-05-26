@@ -6,7 +6,9 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   use Pleroma.Web.ConnCase
 
   import Mock
+  import Mox
 
+  alias Pleroma.ReverseProxy.ClientMock
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
 
@@ -73,6 +75,20 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
         call: fn _conn, _url, _opts -> %Conn{status: :success} end do
         assert %Conn{status: 404, resp_body: "Not Found"} = get(conn, url)
       end
+    end
+
+    test "it applies sandbox CSP to MediaProxy requests", %{conn: conn} do
+      media_url = "https://lain.com/image.png"
+      media_proxy_url = MediaProxy.encode_url(media_url)
+
+      ClientMock
+      |> expect(:request, fn :get, ^media_url, _, _, _ ->
+        {:ok, 200, [{"content-type", "image/png"}]}
+      end)
+
+      %Conn{resp_headers: headers} = get(conn, media_proxy_url)
+
+      assert {"content-security-policy", "sandbox;"} in headers
     end
   end
 
