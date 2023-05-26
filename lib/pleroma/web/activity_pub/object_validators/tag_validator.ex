@@ -74,8 +74,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.TagValidator do
     |> cast(data, [:type, :name, :href, :mediaType])
   end
 
-  # Fallback
-  def changeset(struct, data), do: cast(struct, data, [:type, :name])
+  def changeset(struct, %{"type" => _} = data) do
+    struct
+    |> cast(data, [])
+    |> Map.put(:action, :ignore)
+  end
 
   def icon_changeset(struct, data) do
     struct
