@@ -55,6 +55,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
          {:ok, get_method} <- uploader.get_file(file),
          false <- media_is_banned(conn, get_method) do
       get_media(conn, get_method, proxy_remote, opts)
+      |> scrub_mime()
     else
       {:valid_host, false} ->
         redirect_url =
@@ -130,5 +131,27 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn
     |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))
     |> halt()
+  end
+
+  defp scrub_mime(%Plug.Conn{resp_headers: headers} = conn) do
+    [{_, mimetype}] = Enum.filter(headers, fn {x, _y} -> match?("content-type", x) end)
+
+    [_type, subtype] = String.split(mimetype, "/")
+
+    cond do
+      String.contains?(subtype, ["javascript", "ecmascript", "jscript"]) ->
+        force_plaintext(conn)
+
+      String.contains?(mimetype, ["text/html", "text/xml", "application/xml"]) ->
+        force_plaintext(conn)
+
+      true ->
+        conn
+    end
+  end
+
+  defp force_plaintext(conn) do
+    conn
+    |> merge_resp_headers([{"content-type", "text/plain"}])
   end
 end

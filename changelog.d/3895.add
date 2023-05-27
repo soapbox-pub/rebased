@@ -1,0 +1,1 @@
+Uploaded media content-type is scrubbed before serving the files to limit the security impact of some attachments
