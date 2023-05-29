@@ -673,7 +673,7 @@ No specific configuration.
 
 #### Pleroma.Upload.Filter.OnlyMedia
 
-This filter rejects uploads that are not identified with Content-Type matching audio/*, image/*, or video/*
+This filter rejects uploads that are not identified with Content-Type matching audio/\*, image/\*, or video/\*
 
 No specific configuration.
 
