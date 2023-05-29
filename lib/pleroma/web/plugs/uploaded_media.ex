@@ -56,8 +56,6 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
       get_media(conn, get_method, proxy_remote, opts)
     else
       {:valid_host, false} ->
-        conn
-
         send_resp(conn, 400, Plug.Conn.Status.reason_phrase(400))
         |> halt()
 
