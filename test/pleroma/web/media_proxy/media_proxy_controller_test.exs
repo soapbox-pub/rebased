@@ -54,6 +54,23 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
              } = get(conn, "/proxy/hhgfh/eeee/fff")
     end
 
+    test "it returns a 400 for invalid host", %{conn: conn} do
+      clear_config([:media_proxy, :base_url], "http://mp.localhost/")
+
+      url =
+        MediaProxy.encode_url("https://pleroma.social/logo.jpeg")
+        |> URI.parse()
+        |> Map.put(:host, "wronghost")
+        |> URI.to_string()
+
+      with_mock Pleroma.ReverseProxy,
+        call: fn _conn, _url, _opts -> %Conn{status: :success} end do
+        %{status: status} = get(conn, url)
+
+        assert status == 400
+      end
+    end
+
     test "redirects to valid url when filename is invalidated", %{conn: conn, url: url} do
       invalid_url = String.replace(url, "test.png", "test-file.png")
       response = get(conn, invalid_url)
