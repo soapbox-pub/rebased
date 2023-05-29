@@ -123,7 +123,6 @@ defmodule Pleroma.Web.ConnCase do
     {:ok,
      conn:
        Phoenix.ConnTest.build_conn()
-       |> Map.put(:host, Pleroma.Web.Endpoint.host())
-       |> Plug.Test.init_test_session(%{})}
+       |> Map.put(:host, Pleroma.Web.Endpoint.host())}
   end
 end
