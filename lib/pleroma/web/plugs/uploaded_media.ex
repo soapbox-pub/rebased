@@ -46,12 +46,21 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
 
     config = Pleroma.Config.get(Pleroma.Upload)
 
-    with uploader <- Keyword.fetch!(config, :uploader),
+    media_host = Pleroma.Upload.base_url() |> URI.parse() |> Map.get(:host)
+
+    with {:valid_host, true} <- {:valid_host, match?(^media_host, conn.host)},
+         uploader <- Keyword.fetch!(config, :uploader),
          proxy_remote = Keyword.get(config, :proxy_remote, false),
          {:ok, get_method} <- uploader.get_file(file),
          false <- media_is_banned(conn, get_method) do
       get_media(conn, get_method, proxy_remote, opts)
     else
+      {:valid_host, false} ->
+        conn
+
+        send_resp(conn, 400, Plug.Conn.Status.reason_phrase(400))
+        |> halt()
+
       _ ->
         conn
         |> send_resp(:internal_server_error, dgettext("errors", "Failed"))

@@ -40,4 +40,18 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
              &(&1 == {"content-disposition", ~s[inline; filename="\\"cofe\\".gif"]})
            )
   end
+
+  test "denies access to media if wrong Host", %{
+    attachment_url: attachment_url
+  } do
+    conn = get(build_conn(), attachment_url)
+
+    assert conn.status == 200
+
+    clear_config([Pleroma.Upload, :base_url], "http://media.localhost/")
+
+    conn = get(build_conn(), attachment_url)
+
+    assert conn.status == 400
+  end
 end
