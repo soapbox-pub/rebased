@@ -48,10 +48,27 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
 
     assert conn.status == 200
 
-    clear_config([Pleroma.Upload, :base_url], "http://media.localhost/")
+    new_media_base = "http://media.localhost:8080"
+
+    %{scheme: new_media_scheme, host: new_media_host, port: new_media_port} =
+      URI.parse(new_media_base)
+
+    clear_config([Pleroma.Upload, :base_url], new_media_base)
 
     conn = get(build_conn(), attachment_url)
 
-    assert conn.status == 400
+    expected_url =
+      URI.parse(attachment_url)
+      |> Map.put(:host, new_media_host)
+      |> Map.put(:port, new_media_port)
+      |> Map.put(:scheme, new_media_scheme)
+      |> URI.to_string()
+
+    assert conn.status == 302
+
+    assert Enum.any?(
+             conn.resp_headers,
+             &(&1 == {"location", expected_url})
+           )
   end
 end

@@ -54,20 +54,37 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
              } = get(conn, "/proxy/hhgfh/eeee/fff")
     end
 
-    test "it returns a 400 for invalid host", %{conn: conn} do
-      clear_config([:media_proxy, :base_url], "http://mp.localhost/")
+    test "it returns a 302 for invalid host", %{conn: conn} do
+      new_proxy_base = "http://mp.localhost/"
 
-      url =
+      %{scheme: new_proxy_scheme, host: new_proxy_host, port: new_proxy_port} =
+        URI.parse(new_proxy_base)
+
+      clear_config([:media_proxy, :base_url], new_proxy_base)
+
+      proxy_url =
         MediaProxy.encode_url("https://pleroma.social/logo.jpeg")
         |> URI.parse()
         |> Map.put(:host, "wronghost")
         |> URI.to_string()
 
+      expected_url =
+        URI.parse(proxy_url)
+        |> Map.put(:host, new_proxy_host)
+        |> Map.put(:port, new_proxy_port)
+        |> Map.put(:scheme, new_proxy_scheme)
+        |> URI.to_string()
+
       with_mock Pleroma.ReverseProxy,
         call: fn _conn, _url, _opts -> %Conn{status: :success} end do
-        %{status: status} = get(conn, url)
+        %{resp_headers: resp_headers, status: status} = get(conn, proxy_url)
 
-        assert status == 400
+        assert status == 302
+
+        assert Enum.any?(
+                 resp_headers,
+                 &(&1 == {"location", expected_url})
+               )
       end
     end
 

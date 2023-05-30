@@ -207,12 +207,25 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp validate_host(conn, _params) do
-    proxy_host = MediaProxy.base_url() |> URI.parse() |> Map.get(:host)
+    %{scheme: proxy_scheme, host: proxy_host, port: proxy_port} =
+      MediaProxy.base_url() |> URI.parse()
 
     if match?(^proxy_host, conn.host) do
       conn
     else
-      send_resp(conn, 400, Conn.Status.reason_phrase(400))
+      redirect_url =
+        %URI{
+          scheme: proxy_scheme,
+          host: proxy_host,
+          port: proxy_port,
+          path: conn.request_path,
+          query: conn.query_string
+        }
+        |> URI.to_string()
+        |> String.trim_trailing("?")
+
+      conn
+      |> Phoenix.Controller.redirect(external: redirect_url)
       |> halt()
     end
   end
