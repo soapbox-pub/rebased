@@ -55,7 +55,6 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
          {:ok, get_method} <- uploader.get_file(file),
          false <- media_is_banned(conn, get_method) do
       get_media(conn, get_method, proxy_remote, opts)
-      |> scrub_mime()
     else
       {:valid_host, false} ->
         redirect_url =
@@ -95,6 +94,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
+      |> Map.put(:headers, {__MODULE__, :scrub_mime, []})
 
     conn = Plug.Static.call(conn, static_opts)
 
@@ -133,25 +133,24 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     |> halt()
   end
 
-  defp scrub_mime(%Plug.Conn{resp_headers: headers} = conn) do
+  def scrub_mime(%Plug.Conn{halted: false, resp_headers: headers}, _args \\ []) do
     [{_, mimetype}] = Enum.filter(headers, fn {x, _y} -> match?("content-type", x) end)
 
     [_type, subtype] = String.split(mimetype, "/")
 
     cond do
       String.contains?(subtype, ["javascript", "ecmascript", "jscript"]) ->
-        force_plaintext(conn)
+        plaintext_header()
 
       String.contains?(mimetype, ["text/html", "text/xml", "application/xml"]) ->
-        force_plaintext(conn)
+        plaintext_header()
 
       true ->
-        conn
+        []
     end
   end
 
-  defp force_plaintext(conn) do
-    conn
-    |> merge_resp_headers([{"content-type", "text/plain"}])
+  defp plaintext_header() do
+    [{"content-type", "text/plain"}]
   end
 end
