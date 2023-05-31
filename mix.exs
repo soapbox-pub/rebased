@@ -197,9 +197,6 @@ defmodule Pleroma.Mixfile do
       {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
 
-      # indirect dependency version override
-      {:plug, "~> 1.10.4", override: true},
-
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:ex_machina, "~> 2.4", only: :test},
