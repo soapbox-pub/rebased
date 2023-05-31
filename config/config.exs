@@ -133,7 +133,7 @@ config :pleroma, Pleroma.Web.Endpoint,
          {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
           {Phoenix.Transports.WebSocket,
            {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
-         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+         {:_, Plug.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
   ],
