@@ -9,7 +9,20 @@ defmodule Pleroma.Web.Endpoint do
 
   alias Pleroma.Config
 
-  socket("/socket", Pleroma.Web.UserSocket)
+  socket("/socket", Pleroma.Web.UserSocket,
+    websocket: [
+      path: "/websocket",
+      serializer: [
+        {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
+        {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}
+      ],
+      timeout: 60_000,
+      transport_log: false,
+      compress: false
+    ],
+    longpoll: false
+  )
+
   socket("/live", Phoenix.LiveView.Socket)
 
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
