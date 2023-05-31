@@ -138,15 +138,10 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
 
     [_type, subtype] = String.split(mimetype, "/")
 
-    cond do
-      String.contains?(subtype, ["javascript", "ecmascript", "jscript"]) ->
-        plaintext_header()
-
-      String.contains?(mimetype, ["text/html", "text/xml", "application/xml"]) ->
-        plaintext_header()
-
-      true ->
-        []
+    if String.contains?(subtype, ["javascript", "ecmascript", "jscript", "html", "xml"]) do
+      plaintext_header()
+    else
+      []
     end
   end
 
