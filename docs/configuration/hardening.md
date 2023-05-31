@@ -68,7 +68,7 @@ It is STRONGLY RECOMMENDED to serve both the locally-uploaded media and the medi
 
 ```elixir
 config :pleroma, :media_proxy,
-  base_url: "https://some.other.domain/proxy"
+  base_url: "https://some.other.domain"
 
 config :pleroma, Pleroma.Upload,
   base_url: "https://some.other.domain/media"
