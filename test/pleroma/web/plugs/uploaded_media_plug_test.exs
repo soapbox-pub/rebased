@@ -89,10 +89,7 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
 
       conn = get(build_conn(), attachment_url)
 
-      assert Enum.any?(
-               conn.resp_headers,
-               &(&1 == {"content-type", "text/plain"})
-             )
+      assert response_content_type(conn, :text)
     end)
   end
 end
