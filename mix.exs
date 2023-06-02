@@ -129,10 +129,7 @@ defmodule Pleroma.Mixfile do
       {:plug_cowboy, "~> 2.5"},
       # oban 2.14 requires Elixir 1.12+
       {:oban, "~> 2.13.4"},
-      {:gettext,
-       git: "https://github.com/tusooa/gettext.git",
-       ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
-       override: true},
+      {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},

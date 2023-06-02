@@ -64,11 +64,6 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
       |> Map.put(:scheme, new_media_scheme)
       |> URI.to_string()
 
-    assert conn.status == 302
-
-    assert Enum.any?(
-             conn.resp_headers,
-             &(&1 == {"location", expected_url})
-           )
+    assert redirected_to(conn, 302) == expected_url
   end
 end

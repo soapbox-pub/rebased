@@ -77,14 +77,9 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
 
       with_mock Pleroma.ReverseProxy,
         call: fn _conn, _url, _opts -> %Conn{status: :success} end do
-        %{resp_headers: resp_headers, status: status} = get(conn, proxy_url)
+        conn = get(conn, proxy_url)
 
-        assert status == 302
-
-        assert Enum.any?(
-                 resp_headers,
-                 &(&1 == {"location", expected_url})
-               )
+        assert redirected_to(conn, 302) == expected_url
       end
     end
 
