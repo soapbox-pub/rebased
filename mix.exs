@@ -8,10 +8,10 @@ defmodule Pleroma.Mixfile do
       app: :pleroma,
       name: "Rebased",
       compat_name: "Pleroma",
-      version: version("2.5.51"),
+      version: version("2.5.52"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      compilers: [:phoenix] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
@@ -81,8 +81,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :fast_sanitize,
         :os_mon,
-        :ssl,
-        :esshd
+        :ssl
       ],
       included_applications: [:ex_syslogger]
     ]
@@ -131,11 +130,9 @@ defmodule Pleroma.Mixfile do
       {:phoenix_live_dashboard, "~> 0.6.2"},
       {:telemetry_metrics, "~> 0.6.1"},
       {:telemetry_poller, "~> 1.0"},
-      {:oban, "~> 2.13"},
-      {:gettext,
-       git: "https://github.com/tusooa/gettext.git",
-       ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
-       override: true},
+      # oban 2.14 requires Elixir 1.12+
+      {:oban, "~> 2.13.4"},
+      {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
@@ -154,7 +151,8 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
-      {:earmark, "~> 1.4.22"},
+      # earmark 1.4.23 requires Elixir 1.12+
+      {:earmark, "1.4.22"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3.1"},
@@ -185,7 +183,6 @@ defmodule Pleroma.Mixfile do
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
-      {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:flake_id, "~> 0.1.0"},

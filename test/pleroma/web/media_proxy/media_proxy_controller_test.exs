@@ -6,7 +6,9 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   use Pleroma.Web.ConnCase
 
   import Mock
+  import Mox
 
+  alias Pleroma.ReverseProxy.ClientMock
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
 
@@ -52,6 +54,35 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
              } = get(conn, "/proxy/hhgfh/eeee/fff")
     end
 
+    test "it returns a 302 for invalid host", %{conn: conn} do
+      new_proxy_base = "http://mp.localhost/"
+
+      %{scheme: new_proxy_scheme, host: new_proxy_host, port: new_proxy_port} =
+        URI.parse(new_proxy_base)
+
+      clear_config([:media_proxy, :base_url], new_proxy_base)
+
+      proxy_url =
+        MediaProxy.encode_url("https://pleroma.social/logo.jpeg")
+        |> URI.parse()
+        |> Map.put(:host, "wronghost")
+        |> URI.to_string()
+
+      expected_url =
+        URI.parse(proxy_url)
+        |> Map.put(:host, new_proxy_host)
+        |> Map.put(:port, new_proxy_port)
+        |> Map.put(:scheme, new_proxy_scheme)
+        |> URI.to_string()
+
+      with_mock Pleroma.ReverseProxy,
+        call: fn _conn, _url, _opts -> %Conn{status: :success} end do
+        conn = get(conn, proxy_url)
+
+        assert redirected_to(conn, 302) == expected_url
+      end
+    end
+
     test "redirects to valid url when filename is invalidated", %{conn: conn, url: url} do
       invalid_url = String.replace(url, "test.png", "test-file.png")
       response = get(conn, invalid_url)
@@ -73,6 +104,20 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
         call: fn _conn, _url, _opts -> %Conn{status: :success} end do
         assert %Conn{status: 404, resp_body: "Not Found"} = get(conn, url)
       end
+    end
+
+    test "it applies sandbox CSP to MediaProxy requests", %{conn: conn} do
+      media_url = "https://lain.com/image.png"
+      media_proxy_url = MediaProxy.encode_url(media_url)
+
+      ClientMock
+      |> expect(:request, fn :get, ^media_url, _, _, _ ->
+        {:ok, 200, [{"content-type", "image/png"}]}
+      end)
+
+      %Conn{resp_headers: headers} = get(conn, media_proxy_url)
+
+      assert {"content-security-policy", "sandbox;"} in headers
     end
   end
 
