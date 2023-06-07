@@ -12,7 +12,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
 
-  plug(:validate_host)
   plug(:sandbox)
 
   def remote(conn, %{"sig" => sig64, "url" => url64}) do
@@ -204,30 +203,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   defp media_proxy_opts do
     Config.get([:media_proxy, :proxy_opts], [])
-  end
-
-  defp validate_host(conn, _params) do
-    %{scheme: proxy_scheme, host: proxy_host, port: proxy_port} =
-      MediaProxy.base_url() |> URI.parse()
-
-    if match?(^proxy_host, conn.host) do
-      conn
-    else
-      redirect_url =
-        %URI{
-          scheme: proxy_scheme,
-          host: proxy_host,
-          port: proxy_port,
-          path: conn.request_path,
-          query: conn.query_string
-        }
-        |> URI.to_string()
-        |> String.trim_trailing("?")
-
-      conn
-      |> Phoenix.Controller.redirect(external: redirect_url)
-      |> halt()
-    end
   end
 
   defp sandbox(conn, _params) do
