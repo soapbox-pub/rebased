@@ -29,6 +29,26 @@ defmodule Pleroma.Web.StreamerTest do
       assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", nil, nil)
     end
 
+    test "rejects local public streams if restricted_unauthenticated is on" do
+      clear_config([:restrict_unauthenticated, :timelines, :local], true)
+
+      assert {:error, :unauthorized} = Streamer.get_topic("public:local", nil, nil)
+      assert {:error, :unauthorized} = Streamer.get_topic("public:local:media", nil, nil)
+    end
+
+    test "rejects remote public streams if restricted_unauthenticated is on" do
+      clear_config([:restrict_unauthenticated, :timelines, :federated], true)
+
+      assert {:error, :unauthorized} = Streamer.get_topic("public", nil, nil)
+      assert {:error, :unauthorized} = Streamer.get_topic("public:media", nil, nil)
+
+      assert {:error, :unauthorized} =
+               Streamer.get_topic("public:remote", nil, nil, %{"instance" => "lain.com"})
+
+      assert {:error, :unauthorized} =
+               Streamer.get_topic("public:remote:media", nil, nil, %{"instance" => "lain.com"})
+    end
+
     test "allows instance streams" do
       assert {:ok, "public:remote:lain.com"} =
                Streamer.get_topic("public:remote", nil, nil, %{"instance" => "lain.com"})
@@ -66,6 +86,63 @@ defmodule Pleroma.Web.StreamerTest do
 
         assert {:ok, "public:local:media"} =
                  Streamer.get_topic("public:local:media", user, oauth_token)
+      end
+    end
+
+    test "allows local public streams if restricted_unauthenticated is on", %{
+      user: user,
+      token: oauth_token
+    } do
+      clear_config([:restrict_unauthenticated, :timelines, :local], true)
+
+      %{token: read_notifications_token} = oauth_access(["read:notifications"], user: user)
+      %{token: badly_scoped_token} = oauth_access(["irrelevant:scope"], user: user)
+
+      assert {:ok, "public:local"} = Streamer.get_topic("public:local", user, oauth_token)
+
+      assert {:ok, "public:local:media"} =
+               Streamer.get_topic("public:local:media", user, oauth_token)
+
+      for token <- [read_notifications_token, badly_scoped_token] do
+        assert {:error, :unauthorized} = Streamer.get_topic("public:local", user, token)
+
+        assert {:error, :unauthorized} = Streamer.get_topic("public:local:media", user, token)
+      end
+    end
+
+    test "allows remote public streams if restricted_unauthenticated is on", %{
+      user: user,
+      token: oauth_token
+    } do
+      clear_config([:restrict_unauthenticated, :timelines, :federated], true)
+
+      %{token: read_notifications_token} = oauth_access(["read:notifications"], user: user)
+      %{token: badly_scoped_token} = oauth_access(["irrelevant:scope"], user: user)
+
+      assert {:ok, "public"} = Streamer.get_topic("public", user, oauth_token)
+      assert {:ok, "public:media"} = Streamer.get_topic("public:media", user, oauth_token)
+
+      assert {:ok, "public:remote:lain.com"} =
+               Streamer.get_topic("public:remote", user, oauth_token, %{"instance" => "lain.com"})
+
+      assert {:ok, "public:remote:media:lain.com"} =
+               Streamer.get_topic("public:remote:media", user, oauth_token, %{
+                 "instance" => "lain.com"
+               })
+
+      for token <- [read_notifications_token, badly_scoped_token] do
+        assert {:error, :unauthorized} = Streamer.get_topic("public", user, token)
+        assert {:error, :unauthorized} = Streamer.get_topic("public:media", user, token)
+
+        assert {:error, :unauthorized} =
+                 Streamer.get_topic("public:remote", user, token, %{
+                   "instance" => "lain.com"
+                 })
+
+        assert {:error, :unauthorized} =
+                 Streamer.get_topic("public:remote:media", user, token, %{
+                   "instance" => "lain.com"
+                 })
       end
     end
 

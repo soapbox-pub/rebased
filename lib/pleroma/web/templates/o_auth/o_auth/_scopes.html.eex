@@ -8,7 +8,7 @@
           <%= checkbox @form, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
           <%= label @form, :"scope_#{scope}", String.capitalize(scope) %>
           <%= if scope in @scopes && scope do %>
-            <%= String.capitalize(scope) %>
+            <code><%= scope %></code> <%= :"Elixir.Gettext".dgettext(Gettext, "oauth_scopes", scope) %>
           <% end %>
         </div>
       <% else %>

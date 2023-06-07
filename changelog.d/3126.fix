@@ -1,0 +1,1 @@
+MediaProxy responses now return a sandbox CSP header

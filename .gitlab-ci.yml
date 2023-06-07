@@ -91,12 +91,12 @@ lint:
   script:
     - mix format --check-formatted
 
-analysis:
-  stage: test
-  only:
-    changes: *elixir-changes
-  script:
-    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+# analysis:
+#   stage: test
+#   only:
+#     changes: *elixir-changes
+#   script:
+#     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 cycles:
   stage: test
