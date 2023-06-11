@@ -12,6 +12,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   alias Pleroma.Web.MediaProxy
   alias Plug.Conn
 
+  plug(:sandbox)
+
   def remote(conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.enabled?()},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
@@ -201,5 +203,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   defp media_proxy_opts do
     Config.get([:media_proxy, :proxy_opts], [])
+  end
+
+  defp sandbox(conn, _params) do
+    conn
+    |> merge_resp_headers([{"content-security-policy", "sandbox;"}])
   end
 end
