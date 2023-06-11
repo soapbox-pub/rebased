@@ -1018,6 +1018,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       refute Activity.get_by_id(activity.id)
     end
+
+    test "when you're privileged and the user is banned", %{conn: conn} do
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
+      posting_user = insert(:user, is_active: false)
+      refute posting_user.is_active
+      activity = insert(:note_activity, user: posting_user)
+      user = insert(:user, is_moderator: true)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
+
+      assert %{} = json_response_and_validate_schema(res_conn, 200)
+
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
+
+      refute Activity.get_by_id(activity.id)
+    end
   end
 
   describe "reblogging" do

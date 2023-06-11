@@ -142,7 +142,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(activity_id)},
+           {:find_activity, Activity.get_by_id(activity_id, filter: [])},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
          true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
