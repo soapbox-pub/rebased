@@ -22,13 +22,6 @@ defmodule Pleroma.Repo.Migrations.DropUnusedIndexes do
     drop_if_exists(
       index(:activities, ["((data #> '{\"object\",\"likes\"}'))"], name: :activities_likes)
     )
-
-    drop_if_exists(
-      index(:activities, ["activity_visibility(actor, recipients, data)", "id DESC NULLS LAST"],
-        name: :activities_visibility_index,
-        where: "data->>'type' = 'Create'"
-      )
-    )
   end
 
   def down do
@@ -73,14 +66,6 @@ defmodule Pleroma.Repo.Migrations.DropUnusedIndexes do
       index(:activities, ["((data #> '{\"object\",\"likes\"}'))"],
         name: :activities_likes,
         using: :gin,
-        concurrently: true
-      )
-    )
-
-    create_if_not_exists(
-      index(:activities, ["activity_visibility(actor, recipients, data)", "id DESC NULLS LAST"],
-        name: :activities_visibility_index,
-        where: "data->>'type' = 'Create'",
         concurrently: true
       )
     )
