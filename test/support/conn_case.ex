@@ -120,9 +120,6 @@ defmodule Pleroma.Web.ConnCase do
 
     Mox.verify_on_exit!()
 
-    {:ok,
-     conn:
-       Phoenix.ConnTest.build_conn()
-       |> Map.put(:host, Pleroma.Web.Endpoint.host())}
+    {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end
