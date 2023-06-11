@@ -282,7 +282,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
     {:ok, post} = CommonAPI.post(rogerick, %{status: "eugh"})
 
     inline_mentions = [
-      "<span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{rogerick.id}\" href=\"#{rogerick.uri}\" rel=\"ugc\">@<span>rogerick</span></a></span>",
+      "<span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{rogerick.id}\" href=\"#{rogerick.ap_id}\" rel=\"ugc\">@<span>rogerick</span></a></span>",
       "<span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{greg.id}\" href=\"#{greg.uri}\" rel=\"ugc\">@<span>greg</span></a></span>"
     ]
 
