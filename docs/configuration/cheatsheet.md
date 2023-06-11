@@ -671,6 +671,12 @@ This filter reads the ImageDescription and iptc:Caption-Abstract fields with Exi
 
 No specific configuration.
 
+#### Pleroma.Upload.Filter.OnlyMedia
+
+This filter rejects uploads that are not identified with Content-Type matching audio/\*, image/\*, or video/\*
+
+No specific configuration.
+
 #### Pleroma.Upload.Filter.Mogrify
 
 * `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
@@ -873,21 +879,8 @@ This will probably take a long time.
 
 ### BBS / SSH access
 
-To enable simple command line interface accessible over ssh, add a setting like this to your configuration file:
-
-```exs
-app_dir = File.cwd!
-priv_dir = Path.join([app_dir, "priv/ssh_keys"])
-
-config :esshd,
-  enabled: true,
-  priv_dir: priv_dir,
-  handler: "Pleroma.BBS.Handler",
-  port: 10_022,
-  password_authenticator: "Pleroma.BBS.Authenticator"
-```
-
-Feel free to adjust the priv_dir and port number. Then you will have to create the key for the keys (in the example `priv/ssh_keys`) and create the host keys with `ssh-keygen -m PEM -N "" -b 2048 -t rsa -f ssh_host_rsa_key`. After restarting, you should be able to connect to your Pleroma instance with `ssh username@server -p $PORT`
+This feature has been removed from Pleroma core.
+However, a client has been made and is available at https://git.pleroma.social/Duponin/sshocial.
 
 ### :gopher
 * `enabled`: Enables the gopher interface

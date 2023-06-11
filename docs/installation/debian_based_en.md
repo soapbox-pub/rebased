@@ -4,7 +4,7 @@
 
 ## Installation
 
-This guide will assume you are on Debian 11 (“bullseye”) or later. This guide should also work with Ubuntu 18.04 (“Bionic Beaver”) and later. It also assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.digitalocean.com/community/tutorials/how-to-add-delete-and-grant-sudo-privileges-to-users-on-a-debian-vps). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.
+This guide will assume you are on Debian 12 (“bookworm”) or later. This guide should also work with Ubuntu 22.04 (“jammy”) and later. It also assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.digitalocean.com/community/tutorials/how-to-add-delete-and-grant-sudo-privileges-to-users-on-a-debian-vps). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su <username> -s $SHELL -c 'command'` instead.
 
 {! backend/installation/generic_dependencies.include !}
 

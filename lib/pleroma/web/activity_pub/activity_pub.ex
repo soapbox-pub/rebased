@@ -1547,7 +1547,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
-      ap_enabled: true,
       banner: normalize_image(data["image"]),
       fields: fields,
       emoji: emojis,
@@ -1668,7 +1667,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id, additional \\ []) do
+  defp fetch_and_prepare_user_from_ap_id(ap_id, additional) do
     with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
          {:ok, data} <- user_data_from_user_object(data, additional) do
       {:ok, maybe_update_follow_information(data)}
@@ -1751,24 +1750,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def make_user_from_ap_id(ap_id, additional \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
 
-    if user && !User.ap_enabled?(user) do
-      Transmogrifier.upgrade_user_from_ap_id(ap_id)
-    else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
-        {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
+    with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
+      {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
 
-        if user do
-          user
-          |> User.remote_user_changeset(data)
-          |> User.update_and_set_cache()
-        else
-          maybe_handle_clashing_nickname(data)
+      if user do
+        user
+        |> User.remote_user_changeset(data)
+        |> User.update_and_set_cache()
+      else
+        maybe_handle_clashing_nickname(data)
 
-          data
-          |> User.remote_user_changeset()
-          |> Repo.insert()
-          |> User.set_cache()
-        end
+        data
+        |> User.remote_user_changeset()
+        |> Repo.insert()
+        |> User.set_cache()
       end
     end
   end

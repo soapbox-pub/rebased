@@ -1,0 +1,261 @@
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here has no
+## effect: edit them in PO (.po) files instead.
+msgid ""
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "follow"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "push"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:accounts"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:backups"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:blocks"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:bookmarks"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:chats"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:favourites"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:filters"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:follows"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:lists"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:notifications"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:reports"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:search"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:statuses"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:accounts"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:blocks"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:bookmarks"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:chats"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:conversations"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:favourites"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:filters"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:follow"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:follows"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:lists"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:media"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:mutes"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:notifications"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:reports"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "write:statuses"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:accounts"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:chats"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:invites"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:media_proxy_caches"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:reports"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:read:statuses"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:accounts"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:chats"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:follows"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:invites"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:media_proxy_caches"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:reports"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "admin:write:statuses"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:media"
+msgstr ""
+
+#, elixir-autogen, elixir-format
+#: lib/pleroma/web/api_spec/scopes/translator.ex:5
+msgid "read:mutes"
+msgstr ""

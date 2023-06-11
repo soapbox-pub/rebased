@@ -527,6 +527,17 @@ defmodule Pleroma.Web.CommonAPITest do
     assert Object.tags(object) == ["ساٴين‌س"]
   end
 
+  test "allows lang attribute" do
+    user = insert(:user)
+    text = ~s{<span lang="en">something</span><p lang="diaetuitech_rpyhpgc">random</p>}
+
+    {:ok, activity} = CommonAPI.post(user, %{status: text, content_type: "text/html"})
+
+    object = Object.normalize(activity, fetch: false)
+
+    assert object.data["content"] == text
+  end
+
   test "double dot in link is allowed" do
     user = insert(:user)
     text = "https://example.to/something..mp3"
@@ -1328,7 +1339,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "cancels a pending follow for a remote user" do
       follower = insert(:user)
-      followed = insert(:user, is_locked: true, local: false, ap_enabled: true)
+      followed = insert(:user, is_locked: true, local: false)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)

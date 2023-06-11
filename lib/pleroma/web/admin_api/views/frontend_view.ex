@@ -15,7 +15,8 @@ defmodule Pleroma.Web.AdminAPI.FrontendView do
       git: frontend["git"],
       build_url: frontend["build_url"],
       ref: frontend["ref"],
-      installed: frontend["installed"]
+      installed: frontend["installed"],
+      installed_refs: frontend["installed_refs"]
     }
   end
 end

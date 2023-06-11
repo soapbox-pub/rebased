@@ -5,6 +5,9 @@
 defmodule Pleroma.Object.Updater do
   require Pleroma.Constants
 
+  alias Pleroma.Object
+  alias Pleroma.Repo
+
   def update_content_fields(orig_object_data, updated_object) do
     Pleroma.Constants.status_updatable_fields()
     |> Enum.reduce(
@@ -97,12 +100,14 @@ defmodule Pleroma.Object.Updater do
   end
 
   defp maybe_update_poll(to_be_updated, updated_object) do
-    choice_key = fn data ->
-      if Map.has_key?(data, "anyOf"), do: "anyOf", else: "oneOf"
+    choice_key = fn
+      %{"anyOf" => [_ | _]} -> "anyOf"
+      %{"oneOf" => [_ | _]} -> "oneOf"
+      _ -> nil
     end
 
     with true <- to_be_updated["type"] == "Question",
-         key <- choice_key.(updated_object),
+         key when not is_nil(key) <- choice_key.(updated_object),
          true <- key == choice_key.(to_be_updated),
          orig_choices <- to_be_updated[key] |> Enum.map(&Map.drop(&1, ["replies"])),
          new_choices <- updated_object[key] |> Enum.map(&Map.drop(&1, ["replies"])),
@@ -235,6 +240,51 @@ defmodule Pleroma.Object.Updater do
     else
       {:main_body, e} -> e
       {:history_items, e} -> e
+    end
+  end
+
+  defp maybe_touch_changeset(changeset, true) do
+    updated_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.truncate(:second)
+
+    Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
+  end
+
+  defp maybe_touch_changeset(changeset, _), do: changeset
+
+  def do_update_and_invalidate_cache(orig_object, updated_object, touch_changeset? \\ false) do
+    orig_object_ap_id = updated_object["id"]
+    orig_object_data = orig_object.data
+
+    %{
+      updated_data: updated_object_data,
+      updated: updated,
+      used_history_in_new_object?: used_history_in_new_object?
+    } = make_new_object_data_from_update_object(orig_object_data, updated_object)
+
+    changeset =
+      orig_object
+      |> Repo.preload(:hashtags)
+      |> Object.change(%{data: updated_object_data})
+      |> maybe_touch_changeset(touch_changeset?)
+
+    with {:ok, new_object} <- Repo.update(changeset),
+         {:ok, _} <- Object.invalid_object_cache(new_object),
+         {:ok, _} <- Object.set_cache(new_object),
+         # The metadata/utils.ex uses the object id for the cache.
+         {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(new_object.id) do
+      if used_history_in_new_object? do
+        with create_activity when not is_nil(create_activity) <-
+               Pleroma.Activity.get_create_by_object_ap_id(orig_object_ap_id),
+             {:ok, _} <- Pleroma.Activity.HTML.invalidate_cache_for(create_activity.id) do
+          nil
+        else
+          _ -> nil
+        end
+      end
+
+      {:ok, new_object, updated}
     end
   end
 end
