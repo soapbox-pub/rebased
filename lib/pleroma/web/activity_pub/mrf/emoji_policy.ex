@@ -56,6 +56,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   end
 
   @impl Pleroma.Web.ActivityPub.MRF.Policy
+  def filter(%{"type" => "EmojiReact"} = object) do
+    with {:ok, _} <-
+           matched_emoji_checker(config_remove_url(), config_remove_shortcode()).(object) do
+      {:ok, object}
+    else
+      _ ->
+        {:reject, "[EmojiPolicy] Rejected for having disallowed emoji"}
+    end
+  end
+
+  @impl Pleroma.Web.ActivityPub.MRF.Policy
   def filter(message) do
     {:ok, message}
   end
@@ -133,20 +144,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
     end
   end
 
-  defp maybe_delist(%{"object" => object, "to" => to, "type" => "Create"} = activity) do
-    check = fn object ->
-      if any_emoji_match?(object, &url_from_tag/1, &url_from_emoji/1, config_unlist_url()) or
+  defp matched_emoji_checker(urls, shortcodes) do
+    fn object ->
+      if any_emoji_match?(object, &url_from_tag/1, &url_from_emoji/1, urls) or
            any_emoji_match?(
              object,
              &shortcode_from_tag/1,
              &shortcode_from_emoji/1,
-             config_unlist_shortcode()
+             shortcodes
            ) do
-        {:should_delist, nil}
+        {:matched, nil}
       else
         {:ok, %{}}
       end
     end
+  end
+
+  defp maybe_delist(%{"object" => object, "to" => to, "type" => "Create"} = activity) do
+    check = matched_emoji_checker(config_unlist_url(), config_unlist_shortcode())
 
     should_delist? = fn object ->
       with {:ok, _} <- Pleroma.Object.Updater.do_with_history(object, check) do
@@ -173,7 +188,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   defp any_emoji_match?(object, extract_from_tag, extract_from_emoji, patterns) do
     Kernel.||(
       Enum.any?(
-        object["tag"],
+        object["tag"] || [],
         fn
           %{"type" => "Emoji"} = tag ->
             str = extract_from_tag.(tag)
@@ -188,7 +203,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
             false
         end
       ),
-      object["emoji"]
+      (object["emoji"] || [])
       |> Enum.any?(fn emoji -> match_any?(extract_from_emoji.(emoji), patterns) end)
     )
   end
@@ -227,7 +242,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
           key: :remove_url,
           type: {:list, :string},
           description: """
-            A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to both statuses and user profiles.
+            A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,
@@ -237,7 +252,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
           key: :remove_shortcode,
           type: {:list, :string},
           description: """
-            A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to both statuses and user profiles.
+            A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles.
 
             Each pattern can be a string or [Regex](https://hexdocs.pm/elixir/Regex.html) in the format of `~r/PATTERN/`.
           """,

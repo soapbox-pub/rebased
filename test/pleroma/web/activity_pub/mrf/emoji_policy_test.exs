@@ -109,6 +109,30 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
     "cc" => ["https://example.org/someone"]
   }
 
+  @emoji_react_data %{
+    "type" => "EmojiReact",
+    "tag" => [@emoji_tags |> Enum.at(3)],
+    "object" => "https://example.org/someobject",
+    "to" => ["https://example.org/self"],
+    "cc" => ["https://example.org/someone"]
+  }
+
+  @emoji_react_data_matching_regex %{
+    "type" => "EmojiReact",
+    "tag" => [@emoji_tags |> Enum.at(1)],
+    "object" => "https://example.org/someobject",
+    "to" => ["https://example.org/self"],
+    "cc" => ["https://example.org/someone"]
+  }
+
+  @emoji_react_data_matching_nothing %{
+    "type" => "EmojiReact",
+    "tag" => [@emoji_tags |> Enum.at(2)],
+    "object" => "https://example.org/someobject",
+    "to" => ["https://example.org/self"],
+    "cc" => ["https://example.org/someone"]
+  }
+
   describe "remove_url" do
     setup do
       clear_config([:mrf_emoji, :remove_url], [
@@ -182,6 +206,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
              } = filtered
 
       assert %{"tag" => ^expected_tags, "emoji" => ^expected_emoji} = item
+    end
+
+    test "processes EmojiReact" do
+      assert {:reject, "[EmojiPolicy] Rejected for having disallowed emoji"} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data)
+
+      assert {:reject, "[EmojiPolicy] Rejected for having disallowed emoji"} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data_matching_regex)
+
+      assert {:ok, @emoji_react_data_matching_nothing} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data_matching_nothing)
     end
   end
 
@@ -258,6 +293,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
              } = filtered
 
       assert %{"tag" => ^expected_tags, "emoji" => ^expected_emoji} = item
+    end
+
+    test "processes EmojiReact" do
+      assert {:reject, "[EmojiPolicy] Rejected for having disallowed emoji"} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data)
+
+      assert {:reject, "[EmojiPolicy] Rejected for having disallowed emoji"} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data_matching_regex)
+
+      assert {:ok, @emoji_react_data_matching_nothing} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data_matching_nothing)
     end
   end
 
