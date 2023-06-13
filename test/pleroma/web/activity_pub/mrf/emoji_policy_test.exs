@@ -133,6 +133,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
     "cc" => ["https://example.org/someone"]
   }
 
+  @emoji_react_data_unicode %{
+    "type" => "EmojiReact",
+    "content" => "😍",
+    "object" => "https://example.org/someobject",
+    "to" => ["https://example.org/self"],
+    "cc" => ["https://example.org/someone"]
+  }
+
   describe "remove_url" do
     setup do
       clear_config([:mrf_emoji, :remove_url], [
@@ -217,6 +225,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
 
       assert {:ok, @emoji_react_data_matching_nothing} ==
                MRF.filter_one(EmojiPolicy, @emoji_react_data_matching_nothing)
+
+      assert {:ok, @emoji_react_data_unicode} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data_unicode)
     end
   end
 
@@ -304,6 +315,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
 
       assert {:ok, @emoji_react_data_matching_nothing} ==
                MRF.filter_one(EmojiPolicy, @emoji_react_data_matching_nothing)
+
+      assert {:ok, @emoji_react_data_unicode} ==
+               MRF.filter_one(EmojiPolicy, @emoji_react_data_unicode)
     end
   end
 
