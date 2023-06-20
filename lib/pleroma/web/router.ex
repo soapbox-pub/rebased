@@ -286,11 +286,6 @@ defmodule Pleroma.Web.Router do
     post("/frontends/install", FrontendController, :install)
 
     post("/backups", AdminAPIController, :create_backup)
-  end
-
-  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
-  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:require_privileged_role_announcements_manage_announcements)
 
     get("/email_list/subscribers.csv", EmailListController, :subscribers)
     get("/email_list/unsubscribers.csv", EmailListController, :unsubscribers)
@@ -301,12 +296,6 @@ defmodule Pleroma.Web.Router do
     patch("/rules/:id", RuleController, :update)
     delete("/rules/:id", RuleController, :delete)
 
-    get("/announcements", AnnouncementController, :index)
-    post("/announcements", AnnouncementController, :create)
-    get("/announcements/:id", AnnouncementController, :show)
-    patch("/announcements/:id", AnnouncementController, :change)
-    delete("/announcements/:id", AnnouncementController, :delete)
-
     get("/webhooks", WebhookController, :index)
     get("/webhooks/:id", WebhookController, :show)
     post("/webhooks", WebhookController, :create)
@@ -315,6 +304,17 @@ defmodule Pleroma.Web.Router do
     post("/webhooks/:id/enable", WebhookController, :enable)
     post("/webhooks/:id/disable", WebhookController, :disable)
     post("/webhooks/:id/rotate_secret", WebhookController, :rotate_secret)
+  end
+
+  # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
+  scope "/api/v1/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:require_privileged_role_announcements_manage_announcements)
+
+    get("/announcements", AnnouncementController, :index)
+    post("/announcements", AnnouncementController, :create)
+    get("/announcements/:id", AnnouncementController, :show)
+    patch("/announcements/:id", AnnouncementController, :change)
+    delete("/announcements/:id", AnnouncementController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)
