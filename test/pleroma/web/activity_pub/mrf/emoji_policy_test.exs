@@ -389,4 +389,37 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicyTest do
              } = filtered
     end
   end
+
+  describe "edge cases" do
+    setup do
+      clear_config([:mrf_emoji, :remove_url], [
+        "https://example.org/test.png",
+        ~r{/biribiri/mikoto_smile[23]\.png},
+        "nekomimi_girl_emoji"
+      ])
+
+      :ok
+    end
+
+    test "non-statuses" do
+      answer = @status_data |> put_in(["object", "type"], "Answer")
+      {:ok, filtered} = MRF.filter_one(EmojiPolicy, answer)
+
+      assert filtered == answer
+    end
+
+    test "without tag" do
+      status = @status_data |> Map.put("object", Map.drop(@status_data["object"], ["tag"]))
+      {:ok, filtered} = MRF.filter_one(EmojiPolicy, status)
+
+      refute Map.has_key?(filtered["object"], "tag")
+    end
+
+    test "without emoji" do
+      status = @status_data |> Map.put("object", Map.drop(@status_data["object"], ["emoji"]))
+      {:ok, filtered} = MRF.filter_one(EmojiPolicy, status)
+
+      refute Map.has_key?(filtered["object"], "emoji")
+    end
+  end
 end

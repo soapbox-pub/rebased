@@ -31,8 +31,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   def history_awareness, do: :manual
 
   @impl Pleroma.Web.ActivityPub.MRF.Policy
-  def filter(%{"type" => type, "object" => %{} = object} = message)
-      when type in ["Create", "Update"] do
+  def filter(%{"type" => type, "object" => %{"type" => objtype} = object} = message)
+      when type in ["Create", "Update"] and objtype in Pleroma.Constants.status_object_types() do
     with {:ok, object} <-
            Updater.do_with_history(object, fn object ->
              {:ok, process_remove(object, :url, config_remove_url())}
@@ -102,46 +102,51 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   end
 
   defp process_remove_impl(object, extract_from_tag, extract_from_emoji, patterns) do
-    processed_tag =
-      Enum.filter(
-        object["tag"],
-        fn
-          %{"type" => "Emoji"} = tag ->
-            str = extract_from_tag.(tag)
+    object =
+      if object["tag"] do
+        Map.put(
+          object,
+          "tag",
+          Enum.filter(
+            object["tag"],
+            fn
+              %{"type" => "Emoji"} = tag ->
+                str = extract_from_tag.(tag)
 
-            if is_binary(str) do
-              not match_any?(str, patterns)
-            else
-              true
+                if is_binary(str) do
+                  not match_any?(str, patterns)
+                else
+                  true
+                end
+
+              _ ->
+                true
             end
-
-          _ ->
-            true
-        end
-      )
-
-    processed_emoji =
-      if object["emoji"] do
-        object["emoji"]
-        |> Enum.reduce(%{}, fn {name, url} = emoji, acc ->
-          if not match_any?(extract_from_emoji.(emoji), patterns) do
-            Map.put(acc, name, url)
-          else
-            acc
-          end
-        end)
+          )
+        )
       else
-        nil
+        object
       end
 
-    if processed_emoji do
-      object
-      |> Map.put("tag", processed_tag)
-      |> Map.put("emoji", processed_emoji)
-    else
-      object
-      |> Map.put("tag", processed_tag)
-    end
+    object =
+      if object["emoji"] do
+        Map.put(
+          object,
+          "emoji",
+          object["emoji"]
+          |> Enum.reduce(%{}, fn {name, url} = emoji, acc ->
+            if not match_any?(extract_from_emoji.(emoji), patterns) do
+              Map.put(acc, name, url)
+            else
+              acc
+            end
+          end)
+        )
+      else
+        object
+      end
+
+    object
   end
 
   defp matched_emoji_checker(urls, shortcodes) do
