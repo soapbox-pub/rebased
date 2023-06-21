@@ -20,6 +20,20 @@ defmodule Pleroma.Config.ReleaseRuntimeProvider do
 
     with_runtime_config =
       if File.exists?(config_path) do
+        # <https://git.pleroma.social/pleroma/pleroma/-/issues/3135>
+        %File.Stat{mode: mode} = File.lstat!(config_path)
+
+        if Bitwise.band(mode, 0o007) > 0 do
+          raise "Configuration at #{config_path} has world-permissions, execute the following: chmod o= #{config_path}"
+        end
+
+        if Bitwise.band(mode, 0o020) > 0 do
+          raise "Configuration at #{config_path} has group-wise write permissions, execute the following: chmod g-w #{config_path}"
+        end
+
+        # Note: Elixir doesn't provides a getuid(2)
+        # so cannot forbid group-read only when config is owned by us
+
         runtime_config = Config.Reader.read!(config_path)
 
         with_defaults
