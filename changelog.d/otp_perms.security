@@ -1,0 +1,1 @@
+- Reduced permissions of config files and directories, distros requiring greater permissions like group-read need to pre-create the directories
