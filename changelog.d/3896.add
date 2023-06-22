@@ -1,1 +1,0 @@
-Validate Host header for Uploads and return a 302 if the base_url has changed
