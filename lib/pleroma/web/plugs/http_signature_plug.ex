@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   def call(conn, _opts) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["json", "activity+json"] do
       conn
       |> maybe_assign_valid_signature()
       |> maybe_require_signature()
