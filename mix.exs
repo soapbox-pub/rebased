@@ -150,7 +150,8 @@ defmodule Pleroma.Mixfile do
       {:bbcode_pleroma, "~> 0.2.0"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3.1"},
-      {:swoosh, "~> 1.0"},
+      # swoosh 1.11.2+ requires Elixir 1.12+
+      {:swoosh, "~> 1.10.0"},
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
