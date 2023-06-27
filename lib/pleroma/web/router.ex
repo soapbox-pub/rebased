@@ -996,8 +996,8 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
-    match(:*, "/api/pleroma*path", LegacyPleromaApiRerouterPlug, [])
-    get("/api*path", RedirectController, :api_not_implemented)
+    match(:*, "/api/pleroma/*path", LegacyPleromaApiRerouterPlug, [])
+    get("/api/*path", RedirectController, :api_not_implemented)
     get("/*path", RedirectController, :redirector_with_preload)
 
     options("/*path", RedirectController, :empty)
