@@ -3364,6 +3364,21 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Limit user to export not more often than once per N days",
         suggestions: [7]
+      },
+      %{
+        key: :process_wait_time,
+        type: :integer,
+        label: "Process Wait Time",
+        description:
+          "The amount of time to wait for backup to report progress, in milliseconds. If no progress is received from the backup job for that much time, terminate it and deem it failed.",
+        suggestions: [30_000]
+      },
+      %{
+        key: :process_chunk_size,
+        type: :integer,
+        label: "Process Chunk Size",
+        description: "The number of activities to fetch in the backup job for each chunk.",
+        suggestions: [100]
       }
     ]
   },

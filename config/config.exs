@@ -871,7 +871,9 @@ config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthent
 config :pleroma, Pleroma.User.Backup,
   purge_after_days: 30,
   limit_days: 7,
-  dir: nil
+  dir: nil,
+  process_wait_time: 30_000,
+  process_chunk_size: 100
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
