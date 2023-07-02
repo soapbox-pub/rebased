@@ -65,13 +65,21 @@ check-changelog:
         - "**/*.exs"
         - "mix.lock"
 
+.using-ci-base:
+  tags:
+    - amd64
+
 build:
-  extends: .build_changes_policy
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
   stage: build
   script:
   - mix compile --force
 
 spec-build:
+  extends:
+  - .using-ci-base
   stage: test
   rules:
     - changes:
@@ -85,6 +93,8 @@ spec-build:
   - mix pleroma.openapi_spec spec.json
 
 benchmark:
+  extends:
+  - .using-ci-base
   stage: benchmark
   when: manual
   variables:
@@ -99,7 +109,9 @@ benchmark:
     - mix pleroma.load_testing
 
 unit-testing:
-  extends: .build_changes_policy
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
   stage: test
   cache: &testing_cache_policy
     <<: *global_cache_policy
@@ -121,7 +133,9 @@ unit-testing:
         path: coverage.xml
 
 unit-testing-erratic:
-  extends: .build_changes_policy
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
   stage: test
   retry: 2
   allow_failure: true
@@ -155,7 +169,9 @@ unit-testing-erratic:
 #     - mix test --trace --only federated
 
 unit-testing-rum:
-  extends: .build_changes_policy
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
   stage: test
   cache: *testing_cache_policy
   services:
@@ -186,7 +202,9 @@ lint:
     - mix format --check-formatted
 
 analysis:
-  extends: .build_changes_policy
+  extends:
+  - .build_changes_policy
+  - .using-ci-base
   stage: test
   cache: *testing_cache_policy
   script:
