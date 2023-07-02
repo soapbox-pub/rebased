@@ -136,6 +136,11 @@ sudo ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/ple
 ```
 
 * Before starting nginx edit the configuration and change it to your needs (e.g. change servername, change cert paths)
+
+* (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
+
 * Enable and start nginx:
 
 ```shell
