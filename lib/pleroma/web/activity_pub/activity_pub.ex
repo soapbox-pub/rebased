@@ -1720,6 +1720,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end)
   end
 
+  def pin_data_from_featured_collection(obj) do
+    Logger.error("Could not parse featured collection #{inspect(obj)}")
+    %{}
+  end
+
   def fetch_and_prepare_featured_from_ap_id(nil) do
     {:ok, %{}}
   end
