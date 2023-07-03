@@ -82,6 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       limit: min(params[:limit], @search_limit),
       offset: params[:offset],
       type: params[:type],
+      capabilities: params[:capabilities],
       author: get_author(params),
       embed_relationships: ControllerHelper.embed_relationships?(params),
       for_user: user

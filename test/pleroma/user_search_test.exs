@@ -366,5 +366,13 @@ defmodule Pleroma.UserSearchTest do
 
       assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
     end
+
+    test "find users accepting chat messages only" do
+      user1 = insert(:user, nickname: "user1", accepts_chat_messages: true)
+      insert(:user, nickname: "user2", accepts_chat_messages: false)
+
+      [found_user1] = User.search("user", capabilities: ["accepts_chat_messages"])
+      assert found_user1.id == user1.id
+    end
   end
 end

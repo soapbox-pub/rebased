@@ -46,6 +46,12 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
           :query,
           %Schema{allOf: [BooleanLike], default: false},
           "Only include accounts that the user is following"
+        ),
+        Operation.parameter(
+          :capabilities,
+          :query,
+          %Schema{type: :array, items: %Schema{type: :string, enum: ["accepts_chat_messages"]}},
+          "Only include accounts with given capabilities"
         )
       ],
       responses: %{

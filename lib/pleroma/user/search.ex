@@ -16,6 +16,7 @@ defmodule Pleroma.User.Search do
     following = Keyword.get(opts, :following, false)
     result_limit = Keyword.get(opts, :limit, @limit)
     offset = Keyword.get(opts, :offset, 0)
+    capabilities = Keyword.get(opts, :capabilities, [])
 
     for_user = Keyword.get(opts, :for_user)
 
@@ -32,7 +33,7 @@ defmodule Pleroma.User.Search do
 
     results =
       query_string
-      |> search_query(for_user, following, top_user_ids)
+      |> search_query(for_user, following, top_user_ids, capabilities)
       |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => result_limit}, :offset)
 
     results
@@ -80,7 +81,7 @@ defmodule Pleroma.User.Search do
     end
   end
 
-  defp search_query(query_string, for_user, following, top_user_ids) do
+  defp search_query(query_string, for_user, following, top_user_ids, capabilities) do
     for_user
     |> base_query(following)
     |> filter_blocked_user(for_user)
@@ -94,6 +95,7 @@ defmodule Pleroma.User.Search do
     |> subquery()
     |> order_by(desc: :search_rank)
     |> maybe_restrict_local(for_user)
+    |> maybe_restrict_accepting_chat_messages(capabilities)
     |> filter_deactivated_users()
   end
 
@@ -211,6 +213,14 @@ defmodule Pleroma.User.Search do
       {:unauthenticated, %User{}} -> q
       {:unauthenticated, _} -> restrict_local(q)
       {false, _} -> q
+    end
+  end
+
+  defp maybe_restrict_accepting_chat_messages(query, capabilities) do
+    if "accepts_chat_messages" in capabilities do
+      from(q in query, where: q.accepts_chat_messages == true)
+    else
+      query
     end
   end
 
