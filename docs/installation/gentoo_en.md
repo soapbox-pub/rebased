@@ -2,7 +2,7 @@
 
 {! backend/installation/otp_vs_from_source.include !}
 
-This guide covers a manual from-source installation. To use the gentoo package, please check the [packaged installation guide for gentoo](./gentoo.en.md).
+This guide covers a manual from-source installation. To use the gentoo package, please check the [packaged installation guide for gentoo](./gentoo_otp_en.md).
 
 ## Installation
 
