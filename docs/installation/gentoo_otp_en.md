@@ -65,7 +65,7 @@ The output from emerging postgresql should give you a command for initializing t
 
 ### Install media / graphics packages (optional)
 
-See [Optional software packages needed for specific functionality](docs/installation/optional/media_graphics_packages.md) for details.
+See [Optional software packages needed for specific functionality](optional/media_graphics_packages.md) for details.
 
 ```shell
 # emerge --ask media-video/ffmpeg media-gfx/imagemagick media-libs/exiftool
