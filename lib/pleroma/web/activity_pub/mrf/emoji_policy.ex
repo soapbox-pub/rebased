@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
   require Pleroma.Constants
 
   alias Pleroma.Object.Updater
+  alias Pleroma.Web.ActivityPub.MRF.Utils
 
   @moduledoc "Reject or force-unlisted emojis with certain URLs or names"
 
@@ -215,19 +216,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.EmojiPolicy do
 
   @impl Pleroma.Web.ActivityPub.MRF.Policy
   def describe do
-    # This horror is needed to convert regex sigils to strings
     mrf_emoji =
       Pleroma.Config.get(:mrf_emoji, [])
       |> Enum.map(fn {key, value} ->
-        {key,
-         Enum.map(value, fn
-           pattern ->
-             if not is_binary(pattern) do
-               inspect(pattern)
-             else
-               pattern
-             end
-         end)}
+        {key, Enum.map(value, &Utils.describe_regex_or_string/1)}
       end)
       |> Enum.into(%{})
 
