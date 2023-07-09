@@ -1426,6 +1426,7 @@ defmodule Pleroma.User do
   def get_familiar_followers_query(%User{} = user, %User{} = current_user, nil) do
     friends =
       get_friends_query(current_user)
+      |> where([u], not u.hide_follows)
       |> select([u], u.id)
 
     User.Query.build(%{is_active: true})

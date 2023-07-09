@@ -2229,7 +2229,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: oauth_access(["read:follows"])
 
     test "fetch user familiar followers", %{user: user, conn: conn} do
-      other_user1 = insert(:user)
+      %{id: id1} = other_user1 = insert(:user)
       %{id: id2} = other_user2 = insert(:user)
       _ = insert(:user)
 
@@ -2259,7 +2259,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "it respects hide_followers", %{user: user, conn: conn} do
-      %{id: id1} = other_user1 = insert(:user)
+      other_user1 = insert(:user)
       %{id: id2} = other_user2 = insert(:user, hide_followers: true)
       _ = insert(:user)
 
