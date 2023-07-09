@@ -1424,8 +1424,9 @@ defmodule Pleroma.User do
 
   @spec get_familiar_followers_query(User.t(), User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_familiar_followers_query(%User{} = user, %User{} = current_user, nil) do
-    friends = get_friends_query(current_user)
-    |> select([u], u.id)
+    friends =
+      get_friends_query(current_user)
+      |> select([u], u.id)
 
     User.Query.build(%{is_active: true})
     |> where([u], u.id not in ^[user.id, current_user.id])
