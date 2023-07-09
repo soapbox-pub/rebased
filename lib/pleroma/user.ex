@@ -1424,18 +1424,17 @@ defmodule Pleroma.User do
 
   @spec get_familiar_followers_query(User.t(), User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_familiar_followers_query(%User{} = user, %User{} = current_user, nil) do
+    friends = get_friends_query(current_user)
+    |> select([u], u.id)
+
     User.Query.build(%{is_active: true})
     |> where([u], u.id not in ^[user.id, current_user.id])
     |> join(:inner, [u], r in FollowingRelationship,
       as: :followers_relationships,
       on: r.following_id == ^user.id and r.follower_id == u.id
     )
-    |> join(:inner, [u], r in FollowingRelationship,
-      as: :following_relationships,
-      on: r.following_id == u.id and r.follower_id == ^current_user.id and not u.hide_follows
-    )
     |> where([followers_relationships: r], r.state == ^:follow_accept)
-    |> where([following_relationships: r], r.state == ^:follow_accept)
+    |> where([followers_relationships: r], r.follower_id in subquery(friends))
   end
 
   def get_familiar_followers_query(%User{} = user, %User{} = current_user, page) do
