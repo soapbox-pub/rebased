@@ -1,6 +1,6 @@
 # Pleroma: A lightweight social networking server
 
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
@@ -20,12 +20,12 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
 
     [
       title_tag(user),
-      {:meta, [property: "twitter:description", content: scrubbed_content], []}
+      {:meta, [name: "twitter:description", content: scrubbed_content], []}
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
           image_tag(user),
-          {:meta, [property: "twitter:card", content: "summary"], []}
+          {:meta, [name: "twitter:card", content: "summary"], []}
         ]
       else
         attachments
@@ -37,20 +37,19 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     with truncated_bio = Utils.scrub_html_and_truncate(user.bio) do
       [
         title_tag(user),
-        {:meta, [property: "twitter:description", content: truncated_bio], []},
+        {:meta, [name: "twitter:description", content: truncated_bio], []},
         image_tag(user),
-        {:meta, [property: "twitter:card", content: "summary"], []}
+        {:meta, [name: "twitter:card", content: "summary"], []}
       ]
     end
   end
 
   defp title_tag(user) do
-    {:meta, [property: "twitter:title", content: Utils.user_name_string(user)], []}
+    {:meta, [name: "twitter:title", content: Utils.user_name_string(user)], []}
   end
 
   def image_tag(user) do
-    {:meta, [property: "twitter:image", content: MediaProxy.preview_url(User.avatar_url(user))],
-     []}
+    {:meta, [name: "twitter:image", content: MediaProxy.preview_url(User.avatar_url(user))], []}
   end
 
   defp build_attachments(id, %{data: %{"attachment" => attachments}}) do
@@ -60,10 +59,10 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
           case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
               [
-                {:meta, [property: "twitter:card", content: "player"], []},
-                {:meta, [property: "twitter:player:width", content: "480"], []},
-                {:meta, [property: "twitter:player:height", content: "80"], []},
-                {:meta, [property: "twitter:player", content: player_url(id)], []}
+                {:meta, [name: "twitter:card", content: "player"], []},
+                {:meta, [name: "twitter:player:width", content: "480"], []},
+                {:meta, [name: "twitter:player:height", content: "80"], []},
+                {:meta, [name: "twitter:player", content: player_url(id)], []}
                 | acc
               ]
 
@@ -74,10 +73,10 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
             # workaround.
             "image" ->
               [
-                {:meta, [property: "twitter:card", content: "summary_large_image"], []},
+                {:meta, [name: "twitter:card", content: "summary_large_image"], []},
                 {:meta,
                  [
-                   property: "twitter:player",
+                   name: "twitter:player",
                    content: MediaProxy.url(url["href"])
                  ], []}
                 | acc
@@ -90,14 +89,14 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
               width = url["width"] || 480
 
               [
-                {:meta, [property: "twitter:card", content: "player"], []},
-                {:meta, [property: "twitter:player", content: player_url(id)], []},
-                {:meta, [property: "twitter:player:width", content: "#{width}"], []},
-                {:meta, [property: "twitter:player:height", content: "#{height}"], []},
-                {:meta, [property: "twitter:player:stream", content: MediaProxy.url(url["href"])],
+                {:meta, [name: "twitter:card", content: "player"], []},
+                {:meta, [name: "twitter:player", content: player_url(id)], []},
+                {:meta, [name: "twitter:player:width", content: "#{width}"], []},
+                {:meta, [name: "twitter:player:height", content: "#{height}"], []},
+                {:meta, [name: "twitter:player:stream", content: MediaProxy.url(url["href"])],
                  []},
-                {:meta,
-                 [property: "twitter:player:stream:content_type", content: url["mediaType"]], []}
+                {:meta, [name: "twitter:player:stream:content_type", content: url["mediaType"]],
+                 []}
                 | acc
               ]
 
@@ -123,8 +122,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
       !is_nil(url["height"]) && !is_nil(url["width"]) ->
         metadata ++
           [
-            {:meta, [property: "twitter:player:width", content: "#{url["width"]}"], []},
-            {:meta, [property: "twitter:player:height", content: "#{url["height"]}"], []}
+            {:meta, [name: "twitter:player:width", content: "#{url["width"]}"], []},
+            {:meta, [name: "twitter:player:height", content: "#{url["height"]}"], []}
           ]
 
       true ->

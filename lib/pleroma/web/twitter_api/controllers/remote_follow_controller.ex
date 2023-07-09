@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   def do_follow(%{assigns: %{user: %User{} = user}} = conn, %{"user" => %{"id" => id}}) do
     with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
          {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
-      redirect(conn, to: "/users/#{followee.id}")
+      redirect(conn, to: "/users/#{followee.nickname}")
     else
       error ->
         handle_follow_error(conn, error)
@@ -91,7 +91,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
          {_, {:ok, user}, _} <- {:auth, WrapperAuthenticator.get_user(conn), followee},
          {_, _, _, false} <- {:mfa_required, followee, user, MFA.require?(user)},
          {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
-      redirect(conn, to: "/users/#{followee.id}")
+      redirect(conn, to: "/users/#{followee.nickname}")
     else
       error ->
         handle_follow_error(conn, error)
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
          {_, _, _, {:ok, _}} <-
            {:verify_mfa_code, followee, token, TOTPAuthenticator.verify(code, user)},
          {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
-      redirect(conn, to: "/users/#{followee.id}")
+      redirect(conn, to: "/users/#{followee.nickname}")
     else
       error ->
         handle_follow_error(conn, error)

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
@@ -8,6 +8,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   require Logger
+
+  @impl true
+  def history_awareness, do: :auto
 
   # has the user successfully posted before?
   defp old_user?(%User{} = u) do

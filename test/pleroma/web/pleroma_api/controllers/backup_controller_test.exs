@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   setup do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
-    oauth_access(["read:accounts"])
+    oauth_access(["read:backups"])
   end
 
   test "GET /api/v1/pleroma/backups", %{user: user, conn: conn} do
@@ -81,5 +81,25 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
              conn
              |> post("/api/v1/pleroma/backups")
              |> json_response_and_validate_schema(400)
+  end
+
+  test "Backup without email address" do
+    user = Pleroma.Factory.insert(:user, email: nil)
+    %{conn: conn} = oauth_access(["read:backups"], user: user)
+
+    assert is_nil(user.email)
+
+    assert [
+             %{
+               "content_type" => "application/zip",
+               "url" => _url,
+               "file_size" => 0,
+               "processed" => false,
+               "inserted_at" => _
+             }
+           ] =
+             conn
+             |> post("/api/v1/pleroma/backups")
+             |> json_response_and_validate_schema(:ok)
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Instance do
@@ -34,7 +34,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           static_dir: :string,
           listen_ip: :string,
           listen_port: :string,
-          strip_uploads: :string,
+          strip_uploads_location: :string,
+          read_uploads_description: :string,
           anonymize_uploads: :string,
           dedupe_uploads: :string
         ],
@@ -146,9 +147,11 @@ defmodule Mix.Tasks.Pleroma.Instance do
           Config.get([:instance, :static_dir])
           |> Path.expand()
 
-      strip_uploads = false
+      strip_uploads_location = false
 
       anonymize_uploads = false
+
+      read_uploads_description = true
 
       dedupe_uploads = false
 
@@ -187,7 +190,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           listen_port: listen_port,
           upload_filters:
             upload_filters(%{
-              strip: strip_uploads,
+              strip_location: strip_uploads_location,
+              read_description: read_uploads_description,
               anonymize: anonymize_uploads,
               dedupe: dedupe_uploads
             })
@@ -255,10 +259,17 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
   defp upload_filters(filters) when is_map(filters) do
     enabled_filters =
-      if filters.strip do
-        [Pleroma.Upload.Filter.Exiftool]
+      if filters.strip_location do
+        [Pleroma.Upload.Filter.Exiftool.StripLocation]
       else
         []
+      end
+
+    enabled_filters =
+      if filters.read_description do
+        enabled_filters ++ [Pleroma.Upload.Filter.Exiftool.ReadDescription]
+      else
+        enabled_filters
       end
 
     enabled_filters =

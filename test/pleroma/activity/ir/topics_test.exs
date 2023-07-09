@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Ir.TopicsTest do
@@ -12,6 +12,29 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
   require Pleroma.Constants
 
   import Mock
+
+  describe "chat message" do
+    test "Create produces no topics" do
+      activity = %Activity{
+        object: %Object{data: %{"type" => "ChatMessage"}},
+        data: %{"type" => "Create"}
+      }
+
+      assert [] == Topics.get_activity_topics(activity)
+    end
+
+    test "Delete produces user and user:pleroma_chat" do
+      activity = %Activity{
+        object: %Object{data: %{"type" => "ChatMessage"}},
+        data: %{"type" => "Delete"}
+      }
+
+      topics = Topics.get_activity_topics(activity)
+      assert [_, _] = topics
+      assert "user" in topics
+      assert "user:pleroma_chat" in topics
+    end
+  end
 
   describe "poll answer" do
     test "produce no topics" do
@@ -35,7 +58,7 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
     setup do
       activity = %Activity{
         object: %Object{data: %{"type" => "Note"}},
-        data: %{"to" => [Pleroma.Constants.as_public()]}
+        data: %{"to" => [Pleroma.Constants.as_public()], "type" => "Create"}
       }
 
       {:ok, activity: activity}
@@ -114,6 +137,55 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
     end
   end
 
+  describe "public visibility Announces" do
+    setup do
+      activity = %Activity{
+        object: %Object{data: %{"attachment" => []}},
+        data: %{"type" => "Announce", "to" => [Pleroma.Constants.as_public()]}
+      }
+
+      {:ok, activity: activity}
+    end
+
+    test "does not generate public topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute "public" in topics
+      refute "public:remote" in topics
+      refute "public:local" in topics
+    end
+  end
+
+  describe "local-public visibility create events" do
+    setup do
+      activity = %Activity{
+        object: %Object{data: %{"attachment" => []}},
+        data: %{"type" => "Create", "to" => [Pleroma.Web.ActivityPub.Utils.as_local_public()]}
+      }
+
+      {:ok, activity: activity}
+    end
+
+    test "doesn't produce public topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public")
+    end
+
+    test "produces public:local topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      assert Enum.member?(topics, "public:local")
+    end
+
+    test "with no attachments doesn't produce public:media topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public:media")
+      refute Enum.member?(topics, "public:local:media")
+    end
+  end
+
   describe "public visibility create events with attachments" do
     setup do
       activity = %Activity{
@@ -152,9 +224,36 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
     end
   end
 
+  describe "local-public visibility create events with attachments" do
+    setup do
+      activity = %Activity{
+        object: %Object{data: %{"attachment" => ["foo"]}},
+        data: %{"type" => "Create", "to" => [Pleroma.Web.ActivityPub.Utils.as_local_public()]}
+      }
+
+      {:ok, activity: activity}
+    end
+
+    test "do not produce public:media topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      refute Enum.member?(topics, "public:media")
+    end
+
+    test "produces public:local:media topics", %{activity: activity} do
+      topics = Topics.get_activity_topics(activity)
+
+      assert Enum.member?(topics, "public:local:media")
+    end
+  end
+
   describe "non-public visibility" do
     test "produces direct topic" do
-      activity = %Activity{object: %Object{data: %{"type" => "Note"}}, data: %{"to" => []}}
+      activity = %Activity{
+        object: %Object{data: %{"type" => "Note"}},
+        data: %{"to" => [], "type" => "Create"}
+      }
+
       topics = Topics.get_activity_topics(activity)
 
       assert Enum.member?(topics, "direct")

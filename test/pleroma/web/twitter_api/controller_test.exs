@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
@@ -77,6 +77,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         build_conn()
         |> assign(:user, token.user)
         |> delete("/api/oauth_tokens/#{token.id}")
+
+      tokens = Token.get_user_tokens(token.user)
+
+      assert tokens == []
+      assert response.status == 201
+    end
+
+    test "revoke all tokens", %{token: token} do
+      insert(:oauth_token, user: token.user)
+      insert(:oauth_token, user: token.user)
+
+      response =
+        build_conn()
+        |> assign(:user, token.user)
+        |> delete("/api/oauth_tokens")
 
       tokens = Token.get_user_tokens(token.user)
 

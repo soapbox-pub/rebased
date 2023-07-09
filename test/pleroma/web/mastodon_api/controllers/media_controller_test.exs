@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
@@ -121,6 +121,23 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert media["id"]
 
       assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
+    end
+
+    test "Do not allow nested filename", %{conn: conn, image: image} do
+      image = %Plug.Upload{
+        image
+        | filename: "../../../../../nested/file.jpg"
+      }
+
+      desc = "Description of the image"
+
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/media", %{"file" => image, "description" => desc})
+        |> json_response_and_validate_schema(:ok)
+
+      refute Regex.match?(~r"/nested/", media["url"])
     end
   end
 

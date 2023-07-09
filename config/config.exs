@@ -37,7 +37,7 @@
 # FIGURATION! EDIT YOUR SECRET FILE (either prod.secret.exs, dev.secret.exs).
 #
 # This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# and its dependencies with the aid of the Config module.
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
@@ -110,17 +110,6 @@ config :pleroma, :uri_schemes,
     "xmpp"
   ]
 
-websocket_config = [
-  path: "/websocket",
-  serializer: [
-    {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
-    {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}
-  ],
-  timeout: 60_000,
-  transport_log: false,
-  compress: false
-]
-
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
@@ -130,9 +119,6 @@ config :pleroma, Pleroma.Web.Endpoint,
       {:_,
        [
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
-          {Phoenix.Transports.WebSocket,
-           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
          {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
@@ -160,11 +146,6 @@ config :logger, :ex_syslogger,
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
-config :quack,
-  level: :warn,
-  meta: [:all],
-  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
-
 config :mime, :types, %{
   "application/xml" => ["xml"],
   "application/xrd+xml" => ["xrd+xml"],
@@ -187,8 +168,10 @@ config :pleroma, :instance,
   email: "example@example.com",
   notify_email: "noreply@example.com",
   description: "Pleroma: An efficient and flexible fediverse server",
+  short_description: "",
   background_image: "/images/city.jpg",
-  instance_thumbnail: "/instance/thumbnail.jpeg",
+  instance_thumbnail: "/instance/thumbnail.png",
+  favicon: "/favicon.png",
   limit: 5_000,
   description_limit: 5_000,
   remote_limit: 100_000,
@@ -205,7 +188,7 @@ config :pleroma, :instance,
   registrations_open: true,
   invites_enabled: false,
   account_activation_required: false,
-  account_approval_required: false,
+  account_approval_required: true,
   federating: true,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
@@ -227,6 +210,7 @@ config :pleroma, :instance,
   max_pinned_statuses: 1,
   attachment_links: false,
   max_report_comment_size: 1000,
+  report_strip_status: true,
   safe_dm_mentions: false,
   healthcheck: false,
   remote_post_retention_days: 90,
@@ -257,11 +241,43 @@ config :pleroma, :instance,
   show_reactions: true,
   password_reset_token_validity: 60 * 60 * 24,
   profile_directory: true,
-  privileged_staff: false,
+  admin_privileges: [
+    :users_read,
+    :users_manage_invites,
+    :users_manage_activation_state,
+    :users_manage_tags,
+    :users_manage_credentials,
+    :users_delete,
+    :messages_read,
+    :messages_delete,
+    :instances_delete,
+    :reports_manage_reports,
+    :moderation_log_read,
+    :announcements_manage_announcements,
+    :emoji_manage_emoji,
+    :statistics_read
+  ],
+  moderator_privileges: [
+    :users_read,
+    :users_manage_invites,
+    :users_manage_activation_state,
+    :users_manage_tags,
+    :users_manage_credentials,
+    :users_delete,
+    :messages_read,
+    :messages_delete,
+    :instances_delete,
+    :reports_manage_reports,
+    :moderation_log_read,
+    :announcements_manage_announcements,
+    :emoji_manage_emoji,
+    :statistics_read
+  ],
   max_endorsed_users: 20,
   birthday_required: false,
   birthday_min_age: 0,
-  max_media_attachments: 1_000
+  max_media_attachments: 1_000,
+  migration_cooldown_period: 30
 
 config :pleroma, :welcome,
   direct_message: [
@@ -289,9 +305,7 @@ config :pleroma, :feed,
   }
 
 config :pleroma, :markup,
-  # XXX - unfortunately, inline images must be enabled by default right now, because
-  # of custom emoji.  Issue #275 discusses defanging that somehow.
-  allow_inline_images: true,
+  allow_inline_images: false,
   allow_headings: false,
   allow_tables: false,
   allow_fonts: false,
@@ -425,6 +439,15 @@ config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
 config :pleroma, :mrf_inline_quote, prefix: "RT"
 
+config :pleroma, :mrf_remote_report,
+  reject_all: false,
+  reject_anonymous: true,
+  reject_empty_message: true
+
+config :pleroma, :mrf_anti_duplication,
+  ttl: 60_000,
+  min_length: 50
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
@@ -472,11 +495,7 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :pleroma, :shout,
-  enabled: true,
-  limit: 5_000
-
-config :phoenix, :format_encoders, json: Jason, "activity+json": Jason
+config :phoenix, :format_encoders, json: Jason, "activity+json": Jason, ics: ICalendar
 
 config :phoenix, :json_library, Jason
 
@@ -577,6 +596,7 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     poll_notifications: 10,
+    notifications: 20,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,
@@ -615,9 +635,6 @@ config :pleroma, :ldap,
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
   uid: System.get_env("LDAP_UID") || "cn"
 
-config :esshd,
-  enabled: false
-
 oauth_consumer_strategies =
   System.get_env("OAUTH_CONSUMER_STRATEGIES")
   |> to_string()
@@ -628,7 +645,14 @@ ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
     strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
     strategy_module = String.to_atom(strategy_module_name)
-    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+
+    params =
+      case strategy do
+        "keycloak" -> [uid_field: :email, default_scope: "openid profile"]
+        _ -> [callback_params: ["state"]]
+      end
+
+    {String.to_atom(strategy), {strategy_module, params}}
   end
 
 config :ueberauth,
@@ -683,6 +707,8 @@ config :pleroma, :features, improved_hashtag_timeline: :auto
 
 config :pleroma, :populate_hashtags_table, fault_rate_allowance: 0.01
 
+config :pleroma, :delete_context_objects, fault_rate_allowance: 0.01
+
 config :pleroma, :env, Mix.env()
 
 config :http_signatures,
@@ -697,6 +723,7 @@ config :pleroma, :rate_limit,
   relation_id_action: {60_000, 2},
   statuses_actions: {10_000, 15},
   status_id_action: {60_000, 3},
+  events_actions: {10_000, 15},
   password_reset: {1_800_000, 5},
   account_confirmation_resend: {8_640_000, 5},
   ap_routes: {60_000, 15}
@@ -751,7 +778,7 @@ config :pleroma, :frontends,
       "name" => "fedi-fe",
       "git" => "https://git.pleroma.social/pleroma/fedi-fe",
       "build_url" =>
-        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build_release",
       "ref" => "master",
       "custom-http-headers" => [
         {"service-worker-allowed", "/"}
@@ -764,13 +791,21 @@ config :pleroma, :frontends,
         "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
       "ref" => "develop"
     },
-    "soapbox-fe" => %{
-      "name" => "soapbox-fe",
-      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+    "soapbox" => %{
+      "name" => "soapbox",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
       "ref" => "develop",
       "build_dir" => "static"
+    },
+    "glitch-lily" => %{
+      "name" => "glitch-lily",
+      "git" => "https://lily-is.land/infra/glitch-lily",
+      "build_url" =>
+        "https://lily-is.land/infra/glitch-lily/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "servant",
+      "build_dir" => "public"
     }
   }
 
@@ -870,8 +905,29 @@ config :pleroma, Pleroma.User.Backup,
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
-  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
+  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
+
+config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: false
+
+config :pleroma, Pleroma.Language.Translation, allow_unauthenticated: false, allow_remote: true
+
+config :geospatial, Geospatial.Service, service: Geospatial.Providers.Nominatim
+
+config :geospatial, Geospatial.Providers.GoogleMaps,
+  api_key: nil,
+  fetch_place_details: true
+
+config :geospatial, Geospatial.Providers.Nominatim,
+  endpoint: "https://nominatim.openstreetmap.org",
+  api_key: nil
+
+config :geospatial, Geospatial.Providers.Pelias,
+  endpoint: "https://api.geocode.earth",
+  api_key: nil
+
+config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
 import_config "soapbox.exs"
 

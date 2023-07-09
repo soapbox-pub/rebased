@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.HTML.Scrubber.Default do
   @doc "The default HTML scrubbing policy: no "
 
@@ -29,32 +33,32 @@ defmodule Pleroma.HTML.Scrubber.Default do
     "ugc"
   ])
 
-  Meta.allow_tag_with_these_attributes(:a, ["name", "title"])
+  Meta.allow_tag_with_these_attributes(:a, ["name", "title", "lang"])
 
-  Meta.allow_tag_with_these_attributes(:abbr, ["title"])
+  Meta.allow_tag_with_these_attributes(:abbr, ["title", "lang"])
 
-  Meta.allow_tag_with_these_attributes(:b, [])
-  Meta.allow_tag_with_these_attributes(:blockquote, [])
-  Meta.allow_tag_with_these_attributes(:br, [])
-  Meta.allow_tag_with_these_attributes(:code, [])
-  Meta.allow_tag_with_these_attributes(:del, [])
-  Meta.allow_tag_with_these_attributes(:em, [])
-  Meta.allow_tag_with_these_attributes(:hr, [])
-  Meta.allow_tag_with_these_attributes(:i, [])
-  Meta.allow_tag_with_these_attributes(:li, [])
-  Meta.allow_tag_with_these_attributes(:ol, [])
-  Meta.allow_tag_with_these_attributes(:p, [])
-  Meta.allow_tag_with_these_attributes(:pre, [])
-  Meta.allow_tag_with_these_attributes(:strong, [])
-  Meta.allow_tag_with_these_attributes(:sub, [])
-  Meta.allow_tag_with_these_attributes(:sup, [])
-  Meta.allow_tag_with_these_attributes(:ruby, [])
-  Meta.allow_tag_with_these_attributes(:rb, [])
-  Meta.allow_tag_with_these_attributes(:rp, [])
-  Meta.allow_tag_with_these_attributes(:rt, [])
-  Meta.allow_tag_with_these_attributes(:rtc, [])
-  Meta.allow_tag_with_these_attributes(:u, [])
-  Meta.allow_tag_with_these_attributes(:ul, [])
+  Meta.allow_tag_with_these_attributes(:b, ["lang"])
+  Meta.allow_tag_with_these_attributes(:blockquote, ["lang"])
+  Meta.allow_tag_with_these_attributes(:br, ["lang"])
+  Meta.allow_tag_with_these_attributes(:code, ["lang"])
+  Meta.allow_tag_with_these_attributes(:del, ["lang"])
+  Meta.allow_tag_with_these_attributes(:em, ["lang"])
+  Meta.allow_tag_with_these_attributes(:hr, ["lang"])
+  Meta.allow_tag_with_these_attributes(:i, ["lang"])
+  Meta.allow_tag_with_these_attributes(:li, ["lang"])
+  Meta.allow_tag_with_these_attributes(:ol, ["lang"])
+  Meta.allow_tag_with_these_attributes(:p, ["lang"])
+  Meta.allow_tag_with_these_attributes(:pre, ["lang"])
+  Meta.allow_tag_with_these_attributes(:strong, ["lang"])
+  Meta.allow_tag_with_these_attributes(:sub, ["lang"])
+  Meta.allow_tag_with_these_attributes(:sup, ["lang"])
+  Meta.allow_tag_with_these_attributes(:ruby, ["lang"])
+  Meta.allow_tag_with_these_attributes(:rb, ["lang"])
+  Meta.allow_tag_with_these_attributes(:rp, ["lang"])
+  Meta.allow_tag_with_these_attributes(:rt, ["lang"])
+  Meta.allow_tag_with_these_attributes(:rtc, ["lang"])
+  Meta.allow_tag_with_these_attributes(:u, ["lang"])
+  Meta.allow_tag_with_these_attributes(:ul, ["lang"])
 
   Meta.allow_tag_with_this_attribute_values(:span, "class", [
     "h-card",
@@ -62,44 +66,46 @@ defmodule Pleroma.HTML.Scrubber.Default do
     "recipients-inline"
   ])
 
-  Meta.allow_tag_with_these_attributes(:span, [])
+  Meta.allow_tag_with_these_attributes(:span, ["lang"])
 
   Meta.allow_tag_with_this_attribute_values(:code, "class", ["inline"])
 
   @allow_inline_images Pleroma.Config.get([:markup, :allow_inline_images])
 
   if @allow_inline_images do
+    Meta.allow_tag_with_this_attribute_values(:img, "class", ["emoji"])
+
     # restrict img tags to http/https only, because of MediaProxy.
     Meta.allow_tag_with_uri_attributes(:img, ["src"], ["http", "https"])
 
     Meta.allow_tag_with_these_attributes(:img, [
       "width",
       "height",
-      "class",
       "title",
-      "alt"
+      "alt",
+      "lang"
     ])
   end
 
   if Pleroma.Config.get([:markup, :allow_tables]) do
-    Meta.allow_tag_with_these_attributes(:table, [])
-    Meta.allow_tag_with_these_attributes(:tbody, [])
-    Meta.allow_tag_with_these_attributes(:td, [])
-    Meta.allow_tag_with_these_attributes(:th, [])
-    Meta.allow_tag_with_these_attributes(:thead, [])
-    Meta.allow_tag_with_these_attributes(:tr, [])
+    Meta.allow_tag_with_these_attributes(:table, ["lang"])
+    Meta.allow_tag_with_these_attributes(:tbody, ["lang"])
+    Meta.allow_tag_with_these_attributes(:td, ["lang"])
+    Meta.allow_tag_with_these_attributes(:th, ["lang"])
+    Meta.allow_tag_with_these_attributes(:thead, ["lang"])
+    Meta.allow_tag_with_these_attributes(:tr, ["lang"])
   end
 
   if Pleroma.Config.get([:markup, :allow_headings]) do
-    Meta.allow_tag_with_these_attributes(:h1, [])
-    Meta.allow_tag_with_these_attributes(:h2, [])
-    Meta.allow_tag_with_these_attributes(:h3, [])
-    Meta.allow_tag_with_these_attributes(:h4, [])
-    Meta.allow_tag_with_these_attributes(:h5, [])
+    Meta.allow_tag_with_these_attributes(:h1, ["lang"])
+    Meta.allow_tag_with_these_attributes(:h2, ["lang"])
+    Meta.allow_tag_with_these_attributes(:h3, ["lang"])
+    Meta.allow_tag_with_these_attributes(:h4, ["lang"])
+    Meta.allow_tag_with_these_attributes(:h5, ["lang"])
   end
 
   if Pleroma.Config.get([:markup, :allow_fonts]) do
-    Meta.allow_tag_with_these_attributes(:font, ["face"])
+    Meta.allow_tag_with_these_attributes(:font, ["face", "lang"])
   end
 
   Meta.strip_everything_not_covered()

@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.BlockNotificationPolicyTest do
 
     [head | _tail] = activities
 
-    assert head.object.data["source"] == "@butthurt blocked @sneed"
+    assert head.object.data["source"]["content"] == "@butthurt blocked @sneed"
   end
 
   test "creates messages when user unblocks other user", %{
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.BlockNotificationPolicyTest do
 
     [head | _tail] = activities
 
-    assert head.object.data["source"] == "@butthurt unblocked @sneed"
+    assert head.object.data["source"]["content"] == "@butthurt unblocked @sneed"
   end
 
   test "creates no message when the action type isn't block or unblock", %{

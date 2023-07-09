@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ManifestView do
@@ -22,7 +22,48 @@ defmodule Pleroma.Web.ManifestView do
       ],
       serviceworker: %{
         src: "/sw.js"
-      }
+      },
+      share_target: %{
+        action: "share",
+        method: "GET",
+        params: %{
+          title: "title",
+          text: "text",
+          url: "url"
+        }
+      },
+      shortcuts: [
+        %{
+          name: "Search",
+          url: "/search",
+          icons: [
+            %{
+              src: "/images/shortcuts/search.png",
+              sizes: "192x192"
+            }
+          ]
+        },
+        %{
+          name: "Notifications",
+          url: "/notifications",
+          icons: [
+            %{
+              src: "/images/shortcuts/notifications.png",
+              sizes: "192x192"
+            }
+          ]
+        },
+        %{
+          name: "Chats",
+          url: "/chats",
+          icons: [
+            %{
+              src: "/images/shortcuts/chats.png",
+              sizes: "192x192"
+            }
+          ]
+        }
+      ]
     }
   end
 end

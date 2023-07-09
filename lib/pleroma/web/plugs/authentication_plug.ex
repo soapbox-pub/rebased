@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.AuthenticationPlug do
@@ -38,10 +38,6 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlug do
 
   def call(conn, _), do: conn
 
-  def checkpw(password, "$6" <> _ = password_hash) do
-    :crypt.crypt(password, password_hash) == password_hash
-  end
-
   def checkpw(password, "$2" <> _ = password_hash) do
     # Handle bcrypt passwords for Mastodon migration
     Bcrypt.verify_pass(password, password_hash)
@@ -57,10 +53,6 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlug do
   end
 
   def maybe_update_password(%User{password_hash: "$2" <> _} = user, password) do
-    do_update_password(user, password)
-  end
-
-  def maybe_update_password(%User{password_hash: "$6" <> _} = user, password) do
     do_update_password(user, password)
   end
 

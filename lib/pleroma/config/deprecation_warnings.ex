@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.DeprecationWarnings do
@@ -19,6 +19,43 @@ defmodule Pleroma.Config.DeprecationWarnings do
     {[:instance, :mrf_transparency_exclusions], [:mrf, :transparency_exclusions],
      "\n* `config :pleroma, :instance, mrf_transparency_exclusions` is now `config :pleroma, :mrf, transparency_exclusions`"}
   ]
+
+  def check_exiftool_filter do
+    filters = Config.get([Pleroma.Upload]) |> Keyword.get(:filters, [])
+
+    if Pleroma.Upload.Filter.Exiftool in filters do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using Exiftool as a filter instead of Exiftool.StripLocation. This should work for now, but you are advised to change to the new configuration to prevent possible issues later:
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool]
+      ```
+
+      Is now
+
+
+      ```
+      config :pleroma, Pleroma.Upload,
+        filters: [Pleroma.Upload.Filter.Exiftool.StripLocation]
+      ```
+      """)
+
+      new_config =
+        filters
+        |> Enum.map(fn
+          Pleroma.Upload.Filter.Exiftool -> Pleroma.Upload.Filter.Exiftool.StripLocation
+          filter -> filter
+        end)
+
+      Config.put([Pleroma.Upload, :filters], new_config)
+
+      :error
+    else
+      :ok
+    end
+  end
 
   def check_simple_policy_tuples do
     has_strings =
@@ -177,10 +214,10 @@ defmodule Pleroma.Config.DeprecationWarnings do
       check_activity_expiration_config(),
       check_remote_ip_plug_name(),
       check_uploders_s3_public_endpoint(),
-      check_old_chat_shoutbox(),
       check_quarantined_instances_tuples(),
       check_transparency_exclusions_tuples(),
-      check_simple_policy_tuples()
+      check_simple_policy_tuples(),
+      check_exiftool_filter()
     ]
     |> Enum.reduce(:ok, fn
       :ok, :ok -> :ok
@@ -273,7 +310,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
     warning_preface = """
     !!!DEPRECATION WARNING!!!
-    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+    Your config is using old setting name `timeout` instead of `recv_timeout` in pool settings. The setting will not take effect until updated.
     """
 
     updated_config =
@@ -347,29 +384,6 @@ defmodule Pleroma.Config.DeprecationWarnings do
       Please make the following change at your earliest convenience.\n
       \n* `config :pleroma, Pleroma.Uploaders.S3, public_endpoint` is now equal to:
       \n* `config :pleroma, Pleroma.Upload, base_url`
-      """)
-
-      :error
-    else
-      :ok
-    end
-  end
-
-  @spec check_old_chat_shoutbox() :: :ok | nil
-  def check_old_chat_shoutbox do
-    instance_config = Pleroma.Config.get([:instance])
-    chat_config = Pleroma.Config.get([:chat]) || []
-
-    use_old_config =
-      Keyword.has_key?(instance_config, :chat_limit) or
-        Keyword.has_key?(chat_config, :enabled)
-
-    if use_old_config do
-      Logger.error("""
-      !!!DEPRECATION WARNING!!!
-      Your config is using the old namespace for the Shoutbox configuration. You need to convert to the new namespace. e.g.,
-      \n* `config :pleroma, :chat, enabled` and `config :pleroma, :instance, chat_limit` are now equal to:
-      \n* `config :pleroma, :shout, enabled` and `config :pleroma, :shout, limit`
       """)
 
       :error

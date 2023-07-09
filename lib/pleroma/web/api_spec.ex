@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec do
@@ -95,7 +95,17 @@ defmodule Pleroma.Web.ApiSpec do
               "Relays",
               "Report managment",
               "Status administration",
-              "User administration"
+              "User administration",
+              "Announcement management",
+              "Instance rule managment",
+              "Webhooks"
+            ]
+          },
+          %{
+            "name" => "Administration (MastoAPI)",
+            "tags" => [
+              "User administration",
+              "Report methods"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
@@ -110,10 +120,12 @@ defmodule Pleroma.Web.ApiSpec do
               "Follow requests",
               "Mascot",
               "Markers",
-              "Notifications"
+              "Notifications",
+              "Filters",
+              "Settings"
             ]
           },
-          %{"name" => "Instance", "tags" => ["Custom emojis"]},
+          %{"name" => "Instance", "tags" => ["Custom emojis", "Instance misc"]},
           %{"name" => "Messaging", "tags" => ["Chats", "Conversations"]},
           %{
             "name" => "Statuses",
@@ -125,10 +137,22 @@ defmodule Pleroma.Web.ApiSpec do
               "Retrieve status information",
               "Scheduled statuses",
               "Search",
-              "Status actions"
+              "Status actions",
+              "Media attachments",
+              "Event actions"
             ]
           },
-          %{"name" => "Miscellaneous", "tags" => ["Emoji packs", "Reports", "Suggestions"]}
+          %{
+            "name" => "Miscellaneous",
+            "tags" => [
+              "Emoji packs",
+              "Reports",
+              "Suggestions",
+              "Announcements",
+              "Remote interaction",
+              "Others"
+            ]
+          }
         ]
       }
     }

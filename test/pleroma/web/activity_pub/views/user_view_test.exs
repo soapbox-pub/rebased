@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UserViewTest do
@@ -12,7 +12,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
   test "Renders a user, including the public key" do
     user = insert(:user)
-    {:ok, user} = User.ensure_keys_present(user)
 
     result = UserView.render("user.json", %{user: user})
 
@@ -55,7 +54,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
   test "Does not add an avatar image if the user hasn't set one" do
     user = insert(:user)
-    {:ok, user} = User.ensure_keys_present(user)
 
     result = UserView.render("user.json", %{user: user})
     refute result["icon"]
@@ -66,8 +64,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
         avatar: %{"url" => [%{"href" => "https://someurl"}]},
         banner: %{"url" => [%{"href" => "https://somebanner"}]}
       )
-
-    {:ok, user} = User.ensure_keys_present(user)
 
     result = UserView.render("user.json", %{user: user})
     assert result["icon"]["url"] == "https://someurl"
@@ -89,7 +85,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
   describe "endpoints" do
     test "local users have a usable endpoints structure" do
       user = insert(:user)
-      {:ok, user} = User.ensure_keys_present(user)
 
       result = UserView.render("user.json", %{user: user})
 
@@ -105,7 +100,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     test "remote users have an empty endpoints structure" do
       user = insert(:user, local: false)
-      {:ok, user} = User.ensure_keys_present(user)
 
       result = UserView.render("user.json", %{user: user})
 
@@ -115,7 +109,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     test "instance users do not expose oAuth endpoints" do
       user = insert(:user, nickname: nil, local: true)
-      {:ok, user} = User.ensure_keys_present(user)
 
       result = UserView.render("user.json", %{user: user})
 

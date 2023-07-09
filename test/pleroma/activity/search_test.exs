@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.SearchTest do
@@ -16,6 +16,23 @@ defmodule Pleroma.Activity.SearchTest do
     [result] = Search.search(nil, "wednesday")
 
     assert result.id == post.id
+  end
+
+  test "it finds local-only posts for authenticated users" do
+    user = insert(:user)
+    reader = insert(:user)
+    {:ok, post} = CommonAPI.post(user, %{status: "it's wednesday my dudes", visibility: "local"})
+
+    [result] = Search.search(reader, "wednesday")
+
+    assert result.id == post.id
+  end
+
+  test "it does not find local-only posts for anonymous users" do
+    user = insert(:user)
+    {:ok, _post} = CommonAPI.post(user, %{status: "it's wednesday my dudes", visibility: "local"})
+
+    assert [] = Search.search(nil, "wednesday")
   end
 
   test "using plainto_tsquery on postgres < 11" do

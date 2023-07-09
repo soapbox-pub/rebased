@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.PollWorker do
@@ -18,6 +18,9 @@ defmodule Pleroma.Workers.PollWorker do
       Notification.create_poll_notifications(activity)
     end
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 
   defp find_poll_activity(activity_id) do
     with nil <- Activity.get_by_id(activity_id) do

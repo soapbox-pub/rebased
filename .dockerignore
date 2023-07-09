@@ -9,3 +9,65 @@ test/
 
 # Required to get version
 !.git
+
+# App artifacts
+/_build
+/db
+/deps
+/*.ez
+/test/instance
+/test/uploads
+/.elixir_ls
+/test/fixtures/DSCN0010_tmp.jpg
+/test/fixtures/test_tmp.txt
+/test/fixtures/image_tmp.jpg
+/test/tmp/
+/test/frontend_static_test/
+/doc
+/instance
+/priv/ssh_keys
+
+# Prevent committing custom emojis
+/priv/static/emoji/custom/*
+
+# Generated on crash by the VM
+erl_crash.dump
+
+# Files matching config/*.secret.exs pattern contain sensitive
+# data and you should not commit them into version control.
+#
+# Alternatively, you may comment the line below and commit the
+# secrets files as long as you replace their contents by environment
+# variables.
+/config/*.secret.exs
+/config/generated_config.exs
+/config/runtime.exs
+/config/*.env
+
+
+# Database setup file, some may forget to delete it
+/config/setup_db*.psql
+
+# Whitelist Landing FE
+!/instance/static/frontends/landing-fe/vendor/**
+
+.DS_Store
+.env
+
+# Editor config
+/.vscode/
+
+# Prevent committing docs files
+/priv/static/doc/*
+docs/generated_config.md
+
+# Code test coverage
+/cover
+/Elixir.*.coverdata
+
+.idea
+pleroma.iml
+
+# Editor temp files
+/*~
+/*#

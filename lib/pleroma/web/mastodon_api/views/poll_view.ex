@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.PollView do
@@ -21,7 +21,10 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       votes_count: votes_count,
       voters_count: voters_count(object),
       options: options,
-      emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"])
+      emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"]),
+      pleroma: %{
+        non_anonymous: object.data["nonAnonymous"] || false
+      }
     }
 
     if params[:for] do
@@ -66,6 +69,10 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
          votes_count: current_count
        }, current_count + count}
     end)
+  end
+
+  defp voters_count(%{data: %{"votersCount" => voters}}) when is_number(voters) do
+    voters
   end
 
   defp voters_count(%{data: %{"voters" => [_ | _] = voters}}) do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RelMe do
@@ -9,17 +9,13 @@ defmodule Pleroma.Web.RelMe do
     recv_timeout: 2_000
   ]
 
-  if Pleroma.Config.get(:env) == :test do
-    def parse(url) when is_binary(url), do: parse_url(url)
-  else
-    @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
-    def parse(url) when is_binary(url) do
-      @cachex.fetch!(:rel_me_cache, url, fn _ ->
-        {:commit, parse_url(url)}
-      end)
-    rescue
-      e -> {:error, "Cachex error: #{inspect(e)}"}
-    end
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  def parse(url) when is_binary(url) do
+    @cachex.fetch!(:rel_me_cache, url, fn _ ->
+      {:commit, parse_url(url)}
+    end)
+  rescue
+    e -> {:error, "Cachex error: #{inspect(e)}"}
   end
 
   def parse(_), do: {:error, "No URL provided"}

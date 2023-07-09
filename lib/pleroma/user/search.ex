@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
@@ -94,6 +94,7 @@ defmodule Pleroma.User.Search do
     |> subquery()
     |> order_by(desc: :search_rank)
     |> maybe_restrict_local(for_user)
+    |> filter_deactivated_users()
   end
 
   defp select_top_users(query, top_user_ids) do
@@ -164,6 +165,10 @@ defmodule Pleroma.User.Search do
 
   defp filter_internal_users(query) do
     from(q in query, where: q.actor_type != "Application")
+  end
+
+  defp filter_deactivated_users(query) do
+    from(q in query, where: q.is_active == true)
   end
 
   defp filter_blocked_user(query, %User{} = blocker) do

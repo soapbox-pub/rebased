@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   import Pleroma.Factory
   import Mock
@@ -32,20 +32,26 @@ defmodule Pleroma.NotificationTest do
       refute {:ok, [nil]} == Notification.create_notifications(activity)
     end
 
-    test "creates a notification for a report" do
+    test "creates a report notification only for privileged users" do
       reporting_user = insert(:user)
       reported_user = insert(:user)
-      {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+      moderator_user = insert(:user, is_moderator: true)
 
-      {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      clear_config([:instance, :moderator_privileges], [])
+      {:ok, activity1} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      {:ok, []} = Notification.create_notifications(activity1)
 
-      {:ok, [notification]} = Notification.create_notifications(activity)
+      clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
+      {:ok, activity2} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      {:ok, [notification]} = Notification.create_notifications(activity2)
 
       assert notification.user_id == moderator_user.id
       assert notification.type == "pleroma:report"
     end
 
-    test "suppresses notification to reporter if reporter is an admin" do
+    test "suppresses notifications for own reports" do
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
+
       reporting_admin = insert(:user, is_admin: true)
       reported_user = insert(:user)
       other_admin = insert(:user, is_admin: true)
@@ -84,6 +90,8 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, [notification, other_notification]} = Notification.create_notifications(activity)
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       notified_ids = Enum.sort([notification.user_id, other_notification.user_id])
       assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
@@ -104,6 +112,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(status)
 
       assert notification.user_id == subscriber.id
+      assert notification.type == "status"
     end
 
     test "does not create a notification for subscribed users if status is a reply" do
@@ -121,12 +130,160 @@ defmodule Pleroma.NotificationTest do
           in_reply_to_status_id: activity.id
         })
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       user_notifications = Notification.for_user(user)
       assert length(user_notifications) == 1
 
       subscriber_notifications = Notification.for_user(subscriber)
       assert Enum.empty?(subscriber_notifications)
     end
+
+    test "creates notification for event join request" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "restricted",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
+
+      CommonAPI.join(other_user, activity.id)
+
+      [notification] = user_notifications = Notification.for_user(user)
+      assert length(user_notifications) == 1
+
+      assert notification.type == "pleroma:participation_request"
+    end
+
+    test "creates notification for event join approval" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "restricted",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
+
+      CommonAPI.join(other_user, activity.id)
+
+      CommonAPI.accept_join_request(user, other_user, activity.data["object"])
+
+      [notification] = user_notifications = Notification.for_user(other_user)
+      assert length(user_notifications) == 1
+
+      assert notification.type == "pleroma:participation_accepted"
+    end
+
+    test "doesn't create notification for events without participation approval" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.event(user, %{
+          name: "test event",
+          status: "",
+          join_mode: "free",
+          start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+        })
+
+      CommonAPI.join(other_user, activity.id)
+
+      user_notifications = Notification.for_user(user)
+      assert length(user_notifications) == 0
+
+      user_notifications = Notification.for_user(other_user)
+      assert length(user_notifications) == 0
+    end
+
+    test "it sends edited notifications to those who repeated a status" do
+      user = insert(:user)
+      repeated_user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          status: "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, _activity_two} = CommonAPI.repeat(activity_one.id, repeated_user)
+
+      {:ok, _edit_activity} =
+        CommonAPI.update(user, activity_one, %{
+          status: "hey @#{other_user.nickname}! mew mew"
+        })
+
+      Pleroma.Tests.ObanHelpers.perform_all()
+
+      assert [%{type: "reblog"}] = Notification.for_user(user)
+      assert [%{type: "update"}] = Notification.for_user(repeated_user)
+      assert [%{type: "mention"}] = Notification.for_user(other_user)
+    end
+  end
+
+  test "creates notifications for edited events for participants" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.event(user, %{
+        name: "test event",
+        status: "test evnet",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    CommonAPI.join(other_user, activity.id)
+
+    {:ok, _edit_activity} =
+      CommonAPI.update_event(user, activity, %{
+        name: "test event",
+        status: "test event",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    Pleroma.Tests.ObanHelpers.perform_all()
+
+    [notification] = user_notifications = Notification.for_user(other_user)
+    assert length(user_notifications) == 1
+
+    assert notification.type == "pleroma:event_update"
+  end
+
+  test "doesn't create multiple edit notifications for events" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.event(user, %{
+        name: "test event",
+        status: "test evnet",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    CommonAPI.join(other_user, activity.id)
+    CommonAPI.repeat(activity.id, other_user)
+
+    {:ok, _edit_activity} =
+      CommonAPI.update_event(user, activity, %{
+        name: "test event",
+        status: "test event",
+        join_mode: "free",
+        start_time: DateTime.from_iso8601("2023-01-01T01:00:00.000Z") |> elem(1)
+      })
+
+    Pleroma.Tests.ObanHelpers.perform_all()
+
+    user_notifications = Notification.for_user(other_user)
+    assert length(user_notifications) == 1
   end
 
   test "create_poll_notifications/1" do
@@ -153,6 +310,8 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(user, %{status: "hey @#{blocker.nickname}!"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       blocker_id = blocker.id
       assert [%Notification{user_id: ^blocker_id}] = Repo.all(Notification)
       refute called(Push.send(:_))
@@ -167,6 +326,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _user_relationships} = User.mute(muter, user)
 
       {:ok, _activity} = CommonAPI.post(user, %{status: "hey @#{muter.nickname}!"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       muter_id = muter.id
       assert [%Notification{user_id: ^muter_id}] = Repo.all(Notification)
@@ -182,6 +342,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{thread_muter.nickname}!"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+      [pre_mute_notification] = Repo.all(Notification)
+
       {:ok, _} = CommonAPI.add_mute(thread_muter, activity)
 
       {:ok, _same_context_activity} =
@@ -190,8 +353,15 @@ defmodule Pleroma.NotificationTest do
           in_reply_to_status_id: activity.id
         })
 
-      [pre_mute_notification, post_mute_notification] =
-        Repo.all(from(n in Notification, where: n.user_id == ^thread_muter.id, order_by: n.id))
+      Pleroma.Tests.ObanHelpers.perform_all()
+
+      [post_mute_notification] =
+        Repo.all(
+          from(n in Notification,
+            where: n.id != ^pre_mute_notification.id and n.user_id == ^thread_muter.id,
+            order_by: n.id
+          )
+        )
 
       pre_mute_notification_id = pre_mute_notification.id
       post_mute_notification_id = post_mute_notification.id
@@ -304,6 +474,32 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
+    end
+
+    test "it disables notifications from non-followees" do
+      follower = insert(:user)
+
+      followed =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(follower, followed)
+      {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
+      refute Notification.create_notification(activity, followed)
+    end
+
+    test "it allows notifications from followees" do
+      poster = insert(:user)
+
+      receiver =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(receiver, poster)
+      {:ok, activity} = CommonAPI.post(poster, %{status: "hey @#{receiver.nickname}"})
+      assert Notification.create_notification(activity, receiver)
     end
 
     test "it doesn't create a notification for user if he is the activity author" do
@@ -522,8 +718,7 @@ defmodule Pleroma.NotificationTest do
 
   describe "set_read_up_to()" do
     test "it sets all notifications as read up to a specified notification ID" do
-      user = insert(:user)
-      other_user = insert(:user)
+      [user, other_user] = insert_pair(:user)
 
       {:ok, _activity} =
         CommonAPI.post(user, %{
@@ -535,6 +730,8 @@ defmodule Pleroma.NotificationTest do
           status: "hey again @#{other_user.nickname}!"
         })
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       [n2, n1] = Notification.for_user(other_user)
 
       assert n2.id > n1.id
@@ -543,6 +740,8 @@ defmodule Pleroma.NotificationTest do
         CommonAPI.post(user, %{
           status: "hey yet again @#{other_user.nickname}!"
         })
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       [_, read_notification] = Notification.set_read_up_to(other_user, n2.id)
 
@@ -563,6 +762,37 @@ defmodule Pleroma.NotificationTest do
                )
 
       assert m.last_read_id == to_string(n2.id)
+    end
+
+    @tag needs_streamer: true
+    test "it send updated marker to the 'user' and the 'user:notification' stream" do
+      %{user: user, token: oauth_token} = oauth_access(["read"])
+      other_user = insert(:user)
+
+      {:ok, _activity} =
+        CommonAPI.post(other_user, %{
+          status: "hi @#{user.nickname}!"
+        })
+
+      Pleroma.Tests.ObanHelpers.perform_all()
+
+      [%{id: notification_id}] = Notification.for_user(user)
+
+      notification_id = to_string(notification_id)
+
+      task =
+        Task.async(fn ->
+          {:ok, _topic} = Streamer.get_topic_and_add_socket("user", user, oauth_token)
+          assert_receive {:text, event}, 4_000
+
+          assert %{"event" => "marker", "payload" => payload} = Jason.decode!(event)
+
+          assert %{"notifications" => %{"last_read_id" => ^notification_id}} =
+                   Jason.decode!(payload)
+        end)
+
+      Notification.set_read_up_to(user, notification_id)
+      Task.await(task)
     end
   end
 
@@ -820,6 +1050,30 @@ defmodule Pleroma.NotificationTest do
       assert [other_user] == enabled_receivers
       assert [] == disabled_receivers
     end
+
+    test "it sends edited notifications to those who repeated a status" do
+      user = insert(:user)
+      repeated_user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          status: "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, _activity_two} = CommonAPI.repeat(activity_one.id, repeated_user)
+
+      {:ok, edit_activity} =
+        CommonAPI.update(user, activity_one, %{
+          status: "hey @#{other_user.nickname}! mew mew"
+        })
+
+      {enabled_receivers, _disabled_receivers} =
+        Notification.get_notified_from_activity(edit_activity)
+
+      assert repeated_user in enabled_receivers
+      assert other_user not in enabled_receivers
+    end
   end
 
   describe "notification lifecycle" do
@@ -925,22 +1179,6 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(user))
     end
 
-    test "replying to a deleted post without tagging does not generate a notification" do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
-      {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
-
-      {:ok, _reply_activity} =
-        CommonAPI.post(other_user, %{
-          status: "test reply",
-          in_reply_to_status_id: activity.id
-        })
-
-      assert Enum.empty?(Notification.for_user(user))
-    end
-
     test "notifications are deleted if a local user is deleted" do
       user = insert(:user)
       other_user = insert(:user)
@@ -948,6 +1186,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{status: "hi @#{other_user.nickname}", visibility: "direct"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
       refute Enum.empty?(Notification.for_user(other_user))
 
       {:ok, job} = User.delete(user)
@@ -1009,6 +1248,7 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(local_user))
     end
 
+    @tag :erratic
     test "move activity generates a notification" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
@@ -1052,6 +1292,8 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
+
       [notification] = Notification.for_user(user)
 
       assert notification.activity.object
@@ -1094,6 +1336,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{status: "hey @#{user.nickname}"})
 
+      Pleroma.Tests.ObanHelpers.perform_all()
       assert length(Notification.for_user(user)) == 1
     end
 
@@ -1111,6 +1354,8 @@ defmodule Pleroma.NotificationTest do
       {:ok, _user_relationships} = User.mute(user, muted)
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
     end
@@ -1141,6 +1386,7 @@ defmodule Pleroma.NotificationTest do
       another_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(another_user, %{status: "hey @#{user.nickname}"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       {:ok, _} = Pleroma.ThreadMute.add_mute(user.id, activity.data["context"])
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
@@ -1160,6 +1406,7 @@ defmodule Pleroma.NotificationTest do
       another_user = insert(:user)
 
       {:ok, _} = CommonAPI.post(another_user, %{status: "@#{user.nickname} test"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       assert length(Notification.for_user(user)) == 1
     end
@@ -1172,6 +1419,33 @@ defmodule Pleroma.NotificationTest do
       {:ok, _} = CommonAPI.favorite(another_user, activity.id)
 
       assert length(Notification.for_user(user)) == 1
+    end
+
+    test "it returns notifications when related object is without content and filters are defined",
+         %{user: user} do
+      followed_user = insert(:user, is_locked: true)
+
+      insert(:filter, user: followed_user, phrase: "test", hide: true)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      refute FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow_request"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
+
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
+
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
     end
   end
 end

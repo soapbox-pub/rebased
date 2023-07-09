@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
@@ -366,6 +366,47 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                  }
                }
              ] = result
+    end
+
+    test "should return local-only posts for authenticated users" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access(["read:statuses"])
+
+      {:ok, %{id: id}} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => ^id}] = result
+    end
+
+    test "should not return local-only posts for users without read:statuses" do
+      user = insert(:user)
+      %{user: _reader, conn: conn} = oauth_access([])
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        conn
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
+    end
+
+    test "should not return local-only posts for anonymous users" do
+      user = insert(:user)
+
+      {:ok, _activity} = CommonAPI.post(user, %{status: "#2hu #2HU", visibility: "local"})
+
+      result =
+        build_conn()
+        |> get("/api/v1/timelines/public")
+        |> json_response_and_validate_schema(200)
+
+      assert [] = result
     end
   end
 
@@ -903,7 +944,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
   end
 
-  describe "hashtag timeline handling of :restrict_unauthenticated setting" do
+  describe "hashtag timeline handling of restrict_unauthenticated setting" do
     setup do
       user = insert(:user)
       {:ok, activity1} = CommonAPI.post(user, %{status: "test #tag1"})

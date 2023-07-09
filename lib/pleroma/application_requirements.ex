@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ApplicationRequirements do
@@ -164,7 +164,8 @@ defmodule Pleroma.ApplicationRequirements do
 
   defp check_system_commands!(:ok) do
     filter_commands_statuses = [
-      check_filter(Pleroma.Upload.Filter.Exiftool, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Exiftool.StripLocation, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Exiftool.ReadDescription, "exiftool"),
       check_filter(Pleroma.Upload.Filter.Mogrify, "mogrify"),
       check_filter(Pleroma.Upload.Filter.Mogrifun, "mogrify"),
       check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "mogrify"),
@@ -186,7 +187,27 @@ defmodule Pleroma.ApplicationRequirements do
         false
       end
 
-    if Enum.all?([preview_proxy_commands_status | filter_commands_statuses], & &1) do
+    language_detector_commands_status =
+      if Pleroma.Language.LanguageDetector.missing_dependencies() == [] do
+        true
+      else
+        Logger.error(
+          "The following dependencies required by the currently enabled " <>
+            "language detection provider are not installed: " <>
+            inspect(Pleroma.Language.LanguageDetector.missing_dependencies())
+        )
+
+        false
+      end
+
+    if Enum.all?(
+         [
+           preview_proxy_commands_status,
+           language_detector_commands_status
+           | filter_commands_statuses
+         ],
+         & &1
+       ) do
       :ok
     else
       {:error,

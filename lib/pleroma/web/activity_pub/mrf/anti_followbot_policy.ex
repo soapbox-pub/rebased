@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
   defp score_displayname("fedibot"), do: 1.0
   defp score_displayname(_), do: 0.0
 
-  defp determine_if_followbot(%User{nickname: nickname, name: displayname}) do
+  defp determine_if_followbot(%User{nickname: nickname, name: displayname, actor_type: actor_type}) do
     # nickname will be a binary string except when following a relay
     nick_score =
       if is_binary(nickname) do
@@ -45,10 +45,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
         0.0
       end
 
-    nick_score + name_score
+    # actor_type "Service" is a Bot account
+    actor_type_score =
+      if actor_type == "Service" do
+        1.0
+      else
+        0.0
+      end
+
+    nick_score + name_score + actor_type_score
   end
 
   defp determine_if_followbot(_), do: 0.0
+
+  defp bot_allowed?(%{"object" => target}, bot_actor) do
+    %User{} = user = normalize_by_ap_id(target)
+
+    User.following?(user, bot_actor)
+  end
 
   @impl true
   def filter(%{"type" => "Follow", "actor" => actor_id} = message) do
@@ -56,8 +70,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
 
     score = determine_if_followbot(actor)
 
-    # TODO: scan biography data for keywords and score it somehow.
-    if score < 0.8 do
+    if score < 0.8 || bot_allowed?(message, actor) do
       {:ok, message}
     else
       {:reject, "[AntiFollowbotPolicy] Scored #{actor_id} as #{score}"}

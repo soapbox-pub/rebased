@@ -40,6 +40,10 @@ Has these additional fields under the `pleroma` object:
 - `parent_visible`: If the parent of this post is visible to the user or not.
 - `pinned_at`: a datetime (iso8601) when status was pinned, `null` otherwise.
 
+The `GET /api/v1/statuses/:id/source` endpoint additionally has the following attributes:
+
+- `content_type`: The content type of the status source.
+
 ## Scheduled statuses
 
 Has these additional fields in `params`:
@@ -99,7 +103,6 @@ Has these additional fields under the `pleroma` object:
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
 - `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `/api/v1/accounts/verify_credentials` and `/api/v1/accounts/update_credentials`
-- `chat_token`: The token needed for Pleroma shoutbox. Only returned in `/api/v1/accounts/verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
@@ -241,6 +244,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `discoverable` - if true, external services (search bots) etc. are allowed to index / list the account (regardless of this setting, user will still appear in regular search results).
 - `actor_type` - the type of this account.
 - `accepts_chat_messages` - if false, this account will reject all chat messages.
+- `language` - user's preferred language for receiving emails (digest, confirmation, etc.)
 
 All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 
@@ -292,6 +296,7 @@ Has these additional parameters (which are the same as in Pleroma-API):
 - `captcha_token`: optional, contains provider-specific captcha token
 - `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
+- `language`: optional, user's preferred language for receiving emails (digest, confirmation, etc.), default to the language set in the `userLanguage` cookies or `Accept-Language` header.
 
 ## Instance
 

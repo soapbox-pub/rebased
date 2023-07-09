@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= Pleroma.Web.Gettext.language_tag() %>">
   <head>
     <meta charset="utf-8">
     <title><%= @email.subject %></title>
   </head>
   <body>
-    <%= render @view_module, @view_template, assigns %>
+    <%= render Phoenix.Controller.view_module(@conn), Phoenix.Controller.view_template(@conn), assigns %>
   </body>
 </html>

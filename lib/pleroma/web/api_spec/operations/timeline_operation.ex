@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.TimelineOperation do
@@ -27,6 +27,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         remote_param(),
         only_media_param(),
+        only_events_param(),
         with_muted_param(),
         exclude_visibilities_param(),
         reply_visibility_param() | pagination_params()
@@ -62,6 +63,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         instance_param(),
         only_media_param(),
+        only_events_param(),
         remote_param(),
         with_muted_param(),
         exclude_visibilities_param(),
@@ -109,6 +111,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         ),
         local_param(),
         only_media_param(),
+        only_events_param(),
         remote_param(),
         with_muted_param(),
         exclude_visibilities_param() | pagination_params()
@@ -139,6 +142,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         remote_param(),
         only_media_param(),
+        only_events_param(),
         exclude_visibilities_param() | pagination_params()
       ],
       operationId: "TimelineController.list",
@@ -203,6 +207,15 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       :query,
       %Schema{allOf: [BooleanLike], default: false},
       "Show only statuses with media attached?"
+    )
+  end
+
+  defp only_events_param do
+    Operation.parameter(
+      :only_events,
+      :query,
+      %Schema{allOf: [BooleanLike], default: false},
+      "Include only objects with Event type"
     )
   end
 

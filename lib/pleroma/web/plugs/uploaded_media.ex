@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.UploadedMedia do
@@ -35,9 +35,9 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn =
       case fetch_query_params(conn) do
         %{query_params: %{"name" => name}} = conn ->
-          name = String.replace(name, "\"", "\\\"")
+          name = String.replace(name, ~s["], ~s[\\"])
 
-          put_resp_header(conn, "content-disposition", "filename=\"#{name}\"")
+          put_resp_header(conn, "content-disposition", ~s[inline; filename="#{name}"])
 
         conn ->
           conn
@@ -46,12 +46,32 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
 
     config = Pleroma.Config.get(Pleroma.Upload)
 
-    with uploader <- Keyword.fetch!(config, :uploader),
+    %{scheme: media_scheme, host: media_host, port: media_port} =
+      Pleroma.Upload.base_url() |> URI.parse()
+
+    with {:valid_host, true} <- {:valid_host, match?(^media_host, conn.host)},
+         uploader <- Keyword.fetch!(config, :uploader),
          proxy_remote = Keyword.get(config, :proxy_remote, false),
          {:ok, get_method} <- uploader.get_file(file),
          false <- media_is_banned(conn, get_method) do
       get_media(conn, get_method, proxy_remote, opts)
     else
+      {:valid_host, false} ->
+        redirect_url =
+          %URI{
+            scheme: media_scheme,
+            host: media_host,
+            port: media_port,
+            path: conn.request_path,
+            query: conn.query_string
+          }
+          |> URI.to_string()
+          |> String.trim_trailing("?")
+
+        conn
+        |> Phoenix.Controller.redirect(external: redirect_url)
+        |> halt()
+
       _ ->
         conn
         |> send_resp(:internal_server_error, dgettext("errors", "Failed"))
@@ -74,6 +94,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
+      |> Map.put(:headers, {__MODULE__, :scrub_mime, []})
 
     conn = Plug.Static.call(conn, static_opts)
 
@@ -110,5 +131,21 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn
     |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))
     |> halt()
+  end
+
+  def scrub_mime(%Plug.Conn{halted: false, resp_headers: headers}, _args \\ []) do
+    [{_, mimetype}] = Enum.filter(headers, fn {x, _y} -> match?("content-type", x) end)
+
+    [_type, subtype] = String.split(mimetype, "/")
+
+    if String.contains?(subtype, ["javascript", "ecmascript", "jscript", "html", "xml"]) do
+      plaintext_header()
+    else
+      []
+    end
+  end
+
+  defp plaintext_header() do
+    [{"content-type", "text/plain"}]
   end
 end

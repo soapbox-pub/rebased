@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UploadTest do
@@ -49,20 +49,22 @@ defmodule Pleroma.UploadTest do
     test "it returns file" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
-      assert Upload.store(@upload_file) ==
-               {:ok,
-                %{
-                  "name" => "image.jpg",
-                  "type" => "Document",
-                  "mediaType" => "image/jpeg",
-                  "url" => [
-                    %{
-                      "href" => "http://localhost:4001/media/post-process-file.jpg",
-                      "mediaType" => "image/jpeg",
-                      "type" => "Link"
-                    }
-                  ]
-                }}
+      assert {:ok, result} = Upload.store(@upload_file)
+
+      assert result ==
+               %{
+                 "id" => result["id"],
+                 "name" => "image.jpg",
+                 "type" => "Document",
+                 "mediaType" => "image/jpeg",
+                 "url" => [
+                   %{
+                     "href" => "http://localhost:4001/media/post-process-file.jpg",
+                     "mediaType" => "image/jpeg",
+                     "type" => "Link"
+                   }
+                 ]
+               }
 
       Task.await(Agent.get(TestUploaderSuccess, fn task_pid -> task_pid end))
     end

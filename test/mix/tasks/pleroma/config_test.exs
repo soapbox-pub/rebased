@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.ConfigTest do
@@ -49,7 +49,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
   describe "migrate_to_db/1" do
     setup do
       clear_config(:configurable_from_database, true)
-      clear_config([:quack, :level])
     end
 
     @tag capture_log: true
@@ -72,14 +71,12 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
       config1 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
       config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})
-      config3 = ConfigDB.get_by_params(%{group: ":quack", key: ":level"})
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
       refute ConfigDB.get_by_params(%{group: ":postgrex", key: ":json_library"})
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: ":database"})
 
       assert config1.value == [key: "value", key2: [Repo]]
       assert config2.value == [key: "value2", key2: ["Activity"]]
-      assert config3.value == :info
     end
 
     test "config table is truncated before migration" do
@@ -108,7 +105,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     test "settings are migrated to file and deleted from db", %{temp_file: temp_file} do
       insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
       insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
-      insert_config_record(:quack, :level, :info)
 
       MixTask.run(["migrate_from_db", "--env", "temp", "-d"])
 
@@ -117,7 +113,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       file = File.read!(temp_file)
       assert file =~ "config :pleroma, :setting_first,"
       assert file =~ "config :pleroma, :setting_second,"
-      assert file =~ "config :quack, :level, :info"
     end
 
     test "load a settings with large values and pass to file", %{temp_file: temp_file} do
@@ -199,7 +194,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     setup do
       insert_config_record(:pleroma, :setting_first, key: "value", key2: ["Activity"])
       insert_config_record(:pleroma, :setting_second, key: "value2", key2: [Repo])
-      insert_config_record(:quack, :level, :info)
 
       path = "test/instance_static"
       file_path = Path.join(path, "temp.exported_from_db.secret.exs")
@@ -215,7 +209,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       file = File.read!(file_path)
       assert file =~ "config :pleroma, :setting_first,"
       assert file =~ "config :pleroma, :setting_second,"
-      assert file =~ "config :quack, :level, :info"
     end
 
     test "release", %{file_path: file_path} do
@@ -227,7 +220,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       file = File.read!(file_path)
       assert file =~ "config :pleroma, :setting_first,"
       assert file =~ "config :pleroma, :setting_second,"
-      assert file =~ "config :quack, :level, :info"
     end
   end
 

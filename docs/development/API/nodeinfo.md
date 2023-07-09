@@ -45,7 +45,6 @@ See also [the Nodeinfo standard](https://nodeinfo.diaspora.software/).
          "multifetch",
          "pleroma:api/v1/notifications:include_types_filter",
          "chat",
-         "shout",
          "relay",
          "pleroma_emoji_reactions",
          "pleroma_chat_messages"
@@ -205,7 +204,6 @@ See also [the Nodeinfo standard](https://nodeinfo.diaspora.software/).
          "multifetch",
          "pleroma:api/v1/notifications:include_types_filter",
          "chat",
-         "shout",
          "relay",
          "pleroma_emoji_reactions",
          "pleroma_chat_messages"

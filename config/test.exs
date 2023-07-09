@@ -31,10 +31,14 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test, enabled: true
 
 config :pleroma, :instance,
+  name: "Pleroma",
+  description: "Pleroma: An efficient and flexible fediverse server",
+  instance_thumbnail: "/instance/thumbnail.jpeg",
   email: "admin@example.com",
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
   federating: false,
+  account_approval_required: false,
   external_user_synchronization: false,
   static_dir: "test/instance_static/"
 
@@ -47,6 +51,7 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
+  port: System.get_env("DB_PORT") || "5432",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 50
 
@@ -56,6 +61,8 @@ config :pleroma, :dangerzone, override_repo_pool_size: true
 config :pleroma, :password, iterations: 1
 
 config :tesla, adapter: Tesla.Mock
+
+config :tesla, Geospatial.HTTP, adapter: Tesla.Mock
 
 config :pleroma, :rich_media,
   enabled: false,
@@ -81,10 +88,7 @@ config :web_push_encryption, :vapid_details,
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
 
-config :pleroma, Oban,
-  queues: false,
-  crontab: false,
-  plugins: false
+config :pleroma, Oban, testing: :manual
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
@@ -119,6 +123,8 @@ config :tzdata, :autoupdate, :disabled
 
 config :pleroma, :mrf, policies: []
 
+config :pleroma, :instances_favicons, enabled: false
+
 config :pleroma, :pipeline,
   object_validator: Pleroma.Web.ActivityPub.ObjectValidatorMock,
   mrf: Pleroma.Web.ActivityPub.MRFMock,
@@ -129,6 +135,8 @@ config :pleroma, :pipeline,
 
 config :pleroma, :cachex, provider: Pleroma.CachexMock
 
+config :pleroma, Pleroma.Web.WebFinger, update_nickname_on_user_fetch: false
+
 config :pleroma, :side_effects,
   ap_streamer: Pleroma.Web.ActivityPub.ActivityPubMock,
   logger: Pleroma.LoggerMock
@@ -136,6 +144,10 @@ config :pleroma, :side_effects,
 # Reduce recompilation time
 # https://dashbit.co/blog/speeding-up-re-compilation-of-elixir-projects
 config :phoenix, :plug_init_mode, :runtime
+
+# Allow inline images in tests (for now).
+# FIXME: rework/remove tests that depend on this.
+config :pleroma, :markup, allow_inline_images: true
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.ChatOperation do
@@ -213,6 +213,30 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           ),
         400 => Operation.response("Bad Request", "application/json", ApiError),
         422 => Operation.response("MRF Rejection", "application/json", ApiError)
+      },
+      security: [
+        %{
+          "oAuth" => ["write:chats"]
+        }
+      ]
+    }
+  end
+
+  def delete_operation do
+    %Operation{
+      tags: ["Chats"],
+      summary: "delete",
+      operationId: "ChatController.delete",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "The ID of the Chat")
+      ],
+      responses: %{
+        200 =>
+          Operation.response(
+            "The deleted Chat",
+            "application/json",
+            Chat
+          )
       },
       security: [
         %{

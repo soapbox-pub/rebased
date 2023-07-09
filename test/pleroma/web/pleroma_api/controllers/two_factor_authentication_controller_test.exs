@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.TwoFactorAuthenticationControllerTest do
@@ -134,6 +134,7 @@ defmodule Pleroma.Web.PleromaAPI.TwoFactorAuthenticationControllerTest do
   end
 
   describe "GET /api/pleroma/accounts/mfa/confirm/totp" do
+    @tag :erratic
     test "returns success result", %{conn: conn} do
       secret = TOTP.generate_secret()
       code = TOTP.generate_token(secret)

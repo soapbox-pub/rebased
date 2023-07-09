@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.PleromaInstancesOperation do
@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaInstancesOperation do
 
   def show_operation do
     %Operation{
-      tags: ["Instance"],
+      tags: ["Instance misc"],
       summary: "Retrieve federation status",
       description: "Information about instances deemed unreachable by the server",
       operationId: "PleromaInstances.show",

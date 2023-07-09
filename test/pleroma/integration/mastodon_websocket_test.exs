@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Integration.MastodonWebsocketTest do
@@ -33,16 +33,18 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
   test "refuses invalid requests" do
     capture_log(fn ->
-      assert {:error, {404, _}} = start_socket()
-      assert {:error, {404, _}} = start_socket("?stream=ncjdk")
+      assert {:error, %WebSockex.RequestError{code: 404}} = start_socket()
+      assert {:error, %WebSockex.RequestError{code: 404}} = start_socket("?stream=ncjdk")
       Process.sleep(30)
     end)
   end
 
   test "requires authentication and a valid token for protected streams" do
     capture_log(fn ->
-      assert {:error, {401, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
-      assert {:error, {401, _}} = start_socket("?stream=user")
+      assert {:error, %WebSockex.RequestError{code: 401}} =
+               start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+
+      assert {:error, %WebSockex.RequestError{code: 401}} = start_socket("?stream=user")
       Process.sleep(30)
     end)
   end
@@ -91,7 +93,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       {:ok, token} = OAuth.Token.exchange_token(app, auth)
 
-      %{user: user, token: token}
+      %{app: app, user: user, token: token}
     end
 
     test "accepts valid tokens", state do
@@ -102,7 +104,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, {401, _}} = start_socket("?stream=user")
+        assert {:error, %WebSockex.RequestError{code: 401}} = start_socket("?stream=user")
         Process.sleep(30)
       end)
     end
@@ -111,7 +113,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
 
       capture_log(fn ->
-        assert {:error, {401, _}} = start_socket("?stream=user:notification")
+        assert {:error, %WebSockex.RequestError{code: 401}} =
+                 start_socket("?stream=user:notification")
+
         Process.sleep(30)
       end)
     end
@@ -120,11 +124,27 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
 
       capture_log(fn ->
-        assert {:error, {401, _}} =
+        assert {:error, %WebSockex.RequestError{code: 401}} =
                  start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
 
         Process.sleep(30)
       end)
+    end
+
+    test "disconnect when token is revoked", %{app: app, user: user, token: token} do
+      assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
+      assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
+
+      {:ok, auth} = OAuth.Authorization.create_authorization(app, user)
+
+      {:ok, token2} = OAuth.Token.exchange_token(app, auth)
+      assert {:ok, _} = start_socket("?stream=user&access_token=#{token2.token}")
+
+      OAuth.Token.Strategy.Revoke.revoke(token)
+
+      assert_receive {:close, _}
+      assert_receive {:close, _}
+      refute_receive {:close, _}
     end
   end
 end

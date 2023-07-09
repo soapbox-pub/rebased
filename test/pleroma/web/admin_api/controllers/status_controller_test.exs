@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase, async: false
 
   import Pleroma.Factory
 
@@ -26,6 +26,10 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
   end
 
   describe "GET /api/pleroma/admin/statuses/:id" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:messages_read])
+    end
+
     test "not found", %{conn: conn} do
       assert conn
              |> get("/api/pleroma/admin/statuses/not_found")
@@ -50,10 +54,17 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       assert account["is_active"] == actor.is_active
       assert account["is_confirmed"] == actor.is_confirmed
     end
+
+    test "denies reading activity when not privileged", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn |> get("/api/pleroma/admin/statuses/some_id") |> json_response(:forbidden)
+    end
   end
 
   describe "PUT /api/pleroma/admin/statuses/:id" do
     setup do
+      clear_config([:instance, :admin_privileges], [:messages_delete])
       activity = insert(:note_activity)
 
       %{id: activity.id}
@@ -122,10 +133,20 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       assert %{"error" => "test - Invalid value for enum."} =
                json_response_and_validate_schema(conn, :bad_request)
     end
+
+    test "it requires privileged role :messages_delete", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> put("/api/pleroma/admin/statuses/some_id", %{})
+             |> json_response(:forbidden)
+    end
   end
 
   describe "DELETE /api/pleroma/admin/statuses/:id" do
     setup do
+      clear_config([:instance, :admin_privileges], [:messages_delete])
       activity = insert(:note_activity)
 
       %{id: activity.id}
@@ -149,9 +170,22 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
       assert json_response_and_validate_schema(conn, :not_found) == %{"error" => "Not found"}
     end
+
+    test "it requires privileged role :messages_delete", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> delete("/api/pleroma/admin/statuses/some_id")
+             |> json_response(:forbidden)
+    end
   end
 
   describe "GET /api/pleroma/admin/statuses" do
+    setup do
+      clear_config([:instance, :admin_privileges], [:messages_read])
+    end
+
     test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
       blocked = insert(:user)
       user = insert(:user)
@@ -196,6 +230,14 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
       assert json_response_and_validate_schema(conn, 200) |> length() == 3
+    end
+
+    test "it requires privileged role :messages_read", %{conn: conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      conn = get(conn, "/api/pleroma/admin/statuses")
+
+      assert json_response(conn, :forbidden)
     end
   end
 end

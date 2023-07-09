@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
             [
               property: "og:image",
               content:
-                "http://localhost:4001/proxy/preview/LzAnlke-l5oZbNzWsrHfprX1rGw/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
+                "http://localhost:4001/proxy/preview/YyXfYXyaEAGVHVfKF-HRc4GrFMY03Smi7effZ8WKow8/aHR0cHM6Ly9wbGVyb21hLmdvdi9hYm91dC9qdWNoZS53ZWJt/juche.webm"
             ], []} in result
   end
 

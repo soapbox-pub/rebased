@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Signature do
@@ -10,17 +10,14 @@ defmodule Pleroma.Signature do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  @known_suffixes ["/publickey", "/main-key"]
+
   def key_id_to_actor_id(key_id) do
     uri =
-      URI.parse(key_id)
+      key_id
+      |> URI.parse()
       |> Map.put(:fragment, nil)
-
-    uri =
-      if not is_nil(uri.path) and String.ends_with?(uri.path, "/publickey") do
-        Map.put(uri, :path, String.replace(uri.path, "/publickey", ""))
-      else
-        uri
-      end
+      |> remove_suffix(@known_suffixes)
 
     maybe_ap_id = URI.to_string(uri)
 
@@ -35,6 +32,16 @@ defmodule Pleroma.Signature do
         end
     end
   end
+
+  defp remove_suffix(uri, [test | rest]) do
+    if not is_nil(uri.path) and String.ends_with?(uri.path, test) do
+      Map.put(uri, :path, String.replace(uri.path, test, ""))
+    else
+      remove_suffix(uri, rest)
+    end
+  end
+
+  defp remove_suffix(uri, []), do: uri
 
   def fetch_public_key(conn) do
     with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
@@ -59,9 +66,8 @@ defmodule Pleroma.Signature do
     end
   end
 
-  def sign(%User{} = user, headers) do
-    with {:ok, %{keys: keys}} <- User.ensure_keys_present(user),
-         {:ok, private_key, _} <- Keys.keys_from_pem(keys) do
+  def sign(%User{keys: keys} = user, headers) do
+    with {:ok, private_key, _} <- Keys.keys_from_pem(keys) do
       HTTPSignatures.sign(private_key, user.ap_id <> "#main-key", headers)
     end
   end

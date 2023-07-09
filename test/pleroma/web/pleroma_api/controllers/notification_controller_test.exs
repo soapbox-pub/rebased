@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.NotificationControllerTest do
@@ -37,6 +37,7 @@ defmodule Pleroma.Web.PleromaAPI.NotificationControllerTest do
       {:ok, _activity1} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
       {:ok, _activity2} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
       {:ok, _activity3} = CommonAPI.post(user2, %{status: "HIE @#{user1.nickname}"})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       [notification3, notification2, notification1] = Notification.for_user(user1, %{limit: 3})
 

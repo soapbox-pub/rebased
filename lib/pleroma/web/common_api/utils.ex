@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
@@ -23,6 +23,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   require Logger
   require Pleroma.Constants
 
+  @supported_locales ~w(
+    aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr cs cu cv cy da
+    de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu gv ha he hi ho hr ht hu hy hz
+    ia id ie ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb lg li ln
+    lo lt lu lv mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi
+    pl ps pt qu rm rn ro ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ta te tg th ti
+    tk tl tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu ast ckb kab kmr zgh
+  )
+
   def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
     attachments_from_ids_descs(ids, desc)
   end
@@ -37,7 +46,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def attachments_from_ids_no_descs(ids) do
     Enum.map(ids, fn media_id ->
-      case Repo.get(Object, media_id) do
+      case get_attachment(media_id) do
         %Object{data: data} -> data
         _ -> nil
       end
@@ -51,11 +60,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     {_, descs} = Jason.decode(descs_str)
 
     Enum.map(ids, fn media_id ->
-      with %Object{data: data} <- Repo.get(Object, media_id) do
+      with %Object{data: data} <- get_attachment(media_id) do
         Map.put(data, "name", descs[media_id])
       end
     end)
     |> Enum.reject(&is_nil/1)
+  end
+
+  defp get_attachment(media_id) do
+    Repo.get(Object, media_id)
   end
 
   @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
@@ -141,6 +154,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       when is_list(options) do
     limits = Config.get([:instance, :poll_limits])
 
+    options = options |> Enum.uniq()
+
     with :ok <- validate_poll_expiration(expires_in, limits),
          :ok <- validate_poll_options_amount(options, limits),
          :ok <- validate_poll_options_length(options, limits) do
@@ -176,10 +191,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
-    if Enum.count(options) > max_options do
-      {:error, "Poll can't contain more than #{max_options} options"}
-    else
-      :ok
+    cond do
+      Enum.count(options) < 2 ->
+        {:error, "Poll must contain at least 2 options"}
+
+      Enum.count(options) > max_options ->
+        {:error, "Poll can't contain more than #{max_options} options"}
+
+      true ->
+        :ok
     end
   end
 
@@ -219,7 +239,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> maybe_add_attachments(draft.attachments, attachment_links)
   end
 
-  defp get_content_type(content_type) do
+  def get_content_type(content_type) do
     if Enum.member?(Config.get([:instance, :allowed_post_formats]), content_type) do
       content_type
     else
@@ -420,6 +440,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_followers(recipients, _), do: recipients
 
+  def maybe_notify_participants(
+        recipients,
+        %Activity{data: %{"type" => "Update"}} = activity
+      ) do
+    with %Object{data: object} <- Object.normalize(activity, fetch: false) do
+      participant_ids = Map.get(object, "participations", [])
+
+      recipients ++ participant_ids
+    else
+      _e -> recipients
+    end
+  end
+
+  def maybe_notify_participants(recipients, _), do: recipients
+
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag
     |> Enum.filter(fn x -> is_map(x) && x["type"] == "Mention" end)
@@ -448,35 +483,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def get_report_statuses(_, _), do: {:ok, nil}
-
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, dgettext("errors", "No such conversation")}
-    end
-  end
 
   def validate_character_limit("" = _full_payload, [] = _attachments) do
     {:error, dgettext("errors", "Cannot post an empty status without attachments")}
@@ -507,4 +513,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       {:error, dgettext("errors", "Too many attachments")}
     end
   end
+
+  def get_valid_language(language) when is_binary(language) do
+    case language |> String.split("_") |> Enum.at(0) do
+      locale when locale in @supported_locales -> locale
+      _ -> nil
+    end
+  end
+
+  def get_valid_language(_), do: nil
 end

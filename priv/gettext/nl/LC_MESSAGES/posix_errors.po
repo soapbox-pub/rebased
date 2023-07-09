@@ -1,0 +1,165 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-08-13 13:32+0300\n"
+"PO-Revision-Date: 2022-08-14 11:04+0000\n"
+"Last-Translator: Fristi <fristi@subcon.town>\n"
+"Language-Team: Dutch <http://weblate.pleroma-dev.ebin.club/projects/pleroma/"
+"pleroma-backend-domain-posix_errors/nl/>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.13.1\n"
+
+## This file is a PO Template file.
+##
+## `msgid`s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run `mix gettext.extract` to bring this file up to
+## date. Leave `msgstr`s empty as changing them here as no
+## effect: edit them in PO (`.po`) files instead.
+msgid "eperm"
+msgstr "Uitvoering niet toegestaan"
+
+msgid "eacces"
+msgstr "Toegang geweigerd"
+
+msgid "eagain"
+msgstr "Resource tijdelijk niet beschikbaar"
+
+msgid "ebadf"
+msgstr "Ongeldige file descriptor"
+
+msgid "ebadmsg"
+msgstr "Ongeldig bericht"
+
+msgid "ebusy"
+msgstr "Apparaat of resource bezet"
+
+msgid "edeadlk"
+msgstr "Resource deadlock vermeden"
+
+msgid "edeadlock"
+msgstr "Resource deadlock vermeden"
+
+msgid "edquot"
+msgstr "Schijf-quota overschreden"
+
+msgid "eexist"
+msgstr "Bestand bestaat"
+
+msgid "efault"
+msgstr "Ongeldig adres"
+
+msgid "efbig"
+msgstr "Bestand is te groot"
+
+msgid "eftype"
+msgstr "Ongepast bestands-type of formaat"
+
+msgid "eintr"
+msgstr "Onderbroken systeem aanroep"
+
+msgid "einval"
+msgstr "Ongeldig argument"
+
+msgid "eio"
+msgstr "Input/output fout"
+
+msgid "eisdir"
+msgstr "Illegale bewerking op een directory"
+
+msgid "eloop"
+msgstr "Te veel niveau's van symbolische koppelingen"
+
+msgid "emfile"
+msgstr "Te veel geopende bestanden"
+
+msgid "emlink"
+msgstr "Te veel koppelingen"
+
+msgid "emultihop"
+msgstr "Multihop geprobeerd"
+
+msgid "enametoolong"
+msgstr "Bestandsnaam is te lang"
+
+msgid "enfile"
+msgstr "Te veel geopende bestanden in systeem"
+
+msgid "enobufs"
+msgstr "Geen buffer-ruimte beschikbaar"
+
+msgid "enodev"
+msgstr "Apparaat bestaat niet"
+
+msgid "enolck"
+msgstr "Geen sloten beschikbaar"
+
+msgid "enolink"
+msgstr "Koppeling is ongedaan gemaakt"
+
+msgid "enoent"
+msgstr "Bestand of directory bestaat niet"
+
+msgid "enomem"
+msgstr "Geheugen kon niet toegewezen worden"
+
+msgid "enospc"
+msgstr "Geen ruimte over op apparaat"
+
+msgid "enosr"
+msgstr ""
+
+msgid "enostr"
+msgstr ""
+
+msgid "enosys"
+msgstr ""
+
+msgid "enotblk"
+msgstr ""
+
+msgid "enotdir"
+msgstr ""
+
+msgid "enotsup"
+msgstr ""
+
+msgid "enxio"
+msgstr ""
+
+msgid "eopnotsupp"
+msgstr ""
+
+msgid "eoverflow"
+msgstr ""
+
+msgid "epipe"
+msgstr ""
+
+msgid "erange"
+msgstr ""
+
+msgid "erofs"
+msgstr ""
+
+msgid "espipe"
+msgstr ""
+
+msgid "esrch"
+msgstr ""
+
+msgid "estale"
+msgstr ""
+
+msgid "etxtbsy"
+msgstr ""
+
+msgid "exdev"
+msgstr ""

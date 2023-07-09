@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.Token.Strategy.Revoke do
@@ -21,6 +21,18 @@ defmodule Pleroma.Web.OAuth.Token.Strategy.Revoke do
   @doc "Revokes access token"
   @spec revoke(Token.t()) :: {:ok, Token.t()} | {:error, Ecto.Changeset.t()}
   def revoke(%Token{} = token) do
-    Repo.delete(token)
+    with {:ok, token} <- Repo.delete(token) do
+      Task.Supervisor.start_child(
+        Pleroma.TaskSupervisor,
+        Pleroma.Web.Streamer,
+        :close_streams_by_oauth_token,
+        [token],
+        restart: :transient
+      )
+
+      {:ok, token}
+    else
+      result -> result
+    end
   end
 end

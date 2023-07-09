@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.BackupTest do
@@ -22,15 +22,15 @@ defmodule Pleroma.User.BackupTest do
     clear_config([Pleroma.Emails.Mailer, :enabled], true)
   end
 
-  test "it requries enabled email" do
+  test "it does not requrie enabled email" do
     clear_config([Pleroma.Emails.Mailer, :enabled], false)
     user = insert(:user)
-    assert {:error, "Backups require enabled email"} == Backup.create(user)
+    assert {:ok, _} = Backup.create(user)
   end
 
-  test "it requries user's email" do
+  test "it does not require user's email" do
     user = insert(:user, %{email: nil})
-    assert {:error, "Email is required"} == Backup.create(user)
+    assert {:ok, _} = Backup.create(user)
   end
 
   test "it creates a backup record and an Oban job" do
@@ -73,6 +73,43 @@ defmodule Pleroma.User.BackupTest do
       to: {user.name, user.email},
       html_body: email.html_body
     )
+  end
+
+  test "it does not send an email if the user does not have an email" do
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    %{id: user_id} = user = insert(:user, %{email: nil})
+
+    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
+    assert {:ok, backup} = perform_job(BackupWorker, args)
+    assert backup.file_size > 0
+    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
+
+    assert_no_email_sent()
+  end
+
+  test "it does not send an email if mailer is not on" do
+    clear_config([Pleroma.Emails.Mailer, :enabled], false)
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    %{id: user_id} = user = insert(:user)
+
+    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
+    assert {:ok, backup} = perform_job(BackupWorker, args)
+    assert backup.file_size > 0
+    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
+
+    assert_no_email_sent()
+  end
+
+  test "it does not send an email if the user has an empty email" do
+    clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+    %{id: user_id} = user = insert(:user, %{email: ""})
+
+    assert {:ok, %Oban.Job{args: %{"backup_id" => backup_id} = args}} = Backup.create(user)
+    assert {:ok, backup} = perform_job(BackupWorker, args)
+    assert backup.file_size > 0
+    assert %Backup{id: ^backup_id, processed: true, user_id: ^user_id} = backup
+
+    assert_no_email_sent()
   end
 
   test "it removes outdated backups after creating a fresh one" do

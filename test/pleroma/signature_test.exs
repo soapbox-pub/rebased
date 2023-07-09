@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.SignatureTest do
@@ -106,6 +106,11 @@ defmodule Pleroma.SignatureTest do
 
     test "it properly deduces the actor id for mastodon and pleroma" do
       assert Signature.key_id_to_actor_id("https://example.com/users/1234#main-key") ==
+               {:ok, "https://example.com/users/1234"}
+    end
+
+    test "it deduces the actor id for gotoSocial" do
+      assert Signature.key_id_to_actor_id("https://example.com/users/1234/main-key") ==
                {:ok, "https://example.com/users/1234"}
     end
 

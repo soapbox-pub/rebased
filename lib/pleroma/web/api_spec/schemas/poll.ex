@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
@@ -56,6 +56,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
           }
         },
         description: "Possible answers for the poll."
+      },
+      pleroma: %Schema{
+        type: :object,
+        properties: %{
+          non_anonymous: %Schema{type: :boolean, description: "Is the voters collection public?"}
+        }
       }
     },
     example: %{
@@ -79,7 +85,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
           votes_count: 4
         }
       ],
-      emojis: []
+      emojis: [],
+      pleroma: %{
+        non_anonymous: false
+      }
     }
   })
 end

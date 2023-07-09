@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.TimelineController do
@@ -112,6 +112,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:muting_user, user)
         |> Map.put(:reply_filtering_user, user)
         |> Map.put(:instance, params[:instance])
+        # Restricts unfederated content to authenticated users
+        |> Map.put(:includes_local_public, not is_nil(user))
         |> ActivityPub.fetch_public_activities()
 
       conn

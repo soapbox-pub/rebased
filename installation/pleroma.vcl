@@ -1,4 +1,5 @@
 # Recommended varnishncsa logging format: '%h %l %u %t "%m %{X-Forwarded-Proto}i://%{Host}i%U%q %H" %s %b "%{Referer}i" "%{User-agent}i"'
+# Please use Varnish 7.0+ for proper Range Requests / Chunked encoding support
 vcl 4.1;
 import std;
 
@@ -22,11 +23,6 @@ sub vcl_recv {
       set req.http.X-Forwarded-Proto = "https";
     }
 
-    # CHUNKED SUPPORT
-    if (req.http.Range ~ "bytes=") {
-      set req.http.x-range = req.http.Range;
-    }
-
     # Pipe if WebSockets request is coming through
     if (req.http.upgrade ~ "(?i)websocket") {
       return (pipe);
@@ -35,9 +31,9 @@ sub vcl_recv {
     # Allow purging of the cache
     if (req.method == "PURGE") {
       if (!client.ip ~ purge) {
-        return(synth(405,"Not allowed."));
+        return (synth(405,"Not allowed."));
       }
-      return(purge);
+      return (purge);
     }
 }
 
@@ -53,17 +49,11 @@ sub vcl_backend_response {
       return (retry);
     }
 
-    # CHUNKED SUPPORT
-    if (bereq.http.x-range ~ "bytes=" && beresp.status == 206) {
-      set beresp.ttl = 10m;
-      set beresp.http.CR = beresp.http.content-range;
-    }
-
     # Bypass cache for large files
     # 50000000 ~ 50MB
     if (std.integer(beresp.http.content-length, 0) > 50000000) {
        set beresp.uncacheable = true;
-       return(deliver);
+       return (deliver);
     }
 
     # Don't cache objects that require authentication
@@ -94,7 +84,7 @@ sub vcl_synth {
     if (resp.status == 750) {
       set resp.status = 301;
       set resp.http.Location = req.http.x-redir;
-      return(deliver);
+      return (deliver);
     }
 }
 
@@ -106,23 +96,10 @@ sub vcl_pipe {
     }
 }
 
-sub vcl_hash {
-    # CHUNKED SUPPORT
-    if (req.http.x-range ~ "bytes=") {
-      hash_data(req.http.x-range);
-      unset req.http.Range;
-    }
-}
-
 sub vcl_backend_fetch {
     # Be more lenient for slow servers on the fediverse
     if (bereq.url ~ "^/proxy/") {
       set bereq.first_byte_timeout = 300s;
-    }
-
-    # CHUNKED SUPPORT
-    if (bereq.http.x-range) {
-      set bereq.http.Range = bereq.http.x-range;
     }
 
     if (bereq.retries == 0) {
@@ -140,14 +117,6 @@ sub vcl_backend_fetch {
               return (abandon);
             }
         }
-    }
-}
-
-sub vcl_deliver {
-    # CHUNKED SUPPORT
-    if (resp.http.CR) {
-      set resp.http.Content-Range = resp.http.CR;
-      unset resp.http.CR;
     }
 }
 

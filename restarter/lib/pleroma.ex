@@ -61,6 +61,12 @@ defmodule Restarter.Pleroma do
     {:noreply, @init_state}
   end
 
+  # Don't actually restart during tests.
+  # We just check if the correct call has been done.
+  # If we actually restart, we get errors during the tests like
+  #     (RuntimeError) could not lookup Ecto repo Pleroma.Repo because it was not started or
+  #      it does not exist
+  # See tests in Pleroma.Config.TransferTaskTest
   def handle_cast({:restart, :test, _}, state) do
     Logger.debug("pleroma manually restarted")
     {:noreply, Map.put(state, :need_reboot, false)}
@@ -74,6 +80,12 @@ defmodule Restarter.Pleroma do
 
   def handle_cast({:after_boot, _}, %{after_boot: true} = state), do: {:noreply, state}
 
+  # Don't actually restart during tests.
+  # We just check if the correct call has been done.
+  # If we actually restart, we get errors during the tests like
+  #     (RuntimeError) could not lookup Ecto repo Pleroma.Repo because it was not started or
+  #      it does not exist
+  # See tests in Pleroma.Config.TransferTaskTest
   def handle_cast({:after_boot, :test}, state) do
     Logger.debug("pleroma restarted after boot")
     state = %{state | after_boot: true, rebooted: true}

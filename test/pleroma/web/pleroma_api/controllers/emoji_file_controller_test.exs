@@ -1,9 +1,9 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
-  use Pleroma.Web.ConnCase
+  use Pleroma.Web.ConnCase, async: false
 
   import Mock
   import Tesla.Mock
@@ -30,6 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
 
   describe "POST/PATCH/DELETE /api/pleroma/emoji/packs/files?name=:name" do
     setup do
+      clear_config([:instance, :admin_privileges], [:emoji_manage_emoji])
       pack_file = "#{@emoji_path}/test_pack/pack.json"
       original_content = File.read!(pack_file)
 
@@ -376,6 +377,33 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileControllerTest do
                  new_filename: "dir_2/blank_3.png"
                })
                |> json_response_and_validate_schema(:bad_request)
+    end
+
+    test "it requires privileged role :emoji_manage_emoji", %{admin_conn: admin_conn} do
+      clear_config([:instance, :admin_privileges], [])
+
+      assert admin_conn
+             |> put_req_header("content-type", "multipart/form-data")
+             |> post("/api/pleroma/emoji/packs/files?name=test_pack", %{
+               file: %Plug.Upload{
+                 filename: "shortcode.png",
+                 path: "#{Pleroma.Config.get([:instance, :static_dir])}/add/shortcode.png"
+               }
+             })
+             |> json_response(:forbidden)
+
+      assert admin_conn
+             |> put_req_header("content-type", "multipart/form-data")
+             |> patch("/api/pleroma/emoji/packs/files?name=test_pack", %{
+               shortcode: "blank",
+               new_filename: "dir_2/blank_3.png"
+             })
+             |> json_response(:forbidden)
+
+      assert admin_conn
+             |> put_req_header("content-type", "multipart/form-data")
+             |> delete("/api/pleroma/emoji/packs/files?name=test_pack&shortcode=blank3")
+             |> json_response(:forbidden)
     end
   end
 end

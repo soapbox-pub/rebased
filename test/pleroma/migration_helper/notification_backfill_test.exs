@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.MigrationHelper.NotificationBackfillTest do
@@ -23,6 +23,8 @@ defmodule Pleroma.MigrationHelper.NotificationBackfillTest do
       {:ok, react} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
       {:ok, like} = CommonAPI.favorite(other_user, post.id)
       {:ok, react_2} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
+
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       data =
         react_2.data

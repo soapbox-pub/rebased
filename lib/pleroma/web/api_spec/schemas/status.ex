@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Status do
@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
+  alias Pleroma.Web.ApiSpec.Schemas.Event
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.Tag
@@ -73,6 +74,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         format: "date-time",
         description: "The date when this status was created"
       },
+      edited_at: %Schema{
+        type: :string,
+        format: "date-time",
+        nullable: true,
+        description: "The date when this status was last edited"
+      },
       emojis: %Schema{
         type: :array,
         items: Emoji,
@@ -138,13 +145,28 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         properties: %{
           content: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
           },
+          content_type: %Schema{
+            type: :string,
+            nullable: true,
+            description: "A MIME type of the status"
+          },
+          context: %Schema{
+            type: :string,
+            description: "The thread identifier the status is associated with"
+          },
           conversation_id: %Schema{
             type: :integer,
-            description: "The ID of the AP context the status is associated with (if any)"
+            deprecated: true,
+            description:
+              "The ID of the AP context the status is associated with (if any); deprecated, please use `context` instead"
           },
           direct_conversation_id: %Schema{
             type: :integer,
@@ -164,6 +186,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
                 me: %Schema{type: :boolean}
               }
             }
+          },
+          event: %Schema{
+            allOf: [Event],
+            nullable: true,
+            description: "The event attached to the status"
           },
           expires_at: %Schema{
             type: :string,
@@ -192,13 +219,21 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             type: :boolean,
             description: "`true` if the quoted post is visible to the user"
           },
+          quotes_count: %Schema{
+            type: :integer,
+            description: "How many statuses quoted this status"
+          },
           local: %Schema{
             type: :boolean,
             description: "`true` if the post was made on the local instance"
           },
           spoiler_text: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
           },
@@ -216,11 +251,6 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description:
               "A datetime (ISO 8601) that states when the post was pinned or `null` if the post is not pinned"
-          },
-          content_type: %Schema{
-            type: :string,
-            nullable: true,
-            description: "A MIME type of the status"
           }
         }
       },
@@ -339,6 +369,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       "pinned" => false,
       "pleroma" => %{
         "content" => %{"text/plain" => "foobar"},
+        "context" => "http://localhost:4001/objects/8b4c0c80-6a37-4d2a-b1b9-05a19e3875aa",
         "conversation_id" => 345_972,
         "direct_conversation_id" => nil,
         "emoji_reactions" => [],
@@ -346,7 +377,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         "in_reply_to_account_acct" => nil,
         "local" => true,
         "spoiler_text" => %{"text/plain" => ""},
-        "thread_muted" => false
+        "thread_muted" => false,
+        "quotes_count" => 0
       },
       "poll" => nil,
       "reblog" => nil,

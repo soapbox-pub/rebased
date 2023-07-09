@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
@@ -321,10 +321,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       }
     }
     |> maybe_put_role(user, opts[:for])
+    |> maybe_put_privileges(user, opts[:for])
     |> maybe_put_settings(user, opts[:for], opts)
     |> maybe_put_notification_settings(user, opts[:for])
     |> maybe_put_settings_store(user, opts[:for], opts)
-    |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
     |> maybe_put_follow_requests_count(user, opts[:for])
     |> maybe_put_allow_following_move(user, opts[:for])
@@ -332,6 +332,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_notification_count(user, opts[:for])
     |> maybe_put_accepts_email_list(user, opts[:for])
     |> maybe_put_email_address(user, opts[:for])
+    |> maybe_put_mute_expires_at(user, opts[:for], opts)
     |> maybe_show_birthday(user, opts[:for])
   end
 
@@ -380,28 +381,31 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_settings_store(data, _, _, _), do: data
 
-  defp maybe_put_chat_token(data, %User{id: id}, %User{id: id}, %{
-         with_chat_token: token
-       }) do
-    data
-    |> Kernel.put_in([:pleroma, :chat_token], token)
-  end
-
-  defp maybe_put_chat_token(data, _, _, _), do: data
-
   defp maybe_put_role(data, %User{show_role: true} = user, _) do
-    data
-    |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
-    |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
+    put_role(data, user)
   end
 
   defp maybe_put_role(data, %User{id: user_id} = user, %User{id: user_id}) do
+    put_role(data, user)
+  end
+
+  defp maybe_put_role(data, _, _), do: data
+
+  defp put_role(data, user) do
     data
     |> Kernel.put_in([:pleroma, :is_admin], user.is_admin)
     |> Kernel.put_in([:pleroma, :is_moderator], user.is_moderator)
   end
 
-  defp maybe_put_role(data, _, _), do: data
+  defp maybe_put_privileges(data, %User{id: user_id} = user, %User{id: user_id}) do
+    put_privileges(data, user)
+  end
+
+  defp maybe_put_privileges(data, _, _), do: data
+
+  defp put_privileges(data, user) do
+    Kernel.put_in(data, [:pleroma, :privileges], User.privileges(user))
+  end
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
     Kernel.put_in(
@@ -419,11 +423,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp maybe_put_allow_following_move(data, _, _), do: data
 
-  defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
-    Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active)
+  defp maybe_put_activation_status(data, user, user_for) do
+    if User.privileged?(user_for, :users_manage_activation_state),
+      do: Kernel.put_in(data, [:pleroma, :deactivated], !user.is_active),
+      else: data
   end
-
-  defp maybe_put_activation_status(data, _, _), do: data
 
   defp maybe_put_unread_conversation_count(data, %User{id: user_id} = user, %User{id: user_id}) do
     data
@@ -464,6 +468,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_email_address(data, _, _), do: data
+
+  defp maybe_put_mute_expires_at(data, %User{} = user, target, %{mutes: true}) do
+    Map.put(
+      data,
+      :mute_expires_at,
+      UserRelationship.get_mute_expire_date(target, user)
+    )
+  end
+
+  defp maybe_put_mute_expires_at(data, _, _, _), do: data
 
   defp maybe_show_birthday(data, %User{id: user_id} = user, %User{id: user_id}) do
     data

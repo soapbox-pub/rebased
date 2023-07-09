@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter do
@@ -38,9 +38,9 @@ defmodule Pleroma.Upload.Filter do
       {:ok, :noop} ->
         filter(rest, upload)
 
-      error ->
-        Logger.error("#{__MODULE__}: Filter #{filter} failed: #{inspect(error)}")
-        error
+      {:error, e} ->
+        Logger.error("#{__MODULE__}: Filter #{filter} failed: #{inspect(e)}")
+        {:error, e}
     end
   end
 end

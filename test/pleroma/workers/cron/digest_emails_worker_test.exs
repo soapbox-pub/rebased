@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
@@ -30,6 +30,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
     user2 = insert(:user, last_digest_emailed_at: date)
     {:ok, _} = User.switch_email_notifications(user2, "digest", true)
     CommonAPI.post(user, %{status: "hey @#{user2.nickname}!"})
+    ObanHelpers.perform_all()
 
     {:ok, user2: user2}
   end

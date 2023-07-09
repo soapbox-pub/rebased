@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.BackupController do
@@ -9,7 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
-  plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action in [:index, :create])
+  plug(OAuthScopesPlug, %{scopes: ["read:backups"]} when action in [:index, :create])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaBackupOperation

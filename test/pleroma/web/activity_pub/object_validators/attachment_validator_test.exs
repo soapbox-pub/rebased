@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
@@ -11,6 +11,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   import Pleroma.Factory
 
   describe "attachments" do
+    test "fails without url" do
+      attachment = %{
+        "mediaType" => "",
+        "name" => "",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document"
+      }
+
+      assert {:error, _cng} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "works with honkerific attachments" do
       attachment = %{
         "mediaType" => "",
@@ -18,6 +31,46 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         "summary" => "298p3RG7j27tfsZ9RQ.jpg",
         "type" => "Document",
         "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+    end
+
+    test "works with an unknown but valid mime type" do
+      attachment = %{
+        "mediaType" => "x-custom/x-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "x-custom/x-type"
+    end
+
+    test "works with invalid mime types" do
+      attachment = %{
+        "mediaType" => "x-customx-type",
+        "type" => "Document",
+        "url" => "https://example.org"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
+
+      attachment = %{
+        "mediaType" => "https://example.org",
+        "type" => "Document",
+        "url" => "https://example.org"
       }
 
       assert {:ok, attachment} =

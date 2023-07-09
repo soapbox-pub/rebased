@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -16,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Webhook.Notify
 
   import ExUnit.CaptureLog
   import Mock
@@ -574,7 +575,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["ok"] == data["ok"]
       assert activity.data["id"] == given_id
       assert activity.data["context"] == "blabla"
-      assert activity.data["context_id"]
     end
 
     test "adds a context when none is there" do
@@ -596,8 +596,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert is_binary(activity.data["context"])
       assert is_binary(object.data["context"])
-      assert activity.data["context_id"]
-      assert object.data["context_id"]
     end
 
     test "adds an id to a given object if it lacks one and is a note and inserts it to the object database" do
@@ -793,6 +791,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "direct"))
       assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
+    end
+
+    test "increases quotes count", %{user: user} do
+      user2 = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})
+      ap_id = activity.data["id"]
+      quote_data = %{status: "1", quote_id: activity.id}
+
+      # public
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "public"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 1
+
+      # unlisted
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "unlisted"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 2
+
+      # private
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "private"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 2
+
+      # direct
+      {:ok, _} = CommonAPI.post(user2, Map.put(quote_data, :visibility, "direct"))
+      assert %{data: _data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert object.data["quotesCount"] == 2
     end
   end
 
@@ -1365,6 +1391,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       %{test_file: test_file}
     end
 
+    test "strips / from filename", %{test_file: file} do
+      file = %Plug.Upload{file | filename: "../../../../../nested/bad.jpg"}
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      [%{"href" => href}] = object.data["url"]
+      assert Regex.match?(~r"/bad.jpg$", href)
+      refute Regex.match?(~r"/nested/", href)
+    end
+
     test "sets a description if given", %{test_file: file} do
       {:ok, %Object{} = object} = ActivityPub.upload(file, description: "a cool file")
       assert object.data["name"] == "a cool file"
@@ -1527,6 +1561,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       reporter_ap_id = reporter.ap_id
       target_ap_id = target_account.ap_id
       activity_ap_id = activity.data["id"]
+      object_ap_id = activity.object.data["id"]
 
       activity_with_object = Activity.get_by_ap_id_with_object(activity_ap_id)
 
@@ -1538,6 +1573,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
          reported_activity: activity,
          content: content,
          activity_ap_id: activity_ap_id,
+         object_ap_id: object_ap_id,
          activity_with_object: activity_with_object,
          reporter_ap_id: reporter_ap_id,
          target_ap_id: target_ap_id
@@ -1551,7 +1587,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
            target_account: target_account,
            reported_activity: reported_activity,
            content: content,
-           activity_ap_id: activity_ap_id,
+           object_ap_id: object_ap_id,
            activity_with_object: activity_with_object,
            reporter_ap_id: reporter_ap_id,
            target_ap_id: target_ap_id
@@ -1567,7 +1603,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       note_obj = %{
         "type" => "Note",
-        "id" => activity_ap_id,
+        "id" => object_ap_id,
         "content" => content,
         "published" => activity_with_object.object.data["published"],
         "actor" =>
@@ -1591,6 +1627,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                      context: context,
                      target_account: target_account,
                      reported_activity: reported_activity,
+                     object_ap_id: object_ap_id,
                      content: content
                    },
                    Utils,
@@ -1605,8 +1642,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           content: content
         })
 
-      new_data =
-        put_in(activity.data, ["object"], [target_account.ap_id, reported_activity.data["id"]])
+      new_data = put_in(activity.data, ["object"], [target_account.ap_id, object_ap_id])
 
       assert_called(Utils.maybe_federate(%{activity | data: new_data}))
     end
@@ -1632,8 +1668,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                })
 
       assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 2
+      assert Repo.aggregate(Object, :count, :id) == 1
       assert Repo.aggregate(Notification, :count, :id) == 0
+    end
+
+    test_with_mock "triggers webhooks",
+                   %{
+                     reporter: reporter,
+                     context: context,
+                     target_account: target_account,
+                     reported_activity: reported_activity,
+                     content: content
+                   },
+                   Notify,
+                   [:passthrough],
+                   trigger_webhooks: fn _, _ -> nil end do
+      {:ok, activity} =
+        ActivityPub.flag(%{
+          actor: reporter,
+          context: context,
+          account: target_account,
+          statuses: [reported_activity],
+          content: content
+        })
+
+      assert_called(Notify.trigger_webhooks(activity, :"report.created"))
     end
   end
 
@@ -1685,7 +1744,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "fetch_follow_information_for_user" do
-    test "syncronizes following/followers counters" do
+    test "synchronizes following/followers counters" do
       user =
         insert(:user,
           local: false,
@@ -1834,6 +1893,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "Move activity" do
+    @tag :erratic
     test "create" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
@@ -1870,7 +1930,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
 
-      Pleroma.Workers.BackgroundWorker.perform(%Oban.Job{args: params})
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       refute User.following?(follower, old_user)
       assert User.following?(follower, new_user)

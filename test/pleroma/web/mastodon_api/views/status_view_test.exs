@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
@@ -14,10 +14,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.RichMedia.Parser.Embed
+
+  require Bitwise
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -35,16 +36,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} = CommonAPI.post(user, %{status: "dae cofe??"})
 
     {:ok, _} = CommonAPI.react_with_emoji(activity.id, user, "☕")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, user, ":dinosaur:")
     {:ok, _} = CommonAPI.react_with_emoji(activity.id, third_user, "🍵")
     {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, ":dinosaur:")
+
     activity = Repo.get(Activity, activity.id)
     status = StatusView.render("show.json", activity: activity)
 
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 2, me: false},
-             %{name: "🍵", count: 1, me: false}
+             %{name: "☕", count: 2, me: false, url: nil, account_ids: [other_user.id, user.id]},
+             %{
+               count: 2,
+               me: false,
+               name: "dinosaur",
+               url: "http://localhost:4001/emoji/dino walking.gif",
+               account_ids: [other_user.id, user.id]
+             },
+             %{name: "🍵", count: 1, me: false, url: nil, account_ids: [third_user.id]}
            ]
 
     status = StatusView.render("show.json", activity: activity, for: user)
@@ -52,8 +63,36 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 2, me: true},
-             %{name: "🍵", count: 1, me: false}
+             %{name: "☕", count: 2, me: true, url: nil, account_ids: [other_user.id, user.id]},
+             %{
+               count: 2,
+               me: true,
+               name: "dinosaur",
+               url: "http://localhost:4001/emoji/dino walking.gif",
+               account_ids: [other_user.id, user.id]
+             },
+             %{name: "🍵", count: 1, me: false, url: nil, account_ids: [third_user.id]}
+           ]
+  end
+
+  test "works with legacy-formatted reactions" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    note =
+      insert(:note,
+        user: user,
+        data: %{
+          "reactions" => [["😿", [other_user.ap_id]]]
+        }
+      )
+
+    activity = insert(:note_activity, user: user, note: note)
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "😿", count: 1, me: false, url: nil, account_ids: [other_user.id]}
            ]
   end
 
@@ -66,11 +105,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     |> Object.update_data(%{"reactions" => %{"☕" => [user.ap_id], "x" => 1}})
 
     activity = Activity.get_by_id(activity.id)
-
     status = StatusView.render("show.json", activity: activity, for: user)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 1, me: true}
+             %{name: "☕", count: 1, me: true, url: nil, account_ids: [user.id]}
            ]
   end
 
@@ -90,7 +128,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 1, me: false}
+             %{name: "☕", count: 1, me: false, url: nil, account_ids: [other_user.id]}
            ]
 
     status = StatusView.render("show.json", activity: activity, for: user)
@@ -102,19 +140,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 2, me: false}
+             %{
+               name: "☕",
+               count: 2,
+               me: false,
+               url: nil,
+               account_ids: [third_user.id, other_user.id]
+             }
            ]
 
     status = StatusView.render("show.json", activity: activity, for: user)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 1, me: false}
+             %{name: "☕", count: 1, me: false, url: nil, account_ids: [third_user.id]}
            ]
 
     status = StatusView.render("show.json", activity: activity, for: other_user)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{name: "☕", count: 1, me: true}
+             %{name: "☕", count: 1, me: true, url: nil, account_ids: [other_user.id]}
            ]
   end
 
@@ -227,7 +271,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     object_data = Object.normalize(note, fetch: false).data
     user = User.get_cached_by_ap_id(note.data["actor"])
 
-    convo_id = Utils.context_to_conversation_id(object_data["context"])
+    convo_id = :erlang.crc32(object_data["context"]) |> Bitwise.band(Bitwise.bnot(0x8000_0000))
 
     status = StatusView.render("show.json", %{activity: note})
 
@@ -247,6 +291,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       content: HTML.filter_tags(object_data["content"]),
       text: nil,
       created_at: created_at,
+      edited_at: nil,
       reblogs_count: 0,
       replies_count: 0,
       favourites_count: 0,
@@ -280,6 +325,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pleroma: %{
         local: true,
         conversation_id: convo_id,
+        context: object_data["context"],
         in_reply_to_account_acct: nil,
         quote: nil,
         quote_url: nil,
@@ -292,7 +338,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         emoji_reactions: [],
         parent_visible: false,
         pinned_at: nil,
-        content_type: nil
+        content_type: nil,
+        quotes_count: 0,
+        event: nil
       }
     }
 
@@ -651,8 +699,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert represented[:url] ==
              "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
 
-    assert represented[:content] ==
-             "<p><a href=\"https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39\">Mobilizon Launching Party</a></p><p>Mobilizon is now federated! 🎉</p><p></p><p>You can view this event from other instances if they are subscribed to mobilizon.org, and soon directly from Mastodon and Pleroma. It is possible that you may see some comments from other instances, including Mastodon ones, just below.</p><p></p><p>With a Mobilizon account on an instance, you may <strong>participate</strong> at events from other instances and <strong>add comments</strong> on events.</p><p></p><p>Of course, it&#39;s still <u>a work in progress</u>: if reports made from an instance on events and comments can be federated, you can&#39;t block people right now, and moderators actions are rather limited, but this <strong>will definitely get fixed over time</strong> until first stable version next year.</p><p></p><p>Anyway, if you want to come up with some feedback, head over to our forum or - if you feel you have technical skills and are familiar with it - on our Gitlab repository.</p><p></p><p>Also, to people that want to set Mobilizon themselves even though we really don&#39;t advise to do that for now, we have a little documentation but it&#39;s quite the early days and you&#39;ll probably need some help. No worries, you can chat with us on our Forum or though our Matrix channel.</p><p></p><p>Check our website for more informations and follow us on Twitter or Mastodon.</p>"
+    assert represented.pleroma.event == %{
+             name: "Mobilizon Launching Party",
+             start_time: "2019-12-18T13:00:00Z",
+             end_time: "2019-12-18T14:00:00Z",
+             join_mode: "free",
+             participants_count: 0,
+             location: %{
+               country: "France",
+               latitude: nil,
+               locality: "Nantes",
+               longitude: nil,
+               name: "Cour du Château des Ducs de Bretagne",
+               postal_code: nil,
+               region: "Pays de la Loire",
+               street: " ",
+               url: nil
+             },
+             join_state: nil,
+             participation_request_count: nil
+           }
   end
 
   describe "build_tags/1" do
@@ -779,5 +845,66 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("show.json", activity: visible, for: poster)
     assert status.pleroma.parent_visible
+  end
+
+  test "it shows edited_at" do
+    poster = insert(:user)
+
+    {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
+
+    status = StatusView.render("show.json", activity: post)
+    refute status.edited_at
+
+    {:ok, _} = CommonAPI.update(poster, post, %{status: "mew mew"})
+    edited = Pleroma.Activity.normalize(post)
+
+    status = StatusView.render("show.json", activity: edited)
+    assert status.edited_at
+  end
+
+  test "it shows post language" do
+    user = insert(:user)
+
+    {:ok, post} = CommonAPI.post(user, %{status: "Szczęść Boże", language: "pl"})
+
+    status = StatusView.render("show.json", activity: post)
+
+    assert status.language == "pl"
+  end
+
+  test "with a source object" do
+    note =
+      insert(:note,
+        data: %{"source" => %{"content" => "object source", "mediaType" => "text/markdown"}}
+      )
+
+    activity = insert(:note_activity, note: note)
+
+    status = StatusView.render("show.json", activity: activity, with_source: true)
+    assert status.text == "object source"
+  end
+
+  describe "source.json" do
+    test "with a source object, renders both source and content type" do
+      note =
+        insert(:note,
+          data: %{"source" => %{"content" => "object source", "mediaType" => "text/markdown"}}
+        )
+
+      activity = insert(:note_activity, note: note)
+
+      status = StatusView.render("source.json", activity: activity)
+      assert status.text == "object source"
+      assert status.content_type == "text/markdown"
+    end
+
+    test "with a source string, renders source and put text/plain as the content type" do
+      note = insert(:note, data: %{"source" => "string source"})
+      activity = insert(:note_activity, note: note)
+
+      status = StatusView.render("source.json", activity: activity)
+      assert status.text == "string source"
+      assert status.content_type == "text/plain"
+    end
   end
 end

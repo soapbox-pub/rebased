@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.FallbackController do
@@ -9,6 +9,12 @@ defmodule Pleroma.Web.AdminAPI.FallbackController do
     conn
     |> put_status(:not_found)
     |> json(%{error: dgettext("errors", "Not found")})
+  end
+
+  def call(conn, {:error, :forbidden}) do
+    conn
+    |> put_status(:forbidden)
+    |> json(%{error: dgettext("errors", "Forbidden")})
   end
 
   def call(conn, {:error, reason}) do

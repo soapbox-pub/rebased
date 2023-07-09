@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicy do
@@ -7,13 +7,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
+  def history_awareness, do: :auto
+
+  @impl true
   def filter(
         %{
-          "type" => "Create",
+          "type" => type,
           "object" => %{"content" => content, "attachment" => _} = _child_object
         } = object
       )
-      when content in [".", "<p>.</p>"] do
+      when type in ["Create", "Update"] and content in [".", "<p>.</p>"] do
     {:ok, put_in(object, ["object", "content"], "")}
   end
 
