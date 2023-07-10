@@ -1422,6 +1422,40 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  @spec get_familiar_followers_query(User.t(), User.t(), pos_integer() | nil) :: Ecto.Query.t()
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user, nil) do
+    friends =
+      get_friends_query(current_user)
+      |> where([u], not u.hide_follows)
+      |> select([u], u.id)
+
+    User.Query.build(%{is_active: true})
+    |> where([u], u.id not in ^[user.id, current_user.id])
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :followers_relationships,
+      on: r.following_id == ^user.id and r.follower_id == u.id
+    )
+    |> where([followers_relationships: r], r.state == ^:follow_accept)
+    |> where([followers_relationships: r], r.follower_id in subquery(friends))
+  end
+
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user, page) do
+    user
+    |> get_familiar_followers_query(current_user, nil)
+    |> User.Query.paginate(page, 20)
+  end
+
+  @spec get_familiar_followers_query(User.t(), User.t()) :: Ecto.Query.t()
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user),
+    do: get_familiar_followers_query(user, current_user, nil)
+
+  @spec get_familiar_followers(User.t(), User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
+  def get_familiar_followers(%User{} = user, %User{} = current_user, page \\ nil) do
+    user
+    |> get_familiar_followers_query(current_user, page)
+    |> Repo.all()
+  end
+
   def increase_note_count(%User{} = user) do
     User
     |> where(id: ^user.id)
