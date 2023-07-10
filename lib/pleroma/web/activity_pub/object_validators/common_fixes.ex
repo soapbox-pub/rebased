@@ -76,4 +76,25 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
     Map.put(data, "to", to)
   end
+
+  def fix_quote_url(%{"quoteUrl" => _quote_url} = data), do: data
+
+  # Fedibird
+  # https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  def fix_quote_url(%{"quoteUri" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  # Old Fedibird (bug)
+  # https://github.com/fedibird/mastodon/issues/9
+  def fix_quote_url(%{"quoteURL" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  # Misskey fallback
+  def fix_quote_url(%{"_misskey_quote" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  def fix_quote_url(data), do: data
 end
