@@ -146,4 +146,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
     assert cng.valid?
     assert cng.changes.quoteUrl == "https://misskey.io/notes/8vs6wxufd0"
   end
+
+  test "Parse tag as quote" do
+    # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
+
+    insert(:user, ap_id: "https://server.example/users/1")
+
+    data = File.read!("test/fixtures/quote_post/fep-e232-tag-example.json") |> Jason.decode!()
+    cng = ArticleNotePageValidator.cast_and_validate(data)
+
+    assert cng.valid?
+    assert cng.changes.quoteUrl == "https://server.example/objects/123"
+  end
 end

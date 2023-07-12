@@ -10,6 +10,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
 
+  require Pleroma.Constants
+
   def cast_and_filter_recipients(message, field, follower_collection, field_fallback \\ []) do
     {:ok, data} = ObjectValidators.Recipients.cast(message[field] || field_fallback)
 
@@ -96,5 +98,30 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
     Map.put(data, "quoteUrl", quote_url)
   end
 
+  def fix_quote_url(%{"tag" => [_ | _] = tags} = data) do
+    tag = Enum.find(tags, &is_object_link_tag/1)
+
+    if not is_nil(tag) do
+      data
+      |> Map.put("quoteUrl", tag["href"])
+    else
+      data
+    end
+  end
+
   def fix_quote_url(data), do: data
+
+  # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
+  defp is_object_link_tag(
+         %{
+           "type" => "Link",
+           "mediaType" => media_type,
+           "href" => href
+         } = tag
+       )
+       when media_type in Pleroma.Constants.activity_json_mime_types() and is_binary(href) do
+    true
+  end
+
+  defp is_object_link_tag(_), do: false
 end
