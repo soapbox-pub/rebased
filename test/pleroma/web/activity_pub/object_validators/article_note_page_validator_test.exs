@@ -157,5 +157,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
 
     assert cng.valid?
     assert cng.changes.quoteUrl == "https://server.example/objects/123"
+
+    assert Enum.at(cng.changes.tag, 0).changes == %{
+             type: "Link",
+             mediaType: "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+             href: "https://server.example/objects/123",
+             name: "RE: https://server.example/objects/123"
+           }
   end
 end
