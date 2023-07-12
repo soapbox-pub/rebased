@@ -123,7 +123,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["context"] == object.data["context"]
     end
 
-    test "it drops link tags" do
+    test "it keeps link tags" do
       insert(:user, ap_id: "https://example.org/users/alice")
 
       message = File.read!("test/fixtures/fep-e232.json") |> Jason.decode!()
@@ -131,10 +131,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert {:ok, activity} = Transmogrifier.handle_incoming(message)
 
       object = Object.normalize(activity)
-      assert length(object.data["tag"]) == 1
-
-      tag = object.data["tag"] |> List.first()
-      assert tag["type"] == "Mention"
+      assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
     end
 
     test "it accepts quote posts" do
