@@ -53,6 +53,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy do
   @impl true
   def describe, do: {:ok, %{}}
 
+  @impl Pleroma.Web.ActivityPub.MRF.Policy
+  def history_awareness, do: :auto
+
   @impl true
   def config_description do
     %{
