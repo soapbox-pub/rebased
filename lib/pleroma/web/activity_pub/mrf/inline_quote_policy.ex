@@ -6,8 +6,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy do
   @moduledoc "Force a quote line into the message content."
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
-  defp build_inline_quote(prefix, url) do
-    "<span class=\"quote-inline\"><br/><br/>#{prefix}: <a href=\"#{url}\">#{url}</a></span>"
+  defp build_inline_quote(template, url) do
+    quote_line = String.replace(template, "{url}", "<a href=\"#{url}\">#{url}</a>")
+
+    "<span class=\"quote-inline\"><br/><br/>#{quote_line}</span>"
   end
 
   defp has_inline_quote?(content, quote_url) do
@@ -27,14 +29,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy do
     if has_inline_quote?(content, quote_url) do
       object
     else
-      prefix = Pleroma.Config.get([:mrf_inline_quote, :prefix])
+      template = Pleroma.Config.get([:mrf_inline_quote, :template])
 
       content =
         if String.ends_with?(content, "</p>"),
           do:
             String.trim_trailing(content, "</p>") <>
-              build_inline_quote(prefix, quote_url) <> "</p>",
-          else: content <> build_inline_quote(prefix, quote_url)
+              build_inline_quote(template, quote_url) <> "</p>",
+          else: content <> build_inline_quote(template, quote_url)
 
       Map.put(object, "content", content)
     end

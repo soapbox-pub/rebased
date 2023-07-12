@@ -269,7 +269,7 @@ Notes:
 * `federated_timeline_removal_shortcode`: A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
 
 #### :mrf_inline_quote
-* `prefix`: Prefix before the link (default: `RT`)
+* `template`: The template to append to the post. `{url}` will be replaced with the actual link to the quoted post. Default: `<bdi>RT:</bdi> {url}`
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
