@@ -112,16 +112,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   def fix_quote_url(data), do: data
 
   # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
-  defp is_object_link_tag(
-         %{
-           "type" => "Link",
-           "mediaType" => media_type,
-           "href" => href
-         } = tag
-       )
-       when media_type in Pleroma.Constants.activity_json_mime_types() and is_binary(href) do
+  def is_object_link_tag(%{
+        "type" => "Link",
+        "mediaType" => media_type,
+        "href" => href
+      })
+      when media_type in Pleroma.Constants.activity_json_mime_types() and is_binary(href) do
     true
   end
 
-  defp is_object_link_tag(_), do: false
+  def is_object_link_tag(_), do: false
 end
