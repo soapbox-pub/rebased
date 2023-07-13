@@ -312,12 +312,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # Here the implicit index of the current content is 0
     chrono_order = history_len - 1
 
-    quote_id = get_quote_id(activity)
-
     quote_activity = get_quote(activity, opts)
 
+    quote_id =
+      case quote_activity do
+        %Activity{id: id} -> id
+        _ -> nil
+      end
+
     quote_post =
-      if visible_for_user?(quote_activity, opts[:for]) do
+      if visible_for_user?(quote_activity, opts[:for]) and opts[:show_quote] != false do
         quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
         render("show.json", quote_rendering_opts)
       else
@@ -671,8 +675,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def get_quote(_activity, %{show_quote: false}), do: nil
-
   def get_quote(activity, %{quoted_activities: quoted_activities}) do
     object = Object.normalize(activity, fetch: false)
 
@@ -689,13 +691,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       Activity.get_create_by_object_ap_id(object.data["quoteUrl"])
     else
       nil
-    end
-  end
-
-  defp get_quote_id(activity) do
-    case get_quote(activity, %{}) do
-      %Activity{id: id} -> id
-      _ -> nil
     end
   end
 
