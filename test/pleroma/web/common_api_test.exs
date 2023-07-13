@@ -808,8 +808,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert quote_post.data["quoteUrl"] == quoted.data["id"]
 
-      # The OP is mentioned
-      assert quoted.data["actor"] in quote_post.data["to"]
+      # The OP is not mentioned
+      refute quoted.data["actor"] in quote_post.data["to"]
     end
 
     test "quote posting with explicit addressing doesn't mention the OP" do

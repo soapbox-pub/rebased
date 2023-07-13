@@ -139,9 +139,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp quote_post(%{params: %{quote_id: id}} = draft) when not_empty_string(id) do
     case Activity.get_by_id_with_object(id) do
-      %Activity{actor: actor_ap_id} = activity when not_empty_string(actor_ap_id) ->
-        %__MODULE__{draft | quote_post: activity, mentions: [actor_ap_id]}
-
       %Activity{} = activity ->
         %__MODULE__{draft | quote_post: activity}
 
