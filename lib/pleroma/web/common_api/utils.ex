@@ -334,21 +334,23 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     ""
   end
 
-  def to_masto_date(%NaiveDateTime{} = date) do
+  def to_masto_date(date, default \\ "")
+
+  def to_masto_date(%NaiveDateTime{} = date, _default) do
     date
     |> NaiveDateTime.to_iso8601()
     |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
   end
 
-  def to_masto_date(date) when is_binary(date) do
+  def to_masto_date(date, default) when is_binary(date) do
     with {:ok, date} <- NaiveDateTime.from_iso8601(date) do
-      to_masto_date(date)
+      to_masto_date(date, default)
     else
       _ -> ""
     end
   end
 
-  def to_masto_date(_), do: ""
+  def to_masto_date(_, default), do: default
 
   defp shortname(name) do
     with max_length when max_length > 0 <-
