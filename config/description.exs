@@ -2996,24 +2996,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :mrf_inline_quote,
-    tab: :mrf,
-    related_policy: "Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy",
-    label: "MRF Inline Quote Policy",
-    type: :group,
-    description: "Force quote url to appear in post content.",
-    children: [
-      %{
-        key: :template,
-        type: :string,
-        description:
-          "The template to append to the post. `{url}` will be replaced with the actual link to the quoted post.",
-        suggestions: ["<bdi>RT:</bdi> {url}"]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: :modules,
     type: :group,
     description: "Custom Runtime Modules",

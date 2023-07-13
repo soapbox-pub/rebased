@@ -61,14 +61,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy do
     %{
       key: :mrf_inline_quote,
       related_policy: "Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy",
-      label: "MRF Inline Quote",
-      description: "Force quote post URLs inline",
+      label: "MRF Inline Quote Policy",
+      type: :group,
+      description: "Force quote url to appear in post content.",
       children: [
         %{
-          key: :prefix,
+          key: :template,
           type: :string,
-          description: "Prefix before the link",
-          suggestions: ["RT", "QT", "RE", "RN"]
+          description:
+            "The template to append to the post. `{url}` will be replaced with the actual link to the quoted post.",
+          suggestions: ["<bdi>RT:</bdi> {url}"]
         }
       ]
     }
