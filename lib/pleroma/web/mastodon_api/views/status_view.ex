@@ -312,6 +312,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # Here the implicit index of the current content is 0
     chrono_order = history_len - 1
 
+    quote_id = get_quote_id(activity)
+
     quote_activity = get_quote(activity, opts)
 
     quote_post =
@@ -431,6 +433,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         quote: quote_post,
+        quote_id: quote_id,
         quote_url: object.data["quoteUrl"],
         quote_visible: visible_for_user?(quote_activity, opts[:for]),
         content: %{"text/plain" => content_plaintext},
@@ -686,6 +689,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       Activity.get_create_by_object_ap_id(object.data["quoteUrl"])
     else
       nil
+    end
+  end
+
+  defp get_quote_id(activity) do
+    case get_quote(activity, %{}) do
+      %Activity{id: id} -> id
+      _ -> nil
     end
   end
 

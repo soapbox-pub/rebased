@@ -327,6 +327,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         context: object_data["context"],
         in_reply_to_account_acct: nil,
         quote: nil,
+        quote_id: nil,
         quote_url: nil,
         quote_visible: false,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
@@ -435,10 +436,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", %{activity: quoted_quote_post})
 
     assert status.pleroma.quote.id == to_string(quote_post.id)
+    assert status.pleroma.quote_id == to_string(quote_post.id)
     assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
 
     # Quotes don't go more than one level deep
     refute status.pleroma.quote.pleroma.quote
+    assert status.pleroma.quote.pleroma.quote_id == to_string(post.id)
     assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
 
     # In an index

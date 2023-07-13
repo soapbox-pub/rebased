@@ -198,6 +198,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description: "Quoted status (if any)"
           },
+          quote_id: %Schema{
+            nullable: true,
+            allOf: [FlakeID],
+            description: "ID of the status being quoted, if any"
+          },
           quote_url: %Schema{
             type: :string,
             format: :uri,
