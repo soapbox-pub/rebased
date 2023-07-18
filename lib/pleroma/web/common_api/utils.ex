@@ -59,7 +59,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   defp get_attachment(media_id) do
-    Repo.get(Object, media_id)
+    with %Object{data: data} = object <- Repo.get(Object, media_id),
+         %{"type" => type} when type in Pleroma.Constants.upload_object_types() <- data do
+      object
+    else
+      _ -> nil
+    end
   end
 
   @spec get_to_and_cc(ActivityDraft.t()) :: {list(String.t()), list(String.t())}
