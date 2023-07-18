@@ -110,7 +110,7 @@ msgstr ""
 msgid "Can't display this activity"
 msgstr ""
 
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:334
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:346
 #, elixir-autogen, elixir-format
 msgid "Can't find user"
 msgstr ""
@@ -198,7 +198,7 @@ msgstr ""
 msgid "Invalid password."
 msgstr ""
 
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:267
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:279
 #, elixir-autogen, elixir-format
 msgid "Invalid request"
 msgstr ""
@@ -225,7 +225,7 @@ msgstr ""
 #: lib/pleroma/web/feed/tag_controller.ex:16
 #: lib/pleroma/web/feed/user_controller.ex:69
 #: lib/pleroma/web/o_status/o_status_controller.ex:132
-#: lib/pleroma/web/plugs/uploaded_media.ex:104
+#: lib/pleroma/web/plugs/uploaded_media.ex:84
 #, elixir-autogen, elixir-format
 msgid "Not found"
 msgstr ""
@@ -235,7 +235,7 @@ msgstr ""
 msgid "Poll's author can't vote"
 msgstr ""
 
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:499
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:511
 #: lib/pleroma/web/mastodon_api/controllers/fallback_controller.ex:20
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:39
 #: lib/pleroma/web/mastodon_api/controllers/poll_controller.ex:51
@@ -341,7 +341,7 @@ msgstr ""
 msgid "CAPTCHA expired"
 msgstr ""
 
-#: lib/pleroma/web/plugs/uploaded_media.ex:77
+#: lib/pleroma/web/plugs/uploaded_media.ex:57
 #, elixir-autogen, elixir-format
 msgid "Failed"
 msgstr ""
@@ -361,7 +361,7 @@ msgstr ""
 msgid "Insufficient permissions: %{permissions}."
 msgstr ""
 
-#: lib/pleroma/web/plugs/uploaded_media.ex:131
+#: lib/pleroma/web/plugs/uploaded_media.ex:111
 #, elixir-autogen, elixir-format
 msgid "Internal Error"
 msgstr ""
@@ -557,7 +557,7 @@ msgstr ""
 msgid "Access denied"
 msgstr ""
 
-#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:331
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:343
 #, elixir-autogen, elixir-format
 msgid "This API requires an authenticated user"
 msgstr ""
@@ -567,7 +567,7 @@ msgstr ""
 msgid "User is not an admin."
 msgstr ""
 
-#: lib/pleroma/user/backup.ex:73
+#: lib/pleroma/user/backup.ex:78
 #, elixir-format
 msgid "Last export was less than a day ago"
 msgid_plural "Last export was less than %{days} days ago"
@@ -606,4 +606,24 @@ msgstr ""
 #: lib/pleroma/web/plugs/ensure_privileged_plug.ex:41
 #, elixir-autogen, elixir-format
 msgid "User isn't privileged."
+msgstr ""
+
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:267
+#, elixir-autogen, elixir-format
+msgid "Bio is too long"
+msgstr ""
+
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:270
+#, elixir-autogen, elixir-format
+msgid "Name is too long"
+msgstr ""
+
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:273
+#, elixir-autogen, elixir-format
+msgid "One or more field entries are too long"
+msgstr ""
+
+#: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:276
+#, elixir-autogen, elixir-format
+msgid "Too many field entries"
 msgstr ""
