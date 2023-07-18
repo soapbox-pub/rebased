@@ -38,6 +38,13 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     end
   end
 
+  # Turns atom keys to strings
+  defp atom_key_to_string(json) do
+    json
+    |> Jason.encode!()
+    |> Jason.decode!()
+  end
+
   test "refuses invalid requests" do
     capture_log(fn ->
       assert {:error, %WebSockex.RequestError{code: 404}} = start_socket("?stream=ncjdk")
@@ -80,8 +87,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
     view_json =
       Pleroma.Web.MastodonAPI.StatusView.render("show.json", activity: activity, for: nil)
-      |> Jason.encode!()
-      |> Jason.decode!()
+      |> atom_key_to_string()
 
     assert json == view_json
   end
