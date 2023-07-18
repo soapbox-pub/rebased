@@ -1187,7 +1187,7 @@ config :pleroma, :config_description, [
         type: [:atom, :tuple, :module],
         description:
           "Where logs will be sent, :console - send logs to stdout, { ExSyslogger, :ex_syslogger } - to syslog, Quack.Logger - to Slack.",
-        suggestions: [:console, {ExSyslogger, :ex_syslogger}, Quack.Logger]
+        suggestions: [:console, {ExSyslogger, :ex_syslogger}]
       }
     ]
   },
