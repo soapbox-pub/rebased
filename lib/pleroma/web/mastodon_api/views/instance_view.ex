@@ -72,7 +72,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
           |> to_string
       },
-      languages: ["en"],
+      languages: Keyword.get(instance, :languages, ["en"]),
       configuration: configuration2(),
       registrations: %{
         enabled: Keyword.get(instance, :registrations_open),
