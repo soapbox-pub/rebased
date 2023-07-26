@@ -10,7 +10,7 @@ defmodule Pleroma.Config.ReleaseRuntimeProviderTest do
   describe "load/2" do
     test "loads release defaults config and warns about non-existent runtime config" do
       ExUnit.CaptureIO.capture_io(fn ->
-        merged = ReleaseRuntimeProvider.load([], [])
+        merged = ReleaseRuntimeProvider.load([], config_path: "/var/empty/config.exs")
         assert merged == Pleroma.Config.Holder.release_defaults()
       end) =~
         "!!! Config path is not declared! Please ensure it exists and that PLEROMA_CONFIG_PATH is unset or points to an existing file"

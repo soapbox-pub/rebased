@@ -156,8 +156,9 @@ defmodule Pleroma.Mixfile do
       {:bbcode_pleroma, "~> 0.2.0"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3.1"},
-      {:swoosh, "~> 1.8.2"},
-      {:phoenix_swoosh, "~> 1.1.0"},
+      # swoosh 1.11.2+ requires Elixir 1.12+
+      {:swoosh, "~> 1.10.0"},
+      {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
       {:floki, "~> 0.27"},
@@ -203,10 +204,6 @@ defmodule Pleroma.Mixfile do
       {:geospatial, "~> 0.2.0"},
       {:prom_ex, "~> 1.7.1"},
       {:unplug, "~> 1.0"},
-
-      # indirect dependency version override
-      {:plug, "~> 1.10.4", override: true},
-      {:mime, "~> 2.0", override: true},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},

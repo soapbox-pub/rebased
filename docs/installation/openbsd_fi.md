@@ -1,5 +1,7 @@
 # Pleroman asennus OpenBSD:llä
 
+Note: This article is potentially outdated because at this time we may not have people who can speak this language well enough to update it. To see the up-to-date version, which may have significant differences or important caveats of the installation process, look up the English version.
+
 Tarvitset:
 * Oman domainin
 * OpenBSD 6.3 -serverin

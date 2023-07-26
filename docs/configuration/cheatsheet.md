@@ -260,6 +260,12 @@ Notes:
 
 #### :mrf_inline_quote
 * `prefix`: Prefix before the link (default: `RT`)
+* 
+#### :mrf_emoji
+* `remove_url`: A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `remove_shortcode`: A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_url`: A list of patterns which result in message with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_shortcode`: A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed

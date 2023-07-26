@@ -394,6 +394,20 @@ defmodule Pleroma.Web.CommonAPITest do
 
       refute Activity.get_by_id(post.id)
     end
+
+    test "it allows privileged users to delete banned user's posts" do
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
+      user = insert(:user)
+      moderator = insert(:user, is_moderator: true)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "namu amida butsu"})
+      User.set_activation(user, false)
+
+      assert {:ok, delete} = CommonAPI.delete(post.id, moderator)
+      assert delete.local
+
+      refute Activity.get_by_id(post.id)
+    end
   end
 
   test "favoriting race condition" do
@@ -1458,7 +1472,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "cancels a pending follow for a remote user" do
       follower = insert(:user)
-      followed = insert(:user, is_locked: true, local: false, ap_enabled: true)
+      followed = insert(:user, is_locked: true, local: false)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
