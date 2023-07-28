@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Preload do
         terms =
           params
           |> parser.generate_terms()
-          |> Enum.map(fn {k, v} -> {k, Base.encode64(Jason.encode!(v))} end)
+          |> Enum.map(fn {k, v} -> {k, Base.encode64(Jason.encode!(v, escape: :html_safe))} end)
           |> Enum.into(%{})
 
         Map.merge(acc, terms)
@@ -19,7 +19,7 @@ defmodule Pleroma.Web.Preload do
 
     rendered_html =
       preload_data
-      |> Jason.encode!()
+      |> Jason.encode!(escape: :html_safe)
       |> build_script_tag()
       |> HTML.safe_to_string()
 

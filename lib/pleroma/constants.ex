@@ -57,6 +57,18 @@ defmodule Pleroma.Constants do
     ]
   )
 
+  const(status_object_types,
+    do: [
+      "Note",
+      "Question",
+      "Audio",
+      "Video",
+      "Event",
+      "Article",
+      "Page"
+    ]
+  )
+
   const(updatable_object_types,
     do: [
       "Note",

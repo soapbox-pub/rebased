@@ -1877,7 +1877,6 @@ defmodule Pleroma.UserTest do
         confirmation_token: "qqqq",
         domain_blocks: ["lain.com"],
         is_active: false,
-        ap_enabled: true,
         is_moderator: true,
         is_admin: true,
         mascot: %{"a" => "b"},
@@ -1918,7 +1917,6 @@ defmodule Pleroma.UserTest do
              confirmation_token: nil,
              domain_blocks: [],
              is_active: false,
-             ap_enabled: false,
              is_moderator: false,
              is_admin: false,
              mascot: nil,
@@ -2508,8 +2506,7 @@ defmodule Pleroma.UserTest do
         insert(:user,
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following",
-          ap_enabled: true
+          following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2530,8 +2527,7 @@ defmodule Pleroma.UserTest do
         insert(:user,
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following",
-          ap_enabled: true
+          following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2552,8 +2548,7 @@ defmodule Pleroma.UserTest do
         insert(:user,
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following",
-          ap_enabled: true
+          following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0

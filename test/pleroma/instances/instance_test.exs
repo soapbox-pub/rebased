@@ -161,6 +161,66 @@ defmodule Pleroma.Instances.InstanceTest do
     end
   end
 
+  describe "get_or_update_metadata/1" do
+    test "Scrapes Wildebeest NodeInfo" do
+      Tesla.Mock.mock(fn
+        %{url: "https://wildebeest.example.org/.well-known/nodeinfo"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/wildebeest-well-known-nodeinfo.json")
+          }
+
+        %{url: "https://wildebeest.example.org/nodeinfo/2.1"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/wildebeest-nodeinfo21.json")
+          }
+      end)
+
+      expected = %{
+        software_name: "wildebeest",
+        software_repository: "https://github.com/cloudflare/wildebeest",
+        software_version: "0.0.1"
+      }
+
+      assert expected ==
+               Instance.get_or_update_metadata(URI.parse("https://wildebeest.example.org/"))
+
+      expected = %Pleroma.Instances.Instance.Pleroma.Instances.Metadata{
+        software_name: "wildebeest",
+        software_repository: "https://github.com/cloudflare/wildebeest",
+        software_version: "0.0.1"
+      }
+
+      assert expected ==
+               Repo.get_by(Pleroma.Instances.Instance, %{host: "wildebeest.example.org"}).metadata
+    end
+
+    test "Scrapes Mastodon NodeInfo" do
+      Tesla.Mock.mock(fn
+        %{url: "https://mastodon.example.org/.well-known/nodeinfo"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/mastodon-well-known-nodeinfo.json")
+          }
+
+        %{url: "https://mastodon.example.org/nodeinfo/2.0"} ->
+          %Tesla.Env{
+            status: 200,
+            body: File.read!("test/fixtures/mastodon-nodeinfo20.json")
+          }
+      end)
+
+      expected = %{
+        software_name: "mastodon",
+        software_version: "4.1.0"
+      }
+
+      assert expected ==
+               Instance.get_or_update_metadata(URI.parse("https://mastodon.example.org/"))
+    end
+  end
+
   test "delete_users_and_activities/1 deletes remote instance users and activities" do
     [mario, luigi, _peach, wario] =
       users = [
