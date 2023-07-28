@@ -771,6 +771,49 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     {:ok, local: local, remote: remote}
   end
 
+  defp local_and_remote_context_activities do
+    local_user_1 = insert(:user)
+    local_user_2 = insert(:user)
+    remote_user = insert(:user, local: false)
+
+    {:ok, %{id: id1, data: %{"context" => context}}} =
+      CommonAPI.post(local_user_1, %{status: "post"})
+
+    {:ok, %{id: id2} = post} =
+      CommonAPI.post(local_user_2, %{status: "local reply", in_reply_to_status_id: id1})
+
+    params = %{
+      "@context" => "https://www.w3.org/ns/activitystreams",
+      "actor" => remote_user.ap_id,
+      "type" => "Create",
+      "context" => context,
+      "id" => "#{remote_user.ap_id}/activities/1",
+      "inReplyTo" => post.data["id"],
+      "object" => %{
+        "type" => "Note",
+        "content" => "remote reply",
+        "context" => context,
+        "id" => "#{remote_user.ap_id}/objects/1",
+        "attributedTo" => remote_user.ap_id,
+        "to" => [
+          local_user_1.ap_id,
+          local_user_2.ap_id,
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "to" => [
+        local_user_1.ap_id,
+        local_user_2.ap_id,
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    }
+
+    {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
+    {:ok, remote_activity} = ObanHelpers.perform(job)
+
+    %{locals: [id1, id2], remote: remote_activity.id, context: context}
+  end
+
   describe "status with restrict unauthenticated activities for local and remote" do
     setup do: local_and_remote_activities()
 
@@ -954,6 +997,230 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       res_conn = get(conn, "/api/v1/statuses?ids[]=#{local.id}&ids[]=#{remote.id}")
 
       assert length(json_response_and_validate_schema(res_conn, 200)) == 2
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for local and remote" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, locals: [post_id, _]} do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      assert json_response_and_validate_schema(res_conn, 200) == %{
+               "ancestors" => [],
+               "descendants" => []
+             }
+    end
+
+    test "if user is unauthenticated reply", %{conn: conn, locals: [_, reply_id]} do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      assert json_response_and_validate_schema(res_conn, 200) == %{
+               "ancestors" => [],
+               "descendants" => []
+             }
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for local" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], false)
+
+    test "if user is unauthenticated", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id not in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is unauthenticated reply", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id not in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for remote" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], false)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
+
+    test "if user is unauthenticated", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id not in descendant_ids
+    end
+
+    test "if user is unauthenticated reply", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id not in descendant_ids
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      reply_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in reply_ids
+      assert remote_reply_id in reply_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
     end
   end
 
