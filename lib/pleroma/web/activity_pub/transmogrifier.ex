@@ -266,7 +266,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
     attachments =
-      Enum.map(attachment, fn data ->
+      attachment
+      |> Enum.filter(fn data -> Map.has_key?(data, "url") or Map.has_key?(data, "href") end)
+      |> Enum.map(fn data ->
         url =
           cond do
             is_list(data["url"]) -> List.first(data["url"])
@@ -529,6 +531,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data["object"]
       |> strip_internal_fields()
       |> fix_type(fetch_options)
+      |> fix_attachments()
       |> fix_in_reply_to(fetch_options)
       |> fix_quote_url(fetch_options)
       |> maybe_add_language_from_activity(data)
