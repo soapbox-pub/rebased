@@ -90,4 +90,8 @@ defmodule Pleroma.Emoji.PackTest do
 
     assert updated_pack.files_count == 1
   end
+
+  test "load_pack/1 ignores path traversal in a forged pack name", %{pack: pack} do
+    assert {:ok, ^pack} = Pack.load_pack("../../../../../dump_pack")
+  end
 end
