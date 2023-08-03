@@ -81,4 +81,6 @@ defmodule Pleroma.Constants do
   const(mime_regex,
     do: ~r/^[^[:cntrl:] ()<>@,;:\\"\/\[\]?=]+\/[^[:cntrl:] ()<>@,;:\\"\/\[\]?=]+(; .*)?$/
   )
+
+  const(upload_object_types, do: ["Document", "Image"])
 end
