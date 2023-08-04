@@ -592,7 +592,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
 
     test "returns list attachments with desc" do
-      object = insert(:note)
+      object = insert(:attachment)
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids_descs(["#{object.id}", "34"], desc) == [
@@ -603,7 +603,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
   describe "attachments_from_ids/1" do
     test "returns attachments with descs" do
-      object = insert(:note)
+      object = insert(:attachment)
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids(%{
@@ -615,12 +615,17 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
 
     test "returns attachments without descs" do
-      object = insert(:note)
+      object = insert(:attachment)
       assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == [object.data]
     end
 
     test "returns [] when not pass media_ids" do
       assert Utils.attachments_from_ids(%{}) == []
+    end
+
+    test "checks that the object is of upload type" do
+      object = insert(:note)
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == []
     end
   end
 
