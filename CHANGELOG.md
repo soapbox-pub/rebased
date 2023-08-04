@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+## 2.5.3
+
+### Security
+- Emoji pack loader sanitizes pack names
+- Reduced permissions of config files and directories, distros requiring greater permissions like group-read need to pre-create the directories
+
 ## 2.5.2
 
 ### Security

@@ -32,7 +32,13 @@ before_script:
 after_script:
   - rm -rf _build/*/lib/pleroma
 
+.using-ci-base:
+  tags:
+    - amd64
+
 build:
+  extends:
+  - .using-ci-base
   stage: build
   only:
     changes: &build_changes_policy
@@ -44,6 +50,8 @@ build:
   - mix compile --force
 
 spec-build:
+  extends:
+  - .using-ci-base
   stage: test
   only:
     changes:
@@ -57,6 +65,8 @@ spec-build:
   - mix pleroma.openapi_spec spec.json
 
 benchmark:
+  extends:
+  - .using-ci-base
   stage: benchmark
   when: manual
   variables:
@@ -71,6 +81,8 @@ benchmark:
     - mix pleroma.load_testing
 
 unit-testing:
+  extends:
+  - .using-ci-base
   stage: test
   only:
     changes: *build_changes_policy
@@ -94,6 +106,8 @@ unit-testing:
         path: coverage.xml
 
 unit-testing-erratic:
+  extends:
+  - .using-ci-base
   stage: test
   retry: 2
   allow_failure: true
@@ -129,6 +143,8 @@ unit-testing-erratic:
 #     - mix test --trace --only federated
 
 unit-testing-rum:
+  extends:
+  - .using-ci-base
   stage: test
   only:
     changes: *build_changes_policy
@@ -162,6 +178,8 @@ lint:
     - mix format --check-formatted
 
 analysis:
+  extends:
+  - .using-ci-base
   stage: test
   only:
     changes: *build_changes_policy
