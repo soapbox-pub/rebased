@@ -180,5 +180,28 @@ defmodule Pleroma.Web.WebFingerTest do
 
       {:ok, _data} = WebFinger.finger("pekorino@pawoo.net")
     end
+
+    test "refuses to process XML remote entities" do
+      Tesla.Mock.mock(fn
+        %{
+          url: "https://pawoo.net/.well-known/webfinger?resource=acct:pekorino@pawoo.net"
+        } ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/xml_external_entities.xml"),
+             headers: [{"content-type", "application/xrd+xml"}]
+           }}
+
+        %{url: "https://pawoo.net/.well-known/host-meta"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/pawoo.net_host_meta")
+           }}
+      end)
+
+      assert :error = WebFinger.finger("pekorino@pawoo.net")
+    end
   end
 end
