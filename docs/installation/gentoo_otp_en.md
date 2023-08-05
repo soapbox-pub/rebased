@@ -2,7 +2,7 @@
 
 {! backend/installation/otp_vs_from_source.include !}
 
-A [manual installation guide for gentoo](./gentoo_en.md) is also available.
+This guide covers installation via Gentoo provided packaging. A [manual installation guide for gentoo](./gentoo_en.md) is also available.
 
 ## Installation
 

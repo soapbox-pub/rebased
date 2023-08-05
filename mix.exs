@@ -8,7 +8,7 @@ defmodule Pleroma.Mixfile do
       app: :pleroma,
       name: "Rebased",
       compat_name: "Pleroma",
-      version: version("2.5.53"),
+      version: version("2.5.54"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix] ++ Mix.compilers(),
