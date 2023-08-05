@@ -31,7 +31,7 @@ defmodule Pleroma.Web.XML do
         |> :binary.bin_to_list()
         |> :xmerl_scan.string(
           quiet: true,
-          fetch_fun: fn _, _ -> raise "Resolving external entities not supported" end
+          allow_entities: false
         )
 
       {:ok, doc}
