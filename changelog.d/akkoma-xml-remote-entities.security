@@ -1,1 +1,1 @@
-Restrict XML parser from processing external entitites (XXE)
+Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitary files from the server's filesystem
