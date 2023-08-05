@@ -18,6 +18,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - BREAKING: Support for passwords generated with `crypt(3)` (Gnu Social migration artifact)
 
+## 2.5.4
+
+## Security
+- Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitary files from the server's filesystem
+
 ## 2.5.3
 
 ### Security
