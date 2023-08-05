@@ -1877,7 +1877,6 @@ defmodule Pleroma.UserTest do
         confirmation_token: "qqqq",
         domain_blocks: ["lain.com"],
         is_active: false,
-        ap_enabled: true,
         is_moderator: true,
         is_admin: true,
         mascot: %{"a" => "b"},
@@ -1918,7 +1917,6 @@ defmodule Pleroma.UserTest do
              confirmation_token: nil,
              domain_blocks: [],
              is_active: false,
-             ap_enabled: false,
              is_moderator: false,
              is_admin: false,
              mascot: nil,
@@ -2508,8 +2506,7 @@ defmodule Pleroma.UserTest do
         insert(:user,
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following",
-          ap_enabled: true
+          following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2530,8 +2527,7 @@ defmodule Pleroma.UserTest do
         insert(:user,
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following",
-          ap_enabled: true
+          following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2552,8 +2548,7 @@ defmodule Pleroma.UserTest do
         insert(:user,
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
-          following_address: "http://localhost:4001/users/masto_closed/following",
-          ap_enabled: true
+          following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
       assert other_user.following_count == 0
@@ -2926,6 +2921,20 @@ defmodule Pleroma.UserTest do
 
       assert user3_updated.also_known_as |> length() == 1
       assert user.ap_id in user3_updated.also_known_as
+    end
+  end
+
+  describe "get_familiar_followers/3" do
+    test "returns familiar followers for a pair of users" do
+      user1 = insert(:user)
+      %{id: id2} = user2 = insert(:user)
+      user3 = insert(:user)
+      _user4 = insert(:user)
+
+      User.follow(user1, user2)
+      User.follow(user2, user3)
+
+      assert [%{id: ^id2}] = User.get_familiar_followers(user3, user1)
     end
   end
 

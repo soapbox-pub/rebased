@@ -86,6 +86,7 @@ server {
         slice              1m;
         proxy_cache_key    $host$uri$is_args$args$slice_range;
         proxy_set_header   Range $slice_range;
+        proxy_set_header   Host $host;
         proxy_cache_valid  200 206 301 304 1h;
         proxy_cache_lock   on;
         proxy_ignore_client_abort on;

@@ -13,7 +13,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   require Logger
 
   plug(:skip_auth when action == :confirm_email)
-  plug(:skip_plug, OAuthScopesPlug when action in [:oauth_tokens, :revoke_token])
+
+  plug(
+    :skip_plug,
+    OAuthScopesPlug when action in [:oauth_tokens, :revoke_token, :revoke_all_tokens]
+  )
 
   action_fallback(:errors)
 
@@ -35,6 +39,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def revoke_token(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     Token.delete_user_token(user, id)
+
+    json_reply(conn, 201, "")
+  end
+
+  def revoke_all_tokens(%{assigns: %{user: user}} = conn, _params) do
+    Token.delete_user_tokens(user)
 
     json_reply(conn, 201, "")
   end
