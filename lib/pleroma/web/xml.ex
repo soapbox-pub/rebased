@@ -29,7 +29,10 @@ defmodule Pleroma.Web.XML do
       {doc, _rest} =
         text
         |> :binary.bin_to_list()
-        |> :xmerl_scan.string(quiet: true)
+        |> :xmerl_scan.string(
+          quiet: true,
+          fetch_fun: fn _, _ -> raise "Resolving external entities not supported" end
+        )
 
       {:ok, doc}
     rescue
