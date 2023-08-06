@@ -63,6 +63,20 @@ defmodule Pleroma.UserTest do
              end) =~ "Cannot create service actor:"
     end
 
+    test "returns user of given type" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/relay"
+      followers_uri = "#{uri}/followers"
+
+      assert %User{
+               nickname: "relay",
+               invisible: true,
+               local: true,
+               ap_id: ^uri,
+               follower_address: ^followers_uri,
+               actor_type: "Application"
+             } = User.get_or_create_service_actor_by_ap_id(uri, "relay", "Application")
+    end
+
     test "returns invisible actor" do
       uri = "#{Pleroma.Web.Endpoint.url()}/internal/fetch-test"
       followers_uri = "#{uri}/followers"

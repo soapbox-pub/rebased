@@ -11,12 +11,13 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   require Logger
 
   @nickname "relay"
+  @actor_type "Application"
 
   @spec ap_id() :: String.t()
   def ap_id, do: "#{Pleroma.Web.Endpoint.url()}/#{@nickname}"
 
   @spec get_actor() :: User.t() | nil
-  def get_actor, do: User.get_or_create_service_actor_by_ap_id(ap_id(), @nickname)
+  def get_actor, do: User.get_or_create_service_actor_by_ap_id(ap_id(), @nickname, @actor_type)
 
   @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
   def follow(target_instance) do
