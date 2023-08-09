@@ -16,11 +16,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
       when type in ["Create", "Update"] do
     scrub_policy = Pleroma.Config.get([:mrf_normalize_markup, :scrub_policy])
 
-    content =
-      child_object["content"]
-      |> HTML.filter_tags(scrub_policy)
+    object =
+      with %{} = content_map <- child_object["contentMap"] do
+        fixed_content_map =
+          Enum.reduce(content_map, %{}, fn {lang, content}, acc ->
+            Map.put(acc, lang, HTML.filter_tags(content, scrub_policy))
+          end)
 
-    object = put_in(object, ["object", "content"], content)
+        object
+        |> put_in(["object", "contentMap"], fixed_content_map)
+        |> put_in(
+          ["object", "content"],
+          Pleroma.MultiLanguage.map_to_str(fixed_content_map, multiline: true)
+        )
+      else
+        _ ->
+          content =
+            child_object["content"]
+            |> HTML.filter_tags(scrub_policy)
+
+          put_in(object, ["object", "content"], content)
+      end
 
     {:ok, object}
   end

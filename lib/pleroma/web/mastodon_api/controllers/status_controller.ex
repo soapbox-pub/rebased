@@ -194,6 +194,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
+  def create(%{assigns: %{user: _user}, body_params: %{status_map: _} = params} = conn, _) do
+    params = Map.put(params, :status, "")
+    create(%Plug.Conn{conn | body_params: params}, %{})
+  end
+
   def create(%{assigns: %{user: _user}, body_params: %{media_ids: _} = params} = conn, _) do
     params = Map.put(params, :status, "")
     create(%Plug.Conn{conn | body_params: params}, %{})

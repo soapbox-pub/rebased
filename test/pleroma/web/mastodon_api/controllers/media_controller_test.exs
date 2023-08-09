@@ -44,6 +44,44 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
+    test "/api/v1/media, multilang", %{conn: conn, image: image} do
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/media", %{
+          "file" => image,
+          "description_map" => %{"a" => "mew", "b" => "lol"}
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert media["type"] == "image"
+      assert media["description_map"] == %{"a" => "mew", "b" => "lol"}
+      assert media["id"]
+
+      object = Object.get_by_id(media["id"])
+      assert object.data["actor"] == User.ap_id(conn.assigns[:user])
+    end
+
+    test "/api/v1/media, multilang, invalid description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v1/media", %{
+        "file" => image,
+        "description_map" => %{"a" => "mew", "b_" => "lol"}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
+    test "/api/v1/media, multilang, empty description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v1/media", %{
+        "file" => image,
+        "description_map" => %{}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
     test "/api/v2/media", %{conn: conn, user: user, image: image} do
       desc = "Description of the image"
 
@@ -70,6 +108,44 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == user.ap_id
     end
 
+    test "/api/v2/media, multilang", %{conn: conn, image: image} do
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v2/media", %{
+          "file" => image,
+          "description_map" => %{"a" => "mew", "b" => "lol"}
+        })
+        |> json_response_and_validate_schema(202)
+
+      assert media["type"] == "image"
+      assert media["description_map"] == %{"a" => "mew", "b" => "lol"}
+      assert media["id"]
+
+      object = Object.get_by_id(media["id"])
+      assert object.data["actor"] == User.ap_id(conn.assigns[:user])
+    end
+
+    test "/api/v2/media, multilang, invalid description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v2/media", %{
+        "file" => image,
+        "description_map" => %{"a" => "mew", "b_" => "lol"}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
+    test "/api/v2/media, multilang, empty description_map", %{conn: conn, image: image} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> post("/api/v2/media", %{
+        "file" => image,
+        "description_map" => %{}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
     test "/api/v2/media, upload_limit", %{conn: conn, user: user} do
       desc = "Description of the binary"
 
@@ -92,7 +168,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
                           "file" => large_binary,
                           "description" => desc
                         })
-                        |> json_response_and_validate_schema(400)
+                        |> json_response_and_validate_schema(422)
              end) =~
                "[error] Elixir.Pleroma.Upload store (using Pleroma.Uploaders.Local) failed: :file_too_large"
 
@@ -170,6 +246,35 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       assert media["description"] == "test-media"
       assert refresh_record(object).data["name"] == "test-media"
+    end
+
+    test "/api/v1/media/:id description_map", %{conn: conn, object: object} do
+      media =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put("/api/v1/media/#{object.id}", %{
+          "description_map" => %{"a" => "test-media", "b" => "xxx"}
+        })
+        |> json_response_and_validate_schema(:ok)
+
+      assert media["description_map"] == %{"a" => "test-media", "b" => "xxx"}
+      assert refresh_record(object).data["nameMap"] == %{"a" => "test-media", "b" => "xxx"}
+    end
+
+    test "/api/v1/media/:id description_map, invalid", %{conn: conn, object: object} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/media/#{object.id}", %{
+        "description_map" => %{"a" => "test-media", "b_" => "xxx"}
+      })
+      |> json_response_and_validate_schema(422)
+    end
+
+    test "/api/v1/media/:id description_map, empty", %{conn: conn, object: object} do
+      conn
+      |> put_req_header("content-type", "multipart/form-data")
+      |> put("/api/v1/media/#{object.id}", %{"description_map" => %{}})
+      |> json_response_and_validate_schema(422)
     end
   end
 

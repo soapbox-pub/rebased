@@ -37,10 +37,10 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
       id: to_string(object.id),
       multiple: false,
       options: [
-        %{title: "absolutely!", votes_count: 0},
-        %{title: "sure", votes_count: 0},
-        %{title: "yes", votes_count: 0},
-        %{title: "why are you even asking?", votes_count: 0}
+        %{title: "absolutely!", title_map: %{}, votes_count: 0},
+        %{title: "sure", title_map: %{}, votes_count: 0},
+        %{title: "yes", title_map: %{}, votes_count: 0},
+        %{title: "why are you even asking?", title_map: %{}, votes_count: 0}
       ],
       votes_count: 0,
       voters_count: 0,
@@ -186,5 +186,30 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
     result = PollView.render("show.json", %{object: object})
 
     assert result[:pleroma][:non_anonymous] == true
+  end
+
+  describe "multilang" do
+    test "renders multilang" do
+      object = %Object{
+        id: 123,
+        data: %{
+          "oneOf" => [
+            %{
+              "name" => "mew",
+              "nameMap" => %{"en" => "mew", "cmn" => "喵"},
+              "nameRendered" => "mew | 喵"
+            },
+            %{"name" => "mew mew", "nameMap" => %{"en" => "mew mew", "cmn" => "喵喵"}}
+          ]
+        }
+      }
+
+      assert %{
+               options: [
+                 %{title: "mew | 喵", title_map: %{"en" => "mew", "cmn" => "喵"}},
+                 %{title: "mew mew", title_map: %{"en" => "mew mew", "cmn" => "喵喵"}}
+               ]
+             } = PollView.render("show.json", %{object: object})
+    end
   end
 end

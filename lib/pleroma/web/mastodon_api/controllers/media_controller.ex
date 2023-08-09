@@ -25,11 +25,17 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
            ActivityPub.upload(
              file,
              actor: User.ap_id(user),
-             description: Map.get(data, :description)
+             description: Map.get(data, :description),
+             description_map: Map.get(data, :description_map)
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
       render(conn, "attachment.json", %{attachment: attachment_data})
+    else
+      {:error, e} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: e})
     end
   end
 
@@ -41,19 +47,46 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
            ActivityPub.upload(
              file,
              actor: User.ap_id(user),
-             description: Map.get(data, :description)
+             description: Map.get(data, :description),
+             description_map: Map.get(data, :description_map)
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
       conn
       |> put_status(202)
       |> render("attachment.json", %{attachment: attachment_data})
+    else
+      {:error, e} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: e})
     end
   end
 
   def create2(_conn, _data), do: {:error, :bad_request}
 
   @doc "PUT /api/v1/media/:id"
+  def update(
+        %{assigns: %{user: user}, body_params: %{description_map: %{} = description_map}} = conn,
+        %{id: id}
+      ) do
+    with %Object{} = object <- Object.get_by_id(id),
+         :ok <- Object.authorize_access(object, user),
+         {_, {:ok, %{}}} <-
+           {:description_map, Pleroma.MultiLanguage.validate_map(description_map)},
+         {:ok, %Object{data: data}} <-
+           Object.update_data(object, %{
+             "name" => Pleroma.MultiLanguage.map_to_str(description_map),
+             "nameMap" => description_map
+           }) do
+      attachment_data = Map.put(data, "id", object.id)
+
+      render(conn, "attachment.json", %{attachment: attachment_data})
+    else
+      {:description_map, _} -> render_error(conn, 422, "description_map not valid")
+    end
+  end
+
   def update(%{assigns: %{user: user}, body_params: %{description: description}} = conn, %{id: id}) do
     with %Object{} = object <- Object.get_by_id(id),
          :ok <- Object.authorize_access(object, user),

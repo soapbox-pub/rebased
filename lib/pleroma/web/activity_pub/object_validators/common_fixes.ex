@@ -76,4 +76,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
     Map.put(data, "to", to)
   end
+
+  def fix_multilang_field(data, str_field, map_field, opts \\ []) do
+    with %{} = map <- data[map_field],
+         str when is_binary(str) <- Pleroma.MultiLanguage.map_to_str(map, opts) do
+      Map.put(data, str_field, str)
+    else
+      _ -> data
+    end
+  end
 end

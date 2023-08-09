@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
 
@@ -52,6 +53,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
           type: :object,
           properties: %{
             title: %Schema{type: :string},
+            title_map: Helpers.multilang_map_of(%Schema{type: :string}),
             votes_count: %Schema{type: :integer}
           }
         },
@@ -78,10 +80,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
       options: [
         %{
           title: "accept",
+          title_map: %{"en" => "accept", "cmn" => "接受"},
           votes_count: 6
         },
         %{
           title: "deny",
+          title_map: %{"en" => "deny", "cmn" => "拒绝"},
           votes_count: 4
         }
       ],

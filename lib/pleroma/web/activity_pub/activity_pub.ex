@@ -34,6 +34,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Pleroma.Web.ActivityPub.Utils
   import Pleroma.Web.ActivityPub.Visibility
   import Pleroma.Webhook.Notify, only: [trigger_webhooks: 2]
+  import Pleroma.Web.Gettext
 
   require Logger
   require Pleroma.Constants
@@ -1559,12 +1560,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  defp validate_media_description_map(%{} = map) do
+    with {:ok, %{}} <- Pleroma.MultiLanguage.validate_map(map) do
+      :ok
+    else
+      _ -> :error
+    end
+  end
+
+  defp validate_media_description_map(nil), do: :ok
+  defp validate_media_description_map(_), do: :error
+
   @spec upload(Upload.source(), keyword()) :: {:ok, Object.t()} | {:error, any()}
   def upload(file, opts \\ []) do
-    with {:ok, data} <- Upload.store(sanitize_upload_file(file), opts) do
+    with {_, :ok} <- {:description_map, validate_media_description_map(opts[:description_map])},
+         {:ok, data} <- Upload.store(sanitize_upload_file(file), opts) do
       obj_data = Maps.put_if_present(data, "actor", opts[:actor])
 
       Repo.insert(%Object{data: obj_data})
+    else
+      {:description_map, _} -> {:error, dgettext("errors", "description_map invalid")}
+      e -> e
     end
   end
 

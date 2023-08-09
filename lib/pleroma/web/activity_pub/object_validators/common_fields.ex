@@ -32,6 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
   defmacro object_fields do
     quote bind_quoted: binding() do
       field(:content, :string)
+      field(:contentMap, ObjectValidators.MapOfString)
 
       field(:published, ObjectValidators.DateTime)
       field(:updated, ObjectValidators.DateTime)
@@ -50,7 +51,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
       embeds_many(:tag, TagValidator)
 
       field(:name, :string)
+      field(:nameMap, ObjectValidators.MapOfString)
       field(:summary, :string)
+      field(:summaryMap, ObjectValidators.MapOfString)
 
       field(:context, :string)
 

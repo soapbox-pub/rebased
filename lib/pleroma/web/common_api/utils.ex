@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
+  alias Pleroma.MultiLanguage
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -155,22 +156,36 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> make_poll_data()
   end
 
-  def make_poll_data(%{poll: %{options: options, expires_in: expires_in}} = data)
-      when is_list(options) do
+  def make_poll_data(%{poll: %{options_map: options_map, expires_in: expires_in}} = data)
+      when is_list(options_map) do
     limits = Config.get([:instance, :poll_limits])
 
     options = options |> Enum.uniq()
 
     with :ok <- validate_poll_expiration(expires_in, limits),
-         :ok <- validate_poll_options_amount(options, limits),
-         :ok <- validate_poll_options_length(options, limits) do
+         :ok <- validate_poll_options_map(options_map),
+         :ok <- validate_poll_options_amount(options_map, limits),
+         :ok <- validate_poll_options_length(options_map, limits) do
       {option_notes, emoji} =
-        Enum.map_reduce(options, %{}, fn option, emoji ->
-          note = %{
-            "name" => option,
-            "type" => "Note",
-            "replies" => %{"type" => "Collection", "totalItems" => 0}
-          }
+        Enum.map_reduce(options_map, %{}, fn option, emoji ->
+          is_single_language = Map.keys(option) == ["und"]
+
+          name_attrs =
+            if is_single_language do
+              %{"name" => option["und"]}
+            else
+              %{
+                "name" => MultiLanguage.map_to_str(option, multiline: false),
+                "nameMap" => option
+              }
+            end
+
+          note =
+            %{
+              "type" => "Note",
+              "replies" => %{"type" => "Collection", "totalItems" => 0}
+            }
+            |> Map.merge(name_attrs)
 
           {note, Map.merge(emoji, Pleroma.Emoji.Formatter.get_emoji_map(option))}
         end)
@@ -187,12 +202,39 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def make_poll_data(%{poll: %{options: options}} = data) when is_list(options) do
+    new_poll =
+      data.poll
+      |> Map.put(
+        :options_map,
+        Enum.map(options, &MultiLanguage.str_to_map(&1, lang: data[:language]))
+      )
+
+    data
+    |> Map.put(:poll, new_poll)
+    |> make_poll_data()
+  end
+
   def make_poll_data(%{"poll" => poll}) when is_map(poll) do
     {:error, "Invalid poll"}
   end
 
   def make_poll_data(_data) do
     {:ok, {%{}, %{}}}
+  end
+
+  defp validate_poll_options_map(options) do
+    if Enum.all?(options, fn opt ->
+         with {:ok, %{}} <- MultiLanguage.validate_map(opt) do
+           true
+         else
+           _ -> false
+         end
+       end) do
+      :ok
+    else
+      {:error, dgettext("errors", "Poll option map not valid")}
+    end
   end
 
   defp validate_poll_options_amount(options, %{max_options: max_options}) do
@@ -208,8 +250,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  defp validate_poll_options_length(options, %{max_option_chars: max_option_chars}) do
-    if Enum.any?(options, &(String.length(&1) > max_option_chars)) do
+  defp validate_poll_options_length(options_map, %{max_option_chars: max_option_chars}) do
+    if Enum.any?(options_map, fn option ->
+         Enum.reduce(option, 0, fn {_lang, cur}, acc -> acc + String.length(cur) end)
+         |> Kernel.>(max_option_chars)
+       end) do
       {:error, "Poll options cannot be longer than #{max_option_chars} characters each"}
     else
       :ok
@@ -239,7 +284,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         []
       end
 
-    draft.status
+    draft
     |> format_input(content_type, options)
     |> maybe_add_attachments(draft.attachments, attachment_links)
   end
@@ -261,6 +306,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_add_attachments(parsed, _attachments, false = _no_links), do: parsed
 
+  def maybe_add_attachments({%{} = text_map, mentions, tags}, attachments, _no_links) do
+    text_map =
+      Enum.reduce(text_map, %{}, fn {lang, text}, acc ->
+        Map.put(acc, lang, add_attachments(text, attachments))
+      end)
+
+    {text_map, mentions, tags}
+  end
+
   def maybe_add_attachments({text, mentions, tags}, attachments, _no_links) do
     text = add_attachments(text, attachments)
     {text, mentions, tags}
@@ -280,6 +334,31 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   defp build_attachment_link(_), do: ""
 
   def format_input(text, format, options \\ [])
+
+  def format_input(%ActivityDraft{status_map: status_map} = _draft, format, options)
+      when is_map(status_map) do
+    {content_map, mentions, tags} =
+      Enum.reduce(
+        status_map,
+        {%{}, [], []},
+        fn {lang, status}, {content_map, mentions, tags} ->
+          {cur_content, cur_mentions, cur_tags} = format_input(status, format, options)
+
+          {
+            Map.put(content_map, lang, cur_content),
+            mentions ++ cur_mentions,
+            tags ++ cur_tags
+          }
+        end
+      )
+
+    {content_map, Enum.uniq(mentions), Enum.uniq(tags)}
+  end
+
+  def format_input(%ActivityDraft{status: status} = _draft, format, options)
+      when is_binary(status) do
+    format_input(status, format, options)
+  end
 
   @doc """
   Formatting text to plain text, BBCode, HTML, or Markdown

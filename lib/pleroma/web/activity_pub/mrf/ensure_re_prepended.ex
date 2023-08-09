@@ -13,17 +13,33 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
   def history_awareness, do: :auto
 
   def filter_by_summary(
+        %{data: %{"summaryMap" => %{} = parent_summary_map}} = _in_reply_to,
+        %{"summaryMap" => %{} = child_summary_map} = child
+      ) do
+    fixed_summary_map =
+      Enum.reduce(child_summary_map, %{}, fn {lang, cur}, acc ->
+        with {:ok, fixed_cur} <- fix_one(cur, parent_summary_map[lang]) do
+          Map.put(acc, lang, fixed_cur)
+        else
+          _ -> Map.put(acc, lang, cur)
+        end
+      end)
+
+    child
+    |> Map.put("summaryMap", fixed_summary_map)
+    |> Map.put("summary", Pleroma.MultiLanguage.map_to_str(fixed_summary_map, multiline: false))
+  end
+
+  def filter_by_summary(
         %{data: %{"summary" => parent_summary}} = _in_reply_to,
         %{"summary" => child_summary} = child
       )
       when not is_nil(child_summary) and byte_size(child_summary) > 0 and
              not is_nil(parent_summary) and byte_size(parent_summary) > 0 do
-    if (child_summary == parent_summary and not Regex.match?(@reply_prefix, child_summary)) or
-         (Regex.match?(@reply_prefix, parent_summary) &&
-            Regex.replace(@reply_prefix, parent_summary, "") == child_summary) do
-      Map.put(child, "summary", "re: " <> child_summary)
+    with {:ok, fixed_child_summary} <- fix_one(child_summary, parent_summary) do
+      Map.put(child, "summary", fixed_child_summary)
     else
-      child
+      _ -> child
     end
   end
 
@@ -44,4 +60,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
   def filter(object), do: {:ok, object}
 
   def describe, do: {:ok, %{}}
+
+  defp fix_one(child_summary, parent_summary)
+       when is_binary(child_summary) and child_summary != "" and is_binary(parent_summary) and
+              parent_summary != "" do
+    if (child_summary == parent_summary and not Regex.match?(@reply_prefix, child_summary)) or
+         (Regex.match?(@reply_prefix, parent_summary) &&
+            Regex.replace(@reply_prefix, parent_summary, "") == child_summary) do
+      {:ok, "re: " <> child_summary}
+    else
+      {:nochange, nil}
+    end
+  end
+
+  defp fix_one(_, _) do
+    {:nochange, nil}
+  end
 end

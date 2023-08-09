@@ -289,7 +289,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       card: nil,
       reblog: nil,
       content: HTML.filter_tags(object_data["content"]),
+      content_map: %{},
       text: nil,
+      text_map: nil,
       created_at: created_at,
       edited_at: nil,
       reblogs_count: 0,
@@ -303,6 +305,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       sensitive: false,
       poll: nil,
       spoiler_text: HTML.filter_tags(object_data["summary"]),
+      spoiler_text_map: %{},
       visibility: "public",
       media_attachments: [],
       mentions: [],
@@ -331,7 +334,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         quote_url: nil,
         quote_visible: false,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
+        content_map: %{"text/plain" => %{}},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
+        spoiler_text_map: %{"text/plain" => %{}},
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
@@ -346,6 +351,70 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert status == expected
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
+  end
+
+  test "a note activity with multiple languages" do
+    user = insert(:user)
+
+    note_obj =
+      insert(:note,
+        data: %{
+          "content" => "mew mew",
+          "contentMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+          "summary" => "mew",
+          "summaryMap" => %{"en" => "mew", "cmn" => "喵"}
+        }
+      )
+
+    note = insert(:note_activity, note: note_obj, user: user)
+
+    status = StatusView.render("show.json", %{activity: note})
+
+    assert %{
+             content: "mew mew",
+             content_map: %{"en" => "mew mew", "cmn" => "喵喵"},
+             spoiler_text: "mew",
+             spoiler_text_map: %{"en" => "mew", "cmn" => "喵"},
+             language: "mul",
+             pleroma: %{
+               content: %{"text/plain" => "mew mew"},
+               content_map: %{"text/plain" => %{"en" => "mew mew", "cmn" => "喵喵"}},
+               spoiler_text: %{"text/plain" => "mew"},
+               spoiler_text_map: %{"text/plain" => %{"en" => "mew", "cmn" => "喵"}}
+             }
+           } = status
+  end
+
+  test "a note activity with single language" do
+    user = insert(:user)
+
+    note_obj =
+      insert(:note,
+        data: %{
+          "content" => "mew mew",
+          "contentMap" => %{"en" => "mew mew"},
+          "summary" => "mew",
+          "summaryMap" => %{"en" => "mew"}
+        }
+      )
+
+    note = insert(:note_activity, note: note_obj, user: user)
+
+    status = StatusView.render("show.json", %{activity: note})
+
+    assert %{
+             content: "mew mew",
+             content_map: %{"en" => "mew mew"},
+             spoiler_text: "mew",
+             spoiler_text_map: %{"en" => "mew"},
+             language: "en",
+             pleroma: %{
+               content: %{"text/plain" => "mew mew"},
+               content_map: %{"text/plain" => %{"en" => "mew mew"}},
+               spoiler_text: %{"text/plain" => "mew"},
+               spoiler_text_map: %{"text/plain" => %{"en" => "mew"}}
+             }
+           } = status
   end
 
   test "tells if the message is muted for some reason" do
@@ -609,7 +678,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       description: nil,
       pleroma: %{mime_type: "image/png"},
       meta: %{original: %{width: 200, height: 100, aspect: 2}},
-      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn"
+      blurhash: "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
+      description_map: %{}
     }
 
     api_spec = Pleroma.Web.ApiSpec.spec()
@@ -623,6 +693,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert %{id: "2"} = result
     assert_schema(result, "Attachment", api_spec)
+  end
+
+  test "attachments with multilang" do
+    object = %{
+      "type" => "Image",
+      "url" => [
+        %{
+          "mediaType" => "image/png",
+          "href" => "someurl",
+          "width" => 200,
+          "height" => 100
+        }
+      ],
+      "name" => "mew mew",
+      "nameMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+      "blurhash" => "UJJ8X[xYW,%Jtq%NNFbXB5j]IVM|9GV=WHRn",
+      "uuid" => 6
+    }
+
+    assert %{description: "mew mew", description_map: %{"en" => "mew mew", "cmn" => "喵喵"}} =
+             StatusView.render("attachment.json", %{attachment: object})
   end
 
   test "put the url advertised in the Activity in to the url attribute" do
@@ -905,6 +996,72 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       status = StatusView.render("source.json", activity: activity)
       assert status.text == "string source"
       assert status.content_type == "text/plain"
+    end
+  end
+
+  describe "history items" do
+    test "renders multilang" do
+      user = insert(:user)
+
+      note_obj =
+        insert(:note,
+          data: %{
+            "content" => "mew mew",
+            "contentMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+            "summary" => "mew",
+            "summaryMap" => %{"en" => "mew", "cmn" => "喵"}
+          }
+        )
+
+      note = insert(:note_activity, note: note_obj, user: user)
+
+      status =
+        StatusView.render("history_item.json", %{
+          activity: note,
+          user: user,
+          hashtags: [],
+          item: %{object: note_obj, chrono_order: 0}
+        })
+
+      assert %{
+               content: "mew mew",
+               content_map: %{"en" => "mew mew", "cmn" => "喵喵"},
+               spoiler_text: "mew",
+               spoiler_text_map: %{"en" => "mew", "cmn" => "喵"}
+             } = status
+    end
+  end
+
+  describe "source" do
+    test "renders multilang" do
+      user = insert(:user)
+
+      note_obj =
+        insert(:note,
+          data: %{
+            "source" => %{
+              "content" => "mew mew",
+              "contentMap" => %{"en" => "mew mew", "cmn" => "喵喵"},
+              "mediaType" => "text/plain"
+            },
+            "summary" => "mew",
+            "summaryMap" => %{"en" => "mew", "cmn" => "喵"}
+          }
+        )
+
+      note = insert(:note_activity, note: note_obj, user: user)
+
+      status =
+        StatusView.render("source.json", %{
+          activity: note
+        })
+
+      assert %{
+               text: "mew mew",
+               text_map: %{"en" => "mew mew", "cmn" => "喵喵"},
+               spoiler_text: "mew",
+               spoiler_text_map: %{"en" => "mew", "cmn" => "喵"}
+             } = status
     end
   end
 end

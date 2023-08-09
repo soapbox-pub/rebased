@@ -109,6 +109,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
     |> Transmogrifier.maybe_add_language()
+    |> CommonFixes.fix_multilang_field("content", "contentMap", multiline: true)
+    |> CommonFixes.fix_multilang_field("summary", "summaryMap", multiline: false)
+    |> CommonFixes.fix_multilang_field("name", "nameMap", multiline: false)
   end
 
   def changeset(struct, data) do

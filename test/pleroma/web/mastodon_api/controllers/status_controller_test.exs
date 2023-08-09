@@ -69,8 +69,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "sensitive" => "0"
         })
 
-      assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
-               json_response_and_validate_schema(conn_one, 200)
+      assert %{
+               "content" => "cofe",
+               "id" => id,
+               "spoiler_text" => "2hu",
+               "sensitive" => false,
+               "language" => nil
+             } = json_response_and_validate_schema(conn_one, 200)
 
       assert Activity.get_by_id(id)
 
@@ -143,6 +148,197 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                "id" => id,
                "pleroma" => %{"quote" => %{"id" => ^activity_id}, "quote_url" => ^quote_url}
              } = json_response_and_validate_schema(conn, 200)
+    end
+
+    test "posting a single lang status ", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status" => "mew mew",
+          "spoiler_text" => "mew",
+          "sensitive" => "0",
+          "language" => "a"
+        })
+
+      assert %{
+               "content" => "mew mew",
+               "content_map" => %{"a" => "mew mew"},
+               "id" => id,
+               "spoiler_text" => "mew",
+               "spoiler_text_map" => %{"a" => "mew"},
+               "sensitive" => false,
+               "language" => "a"
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a single lang status, bad language code", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status" => "mew mew",
+          "spoiler_text" => "mew",
+          "sensitive" => "0",
+          "language" => "a_"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "content" => _content,
+               "content_map" => %{"a" => "mew mew", "b" => "lol lol"},
+               "id" => id,
+               "spoiler_text" => _spoiler_text,
+               "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+               "sensitive" => false
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a multilang status, invalid language code in status_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b_" => "lol lol"},
+          "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status, empty status_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{},
+          "spoiler_text_map" => %{"a" => "mew", "b" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status, invalid language code in spoiler_text_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text_map" => %{"a" => "mew", "b_" => "lol"},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status, empty spoiler_text_map", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text_map" => %{},
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "error" => _
+             } = json_response_and_validate_schema(conn_one, 422)
+    end
+
+    test "posting a multilang status with singlelang summary", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "spoiler_text" => "mewlol",
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "content" => _content,
+               "content_map" => %{"a" => "mew mew", "b" => "lol lol"},
+               "id" => id,
+               "spoiler_text" => "mewlol",
+               "spoiler_text_map" => %{},
+               "sensitive" => false
+             } = json_response_and_validate_schema(conn_one, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a multilang summary with singlelang status", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
+
+      conn_one =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "spoiler_text_map" => %{"a" => "mew mew", "b" => "lol lol"},
+          "status" => "mewlol",
+          "sensitive" => "0"
+        })
+
+      assert %{
+               "content" => "mewlol",
+               "content_map" => %{},
+               "id" => id,
+               "spoiler_text" => _,
+               "spoiler_text_map" => %{"a" => "mew mew", "b" => "lol lol"},
+               "sensitive" => false
+             } = json_response_and_validate_schema(conn_one, 200)
 
       assert Activity.get_by_id(id)
     end
@@ -638,6 +834,121 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       # closed contains utc timezone
       assert question.data["closed"] =~ "Z"
+    end
+
+    test "posting a single-language poll", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options" => ["Rei", "Asuka", "Misato"],
+            "expires_in" => 420
+          },
+          "language" => "a"
+        })
+
+      response = json_response_and_validate_schema(conn, 200)
+
+      assert Enum.all?(response["poll"]["options"], fn %{"title_map" => title} ->
+               title in [
+                 %{"a" => "Rei"},
+                 %{"a" => "Asuka"},
+                 %{"a" => "Misato"}
+               ]
+             end)
+    end
+
+    test "posting a single-language poll, invalid language code", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options" => ["Rei", "Asuka", "Misato"],
+            "expires_in" => 420
+          },
+          "language" => "a_"
+        })
+
+      json_response_and_validate_schema(conn, 422)
+    end
+
+    test "posting a multilang poll", %{conn: conn} do
+      time = NaiveDateTime.utc_now()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options_map" => [
+              %{"a" => "Rei", "b" => "1"},
+              %{"a" => "Asuka", "b" => "2"},
+              %{"a" => "Misato", "b" => "3"}
+            ],
+            "expires_in" => 420
+          }
+        })
+
+      response = json_response_and_validate_schema(conn, 200)
+
+      assert Enum.all?(response["poll"]["options"], fn %{"title_map" => title} ->
+               title in [
+                 %{"a" => "Rei", "b" => "1"},
+                 %{"a" => "Asuka", "b" => "2"},
+                 %{"a" => "Misato", "b" => "3"}
+               ]
+             end)
+
+      assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
+      assert response["poll"]["expired"] == false
+
+      question = Object.get_by_id(response["poll"]["id"])
+
+      # closed contains utc timezone
+      assert question.data["closed"] =~ "Z"
+    end
+
+    test "posting a multilang poll, invalid lang code", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options_map" => [
+              %{"a" => "Rei", "b" => "1"},
+              %{"a" => "Asuka", "b_" => "2"},
+              %{"a" => "Misato", "b" => "3"}
+            ],
+            "expires_in" => 420
+          }
+        })
+
+      assert %{"error" => _} = json_response_and_validate_schema(conn, 422)
+    end
+
+    test "posting a multilang poll, empty map", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{
+            "options_map" => [
+              %{"a" => "Rei", "b" => "1"},
+              %{},
+              %{"a" => "Misato", "b" => "3"}
+            ],
+            "expires_in" => 420
+          }
+        })
+
+      assert %{"error" => _} = json_response_and_validate_schema(conn, 422)
     end
 
     test "option limit is enforced", %{conn: conn} do

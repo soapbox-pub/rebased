@@ -939,6 +939,12 @@ config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent
 
 import_config "soapbox.exs"
 
+config :pleroma, Pleroma.MultiLanguage,
+  template: "<div lang=\"{code}\">{content}</div>",
+  separator: "<br><hr><br>",
+  single_line_template: "[{code}] {content}",
+  single_line_separator: " | "
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

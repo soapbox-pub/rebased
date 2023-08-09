@@ -73,5 +73,31 @@ defmodule Pleroma.Web.ActivityPub.BuilderTest do
 
       assert {:ok, ^expected, []} = Builder.note(draft)
     end
+
+    test "accepts multilang" do
+      user = insert(:user)
+
+      draft = %ActivityDraft{
+        user: user,
+        to: [user.ap_id],
+        context: "2hu",
+        content_html_map: %{"a" => "mew", "b" => "lol"},
+        tags: [],
+        summary_map: %{"a" => "mew", "b" => "lol"},
+        cc: [],
+        extra: %{}
+      }
+
+      assert {:ok,
+              %{
+                "contentMap" => %{"a" => "mew", "b" => "lol"},
+                "content" => content,
+                "summaryMap" => %{"a" => "mew", "b" => "lol"},
+                "summary" => summary
+              }, []} = Builder.note(draft)
+
+      assert is_binary(content)
+      assert is_binary(summary)
+    end
   end
 end
