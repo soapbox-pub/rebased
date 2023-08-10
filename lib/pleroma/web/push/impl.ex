@@ -57,7 +57,7 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def perform(_) do
-    Logger.warn("Unknown notification type")
+    Logger.warning("Unknown notification type")
     {:error, :unknown_type}
   end
 
