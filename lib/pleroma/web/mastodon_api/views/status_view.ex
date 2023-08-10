@@ -562,9 +562,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       text: get_source_text(Map.get(object.data, "source", "")),
       text_map: get_source_text_map(Map.get(object.data, "source", "")),
       spoiler_text: Map.get(object.data, "summary", ""),
+      spoiler_text_map: Map.get(object.data, "summaryMap", %{}),
       content_type: get_source_content_type(object.data["source"]),
       location: build_source_location(object.data)
-      spoiler_text_map: Map.get(object.data, "summaryMap", %{}),
     }
   end
 
@@ -729,7 +729,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     render_content(object, object.data["name"], object.data["content"])
   end
 
-  def render_content(%{data: %{"name" => name, "type" => type}, name, content} = object)
+  def render_content(%{data: %{"type" => type}} = object, name, content)
       when not is_nil(name) and name != "" and type != "Event" do
     url = object.data["url"] || object.data["id"]
 
@@ -998,7 +998,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     name_langs = get_languages_from_map(data["nameMap"])
 
     langs =
-      (content_langs ++ summary_langs ++ name_langs, data["language"])
+      (content_langs ++ summary_langs ++ name_langs ++ [data["language"]])
       |> Enum.uniq()
 
     case langs do

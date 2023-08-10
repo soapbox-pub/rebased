@@ -43,7 +43,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             cc: [],
             context: nil,
             sensitive: false,
-            language: nil,
             object: nil,
             preview?: false,
             changes: %{},
@@ -76,7 +75,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> with_valid(&content/1)
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
-    |> with_valid(&language/1)
     |> sensitive()
     |> with_valid(&object/1)
     |> preview?()
@@ -161,7 +159,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     end
   end
 
-  defp language(draft), do: draft
+  defp language(draft) do
+    language =
+      LanguageDetector.detect(draft.params[:status] <> " " <> (draft.params[:spoiler_text] || draft.params[:name]))
+
+    if MultiLanguage.is_good_locale_code?(language) do
+      %__MODULE__{draft | language: language}
+    else
+      draft
+    end
+  end
 
   defp status(%{params: %{status_map: %{} = status_map}} = draft) do
     with {:ok, %{}} <- MultiLanguage.validate_map(status_map) do
@@ -336,16 +343,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp sensitive(draft) do
     sensitive = draft.params[:sensitive]
     %__MODULE__{draft | sensitive: sensitive}
-  end
-
-  defp language(draft) do
-    language =
-      Utils.get_valid_language(draft.params[:language]) ||
-        LanguageDetector.detect(
-          draft.content_html <> " " <> (draft.summary || draft.params[:name])
-        )
-
-    %__MODULE__{draft | language: language}
   end
 
   defp object(draft) do

@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Language.LanguageDetector
   alias Pleroma.Maps
+  alias Pleroma.MultiLanguage
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -23,7 +24,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.Federator
 
   import Ecto.Query
-  import Pleroma.Web.CommonAPI.Utils, only: [get_valid_language: 1]
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   require Logger
@@ -1062,9 +1062,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_add_language(object) do
     language =
-      get_language_from_context(object) |> get_valid_language() ||
-        get_language_from_content_map(object) |> get_valid_language() ||
-        get_language_from_content(object) |> get_valid_language()
+      [get_language_from_context(object), get_language_from_content_map(object), get_language_from_content(object)]
+      |> Enum.find(&MultiLanguage.is_good_locale_code?(&1))
 
     if language do
       Map.put(object, "language", language)
@@ -1074,9 +1073,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def maybe_add_language_from_activity(object, activity) do
-    language = get_language_from_context(activity) |> get_valid_language()
+    language = get_language_from_context(activity)
 
-    if language do
+    if MultiLanguage.is_good_locale_code?(language) do
       Map.put(object, "language", language)
     else
       object
