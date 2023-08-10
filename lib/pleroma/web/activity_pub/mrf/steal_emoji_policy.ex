@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
             shortcode
 
           e ->
-            Logger.warn("MRF.StealEmojiPolicy: Failed to write to #{file_path}: #{inspect(e)}")
+            Logger.warning("MRF.StealEmojiPolicy: Failed to write to #{file_path}: #{inspect(e)}")
             nil
         end
       else
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicy do
       end
     else
       e ->
-        Logger.warn("MRF.StealEmojiPolicy: Failed to fetch #{url}: #{inspect(e)}")
+        Logger.warning("MRF.StealEmojiPolicy: Failed to fetch #{url}: #{inspect(e)}")
         nil
     end
   end

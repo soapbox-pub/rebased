@@ -177,7 +177,7 @@ defmodule Pleroma.Instances.Instance do
     end
   rescue
     e ->
-      Logger.warn("Instance.get_or_update_favicon(\"#{host}\") error: #{inspect(e)}")
+      Logger.warning("Instance.get_or_update_favicon(\"#{host}\") error: #{inspect(e)}")
       nil
   end
 
@@ -205,7 +205,7 @@ defmodule Pleroma.Instances.Instance do
       end
     rescue
       e ->
-        Logger.warn(
+        Logger.warning(
           "Instance.scrape_favicon(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
         )
 
@@ -288,7 +288,7 @@ defmodule Pleroma.Instances.Instance do
       end
     rescue
       e ->
-        Logger.warn(
+        Logger.warning(
           "Instance.scrape_metadata(\"#{to_string(instance_uri)}\") error: #{inspect(e)}"
         )
 
