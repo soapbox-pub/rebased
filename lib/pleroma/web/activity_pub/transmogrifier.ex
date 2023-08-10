@@ -1062,7 +1062,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_add_language(object) do
     language =
-      [get_language_from_context(object), get_language_from_content_map(object), get_language_from_content(object)]
+      [
+        get_language_from_context(object),
+        get_language_from_content_map(object),
+        get_language_from_content(object)
+      ]
       |> Enum.find(&MultiLanguage.is_good_locale_code?(&1))
 
     if language do

@@ -161,7 +161,9 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp language(draft) do
     language =
-      LanguageDetector.detect(draft.params[:status] <> " " <> (draft.params[:spoiler_text] || draft.params[:name]))
+      LanguageDetector.detect(
+        draft.params[:status] <> " " <> (draft.params[:spoiler_text] || draft.params[:name])
+      )
 
     if MultiLanguage.is_good_locale_code?(language) do
       %__MODULE__{draft | language: language}
