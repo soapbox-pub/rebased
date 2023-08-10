@@ -19,7 +19,8 @@ defmodule Pleroma.Constants do
       "context_id",
       "deleted_activity_id",
       "pleroma_internal",
-      "generator"
+      "generator",
+      "language"
     ]
   )
 
@@ -38,7 +39,8 @@ defmodule Pleroma.Constants do
       "summary",
       "sensitive",
       "attachment",
-      "generator"
+      "generator",
+      "language"
     ]
   )
 

@@ -33,6 +33,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             cc: [],
             context: nil,
             sensitive: false,
+            language: nil,
             object: nil,
             preview?: false,
             changes: %{}
@@ -57,6 +58,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> content()
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
+    |> with_valid(&language/1)
     |> sensitive()
     |> with_valid(&object/1)
     |> preview?()
@@ -190,6 +192,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | sensitive: sensitive}
   end
 
+  defp language(draft) do
+    language = draft.params[:language]
+
+    if Utils.is_good_locale_code?(language) do
+      %__MODULE__{draft | language: language}
+    else
+      draft
+    end
+  end
+
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
@@ -229,6 +241,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         "mediaType" => Utils.get_content_type(draft.params[:content_type])
       })
       |> Map.put("generator", draft.params[:generator])
+      |> Map.put("language", draft.language)
 
     %__MODULE__{draft | object: object}
   end
