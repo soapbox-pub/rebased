@@ -16,6 +16,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceController do
     render(conn, "show.json")
   end
 
+  @doc "GET /api/v2/instance"
+  def show2(conn, _params) do
+    render(conn, "show2.json")
+  end
+
   @doc "GET /api/v1/instance/peers"
   def peers(conn, _params) do
     json(conn, Pleroma.Stats.get_peers())
