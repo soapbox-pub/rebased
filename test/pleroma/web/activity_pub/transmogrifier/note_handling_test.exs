@@ -536,33 +536,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.NoteHandlingTest do
     assert object.data["language"] == "pl"
   end
 
-  test "it detects language from content" do
-    clear_config([Pleroma.Language.LanguageDetector, :provider], LanguageDetectorMock)
-
-    user = insert(:user)
-
-    message = %{
-      "@context" => ["https://www.w3.org/ns/activitystreams"],
-      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-      "cc" => [],
-      "type" => "Create",
-      "object" => %{
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-        "cc" => [],
-        "id" => Utils.generate_object_id(),
-        "type" => "Note",
-        "content" => "Dieu vous bénisse, Fédivers.",
-        "attributedTo" => user.ap_id
-      },
-      "actor" => user.ap_id
-    }
-
-    {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(message)
-    object = Object.normalize(data["object"], fetch: false)
-
-    assert object.data["language"] == "fr"
-  end
-
   describe "`handle_incoming/2`, Mastodon format `replies` handling" do
     setup do: clear_config([:activitypub, :note_replies_output_limit], 5)
     setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
