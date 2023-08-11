@@ -494,20 +494,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       {:error, dgettext("errors", "Too many attachments")}
     end
   end
-
-  def is_good_locale_code?(code) when is_binary(code) do
-    code
-    |> String.codepoints()
-    |> Enum.all?(&valid_char?/1)
-  end
+  def is_good_locale_code?(code) when is_binary(code), do: code =~ ~r<[A-zA-Z0-9\-]+>
 
   def is_good_locale_code?(_code), do: false
-
-  # [a-zA-Z0-9-]
-  defp valid_char?(char) do
-    ("a" <= char and char <= "z") or
-      ("A" <= char and char <= "Z") or
-      ("0" <= char and char <= "9") or
-      char == "-"
-  end
 end
