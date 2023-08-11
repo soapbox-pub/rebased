@@ -13,12 +13,11 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   def render("show.json", _) do
     instance = Config.get(:instance)
 
-    %{
+    common_information(instance)
+    |> Map.merge(%{
       uri: Pleroma.Web.WebFinger.domain(),
-      title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
@@ -27,7 +26,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       thumbnail:
         URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
         |> to_string,
-      languages: Keyword.get(instance, :languages, ["en"]),
       registrations: Keyword.get(instance, :registrations_open),
       approval_required: Keyword.get(instance, :account_approval_required),
       configuration: configuration(),
@@ -43,16 +41,15 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       shout_limit: Config.get([:shout, :limit]),
       description_limit: Keyword.get(instance, :description_limit),
       pleroma: pleroma_configuration(instance)
-    }
+    })
   end
 
   def render("show2.json", _) do
     instance = Config.get(:instance)
 
-    %{
+    common_information(instance)
+    |> Map.merge(%{
       domain: Pleroma.Web.WebFinger.domain(),
-      title: Keyword.get(instance, :name),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       source_url: Pleroma.Application.repository(),
       description: Keyword.get(instance, :short_description),
       usage: %{users: %{active_month: Pleroma.User.active_user_count()}},
@@ -61,7 +58,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           URI.merge(Pleroma.Web.Endpoint.url(), Keyword.get(instance, :instance_thumbnail))
           |> to_string
       },
-      languages: Keyword.get(instance, :languages, ["en"]),
       configuration: configuration2(),
       registrations: %{
         enabled: Keyword.get(instance, :registrations_open),
@@ -74,6 +70,14 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       },
       # Extra (not present in Mastodon):
       pleroma: pleroma_configuration2(instance)
+    })
+  end
+
+  defp common_information(instance) do
+    %{
+      title: Keyword.get(instance, :name),
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
+      languages: Keyword.get(instance, :languages, ["en"])
     }
   end
 
