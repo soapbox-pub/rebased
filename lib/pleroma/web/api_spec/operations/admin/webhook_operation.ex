@@ -163,7 +163,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.WebhookOperation do
         "id" => "1",
         "url" => "https://example.com/webhook",
         "events" => ["report.created"],
-        "secret" => "D3D8CF4BC11FD9C41FD34DCC38D282E451C8BD34",
+        "secret" => "d3d8cf4bc11fd9c41fd34dcc38d282e451c8bd34",
         "enabled" => true,
         "created_at" => "2022-06-24T16:19:38.523Z",
         "updated_at" => "2022-06-24T16:19:38.523Z"
