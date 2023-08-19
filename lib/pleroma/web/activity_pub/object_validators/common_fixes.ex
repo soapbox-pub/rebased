@@ -13,6 +13,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
   require Pleroma.Constants
 
+  import Pleroma.Web.CommonAPI.Utils, only: [is_good_locale_code?: 1]
+
   def cast_and_filter_recipients(message, field, follower_collection, field_fallback \\ []) do
     {:ok, data} = ObjectValidators.Recipients.cast(message[field] || field_fallback)
 
@@ -125,4 +127,51 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   def object_link_tag?(_), do: false
+
+  def maybe_add_language(object, meta \\ []) do
+    language =
+      [
+        get_language_from_context(object),
+        get_language_from_context(Keyword.get(meta, :activity_data)),
+        get_language_from_content_map(object),
+        get_language_from_content(object)
+      ]
+      |> Enum.find(&is_good_locale_code?(&1))
+
+    if language do
+      Map.put(object, "language", language)
+    else
+      object
+    end
+  end
+
+  defp get_language_from_context(%{"@context" => context}) when is_list(context) do
+    case context
+         |> Enum.find(fn
+           %{"@language" => language} -> language != "und"
+           _ -> nil
+         end) do
+      %{"@language" => language} -> language
+      _ -> nil
+    end
+  end
+
+  defp get_language_from_context(_), do: nil
+
+  defp get_language_from_content_map(%{"contentMap" => content_map, "content" => source_content}) do
+    content_groups = Map.to_list(content_map)
+
+    case Enum.find(content_groups, fn {_, content} -> content == source_content end) do
+      {language, _} -> language
+      _ -> nil
+    end
+  end
+
+  defp get_language_from_content_map(_), do: nil
+
+  defp get_language_from_content(%{"content" => content}) do
+    LanguageDetector.detect(content)
+  end
+
+  defp get_language_from_content(_), do: nil
 end
