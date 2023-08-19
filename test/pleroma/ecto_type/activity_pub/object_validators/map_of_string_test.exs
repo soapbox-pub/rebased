@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfStringTest do
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString
   use Pleroma.DataCase, async: true
+
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString
 
   test "it validates" do
     data = %{
