@@ -28,21 +28,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     field(:replies, {:array, ObjectValidators.ObjectID}, default: [])
   end
 
-  def cast_and_apply(data) do
+  def cast_and_apply(data, meta \\ []) do
     data
-    |> cast_data
+    |> cast_data(meta)
     |> apply_action(:insert)
   end
 
-  def cast_and_validate(data) do
+  def cast_and_validate(data, meta \\ []) do
     data
-    |> cast_data()
+    |> cast_data(meta)
     |> validate_data()
   end
 
-  def cast_data(data) do
+  def cast_data(data, meta \\ []) do
     %__MODULE__{}
-    |> changeset(data)
+    |> changeset(data, meta)
   end
 
   defp fix_url(%{"url" => url} = data) when is_bitstring(url), do: data
@@ -76,7 +76,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
 
   def fix_attachments(data), do: data
 
-  defp fix(data) do
+  defp fix(data, meta) do
     data
     |> CommonFixes.fix_actor()
     |> CommonFixes.fix_object_defaults()
@@ -86,11 +86,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> fix_attachments()
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
-    |> Transmogrifier.maybe_add_language()
+    |> CommonFixes.maybe_add_language(meta)
   end
 
-  def changeset(struct, data) do
-    data = fix(data)
+  def changeset(struct, data, meta \\ []) do
+    data = fix(data, meta)
 
     struct
     |> cast(data, __schema__(:fields) -- [:attachment, :tag])

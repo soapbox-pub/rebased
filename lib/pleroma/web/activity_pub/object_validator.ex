@@ -103,7 +103,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
         meta
       )
       when objtype in ~w[Question Answer Audio Video Image Event Article Note Page] do
-    with {:ok, object_data} <- cast_and_apply_and_stringify_with_history(object),
+    with {:ok, object_data} <-
+           cast_and_apply_and_stringify_with_history(object, activity_data: create_activity),
          meta = Keyword.put(meta, :object_data, object_data),
          {:ok, create_activity} <-
            create_activity
@@ -213,40 +214,42 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def validate(o, m), do: {:error, {:validator_not_set, {o, m}}}
 
-  def cast_and_apply_and_stringify_with_history(object) do
+  def cast_and_apply_and_stringify_with_history(object, meta \\ []) do
     do_separate_with_history(object, fn object ->
-      with {:ok, object_data} <- cast_and_apply(object),
+      with {:ok, object_data} <- cast_and_apply(object, meta),
            object_data <- object_data |> stringify_keys() do
         {:ok, object_data}
       end
     end)
   end
 
-  def cast_and_apply(%{"type" => "ChatMessage"} = object) do
+  def cast_and_apply(object, meta \\ [])
+
+  def cast_and_apply(%{"type" => "ChatMessage"} = object, _) do
     ChatMessageValidator.cast_and_apply(object)
   end
 
-  def cast_and_apply(%{"type" => "Question"} = object) do
+  def cast_and_apply(%{"type" => "Question"} = object, _) do
     QuestionValidator.cast_and_apply(object)
   end
 
-  def cast_and_apply(%{"type" => "Answer"} = object) do
+  def cast_and_apply(%{"type" => "Answer"} = object, _) do
     AnswerValidator.cast_and_apply(object)
   end
 
-  def cast_and_apply(%{"type" => type} = object) when type in ~w[Audio Image Video] do
+  def cast_and_apply(%{"type" => type} = object, _) when type in ~w[Audio Image Video] do
     AudioImageVideoValidator.cast_and_apply(object)
   end
 
-  def cast_and_apply(%{"type" => "Event"} = object) do
-    EventValidator.cast_and_apply(object)
+  def cast_and_apply(%{"type" => "Event"} = object, meta) do
+    EventValidator.cast_and_apply(object, meta)
   end
 
-  def cast_and_apply(%{"type" => type} = object) when type in ~w[Article Note Page] do
-    ArticleNotePageValidator.cast_and_apply(object)
+  def cast_and_apply(%{"type" => type} = object, meta) when type in ~w[Article Note Page] do
+    ArticleNotePageValidator.cast_and_apply(object, meta)
   end
 
-  def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
+  def cast_and_apply(o, _), do: {:error, {:validator_not_set, o}}
 
   def stringify_keys(object) when is_struct(object) do
     object
