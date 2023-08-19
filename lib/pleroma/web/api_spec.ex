@@ -96,7 +96,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Report managment",
               "Status administration",
               "User administration",
-              "Announcement management"
+              "Announcement management",
+              "Webhooks"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
