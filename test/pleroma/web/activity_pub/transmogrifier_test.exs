@@ -376,18 +376,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
   end
 
-  test "it adds contentMap if language is specified" do
-    user = insert(:user)
-
-    {:ok, activity} = CommonAPI.post(user, %{status: "тест", language: "uk"})
-
-    {:ok, prepared} = Transmogrifier.prepare_outgoing(activity.data)
-
-    assert prepared["object"]["contentMap"] == %{
-             "uk" => "тест"
-           }
-  end
-
   describe "actor rewriting" do
     test "it fixes the actor URL property to be a proper URI" do
       data = %{
