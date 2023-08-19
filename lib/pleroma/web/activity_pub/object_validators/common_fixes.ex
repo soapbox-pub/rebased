@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   require Pleroma.Constants
 
   import Pleroma.Web.CommonAPI.Utils, only: [is_good_locale_code?: 1]
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   def cast_and_filter_recipients(message, field, follower_collection, field_fallback \\ []) do
     {:ok, data} = ObjectValidators.Recipients.cast(message[field] || field_fallback)
@@ -174,4 +175,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   end
 
   defp get_language_from_content(_), do: nil
+
+  def maybe_add_content_map(%{"language" => language, "content" => content} = object)
+       when not_empty_string(language) do
+    Map.put(object, "contentMap", Map.put(%{}, language, content))
+  end
+
+  def maybe_add_content_map(object), do: object
 end

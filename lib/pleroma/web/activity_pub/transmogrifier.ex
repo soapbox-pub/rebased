@@ -723,7 +723,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_emoji_tags
     |> add_attributed_to
-    |> maybe_add_content_map
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
@@ -998,11 +997,4 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
-
-  defp maybe_add_content_map(%{"language" => language, "content" => content} = object)
-       when not_empty_string(language) do
-    Map.put(object, "contentMap", Map.put(%{}, language, content))
-  end
-
-  defp maybe_add_content_map(object), do: object
 end

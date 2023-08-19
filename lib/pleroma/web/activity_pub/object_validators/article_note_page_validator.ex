@@ -110,6 +110,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidator do
     |> Transmogrifier.fix_emoji()
     |> Transmogrifier.fix_content_map()
     |> CommonFixes.maybe_add_language(meta)
+    |> CommonFixes.maybe_add_content_map()
   end
 
   def changeset(struct, data, meta \\ []) do
