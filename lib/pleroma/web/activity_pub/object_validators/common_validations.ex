@@ -136,11 +136,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
 
   # This figures out if a user is able to create, delete or modify something
   # based on the domain and superuser status
-  @spec validate_modification_rights(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  def validate_modification_rights(cng) do
+  @spec validate_modification_rights(Ecto.Changeset.t(), atom()) :: Ecto.Changeset.t()
+  def validate_modification_rights(cng, privilege) do
     actor = User.get_cached_by_ap_id(get_field(cng, :actor))
 
-    if User.superuser?(actor) || same_domain?(cng) do
+    if User.privileged?(actor, privilege) || same_domain?(cng) do
       cng
     else
       cng

@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
           pagination_params(),
       responses: %{
         200 =>
-          Operation.response("Account", "application/json", %Schema{
+          Operation.response("Report", "application/json", %Schema{
             title: "ArrayOfReports",
             type: :array,
             items: report()
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
         Operation.parameter(:id, :path, :string, "ID of the report")
       ],
       responses: %{
-        200 => Operation.response("Account", "application/json", report()),
+        200 => Operation.response("Report", "application/json", report()),
         401 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Error", "application/json", ApiError)
       }
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
         Operation.parameter(:id, :path, :string, "ID of the report")
       ],
       responses: %{
-        200 => Operation.response("Account", "application/json", report()),
+        200 => Operation.response("Report", "application/json", report()),
         400 => Operation.response("Error", "application/json", ApiError),
         401 => Operation.response("Error", "application/json", ApiError)
       }
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
         Operation.parameter(:id, :path, :string, "ID of the report")
       ],
       responses: %{
-        200 => Operation.response("Account", "application/json", report()),
+        200 => Operation.response("Report", "application/json", report()),
         400 => Operation.response("Error", "application/json", ApiError),
         401 => Operation.response("Error", "application/json", ApiError)
       }
@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
         Operation.parameter(:id, :path, :string, "ID of the report")
       ],
       responses: %{
-        200 => Operation.response("Account", "application/json", report()),
+        200 => Operation.response("Report", "application/json", report()),
         400 => Operation.response("Error", "application/json", ApiError),
         401 => Operation.response("Error", "application/json", ApiError)
       }
@@ -132,7 +132,7 @@ defmodule Pleroma.Web.ApiSpec.MastodonAdmin.ReportOperation do
         Operation.parameter(:id, :path, :string, "ID of the report")
       ],
       responses: %{
-        200 => Operation.response("Account", "application/json", report()),
+        200 => Operation.response("Report", "application/json", report()),
         400 => Operation.response("Error", "application/json", ApiError),
         401 => Operation.response("Error", "application/json", ApiError)
       }

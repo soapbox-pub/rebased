@@ -9,6 +9,18 @@ defmodule Pleroma.Workers.ReceiverWorker do
 
   @impl Oban.Worker
   def perform(%Job{args: %{"op" => "incoming_ap_doc", "params" => params}}) do
-    Federator.perform(:incoming_ap_doc, params)
+    with {:ok, res} <- Federator.perform(:incoming_ap_doc, params) do
+      {:ok, res}
+    else
+      {:error, :origin_containment_failed} -> {:cancel, :origin_containment_failed}
+      {:error, :already_present} -> {:cancel, :already_present}
+      {:error, {:validate_object, reason}} -> {:cancel, reason}
+      {:error, {:error, {:validate, reason}}} -> {:cancel, reason}
+      {:error, {:reject, reason}} -> {:cancel, reason}
+      e -> e
+    end
   end
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.seconds(5)
 end

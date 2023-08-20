@@ -9,8 +9,12 @@ defmodule Pleroma.Web.Endpoint do
 
   alias Pleroma.Config
 
-  socket("/socket", Pleroma.Web.UserSocket)
   socket("/live", Phoenix.LiveView.Socket)
+
+  plug(Unplug,
+    if: Pleroma.Web.Plugs.MetricsPredicate,
+    do: {PromEx.Plug, path: "/api/metrics", prom_ex_module: Pleroma.PromEx}
+  )
 
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 
@@ -101,13 +105,10 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.Logger, log: :debug)
 
   plug(Plug.Parsers,
-    parsers: [
-      :urlencoded,
-      {:multipart, length: {Config, :get, [[:instance, :upload_limit]]}},
-      :json
-    ],
+    parsers: [:urlencoded, Pleroma.Web.Multipart, :json],
     pass: ["*/*"],
     json_decoder: Jason,
+    # Note: this is compile-time only, won't work for database-config
     length: Config.get([:instance, :upload_limit]),
     body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
   )

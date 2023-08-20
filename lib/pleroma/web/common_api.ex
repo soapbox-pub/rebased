@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
+  alias Pleroma.ModerationLog
   alias Pleroma.Object
   alias Pleroma.Rule
   alias Pleroma.ThreadMute
@@ -143,12 +144,27 @@ defmodule Pleroma.Web.CommonAPI do
 
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(activity_id)},
+           {:find_activity, Activity.get_by_id(activity_id, filter: [])},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
-         true <- User.superuser?(user) || user.ap_id == object.data["actor"],
+         true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
+      if User.privileged?(user, :messages_delete) and user.ap_id != object.data["actor"] do
+        action =
+          if object.data["type"] == "ChatMessage" do
+            "chat_message_delete"
+          else
+            "status_delete"
+          end
+
+        ModerationLog.insert_log(%{
+          action: action,
+          actor: user,
+          subject_id: activity_id
+        })
+      end
+
       {:ok, delete}
     else
       {:find_activity, _} ->
@@ -306,6 +322,85 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def join(%User{} = user, event_id, params \\ %{}) do
+    participation_message = Map.get(params, :participation_message)
+
+    case join_helper(user, event_id, participation_message) do
+      {:ok, _} = res ->
+        res
+
+      {:error, :not_found} = res ->
+        res
+
+      {:error, e} ->
+        Logger.error("Could not join #{event_id}. Error: #{inspect(e, pretty: true)}")
+        {:error, dgettext("errors", "Could not join")}
+    end
+  end
+
+  defp join_helper(user, id, participation_message) do
+    with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
+         {_, {:ok, join_object, meta}} <-
+           {:build_object, Builder.join(user, object, participation_message)},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(join_object, Keyword.put(meta, :local, true))} do
+      {:ok, activity}
+    else
+      {:find_object, _} ->
+        {:error, :not_found}
+
+      {:common_pipeline, {:error, {:validate, {:error, changeset}}}} = e ->
+        if {:object, {"already joined by this actor", []}} in changeset.errors do
+          {:ok, :already_joined}
+        else
+          {:error, e}
+        end
+
+      e ->
+        {:error, e}
+    end
+  end
+
+  def leave(%User{ap_id: participant_ap_id} = user, event_id) do
+    with %Activity{data: %{"object" => event_ap_id}} <- Activity.get_by_id(event_id),
+         %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_ap_id),
+         {:ok, undo, _} <- Builder.undo(user, join_activity),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
+    else
+      nil ->
+        {:error, dgettext("errors", "Not participating in the event")}
+
+      _ ->
+        {:error, dgettext("errors", "Could not remove join activity")}
+    end
+  end
+
+  def accept_join_request(%User{} = user, %User{ap_id: participant_ap_id} = participant, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
+         {:ok, accept_data, _} <- Builder.accept(user, join_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true),
+         event <- Object.get_by_ap_id(event_id) do
+      if Object.local?(event) and event.data["joinMode"] != "free" and
+           join_activity.data["actor"] == event.data["actor"] do
+        Utils.update_participation_request_count_in_object(event)
+      end
+
+      {:ok, participant}
+    end
+  end
+
+  def reject_join_request(%User{} = user, %User{ap_id: participant_ap_id} = participant, event_id) do
+    with %Activity{} = join_activity <- Utils.get_existing_join(participant_ap_id, event_id),
+         {:ok, reject_data, _} <- Builder.reject(user, join_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(reject_data, local: true),
+         event <- Object.get_by_ap_id(event_id),
+         {:ok, _} <- Utils.update_participation_request_count_in_object(event) do
+      {:ok, participant}
+    end
+  end
+
   defp validate_not_author(%{data: %{"actor" => ap_id}}, %{ap_id: ap_id}),
     do: {:error, dgettext("errors", "Poll's author can't vote")}
 
@@ -404,6 +499,41 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def update(user, orig_activity, changes) do
+    with orig_object <- Object.normalize(orig_activity),
+         {:ok, new_object} <- make_update_data(user, orig_object, changes),
+         {:ok, update_data, _} <- Builder.update(user, new_object),
+         {:ok, update, _} <- Pipeline.common_pipeline(update_data, local: true) do
+      {:ok, update}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp make_update_data(user, orig_object, changes) do
+    kept_params = %{
+      visibility: Visibility.get_visibility(orig_object),
+      in_reply_to_id:
+        with replied_id when is_binary(replied_id) <- orig_object.data["inReplyTo"],
+             %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(replied_id) do
+          activity_id
+        else
+          _ -> nil
+        end
+    }
+
+    params = Map.merge(changes, kept_params)
+
+    with {:ok, draft} <- ActivityDraft.create(user, params) do
+      change =
+        Object.Updater.make_update_object_data(orig_object.data, draft.object, Utils.make_date())
+
+      {:ok, change}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
   @spec pin(String.t(), User.t()) :: {:ok, Activity.t()} | {:error, term()}
   def pin(id, %User{} = user) do
     with %Activity{} = activity <- create_activity_by_id(id),
@@ -489,7 +619,7 @@ defmodule Pleroma.Web.CommonAPI do
       remove_mute(user, activity)
     else
       {what, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "CommonAPI.remove_mute/2 failed. #{what}: #{result}, user_id: #{user_id}, activity_id: #{activity_id}"
         )
 
@@ -605,7 +735,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update_report_state(activity_id, state) do
-    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id, filter: []) do
       Utils.update_report_state(activity, state)
     else
       nil -> {:error, :not_found}
@@ -685,6 +815,47 @@ defmodule Pleroma.Web.CommonAPI do
 
       true ->
         nil
+    end
+  end
+
+  def event(user, data, location \\ nil) do
+    with {:ok, draft} <- ActivityDraft.event(user, data, location) do
+      ActivityPub.create(draft.changes)
+    end
+  end
+
+  def update_event(user, orig_activity, changes, location \\ nil) do
+    with orig_object <- Object.normalize(orig_activity),
+         {:ok, new_object} <- make_update_event_data(user, orig_object, changes, location),
+         {:ok, update_data, _} <- Builder.update(user, new_object),
+         {:ok, update, _} <- Pipeline.common_pipeline(update_data, local: true) do
+      {:ok, update}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp make_update_event_data(user, orig_object, changes, location) do
+    kept_params = %{
+      visibility: Visibility.get_visibility(orig_object),
+      in_reply_to_id:
+        with replied_id when is_binary(replied_id) <- orig_object.data["inReplyTo"],
+             %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(replied_id) do
+          activity_id
+        else
+          _ -> nil
+        end
+    }
+
+    params = Map.merge(changes, kept_params)
+
+    with {:ok, draft} <- ActivityDraft.event(user, params, location) do
+      change =
+        Object.Updater.make_update_object_data(orig_object.data, draft.object, Utils.make_date())
+
+      {:ok, change}
+    else
+      _ -> {:error, nil}
     end
   end
 end

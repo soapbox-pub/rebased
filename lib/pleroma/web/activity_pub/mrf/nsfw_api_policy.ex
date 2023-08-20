@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NsfwApiPolicy do
       Jason.decode(body)
     else
       error ->
-        Logger.warn("""
+        Logger.warning("""
         [NsfwApiPolicy]: The API server failed. Skipping.
         #{inspect(error)}
         """)

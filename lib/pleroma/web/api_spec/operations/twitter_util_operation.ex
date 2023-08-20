@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def emoji_operation do
     %Operation{
-      tags: ["Emojis"],
+      tags: ["Custom emojis"],
       summary: "List all custom emojis",
       operationId: "UtilController.emoji",
       parameters: [],
@@ -30,7 +30,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
               properties: %{
                 image_url: %Schema{type: :string},
                 tags: %Schema{type: :array, items: %Schema{type: :string}}
-              }
+              },
+              extensions: %{"x-additionalPropertiesName": "Emoji name"}
             },
             example: %{
               "firefox" => %{
@@ -45,7 +46,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def frontend_configurations_operation do
     %Operation{
-      tags: ["Configuration"],
+      tags: ["Others"],
       summary: "Dump frontend configurations",
       operationId: "UtilController.frontend_configurations",
       parameters: [],
@@ -53,7 +54,12 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
         200 =>
           Operation.response("List", "application/json", %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :object}
+            additionalProperties: %Schema{
+              type: :object,
+              description:
+                "Opaque object representing the instance-wide configuration for the frontend",
+              extensions: %{"x-additionalPropertiesName": "Frontend name"}
+            }
           })
       }
     }
@@ -132,7 +138,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def update_notificaton_settings_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Settings"],
       summary: "Update Notification Settings",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.update_notificaton_settings",
@@ -207,6 +213,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
     %Operation{
       summary: "Get a captcha",
       operationId: "UtilController.captcha",
+      tags: ["Others"],
       parameters: [],
       responses: %{
         200 => Operation.response("Success", "application/json", %Schema{type: :object})
@@ -229,7 +236,8 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
           }),
         400 => Operation.response("Error", "application/json", ApiError),
         403 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError)
+        404 => Operation.response("Error", "application/json", ApiError),
+        429 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -356,7 +364,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def healthcheck_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Others"],
       summary: "Quick status check on the instance",
       security: [%{"oAuth" => ["write:accounts"]}],
       operationId: "UtilController.healthcheck",
@@ -371,7 +379,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def remote_subscribe_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Remote interaction"],
       summary: "Remote Subscribe",
       operationId: "UtilController.remote_subscribe",
       parameters: [],
@@ -381,7 +389,7 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
 
   def remote_interaction_operation do
     %Operation{
-      tags: ["Accounts"],
+      tags: ["Remote interaction"],
       summary: "Remote interaction",
       operationId: "UtilController.remote_interaction",
       requestBody: request_body("Parameters", remote_interaction_request(), required: true),
@@ -402,6 +410,16 @@ defmodule Pleroma.Web.ApiSpec.TwitterUtilOperation do
         ap_id: %Schema{type: :string, description: "Profile or status ActivityPub ID"},
         profile: %Schema{type: :string, description: "Remote profile webfinger"}
       }
+    }
+  end
+
+  def show_subscribe_form_operation do
+    %Operation{
+      tags: ["Remote interaction"],
+      summary: "Show remote subscribe form",
+      operationId: "UtilController.show_subscribe_form",
+      parameters: [],
+      responses: %{200 => Operation.response("Web Page", "test/html", %Schema{type: :string})}
     }
   end
 

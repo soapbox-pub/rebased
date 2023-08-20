@@ -8,6 +8,7 @@ pidfile="/var/run/pleroma.pid"
 directory=/opt/pleroma
 healthcheck_delay=60
 healthcheck_timer=30
+no_new_privs="yes"
 
 : ${pleroma_port:-4000}
 

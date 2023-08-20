@@ -1,0 +1,13 @@
+{
+  "name": "Rebased",
+  "description": "Rebased, the recommended backend for Soapbox written in Elixir.",
+  "keywords": [
+    "fediverse"
+  ],
+  "website": "https://soapbox.pub",
+  "dokku": {
+    "plugins": [
+      "postgres"
+    ]
+  }
+}

@@ -17,13 +17,14 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI.ActivityDraft
+  alias Pleroma.Web.Endpoint
 
   require Pleroma.Constants
 
-  def accept_or_reject(actor, activity, type) do
+  def accept_or_reject(%User{ap_id: ap_id}, activity, type) do
     data = %{
       "id" => Utils.generate_activity_id(),
-      "actor" => actor.ap_id,
+      "actor" => ap_id,
       "type" => type,
       "object" => activity.data["id"],
       "to" => [activity.actor]
@@ -32,14 +33,26 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
-  @spec reject(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def reject(actor, rejected_activity) do
-    accept_or_reject(actor, rejected_activity, "Reject")
+  def accept_or_reject(%Object{data: %{"actor" => actor}}, activity, type) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => actor,
+      "type" => type,
+      "object" => activity.data["id"],
+      "to" => [activity.actor]
+    }
+
+    {:ok, data, []}
   end
 
-  @spec accept(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def accept(actor, accepted_activity) do
-    accept_or_reject(actor, accepted_activity, "Accept")
+  @spec reject(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def reject(object, rejected_activity) do
+    accept_or_reject(object, rejected_activity, "Reject")
+  end
+
+  @spec accept(User.t() | Object.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def accept(object, accepted_activity) do
+    accept_or_reject(object, accepted_activity, "Accept")
   end
 
   @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
@@ -53,6 +66,78 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     }
 
     {:ok, data, []}
+  end
+
+  defp unicode_emoji_react(_object, data, emoji) do
+    data
+    |> Map.put("content", emoji)
+    |> Map.put("type", "EmojiReact")
+  end
+
+  defp add_emoji_content(data, emoji, url) do
+    tag = [
+      %{
+        "id" => url,
+        "type" => "Emoji",
+        "name" => Emoji.maybe_quote(emoji),
+        "icon" => %{
+          "type" => "Image",
+          "url" => url
+        }
+      }
+    ]
+
+    data
+    |> Map.put("content", Emoji.maybe_quote(emoji))
+    |> Map.put("type", "EmojiReact")
+    |> Map.put("tag", tag)
+  end
+
+  defp remote_custom_emoji_react(
+         %{data: %{"reactions" => existing_reactions}},
+         data,
+         emoji
+       ) do
+    [emoji_code, instance] = String.split(Emoji.maybe_strip_name(emoji), "@")
+
+    matching_reaction =
+      Enum.find(
+        existing_reactions,
+        fn [name, _, url] ->
+          if url != nil do
+            url = URI.parse(url)
+            url.host == instance && name == emoji_code
+          end
+        end
+      )
+
+    if matching_reaction do
+      [name, _, url] = matching_reaction
+      add_emoji_content(data, name, url)
+    else
+      {:error, "Could not react"}
+    end
+  end
+
+  defp remote_custom_emoji_react(_object, _data, _emoji) do
+    {:error, "Could not react"}
+  end
+
+  defp local_custom_emoji_react(data, emoji) do
+    with %{file: path} = emojo <- Emoji.get(emoji) do
+      url = "#{Endpoint.url()}#{path}"
+      add_emoji_content(data, emojo.code, url)
+    else
+      _ -> {:error, "Emoji does not exist"}
+    end
+  end
+
+  defp custom_emoji_react(object, data, emoji) do
+    if String.contains?(emoji, "@") do
+      remote_custom_emoji_react(object, data, emoji)
+    else
+      local_custom_emoji_react(data, emoji)
+    end
   end
 
   @spec follow(User.t(), Object.t()) :: {:ok, map(), keyword()}
@@ -72,9 +157,11 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
       data =
-        data
-        |> Map.put("content", emoji)
-        |> Map.put("type", "EmojiReact")
+        if Emoji.is_unicode_emoji?(emoji) do
+          unicode_emoji_react(object, data, emoji)
+        else
+          custom_emoji_react(object, data, emoji)
+        end
 
       {:ok, data, meta}
     end
@@ -243,10 +330,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
-  # Retricted to user updates for now, always public
   @spec update(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def update(actor, object) do
-    to = [Pleroma.Constants.as_public(), actor.follower_address]
+    {to, cc, bcc} =
+      if object["type"] in Pleroma.Constants.actor_types() do
+        # User updates, always public
+        {[Pleroma.Constants.as_public(), actor.follower_address], [], []}
+      else
+        # Status updates, follow the recipients in the object
+        {object["to"] || [], object["cc"] || [], object["participations"] || []}
+      end
 
     {:ok,
      %{
@@ -254,7 +347,9 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "type" => "Update",
        "actor" => actor.ap_id,
        "object" => object,
-       "to" => to
+       "to" => to,
+       "cc" => cc,
+       "bcc" => bcc
      }, []}
   end
 
@@ -361,5 +456,39 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   defp pinned_url(nickname) when is_binary(nickname) do
     Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname)
+  end
+
+  def join(actor, object, participation_message \\ nil) do
+    with {:ok, data, meta} <- object_action(actor, object) do
+      data =
+        data
+        |> Map.put("type", "Join")
+        |> Map.put("participationMessage", participation_message)
+
+      {:ok, data, meta}
+    end
+  end
+
+  @spec event(ActivityDraft.t()) :: {:ok, map(), keyword()}
+  def event(%ActivityDraft{} = draft) do
+    data = %{
+      "type" => "Event",
+      "to" => draft.to,
+      "cc" => draft.cc,
+      "name" => draft.params[:name],
+      "content" => draft.content_html,
+      "context" => draft.context,
+      "attachment" => draft.attachments,
+      "actor" => draft.user.ap_id,
+      "tag" => Keyword.values(draft.tags) |> Enum.uniq(),
+      "joinMode" => draft.params[:join_mode] || "free",
+      "location" => draft.location,
+      "location_id" => draft.location_id,
+      "location_provider" => draft.location_provider,
+      "startTime" => draft.start_time,
+      "endTime" => draft.end_time
+    }
+
+    {:ok, data, []}
   end
 end

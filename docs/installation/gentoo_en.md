@@ -1,6 +1,8 @@
-# Installing on Gentoo GNU/Linux
+# Manual install on Gentoo GNU/Linux
 
-{! backend/installation/otp_vs_from_source_source.include !}
+{! backend/installation/otp_vs_from_source.include !}
+
+This guide covers a manual from-source installation. To use the gentoo package, please check the [packaged installation guide for gentoo](./gentoo_otp_en.md).
 
 ## Installation
 
@@ -226,6 +228,10 @@ If you are using any additional subdomains, such as for a media proxy, you can r
 Replace all instances of `example.tld` with your instance's public URL. If for whatever reason you made changes to the port that your pleroma app runs on, be sure that is reflected in your configuration.
 
 Pay special attention to the line that begins with `ssl_ecdh_curve`. It is stongly advised to comment that line out so that OpenSSL will use its full capabilities, and it is also possible you are running OpenSSL 1.0.2 necessitating that you do this.
+
+* (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
 
 * Enable and start nginx:
 

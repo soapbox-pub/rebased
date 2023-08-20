@@ -8,6 +8,7 @@ defmodule Pleroma.User do
   import Ecto.Changeset
   import Ecto.Query
   import Ecto, only: [assoc: 2]
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   alias Ecto.Multi
   alias Pleroma.Activity
@@ -36,6 +37,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.RelMe
+  alias Pleroma.Webhook.Notify
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -124,7 +126,6 @@ defmodule Pleroma.User do
     field(:domain_blocks, {:array, :string}, default: [])
     field(:is_active, :boolean, default: true)
     field(:no_rich_text, :boolean, default: false)
-    field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
@@ -158,6 +159,8 @@ defmodule Pleroma.User do
     field(:birthday, :date)
     field(:show_birthday, :boolean, default: false)
     field(:location, :string)
+    field(:language, :string)
+    field(:last_move_at, :naive_datetime)
 
     embeds_one(
       :notification_settings,
@@ -327,7 +330,7 @@ defmodule Pleroma.User do
   end
 
   def visible_for(%User{} = user, for_user) do
-    if superuser?(for_user) do
+    if privileged?(for_user, :users_manage_activation_state) do
       :visible
     else
       visible_account_status(user)
@@ -354,10 +357,45 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec superuser?(User.t()) :: boolean()
-  def superuser?(%User{local: true, is_admin: true}), do: true
-  def superuser?(%User{local: true, is_moderator: true}), do: true
-  def superuser?(_), do: false
+  @spec privileged?(User.t(), atom()) :: boolean()
+  def privileged?(%User{is_admin: false, is_moderator: false}, _), do: false
+
+  def privileged?(
+        %User{local: true, is_admin: is_admin, is_moderator: is_moderator},
+        privilege_tag
+      ),
+      do:
+        privileged_for?(privilege_tag, is_admin, :admin_privileges) or
+          privileged_for?(privilege_tag, is_moderator, :moderator_privileges)
+
+  def privileged?(_, _), do: false
+
+  defp privileged_for?(privilege_tag, true, config_role_key),
+    do: privilege_tag in Config.get([:instance, config_role_key])
+
+  defp privileged_for?(_, _, _), do: false
+
+  @spec privileges(User.t()) :: [atom()]
+  def privileges(%User{local: false}) do
+    []
+  end
+
+  def privileges(%User{is_moderator: false, is_admin: false}) do
+    []
+  end
+
+  def privileges(%User{local: true, is_moderator: true, is_admin: true}) do
+    (Config.get([:instance, :moderator_privileges]) ++ Config.get([:instance, :admin_privileges]))
+    |> Enum.uniq()
+  end
+
+  def privileges(%User{local: true, is_moderator: true, is_admin: false}) do
+    Config.get([:instance, :moderator_privileges])
+  end
+
+  def privileges(%User{local: true, is_moderator: false, is_admin: true}) do
+    Config.get([:instance, :admin_privileges])
+  end
 
   @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
@@ -455,7 +493,6 @@ defmodule Pleroma.User do
         :nickname,
         :public_key,
         :avatar,
-        :ap_enabled,
         :banner,
         :is_locked,
         :last_refreshed_at,
@@ -557,7 +594,7 @@ defmodule Pleroma.User do
     |> validate_inclusion(:actor_type, ["Person", "Service"])
     |> put_fields()
     |> put_emoji()
-    |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
+    |> put_change_if_present(:bio, &{:ok, parse_bio(&1)})
     |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
     |> put_change_if_present(:banner, &put_upload(&1, :banner))
     |> put_change_if_present(:background, &put_upload(&1, :background))
@@ -570,9 +607,23 @@ defmodule Pleroma.User do
 
   defp put_fields(changeset) do
     if raw_fields = get_change(changeset, :raw_fields) do
+      old_fields = changeset.data.raw_fields
+
       raw_fields =
         raw_fields
         |> Enum.filter(fn %{"name" => n} -> n != "" end)
+        |> Enum.map(fn field ->
+          previous =
+            old_fields
+            |> Enum.find(fn %{"value" => value} -> field["value"] == value end)
+
+          if previous && Map.has_key?(previous, "verified_at") do
+            field
+            |> Map.put("verified_at", previous["verified_at"])
+          else
+            field
+          end
+        end)
 
       fields =
         raw_fields
@@ -619,7 +670,13 @@ defmodule Pleroma.User do
          {:ok, new_value} <- value_function.(value) do
       put_change(changeset, map_field, new_value)
     else
-      _ -> changeset
+      {:error, :file_too_large} ->
+        Ecto.Changeset.validate_change(changeset, map_field, fn map_field, _value ->
+          [{map_field, "file is too large"}]
+        end)
+
+      _ ->
+        changeset
     end
   end
 
@@ -715,11 +772,12 @@ defmodule Pleroma.User do
     ])
     |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> put_ap_id()
     |> unique_constraint(:ap_id)
     |> put_following_and_follower_and_featured_address()
+    |> put_private_key()
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
@@ -757,23 +815,16 @@ defmodule Pleroma.User do
       :accepts_chat_messages,
       :registration_reason,
       :accepts_email_list,
-      :birthday
+      :birthday,
+      :language
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
-    |> validate_change(:email, fn :email, email ->
-      valid? =
-        Config.get([User, :email_blacklist])
-        |> Enum.all?(fn blacklisted_domain ->
-          !String.ends_with?(email, ["@" <> blacklisted_domain, "." <> blacklisted_domain])
-        end)
-
-      if valid?, do: [], else: [email: "Invalid email"]
-    end)
+    |> validate_email_not_in_blacklisted_domain(:email)
     |> unique_constraint(:nickname)
-    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
@@ -785,6 +836,36 @@ defmodule Pleroma.User do
     |> put_ap_id()
     |> unique_constraint(:ap_id)
     |> put_following_and_follower_and_featured_address()
+    |> put_private_key()
+  end
+
+  def validate_not_restricted_nickname(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      valid? =
+        Config.get([User, :restricted_nicknames])
+        |> Enum.all?(fn restricted_nickname ->
+          String.downcase(value) != String.downcase(restricted_nickname)
+        end)
+
+      if valid?, do: [], else: [nickname: "Invalid nickname"]
+    end)
+  end
+
+  def validate_email_not_in_blacklisted_domain(changeset, field) do
+    validate_change(changeset, field, fn _, value ->
+      valid? =
+        Config.get([User, :email_blacklist])
+        |> Enum.all?(fn blacklisted_domain ->
+          blacklisted_domain_downcase = String.downcase(blacklisted_domain)
+
+          !String.ends_with?(String.downcase(value), [
+            "@" <> blacklisted_domain_downcase,
+            "." <> blacklisted_domain_downcase
+          ])
+        end)
+
+      if valid?, do: [], else: [email: "Invalid email"]
+    end)
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
@@ -834,6 +915,11 @@ defmodule Pleroma.User do
     |> put_change(:featured_address, featured)
   end
 
+  defp put_private_key(changeset) do
+    {:ok, pem} = Keys.generate_rsa_pem()
+    put_change(changeset, :keys, pem)
+  end
+
   defp autofollow_users(user) do
     candidates = Config.get([:instance, :autofollowed_nicknames])
 
@@ -857,6 +943,7 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
+      Notify.trigger_webhooks(user, :"account.created")
       post_register_action(user)
     end
   end
@@ -886,12 +973,16 @@ defmodule Pleroma.User do
     end
   end
 
-  defp send_user_approval_email(user) do
+  defp send_user_approval_email(%User{email: email} = user) when is_binary(email) do
     user
     |> Pleroma.Emails.UserEmail.approval_pending_email()
     |> Pleroma.Emails.Mailer.deliver_async()
 
     {:ok, :enqueued}
+  end
+
+  defp send_user_approval_email(_user) do
+    {:ok, :skipped}
   end
 
   defp send_admin_approval_emails(user) do
@@ -997,11 +1088,7 @@ defmodule Pleroma.User do
   end
 
   def maybe_direct_follow(%User{} = follower, %User{} = followed) do
-    if not ap_enabled?(followed) do
-      follow(follower, followed)
-    else
-      {:ok, follower, followed}
-    end
+    {:ok, follower, followed}
   end
 
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
@@ -1140,6 +1227,10 @@ defmodule Pleroma.User do
 
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
+      if get_change(changeset, :raw_fields) do
+        BackgroundWorker.enqueue("verify_fields_links", %{"user_id" => user.id})
+      end
+
       set_cache(user)
     end
   end
@@ -1325,6 +1416,40 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  @spec get_familiar_followers_query(User.t(), User.t(), pos_integer() | nil) :: Ecto.Query.t()
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user, nil) do
+    friends =
+      get_friends_query(current_user)
+      |> where([u], not u.hide_follows)
+      |> select([u], u.id)
+
+    User.Query.build(%{is_active: true})
+    |> where([u], u.id not in ^[user.id, current_user.id])
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :followers_relationships,
+      on: r.following_id == ^user.id and r.follower_id == u.id
+    )
+    |> where([followers_relationships: r], r.state == ^:follow_accept)
+    |> where([followers_relationships: r], r.follower_id in subquery(friends))
+  end
+
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user, page) do
+    user
+    |> get_familiar_followers_query(current_user, nil)
+    |> User.Query.paginate(page, 20)
+  end
+
+  @spec get_familiar_followers_query(User.t(), User.t()) :: Ecto.Query.t()
+  def get_familiar_followers_query(%User{} = user, %User{} = current_user),
+    do: get_familiar_followers_query(user, current_user, nil)
+
+  @spec get_familiar_followers(User.t(), User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
+  def get_familiar_followers(%User{} = user, %User{} = current_user, page \\ nil) do
+    user
+    |> get_familiar_followers_query(current_user, page)
+    |> Repo.all()
+  end
+
   def increase_note_count(%User{} = user) do
     User
     |> where(id: ^user.id)
@@ -1454,17 +1579,30 @@ defmodule Pleroma.User do
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
   def mute(%User{} = muter, %User{} = mutee, params \\ %{}) do
     notifications? = Map.get(params, :notifications, true)
-    expires_in = Map.get(params, :expires_in, 0)
+    duration = Map.get(params, :duration, 0)
 
-    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee),
+    expires_at =
+      if duration > 0 do
+        DateTime.utc_now()
+        |> DateTime.add(duration)
+      else
+        nil
+      end
+
+    with {:ok, user_mute} <- UserRelationship.create_mute(muter, mutee, expires_at),
          {:ok, user_notification_mute} <-
-           (notifications? && UserRelationship.create_notification_mute(muter, mutee)) ||
+           (notifications? &&
+              UserRelationship.create_notification_mute(
+                muter,
+                mutee,
+                expires_at
+              )) ||
              {:ok, nil} do
-      if expires_in > 0 do
+      if duration > 0 do
         Pleroma.Workers.MuteExpireWorker.enqueue(
           "unmute_user",
           %{"muter_id" => muter.id, "mutee_id" => mutee.id},
-          schedule_in: expires_in
+          scheduled_at: expires_at
         )
       end
 
@@ -1489,7 +1627,7 @@ defmodule Pleroma.User do
       unmute(muter, mutee)
     else
       {who, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "User.unmute/2 failed. #{who}: #{result}, muter_id: #{muter_id}, mutee_id: #{mutee_id}"
         )
 
@@ -1535,11 +1673,17 @@ defmodule Pleroma.User do
         blocker
       end
 
-    # clear any requested follows as well
+    # clear any requested follows from both sides as well
     blocked =
       case CommonAPI.reject_follow_request(blocked, blocker) do
         {:ok, %User{} = updated_blocked} -> updated_blocked
         nil -> blocked
+      end
+
+    blocker =
+      case CommonAPI.reject_follow_request(blocker, blocked) do
+        {:ok, %User{} = updated_blocker} -> updated_blocker
+        nil -> blocker
       end
 
     unsubscribe(blocked, blocker)
@@ -1821,7 +1965,6 @@ defmodule Pleroma.User do
       confirmation_token: nil,
       domain_blocks: [],
       is_active: false,
-      ap_enabled: false,
       is_moderator: false,
       is_admin: false,
       mascot: nil,
@@ -1901,7 +2044,46 @@ defmodule Pleroma.User do
     maybe_delete_from_db(user)
   end
 
+  def perform(:verify_fields_links, user) do
+    profile_urls = [user.ap_id, "#{Endpoint.url()}/@#{user.nickname}"]
+
+    fields =
+      user.raw_fields
+      |> Enum.map(&verify_field_link(&1, profile_urls))
+
+    changeset =
+      user
+      |> update_changeset(%{raw_fields: fields})
+
+    with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
+      set_cache(user)
+    end
+  end
+
   def perform(:set_activation_async, user, status), do: set_activation(user, status)
+
+  defp verify_field_link(field, profile_urls) do
+    verified_at =
+      with %{"value" => value} <- field,
+           {:verified_at, nil} <- {:verified_at, Map.get(field, "verified_at")},
+           %{scheme: scheme, userinfo: nil, host: host}
+           when not_empty_string(host) and scheme in ["http", "https"] <-
+             URI.parse(value),
+           {:not_idn, true} <- {:not_idn, to_string(:idna.encode(host)) == host},
+           attr <- Pleroma.Web.RelMe.maybe_put_rel_me(value, profile_urls) do
+        if attr == "me" do
+          CommonUtils.to_masto_date(NaiveDateTime.utc_now())
+        end
+      else
+        {:verified_at, value} when not_empty_string(value) ->
+          value
+
+        _ ->
+          nil
+      end
+
+    Map.put(field, "verified_at", verified_at)
+  end
 
   @spec external_users_query() :: Ecto.Query.t()
   def external_users_query do
@@ -2048,6 +2230,7 @@ defmodule Pleroma.User do
       follower_address: uri <> "/followers"
     }
     |> change
+    |> put_private_key()
     |> unique_constraint(:nickname)
     |> Repo.insert()
     |> set_cache()
@@ -2074,13 +2257,10 @@ defmodule Pleroma.User do
     end
   end
 
-  def ap_enabled?(%User{local: true}), do: true
-  def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
-  def ap_enabled?(_), do: false
-
   @doc "Gets or fetch a user by uri or nickname."
   @spec get_or_fetch(String.t()) :: {:ok, User.t()} | {:error, String.t()}
-  def get_or_fetch("http" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
+  def get_or_fetch("http://" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
+  def get_or_fetch("https://" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
   def get_or_fetch(nickname), do: get_or_fetch_by_nickname(nickname)
 
   # wait a period of time and return newest version of the User structs
@@ -2185,7 +2365,7 @@ defmodule Pleroma.User do
     if String.contains?(user.nickname, "@") do
       user.nickname
     else
-      %{host: host} = URI.parse(user.ap_id)
+      host = Pleroma.Web.WebFinger.domain()
       user.nickname <> "@" <> host
     end
   end
@@ -2206,6 +2386,11 @@ defmodule Pleroma.User do
   def all_superusers do
     User.Query.build(%{super_users: true, local: true, is_active: true})
     |> Repo.all()
+  end
+
+  @spec all_users_with_privilege(atom()) :: [User.t()]
+  def all_users_with_privilege(privilege) do
+    User.Query.build(%{is_privileged: privilege}) |> Repo.all()
   end
 
   def muting_reblogs?(%User{} = user, %User{} = target) do
@@ -2311,17 +2496,6 @@ defmodule Pleroma.User do
         "mime_type" => mascot[:mime_type]
       }
     }
-  end
-
-  def ensure_keys_present(%{keys: keys} = user) when not is_nil(keys), do: {:ok, user}
-
-  def ensure_keys_present(%User{} = user) do
-    with {:ok, pem} <- Keys.generate_rsa_pem() do
-      user
-      |> cast(%{keys: pem}, [:keys])
-      |> validate_required([:keys])
-      |> update_and_set_cache()
-    end
   end
 
   def get_ap_ids_by_nicknames(nicknames) do
@@ -2598,10 +2772,11 @@ defmodule Pleroma.User do
   # - display name
   def sanitize_html(%User{} = user, filter) do
     fields =
-      Enum.map(user.fields, fn %{"name" => name, "value" => value} ->
+      Enum.map(user.fields, fn %{"name" => name, "value" => value} = field ->
         %{
           "name" => name,
-          "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+          "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly),
+          "verified_at" => Map.get(field, "verified_at")
         }
       end)
 
@@ -2648,5 +2823,11 @@ defmodule Pleroma.User do
       birthday_day: day,
       birthday_month: month
     })
+  end
+
+  def update_last_move_at(%__MODULE__{local: true} = user) do
+    user
+    |> cast(%{last_move_at: NaiveDateTime.utc_now()}, [:last_move_at])
+    |> update_and_set_cache()
   end
 end

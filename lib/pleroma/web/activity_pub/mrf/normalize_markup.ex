@@ -9,7 +9,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
   @behaviour Pleroma.Web.ActivityPub.MRF.Policy
 
   @impl true
-  def filter(%{"type" => "Create", "object" => child_object} = object) do
+  def history_awareness, do: :auto
+
+  @impl true
+  def filter(%{"type" => type, "object" => child_object} = object)
+      when type in ["Create", "Update"] do
     scrub_policy = Pleroma.Config.get([:mrf_normalize_markup, :scrub_policy])
 
     content =

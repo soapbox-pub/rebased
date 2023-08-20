@@ -38,9 +38,9 @@ defmodule Pleroma.Upload.Filter do
       {:ok, :noop} ->
         filter(rest, upload)
 
-      error ->
-        Logger.error("#{__MODULE__}: Filter #{filter} failed: #{inspect(error)}")
-        error
+      {:error, e} ->
+        Logger.error("#{__MODULE__}: Filter #{filter} failed: #{inspect(e)}")
+        {:error, e}
     end
   end
 end

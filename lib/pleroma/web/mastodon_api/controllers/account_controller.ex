@@ -32,14 +32,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
-  plug(:skip_auth when action in [:create, :lookup])
+  plug(:skip_auth when action in [:create])
 
   plug(:skip_public_check when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action in [:show, :followers, :following]
+    when action in [:show, :followers, :following, :lookup]
   )
 
   plug(
@@ -72,7 +72,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     %{scopes: ["follow", "write:blocks"]} when action in [:block, :unblock]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:follows"]} when action in [:relationships, :familiar_followers]
+  )
 
   plug(
     OAuthScopesPlug,
@@ -157,13 +160,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/accounts/verify_credentials"
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
-    chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
-
     render(conn, "show.json",
       user: user,
       for: user,
-      with_pleroma_settings: true,
-      with_chat_token: chat_token
+      with_pleroma_settings: true
     )
   end
 
@@ -225,6 +225,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:is_discoverable, params[:discoverable])
       |> Maps.put_if_present(:birthday, params[:birthday])
       |> Maps.put_if_present(:location, params[:location])
+      |> Maps.put_if_present(:language, Pleroma.Web.Gettext.normalize_locale(params[:language]))
 
     # What happens here:
     #
@@ -255,13 +256,37 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         with_pleroma_settings: true
       )
     else
-      _e -> render_error(conn, :forbidden, "Invalid request")
+      {:error, %Ecto.Changeset{errors: [avatar: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [banner: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [background: {"file is too large", _}]}} ->
+        render_error(conn, :request_entity_too_large, "File is too large")
+
+      {:error, %Ecto.Changeset{errors: [{:bio, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Bio is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:name, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Name is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:fields, {"invalid", _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "One or more field entries are too long")
+
+      {:error, %Ecto.Changeset{errors: [{:fields, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Too many field entries")
+
+      _e ->
+        render_error(conn, :forbidden, "Invalid request")
     end
   end
 
   defp normalize_fields_attributes(fields) do
     if Enum.all?(fields, &is_tuple/1) do
-      Enum.map(fields, fn {_, v} -> v end)
+      Enum.map(fields, fn {_, %{} = field} ->
+        %{"name" => field.name, "value" => field.value}
+      end)
     else
       Enum.map(fields, fn
         %{} = field -> %{"name" => field.name, "value" => field.value}
@@ -414,6 +439,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/mute"
   def mute(%{assigns: %{user: muter, account: muted}, body_params: params} = conn, _params) do
+    params =
+      params
+      |> Map.put_new(:duration, Map.get(params, :expires_in, 0))
+
     with {:ok, _user_relationships} <- User.mute(muter, muted, params) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
@@ -483,7 +512,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   def remove_from_followers(%{assigns: %{user: followed, account: follower}} = conn, _params) do
     with {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
-      render(conn, "relationship.json", user: follower, target: followed)
+      render(conn, "relationship.json", user: followed, target: follower)
     else
       nil ->
         render_error(conn, :not_found, "Record not found")
@@ -508,7 +537,25 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     users =
       user
       |> User.muted_users_relation(_restrict_deactivated = true)
-      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
+      |> Pleroma.Pagination.fetch_paginated(params)
+
+    conn
+    |> add_link_headers(users)
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params),
+      mutes: true
+    )
+  end
+
+  @doc "GET /api/v1/blocks"
+  def blocks(%{assigns: %{user: user}} = conn, params) do
+    users =
+      user
+      |> User.blocked_users_relation(_restrict_deactivated = true)
+      |> Pleroma.Pagination.fetch_paginated(params)
 
     conn
     |> add_link_headers(users)
@@ -520,21 +567,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     )
   end
 
-  @doc "GET /api/v1/blocks"
-  def blocks(%{assigns: %{user: user}} = conn, params) do
-    users =
-      user
-      |> User.blocked_users_relation(_restrict_deactivated = true)
-      |> Pleroma.Pagination.fetch_paginated(Map.put(params, :skip_order, true))
-
-    conn
-    |> add_link_headers(users)
-    |> render("index.json", users: users, for: user, as: :user)
-  end
-
   @doc "GET /api/v1/accounts/lookup"
-  def lookup(conn, %{acct: nickname} = _params) do
-    with %User{} = user <- User.get_by_nickname(nickname) do
+  def lookup(%{assigns: %{user: for_user}} = conn, %{acct: nickname} = _params) do
+    with %User{} = user <- User.get_by_nickname(nickname),
+         :visible <- User.visible_for(user, for_user) do
       render(conn, "show.json",
         user: user,
         skip_visibility_check: true
@@ -558,6 +594,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       as: :user,
       embed_relationships: embed_relationships?(params)
     )
+  end
+
+  @doc "GET /api/v1/accounts/familiar_followers"
+  def familiar_followers(%{assigns: %{user: user}} = conn, %{id: id}) do
+    users =
+      User.get_all_by_ids(List.wrap(id))
+      |> Enum.map(&%{id: &1.id, accounts: get_familiar_followers(&1, user)})
+
+    conn
+    |> render("familiar_followers.json",
+      for: user,
+      users: users,
+      as: :user
+    )
+  end
+
+  defp get_familiar_followers(%{id: id} = user, %{id: id}) do
+    User.get_familiar_followers(user, user)
+  end
+
+  defp get_familiar_followers(%{hide_followers: true}, _current_user) do
+    []
+  end
+
+  defp get_familiar_followers(user, current_user) do
+    User.get_familiar_followers(user, current_user)
   end
 
   @doc "GET /api/v1/identity_proofs"

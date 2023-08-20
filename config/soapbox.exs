@@ -6,15 +6,12 @@ import Config
 # Twitter-like block behavior
 config :pleroma, :activitypub, blockers_visible: false
 
-# Set the default frontend to an instructions page
-config :pleroma, :frontends, primary: %{"name" => "landing-fe", "ref" => "vendor"}
-
 # Sane default upload filters
 config :pleroma, Pleroma.Upload,
   filters: [
     Pleroma.Upload.Filter.AnalyzeMetadata,
     Pleroma.Upload.Filter.Dedupe,
-    Pleroma.Upload.Filter.Exiftool
+    Pleroma.Upload.Filter.Exiftool.StripLocation
   ]
 
 # Default MRF policies
@@ -37,6 +34,9 @@ config :pleroma, Pleroma.Repo,
 # Allow privileged staff
 config :pleroma, :instance, privileged_staff: true
 
+# Enable instance favicons
+config :pleroma, :instances_favicons, enabled: true
+
 # Hellthread limits
 config :pleroma, :mrf_hellthread,
   delist_threshold: 15,
@@ -50,3 +50,9 @@ config :pleroma, :instance,
   name: "Soapbox",
   description: "Social media owned by you",
   instance_thumbnail: "/instance/thumbnail.png"
+
+# Background migration performance
+config :pleroma, :delete_context_objects, sleep_interval_ms: 3_000
+
+# Pretend to be WhatsApp because some sites don't return link previews otherwise
+config :pleroma, :rich_media, user_agent: "WhatsApp/2"

@@ -9,7 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.BackupController do
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
-  plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action in [:index, :create])
+  plug(OAuthScopesPlug, %{scopes: ["read:backups"]} when action in [:index, :create])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaBackupOperation

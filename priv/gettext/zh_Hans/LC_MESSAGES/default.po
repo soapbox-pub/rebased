@@ -1,0 +1,193 @@
+## "msgid"s in this file come from POT (.pot) files.
+##
+## Do not add, change, or remove "msgid"s manually here as
+## they're tied to the ones in the corresponding POT file
+## (with the same domain).
+##
+## Use "mix gettext.extract --merge" or "mix gettext.merge"
+## to merge POT files into PO files.
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2022-07-22 19:00+0000\n"
+"Last-Translator: Yating Zhan <thestrandedvalley@protonmail.com>\n"
+"Language-Team: Chinese (Simplified) <http://weblate.pleroma-dev.ebin.club/"
+"projects/pleroma/pleroma-backend-domain-default/zh_Hans/>\n"
+"Language: zh_Hans\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.13.1\n"
+
+#: lib/pleroma/web/api_spec/render_error.ex:122
+#, elixir-format
+msgid "%{name} - %{count} is not a multiple of %{multiple}."
+msgstr "%{name} - %{count} 不是 %{multiple} 的倍数。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:131
+#, elixir-format
+msgid "%{name} - %{value} is larger than exclusive maximum %{max}."
+msgstr "%{name} - %{value} 大于排除性最大值 %{max}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:140
+#, elixir-format
+msgid "%{name} - %{value} is larger than inclusive maximum %{max}."
+msgstr "%{name} - %{value} 大于包括性最大值 %{max}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:149
+#, elixir-format
+msgid "%{name} - %{value} is smaller than exclusive minimum %{min}."
+msgstr "%{name} - %{value} 小于排除性最小值 %{min}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:158
+#, elixir-format
+msgid "%{name} - %{value} is smaller than inclusive minimum %{min}."
+msgstr "%{name} - %{value} 小于包括性最小值 %{min}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:102
+#, elixir-format
+msgid "%{name} - Array items must be unique."
+msgstr "%{name} - 数组项目必须唯一。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:114
+#, elixir-format
+msgid "%{name} - Array length %{length} is larger than maxItems: %{}."
+msgstr "%{name} - 数组长度 %{length} 大于最大项目数： %{}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:106
+#, elixir-format
+msgid "%{name} - Array length %{length} is smaller than minItems: %{min}."
+msgstr "%{name} - 数组长度 %{length} 小于最小项目数： %{min}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:166
+#, elixir-format
+msgid "%{name} - Invalid %{type}. Got: %{value}."
+msgstr "%{name} - 不合法的 %{type}。得到的是：%{value}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:174
+#, elixir-format
+msgid "%{name} - Invalid format. Expected %{format}."
+msgstr "%{name} - 不合法的格式。预期是 %{format}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:51
+#, elixir-format
+msgid "%{name} - Invalid schema.type. Got: %{type}."
+msgstr "%{name} - 不合法的 schema.type。得到的是：%{type}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:178
+#, elixir-format
+msgid "%{name} - Invalid value for enum."
+msgstr "%{name} - 枚举值不合法。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:95
+#, elixir-format
+msgid "%{name} - String length is larger than maxLength: %{length}."
+msgstr "%{name} - 字串长度大于最大长度：%{length}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:88
+#, elixir-format
+msgid "%{name} - String length is smaller than minLength: %{length}."
+msgstr "%{name} - 字串长度小于最小长度：%{length}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:63
+#, elixir-format
+msgid "%{name} - null value where %{type} expected."
+msgstr "%{name} - null 值，但是预期该是 %{type}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:60
+#, elixir-format
+msgid "%{name} - null value."
+msgstr "%{name} - null 值。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:182
+#, elixir-format
+msgid "Failed to cast to any schema in %{polymorphic_type}"
+msgstr "转换到 %{polymorphic_type} 中的任一 schema 失败"
+
+#: lib/pleroma/web/api_spec/render_error.ex:71
+#, elixir-format
+msgid "Failed to cast value as %{invalid_schema}. Value must be castable using `allOf` schemas listed."
+msgstr "把值转换成 %{invalid_schema} 失败。值必须可以被转换成在列的「所有」schema。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:84
+#, elixir-format
+msgid "Failed to cast value to one of: %{failed_schemas}."
+msgstr "转换值为 %{failed_schemas} 中的一个失败。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:78
+#, elixir-format
+msgid "Failed to cast value using any of: %{failed_schemas}."
+msgstr "转换值为 %{failed_schemas} 中的任意一个失败。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:212
+#, elixir-format
+msgid "Invalid value for header: %{name}."
+msgstr "头 %{name} 的不合法的值。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:204
+#, elixir-format
+msgid "Missing field: %{name}."
+msgstr "缺少字段：%{name}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:208
+#, elixir-format
+msgid "Missing header: %{name}."
+msgstr "缺少头：%{name}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:196
+#, elixir-format
+msgid "No value provided for required discriminator `%{field}`."
+msgstr ""
+
+#: lib/pleroma/web/api_spec/render_error.ex:216
+#, elixir-format
+msgid "Object property count %{property_count} is greater than maxProperties: %{max_properties}."
+msgstr ""
+
+#: lib/pleroma/web/api_spec/render_error.ex:224
+#, elixir-format
+msgid "Object property count %{property_count} is less than minProperties: %{min_properties}"
+msgstr ""
+
+#: lib/pleroma/web/templates/static_fe/static_fe/error.html.eex:2
+#, elixir-format
+msgid "Oops"
+msgstr "嗨呀"
+
+#: lib/pleroma/web/api_spec/render_error.ex:188
+#, elixir-format
+msgid "Unexpected field: %{name}."
+msgstr "超出预期的字段：%{name}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:200
+#, elixir-format
+msgid "Unknown schema: %{name}."
+msgstr "未知的 schema：%{name}。"
+
+#: lib/pleroma/web/api_spec/render_error.ex:192
+#, elixir-format
+msgid "Value used as discriminator for `%{field}` matches no schemas."
+msgstr ""
+
+#: lib/pleroma/web/templates/embed/show.html.eex:43
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:37
+#, elixir-format
+msgid "announces"
+msgstr "传播"
+
+#: lib/pleroma/web/templates/embed/show.html.eex:44
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:38
+#, elixir-format
+msgid "likes"
+msgstr "喜欢"
+
+#: lib/pleroma/web/templates/embed/show.html.eex:42
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:36
+#, elixir-format
+msgid "replies"
+msgstr "回复"
+
+#: lib/pleroma/web/templates/embed/show.html.eex:27
+#: lib/pleroma/web/templates/static_fe/static_fe/_notice.html.eex:22
+#, elixir-format
+msgid "sensitive media"
+msgstr "敏感媒体"

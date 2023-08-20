@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Marker
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -25,6 +26,7 @@ defmodule Pleroma.Web.Streamer do
   def registry, do: @registry
 
   @public_streams ["public", "public:local", "public:media", "public:local:media"]
+  @local_streams ["public:local", "public:local:media"]
   @user_streams ["user", "user:notification", "direct", "user:pleroma_chat"]
 
   @doc "Expands and authorizes a stream, and registers the process for streaming."
@@ -37,7 +39,23 @@ defmodule Pleroma.Web.Streamer do
           {:ok, topic :: String.t()} | {:error, :bad_topic} | {:error, :unauthorized}
   def get_topic_and_add_socket(stream, user, oauth_token, params \\ %{}) do
     with {:ok, topic} <- get_topic(stream, user, oauth_token, params) do
-      add_socket(topic, user)
+      add_socket(topic, oauth_token)
+    end
+  end
+
+  defp can_access_stream(user, oauth_token, kind) do
+    with {_, true} <- {:restrict?, Config.restrict_unauthenticated_access?(:timelines, kind)},
+         {_, %User{id: user_id}, %Token{user_id: user_id}} <- {:user, user, oauth_token},
+         {_, true} <-
+           {:scopes,
+            OAuthScopesPlug.filter_descendants(["read:statuses"], oauth_token.scopes) != []} do
+      true
+    else
+      {:restrict?, _} ->
+        true
+
+      _ ->
+        false
     end
   end
 
@@ -46,9 +64,16 @@ defmodule Pleroma.Web.Streamer do
           {:ok, topic :: String.t()} | {:error, :bad_topic}
   def get_topic(stream, user, oauth_token, params \\ %{})
 
-  # Allow all public steams.
-  def get_topic(stream, _user, _oauth_token, _params) when stream in @public_streams do
-    {:ok, stream}
+  # Allow all public steams if the instance allows unauthenticated access.
+  # Otherwise, only allow users with valid oauth tokens.
+  def get_topic(stream, user, oauth_token, _params) when stream in @public_streams do
+    kind = if stream in @local_streams, do: :local, else: :federated
+
+    if can_access_stream(user, oauth_token, kind) do
+      {:ok, stream}
+    else
+      {:error, :unauthorized}
+    end
   end
 
   # Allow all hashtags streams.
@@ -57,12 +82,20 @@ defmodule Pleroma.Web.Streamer do
   end
 
   # Allow remote instance streams.
-  def get_topic("public:remote", _user, _oauth_token, %{"instance" => instance} = _params) do
-    {:ok, "public:remote:" <> instance}
+  def get_topic("public:remote", user, oauth_token, %{"instance" => instance} = _params) do
+    if can_access_stream(user, oauth_token, :federated) do
+      {:ok, "public:remote:" <> instance}
+    else
+      {:error, :unauthorized}
+    end
   end
 
-  def get_topic("public:remote:media", _user, _oauth_token, %{"instance" => instance} = _params) do
-    {:ok, "public:remote:media:" <> instance}
+  def get_topic("public:remote:media", user, oauth_token, %{"instance" => instance} = _params) do
+    if can_access_stream(user, oauth_token, :federated) do
+      {:ok, "public:remote:media:" <> instance}
+    else
+      {:error, :unauthorized}
+    end
   end
 
   # Expand user streams.
@@ -120,10 +153,10 @@ defmodule Pleroma.Web.Streamer do
   end
 
   @doc "Registers the process for streaming. Use `get_topic/3` to get the full authorized topic."
-  def add_socket(topic, user) do
+  def add_socket(topic, oauth_token) do
     if should_env_send?() do
-      auth? = if user, do: true
-      Registry.register(@registry, topic, auth?)
+      oauth_token_id = if oauth_token, do: oauth_token.id, else: false
+      Registry.register(@registry, topic, oauth_token_id)
     end
 
     {:ok, topic}
@@ -254,6 +287,16 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
+  defp do_stream(topic, %Marker{} = marker) do
+    Registry.dispatch(@registry, "#{topic}:#{marker.user_id}", fn list ->
+      Enum.each(list, fn {pid, _auth} ->
+        text = StreamerView.render("marker.json", marker)
+
+        send(pid, {:text, text})
+      end)
+    end)
+  end
+
   defp do_stream("user", item) do
     Logger.debug("Trying to push to users")
 
@@ -296,6 +339,24 @@ defmodule Pleroma.Web.Streamer do
 
   defp push_to_socket(_topic, %Activity{data: %{"type" => "Delete"}}), do: :noop
 
+  defp push_to_socket(topic, %Activity{data: %{"type" => "Update"}} = item) do
+    create_activity =
+      Pleroma.Activity.get_create_by_object_ap_id(item.object.data["id"])
+      |> Map.put(:object, item.object)
+
+    anon_render = StreamerView.render("status_update.json", create_activity)
+
+    Registry.dispatch(@registry, topic, fn list ->
+      Enum.each(list, fn {pid, auth?} ->
+        if auth? do
+          send(pid, {:render_with_user, StreamerView, "status_update.json", create_activity})
+        else
+          send(pid, {:text, anon_render})
+        end
+      end)
+    end)
+  end
+
   defp push_to_socket(topic, item) do
     anon_render = StreamerView.render("update.json", item)
 
@@ -317,6 +378,22 @@ defmodule Pleroma.Web.Streamer do
       true
     else
       ActivityPub.contain_activity(activity, user)
+    end
+  end
+
+  def close_streams_by_oauth_token(oauth_token) do
+    if should_env_send?() do
+      Registry.select(
+        @registry,
+        [
+          {
+            {:"$1", :"$2", :"$3"},
+            [{:==, :"$3", oauth_token.id}],
+            [:"$2"]
+          }
+        ]
+      )
+      |> Enum.each(fn pid -> send(pid, :close) end)
     end
   end
 

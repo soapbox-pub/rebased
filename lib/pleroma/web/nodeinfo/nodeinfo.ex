@@ -24,7 +24,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
     %{
       version: "2.0",
       software: %{
-        name: Pleroma.Application.name() |> String.downcase(),
+        name: Pleroma.Application.compat_name() |> String.downcase(),
         version: Pleroma.Application.version()
       },
       protocols: Publisher.gather_nodeinfo_protocol_names(),
@@ -49,6 +49,10 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
           enabled: false
         },
         staffAccounts: staff_accounts,
+        roles: %{
+          admin: Config.get([:instance, :admin_privileges]),
+          moderator: Config.get([:instance, :moderator_privileges])
+        },
         federation: federation,
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
@@ -69,8 +73,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
-        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
-        privilegedStaff: Config.get([:instance, :privileged_staff])
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
       }
     }
   end

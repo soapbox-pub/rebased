@@ -6,9 +6,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
+  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
 
+  import Ecto.Changeset
   import Pleroma.Factory
   import Mock
 
@@ -230,6 +232,102 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> response(:ok)
 
       assert response =~ "Something went wrong."
+    end
+  end
+
+  describe "POST /main/ostatus - remote_subscribe/2 - with statuses" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "renders subscribe form", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+
+      assert is_binary(status_id)
+
+      response =
+        conn
+        |> post("/main/ostatus", %{"status_id" => status_id, "profile" => ""})
+        |> response(:ok)
+
+      refute response =~ "Could not find status"
+      assert response =~ "Interacting with"
+    end
+
+    test "renders subscribe form with error when status not found", %{conn: conn} do
+      response =
+        conn
+        |> post("/main/ostatus", %{"status_id" => "somerandomid", "profile" => ""})
+        |> response(:ok)
+
+      assert response =~ "Could not find status"
+      refute response =~ "Interacting with"
+    end
+
+    test "it redirect to webfinger url", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+      status_ap_id = status.data["object"]
+
+      assert is_binary(status_id)
+      assert is_binary(status_ap_id)
+
+      user2 = insert(:user, ap_id: "shp@social.heldscal.la")
+
+      conn =
+        conn
+        |> post("/main/ostatus", %{
+          "status" => %{"status_id" => status_id, "profile" => user2.ap_id}
+        })
+
+      assert redirected_to(conn) ==
+               "https://social.heldscal.la/main/ostatussub?profile=#{status_ap_id}"
+    end
+
+    test "it renders form with error when status not found", %{conn: conn} do
+      user2 = insert(:user, ap_id: "shp@social.heldscal.la")
+
+      response =
+        conn
+        |> post("/main/ostatus", %{
+          "status" => %{"status_id" => "somerandomid", "profile" => user2.ap_id}
+        })
+        |> response(:ok)
+
+      assert response =~ "Something went wrong."
+    end
+  end
+
+  describe "GET /main/ostatus - show_subscribe_form/2" do
+    setup do: clear_config([:instance, :federating], true)
+
+    test "it works with users", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> get("/main/ostatus", %{"nickname" => user.nickname})
+        |> response(:ok)
+
+      refute response =~ "Could not find user"
+      assert response =~ "Remotely follow #{user.nickname}"
+    end
+
+    test "it works with statuses", %{conn: conn} do
+      user = insert(:user)
+      status = insert(:note_activity, %{user: user})
+      status_id = status.id
+
+      assert is_binary(status_id)
+
+      response =
+        conn
+        |> get("/main/ostatus", %{"status_id" => status_id})
+        |> response(:ok)
+
+      refute response =~ "Could not find status"
+      assert response =~ "Interacting with"
     end
   end
 
@@ -553,7 +651,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{"error" => "Invalid password."}
     end
 
-    test "with proper permissions, valid password and target account does not alias this",
+    test "with proper permissions, valid password and target account does not alias it",
          %{
            conn: conn
          } do
@@ -592,7 +690,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
              }
     end
 
-    test "with proper permissions, valid password, remote target account aliases this and local cache does not exist",
+    test "with proper permissions, valid password, remote target account aliases it and local cache does not exist",
          %{} do
       user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
       %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
@@ -610,7 +708,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
 
-    test "with proper permissions, valid password, remote target account aliases this and local cache does not alias this",
+    test "with proper permissions, valid password, remote target account aliases it and local cache does not aliases it",
          %{} do
       user = insert(:user, ap_id: "https://lm.kazv.moe/users/testuser")
       %{user: _user, conn: conn} = oauth_access(["write:accounts"], user: user)
@@ -636,7 +734,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
 
-    test "with proper permissions, valid password, remote target account does not alias this and local cache aliases this",
+    test "with proper permissions, valid password, remote target account does not aliases it and local cache aliases it",
          %{
            user: user,
            conn: conn
@@ -665,7 +763,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
              }
     end
 
-    test "with proper permissions, valid password and target account aliases this", %{
+    test "with proper permissions, valid password and target account aliases it", %{
       conn: conn,
       user: user
     } do
@@ -741,6 +839,50 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       refute User.following?(follower, user)
       assert User.following?(follower, target_user)
+    end
+
+    test "do not allow to migrate account within cooldown period", %{conn: conn, user: user} do
+      user
+      |> cast(
+        %{last_move_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(-1 * 24 * 60 * 60, :second)},
+        [:last_move_at]
+      )
+      |> Repo.update()
+
+      target_user = insert(:user, also_known_as: [user.ap_id])
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{password: "test", target_account: target_nick})
+
+      assert json_response_and_validate_schema(conn, 429) == %{
+               "error" => "You are within cooldown period."
+             }
+    end
+
+    test "allow to migrate account after cooldown period", %{conn: conn, user: user} do
+      user
+      |> cast(
+        %{
+          last_move_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(-31 * 24 * 60 * 60, :second)
+        },
+        [:last_move_at]
+      )
+      |> Repo.update()
+
+      target_user = insert(:user, also_known_as: [user.ap_id])
+
+      target_nick = target_user |> User.full_nickname()
+
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/pleroma/move_account", %{password: "test", target_account: target_nick})
+
+      assert json_response_and_validate_schema(conn, 200) == %{"status" => "success"}
     end
   end
 

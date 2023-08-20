@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Language.LanguageDetector
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
@@ -36,9 +38,15 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
             cc: [],
             context: nil,
             sensitive: false,
+            language: nil,
             object: nil,
             preview?: false,
-            changes: %{}
+            changes: %{},
+            location: nil,
+            start_time: nil,
+            end_time: nil,
+            location_id: nil,
+            location_provider: nil
 
   def new(user, params) do
     %__MODULE__{user: user}
@@ -62,6 +70,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> content()
     |> with_valid(&to_and_cc/1)
     |> with_valid(&context/1)
+    |> with_valid(&language/1)
     |> sensitive()
     |> with_valid(&object/1)
     |> preview?()
@@ -89,6 +98,43 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       |> Map.put("to", draft.to)
       |> Map.put("cc", draft.cc)
       |> Map.put("actor", draft.user.ap_id)
+
+    %__MODULE__{draft | object: object}
+  end
+
+  @spec event(any, map) :: {:error, any} | {:ok, %{:valid? => true, optional(any) => any}}
+  def event(user, params, location \\ nil) do
+    user
+    |> new(params)
+    |> status()
+    |> visibility()
+    |> content()
+    |> to_and_cc()
+    |> context()
+    |> with_valid(&language/1)
+    |> with_valid(&event_banner/1)
+    |> event_location(location)
+    |> with_valid(&event_date/1)
+    |> event_object()
+    |> with_valid(&changes/1)
+    |> validate()
+  end
+
+  defp event_object(draft) do
+    emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
+
+    {:ok, event_data, _meta} = Builder.event(draft)
+
+    object =
+      event_data
+      |> Map.put("emoji", emoji)
+      |> Map.put("source", %{
+        "content" => draft.status,
+        "mediaType" => Utils.get_content_type(draft.params[:content_type])
+      })
+      |> Map.put("generator", draft.params[:generator])
+      |> Map.put("content_type", draft.params[:content_type])
+      |> Map.put("language", draft.language)
 
     %__MODULE__{draft | object: object}
   end
@@ -128,7 +174,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: id}} = draft) when is_binary(id) do
-    %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
+    case Activity.get_by_id(id) do
+      %Activity{} = activity ->
+        %__MODULE__{draft | in_reply_to: activity}
+
+      _ ->
+        add_error(draft, dgettext("errors", "The post being replied to was deleted"))
+    end
   end
 
   defp in_reply_to(%{params: %{in_reply_to_status_id: %Activity{} = in_reply_to}} = draft) do
@@ -224,6 +276,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | sensitive: sensitive}
   end
 
+  defp language(draft) do
+    language =
+      Utils.get_valid_language(draft.params[:language]) ||
+        LanguageDetector.detect(
+          draft.content_html <> " " <> (draft.summary || draft.params[:name])
+        )
+
+    %__MODULE__{draft | language: language}
+  end
+
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
@@ -258,9 +320,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     object =
       note_data
       |> Map.put("emoji", emoji)
-      |> Map.put("source", draft.status)
+      |> Map.put("source", %{
+        "content" => draft.status,
+        "mediaType" => Utils.get_content_type(draft.params[:content_type])
+      })
       |> Map.put("generator", draft.params[:generator])
       |> Map.put("content_type", draft.params[:content_type])
+      |> Map.put("language", draft.language)
 
     %__MODULE__{draft | object: object}
   end
@@ -291,6 +357,78 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
       |> Utils.maybe_add_list_data(draft.user, draft.visibility)
 
     %__MODULE__{draft | changes: changes}
+  end
+
+  defp event_date(draft) do
+    case draft.params[:start_time] do
+      %DateTime{} = start_time ->
+        case draft.params[:end_time] do
+          %DateTime{} = end_time ->
+            if DateTime.compare(end_time, start_time) == :lt do
+              add_error(draft, dgettext("errors", "Event can't end before its start"))
+            else
+              start_time = start_time |> DateTime.to_iso8601()
+              end_time = end_time |> DateTime.to_iso8601()
+
+              %__MODULE__{draft | start_time: start_time, end_time: end_time}
+            end
+
+          _ ->
+            start_time = start_time |> DateTime.to_iso8601()
+
+            %__MODULE__{draft | start_time: start_time}
+        end
+
+      _ ->
+        add_error(draft, dgettext("errors", "Start date is required"))
+    end
+  end
+
+  defp event_location(draft, %Geospatial.Address{} = address) do
+    location = %{
+      "type" => "Place",
+      "name" => address.description,
+      "id" => address.url,
+      "address" => %{
+        "type" => "PostalAddress",
+        "streetAddress" => address.street,
+        "postalCode" => address.postal_code,
+        "addressLocality" => address.locality,
+        "addressRegion" => address.region,
+        "addressCountry" => address.country
+      }
+    }
+
+    location =
+      if is_nil(address.geom) do
+        location
+      else
+        {longitude, latitude} = address.geom.coordinates
+
+        location
+        |> Map.put("longitude", longitude)
+        |> Map.put("latitude", latitude)
+      end
+
+    %__MODULE__{
+      draft
+      | location: location,
+        location_id: address.origin_id,
+        location_provider: address.origin_provider
+    }
+  end
+
+  defp event_location(draft, _), do: draft
+
+  defp event_banner(draft) do
+    with media_id when is_binary(media_id) <- draft.params[:banner_id],
+         %Object{data: data} <- Repo.get(Object, media_id) do
+      banner = Map.put(data, "name", "Banner")
+
+      %__MODULE__{draft | attachments: [banner]}
+    else
+      _ -> draft
+    end
   end
 
   defp with_valid(%{valid?: true} = draft, func), do: func.(draft)

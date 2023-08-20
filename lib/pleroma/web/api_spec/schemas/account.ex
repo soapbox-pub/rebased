@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       header: %Schema{type: :string, format: :uri},
       id: FlakeID,
       locked: %Schema{type: :boolean},
+      mute_expires_at: %Schema{type: :string, format: "date-time", nullable: true},
       note: %Schema{type: :string, format: :html},
       statuses_count: %Schema{type: :integer},
       url: %Schema{type: :string, format: :uri},
@@ -48,7 +49,6 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           },
           background_image: %Schema{type: :string, nullable: true, format: :uri},
           birthday: %Schema{type: :string, nullable: true, format: :date},
-          chat_token: %Schema{type: :string},
           is_confirmed: %Schema{
             type: :boolean,
             description:
@@ -179,8 +179,6 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "is_moderator" => false,
         "skip_thread_containment" => false,
         "accepts_chat_messages" => true,
-        "chat_token" =>
-          "SFMyNTY.g3QAAAACZAAEZGF0YW0AAAASOXRLaTNlc2JHN09RZ1oyOTIwZAAGc2lnbmVkbgYARNplS3EB.Mb_Iaqew2bN1I1o79B_iP7encmVCpTKC4OtHZRxdjKc",
         "unread_conversation_count" => 0,
         "tags" => [],
         "notification_settings" => %{

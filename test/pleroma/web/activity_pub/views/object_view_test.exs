@@ -81,4 +81,18 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     assert result["object"] == object.data["id"]
     assert result["type"] == "Announce"
   end
+
+  test "renders an undo announce activity" do
+    note = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, announce} = CommonAPI.repeat(note.id, user)
+    {:ok, undo} = CommonAPI.unrepeat(note.id, user)
+
+    result = ObjectView.render("object.json", %{object: undo})
+
+    assert result["id"] == undo.data["id"]
+    assert result["object"] == announce.data["id"]
+    assert result["type"] == "Undo"
+  end
 end

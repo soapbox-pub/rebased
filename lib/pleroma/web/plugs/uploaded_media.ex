@@ -35,9 +35,9 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn =
       case fetch_query_params(conn) do
         %{query_params: %{"name" => name}} = conn ->
-          name = String.replace(name, "\"", "\\\"")
+          name = String.replace(name, ~s["], ~s[\\"])
 
-          put_resp_header(conn, "content-disposition", "filename=\"#{name}\"")
+          put_resp_header(conn, "content-disposition", ~s[inline; filename="#{name}"])
 
         conn ->
           conn
@@ -74,6 +74,7 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
+      |> Map.put(:headers, {__MODULE__, :scrub_mime, []})
 
     conn = Plug.Static.call(conn, static_opts)
 
@@ -110,5 +111,21 @@ defmodule Pleroma.Web.Plugs.UploadedMedia do
     conn
     |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))
     |> halt()
+  end
+
+  def scrub_mime(%Plug.Conn{halted: false, resp_headers: headers}, _args \\ []) do
+    [{_, mimetype}] = Enum.filter(headers, fn {x, _y} -> match?("content-type", x) end)
+
+    [_type, subtype] = String.split(mimetype, "/")
+
+    if String.contains?(subtype, ["javascript", "ecmascript", "jscript", "html", "xml"]) do
+      plaintext_header()
+    else
+      []
+    end
+  end
+
+  defp plaintext_header() do
+    [{"content-type", "text/plain"}]
   end
 end

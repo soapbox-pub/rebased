@@ -28,7 +28,7 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
       {:ok, :filtered, upload}
     rescue
       e in ErlangError ->
-        Logger.warn("#{__MODULE__}: #{inspect(e)}")
+        Logger.warning("#{__MODULE__}: #{inspect(e)}")
         {:ok, :noop}
     end
   end
@@ -45,7 +45,7 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
       {:ok, :filtered, upload}
     rescue
       e in ErlangError ->
-        Logger.warn("#{__MODULE__}: #{inspect(e)}")
+        Logger.warning("#{__MODULE__}: #{inspect(e)}")
         {:ok, :noop}
     end
   end

@@ -78,16 +78,14 @@ defmodule Pleroma.Web.FederatorTest do
         local: false,
         nickname: "nick1@domain.com",
         ap_id: "https://domain.com/users/nick1",
-        inbox: inbox1,
-        ap_enabled: true
+        inbox: inbox1
       })
 
       insert(:user, %{
         local: false,
         nickname: "nick2@domain2.com",
         ap_id: "https://domain2.com/users/nick2",
-        inbox: inbox2,
-        ap_enabled: true
+        inbox: inbox2
       })
 
       dt = NaiveDateTime.utc_now()
@@ -133,7 +131,7 @@ defmodule Pleroma.Web.FederatorTest do
       assert {:ok, _activity} = ObanHelpers.perform(job)
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, :already_present} = ObanHelpers.perform(job)
+      assert {:cancel, :already_present} = ObanHelpers.perform(job)
     end
 
     test "rejects incoming AP docs with incorrect origin" do
@@ -153,7 +151,7 @@ defmodule Pleroma.Web.FederatorTest do
       }
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, :origin_containment_failed} = ObanHelpers.perform(job)
+      assert {:cancel, :origin_containment_failed} = ObanHelpers.perform(job)
     end
 
     test "it does not crash if MRF rejects the post" do
@@ -169,7 +167,7 @@ defmodule Pleroma.Web.FederatorTest do
         |> Jason.decode!()
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert {:error, _} = ObanHelpers.perform(job)
+      assert {:cancel, _} = ObanHelpers.perform(job)
     end
   end
 end

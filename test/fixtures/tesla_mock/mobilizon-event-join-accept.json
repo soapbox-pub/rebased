@@ -1,0 +1,80 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "addressRegion": "sc:addressRegion",
+      "timezone": {"@id": "mz:timezone", "@type": "sc:Text"},
+      "isOnline": {"@id": "mz:isOnline", "@type": "sc:Boolean"},
+      "pt": "https://joinpeertube.org/ns#",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "inLanguage": "sc:inLanguage",
+      "address": {"@id": "sc:address", "@type": "sc:PostalAddress"},
+      "discoverable": "toot:discoverable",
+      "repliesModerationOption": {
+        "@id": "mz:repliesModerationOption",
+        "@type": "mz:repliesModerationOptionType"
+      },
+      "sc": "http://schema.org#",
+      "mz": "https://joinmobilizon.org/ns#",
+      "category": "sc:category",
+      "joinModeType": {"@id": "mz:joinModeType", "@type": "rdfs:Class"},
+      "Hashtag": "as:Hashtag",
+      "propertyID": "sc:propertyID",
+      "PostalAddress": "sc:PostalAddress",
+      "discussions": {"@id": "mz:discussions", "@type": "@id"},
+      "remainingAttendeeCapacity": "sc:remainingAttendeeCapacity",
+      "streetAddress": "sc:streetAddress",
+      "anonymousParticipationEnabled": {
+        "@id": "mz:anonymousParticipationEnabled",
+        "@type": "sc:Boolean"
+      },
+      "addressLocality": "sc:addressLocality",
+      "joinMode": {"@id": "mz:joinMode", "@type": "mz:joinModeType"},
+      "location": {"@id": "sc:location", "@type": "sc:Place"},
+      "toot": "http://joinmastodon.org/ns#",
+      "participantCount": {
+        "@id": "mz:participantCount",
+        "@type": "sc:Integer"
+      },
+      "uuid": "sc:identifier",
+      "maximumAttendeeCapacity": "sc:maximumAttendeeCapacity",
+      "participationMessage": {
+        "@id": "mz:participationMessage",
+        "@type": "sc:Text"
+      },
+      "openness": {"@id": "mz:openness", "@type": "@id"},
+      "members": {"@id": "mz:members", "@type": "@id"},
+      "events": {"@id": "mz:events", "@type": "@id"},
+      "resources": {"@id": "mz:resources", "@type": "@id"},
+      "addressCountry": "sc:addressCountry",
+      "posts": {"@id": "mz:posts", "@type": "@id"},
+      "commentsEnabled": {
+        "@id": "pt:commentsEnabled",
+        "@type": "sc:Boolean"
+      },
+      "value": "sc:value",
+      "PropertyValue": "sc:PropertyValue",
+      "repliesModerationOptionType": {
+        "@id": "mz:repliesModerationOptionType",
+        "@type": "rdfs:Class"
+      },
+      "todos": {"@id": "mz:todos", "@type": "@id"},
+      "ical": "http://www.w3.org/2002/12/cal/ical#",
+      "postalCode": "sc:postalCode",
+      "memberCount": {"@id": "mz:memberCount", "@type": "sc:Integer"},
+      "@language": "und"
+    }
+  ],
+  "actor": "https://mobilizon.org/@tcit",
+  "id": "https://mobilizon.mkljczk.pl/accept/join/fef2a925-cce5-4b8e-b12f-20afe01e5a0f",
+  "object": {
+    "actor": "https://pleroma.mkljczk.pl/users/mkljczk",
+    "id": "https://pleroma.mkljczk.pl/activities/7d1f3986-8b2c-48c2-b89e-d27ba8459777",
+    "object": "https://mobilizon.mkljczk.pl/events/d9d08e46-81af-4ee9-91e5-1298f49beea9",
+    "participationMessage": null,
+    "published": "2022-10-07T18:53:53Z",
+    "type": "Join"
+  },
+  "type": "Accept"
+}

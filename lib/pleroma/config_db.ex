@@ -163,7 +163,6 @@ defmodule Pleroma.ConfigDB do
   defp only_full_update?(%ConfigDB{group: group, key: key}) do
     full_key_update = [
       {:pleroma, :ecto_repos},
-      {:quack, :meta},
       {:mime, :types},
       {:cors_plug, [:max_age, :methods, :expose, :headers]},
       {:swarm, :node_blacklist},
@@ -273,7 +272,7 @@ defmodule Pleroma.ConfigDB do
     ":#{entity}"
   end
 
-  def to_json_types(entity) when is_atom(entity), do: inspect(entity)
+  def to_json_types(entity) when is_atom(entity) or is_function(entity), do: inspect(entity)
 
   @spec to_elixir_types(boolean() | String.t() | map() | list()) :: term()
   def to_elixir_types(%{"tuple" => [":args", args]}) when is_list(args) do
@@ -386,7 +385,7 @@ defmodule Pleroma.ConfigDB do
 
   @spec module_name?(String.t()) :: boolean()
   def module_name?(string) do
-    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack|Ueberauth|Swoosh)\./, string) or
+    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Ueberauth|Swoosh)\./, string) or
       string in ["Oban", "Ueberauth", "ExSyslogger", "ConcurrentLimiter"]
   end
 end

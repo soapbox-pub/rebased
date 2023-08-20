@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.ActivityDraft
   alias Pleroma.Web.CommonAPI.Utils
@@ -179,6 +178,10 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       code = "https://github.com/pragdave/earmark/"
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
+
+      code = "https://github.com/~foo/bar"
+      {result, [], []} = Utils.format_input(code, "text/markdown")
+      assert result == ~s[<p><a href="#{code}">#{code}</a></p>]
     end
 
     test "link with local mention" do
@@ -270,22 +273,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       code = ~s[~~aaaa~~~]
       {result, [], []} = Utils.format_input(code, "text/markdown")
       assert result == ~s[<p><del>aaaa</del>~</p>]
-    end
-  end
-
-  describe "context_to_conversation_id" do
-    test "creates a mapping object" do
-      conversation_id = Utils.context_to_conversation_id("random context")
-      object = Object.get_by_ap_id("random context")
-
-      assert conversation_id == object.id
-    end
-
-    test "returns an existing mapping for an existing object" do
-      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
-      conversation_id = Utils.context_to_conversation_id("random context")
-
-      assert conversation_id == object.id
     end
   end
 
@@ -517,17 +504,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "conversation_id_to_context/1" do
-    test "returns id" do
-      object = insert(:note)
-      assert Utils.conversation_id_to_context(object.id) == object.data["id"]
-    end
-
-    test "returns error if object not found" do
-      assert Utils.conversation_id_to_context("123") == {:error, "No such conversation"}
-    end
-  end
-
   describe "maybe_notify_mentioned_recipients/2" do
     test "returns recipients when activity is not `Create`" do
       activity = insert(:like_activity)
@@ -616,7 +592,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
 
     test "returns list attachments with desc" do
-      object = insert(:note)
+      object = insert(:attachment)
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids_descs(["#{object.id}", "34"], desc) == [
@@ -627,7 +603,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
   describe "attachments_from_ids/1" do
     test "returns attachments with descs" do
-      object = insert(:note)
+      object = insert(:attachment)
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids(%{
@@ -639,12 +615,17 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
 
     test "returns attachments without descs" do
-      object = insert(:note)
+      object = insert(:attachment)
       assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == [object.data]
     end
 
     test "returns [] when not pass media_ids" do
       assert Utils.attachments_from_ids(%{}) == []
+    end
+
+    test "checks that the object is of upload type" do
+      object = insert(:note)
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == []
     end
   end
 

@@ -35,6 +35,8 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
           })
       end)
 
+      ObanHelpers.perform_all()
+
       yesterday =
         NaiveDateTime.add(
           NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
@@ -53,7 +55,13 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
 
       assert_email_sent(
         to: {user2.name, user2.email},
-        html_body: ~r/here is what you've missed!/i
+        html_body:
+          Regex.compile!(
+            "here is what you've missed!"
+            |> Phoenix.HTML.html_escape()
+            |> Phoenix.HTML.safe_to_string(),
+            "i"
+          )
       )
     end
   end

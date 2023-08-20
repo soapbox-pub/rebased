@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ApiSpec.DirectoryOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Directory"],
+      tags: ["Others"],
       summary: "Profile directory",
       operationId: "DirectoryController.index",
       parameters:

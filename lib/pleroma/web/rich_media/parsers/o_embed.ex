@@ -6,8 +6,13 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   def parse(html, data) do
     with elements = [_ | _] <- get_discovery_data(html),
          oembed_url when is_binary(oembed_url) <- get_oembed_url(elements),
-         {:ok, oembed_data} <- get_oembed_data(oembed_url) do
-      Map.put(data, :oembed, oembed_data)
+         {:ok, oembed_data = %{"html" => html}} <- get_oembed_data(oembed_url) do
+      data
+      |> Map.put(
+        :oembed,
+        oembed_data
+        |> Map.put("html", Pleroma.HTML.filter_tags(html))
+      )
     else
       _e -> data
     end

@@ -97,6 +97,42 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user.raw_bio == raw_bio
     end
 
+    test "updating bio honours bio limit", %{conn: conn} do
+      bio_limit = Config.get([:instance, :user_bio_length], 5000)
+
+      raw_bio = String.duplicate(".", bio_limit + 1)
+
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"note" => raw_bio})
+
+      assert %{"error" => "Bio is too long"} = json_response_and_validate_schema(conn, 413)
+    end
+
+    test "updating name honours name limit", %{conn: conn} do
+      name_limit = Config.get([:instance, :user_name_length], 100)
+
+      name = String.duplicate(".", name_limit + 1)
+
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"display_name" => name})
+
+      assert %{"error" => "Name is too long"} = json_response_and_validate_schema(conn, 413)
+    end
+
+    test "when both name and bio exceeds the limit, display name error", %{conn: conn} do
+      name_limit = Config.get([:instance, :user_name_length], 100)
+      bio_limit = Config.get([:instance, :user_bio_length], 5000)
+
+      name = String.duplicate(".", name_limit + 1)
+      raw_bio = String.duplicate(".", bio_limit + 1)
+
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "display_name" => name,
+          "note" => raw_bio
+        })
+
+      assert %{"error" => "Name is too long"} = json_response_and_validate_schema(conn, 413)
+    end
+
     test "updates the user's locking status", %{conn: conn} do
       conn = patch(conn, "/api/v1/accounts/update_credentials", %{locked: "true"})
 
@@ -266,6 +302,34 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user.avatar == nil
     end
 
+    test "updates the user's avatar, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_avatar_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      assert user.avatar == %{}
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar_oversized})
+
+      assert user_response = json_response_and_validate_schema(res, 413)
+      assert user_response["avatar"] != User.avatar_url(user)
+
+      user = User.get_by_id(user.id)
+      assert user.avatar == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
+    end
+
     test "updates the user's banner", %{user: user, conn: conn} do
       new_header = %Plug.Upload{
         content_type: "image/jpeg",
@@ -283,6 +347,32 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       user = User.get_by_id(user.id)
       assert user.banner == nil
+    end
+
+    test "updates the user's banner, upload_limit, returns a HTTP 413", %{conn: conn, user: user} do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_header_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{"header" => new_header_oversized})
+
+      assert user_response = json_response_and_validate_schema(res, 413)
+      assert user_response["header"] != User.banner_url(user)
+
+      user = User.get_by_id(user.id)
+      assert user.banner == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
     end
 
     test "updates the user's background", %{conn: conn, user: user} do
@@ -306,6 +396,64 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       user = User.get_by_id(user.id)
       assert user.background == nil
+    end
+
+    test "updates the user's background, upload_limit, returns a HTTP 413", %{
+      conn: conn,
+      user: user
+    } do
+      upload_limit = Config.get([:instance, :upload_limit]) * 8 + 8
+
+      assert :ok ==
+               File.write(Path.absname("test/tmp/large_binary.data"), <<0::size(upload_limit)>>)
+
+      new_background_oversized = %Plug.Upload{
+        content_type: nil,
+        path: Path.absname("test/tmp/large_binary.data"),
+        filename: "large_binary.data"
+      }
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "pleroma_background_image" => new_background_oversized
+        })
+
+      assert %{"error" => "File is too large"} == json_response_and_validate_schema(res, 413)
+
+      user = Repo.get(User, user.id)
+      assert user.background == %{}
+
+      clear_config([:instance, :upload_limit], upload_limit)
+
+      assert :ok == File.rm(Path.absname("test/tmp/large_binary.data"))
+    end
+
+    test "Strip / from upload files", %{user: user, conn: conn} do
+      new_image = %Plug.Upload{
+        content_type: "image/jpeg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "../../../../nested/an_image.jpg"
+      }
+
+      assert user.avatar == %{}
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "avatar" => new_image,
+          "header" => new_image,
+          "pleroma_background_image" => new_image
+        })
+
+      assert user_response = json_response_and_validate_schema(res, 200)
+      assert user_response["avatar"]
+      assert user_response["header"]
+      assert user_response["pleroma"]["background_image"]
+      refute Regex.match?(~r"/nested/", user_response["avatar"])
+      refute Regex.match?(~r"/nested/", user_response["header"])
+      refute Regex.match?(~r"/nested/", user_response["pleroma"]["background_image"])
+
+      user = User.get_by_id(user.id)
+      refute user.avatar == %{}
     end
 
     test "requires 'write:accounts' permission" do
@@ -351,8 +499,12 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
     test "update fields", %{conn: conn} do
       fields = [
-        %{"name" => "<a href=\"http://google.com\">foo</a>", "value" => "<script>bar</script>"},
-        %{"name" => "link.io", "value" => "cofe.io"}
+        %{
+          "name" => "<a href=\"http://google.com\">foo</a>",
+          "value" => "<script>bar</script>",
+          "verified_at" => nil
+        },
+        %{"name" => "link.io", "value" => "cofe.io", "verified_at" => nil}
       ]
 
       account_data =
@@ -361,10 +513,15 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account_data["fields"] == [
-               %{"name" => "<a href=\"http://google.com\">foo</a>", "value" => "bar"},
+               %{
+                 "name" => "<a href=\"http://google.com\">foo</a>",
+                 "value" => "bar",
+                 "verified_at" => nil
+               },
                %{
                  "name" => "link.io",
-                 "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>)
+                 "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>),
+                 "verified_at" => nil
                }
              ]
 
@@ -397,6 +554,20 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
       assert user_data["source"]["pleroma"]["show_birthday"] == true
     end
 
+    test "unsets birth date", %{conn: conn} do
+      patch(conn, "/api/v1/accounts/update_credentials", %{
+        "birthday" => "2001-02-12"
+      })
+
+      res =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "birthday" => ""
+        })
+
+      assert user_data = json_response_and_validate_schema(res, 200)
+      assert user_data["pleroma"]["birthday"] == nil
+    end
+
     test "updates location", %{conn: conn} do
       res =
         patch(conn, "/api/v1/accounts/update_credentials", %{
@@ -419,8 +590,8 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account_data["fields"] == [
-               %{"name" => ":firefox:", "value" => "is best 2hu"},
-               %{"name" => "they wins", "value" => ":blank:"}
+               %{"name" => ":firefox:", "value" => "is best 2hu", "verified_at" => nil},
+               %{"name" => "they wins", "value" => ":blank:", "verified_at" => nil}
              ]
 
       assert account_data["source"]["fields"] == [
@@ -448,10 +619,11 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account["fields"] == [
-               %{"name" => "foo", "value" => "bar"},
+               %{"name" => "foo", "value" => "bar", "verified_at" => nil},
                %{
                  "name" => "link",
-                 "value" => ~S(<a href="http://cofe.io" rel="ugc">http://cofe.io</a>)
+                 "value" => ~S(<a href="http://cofe.io" rel="ugc">http://cofe.io</a>),
+                 "verified_at" => nil
                }
              ]
 
@@ -473,7 +645,7 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         |> json_response_and_validate_schema(200)
 
       assert account["fields"] == [
-               %{"name" => "foo", "value" => ""}
+               %{"name" => "foo", "value" => "", "verified_at" => nil}
              ]
     end
 
@@ -486,17 +658,17 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
 
       fields = [%{"name" => "foo", "value" => long_value}]
 
-      assert %{"error" => "Invalid request"} ==
+      assert %{"error" => "One or more field entries are too long"} ==
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
-               |> json_response_and_validate_schema(403)
+               |> json_response_and_validate_schema(413)
 
       fields = [%{"name" => long_name, "value" => "bar"}]
 
-      assert %{"error" => "Invalid request"} ==
+      assert %{"error" => "One or more field entries are too long"} ==
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
-               |> json_response_and_validate_schema(403)
+               |> json_response_and_validate_schema(413)
 
       clear_config([:instance, :max_account_fields], 1)
 
@@ -505,10 +677,10 @@ defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
         %{"name" => "link", "value" => "cofe.io"}
       ]
 
-      assert %{"error" => "Invalid request"} ==
+      assert %{"error" => "Too many field entries"} ==
                conn
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
-               |> json_response_and_validate_schema(403)
+               |> json_response_and_validate_schema(413)
     end
   end
 

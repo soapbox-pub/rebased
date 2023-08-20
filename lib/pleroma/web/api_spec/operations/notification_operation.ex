@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
@@ -170,6 +169,11 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
             "Status that was the object of the notification, e.g. in mentions, reblogs, favourites, or polls.",
           nullable: true
         },
+        participation_message: %Schema{
+          type: :string,
+          description: "Description of event participation request",
+          nullable: true
+        },
         pleroma: %Schema{
           type: :object,
           properties: %{
@@ -204,12 +208,17 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "follow_request",
         "poll",
         "status",
+        "pleroma:participation_accepted",
+        "pleroma:participation_request",
+        "pleroma:event_reminder",
+        "pleroma:event_update",
         "pleroma:thread_subscription"
       ],
       description: """
       The type of event that resulted in the notification.
 
       - `follow` - Someone followed you
+      - `follow_request` - Someone wants to follow you
       - `mention` - Someone mentioned you in their status
       - `reblog` - Someone boosted one of your statuses
       - `favourite` - Someone favourited one of your statuses
@@ -219,6 +228,10 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
       - `pleroma:chat_mention` - Someone mentioned you in a chat message
       - `pleroma:report` - Someone was reported
       - `status` - Someone you are subscribed to created a status
+      - `pleroma:event_reminder` – An event you are participating in or created is taking place soon
+      - `pleroma:event_update` – An event you are participating in was edited
+      - `pleroma:participation_request - Someone wants to participate in your event
+      - `pleroma:participation_accepted - Your event participation request was accepted
       - `pleroma:thread_subscription - Someone replied to a status you are subscribed to
       """
     }

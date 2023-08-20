@@ -47,7 +47,7 @@ defmodule Pleroma.Web.WebFingerTest do
 
     test "returns error when there is no content-type header" do
       Tesla.Mock.mock(fn
-        %{url: "http://social.heldscal.la/.well-known/host-meta"} ->
+        %{url: "https://social.heldscal.la/.well-known/host-meta"} ->
           {:ok,
            %Tesla.Env{
              status: 200,
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "it gets the xrd endpoint for statusnet" do
       {:ok, template} = WebFinger.find_lrdd_template("status.alpicola.com")
 
-      assert template == "http://status.alpicola.com/main/xrd?uri={uri}"
+      assert template == "https://status.alpicola.com/main/xrd?uri={uri}"
     end
 
     test "it works with idna domains as nickname" do
@@ -147,7 +147,7 @@ defmodule Pleroma.Web.WebFingerTest do
              headers: [{"content-type", "application/jrd+json"}]
            }}
 
-        %{url: "http://mastodon.social/.well-known/host-meta"} ->
+        %{url: "https://mastodon.social/.well-known/host-meta"} ->
           {:ok,
            %Tesla.Env{
              status: 200,
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.WebFingerTest do
              headers: [{"content-type", "application/xrd+xml"}]
            }}
 
-        %{url: "http://pawoo.net/.well-known/host-meta"} ->
+        %{url: "https://pawoo.net/.well-known/host-meta"} ->
           {:ok,
            %Tesla.Env{
              status: 200,
@@ -179,6 +179,29 @@ defmodule Pleroma.Web.WebFingerTest do
       end)
 
       {:ok, _data} = WebFinger.finger("pekorino@pawoo.net")
+    end
+
+    test "refuses to process XML remote entities" do
+      Tesla.Mock.mock(fn
+        %{
+          url: "https://pawoo.net/.well-known/webfinger?resource=acct:pekorino@pawoo.net"
+        } ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/xml_external_entities.xml"),
+             headers: [{"content-type", "application/xrd+xml"}]
+           }}
+
+        %{url: "https://pawoo.net/.well-known/host-meta"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: File.read!("test/fixtures/tesla_mock/pawoo.net_host_meta")
+           }}
+      end)
+
+      assert :error = WebFinger.finger("pekorino@pawoo.net")
     end
   end
 end

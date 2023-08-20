@@ -34,7 +34,7 @@ defmodule Pleroma.ApplicationRequirements do
   defp check_welcome_message_config!(:ok) do
     if Pleroma.Config.get([:welcome, :email, :enabled], false) and
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.warn("""
+      Logger.warning("""
       To send welcome emails, you need to enable the mailer.
       Welcome emails will NOT be sent with the current config.
 
@@ -53,7 +53,7 @@ defmodule Pleroma.ApplicationRequirements do
   def check_confirmation_accounts!(:ok) do
     if Pleroma.Config.get([:instance, :account_activation_required]) &&
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.warn("""
+      Logger.warning("""
       Account activation is required, but the mailer is disabled.
       Users will NOT be able to confirm their accounts with this config.
       Either disable account activation or enable the mailer.
@@ -164,7 +164,8 @@ defmodule Pleroma.ApplicationRequirements do
 
   defp check_system_commands!(:ok) do
     filter_commands_statuses = [
-      check_filter(Pleroma.Upload.Filter.Exiftool, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Exiftool.StripLocation, "exiftool"),
+      check_filter(Pleroma.Upload.Filter.Exiftool.ReadDescription, "exiftool"),
       check_filter(Pleroma.Upload.Filter.Mogrify, "mogrify"),
       check_filter(Pleroma.Upload.Filter.Mogrifun, "mogrify"),
       check_filter(Pleroma.Upload.Filter.AnalyzeMetadata, "mogrify"),
@@ -186,7 +187,27 @@ defmodule Pleroma.ApplicationRequirements do
         false
       end
 
-    if Enum.all?([preview_proxy_commands_status | filter_commands_statuses], & &1) do
+    language_detector_commands_status =
+      if Pleroma.Language.LanguageDetector.missing_dependencies() == [] do
+        true
+      else
+        Logger.error(
+          "The following dependencies required by the currently enabled " <>
+            "language detection provider are not installed: " <>
+            inspect(Pleroma.Language.LanguageDetector.missing_dependencies())
+        )
+
+        false
+      end
+
+    if Enum.all?(
+         [
+           preview_proxy_commands_status,
+           language_detector_commands_status
+           | filter_commands_statuses
+         ],
+         & &1
+       ) do
       :ok
     else
       {:error,

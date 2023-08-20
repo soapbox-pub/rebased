@@ -33,8 +33,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
     assert object.data["context"] ==
              "tag:mastodon.sdf.org,2019-05-10:objectId=15095122:objectType=Conversation"
 
-    assert object.data["context_id"]
-
     assert object.data["anyOf"] == []
 
     assert Enum.sort(object.data["oneOf"]) ==
@@ -68,7 +66,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
     reply_object = Object.normalize(reply_activity, fetch: false)
 
     assert reply_object.data["context"] == object.data["context"]
-    assert reply_object.data["context_id"] == object.data["context_id"]
   end
 
   test "Mastodon Question activity with HTML tags in plaintext" do
@@ -172,5 +169,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
       |> Kernel.put_in(["object", "content"], "")
 
     assert {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
+  end
+
+  test "it strips voters list and displays voters count instead" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        status: "???",
+        poll: %{expires_in: 10, options: ["yes", "no"]}
+      })
+
+    object = Object.normalize(activity, fetch: false)
+    {:ok, _, _} = CommonAPI.vote(other_user, object, [1])
+
+    {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+    refute Map.has_key?(modified["object"], "voters")
+    assert modified["object"]["votersCount"] == 1
   end
 end

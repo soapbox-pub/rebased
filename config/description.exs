@@ -497,6 +497,27 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :delete_context_objects,
+    type: :group,
+    description: "`delete_context_objects` background migration settings",
+    children: [
+      %{
+        key: :fault_rate_allowance,
+        type: :float,
+        description:
+          "Max accepted rate of objects that failed in the migration. Any value from 0.0 which tolerates no errors to 1.0 which will enable the feature even if context object deletion failed for all records.",
+        suggestions: [0.01]
+      },
+      %{
+        key: :sleep_interval_ms,
+        type: :integer,
+        description:
+          "Sleep interval between each chunk of processed records in order to decrease the load on the system (defaults to 0 and should be keep default on most instances)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :instance,
     type: :group,
     description: "Instance-related settings",
@@ -544,6 +565,12 @@ config :pleroma, :config_description, [
         suggestions: [
           "Cool instance"
         ]
+      },
+      %{
+        key: :contact_username,
+        type: :string,
+        description: "Instance owner username",
+        suggestions: ["admin"]
       },
       %{
         key: :limit,
@@ -795,6 +822,13 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :report_strip_status,
+        label: "Report strip status",
+        type: :boolean,
+        description:
+          "Strip associated statuses in reports to ids when closed/resolved, otherwise keep a copy"
+      },
+      %{
         key: :safe_dm_mentions,
         label: "Safe DM mentions",
         type: :boolean,
@@ -968,6 +1002,13 @@ config :pleroma, :config_description, [
         suggestions: ["/instance/thumbnail.jpeg"]
       },
       %{
+        key: :favicon,
+        type: {:string, :image},
+        description:
+          "Shortcut icon displayed in the browser, and possibly displayed by other instances.",
+        suggestions: ["/favicon.png"]
+      },
+      %{
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
@@ -978,10 +1019,48 @@ config :pleroma, :config_description, [
         description: "Enable profile directory."
       },
       %{
-        key: :privileged_staff,
-        type: :boolean,
+        key: :admin_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
         description:
-          "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+          "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+      },
+      %{
+        key: :moderator_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
+        description:
+          "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
       %{
         key: :birthday_required,
@@ -992,7 +1071,24 @@ config :pleroma, :config_description, [
         key: :birthday_min_age,
         type: :integer,
         description:
-          "Minimum required age for users to create account. Only used if birthday is required."
+          "Minimum required age (in days) for users to create account. Only used if birthday is required.",
+        suggestions: [6570]
+      },
+      %{
+        key: :migration_cooldown_period,
+        type: :integer,
+        description:
+          "Number of days for which users won't be able to migrate account again after successful migration.",
+        suggestions: [30]
+      },
+      %{
+        key: :languages,
+        type: {:list, :string},
+        description:
+          "Languages to be exposed in /api/v1/instance. Should be in the format of BCP47 language codes.",
+        suggestions: [
+          "en"
+        ]
       }
     ]
   },
@@ -1173,45 +1269,6 @@ config :pleroma, :config_description, [
         key: :metadata,
         type: {:list, :atom},
         suggestions: [:request_id]
-      }
-    ]
-  },
-  %{
-    group: :quack,
-    type: :group,
-    label: "Quack Logger",
-    description: "Quack-related settings",
-    children: [
-      %{
-        key: :level,
-        type: {:dropdown, :atom},
-        description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
-      },
-      %{
-        key: :meta,
-        type: {:list, :atom},
-        description: "Configure which metadata you want to report on",
-        suggestions: [
-          :application,
-          :module,
-          :file,
-          :function,
-          :line,
-          :pid,
-          :crash_reason,
-          :initial_call,
-          :registered_name,
-          :all,
-          :none
-        ]
-      },
-      %{
-        key: :webhook_url,
-        label: "Webhook URL",
-        type: :string,
-        description: "Configure the Slack incoming webhook",
-        suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
       }
     ]
   },
@@ -1738,6 +1795,11 @@ config :pleroma, :config_description, [
         description: "Sign object fetches with HTTP signatures"
       },
       %{
+        key: :authorized_fetch_mode,
+        type: :boolean,
+        description: "Require HTTP signatures for AP fetches"
+      },
+      %{
         key: :note_replies_output_limit,
         type: :integer,
         description:
@@ -1912,6 +1974,8 @@ config :pleroma, :config_description, [
           federator_outgoing: 50,
           mailer: 10,
           scheduled_activities: 10,
+          poll_notifications: 10,
+          notifications: 20,
           transmogrifier: 20,
           web_push: 50
         ],
@@ -1963,6 +2027,18 @@ config :pleroma, :config_description, [
             type: :integer,
             description: "Scheduled activities queue, see Pleroma.ScheduledActivities",
             suggestions: [10]
+          },
+          %{
+            key: :poll_notifications,
+            type: :integer,
+            description: "Stores poll expirations so it can notify users when a poll ends",
+            suggestions: [10]
+          },
+          %{
+            key: :notifications,
+            type: :integer,
+            description: "Creates notifications for activities in the background",
+            suggestions: [20]
           },
           %{
             key: :transmogrifier,
@@ -2593,49 +2669,16 @@ config :pleroma, :config_description, [
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
+        key: :events_actions,
+        type: [:tuple, {:list, :tuple}],
+        description: "For create / update / join / leave actions on any statuses",
+        suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
+      },
+      %{
         key: :authentication,
         type: [:tuple, {:list, :tuple}],
         description: "For authentication create / password check / user existence check requests",
         suggestions: [{60_000, 15}]
-      }
-    ]
-  },
-  %{
-    group: :esshd,
-    label: "ESSHD",
-    type: :group,
-    description:
-      "Before enabling this you must add :esshd to mix.exs as one of the extra_applications " <>
-        "and generate host keys in your priv dir with ssh-keygen -m PEM -N \"\" -b 2048 -t rsa -f ssh_host_rsa_key",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables SSH"
-      },
-      %{
-        key: :priv_dir,
-        type: :string,
-        description: "Dir with SSH keys",
-        suggestions: ["/some/path/ssh_keys"]
-      },
-      %{
-        key: :handler,
-        type: :string,
-        description: "Handler module",
-        suggestions: ["Pleroma.BBS.Handler"]
-      },
-      %{
-        key: :port,
-        type: :integer,
-        description: "Port to connect",
-        suggestions: [10_022]
-      },
-      %{
-        key: :password_authenticator,
-        type: :string,
-        description: "Authenticator module",
-        suggestions: ["Pleroma.BBS.Authenticator"]
       }
     ]
   },
@@ -2689,27 +2732,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :shout,
-    type: :group,
-    description: "Pleroma shout settings",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables the backend Shoutbox chat feature."
-      },
-      %{
-        key: :limit,
-        type: :integer,
-        description: "Shout message character limit.",
-        suggestions: [
-          5_000
-        ]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: :http,
     label: "HTTP",
     type: :group,
@@ -2749,7 +2771,7 @@ config :pleroma, :config_description, [
                 key: :versions,
                 type: {:list, :atom},
                 description: "List of TLS version to use",
-                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
+                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2", ":tlsv1.3"]
               }
             ]
           }
@@ -3375,6 +3397,21 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Limit user to export not more often than once per N days",
         suggestions: [7]
+      },
+      %{
+        key: :process_wait_time,
+        type: :integer,
+        label: "Process Wait Time",
+        description:
+          "The amount of time to wait for backup to report progress, in milliseconds. If no progress is received from the backup job for that much time, terminate it and deem it failed.",
+        suggestions: [30_000]
+      },
+      %{
+        key: :process_chunk_size,
+        type: :integer,
+        label: "Process Chunk Size",
+        description: "The number of activities to fetch in the backup job for each chunk.",
+        suggestions: [100]
       }
     ]
   },
@@ -3460,6 +3497,195 @@ config :pleroma, :config_description, [
             suggestion: [5]
           }
         ]
+      },
+      %{
+        key: Pleroma.Webhook.Notify,
+        type: :keyword,
+        description: "Concurrent limits configuration for webhooks.",
+        suggestions: [max_running: 5, max_waiting: 5],
+        children: [
+          %{
+            key: :max_running,
+            type: :integer,
+            description: "Max running concurrently jobs.",
+            suggestion: [5]
+          },
+          %{
+            key: :max_waiting,
+            type: :integer,
+            description: "Max waiting jobs.",
+            suggestion: [5]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.WebFinger,
+    type: :group,
+    description: "Webfinger",
+    children: [
+      %{
+        key: :update_nickname_on_user_fetch,
+        type: :boolean,
+        description: "Update nickname according to host-meta, when refetching the user"
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Language.Translation,
+    type: :group,
+    description: "Translation providers",
+    children: [
+      %{
+        key: :provider,
+        type: :module,
+        suggestions: [
+          Pleroma.Language.Translation.Deepl,
+          Pleroma.Language.Translation.Libretranslate
+        ]
+      },
+      %{
+        key: :allow_unauthenticated,
+        type: :boolean,
+        label: "Allow unauthenticated",
+        description: "Whether to let unauthenticated users translate posts"
+      },
+      %{
+        key: :allow_remote,
+        type: :boolean,
+        label: "Allow remote",
+        description: "Whether to allow translation of remote posts"
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Deepl},
+        key: :base_url,
+        label: "DeepL base URL",
+        type: :string,
+        suggestions: ["https://api-free.deepl.com", "https://api.deepl.com"]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Deepl},
+        key: :api_key,
+        label: "DeepL API Key",
+        type: :string,
+        suggestions: ["YOUR_API_KEY"]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
+        key: :base_url,
+        label: "LibreTranslate instance URL",
+        type: :string,
+        suggestions: ["https://libretranslate.com"]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.Translation.Libretranslate},
+        key: :api_key,
+        label: "LibreTranslate API Key",
+        type: :string,
+        suggestions: ["YOUR_API_KEY"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Language.LanguageDetector,
+    type: :group,
+    description: "Language detection providers",
+    children: [
+      %{
+        key: :provider,
+        type: :module,
+        label: "Language detection provider",
+        suggestions: [
+          Pleroma.Language.LanguageDetector.Fasttext
+        ]
+      },
+      %{
+        group: {:subgroup, Pleroma.Language.LanguageDetector.Fasttext},
+        key: :model,
+        label: "fastText language detection model",
+        type: :string,
+        suggestions: ["/usr/share/fasttext/lid.176.bin"]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Service,
+    type: :group,
+    description: "Geospatial service providers",
+    children: [
+      %{
+        key: :service,
+        type: :module,
+        label: "Geospatial service provider",
+        suggestions: [
+          Geospatial.Providers.GoogleMaps,
+          Geospatial.Providers.Nominatim,
+          Geospatial.Providers.Pelias
+        ]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Nominatim,
+    type: :group,
+    description: "Nominatim provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Nominatim endpoint",
+        suggestions: ["https://nominatim.openstreetmap.org"]
+      },
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Nominatim API key",
+        suggestions: [nil]
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.GoogleMaps,
+    type: :group,
+    description: "Google Maps provider configuration",
+    children: [
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Google Maps API key",
+        suggestions: [nil]
+      },
+      %{
+        key: :fetch_place_details,
+        type: :boolean,
+        description: "Fetch place details"
+      }
+    ]
+  },
+  %{
+    group: :geospatial,
+    key: Geospatial.Providers.Pelias,
+    type: :group,
+    description: "Pelias provider configuration",
+    children: [
+      %{
+        key: :endpoint,
+        type: :string,
+        description: "Pelias endpoint",
+        suggestions: ["https://api.geocode.earth"]
+      },
+      %{
+        key: :api_key,
+        type: :string,
+        description: "Pelias API key",
+        suggestions: [nil]
       }
     ]
   }

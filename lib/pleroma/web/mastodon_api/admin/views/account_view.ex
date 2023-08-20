@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountView do
       disabled: !user.is_active,
       approved: user.is_approved,
       locale: nil,
-      invite_request: nil,
+      invite_request: user.registration_reason,
       ips: nil,
       account: account
     }

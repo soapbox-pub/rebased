@@ -83,5 +83,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert tokens == []
       assert response.status == 201
     end
+
+    test "revoke all tokens", %{token: token} do
+      insert(:oauth_token, user: token.user)
+      insert(:oauth_token, user: token.user)
+
+      response =
+        build_conn()
+        |> assign(:user, token.user)
+        |> delete("/api/oauth_tokens")
+
+      tokens = Token.get_user_tokens(token.user)
+
+      assert tokens == []
+      assert response.status == 201
+    end
   end
 end

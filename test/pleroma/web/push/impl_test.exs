@@ -202,6 +202,21 @@ defmodule Pleroma.Web.Push.ImplTest do
              "New Reaction"
   end
 
+  test "renders title and body for update activity" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "lorem ipsum"})
+
+    {:ok, activity} = CommonAPI.update(user, activity, %{status: "edited status"})
+    object = Object.normalize(activity, fetch: false)
+
+    assert Impl.format_body(%{activity: activity, type: "update"}, user, object) ==
+             "@#{user.nickname} edited a status"
+
+    assert Impl.format_title(%{activity: activity, type: "update"}) ==
+             "New Update"
+  end
+
   test "renders title for create activity with direct visibility" do
     user = insert(:user, nickname: "Bob")
 
@@ -246,6 +261,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, chat} = CommonAPI.post_chat_message(user, recipient, nil, media_id: upload.id)
       object = Object.normalize(chat, fetch: false)
+
+      Pleroma.Tests.ObanHelpers.perform_all()
       [notification] = Notification.for_user(recipient)
 
       res = Impl.build_content(notification, user, object)
@@ -347,6 +364,7 @@ defmodule Pleroma.Web.Push.ImplTest do
              }
 
       {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      Pleroma.Tests.ObanHelpers.perform_all()
 
       notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 

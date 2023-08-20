@@ -1,14 +1,14 @@
 <%= if @error do %>
 <h2><%= @error %></h2>
 <% end %>
-<h2>Log in to follow</h2>
+<h2><%= Gettext.dpgettext("static_pages", "remote follow header, need login", "Log in to follow") %></h2>
 <p><%= @followee.nickname %></p>
 <img height="128" width="128" src="<%= avatar_url(@followee) %>">
 <%= form_for @conn, Routes.remote_follow_path(@conn, :do_follow), [as: "authorization"], fn f -> %>
-<%= text_input f, :name, placeholder: "Username", required: true, autocomplete: "username" %>
+<%= text_input f, :name, placeholder: Gettext.dpgettext("static_pages", "placeholder text for username entry", "Username"), required: true, autocomplete: "username" %>
 <br>
-<%= password_input f, :password, placeholder: "Password", required: true, autocomplete: "password" %>
+<%= password_input f, :password, placeholder: Gettext.dpgettext("static_pages", "placeholder text for password entry", "Password"), required: true, autocomplete: "password" %>
 <br>
 <%= hidden_input f, :id, value: @followee.id %>
-<%= submit "Authorize" %>
+<%= submit Gettext.dpgettext("static_pages", "remote follow authorization button for login", "Authorize") %>
 <% end %>

@@ -24,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.TagValidator do
       field(:url, ObjectValidators.Uri)
     end
 
+    field(:mediaType, ObjectValidators.MIME)
     field(:updated, ObjectValidators.DateTime)
     field(:id, ObjectValidators.Uri)
   end
@@ -66,6 +67,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.TagValidator do
     |> cast(data, [:type, :name, :updated, :id])
     |> cast_embed(:icon, with: &icon_changeset/2)
     |> validate_required([:type, :name, :icon])
+  end
+
+  def changeset(struct, %{"type" => "Link"} = data) do
+    struct
+    |> cast(data, [:type, :name, :href, :mediaType])
+  end
+
+  def changeset(struct, %{"type" => _} = data) do
+    struct
+    |> cast(data, [])
+    |> Map.put(:action, :ignore)
   end
 
   def icon_changeset(struct, data) do

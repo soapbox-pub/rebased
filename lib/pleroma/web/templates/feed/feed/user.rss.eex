@@ -1,20 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
+<rss version="2.0"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:thr="http://purl.org/syndication/thread/1.0"
+     xmlns:activity="http://activitystrea.ms/spec/1.0/"
+     xmlns:ostatus="http://ostatus.org/schema/1.0"
+     xmlns:poco="http://portablecontacts.net/spec/1.0">
   <channel>
-    <guid><%= Routes.user_feed_url(@conn, :feed, @user.nickname) <> ".rss" %></guid>
     <title><%= @user.nickname <> "'s timeline" %></title>
-    <updated><%= most_recent_update(@activities, @user) %></updated>
-    <image><%= logo(@user) %></image>
     <link><%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss' %></link>
+    <atom:link href="<%= Routes.user_feed_url(@conn, :feed, @user.nickname) <> ".atom" %>"
+               rel="self" type="application/rss+xml" />
+    <description><%= escape(@user.bio) %></description>
+    <image>
+      <url><%= logo(@user) %></url>
+      <title><%= @user.nickname <> "'s timeline" %></title>
+      <link><%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss' %></link>
+    </image>
 
-    <%= render @view_module, "_author.rss", assigns %>
+    <%= render Phoenix.Controller.view_module(@conn), "_author.rss", assigns %>
 
     <%= if last_activity(@activities) do %>
       <link rel="next"><%= '#{Routes.user_feed_url(@conn, :feed, @user.nickname)}.rss?max_id=#{last_activity(@activities).id}' %></link>
     <% end %>
 
     <%= for activity <- @activities do %>
-    <%= render @view_module, "_activity.rss", Map.merge(assigns, prepare_activity(activity)) %>
+    <%= render Phoenix.Controller.view_module(@conn), "_activity.rss", Map.merge(assigns, prepare_activity(activity)) %>
     <% end %>
   </channel>
 </rss>

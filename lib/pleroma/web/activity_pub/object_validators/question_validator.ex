@@ -29,6 +29,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
 
     field(:closed, ObjectValidators.DateTime)
     field(:voters, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:votersCount, :integer)
+    field(:nonAnonymous, :boolean)
     embeds_many(:anyOf, QuestionOptionsValidator)
     embeds_many(:oneOf, QuestionOptionsValidator)
   end
@@ -80,7 +82,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   defp validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

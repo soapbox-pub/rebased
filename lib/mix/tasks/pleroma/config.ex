@@ -304,13 +304,8 @@ defmodule Mix.Tasks.Pleroma.Config do
     System.cmd("mix", ["format", path])
   end
 
-  if Code.ensure_loaded?(Config.Reader) do
-    defp config_header, do: "import Config\r\n\r\n"
-    defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
-  else
-    defp config_header, do: "use Mix.Config\r\n\r\n"
-    defp read_file(config_file), do: Mix.Config.eval!(config_file)
-  end
+  defp config_header, do: "import Config\r\n\r\n"
+  defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
 
   defp write_and_delete(config, file, delete?) do
     config
