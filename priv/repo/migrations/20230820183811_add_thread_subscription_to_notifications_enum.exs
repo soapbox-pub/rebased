@@ -37,7 +37,11 @@ defmodule Pleroma.Repo.Migrations.AddThreadSubscriptionToNotificationsEnum do
       'favourite',
       'pleroma:report',
       'poll',
-      'status'
+      'status',
+      'pleroma:participation_accepted',
+      'pleroma:participation_request',
+      'pleroma:event_reminder',
+      'pleroma:event_update'
     )
     """
     |> execute()
