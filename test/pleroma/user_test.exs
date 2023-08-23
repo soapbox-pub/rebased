@@ -903,7 +903,7 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([Pleroma.Web.WebFinger, :update_nickname_on_user_fetch], true)
 
     test "for mastodon" do
-      Tesla.Mock.mock(fn
+      Tesla.Mock.mock_global(fn
         %{url: "https://example.com/.well-known/host-meta"} ->
           %Tesla.Env{
             status: 302,
@@ -961,7 +961,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "for pleroma" do
-      Tesla.Mock.mock(fn
+      Tesla.Mock.mock_global(fn
         %{url: "https://example.com/.well-known/host-meta"} ->
           %Tesla.Env{
             status: 302,
