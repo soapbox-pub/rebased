@@ -142,7 +142,7 @@ defmodule Pleroma.Application do
         num
       else
         e ->
-          Logger.warn(
+          Logger.warning(
             "Could not get the postgres version: #{inspect(e)}.\nSetting the default value of 9.6"
           )
 

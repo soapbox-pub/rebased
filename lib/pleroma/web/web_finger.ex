@@ -163,7 +163,7 @@ defmodule Pleroma.Web.WebFinger do
       get_template_from_xml(body)
     else
       error ->
-        Logger.warn("Can't find LRDD template in #{inspect(meta_url)}: #{inspect(error)}")
+        Logger.warning("Can't find LRDD template in #{inspect(meta_url)}: #{inspect(error)}")
         {:error, :lrdd_not_found}
     end
   end
@@ -216,10 +216,26 @@ defmodule Pleroma.Web.WebFinger do
         _ ->
           {:error, {:content_type, nil}}
       end
+      |> case do
+        {:ok, data} -> validate_webfinger(address, data)
+        error -> error
+      end
     else
       error ->
         Logger.debug("Couldn't finger #{account}: #{inspect(error)}")
         error
     end
   end
+
+  defp validate_webfinger(url, %{"subject" => "acct:" <> acct} = data) do
+    with %URI{host: request_host} <- URI.parse(url),
+         [_name, acct_host] <- String.split(acct, "@"),
+         {_, true} <- {:hosts_match, acct_host == request_host} do
+      {:ok, data}
+    else
+      _ -> {:error, {:webfinger_invalid, url, data}}
+    end
+  end
+
+  defp validate_webfinger(url, data), do: {:error, {:webfinger_invalid, url, data}}
 end

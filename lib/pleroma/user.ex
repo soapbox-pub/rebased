@@ -1627,7 +1627,7 @@ defmodule Pleroma.User do
       unmute(muter, mutee)
     else
       {who, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "User.unmute/2 failed. #{who}: #{result}, muter_id: #{muter_id}, mutee_id: #{mutee_id}"
         )
 

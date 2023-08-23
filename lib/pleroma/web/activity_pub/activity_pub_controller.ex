@@ -476,7 +476,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> json(message)
 
       e ->
-        Logger.warn(fn -> "AP C2S: #{inspect(e)}" end)
+        Logger.warning(fn -> "AP C2S: #{inspect(e)}" end)
 
         conn
         |> put_status(:bad_request)

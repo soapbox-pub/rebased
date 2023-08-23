@@ -34,7 +34,7 @@ defmodule Pleroma.ApplicationRequirements do
   defp check_welcome_message_config!(:ok) do
     if Pleroma.Config.get([:welcome, :email, :enabled], false) and
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.warn("""
+      Logger.warning("""
       To send welcome emails, you need to enable the mailer.
       Welcome emails will NOT be sent with the current config.
 
@@ -53,7 +53,7 @@ defmodule Pleroma.ApplicationRequirements do
   def check_confirmation_accounts!(:ok) do
     if Pleroma.Config.get([:instance, :account_activation_required]) &&
          not Pleroma.Emails.Mailer.enabled?() do
-      Logger.warn("""
+      Logger.warning("""
       Account activation is required, but the mailer is disabled.
       Users will NOT be able to confirm their accounts with this config.
       Either disable account activation or enable the mailer.
