@@ -48,7 +48,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
            ]
   end
 
-  test "reach user on tld, while pleroma is runned on subdomain" do
+  test "reach user on tld, while pleroma is ran on subdomain" do
     Pleroma.Web.Endpoint.config_change(
       [{Pleroma.Web.Endpoint, url: [host: "sub.example.com"]}],
       []
