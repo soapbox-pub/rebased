@@ -11,9 +11,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
 
+<<<<<<< HEAD
   require Pleroma.Constants
 
   import Pleroma.Web.CommonAPI.Utils, only: [is_good_locale_code?: 1]
+=======
+  import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
+    only: [is_good_locale_code?: 1]
+
+>>>>>>> b52d189fcc (Move is_good_locale_code? to object validator)
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   def cast_and_filter_recipients(message, field, follower_collection, field_fallback \\ []) do

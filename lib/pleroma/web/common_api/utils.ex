@@ -512,7 +512,4 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       {:error, dgettext("errors", "Too many attachments")}
     end
   end
-  def is_good_locale_code?(code) when is_binary(code), do: code =~ ~r<[A-zA-Z0-9\-]+>
-
-  def is_good_locale_code?(_code), do: false
 end
