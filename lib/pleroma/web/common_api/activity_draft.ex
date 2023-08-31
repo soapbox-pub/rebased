@@ -10,6 +10,9 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
 
+  import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
+    only: [is_good_locale_code?: 1]
+
   import Pleroma.Web.Gettext
 
   defstruct valid?: true,
@@ -195,7 +198,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp language(draft) do
     language = draft.params[:language]
 
-    if Utils.is_good_locale_code?(language) do
+    if is_good_locale_code?(language) do
       %__MODULE__{draft | language: language}
     else
       draft

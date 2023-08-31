@@ -5,7 +5,8 @@
 defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.MapOfString do
   use Ecto.Type
 
-  import Pleroma.Web.CommonAPI.Utils, only: [is_good_locale_code?: 1]
+  import Pleroma.EctoType.ActivityPub.ObjectValidators.LanguageCode,
+    only: [is_good_locale_code?: 1]
 
   def type, do: :map
 
