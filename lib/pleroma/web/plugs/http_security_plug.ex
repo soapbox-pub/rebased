@@ -100,6 +100,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       if Config.get([:media_proxy, :enabled]) &&
            !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
         sources = build_csp_multimedia_source_list()
+
         {
           [img_src, sources],
           [media_src, sources],
@@ -112,7 +113,6 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
           [connect_src, " https:"]
         }
       end
-
 
     connect_src =
       if Config.get(:env) == :dev do
