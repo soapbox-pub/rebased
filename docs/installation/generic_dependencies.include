@@ -5,7 +5,7 @@
 * Erlang OTP >=22.2.0 <26
 * git
 * file / libmagic
-* gcc (clang might also work)
+* gcc or clang
 * GNU make
 * CMake
 
