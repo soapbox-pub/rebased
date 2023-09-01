@@ -111,7 +111,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp attachments(%{params: params} = draft) do
-    attachments = Utils.attachments_from_ids(params)
+    attachments = Utils.attachments_from_ids(params, draft.user)
     draft = %__MODULE__{draft | attachments: attachments}
 
     case Utils.validate_attachments_count(attachments) do
