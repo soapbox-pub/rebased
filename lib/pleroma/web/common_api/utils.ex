@@ -23,21 +23,21 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   require Logger
   require Pleroma.Constants
 
-  def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
-    attachments_from_ids_descs(ids, desc)
+  def attachments_from_ids(%{media_ids: ids, descriptions: desc}, user) do
+    attachments_from_ids_descs(ids, desc, user)
   end
 
-  def attachments_from_ids(%{media_ids: ids}) do
-    attachments_from_ids_no_descs(ids)
+  def attachments_from_ids(%{media_ids: ids}, user) do
+    attachments_from_ids_no_descs(ids, user)
   end
 
-  def attachments_from_ids(_), do: []
+  def attachments_from_ids(_, _), do: []
 
-  def attachments_from_ids_no_descs([]), do: []
+  def attachments_from_ids_no_descs([], _), do: []
 
-  def attachments_from_ids_no_descs(ids) do
+  def attachments_from_ids_no_descs(ids, user) do
     Enum.map(ids, fn media_id ->
-      case get_attachment(media_id) do
+      case get_attachment(media_id, user) do
         %Object{data: data} -> data
         _ -> nil
       end
@@ -45,22 +45,23 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Enum.reject(&is_nil/1)
   end
 
-  def attachments_from_ids_descs([], _), do: []
+  def attachments_from_ids_descs([], _, _), do: []
 
-  def attachments_from_ids_descs(ids, descs_str) do
+  def attachments_from_ids_descs(ids, descs_str, user) do
     {_, descs} = Jason.decode(descs_str)
 
     Enum.map(ids, fn media_id ->
-      with %Object{data: data} <- get_attachment(media_id) do
+      with %Object{data: data} <- get_attachment(media_id, user) do
         Map.put(data, "name", descs[media_id])
       end
     end)
     |> Enum.reject(&is_nil/1)
   end
 
-  defp get_attachment(media_id) do
+  defp get_attachment(media_id, user) do
     with %Object{data: data} = object <- Repo.get(Object, media_id),
-         %{"type" => type} when type in Pleroma.Constants.upload_object_types() <- data do
+         %{"type" => type} when type in Pleroma.Constants.upload_object_types() <- data,
+         :ok <- Object.authorize_access(object, user) do
       object
     else
       _ -> nil

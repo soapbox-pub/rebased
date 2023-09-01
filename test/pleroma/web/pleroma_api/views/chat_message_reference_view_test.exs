@@ -24,7 +24,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
       filename: "an_image.jpg"
     }
 
-    {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+    {:ok, upload} = ActivityPub.upload(file, actor: recipient.ap_id)
 
     {:ok, activity} =
       CommonAPI.post_chat_message(user, recipient, "kippis :firefox:", idempotency_key: "123")
