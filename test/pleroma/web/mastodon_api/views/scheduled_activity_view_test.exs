@@ -48,7 +48,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
       id: to_string(scheduled_activity.id),
       media_attachments:
         %{media_ids: [upload.id]}
-        |> Utils.attachments_from_ids()
+        |> Utils.attachments_from_ids(user)
         |> Enum.map(&StatusView.render("attachment.json", %{attachment: &1})),
       params: %{
         in_reply_to_id: to_string(activity.id),

@@ -33,6 +33,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+         :ok <- validate_chat_attachment_attribution(maybe_attachment, user),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
@@ -69,6 +70,17 @@ defmodule Pleroma.Web.CommonAPI do
           end).()
 
     text
+  end
+
+  defp validate_chat_attachment_attribution(nil, _), do: :ok
+
+  defp validate_chat_attachment_attribution(attachment, user) do
+    with :ok <- Object.authorize_access(attachment, user) do
+      :ok
+    else
+      e ->
+        e
+    end
   end
 
   defp validate_chat_content_length(_, true), do: :ok
