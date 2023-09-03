@@ -55,7 +55,7 @@ USER pleroma
 
 COPY --from=build --chown=pleroma:0 /src/release ${HOME}
 
-COPY ./config/docker.exs /etc/pleroma/config.exs
+COPY --chown=pleroma --chmod=640 ./config/docker.exs /etc/pleroma/config.exs
 COPY ./docker-entrypoint.sh ${HOME}
 
 ENTRYPOINT ["/opt/pleroma/docker-entrypoint.sh"]
