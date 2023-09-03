@@ -279,6 +279,24 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
                CommonAPI.post_chat_message(author, recipient, "GNO/Linux")
     end
+
+    test "it reject messages with attachments not belonging to user" do
+      author = insert(:user)
+      not_author = insert(:user)
+      recipient = author
+
+      attachment = insert(:attachment, %{user: not_author})
+
+      {:error, message} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "123",
+          media_id: attachment.id
+        )
+
+      assert message == :forbidden
+    end
   end
 
   describe "unblocking" do
