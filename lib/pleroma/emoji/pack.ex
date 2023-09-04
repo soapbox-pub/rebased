@@ -28,6 +28,8 @@ defmodule Pleroma.Emoji.Pack do
 
   @spec create(String.t()) :: {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
   def create(name) do
+    name = safe_path(name)
+
     with :ok <- validate_not_empty([name]),
          dir <- Path.join(emoji_path(), name),
          :ok <- File.mkdir(dir) do
@@ -472,6 +474,7 @@ defmodule Pleroma.Emoji.Pack do
   end
 
   defp save_file(%Plug.Upload{path: upload_path}, pack, filename) do
+    filename = safe_path(filename)
     file_path = Path.join(pack.path, filename)
     create_subdirs(file_path)
 
@@ -491,6 +494,8 @@ defmodule Pleroma.Emoji.Pack do
   end
 
   defp rename_file(pack, filename, new_filename) do
+    filename = safe_path(filename)
+    new_filename = safe_path(new_filename)
     old_path = Path.join(pack.path, filename)
     new_path = Path.join(pack.path, new_filename)
     create_subdirs(new_path)
@@ -650,6 +655,15 @@ defmodule Pleroma.Emoji.Pack do
         List.keyfind(f_list, to_charlist(from_manifest), 0)
       end)
       |> if(do: :ok, else: {:error, :incomplete})
+    end
+  end
+
+  defp safe_path(path) do
+    elems = Path.split(path) |> Enum.reject(fn x -> x == ".." end)
+
+    case length(elems) do
+      x when x < 2 -> Enum.join(elems)
+      _ -> Path.join(elems)
     end
   end
 end
