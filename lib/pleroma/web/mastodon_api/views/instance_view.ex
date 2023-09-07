@@ -92,7 +92,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "shareable_emoji_packs",
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
-      "quote_posting",
       "editing",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
@@ -103,6 +102,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:gopher, :enabled]) do
         "gopher"
       end,
+      # backwards compat
+      if Config.get([:shout, :enabled]) do
+        "chat"
+      end,
+      if Config.get([:shout, :enabled]) do
+        "shout"
+      end,
       if Config.get([:instance, :allow_relay]) do
         "relay"
       end,
@@ -112,7 +118,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "pleroma_emoji_reactions",
       "pleroma_custom_emoji_reactions",
       "pleroma_chat_messages",
-      "email_list",
       if Config.get([:instance, :show_reactions]) do
         "exposable_reactions"
       end,
