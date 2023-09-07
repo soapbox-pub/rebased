@@ -178,7 +178,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ArticleNotePageValidatorTest 
   end
 
   describe "Note language" do
-    test "it detects language from context" do
+    test "it detects language from JSON-LD context" do
       user = insert(:user)
 
       note_activity = %{
