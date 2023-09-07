@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFields do
   defmacro object_fields do
     quote bind_quoted: binding() do
       field(:content, :string)
-      field(:contentMap, ObjectValidators.MapOfString)
+      field(:contentMap, ObjectValidators.ContentLanguageMap)
 
       field(:published, ObjectValidators.DateTime)
       field(:updated, ObjectValidators.DateTime)
