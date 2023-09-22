@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Auth.BasicAuthTest do
   test "with HTTP Basic Auth used, grants access to OAuth scope-restricted endpoints", %{
     conn: conn
   } do
+    clear_config([:auth, :basic_auth], true)
     user = insert(:user)
     assert Pleroma.Password.Pbkdf2.verify_pass("test", user.password_hash)
 

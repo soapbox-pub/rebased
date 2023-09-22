@@ -668,6 +668,10 @@ config :ueberauth,
 
 config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
+config :pleroma, :auth, basic_auth: false
+
+config :pleroma, :auth, mongoose_im: false
+
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
 config :pleroma, Pleroma.Emails.UserEmail,
