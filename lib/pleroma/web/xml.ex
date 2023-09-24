@@ -26,14 +26,7 @@ defmodule Pleroma.Web.XML do
 
   def parse_document(text) do
     try do
-      {doc, _rest} =
-        text
-        |> :binary.bin_to_list()
-        |> :xmerl_scan.string(
-          quiet: true,
-          allow_entities: false
-        )
-
+      doc = SweetXml.parse(text, dtd: :none)
       {:ok, doc}
     rescue
       _e ->
