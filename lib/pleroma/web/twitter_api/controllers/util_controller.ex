@@ -345,12 +345,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def healthcheck(conn, _params) do
-    with true <- Config.get([:instance, :healthcheck]),
+    with {:cfg, true} <- {:cfg, Config.get([:instance, :healthcheck])},
          %{healthy: true} = info <- Healthcheck.system_info() do
       json(conn, info)
     else
       %{healthy: false} = info ->
         service_unavailable(conn, info)
+
+      {:cfg, false} ->
+        service_unavailable(conn, %{"error" => "Healthcheck disabled"})
 
       _ ->
         service_unavailable(conn, %{})
