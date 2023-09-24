@@ -7,6 +7,8 @@ defmodule Pleroma.Web.Plugs.BasicAuthDecoderPlugTest do
 
   alias Pleroma.Web.Plugs.BasicAuthDecoderPlug
 
+  setup do: clear_config([:auth, :basic_auth], true)
+
   defp basic_auth_enc(username, password) do
     "Basic " <> Base.encode64("#{username}:#{password}")
   end
@@ -31,5 +33,18 @@ defmodule Pleroma.Web.Plugs.BasicAuthDecoderPlugTest do
       |> BasicAuthDecoderPlug.call(%{})
 
     assert conn == ret_conn
+  end
+
+  test "when disabled it doesn't do anything", %{conn: conn} do
+    clear_config([:auth, :basic_auth], false)
+
+    header = basic_auth_enc("moonman", "iloverobek")
+
+    conn =
+      conn
+      |> put_req_header("authorization", header)
+      |> BasicAuthDecoderPlug.call(%{})
+
+    refute conn.assigns[:auth_credentials]
   end
 end
