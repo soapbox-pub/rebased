@@ -252,6 +252,21 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     })
   end
 
+  defp restrict_unauthenticated do
+    Config.get([:restrict_unauthenticated])
+    |> Enum.map(fn {category, features} ->
+      features =
+        Enum.map(features, fn
+          {feature, is_enabled} when is_boolean(is_enabled) -> {feature, is_enabled}
+          {feature, :if_instance_is_private} -> {feature, !Config.get!([:instance, :public])}
+        end)
+        |> Enum.into(%{})
+
+      {category, features}
+    end)
+    |> Enum.into(%{})
+  end
+
   defp pleroma_configuration(instance) do
     %{
       metadata: %{
@@ -264,6 +279,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         birthday_required: Config.get([:instance, :birthday_required]),
         birthday_min_age: Config.get([:instance, :birthday_min_age]),
         migration_cooldown_period: Config.get([:instance, :migration_cooldown_period]),
+        restrict_unauthenticated: restrict_unauthenticated(),
         translation: translation_configuration(),
         markup: markup()
       },
