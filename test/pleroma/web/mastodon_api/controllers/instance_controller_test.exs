@@ -204,4 +204,14 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              |> get("/api/v1/instance/translation_languages")
              |> json_response_and_validate_schema(200)
   end
+
+  test "restrict_unauthenticated", %{conn: conn} do
+    result =
+      conn
+      |> get("/api/v1/instance")
+      |> json_response_and_validate_schema(200)
+
+    assert result["pleroma"]["metadata"]["restrict_unauthenticated"]["timelines"]["local"] ==
+             false
+  end
 end
