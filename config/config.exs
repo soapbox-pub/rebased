@@ -806,8 +806,7 @@ config :pleroma, :frontends,
       "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
         "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build",
-      "ref" => "main",
-      "build_dir" => "dist"
+      "ref" => "main"
     },
     "glitch-lily" => %{
       "name" => "glitch-lily",
