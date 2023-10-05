@@ -149,9 +149,11 @@ defmodule Pleroma.Web.WebFinger do
   def get_template_from_xml(body) do
     xpath = "//Link[@rel='lrdd']/@template"
 
-    with {:ok, doc} <- XML.parse_document(body),
-         template when template != nil <- XML.string_from_xpath(xpath, doc) do
+    with {_, {:ok, doc}} <- {:xml_parse, XML.parse_document(body)},
+         {_, template} when template != nil <- {:find_template, XML.string_from_xpath(xpath, doc)} do
       {:ok, template}
+    else
+      error -> {:error, error}
     end
   end
 

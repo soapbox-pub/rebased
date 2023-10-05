@@ -91,25 +91,41 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     static_url = Pleroma.Web.Endpoint.static_url()
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
     report_uri = Config.get([:http_security, :report_uri])
+    sentry_dsn = Config.get([:frontend_configurations, :soapbox_fe, "sentryDsn"])
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
+    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     # Strict multimedia CSP enforcement only when MediaProxy is enabled
-    {img_src, media_src} =
+    {img_src, media_src, connect_src} =
       if Config.get([:media_proxy, :enabled]) &&
            !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
         sources = build_csp_multimedia_source_list()
-        {[img_src, sources], [media_src, sources]}
-      else
-        {[img_src, " https:"], [media_src, " https:"]}
-      end
 
-    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
+        {
+          [img_src, sources],
+          [media_src, sources],
+          [connect_src, sources]
+        }
+      else
+        {
+          [img_src, " https:"],
+          [media_src, " https:"],
+          [connect_src, " https:"]
+        }
+      end
 
     connect_src =
       if Config.get(:env) == :dev do
         [connect_src, " http://localhost:3035/"]
+      else
+        connect_src
+      end
+
+    connect_src =
+      if sentry_dsn do
+        [connect_src, " ", build_csp_param(sentry_dsn)]
       else
         connect_src
       end

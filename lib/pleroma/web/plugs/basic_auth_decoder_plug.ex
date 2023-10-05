@@ -16,7 +16,8 @@ defmodule Pleroma.Web.Plugs.BasicAuthDecoderPlug do
   end
 
   def call(conn, _opts) do
-    with ["Basic " <> header] <- get_req_header(conn, "authorization"),
+    with true <- Pleroma.Config.get([:auth, :basic_auth], false),
+         ["Basic " <> header] <- get_req_header(conn, "authorization"),
          {:ok, userinfo} <- Base.decode64(header),
          [username, password] <- String.split(userinfo, ":", parts: 2) do
       conn

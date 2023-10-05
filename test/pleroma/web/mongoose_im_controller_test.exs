@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MongooseIMControllerTest do
   import Pleroma.Factory
 
   test "/user_exists", %{conn: conn} do
+    clear_config([:auth, :mongoose_im], true)
     _user = insert(:user, nickname: "lain")
     _remote_user = insert(:user, nickname: "alice", local: false)
     _deactivated_user = insert(:user, nickname: "konata", is_active: false)
@@ -41,6 +42,7 @@ defmodule Pleroma.Web.MongooseIMControllerTest do
   end
 
   test "/check_password", %{conn: conn} do
+    clear_config([:auth, :mongoose_im], true)
     user = insert(:user, password_hash: Pleroma.Password.Pbkdf2.hash_pwd_salt("cool"))
 
     _deactivated_user =

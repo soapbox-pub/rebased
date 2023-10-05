@@ -1,0 +1,1 @@
+CommonAPI: Prevent users from accessing media of other users by creating a status with reused attachment ID

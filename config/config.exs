@@ -668,6 +668,10 @@ config :ueberauth,
 
 config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
+config :pleroma, :auth, basic_auth: false
+
+config :pleroma, :auth, mongoose_im: false
+
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
 config :pleroma, Pleroma.Emails.UserEmail,
@@ -801,9 +805,8 @@ config :pleroma, :frontends,
       "name" => "soapbox",
       "git" => "https://gitlab.com/soapbox-pub/soapbox",
       "build_url" =>
-        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build-production",
-      "ref" => "develop",
-      "build_dir" => "static"
+        "https://gitlab.com/soapbox-pub/soapbox/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "main"
     },
     "glitch-lily" => %{
       "name" => "glitch-lily",
