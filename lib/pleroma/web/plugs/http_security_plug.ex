@@ -91,6 +91,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     static_url = Pleroma.Web.Endpoint.static_url()
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
     report_uri = Config.get([:http_security, :report_uri])
+    sentry_dsn = Config.get([:frontend_configurations, :soapbox_fe, "sentryDsn"])
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
@@ -118,6 +119,13 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
     connect_src =
       if Config.get(:env) == :dev do
         [connect_src, " http://localhost:3035/"]
+      else
+        connect_src
+      end
+
+    connect_src =
+      if sentry_dsn do
+        [connect_src, " ", build_csp_param(sentry_dsn)]
       else
         connect_src
       end
