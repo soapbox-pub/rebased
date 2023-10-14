@@ -485,7 +485,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       changeset
       |> User.update_and_set_cache()
     else
-      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object, update: true)
 
       User.get_by_ap_id(updated_object["id"])
       |> User.remote_user_changeset(new_user_data)

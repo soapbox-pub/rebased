@@ -1650,7 +1650,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     # if WebFinger request was already done, we probably have acct, otherwise
     # we request WebFinger here
-    nickname = additional[:nickname_from_acct] || generate_nickname(data)
+    nickname = additional[:nickname_from_acct] || generate_nickname(data, additional)
 
     %{
       ap_id: data["id"],
@@ -1681,10 +1681,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
   end
 
-  defp generate_nickname(%{"preferredUsername" => username} = data) when is_binary(username) do
+  defp generate_nickname(%{"preferredUsername" => username} = data, additional)
+       when is_binary(username) do
     generated = "#{username}@#{URI.parse(data["id"]).host}"
 
-    if Config.get([WebFinger, :update_nickname_on_user_fetch]) do
+    if !additional[:update] or Config.get([WebFinger, :update_nickname_on_user_fetch]) do
       case WebFinger.finger(generated) do
         {:ok, %{"subject" => "acct:" <> acct}} -> acct
         _ -> generated
@@ -1695,7 +1696,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   # nickname can be nil because of virtual actors
-  defp generate_nickname(_), do: nil
+  defp generate_nickname(_, _), do: nil
 
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
@@ -1863,6 +1864,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def make_user_from_ap_id(ap_id, additional \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
+
+    additional =
+      if user do
+        Keyword.put(additional, :update, true)
+      else
+        additional
+      end
 
     with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
       {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
