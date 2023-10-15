@@ -1636,6 +1636,19 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(url, _, _, _)
+      when url in [
+             "https://mastodon.example.org/.well-known/host-meta",
+             "https://peertube.stream/.well-known/host-meta",
+             "https://peertube.moe/.well-known/host-meta",
+             "https://puckipedia.com/.well-known/host-meta",
+             "https://hubzilla.example.org/.well-known/host-meta",
+             "https://apfed.club/.well-known/host-meta",
+             "https://relay.mastodon.host/.well-known/host-meta"
+           ] do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{inspect(headers)}"}
