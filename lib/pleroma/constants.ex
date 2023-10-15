@@ -94,4 +94,8 @@ defmodule Pleroma.Constants do
       "application/activity+json"
     ]
   )
+
+  const(public_streams,
+    do: ["public", "public:local", "public:media", "public:local:media"]
+  )
 end
