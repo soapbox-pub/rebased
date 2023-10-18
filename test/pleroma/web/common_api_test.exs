@@ -843,6 +843,18 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
       {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: public.id})
     end
+
+    test "it properly mentions punycode domain" do
+      user = insert(:user)
+
+      _mentioned_user =
+        insert(:user, ap_id: "https://xn--i2raa.com/users/yyy", nickname: "yyy@xn--i2raa.com")
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "hey @yyy@xn--i2raa.com", content_type: "text/markdown"})
+
+      assert "https://xn--i2raa.com/users/yyy" in Object.normalize(activity).data["to"]
+    end
   end
 
   describe "reactions" do
