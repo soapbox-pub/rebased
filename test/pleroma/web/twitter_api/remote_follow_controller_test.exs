@@ -455,4 +455,38 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       assert avatar_url == "#{Pleroma.Web.Endpoint.url()}/localuser/avatar.png"
     end
   end
+
+  describe "GET /authorize_interaction - authorize_interaction/2" do
+    test "redirects to /ostatus_subscribe", %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://mastodon.social/users/emelie"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
+          }
+      end)
+
+      conn =
+        conn
+        |> get(
+          remote_follow_path(conn, :authorize_interaction, %{
+            uri: "https://mastodon.social/users/emelie"
+          })
+        )
+
+      assert redirected_to(conn) ==
+               remote_follow_path(conn, :follow, %{acct: "https://mastodon.social/users/emelie"})
+    end
+  end
 end
