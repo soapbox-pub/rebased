@@ -107,6 +107,33 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["type"] == "Move"
     end
 
+    test "it fixes both the Create and object contexts in a reply" do
+      insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
+      insert(:user, ap_id: "https://p.helene.moe/users/helene")
+
+      create_activity =
+        "test/fixtures/create-pleroma-reply-to-misskey-thread.json"
+        |> File.read!()
+        |> Jason.decode!()
+
+      assert {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(create_activity)
+
+      object = Object.normalize(activity, fetch: false)
+
+      assert activity.data["context"] == object.data["context"]
+    end
+
+    test "it keeps link tags" do
+      insert(:user, ap_id: "https://example.org/users/alice")
+
+      message = File.read!("test/fixtures/fep-e232.json") |> Jason.decode!()
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      object = Object.normalize(activity)
+      assert [%{"type" => "Mention"}, %{"type" => "Link"}] = object.data["tag"]
+    end
+
     test "it accepts quote posts" do
       insert(:user, ap_id: "https://misskey.io/users/7rkrarq81i")
 
@@ -168,22 +195,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       # It fetched the quoted post
       assert Object.normalize("https://mitra.social/objects/01830912-1357-d4c5-e4a2-76eab347e749")
-    end
-
-    test "it fixes both the Create and object contexts in a reply" do
-      insert(:user, ap_id: "https://mk.absturztau.be/users/8ozbzjs3o8")
-      insert(:user, ap_id: "https://p.helene.moe/users/helene")
-
-      create_activity =
-        "test/fixtures/create-pleroma-reply-to-misskey-thread.json"
-        |> File.read!()
-        |> Jason.decode!()
-
-      assert {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(create_activity)
-
-      object = Object.normalize(activity, fetch: false)
-
-      assert activity.data["context"] == object.data["context"]
     end
   end
 
@@ -402,6 +413,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert prepared["object"]["contentMap"] == %{
                "uk" => "тест"
              }
+    end
+
+    test "it prepares a quote post" do
+      user = insert(:user)
+
+      {:ok, quoted_post} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "hey", quote_id: quoted_post.id})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(quote_post.data)
+
+      %{data: %{"id" => quote_id}} = Object.normalize(quoted_post)
+
+      assert modified["object"]["quoteUrl"] == quote_id
+      assert modified["object"]["quoteUri"] == quote_id
     end
   end
 

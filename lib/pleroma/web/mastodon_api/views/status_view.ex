@@ -306,8 +306,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     quote_activity = get_quote(activity, opts)
 
+    quote_id =
+      case quote_activity do
+        %Activity{id: id} -> id
+        _ -> nil
+      end
+
     quote_post =
-      if visible_for_user?(quote_activity, opts[:for]) do
+      if visible_for_user?(quote_activity, opts[:for]) and opts[:show_quote] != false do
         quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
         render("show.json", quote_rendering_opts)
       else
@@ -436,6 +442,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         quote: quote_post,
+        quote_id: quote_id,
         quote_url: object.data["quoteUrl"],
         quote_visible: visible_for_user?(quote_activity, opts[:for]),
         content: %{"text/plain" => content_plaintext},

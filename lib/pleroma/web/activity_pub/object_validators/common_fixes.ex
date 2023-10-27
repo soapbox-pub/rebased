@@ -10,6 +10,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
 
+  require Pleroma.Constants
+
   def cast_and_filter_recipients(message, field, follower_collection, field_fallback \\ []) do
     {:ok, data} = ObjectValidators.Recipients.cast(message[field] || field_fallback)
 
@@ -76,4 +78,48 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
 
     Map.put(data, "to", to)
   end
+
+  def fix_quote_url(%{"quoteUrl" => _quote_url} = data), do: data
+
+  # Fedibird
+  # https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  def fix_quote_url(%{"quoteUri" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  # Old Fedibird (bug)
+  # https://github.com/fedibird/mastodon/issues/9
+  def fix_quote_url(%{"quoteURL" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  # Misskey fallback
+  def fix_quote_url(%{"_misskey_quote" => quote_url} = data) do
+    Map.put(data, "quoteUrl", quote_url)
+  end
+
+  def fix_quote_url(%{"tag" => [_ | _] = tags} = data) do
+    tag = Enum.find(tags, &is_object_link_tag/1)
+
+    if not is_nil(tag) do
+      data
+      |> Map.put("quoteUrl", tag["href"])
+    else
+      data
+    end
+  end
+
+  def fix_quote_url(data), do: data
+
+  # https://codeberg.org/fediverse/fep/src/branch/main/fep/e232/fep-e232.md
+  def is_object_link_tag(%{
+        "type" => "Link",
+        "mediaType" => media_type,
+        "href" => href
+      })
+      when media_type in Pleroma.Constants.activity_json_mime_types() and is_binary(href) do
+    true
+  end
+
+  def is_object_link_tag(_), do: false
 end

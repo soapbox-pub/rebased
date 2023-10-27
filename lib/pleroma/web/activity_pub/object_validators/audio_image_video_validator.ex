@@ -99,6 +99,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioImageVideoValidator do
     data
     |> CommonFixes.fix_actor()
     |> CommonFixes.fix_object_defaults()
+    |> CommonFixes.fix_quote_url()
     |> Transmogrifier.fix_emoji()
     |> fix_url()
     |> fix_content()

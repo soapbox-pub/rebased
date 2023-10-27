@@ -170,75 +170,26 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_in_reply_to(object, _options), do: object
 
-  def fix_quote_url(object, options \\ [])
+  def fix_quote_url_and_maybe_fetch(object, options \\ []) do
+    quote_url =
+      case Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes.fix_quote_url(object) do
+        %{"quoteUrl" => quote_url} -> quote_url
+        _ -> nil
+      end
 
-  def fix_quote_url(%{"quoteUrl" => quote_url} = object, options)
-      when not is_nil(quote_url) do
-    with {:ok, quoted_object} <- get_obj_helper(quote_url, options),
+    with {:quoting?, true} <- {:quoting?, not is_nil(quote_url)},
+         {:ok, quoted_object} <- get_obj_helper(quote_url, options),
          %Activity{} <- Activity.get_create_by_object_ap_id(quoted_object.data["id"]) do
       Map.put(object, "quoteUrl", quoted_object.data["id"])
     else
+      {:quoting?, _} ->
+        object
+
       e ->
-        Logger.warning("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
         object
     end
   end
-
-  # Fedibird
-  # https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
-  def fix_quote_url(%{"quoteUri" => quote_url} = object, options) do
-    object
-    |> Map.put("quoteUrl", quote_url)
-    |> fix_quote_url(options)
-  end
-
-  # Old Fedibird (bug)
-  # https://github.com/fedibird/mastodon/issues/9
-  def fix_quote_url(%{"quoteURL" => quote_url} = object, options) do
-    object
-    |> Map.put("quoteUrl", quote_url)
-    |> fix_quote_url(options)
-  end
-
-  # Misskey fallback
-  def fix_quote_url(%{"_misskey_quote" => quote_url} = object, options) do
-    object
-    |> Map.put("quoteUrl", quote_url)
-    |> fix_quote_url(options)
-  end
-
-  # FEP-e232
-  # https://codeberg.org/fediverse/fep/src/branch/main/feps/fep-e232.md
-  def fix_quote_url(%{"tag" => tags} = object, options) when is_list(tags) do
-    tags
-    |> Enum.find(&is_quote_tag/1)
-    |> case do
-      %{"href" => quote_url} ->
-        object
-        |> Map.put("quoteUrl", quote_url)
-        |> fix_quote_url(options)
-
-      _ ->
-        object
-    end
-  end
-
-  def fix_quote_url(object, _options), do: object
-
-  @object_media_types [
-    "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-    "application/activity+json"
-  ]
-
-  defp is_quote_tag(%{
-         "type" => "Link",
-         "mediaType" => media_type,
-         "href" => href
-       })
-       when is_binary(href) and media_type in @object_media_types,
-       do: true
-
-  defp is_quote_tag(_object), do: false
 
   defp prepare_in_reply_to(in_reply_to) do
     cond do
@@ -530,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> strip_internal_fields()
       |> fix_type(fetch_options)
       |> fix_in_reply_to(fetch_options)
-      |> fix_quote_url(fetch_options)
+      |> fix_quote_url_and_maybe_fetch(fetch_options)
       |> maybe_add_language_from_activity(data)
 
     data = Map.put(data, "object", object)

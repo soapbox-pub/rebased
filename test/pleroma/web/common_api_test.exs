@@ -826,23 +826,35 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "quote posting visibility" do
       user = insert(:user)
+      another_user = insert(:user)
 
       {:ok, direct} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
       {:ok, private} = CommonAPI.post(user, %{status: ".", visibility: "private"})
       {:ok, unlisted} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, local} = CommonAPI.post(user, %{status: ".", visibility: "local"})
       {:ok, public} = CommonAPI.post(user, %{status: ".", visibility: "public"})
 
       {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: direct.id})
-      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: private.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: private.id})
+      {:error, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: private.id})
       {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: local.id})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: local.id})
       {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: public.id})
     end
 
-    test "block replying to a deleted or non-existant status" do
+    test "it properly mentions punycode domain" do
       user = insert(:user)
 
-      assert {:error, "The post being replied to was deleted"} =
-               CommonAPI.post(user, %{status: "hi", in_reply_to_id: "nonexistant"})
+      _mentioned_user =
+        insert(:user, ap_id: "https://xn--i2raa.com/users/yyy", nickname: "yyy@xn--i2raa.com")
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "hey @yyy@xn--i2raa.com", content_type: "text/markdown"})
+
+      assert "https://xn--i2raa.com/users/yyy" in Object.normalize(activity).data["to"]
     end
   end
 

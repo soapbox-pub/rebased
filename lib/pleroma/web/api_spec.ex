@@ -10,6 +10,14 @@ defmodule Pleroma.Web.ApiSpec do
 
   @behaviour OpenApi
 
+  defp streaming_paths do
+    %{
+      "/api/v1/streaming" => %OpenApiSpex.PathItem{
+        get: Pleroma.Web.ApiSpec.StreamingOperation.streaming_operation()
+      }
+    }
+  end
+
   @impl OpenApi
   def spec(opts \\ []) do
     %OpenApi{
@@ -45,7 +53,7 @@ defmodule Pleroma.Web.ApiSpec do
         }
       },
       # populate the paths from a phoenix router
-      paths: OpenApiSpex.Paths.from_router(Router),
+      paths: Map.merge(streaming_paths(), OpenApiSpex.Paths.from_router(Router)),
       components: %OpenApiSpex.Components{
         parameters: %{
           "accountIdOrNickname" =>
