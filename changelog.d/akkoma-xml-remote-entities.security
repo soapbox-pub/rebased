@@ -1,0 +1,1 @@
+Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitary files from the server's filesystem
