@@ -5,8 +5,10 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   use Ecto.Schema
 
+  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
+  alias Pleroma.Web.ActivityPub.ObjectValidators.TagValidator
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -19,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
         import Elixir.Pleroma.Web.ActivityPub.ObjectValidators.CommonFields
         message_fields()
         activity_fields()
+        embeds_many(:tag, TagValidator)
       end
     end
 
@@ -43,7 +46,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
 
   def changeset(struct, data) do
     struct
-    |> cast(data, __schema__(:fields))
+    |> cast(data, __schema__(:fields) -- [:tag])
+    |> cast_embed(:tag)
   end
 
   defp fix(data) do
@@ -53,12 +57,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
       |> CommonFixes.fix_actor()
       |> CommonFixes.fix_activity_addressing()
 
-    with %Object{} = object <- Object.normalize(data["object"]) do
-      data
-      |> CommonFixes.fix_activity_context(object)
-      |> CommonFixes.fix_object_action_recipients(object)
-    else
-      _ -> data
+    data = Map.put_new(data, "tag", [])
+
+    case Object.normalize(data["object"]) do
+      %Object{} = object ->
+        data
+        |> CommonFixes.fix_activity_context(object)
+        |> CommonFixes.fix_object_action_recipients(object)
+
+      _ ->
+        data
     end
   end
 
@@ -82,11 +90,31 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   defp validate_emoji(cng) do
     content = get_field(cng, :content)
 
-    if Pleroma.Emoji.is_unicode_emoji?(content) do
+    if Emoji.is_unicode_emoji?(content) || Emoji.is_custom_emoji?(content) do
       cng
     else
       cng
-      |> add_error(:content, "must be a single character emoji")
+      |> add_error(:content, "is not a valid emoji")
+    end
+  end
+
+  defp maybe_validate_tag_presence(cng) do
+    content = get_field(cng, :content)
+
+    if Emoji.is_unicode_emoji?(content) do
+      cng
+    else
+      tag = get_field(cng, :tag)
+      emoji_name = Emoji.maybe_strip_name(content)
+
+      case tag do
+        [%{name: ^emoji_name, type: "Emoji", icon: %{url: _}}] ->
+          cng
+
+        _ ->
+          cng
+          |> add_error(:tag, "does not contain an Emoji tag")
+      end
     end
   end
 
@@ -97,5 +125,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
     |> validate_actor_presence()
     |> validate_object_presence()
     |> validate_emoji()
+    |> maybe_validate_tag_presence()
   end
 end

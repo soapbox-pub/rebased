@@ -587,15 +587,38 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   end
 
   describe "get_cached_emoji_reactions/1" do
-    test "returns the data or an emtpy list" do
+    test "returns the normalized data or an emtpy list" do
       object = insert(:note)
       assert Utils.get_cached_emoji_reactions(object) == []
 
       object = insert(:note, data: %{"reactions" => [["x", ["lain"]]]})
-      assert Utils.get_cached_emoji_reactions(object) == [["x", ["lain"]]]
+      assert Utils.get_cached_emoji_reactions(object) == [["x", ["lain"], nil]]
 
       object = insert(:note, data: %{"reactions" => %{}})
       assert Utils.get_cached_emoji_reactions(object) == []
+    end
+  end
+
+  describe "add_emoji_reaction_to_object/1" do
+    test "works with legacy 2-tuple format" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      note =
+        insert(:note,
+          user: user,
+          data: %{
+            "reactions" => [["😿", [other_user.ap_id]]]
+          }
+        )
+
+      _activity = insert(:note_activity, user: user, note: note)
+
+      Utils.add_emoji_reaction_to_object(
+        %Activity{data: %{"content" => "😿", "actor" => third_user.ap_id}},
+        note
+      )
     end
   end
 end

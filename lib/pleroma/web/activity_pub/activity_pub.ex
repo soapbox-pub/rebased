@@ -96,7 +96,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  @object_types ~w[ChatMessage Question Answer Audio Video Event Article Note Page]
+  @object_types ~w[ChatMessage Question Answer Audio Video Image Event Article Note Page]
   @impl true
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
@@ -455,6 +455,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
+    |> restrict_unauthenticated(opts[:user])
     |> restrict_blocked(opts)
     |> restrict_blockers_visibility(opts)
     |> restrict_recipients(recipients, opts[:user])
@@ -1215,6 +1216,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_filtered(query, _), do: query
 
+  defp restrict_unauthenticated(query, nil) do
+    local = Config.restrict_unauthenticated_access?(:activities, :local)
+    remote = Config.restrict_unauthenticated_access?(:activities, :remote)
+
+    cond do
+      local and remote ->
+        from(activity in query, where: false)
+
+      local ->
+        from(activity in query, where: activity.local == false)
+
+      remote ->
+        from(activity in query, where: activity.local == true)
+
+      true ->
+        query
+    end
+  end
+
+  defp restrict_unauthenticated(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1547,7 +1569,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
-      ap_enabled: true,
       banner: normalize_image(data["image"]),
       fields: fields,
       emoji: emojis,
@@ -1668,7 +1689,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_and_prepare_user_from_ap_id(ap_id, additional \\ []) do
+  defp fetch_and_prepare_user_from_ap_id(ap_id, additional) do
     with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
          {:ok, data} <- user_data_from_user_object(data, additional) do
       {:ok, maybe_update_follow_information(data)}
@@ -1721,6 +1742,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end)
   end
 
+  def pin_data_from_featured_collection(obj) do
+    Logger.error("Could not parse featured collection #{inspect(obj)}")
+    %{}
+  end
+
   def fetch_and_prepare_featured_from_ap_id(nil) do
     {:ok, %{}}
   end
@@ -1751,24 +1777,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def make_user_from_ap_id(ap_id, additional \\ []) do
     user = User.get_cached_by_ap_id(ap_id)
 
-    if user && !User.ap_enabled?(user) do
-      Transmogrifier.upgrade_user_from_ap_id(ap_id)
-    else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
-        {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
+    with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id, additional) do
+      {:ok, _pid} = Task.start(fn -> pinned_fetch_task(data) end)
 
-        if user do
-          user
-          |> User.remote_user_changeset(data)
-          |> User.update_and_set_cache()
-        else
-          maybe_handle_clashing_nickname(data)
+      if user do
+        user
+        |> User.remote_user_changeset(data)
+        |> User.update_and_set_cache()
+      else
+        maybe_handle_clashing_nickname(data)
 
-          data
-          |> User.remote_user_changeset()
-          |> Repo.insert()
-          |> User.set_cache()
-        end
+        data
+        |> User.remote_user_changeset()
+        |> Repo.insert()
+        |> User.set_cache()
       end
     end
   end

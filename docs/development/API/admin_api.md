@@ -1585,6 +1585,7 @@ Returns the content of the document
     "build_url": "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
     "git": "https://git.pleroma.social/pleroma/fedi-fe",
     "installed": true,
+    "installed_refs": ["master"],
     "name": "fedi-fe",
     "ref": "master"
   },
@@ -1592,6 +1593,7 @@ Returns the content of the document
     "build_url": "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
     "git": "https://git.pleroma.social/lambadalambda/kenoma",
     "installed": false,
+    "installed_refs": [],
     "name": "kenoma",
     "ref": "master"
   }

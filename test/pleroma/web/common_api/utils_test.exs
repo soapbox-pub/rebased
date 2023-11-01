@@ -200,7 +200,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what&#39;s up?</p>]
     end
 
     test "remote mentions" do
@@ -211,7 +211,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {result, _, []} = Utils.format_input(code, "text/markdown")
 
       assert result ==
-               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what’s up?</p>]
+               ~s[<p><span class="h-card"><a class="u-url mention" data-user="#{mario.id}" href="#{mario.ap_id}" rel="ugc">@<span>mario</span></a></span> <span class="h-card"><a class="u-url mention" data-user="#{luigi.id}" href="#{luigi.ap_id}" rel="ugc">@<span>luigi</span></a></span> yo what&#39;s up?</p>]
     end
 
     test "raw HTML" do
@@ -229,7 +229,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "blockquote" do
       code = ~s[> whoms't are you quoting?]
       {result, [], []} = Utils.format_input(code, "text/markdown")
-      assert result == "<blockquote><p>whoms’t are you quoting?</p></blockquote>"
+      assert result == "<blockquote><p>whoms&#39;t are you quoting?</p></blockquote>"
     end
 
     test "code" do
@@ -593,7 +593,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "returns list attachments with desc" do
       user = insert(:user)
-      object = insert(:note, %{user: user})
+      object = insert(:attachment, %{user: user})
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids_descs(["#{object.id}", "34"], desc, user) == [
@@ -605,7 +605,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   describe "attachments_from_ids/2" do
     test "returns attachments with descs" do
       user = insert(:user)
-      object = insert(:note, %{user: user})
+      object = insert(:attachment, %{user: user})
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids(
@@ -621,7 +621,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "returns attachments without descs" do
       user = insert(:user)
-      object = insert(:note, %{user: user})
+      object = insert(:attachment, %{user: user})
       assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}, user) == [object.data]
     end
 
@@ -636,6 +636,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       object = insert(:attachment, %{user: user})
 
       assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}, user2) == []
+    end
+
+    test "checks that the object is of upload type" do
+      object = insert(:note)
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}, nil) == []
     end
   end
 

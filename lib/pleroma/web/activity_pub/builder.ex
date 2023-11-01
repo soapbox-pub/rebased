@@ -16,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI.ActivityDraft
+  alias Pleroma.Web.Endpoint
 
   require Pleroma.Constants
 
@@ -54,13 +55,87 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     {:ok, data, []}
   end
 
+  defp unicode_emoji_react(_object, data, emoji) do
+    data
+    |> Map.put("content", emoji)
+    |> Map.put("type", "EmojiReact")
+  end
+
+  defp add_emoji_content(data, emoji, url) do
+    tag = [
+      %{
+        "id" => url,
+        "type" => "Emoji",
+        "name" => Emoji.maybe_quote(emoji),
+        "icon" => %{
+          "type" => "Image",
+          "url" => url
+        }
+      }
+    ]
+
+    data
+    |> Map.put("content", Emoji.maybe_quote(emoji))
+    |> Map.put("type", "EmojiReact")
+    |> Map.put("tag", tag)
+  end
+
+  defp remote_custom_emoji_react(
+         %{data: %{"reactions" => existing_reactions}},
+         data,
+         emoji
+       ) do
+    [emoji_code, instance] = String.split(Emoji.maybe_strip_name(emoji), "@")
+
+    matching_reaction =
+      Enum.find(
+        existing_reactions,
+        fn [name, _, url] ->
+          if url != nil do
+            url = URI.parse(url)
+            url.host == instance && name == emoji_code
+          end
+        end
+      )
+
+    if matching_reaction do
+      [name, _, url] = matching_reaction
+      add_emoji_content(data, name, url)
+    else
+      {:error, "Could not react"}
+    end
+  end
+
+  defp remote_custom_emoji_react(_object, _data, _emoji) do
+    {:error, "Could not react"}
+  end
+
+  defp local_custom_emoji_react(data, emoji) do
+    with %{file: path} = emojo <- Emoji.get(emoji) do
+      url = "#{Endpoint.url()}#{path}"
+      add_emoji_content(data, emojo.code, url)
+    else
+      _ -> {:error, "Emoji does not exist"}
+    end
+  end
+
+  defp custom_emoji_react(object, data, emoji) do
+    if String.contains?(emoji, "@") do
+      remote_custom_emoji_react(object, data, emoji)
+    else
+      local_custom_emoji_react(data, emoji)
+    end
+  end
+
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
       data =
-        data
-        |> Map.put("content", emoji)
-        |> Map.put("type", "EmojiReact")
+        if Emoji.is_unicode_emoji?(emoji) do
+          unicode_emoji_react(object, data, emoji)
+        else
+          custom_emoji_react(object, data, emoji)
+        end
 
       {:ok, data, meta}
     end
@@ -142,6 +217,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
         "tag" => Keyword.values(draft.tags) |> Enum.uniq()
       }
       |> add_in_reply_to(draft.in_reply_to)
+      |> add_quote(draft.quote_post)
       |> Map.merge(draft.extra)
 
     {:ok, data, []}
@@ -152,6 +228,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   defp add_in_reply_to(object, in_reply_to) do
     with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to, fetch: false) do
       Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+    else
+      _ -> object
+    end
+  end
+
+  defp add_quote(object, nil), do: object
+
+  defp add_quote(object, quote_post) do
+    with %Object{} = quote_object <- Object.normalize(quote_post, fetch: false) do
+      Map.put(object, "quoteUrl", quote_object.data["id"])
     else
       _ -> object
     end

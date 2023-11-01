@@ -31,7 +31,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "Page",
     "Question",
     "Answer",
-    "Audio"
+    "Audio",
+    "Image"
   ]
   @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
@@ -325,21 +326,29 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
 
   def add_emoji_reaction_to_object(
-        %Activity{data: %{"content" => emoji, "actor" => actor}},
+        %Activity{data: %{"content" => emoji, "actor" => actor}} = activity,
         object
       ) do
     reactions = get_cached_emoji_reactions(object)
+    emoji = Pleroma.Emoji.maybe_strip_name(emoji)
+    url = maybe_emoji_url(emoji, activity)
 
     new_reactions =
-      case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
+      case Enum.find_index(reactions, fn [candidate, _, candidate_url] ->
+             if is_nil(candidate_url) do
+               emoji == candidate
+             else
+               url == candidate_url
+             end
+           end) do
         nil ->
-          reactions ++ [[emoji, [actor]]]
+          reactions ++ [[emoji, [actor], url]]
 
         index ->
           List.update_at(
             reactions,
             index,
-            fn [emoji, users] -> [emoji, Enum.uniq([actor | users])] end
+            fn [emoji, users, url] -> [emoji, Enum.uniq([actor | users]), url] end
           )
       end
 
@@ -348,18 +357,40 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     update_element_in_object("reaction", new_reactions, object, count)
   end
 
+  defp maybe_emoji_url(
+         name,
+         %Activity{
+           data: %{
+             "tag" => [
+               %{"type" => "Emoji", "name" => name, "icon" => %{"url" => url}}
+             ]
+           }
+         }
+       ),
+       do: url
+
+  defp maybe_emoji_url(_, _), do: nil
+
   def emoji_count(reactions_list) do
-    Enum.reduce(reactions_list, 0, fn [_, users], acc -> acc + length(users) end)
+    Enum.reduce(reactions_list, 0, fn [_, users, _], acc -> acc + length(users) end)
   end
 
   def remove_emoji_reaction_from_object(
-        %Activity{data: %{"content" => emoji, "actor" => actor}},
+        %Activity{data: %{"content" => emoji, "actor" => actor}} = activity,
         object
       ) do
+    emoji = Pleroma.Emoji.maybe_strip_name(emoji)
     reactions = get_cached_emoji_reactions(object)
+    url = maybe_emoji_url(emoji, activity)
 
     new_reactions =
-      case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
+      case Enum.find_index(reactions, fn [candidate, _, candidate_url] ->
+             if is_nil(candidate_url) do
+               emoji == candidate
+             else
+               url == candidate_url
+             end
+           end) do
         nil ->
           reactions
 
@@ -367,9 +398,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           List.update_at(
             reactions,
             index,
-            fn [emoji, users] -> [emoji, List.delete(users, actor)] end
+            fn [emoji, users, url] -> [emoji, List.delete(users, actor), url] end
           )
-          |> Enum.reject(fn [_, users] -> Enum.empty?(users) end)
+          |> Enum.reject(fn [_, users, _] -> Enum.empty?(users) end)
       end
 
     count = emoji_count(new_reactions)
@@ -377,11 +408,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def get_cached_emoji_reactions(object) do
-    if is_list(object.data["reactions"]) do
-      object.data["reactions"]
-    else
-      []
-    end
+    Object.get_emoji_reactions(object)
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::
@@ -489,15 +516,35 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def get_latest_reaction(internal_activity_id, %{ap_id: ap_id}, emoji) do
     %{data: %{"object" => object_ap_id}} = Activity.get_by_id(internal_activity_id)
+    emoji = Pleroma.Emoji.maybe_quote(emoji)
 
     "EmojiReact"
     |> Activity.Queries.by_type()
     |> where(actor: ^ap_id)
-    |> where([activity], fragment("?->>'content' = ?", activity.data, ^emoji))
+    |> custom_emoji_discriminator(emoji)
     |> Activity.Queries.by_object_id(object_ap_id)
     |> order_by([activity], fragment("? desc nulls last", activity.id))
     |> limit(1)
     |> Repo.one()
+  end
+
+  defp custom_emoji_discriminator(query, emoji) do
+    if String.contains?(emoji, "@") do
+      stripped = Pleroma.Emoji.maybe_strip_name(emoji)
+      [name, domain] = String.split(stripped, "@")
+      domain_pattern = "%/" <> domain <> "/%"
+      emoji_pattern = Pleroma.Emoji.maybe_quote(name)
+
+      query
+      |> where([activity], fragment("?->>'content' = ?
+        AND EXISTS (
+          SELECT FROM jsonb_array_elements(?->'tag') elem
+          WHERE elem->>'id' ILIKE ?
+        )", activity.data, ^emoji_pattern, activity.data, ^domain_pattern))
+    else
+      query
+      |> where([activity], fragment("?->>'content' = ?", activity.data, ^emoji))
+    end
   end
 
   #### Announce-related helpers

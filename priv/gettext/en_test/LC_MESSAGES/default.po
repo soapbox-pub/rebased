@@ -9,7 +9,6 @@
 msgid ""
 msgstr ""
 "Language: en_test\n"
-"Plural-Forms: nplurals=2\n"
 
 #, elixir-format
 #: lib/pleroma/web/api_spec/render_error.ex:122

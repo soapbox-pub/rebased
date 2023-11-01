@@ -101,13 +101,10 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.Logger, log: :debug)
 
   plug(Plug.Parsers,
-    parsers: [
-      :urlencoded,
-      {:multipart, length: {Config, :get, [[:instance, :upload_limit]]}},
-      :json
-    ],
+    parsers: [:urlencoded, Pleroma.Web.Multipart, :json],
     pass: ["*/*"],
     json_decoder: Jason,
+    # Note: this is compile-time only, won't work for database-config
     length: Config.get([:instance, :upload_limit]),
     body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
   )

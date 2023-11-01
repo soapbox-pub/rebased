@@ -1380,6 +1380,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://misskey.io/users/83ssedkv53", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/aimu@misskey.io.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
   def get("https://gleasonator.com/users/macgirvin", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -1442,6 +1451,15 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/p.helene.moe-AM7S6vZQmL6pI9TgPY.json"),
+       headers: activitypub_object_headers()
+     }}
+  end
+
+  def get("https://misskey.io/notes/8vs6wxufd0", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/misskey.io_8vs6wxufd0.json"),
        headers: activitypub_object_headers()
      }}
   end

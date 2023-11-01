@@ -174,7 +174,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
       assert user.ap_id == user_id
       assert user.nickname == "admin@mastodon.example.org"
-      assert user.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
     end
 
@@ -2652,5 +2651,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, user} = ActivityPub.make_user_from_ap_id("https://princess.cat/users/mewmew")
     assert user.name == " "
+  end
+
+  test "pin_data_from_featured_collection will ignore unsupported values" do
+    assert %{} ==
+             ActivityPub.pin_data_from_featured_collection(%{
+               "type" => "OrderedCollection",
+               "first" => "https://social.example/users/alice/collections/featured?page=true"
+             })
   end
 end

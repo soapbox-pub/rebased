@@ -411,6 +411,20 @@ defmodule Pleroma.Web.CommonAPITest do
 
       refute Activity.get_by_id(post.id)
     end
+
+    test "it allows privileged users to delete banned user's posts" do
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
+      user = insert(:user)
+      moderator = insert(:user, is_moderator: true)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "namu amida butsu"})
+      User.set_activation(user, false)
+
+      assert {:ok, delete} = CommonAPI.delete(post.id, moderator)
+      assert delete.local
+
+      refute Activity.get_by_id(post.id)
+    end
   end
 
   test "favoriting race condition" do
@@ -543,6 +557,17 @@ defmodule Pleroma.Web.CommonAPITest do
     object = Object.normalize(activity, fetch: false)
 
     assert Object.tags(object) == ["ساٴين‌س"]
+  end
+
+  test "allows lang attribute" do
+    user = insert(:user)
+    text = ~s{<span lang="en">something</span><p lang="diaetuitech_rpyhpgc">random</p>}
+
+    {:ok, activity} = CommonAPI.post(user, %{status: text, content_type: "text/html"})
+
+    object = Object.normalize(activity, fetch: false)
+
+    assert object.data["content"] == text
   end
 
   test "double dot in link is allowed" do
@@ -770,6 +795,65 @@ defmodule Pleroma.Web.CommonAPITest do
         args: %{activity_id: activity.id},
         scheduled_at: expires_at
       )
+    end
+
+    test "it allows quote posting" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+      {:ok, quote_post} = CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id})
+
+      quoted = Object.normalize(quoted)
+      quote_post = Object.normalize(quote_post)
+
+      assert quote_post.data["quoteUrl"] == quoted.data["id"]
+
+      # The OP is not mentioned
+      refute quoted.data["actor"] in quote_post.data["to"]
+    end
+
+    test "quote posting with explicit addressing doesn't mention the OP" do
+      user = insert(:user)
+
+      {:ok, quoted} = CommonAPI.post(user, %{status: "Hello world"})
+
+      {:ok, quote_post} =
+        CommonAPI.post(user, %{status: "nice post", quote_id: quoted.id, to: []})
+
+      assert Object.normalize(quote_post).data["to"] == [Pleroma.Constants.as_public()]
+    end
+
+    test "quote posting visibility" do
+      user = insert(:user)
+      another_user = insert(:user)
+
+      {:ok, direct} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
+      {:ok, private} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, unlisted} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, local} = CommonAPI.post(user, %{status: ".", visibility: "local"})
+      {:ok, public} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      {:error, _} = CommonAPI.post(user, %{status: "nice", quote_id: direct.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: private.id})
+      {:error, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: private.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: unlisted.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: local.id})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: local.id})
+      {:ok, _} = CommonAPI.post(user, %{status: "nice", quote_id: public.id})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "nice", quote_id: public.id})
+    end
+
+    test "it properly mentions punycode domain" do
+      user = insert(:user)
+
+      _mentioned_user =
+        insert(:user, ap_id: "https://xn--i2raa.com/users/yyy", nickname: "yyy@xn--i2raa.com")
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{status: "hey @yyy@xn--i2raa.com", content_type: "text/markdown"})
+
+      assert "https://xn--i2raa.com/users/yyy" in Object.normalize(activity).data["to"]
     end
   end
 
@@ -1346,7 +1430,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     test "cancels a pending follow for a remote user" do
       follower = insert(:user)
-      followed = insert(:user, is_locked: true, local: false, ap_enabled: true)
+      followed = insert(:user, is_locked: true, local: false)
 
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)

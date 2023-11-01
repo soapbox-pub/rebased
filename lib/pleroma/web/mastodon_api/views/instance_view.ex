@@ -69,6 +69,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       "multifetch",
       "pleroma:api/v1/notifications:include_types_filter",
       "editing",
+      "quote_posting",
       if Config.get([:activitypub, :blockers_visible]) do
         "blockers_visible"
       end,
@@ -92,6 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         "safe_dm_mentions"
       end,
       "pleroma_emoji_reactions",
+      "pleroma_custom_emoji_reactions",
       "pleroma_chat_messages",
       if Config.get([:instance, :show_reactions]) do
         "exposable_reactions"

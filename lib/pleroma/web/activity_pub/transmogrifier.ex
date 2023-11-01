@@ -20,7 +20,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
-  alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
 
@@ -166,6 +165,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_in_reply_to(object, _options), do: object
+
+  def fix_quote_url_and_maybe_fetch(object, options \\ []) do
+    quote_url =
+      case Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes.fix_quote_url(object) do
+        %{"quoteUrl" => quote_url} -> quote_url
+        _ -> nil
+      end
+
+    with {:quoting?, true} <- {:quoting?, not is_nil(quote_url)},
+         {:ok, quoted_object} <- get_obj_helper(quote_url, options),
+         %Activity{} <- Activity.get_create_by_object_ap_id(quoted_object.data["id"]) do
+      Map.put(object, "quoteUrl", quoted_object.data["id"])
+    else
+      {:quoting?, _} ->
+        object
+
+      e ->
+        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+        object
+    end
+  end
 
   defp prepare_in_reply_to(in_reply_to) do
     cond do
@@ -447,7 +467,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype, "id" => obj_id}} = data,
         options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note Page} do
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article Note Page Image} do
     fetch_options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
 
     object =
@@ -455,6 +475,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> strip_internal_fields()
       |> fix_type(fetch_options)
       |> fix_in_reply_to(fetch_options)
+      |> fix_quote_url_and_maybe_fetch(fetch_options)
 
     data = Map.put(data, "object", object)
     options = Keyword.put(options, :local, false)
@@ -630,6 +651,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def set_reply_to_uri(obj), do: obj
 
   @doc """
+  Fedibird compatibility
+  https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  """
+  def set_quote_url(%{"quoteUrl" => quote_url} = object) when is_binary(quote_url) do
+    Map.put(object, "quoteUri", quote_url)
+  end
+
+  def set_quote_url(obj), do: obj
+
+  @doc """
   Serialized Mastodon-compatible `replies` collection containing _self-replies_.
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
   """
@@ -683,6 +714,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_quote_url
     |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags
@@ -945,47 +977,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp strip_internal_tags(object), do: object
-
-  def perform(:user_upgrade, user) do
-    # we pass a fake user so that the followers collection is stripped away
-    old_follower_address = User.ap_followers(%User{nickname: user.nickname})
-
-    from(
-      a in Activity,
-      where: ^old_follower_address in a.recipients,
-      update: [
-        set: [
-          recipients:
-            fragment(
-              "array_replace(?,?,?)",
-              a.recipients,
-              ^old_follower_address,
-              ^user.follower_address
-            )
-        ]
-      ]
-    )
-    |> Repo.update_all([])
-  end
-
-  def upgrade_user_from_ap_id(ap_id) do
-    with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
-         {:ok, user} <- update_user(user, data) do
-      {:ok, _pid} = Task.start(fn -> ActivityPub.pinned_fetch_task(user) end)
-      TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
-      {:ok, user}
-    else
-      %User{} = user -> {:ok, user}
-      e -> e
-    end
-  end
-
-  defp update_user(user, data) do
-    user
-    |> User.remote_user_changeset(data)
-    |> User.update_and_set_cache()
-  end
 
   def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do
     Map.put(data, "url", url["href"])

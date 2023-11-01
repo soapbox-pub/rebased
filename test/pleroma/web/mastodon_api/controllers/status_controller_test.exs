@@ -125,6 +125,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       )
     end
 
+    test "posting a quote post", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(user, %{status: "yolo"})
+      %{data: %{"id" => quote_url}} = Object.normalize(activity)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "indeed",
+          "quote_id" => activity_id
+        })
+
+      assert %{
+               "id" => id,
+               "pleroma" => %{"quote" => %{"id" => ^activity_id}, "quote_url" => ^quote_url}
+             } = json_response_and_validate_schema(conn, 200)
+
+      assert Activity.get_by_id(id)
+    end
+
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
       conn: conn
     } do
@@ -626,7 +648,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/statuses", %{
           "status" => "desu~",
-          "poll" => %{"options" => Enum.map(0..limit, fn _ -> "desu" end), "expires_in" => 1}
+          "poll" => %{
+            "options" => Enum.map(0..limit, fn num -> "desu #{num}" end),
+            "expires_in" => 1
+          }
         })
 
       %{"error" => error} = json_response_and_validate_schema(conn, 422)
@@ -642,7 +667,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "...",
           "poll" => %{
-            "options" => [Enum.reduce(0..limit, "", fn _, acc -> acc <> "." end)],
+            "options" => [String.duplicate(".", limit + 1), "lol"],
             "expires_in" => 1
           }
         })
@@ -724,6 +749,32 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert object.data["type"] == "Question"
       assert length(object.data["oneOf"]) == 3
     end
+
+    test "cannot have only one option", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "desu~",
+          "poll" => %{"options" => ["mew"], "expires_in" => 1}
+        })
+
+      %{"error" => error} = json_response_and_validate_schema(conn, 422)
+      assert error == "Poll must contain at least 2 options"
+    end
+
+    test "cannot have only duplicated options", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/statuses", %{
+          "status" => "desu~",
+          "poll" => %{"options" => ["mew", "mew"], "expires_in" => 1}
+        })
+
+      %{"error" => error} = json_response_and_validate_schema(conn, 422)
+      assert error == "Poll must contain at least 2 options"
+    end
   end
 
   test "get a status" do
@@ -740,6 +791,49 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     local = insert(:note_activity)
     remote = insert(:note_activity, local: false)
     {:ok, local: local, remote: remote}
+  end
+
+  defp local_and_remote_context_activities do
+    local_user_1 = insert(:user)
+    local_user_2 = insert(:user)
+    remote_user = insert(:user, local: false)
+
+    {:ok, %{id: id1, data: %{"context" => context}}} =
+      CommonAPI.post(local_user_1, %{status: "post"})
+
+    {:ok, %{id: id2} = post} =
+      CommonAPI.post(local_user_2, %{status: "local reply", in_reply_to_status_id: id1})
+
+    params = %{
+      "@context" => "https://www.w3.org/ns/activitystreams",
+      "actor" => remote_user.ap_id,
+      "type" => "Create",
+      "context" => context,
+      "id" => "#{remote_user.ap_id}/activities/1",
+      "inReplyTo" => post.data["id"],
+      "object" => %{
+        "type" => "Note",
+        "content" => "remote reply",
+        "context" => context,
+        "id" => "#{remote_user.ap_id}/objects/1",
+        "attributedTo" => remote_user.ap_id,
+        "to" => [
+          local_user_1.ap_id,
+          local_user_2.ap_id,
+          "https://www.w3.org/ns/activitystreams#Public"
+        ]
+      },
+      "to" => [
+        local_user_1.ap_id,
+        local_user_2.ap_id,
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    }
+
+    {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
+    {:ok, remote_activity} = ObanHelpers.perform(job)
+
+    %{locals: [id1, id2], remote: remote_activity.id, context: context}
   end
 
   describe "status with restrict unauthenticated activities for local and remote" do
@@ -928,6 +1022,230 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
   end
 
+  describe "getting status contexts restricted unauthenticated for local and remote" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, locals: [post_id, _]} do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      assert json_response_and_validate_schema(res_conn, 200) == %{
+               "ancestors" => [],
+               "descendants" => []
+             }
+    end
+
+    test "if user is unauthenticated reply", %{conn: conn, locals: [_, reply_id]} do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      assert json_response_and_validate_schema(res_conn, 200) == %{
+               "ancestors" => [],
+               "descendants" => []
+             }
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for local" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], false)
+
+    test "if user is unauthenticated", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id not in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is unauthenticated reply", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id not in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id in descendant_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
+  describe "getting status contexts restricted unauthenticated for remote" do
+    setup do: local_and_remote_context_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], false)
+
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
+
+    test "if user is unauthenticated", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in descendant_ids
+      assert remote_reply_id not in descendant_ids
+    end
+
+    test "if user is unauthenticated reply", %{
+      conn: conn,
+      locals: [post_id, reply_id],
+      remote: remote_reply_id
+    } do
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id not in descendant_ids
+    end
+
+    test "if user is authenticated", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{post_id}/context")
+
+      %{"ancestors" => [], "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      reply_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert reply_id in reply_ids
+      assert remote_reply_id in reply_ids
+    end
+
+    test "if user is authenticated reply", %{locals: [post_id, reply_id], remote: remote_reply_id} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{reply_id}/context")
+
+      %{"ancestors" => ancestors, "descendants" => descendants} =
+        json_response_and_validate_schema(res_conn, 200)
+
+      ancestor_ids =
+        ancestors
+        |> Enum.map(& &1["id"])
+
+      descendant_ids =
+        descendants
+        |> Enum.map(& &1["id"])
+
+      assert post_id in ancestor_ids
+      assert remote_reply_id in descendant_ids
+    end
+  end
+
   describe "deleting a status" do
     test "when you created it" do
       %{user: author, conn: conn} = oauth_access(["write:statuses"])
@@ -974,6 +1292,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "when you're privileged to", %{conn: conn} do
       clear_config([:instance, :moderator_privileges], [:messages_delete])
       activity = insert(:note_activity)
+      user = insert(:user, is_moderator: true)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:statuses"]))
+        |> delete("/api/v1/statuses/#{activity.id}")
+
+      assert %{} = json_response_and_validate_schema(res_conn, 200)
+
+      assert ModerationLog |> Repo.one() |> ModerationLog.get_log_entry_message() ==
+               "@#{user.nickname} deleted status ##{activity.id}"
+
+      refute Activity.get_by_id(activity.id)
+    end
+
+    test "when you're privileged and the user is banned", %{conn: conn} do
+      clear_config([:instance, :moderator_privileges], [:messages_delete])
+      posting_user = insert(:user, is_active: false)
+      refute posting_user.is_active
+      activity = insert(:note_activity, user: posting_user)
       user = insert(:user, is_moderator: true)
 
       res_conn =

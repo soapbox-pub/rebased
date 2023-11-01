@@ -1,1 +1,0 @@
-Correctly handle the situation when a poll has both "anyOf" and "oneOf" but one of them being empty

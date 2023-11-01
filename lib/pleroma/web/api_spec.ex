@@ -10,6 +10,14 @@ defmodule Pleroma.Web.ApiSpec do
 
   @behaviour OpenApi
 
+  defp streaming_paths do
+    %{
+      "/api/v1/streaming" => %OpenApiSpex.PathItem{
+        get: Pleroma.Web.ApiSpec.StreamingOperation.streaming_operation()
+      }
+    }
+  end
+
   @impl OpenApi
   def spec(opts \\ []) do
     %OpenApi{
@@ -45,7 +53,7 @@ defmodule Pleroma.Web.ApiSpec do
         }
       },
       # populate the paths from a phoenix router
-      paths: OpenApiSpex.Paths.from_router(Router),
+      paths: Map.merge(streaming_paths(), OpenApiSpex.Paths.from_router(Router)),
       components: %OpenApiSpex.Components{
         parameters: %{
           "accountIdOrNickname" =>
@@ -95,7 +103,8 @@ defmodule Pleroma.Web.ApiSpec do
               "Relays",
               "Report managment",
               "Status administration",
-              "User administration"
+              "User administration",
+              "Announcement management"
             ]
           },
           %{"name" => "Applications", "tags" => ["Applications", "Push subscriptions"]},
@@ -110,10 +119,12 @@ defmodule Pleroma.Web.ApiSpec do
               "Follow requests",
               "Mascot",
               "Markers",
-              "Notifications"
+              "Notifications",
+              "Filters",
+              "Settings"
             ]
           },
-          %{"name" => "Instance", "tags" => ["Custom emojis"]},
+          %{"name" => "Instance", "tags" => ["Custom emojis", "Instance misc"]},
           %{"name" => "Messaging", "tags" => ["Chats", "Conversations"]},
           %{
             "name" => "Statuses",
@@ -125,10 +136,21 @@ defmodule Pleroma.Web.ApiSpec do
               "Retrieve status information",
               "Scheduled statuses",
               "Search",
-              "Status actions"
+              "Status actions",
+              "Media attachments"
             ]
           },
-          %{"name" => "Miscellaneous", "tags" => ["Emoji packs", "Reports", "Suggestions"]}
+          %{
+            "name" => "Miscellaneous",
+            "tags" => [
+              "Emoji packs",
+              "Reports",
+              "Suggestions",
+              "Announcements",
+              "Remote interaction",
+              "Others"
+            ]
+          }
         ]
       }
     }

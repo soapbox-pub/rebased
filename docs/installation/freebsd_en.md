@@ -173,6 +173,10 @@ Edit the defaults of `/usr/local/etc/nginx/sites-available/pleroma.nginx`:
 * Change `ssl_certificate_key` to `/var/db/acme/certs/example.tld/example.tld.key`.
 * Change all references of `example.tld` to your instance's domain name.
 
+#### (Strongly recommended) serve media on another domain
+
+Refer to the [Hardening your instance](../configuration/hardening.md) document on how to serve media on another domain. We STRONGLY RECOMMEND you to do this to minimize attack vectors.
+
 ## Creating a startup script for Pleroma
 
 Pleroma will need to compile when it initially starts, which typically takes a longer

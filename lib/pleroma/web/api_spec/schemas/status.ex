@@ -144,7 +144,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         properties: %{
           content: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
           },
@@ -189,13 +193,37 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             nullable: true,
             description: "The `acct` property of User entity for replied user (if any)"
           },
+          quote: %Schema{
+            allOf: [%OpenApiSpex.Reference{"$ref": "#/components/schemas/Status"}],
+            nullable: true,
+            description: "Quoted status (if any)"
+          },
+          quote_id: %Schema{
+            nullable: true,
+            allOf: [FlakeID],
+            description: "ID of the status being quoted, if any"
+          },
+          quote_url: %Schema{
+            type: :string,
+            format: :uri,
+            nullable: true,
+            description: "URL of the quoted status"
+          },
+          quote_visible: %Schema{
+            type: :boolean,
+            description: "`true` if the quoted post is visible to the user"
+          },
           local: %Schema{
             type: :boolean,
             description: "`true` if the post was made on the local instance"
           },
           spoiler_text: %Schema{
             type: :object,
-            additionalProperties: %Schema{type: :string},
+            additionalProperties: %Schema{
+              type: :string,
+              description: "Alternate representation in the MIME type specified",
+              extensions: %{"x-additionalPropertiesName": "MIME type"}
+            },
             description:
               "A map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
           },

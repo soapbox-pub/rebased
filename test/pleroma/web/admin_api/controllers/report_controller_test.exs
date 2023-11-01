@@ -123,6 +123,7 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
         })
 
       %{
+        reporter: reporter,
         id: report_id,
         second_report_id: second_report_id
       }
@@ -265,6 +266,26 @@ defmodule Pleroma.Web.AdminAPI.ReportControllerTest do
 
       assert ModerationLog.get_log_entry_message(second_log_entry) ==
                "@#{admin.nickname} updated report ##{second_report_id} (on user @#{second_activity.user_actor.nickname}) with 'closed' state"
+    end
+
+    test "works if reporter is deactivated", %{
+      conn: conn,
+      id: id,
+      reporter: reporter
+    } do
+      Pleroma.User.set_activation(reporter, false)
+
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id}
+        ]
+      })
+      |> json_response_and_validate_schema(:no_content)
+
+      activity = Activity.get_by_id_with_user_actor(id)
+      assert activity.data["state"] == "resolved"
     end
   end
 

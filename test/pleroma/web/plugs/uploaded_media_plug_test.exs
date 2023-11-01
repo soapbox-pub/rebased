@@ -33,11 +33,11 @@ defmodule Pleroma.Web.Plugs.UploadedMediaPlugTest do
   test "sends Content-Disposition header when name param is set", %{
     attachment_url: attachment_url
   } do
-    conn = get(build_conn(), attachment_url <> "?name=\"cofe\".gif")
+    conn = get(build_conn(), attachment_url <> ~s[?name="cofe".gif])
 
     assert Enum.any?(
              conn.resp_headers,
-             &(&1 == {"content-disposition", "filename=\"\\\"cofe\\\".gif\""})
+             &(&1 == {"content-disposition", ~s[inline; filename="\\"cofe\\".gif"]})
            )
   end
 end

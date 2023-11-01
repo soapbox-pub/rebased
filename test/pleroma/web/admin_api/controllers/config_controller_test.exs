@@ -316,6 +316,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
     end
 
+    @tag capture_log: true
     test "save configs setting without explicit key", %{conn: conn} do
       adapter = Application.get_env(:http, :adapter)
       send_user_agent = Application.get_env(:http, :send_user_agent)
@@ -1501,15 +1502,14 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       clear_config(:database_config_whitelist, [
         {:pleroma, :instance},
         {:pleroma, :activitypub},
-        {:pleroma, Pleroma.Upload},
-        {:esshd}
+        {:pleroma, Pleroma.Upload}
       ])
 
       conn = get(conn, "/api/pleroma/admin/config/descriptions")
 
       children = json_response_and_validate_schema(conn, 200)
 
-      assert length(children) == 4
+      assert length(children) == 3
 
       assert Enum.count(children, fn c -> c["group"] == ":pleroma" end) == 3
 
@@ -1521,9 +1521,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
       web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
       assert web_endpoint["children"]
-
-      esshd = Enum.find(children, fn c -> c["group"] == ":esshd" end)
-      assert esshd["children"]
     end
   end
 end
