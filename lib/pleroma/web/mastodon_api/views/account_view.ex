@@ -212,7 +212,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         do: user.follower_count,
         else: 0
 
-    bot = user.actor_type == "Service"
+    bot = is_bot?(user)
 
     emojis =
       Enum.map(user.emoji, fn {shortcode, raw_url} ->
@@ -468,4 +468,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
+
+  defp is_bot?(user) do
+    # Because older and/or Mastodon clients may not recognize a Group actor properly,
+    # and currently the group actor can only boost things, we should let these clients
+    # think groups are bots.
+    # See https://git.pleroma.social/pleroma/pleroma-meta/-/issues/14
+    user.actor_type == "Service" || user.actor_type == "Group"
+  end
 end
