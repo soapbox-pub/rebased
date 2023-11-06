@@ -6,7 +6,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   use Pleroma.Web, :view
 
   alias Pleroma.Config
+  alias Pleroma.Domain
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.AdminAPI.DomainView
 
   @mastodon_api_level "2.7.2"
 
@@ -49,7 +52,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           fields_limits: fields_limits(),
           post_formats: Config.get([:instance, :allowed_post_formats]),
           birthday_required: Config.get([:instance, :birthday_required]),
-          birthday_min_age: Config.get([:instance, :birthday_min_age])
+          birthday_min_age: Config.get([:instance, :birthday_min_age]),
+          multitenancy: multitenancy()
         },
         stats: %{mau: Pleroma.User.active_user_count()},
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
@@ -140,5 +144,22 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       name_length: Config.get([:instance, :account_field_name_length]),
       value_length: Config.get([:instance, :account_field_value_length])
     }
+  end
+
+  defp multitenancy do
+    enabled = Config.get([:multitenancy, :enabled])
+
+    if enabled do
+      domains =
+        [%Domain{id: "", domain: Pleroma.Web.WebFinger.domain(), public: true}] ++
+          Repo.all(Domain)
+
+      %{
+        enabled: true,
+        domains: DomainView.render("index.json", domains: domains)
+      }
+    else
+      nil
+    end
   end
 end

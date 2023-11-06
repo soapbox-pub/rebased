@@ -82,7 +82,8 @@ defmodule Pleroma.Web.ApiSpec.Admin.UserOperation do
                   properties: %{
                     nickname: %Schema{type: :string},
                     email: %Schema{type: :string},
-                    password: %Schema{type: :string}
+                    password: %Schema{type: :string},
+                    domain: %Schema{type: :string, nullable: true}
                   }
                 }
               }

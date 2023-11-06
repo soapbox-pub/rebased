@@ -585,7 +585,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           type: :string,
           nullable: true,
           description: "User's preferred language for emails"
-        }
+        },
+        domain: %Schema{type: :string, nullable: true}
       },
       example: %{
         "username" => "cofe",

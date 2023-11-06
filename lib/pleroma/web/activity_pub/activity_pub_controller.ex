@@ -66,7 +66,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def user(conn, %{"nickname" => nickname}) do
-    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
+    with %User{local: true} = user <-
+           nickname |> URI.decode() |> User.get_cached_by_nickname_or_id() do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
