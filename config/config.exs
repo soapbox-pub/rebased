@@ -394,6 +394,12 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
+config :pleroma, :mrf_emoji,
+  remove_url: [],
+  remove_shortcode: [],
+  federated_timeline_removal_url: [],
+  federated_timeline_removal_shortcode: []
+
 config :pleroma, :mrf_hashtag,
   sensitive: ["nsfw"],
   reject: [],
@@ -413,6 +419,8 @@ config :pleroma, :mrf_object_age,
   actions: [:delist, :strip_followers]
 
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
+
+config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -568,7 +576,6 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,
-    new_users_digest: 1,
     mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
@@ -838,7 +845,11 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: [Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy, Pleroma.Web.ActivityPub.MRF.TagPolicy],
+  policies: [
+    Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
+    Pleroma.Web.ActivityPub.MRF.TagPolicy,
+    Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy
+  ],
   transparency: true,
   transparency_exclusions: []
 
@@ -857,7 +868,9 @@ config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthent
 config :pleroma, Pleroma.User.Backup,
   purge_after_days: 30,
   limit_days: 7,
-  dir: nil
+  dir: nil,
+  process_wait_time: 30_000,
+  process_chunk_size: 100
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},

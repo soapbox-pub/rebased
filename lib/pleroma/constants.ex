@@ -42,6 +42,18 @@ defmodule Pleroma.Constants do
     ]
   )
 
+  const(status_object_types,
+    do: [
+      "Note",
+      "Question",
+      "Audio",
+      "Video",
+      "Event",
+      "Article",
+      "Page"
+    ]
+  )
+
   const(updatable_object_types,
     do: [
       "Note",
@@ -68,5 +80,22 @@ defmodule Pleroma.Constants do
   # https://datatracker.ietf.org/doc/html/rfc2045#section-5.1
   const(mime_regex,
     do: ~r/^[^[:cntrl:] ()<>@,;:\\"\/\[\]?=]+\/[^[:cntrl:] ()<>@,;:\\"\/\[\]?=]+(; .*)?$/
+  )
+
+  const(upload_object_types, do: ["Document", "Image"])
+
+  const(activity_json_canonical_mime_type,
+    do: "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+  )
+
+  const(activity_json_mime_types,
+    do: [
+      "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+      "application/activity+json"
+    ]
+  )
+
+  const(public_streams,
+    do: ["public", "public:local", "public:media", "public:local:media"]
   )
 end

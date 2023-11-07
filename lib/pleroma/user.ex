@@ -124,7 +124,6 @@ defmodule Pleroma.User do
     field(:domain_blocks, {:array, :string}, default: [])
     field(:is_active, :boolean, default: true)
     field(:no_rich_text, :boolean, default: false)
-    field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
@@ -488,7 +487,6 @@ defmodule Pleroma.User do
         :nickname,
         :public_key,
         :avatar,
-        :ap_enabled,
         :banner,
         :is_locked,
         :last_refreshed_at,
@@ -1061,11 +1059,7 @@ defmodule Pleroma.User do
   end
 
   def maybe_direct_follow(%User{} = follower, %User{} = followed) do
-    if not ap_enabled?(followed) do
-      follow(follower, followed)
-    else
-      {:ok, follower, followed}
-    end
+    {:ok, follower, followed}
   end
 
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
@@ -1898,7 +1892,6 @@ defmodule Pleroma.User do
       confirmation_token: nil,
       domain_blocks: [],
       is_active: false,
-      ap_enabled: false,
       is_moderator: false,
       is_admin: false,
       mascot: nil,
@@ -2150,10 +2143,6 @@ defmodule Pleroma.User do
       _ -> :error
     end
   end
-
-  def ap_enabled?(%User{local: true}), do: true
-  def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
-  def ap_enabled?(_), do: false
 
   @doc "Gets or fetch a user by uri or nickname."
   @spec get_or_fetch(String.t()) :: {:ok, User.t()} | {:error, String.t()}

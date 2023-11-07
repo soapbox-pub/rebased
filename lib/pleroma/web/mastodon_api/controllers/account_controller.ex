@@ -263,6 +263,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       {:error, %Ecto.Changeset{errors: [background: {"file is too large", _}]}} ->
         render_error(conn, :request_entity_too_large, "File is too large")
 
+      {:error, %Ecto.Changeset{errors: [{:bio, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Bio is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:name, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Name is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:fields, {"invalid", _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "One or more field entries are too long")
+
+      {:error, %Ecto.Changeset{errors: [{:fields, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Too many field entries")
+
       _e ->
         render_error(conn, :forbidden, "Invalid request")
     end
