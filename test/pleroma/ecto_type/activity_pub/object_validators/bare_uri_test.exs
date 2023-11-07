@@ -6,15 +6,16 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.BareUriTest do
   use Pleroma.DataCase, async: true
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators.BareUri
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.SafeText
 
   test "diaspora://" do
     text = "diaspora://alice@fediverse.example/post/deadbeefdeadbeefdeadbeefdeadbeef"
-    assert {:ok, text} = BareUri.cast(text)
+    assert {:ok, ^text} = BareUri.cast(text)
   end
 
   test "nostr:" do
     text = "nostr:note1gwdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    assert {:ok, text} = BareUri.cast(text)
+    assert {:ok, ^text} = BareUri.cast(text)
   end
 
   test "errors for non-URIs" do
