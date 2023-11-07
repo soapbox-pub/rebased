@@ -78,7 +78,6 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :fast_sanitize,
         :os_mon,
-        :phoenix,
         :ssl
       ],
       included_applications: [:ex_syslogger]
