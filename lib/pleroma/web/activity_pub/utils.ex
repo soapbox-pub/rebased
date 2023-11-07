@@ -935,4 +935,21 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> where([a, object: o], fragment("(?)->>'type' = 'Answer'", o.data))
     |> Repo.all()
   end
+
+  def maybe_handle_group_posts(activity) do
+    mentions =
+      activity.data["to"]
+      |> Enum.filter(&(&1 != activity.actor))
+
+    mentioned_local_groups =
+      User.get_all_by_ap_id(mentions)
+      |> Enum.filter(&(&1.actor_type == "Group" and &1.local))
+
+    mentioned_local_groups
+    |> Enum.each(fn group ->
+      Pleroma.Web.CommonAPI.repeat(activity.id, group)
+    end)
+
+    :ok
+  end
 end

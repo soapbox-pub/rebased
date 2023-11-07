@@ -319,6 +319,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, _actor} <- update_last_status_at_if_public(actor, activity),
          _ <- notify_and_stream(activity),
          :ok <- maybe_schedule_poll_notifications(activity),
+         :ok <- maybe_handle_group_posts(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
