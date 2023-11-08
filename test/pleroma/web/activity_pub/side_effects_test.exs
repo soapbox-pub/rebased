@@ -984,5 +984,24 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert [announce] = get_announces_of_object(object)
       assert announce.actor == group.ap_id
     end
+
+    test "group should not boost it if group is blocking poster", %{
+      make_create: make_create,
+      group: group,
+      poster: poster
+    } do
+      {:ok, _} = CommonAPI.block(group, poster)
+      create_activity_data = make_create.([group])
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} =
+        SideEffects.handle(create_activity,
+          local: false,
+          object_data: create_activity_data["object"]
+        )
+
+      object = Object.normalize(create_activity, fetch: false)
+      assert [] = get_announces_of_object(object)
+    end
   end
 end

@@ -1883,5 +1883,13 @@ defmodule Pleroma.Web.CommonAPITest do
       announces = get_announces_of_object(post.object)
       assert [_, _] = announces
     end
+
+    test "it does not boost if group is blocking poster", %{poster: poster, group: group} do
+      {:ok, _} = CommonAPI.block(group, poster)
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey @#{group.nickname}"})
+
+      announces = get_announces_of_object(post.object)
+      assert [] = announces
+    end
   end
 end
