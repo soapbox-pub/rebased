@@ -9,17 +9,17 @@ defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.BareUriTest do
 
   test "diaspora://" do
     text = "diaspora://alice@fediverse.example/post/deadbeefdeadbeefdeadbeefdeadbeef"
-    assert {:ok, text} = BareUri.cast(text)
+    assert {:ok, ^text} = BareUri.cast(text)
   end
 
   test "nostr:" do
     text = "nostr:note1gwdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    assert {:ok, text} = BareUri.cast(text)
+    assert {:ok, ^text} = BareUri.cast(text)
   end
 
   test "errors for non-URIs" do
-    assert :error == SafeText.cast(1)
-    assert :error == SafeText.cast("foo")
-    assert :error == SafeText.cast("foo bar")
+    assert :error == BareUri.cast(1)
+    assert :error == BareUri.cast("foo")
+    assert :error == BareUri.cast("foo bar")
   end
 end
