@@ -176,7 +176,6 @@ defmodule Pleroma.Mixfile do
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
       {:joken, "~> 2.0"},
-      {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
@@ -202,7 +201,8 @@ defmodule Pleroma.Mixfile do
       {:covertool, "~> 2.0", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websockex, "~> 0.4.3", only: :test}
+      {:websockex, "~> 0.4.3", only: :test},
+      {:benchee, "~> 1.0", only: :benchmark}
     ] ++ oauth_deps()
   end
 

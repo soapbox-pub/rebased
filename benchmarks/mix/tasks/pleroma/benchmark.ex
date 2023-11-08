@@ -3,8 +3,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Benchmark do
-  import Mix.Pleroma
+  @shortdoc "Benchmarks"
+  @moduledoc """
+  Benchmark tasks available:
+  
+  adapters 
+  render_timeline
+  search
+  tag
+
+  MIX_ENV=benchmark mix pleroma.benchmark adapters
+  """
+
   use Mix.Task
+  import Mix.Pleroma
 
   def run(["search"]) do
     start_pleroma()
@@ -63,7 +75,7 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
 
     Benchee.run(
       %{
-        "Standart rendering" => fn activities ->
+        "Standard rendering" => fn activities ->
           Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
             activities: activities,
             for: user,
