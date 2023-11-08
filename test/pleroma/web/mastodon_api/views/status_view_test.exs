@@ -326,6 +326,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         conversation_id: convo_id,
         context: object_data["context"],
         in_reply_to_account_acct: nil,
+        quote: nil,
+        quote_id: nil,
+        quote_url: nil,
+        quote_visible: false,
         content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
@@ -420,6 +424,88 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     [status] = StatusView.render("index.json", %{activities: [activity], as: :activity})
 
     assert status.in_reply_to_id == to_string(note.id)
+  end
+
+  test "a quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, quoted_quote_post} = CommonAPI.post(user, %{status: "yo", quote_id: quote_post.id})
+
+    status = StatusView.render("show.json", %{activity: quoted_quote_post})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+    assert status.pleroma.quote_id == to_string(quote_post.id)
+    assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
+    assert status.pleroma.quote_visible
+
+    # Quotes don't go more than one level deep
+    refute status.pleroma.quote.pleroma.quote
+    assert status.pleroma.quote.pleroma.quote_id == to_string(post.id)
+    assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
+    assert status.pleroma.quote.pleroma.quote_visible
+
+    # In an index
+    [status] = StatusView.render("index.json", %{activities: [quoted_quote_post], as: :activity})
+
+    assert status.pleroma.quote.id == to_string(quote_post.id)
+  end
+
+  test "quoted private post" do
+    user = insert(:user)
+
+    # Insert a private post
+    private = insert(:followers_only_note_activity, user: user)
+    private_object = Object.normalize(private)
+
+    # Create a public post quoting the private post
+    quote_private =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => private_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_private})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == private_object.data["id"]
+    refute status.pleroma.quote_visible
+
+    # After following the user, the quote is rendered
+    follower = insert(:user)
+    CommonAPI.follow(follower, user)
+
+    status = StatusView.render("show.json", %{activity: quote_private, for: follower})
+    assert status.pleroma.quote.id == to_string(private.id)
+    assert status.pleroma.quote_visible
+  end
+
+  test "quoted direct message" do
+    # Insert a direct message
+    direct = insert(:direct_note_activity)
+    direct_object = Object.normalize(direct)
+
+    # Create a public post quoting the direct message
+    quote_direct =
+      insert(:note_activity, note: insert(:note, data: %{"quoteUrl" => direct_object.data["id"]}))
+
+    status = StatusView.render("show.json", %{activity: quote_direct})
+
+    # The quote isn't rendered
+    refute status.pleroma.quote
+    assert status.pleroma.quote_url == direct_object.data["id"]
+    refute status.pleroma.quote_visible
+  end
+
+  test "repost of quote post" do
+    post = insert(:note_activity)
+    user = insert(:user)
+
+    {:ok, quote_post} = CommonAPI.post(user, %{status: "he", quote_id: post.id})
+    {:ok, repost} = CommonAPI.repeat(quote_post.id, user)
+
+    [status] = StatusView.render("index.json", %{activities: [repost], as: :activity})
+
+    assert status.reblog.pleroma.quote.id == to_string(post.id)
   end
 
   test "contains mentions" do

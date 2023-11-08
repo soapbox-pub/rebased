@@ -166,6 +166,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_in_reply_to(object, _options), do: object
 
+  def fix_quote_url_and_maybe_fetch(object, options \\ []) do
+    quote_url =
+      case Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes.fix_quote_url(object) do
+        %{"quoteUrl" => quote_url} -> quote_url
+        _ -> nil
+      end
+
+    with {:quoting?, true} <- {:quoting?, not is_nil(quote_url)},
+         {:ok, quoted_object} <- get_obj_helper(quote_url, options),
+         %Activity{} <- Activity.get_create_by_object_ap_id(quoted_object.data["id"]) do
+      Map.put(object, "quoteUrl", quoted_object.data["id"])
+    else
+      {:quoting?, _} ->
+        object
+
+      e ->
+        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+        object
+    end
+  end
+
   defp prepare_in_reply_to(in_reply_to) do
     cond do
       is_bitstring(in_reply_to) ->
@@ -454,6 +475,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> strip_internal_fields()
       |> fix_type(fetch_options)
       |> fix_in_reply_to(fetch_options)
+      |> fix_quote_url_and_maybe_fetch(fetch_options)
 
     data = Map.put(data, "object", object)
     options = Keyword.put(options, :local, false)
@@ -629,6 +651,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def set_reply_to_uri(obj), do: obj
 
   @doc """
+  Fedibird compatibility
+  https://github.com/fedibird/mastodon/commit/dbd7ae6cf58a92ec67c512296b4daaea0d01e6ac
+  """
+  def set_quote_url(%{"quoteUrl" => quote_url} = object) when is_binary(quote_url) do
+    Map.put(object, "quoteUri", quote_url)
+  end
+
+  def set_quote_url(obj), do: obj
+
+  @doc """
   Serialized Mastodon-compatible `replies` collection containing _self-replies_.
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
   """
@@ -682,6 +714,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_quote_url
     |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags

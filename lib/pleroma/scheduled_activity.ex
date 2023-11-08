@@ -40,7 +40,11 @@ defmodule Pleroma.ScheduledActivity do
          %{changes: %{params: %{"media_ids" => media_ids} = params}} = changeset
        )
        when is_list(media_ids) do
-    media_attachments = Utils.attachments_from_ids(%{media_ids: media_ids})
+    media_attachments =
+      Utils.attachments_from_ids(
+        %{media_ids: media_ids},
+        User.get_cached_by_id(changeset.data.user_id)
+      )
 
     params =
       params

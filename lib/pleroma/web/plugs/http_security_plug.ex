@@ -93,18 +93,26 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
+    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     # Strict multimedia CSP enforcement only when MediaProxy is enabled
-    {img_src, media_src} =
+    {img_src, media_src, connect_src} =
       if Config.get([:media_proxy, :enabled]) &&
            !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
         sources = build_csp_multimedia_source_list()
-        {[img_src, sources], [media_src, sources]}
-      else
-        {[img_src, " https:"], [media_src, " https:"]}
-      end
 
-    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
+        {
+          [img_src, sources],
+          [media_src, sources],
+          [connect_src, sources]
+        }
+      else
+        {
+          [img_src, " https:"],
+          [media_src, " https:"],
+          [connect_src, " https:"]
+        }
+      end
 
     connect_src =
       if Config.get(:env) == :dev do

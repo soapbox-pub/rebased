@@ -434,6 +434,8 @@ config :pleroma, :mrf_object_age,
 
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
+config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
@@ -588,7 +590,6 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,
-    new_users_digest: 1,
     mute_expire: 5
   ],
   plugins: [Oban.Plugins.Pruner],
@@ -858,7 +859,11 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: [Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy, Pleroma.Web.ActivityPub.MRF.TagPolicy],
+  policies: [
+    Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
+    Pleroma.Web.ActivityPub.MRF.TagPolicy,
+    Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy
+  ],
   transparency: true,
   transparency_exclusions: []
 
