@@ -19,11 +19,13 @@ defmodule Pleroma.Domain do
     domain
     |> cast(params, [:domain, :public])
     |> validate_required([:domain])
+    |> update_change(:domain, &String.downcase/1)
+    |> unique_constraint(:domain)
   end
 
   def update_changeset(%__MODULE__{} = domain, params \\ %{}) do
     domain
-    |> cast(params, [:domain])
+    |> cast(params, [:public])
   end
 
   def get(id), do: Repo.get(__MODULE__, id)

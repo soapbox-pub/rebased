@@ -147,7 +147,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   end
 
   defp multitenancy do
-    enabled = Config.get([:multitenancy, :enabled])
+    enabled = Config.get([:instance, :multitenancy, :enabled])
 
     if enabled do
       domains =

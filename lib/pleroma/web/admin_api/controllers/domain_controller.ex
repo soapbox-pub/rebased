@@ -37,11 +37,13 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
   end
 
   def create(%{body_params: params} = conn, _) do
-    domain =
-      params
-      |> Domain.create()
-
-    render(conn, "show.json", domain: domain)
+    with {:domain_not_used, true} <-
+           {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.domain()},
+         {:domain, domain} <- Domain.create(params) do
+      render(conn, "show.json", domain: domain)
+    else
+      {:domain_not_used, false} -> {:error, :invalid_domain}
+    end
   end
 
   def update(%{body_params: params} = conn, %{id: id}) do

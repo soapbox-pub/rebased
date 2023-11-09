@@ -1061,6 +1061,18 @@ config :pleroma, :config_description, [
         suggestions: [
           "en"
         ]
+      },
+      %{
+        key: :multitenancy,
+        type: :map,
+        description: "Multitenancy support",
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables allowing multiple Webfinger domains"
+          },
+        ]
       }
     ]
   },
@@ -3466,5 +3478,5 @@ config :pleroma, :config_description, [
         ]
       }
     ]
-  }
+  },
 ]

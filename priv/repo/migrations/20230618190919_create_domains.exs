@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.CreateDomains do
 
   def change do
     create_if_not_exists table(:domains) do
-      add(:domain, :string)
+      add(:domain, :citext)
       add(:public, :boolean)
 
       timestamps()
