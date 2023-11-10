@@ -106,4 +106,53 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              |> get("/api/v1/instance")
              |> json_response_and_validate_schema(200)
   end
+
+  test "instance domains", %{conn: conn} do
+    clear_config([:instance, :multitenancy], %{enabled: true})
+
+    {:ok, %{id: domain_id}} =
+      Pleroma.Domain.create(%{
+        domain: "pleroma.example.org"
+      })
+
+    domain_id = to_string(domain_id)
+
+    assert %{
+             "pleroma" => %{
+               "metadata" => %{
+                 "multitenancy" => %{
+                   "enabled" => true,
+                   "domains" => [
+                     %{
+                       "id" => "",
+                       "domain" => _,
+                       "public" => true
+                     },
+                     %{
+                       "id" => ^domain_id,
+                       "domain" => "pleroma.example.org",
+                       "public" => false
+                     }
+                   ]
+                 }
+               }
+             }
+           } =
+             conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+
+    clear_config([:instance, :multitenancy, :enabled], false)
+
+    assert %{
+             "pleroma" => %{
+               "metadata" => %{
+                 "multitenancy" => nil
+               }
+             }
+           } =
+             conn
+             |> get("/api/v1/instance")
+             |> json_response_and_validate_schema(200)
+  end
 end

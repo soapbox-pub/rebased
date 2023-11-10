@@ -816,7 +816,7 @@ defmodule Pleroma.User do
     |> put_private_key()
   end
 
-  defp fix_nickname(changeset, domain_id, from_admin) when is_binary(domain_id) do
+  defp fix_nickname(changeset, domain_id, from_admin) when not is_nil(domain_id) do
     with {:domain, domain} <- {:domain, Pleroma.Domain.get(domain_id)},
          {:domain_allowed, true} <- {:domain_allowed, from_admin || domain.public} do
       nickname = get_field(changeset, :nickname)
@@ -896,15 +896,15 @@ defmodule Pleroma.User do
   end
 
   defp put_ap_id(changeset) do
-        nickname = get_field(changeset, :nickname)
-        ap_id = ap_id(%User{nickname: nickname})
+    nickname = get_field(changeset, :nickname)
+    ap_id = ap_id(%User{nickname: nickname})
 
-        ap_id =
-          if String.contains?(nickname, ".") do
-            ap_id <> ".json"
-          else
-            ap_id
-          end
+    ap_id =
+      if String.contains?(nickname, ".") do
+        ap_id <> ".json"
+      else
+        ap_id
+      end
 
     put_change(changeset, :ap_id, ap_id)
   end
