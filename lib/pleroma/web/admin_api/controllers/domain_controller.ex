@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.AdminAPI.DomainController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Repo
   alias Pleroma.Domain
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   import Pleroma.Web.ControllerHelper,
@@ -29,9 +29,7 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.DomainOperation
 
   def index(conn, _) do
-    domains =
-      Domain
-      |> Repo.all()
+    domains = Domain.list()
 
     render(conn, "index.json", domains: domains)
   end
@@ -39,15 +37,21 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
   def create(%{body_params: params} = conn, _) do
     with {:domain_not_used, true} <-
            {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.domain()},
-         {:domain, domain} <- Domain.create(params) do
+         {:ok, domain} <- Domain.create(params) do
       render(conn, "show.json", domain: domain)
     else
-      {:domain_not_used, false} -> {:error, :invalid_domain}
+      {:domain_not_used, false} ->
+        {:error, :invalid_domain}
+
+      {:error, changeset} ->
+        errors = Map.new(changeset.errors, fn {key, {error, _}} -> {key, error} end)
+
+        {:errors, errors}
     end
   end
 
   def update(%{body_params: params} = conn, %{id: id}) do
-    domain =
+    {:ok, domain} =
       params
       |> Domain.update(id)
 

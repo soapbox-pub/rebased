@@ -5,6 +5,7 @@ defmodule Pleroma.Domain do
   use Ecto.Schema
 
   import Ecto.Changeset
+  import Ecto.Query
 
   alias Pleroma.Repo
 
@@ -28,24 +29,24 @@ defmodule Pleroma.Domain do
     |> cast(params, [:public])
   end
 
+  def list do
+    __MODULE__
+    |> order_by(asc: :id)
+    |> Repo.all()
+  end
+
   def get(id), do: Repo.get(__MODULE__, id)
 
   def create(params) do
-    {:ok, domain} =
-      %__MODULE__{}
-      |> changeset(params)
-      |> Repo.insert()
-
-    domain
+    %__MODULE__{}
+    |> changeset(params)
+    |> Repo.insert()
   end
 
   def update(params, id) do
-    {:ok, domain} =
-      get(id)
-      |> update_changeset(params)
-      |> Repo.update()
-
-    domain
+    get(id)
+    |> update_changeset(params)
+    |> Repo.update()
   end
 
   def delete(id) do
