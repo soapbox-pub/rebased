@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
       responses: %{
         200 => Operation.response("Response", "application/json", domain()),
         400 => Operation.response("Bad Request", "application/json", ApiError),
-        403 => Operation.response("Forbidden", "application/json", ApiError),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
       }
     }
   end
