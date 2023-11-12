@@ -4,11 +4,11 @@
 
 defmodule Pleroma.Search.DatabaseSearch do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.Config
 
   require Pleroma.Constants
 

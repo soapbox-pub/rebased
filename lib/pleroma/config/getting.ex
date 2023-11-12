@@ -9,7 +9,7 @@ defmodule Pleroma.Config.Getting do
   def get(key), do: get(key, nil)
   def get(key, default), do: impl().get(key, default)
 
-  def impl() do
+  def impl do
     Application.get_env(:pleroma, :config_impl, Pleroma.Config)
   end
 end

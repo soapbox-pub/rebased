@@ -13,9 +13,9 @@ defmodule Pleroma.Search.MeilisearchTest do
   import Mox
 
   alias Pleroma.Search.Meilisearch
+  alias Pleroma.UnstubbedConfigMock, as: Config
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.SearchIndexingWorker
-  alias Pleroma.UnstubbedConfigMock, as: Config
 
   describe "meilisearch" do
     test "indexes a local post on creation" do
