@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Search.DatabaseSearchTest do
-  alias Pleroma.Search.DatabaseSearch
+  alias Pleroma.Search.DatabaseSearch, as: Search
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
@@ -13,7 +13,7 @@ defmodule Pleroma.Search.DatabaseSearchTest do
     user = insert(:user)
     {:ok, post} = CommonAPI.post(user, %{status: "it's wednesday my dudes"})
 
-    [result] = DatabaseSearch.search(nil, "wednesday")
+    [result] = Search.search(nil, "wednesday")
 
     assert result.id == post.id
   end
@@ -45,7 +45,7 @@ defmodule Pleroma.Search.DatabaseSearchTest do
     {:ok, _post2} = CommonAPI.post(user, %{status: "it's wednesday my bros"})
 
     # plainto doesn't understand complex queries
-    assert [result] = DatabaseSearch.search(nil, "wednesday -dudes")
+    assert [result] = Search.search(nil, "wednesday -dudes")
 
     assert result.id == post.id
   end
@@ -55,7 +55,7 @@ defmodule Pleroma.Search.DatabaseSearchTest do
     {:ok, _post} = CommonAPI.post(user, %{status: "it's wednesday my dudes"})
     {:ok, other_post} = CommonAPI.post(user, %{status: "it's wednesday my bros"})
 
-    assert [result] = DatabaseSearch.search(nil, "wednesday -dudes")
+    assert [result] = Search.search(nil, "wednesday -dudes")
 
     assert result.id == other_post.id
   end
