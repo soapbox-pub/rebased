@@ -4,10 +4,10 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.4.55"),
+      version: version("2.6.50"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      compilers: [:phoenix] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
@@ -78,8 +78,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :fast_sanitize,
         :os_mon,
-        :ssl,
-        :esshd
+        :ssl
       ],
       included_applications: [:ex_syslogger]
     ]
@@ -126,11 +125,9 @@ defmodule Pleroma.Mixfile do
       {:telemetry_poller, "~> 1.0"},
       {:tzdata, "~> 1.0.3"},
       {:plug_cowboy, "~> 2.3"},
-      {:oban, "~> 2.13"},
-      {:gettext,
-       git: "https://github.com/tusooa/gettext.git",
-       ref: "72fb2496b6c5280ed911bdc3756890e7f38a4808",
-       override: true},
+      # oban 2.14 requires Elixir 1.12+
+      {:oban, "~> 2.13.4"},
+      {:gettext, "~> 0.20"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.2.0"},
@@ -148,21 +145,20 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.1.6"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.7.2"},
-      {:earmark, "~> 1.4.15"},
+      # earmark 1.4.23 requires Elixir 1.12+
+      {:earmark, "1.4.22"},
       {:bbcode_pleroma, "~> 0.2.0"},
-      {:crypt,
-       git: "https://github.com/msantos/crypt.git",
-       ref: "f75cd55325e33cbea198fb41fe41871392f8fb76"},
       {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3.1"},
-      {:swoosh, "~> 1.0"},
+      # swoosh 1.11.2+ requires Elixir 1.12+
+      {:swoosh, "~> 1.10.0"},
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
       {:floki, "~> 0.27"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
-      {:linkify, "~> 0.5.2"},
+      {:linkify, "~> 0.5.3"},
       {:http_signatures, "~> 0.1.1"},
       {:telemetry, "~> 1.0.0", override: true},
       {:poolboy, "~> 1.5"},
@@ -180,9 +176,7 @@ defmodule Pleroma.Mixfile do
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
       {:joken, "~> 2.0"},
-      {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
-      {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:flake_id, "~> 0.1.0"},
@@ -196,11 +190,8 @@ defmodule Pleroma.Mixfile do
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
       {:eblurhash, "~> 1.2.2"},
-      {:open_api_spex, "~> 3.10"},
+      {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
-
-      # indirect dependency version override
-      {:plug, "~> 1.10.4", override: true},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
@@ -210,7 +201,8 @@ defmodule Pleroma.Mixfile do
       {:covertool, "~> 2.0", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websockex, "~> 0.4.3", only: :test}
+      {:websockex, "~> 0.4.3", only: :test},
+      {:benchee, "~> 1.0", only: :benchmark}
     ] ++ oauth_deps()
   end
 

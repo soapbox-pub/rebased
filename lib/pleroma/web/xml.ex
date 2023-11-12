@@ -29,7 +29,10 @@ defmodule Pleroma.Web.XML do
       {doc, _rest} =
         text
         |> :binary.bin_to_list()
-        |> :xmerl_scan.string(quiet: true)
+        |> :xmerl_scan.string(
+          quiet: true,
+          allow_entities: false
+        )
 
       {:ok, doc}
     rescue

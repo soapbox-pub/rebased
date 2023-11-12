@@ -38,16 +38,70 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactHandlingTest do
       assert {:content, {"can't be blank", [validation: :required]}} in cng.errors
     end
 
-    test "it is not valid with a non-emoji content field", %{valid_emoji_react: valid_emoji_react} do
+    test "it is valid when custom emoji is used", %{valid_emoji_react: valid_emoji_react} do
       without_emoji_content =
         valid_emoji_react
-        |> Map.put("content", "x")
+        |> Map.put("content", ":hello:")
+        |> Map.put("tag", [
+          %{
+            "type" => "Emoji",
+            "name" => ":hello:",
+            "icon" => %{"url" => "http://somewhere", "type" => "Image"}
+          }
+        ])
+
+      {:ok, _, _} = ObjectValidator.validate(without_emoji_content, [])
+    end
+
+    test "it is not valid when custom emoji don't have a matching tag", %{
+      valid_emoji_react: valid_emoji_react
+    } do
+      without_emoji_content =
+        valid_emoji_react
+        |> Map.put("content", ":hello:")
+        |> Map.put("tag", [
+          %{
+            "type" => "Emoji",
+            "name" => ":whoops:",
+            "icon" => %{"url" => "http://somewhere", "type" => "Image"}
+          }
+        ])
 
       {:error, cng} = ObjectValidator.validate(without_emoji_content, [])
 
       refute cng.valid?
 
-      assert {:content, {"must be a single character emoji", []}} in cng.errors
+      assert {:tag, {"does not contain an Emoji tag", []}} in cng.errors
+    end
+
+    test "it is not valid when custom emoji have no tags", %{
+      valid_emoji_react: valid_emoji_react
+    } do
+      without_emoji_content =
+        valid_emoji_react
+        |> Map.put("content", ":hello:")
+        |> Map.put("tag", [])
+
+      {:error, cng} = ObjectValidator.validate(without_emoji_content, [])
+
+      refute cng.valid?
+
+      assert {:tag, {"does not contain an Emoji tag", []}} in cng.errors
+    end
+
+    test "it is not valid when custom emoji doesn't match a shortcode format", %{
+      valid_emoji_react: valid_emoji_react
+    } do
+      without_emoji_content =
+        valid_emoji_react
+        |> Map.put("content", "hello")
+        |> Map.put("tag", [])
+
+      {:error, cng} = ObjectValidator.validate(without_emoji_content, [])
+
+      refute cng.valid?
+
+      assert {:tag, {"does not contain an Emoji tag", []}} in cng.errors
     end
   end
 end

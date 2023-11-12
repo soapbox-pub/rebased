@@ -263,20 +263,29 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       {:error, %Ecto.Changeset{errors: [background: {"file is too large", _}]}} ->
         render_error(conn, :request_entity_too_large, "File is too large")
 
+      {:error, %Ecto.Changeset{errors: [{:bio, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Bio is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:name, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Name is too long")
+
+      {:error, %Ecto.Changeset{errors: [{:fields, {"invalid", _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "One or more field entries are too long")
+
+      {:error, %Ecto.Changeset{errors: [{:fields, {_, _}} | _]}} ->
+        render_error(conn, :request_entity_too_large, "Too many field entries")
+
       _e ->
         render_error(conn, :forbidden, "Invalid request")
     end
   end
 
   defp normalize_fields_attributes(fields) do
-    if Enum.all?(fields, &is_tuple/1) do
-      Enum.map(fields, fn {_, v} -> v end)
-    else
-      Enum.map(fields, fn
-        %{} = field -> %{"name" => field.name, "value" => field.value}
-        field -> field
-      end)
-    end
+    if(Enum.all?(fields, &is_tuple/1), do: Enum.map(fields, fn {_, v} -> v end), else: fields)
+    |> Enum.map(fn
+      %{} = field -> %{"name" => field.name, "value" => field.value}
+      field -> field
+    end)
   end
 
   @doc "GET /api/v1/accounts/relationships"
@@ -543,7 +552,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(users)
-    |> render("index.json", users: users, for: user, as: :user)
+    |> render("index.json",
+      users: users,
+      for: user,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/lookup"

@@ -124,7 +124,6 @@ defmodule Pleroma.User do
     field(:domain_blocks, {:array, :string}, default: [])
     field(:is_active, :boolean, default: true)
     field(:no_rich_text, :boolean, default: false)
-    field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
@@ -326,7 +325,7 @@ defmodule Pleroma.User do
   end
 
   def visible_for(%User{} = user, for_user) do
-    if superuser?(for_user) do
+    if privileged?(for_user, :users_manage_activation_state) do
       :visible
     else
       visible_account_status(user)
@@ -353,10 +352,45 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec superuser?(User.t()) :: boolean()
-  def superuser?(%User{local: true, is_admin: true}), do: true
-  def superuser?(%User{local: true, is_moderator: true}), do: true
-  def superuser?(_), do: false
+  @spec privileged?(User.t(), atom()) :: boolean()
+  def privileged?(%User{is_admin: false, is_moderator: false}, _), do: false
+
+  def privileged?(
+        %User{local: true, is_admin: is_admin, is_moderator: is_moderator},
+        privilege_tag
+      ),
+      do:
+        privileged_for?(privilege_tag, is_admin, :admin_privileges) or
+          privileged_for?(privilege_tag, is_moderator, :moderator_privileges)
+
+  def privileged?(_, _), do: false
+
+  defp privileged_for?(privilege_tag, true, config_role_key),
+    do: privilege_tag in Config.get([:instance, config_role_key])
+
+  defp privileged_for?(_, _, _), do: false
+
+  @spec privileges(User.t()) :: [atom()]
+  def privileges(%User{local: false}) do
+    []
+  end
+
+  def privileges(%User{is_moderator: false, is_admin: false}) do
+    []
+  end
+
+  def privileges(%User{local: true, is_moderator: true, is_admin: true}) do
+    (Config.get([:instance, :moderator_privileges]) ++ Config.get([:instance, :admin_privileges]))
+    |> Enum.uniq()
+  end
+
+  def privileges(%User{local: true, is_moderator: true, is_admin: false}) do
+    Config.get([:instance, :moderator_privileges])
+  end
+
+  def privileges(%User{local: true, is_moderator: false, is_admin: true}) do
+    Config.get([:instance, :admin_privileges])
+  end
 
   @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
@@ -453,7 +487,6 @@ defmodule Pleroma.User do
         :nickname,
         :public_key,
         :avatar,
-        :ap_enabled,
         :banner,
         :is_locked,
         :last_refreshed_at,
@@ -1026,11 +1059,7 @@ defmodule Pleroma.User do
   end
 
   def maybe_direct_follow(%User{} = follower, %User{} = followed) do
-    if not ap_enabled?(followed) do
-      follow(follower, followed)
-    else
-      {:ok, follower, followed}
-    end
+    {:ok, follower, followed}
   end
 
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
@@ -1167,24 +1196,10 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def update_and_set_cache(%{data: %Pleroma.User{} = user} = changeset) do
-    was_superuser_before_update = User.superuser?(user)
-
+  def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
       set_cache(user)
     end
-    |> maybe_remove_report_notifications(was_superuser_before_update)
-  end
-
-  defp maybe_remove_report_notifications({:ok, %Pleroma.User{} = user} = result, true) do
-    if not User.superuser?(user),
-      do: user |> Notification.destroy_multiple_from_types(["pleroma:report"])
-
-    result
-  end
-
-  defp maybe_remove_report_notifications(result, _) do
-    result
   end
 
   def get_user_friends_ap_ids(user) do
@@ -1877,7 +1892,6 @@ defmodule Pleroma.User do
       confirmation_token: nil,
       domain_blocks: [],
       is_active: false,
-      ap_enabled: false,
       is_moderator: false,
       is_admin: false,
       mascot: nil,
@@ -2130,10 +2144,6 @@ defmodule Pleroma.User do
     end
   end
 
-  def ap_enabled?(%User{local: true}), do: true
-  def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
-  def ap_enabled?(_), do: false
-
   @doc "Gets or fetch a user by uri or nickname."
   @spec get_or_fetch(String.t()) :: {:ok, User.t()} | {:error, String.t()}
   def get_or_fetch("http://" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
@@ -2263,6 +2273,11 @@ defmodule Pleroma.User do
   def all_superusers do
     User.Query.build(%{super_users: true, local: true, is_active: true})
     |> Repo.all()
+  end
+
+  @spec all_users_with_privilege(atom()) :: [User.t()]
+  def all_users_with_privilege(privilege) do
+    User.Query.build(%{is_privileged: privilege}) |> Repo.all()
   end
 
   def muting_reblogs?(%User{} = user, %User{} = target) do

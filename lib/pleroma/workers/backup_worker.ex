@@ -51,7 +51,7 @@ defmodule Pleroma.Workers.BackupWorker do
   end
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.seconds(900)
+  def timeout(_job), do: :infinity
 
   defp has_email?(user) do
     not is_nil(user.email) and user.email != ""

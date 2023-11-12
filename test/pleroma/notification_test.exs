@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   import Pleroma.Factory
   import Mock
@@ -32,20 +32,26 @@ defmodule Pleroma.NotificationTest do
       refute {:ok, [nil]} == Notification.create_notifications(activity)
     end
 
-    test "creates a notification for a report" do
+    test "creates a report notification only for privileged users" do
       reporting_user = insert(:user)
       reported_user = insert(:user)
-      {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+      moderator_user = insert(:user, is_moderator: true)
 
-      {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      clear_config([:instance, :moderator_privileges], [])
+      {:ok, activity1} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      {:ok, []} = Notification.create_notifications(activity1)
 
-      {:ok, [notification]} = Notification.create_notifications(activity)
+      clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
+      {:ok, activity2} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
+      {:ok, [notification]} = Notification.create_notifications(activity2)
 
       assert notification.user_id == moderator_user.id
       assert notification.type == "pleroma:report"
     end
 
-    test "suppresses notification to reporter if reporter is an admin" do
+    test "suppresses notifications for own reports" do
+      clear_config([:instance, :admin_privileges], [:reports_manage_reports])
+
       reporting_admin = insert(:user, is_admin: true)
       reported_user = insert(:user)
       other_admin = insert(:user, is_admin: true)
@@ -246,7 +252,7 @@ defmodule Pleroma.NotificationTest do
       task =
         Task.async(fn ->
           {:ok, _topic} = Streamer.get_topic_and_add_socket("user", user, oauth_token)
-          assert_receive {:render_with_user, _, _, _}, 4_000
+          assert_receive {:render_with_user, _, _, _, _}, 4_000
         end)
 
       task_user_notification =
@@ -254,7 +260,7 @@ defmodule Pleroma.NotificationTest do
           {:ok, _topic} =
             Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
 
-          assert_receive {:render_with_user, _, _, _}, 4_000
+          assert_receive {:render_with_user, _, _, _, _}, 4_000
         end)
 
       activity = insert(:note_activity)
@@ -326,6 +332,32 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
+    end
+
+    test "it disables notifications from non-followees" do
+      follower = insert(:user)
+
+      followed =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(follower, followed)
+      {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
+      refute Notification.create_notification(activity, followed)
+    end
+
+    test "it allows notifications from followees" do
+      poster = insert(:user)
+
+      receiver =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
+        )
+
+      CommonAPI.follow(receiver, poster)
+      {:ok, activity} = CommonAPI.post(poster, %{status: "hey @#{receiver.nickname}"})
+      assert Notification.create_notification(activity, receiver)
     end
 
     test "it doesn't create a notification for user if he is the activity author" do
@@ -539,25 +571,6 @@ defmodule Pleroma.NotificationTest do
 
       assert Notification.for_user(other_user) == []
       assert Notification.for_user(third_user) != []
-    end
-  end
-
-  describe "destroy_multiple_from_types/2" do
-    test "clears all notifications of a certain type for a given user" do
-      report_activity = insert(:report_activity)
-      user1 = insert(:user, is_moderator: true, is_admin: true)
-      user2 = insert(:user, is_moderator: true, is_admin: true)
-      {:ok, _} = Notification.create_notifications(report_activity)
-
-      {:ok, _} =
-        CommonAPI.post(user2, %{
-          status: "hey @#{user1.nickname} !"
-        })
-
-      Notification.destroy_multiple_from_types(user1, ["pleroma:report"])
-
-      assert [%Pleroma.Notification{type: "mention"}] = Notification.for_user(user1)
-      assert [%Pleroma.Notification{type: "pleroma:report"}] = Notification.for_user(user2)
     end
   end
 
@@ -1237,6 +1250,33 @@ defmodule Pleroma.NotificationTest do
       {:ok, _} = CommonAPI.favorite(another_user, activity.id)
 
       assert length(Notification.for_user(user)) == 1
+    end
+
+    test "it returns notifications when related object is without content and filters are defined",
+         %{user: user} do
+      followed_user = insert(:user, is_locked: true)
+
+      insert(:filter, user: followed_user, phrase: "test", hide: true)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      refute FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow_request"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
+
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
+
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
     end
   end
 end

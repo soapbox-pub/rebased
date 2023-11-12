@@ -66,6 +66,36 @@ To add configuration to your config file, you can copy it from the base config. 
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 * `password_reset_token_validity`: The time after which reset tokens aren't accepted anymore, in seconds (default: one day).
+* `admin_privileges`: A list of privileges an admin has (e.g. delete messages, manage reports...)
+    * Possible values are:
+      * `:users_read`
+        * Allows admins to fetch users through the admin API.
+      * `:users_manage_invites`
+        * Allows admins to manage invites. This includes sending, resending, revoking and approving invites.
+      * `:users_manage_activation_state`
+        * Allows admins to activate and deactivate accounts. This also allows them to see deactivated users through the Mastodon API.
+      * `:users_manage_tags`
+        * Allows admins to set and remove tags for users. This can be useful in combination with MRF policies, such as `Pleroma.Web.ActivityPub.MRF.TagPolicy`.
+      * `:users_manage_credentials`
+        * Allows admins to trigger a password reset and set new credentials for an user.
+      * `:users_delete`
+        * Allows admins to delete accounts. Note that deleting an account is actually deactivating it and removing all data like posts, profile information, etc.
+      * `:messages_read`
+        * Allows admins to read messages through the admin API, including non-public posts and chats.
+      * `:messages_delete`
+        * Allows admins to delete messages from other users.
+      * `:instances_delete,`
+        * Allows admins to remove a whole remote instance from your instance. This will delete all users and messages from that remote instance.
+      * `:reports_manage_reports`
+        * Allows admins to see and manage reports.
+      * `:moderation_log_read,`
+        * Allows admins to read the entries in the moderation log.
+      * `:emoji_manage_emoji`
+        * Allows admins to manage custom emoji on the instance.
+      * `:statistics_read,`
+        * Allows admins to see some simple statistics about the instance.
+* `moderator_privileges`: A list of privileges a moderator has (e.g. delete messages, manage reports...)
+    * Possible values are the same as for `admin_privileges`
 
 ## :database
 * `improved_hashtag_timeline`: Setting to force toggle / force disable improved hashtags timeline. `:enabled` forces hashtags to be fetched from `hashtags` table for hashtags timeline. `:disabled` forces object-embedded hashtags to be used (slower). Keep it `:auto` for automatic behaviour (it is auto-set to `:enabled` [unless overridden] when HashtagsTableMigrator completes).
@@ -130,6 +160,8 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy`: Drops follow requests from followbots. Users can still allow bots to follow them by first following the bot.
     * `Pleroma.Web.ActivityPub.MRF.KeywordPolicy`: Rejects or removes from the federated timeline or replaces keywords. (See [`:mrf_keyword`](#mrf_keyword)).
     * `Pleroma.Web.ActivityPub.MRF.ForceMentionsInContent`: Forces every mentioned user to be reflected in the post content.
+    * `Pleroma.Web.ActivityPub.MRF.InlineQuotePolicy`: Forces quote post URLs to be reflected in the message content inline.
+    * `Pleroma.Web.ActivityPub.MRF.QuoteToLinkTagPolicy`: Force a Link tag for posts quoting another post. (may break outgoing federation of quote posts with older Pleroma versions)
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -231,6 +263,14 @@ Notes:
 
 * `follower_nickname`: The name of the bot account to use for following newly discovered users. Using `followbot` or similar is strongly suggested.
 
+#### :mrf_emoji
+* `remove_url`: A list of patterns which result in emoji whose URL matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `remove_shortcode`: A list of patterns which result in emoji whose shortcode matches being removed from the message. This will apply to statuses, emoji reactions, and user profiles. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_url`: A list of patterns which result in message with emojis whose URLs match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+* `federated_timeline_removal_shortcode`: A list of patterns which result in message with emojis whose shortcodes match being removed from federated timelines (a.k.a unlisted). This will apply only to statuses. Each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html).
+
+#### :mrf_inline_quote
+* `template`: The template to append to the post. `{url}` will be replaced with the actual link to the quoted post. Default: `<bdi>RT:</bdi> {url}`
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
@@ -641,6 +681,12 @@ This filter reads the ImageDescription and iptc:Caption-Abstract fields with Exi
 
 No specific configuration.
 
+#### Pleroma.Upload.Filter.OnlyMedia
+
+This filter rejects uploads that are not identified with Content-Type matching audio/\*, image/\*, or video/\*
+
+No specific configuration.
+
 #### Pleroma.Upload.Filter.Mogrify
 
 * `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
@@ -843,21 +889,8 @@ This will probably take a long time.
 
 ### BBS / SSH access
 
-To enable simple command line interface accessible over ssh, add a setting like this to your configuration file:
-
-```exs
-app_dir = File.cwd!
-priv_dir = Path.join([app_dir, "priv/ssh_keys"])
-
-config :esshd,
-  enabled: true,
-  priv_dir: priv_dir,
-  handler: "Pleroma.BBS.Handler",
-  port: 10_022,
-  password_authenticator: "Pleroma.BBS.Authenticator"
-```
-
-Feel free to adjust the priv_dir and port number. Then you will have to create the key for the keys (in the example `priv/ssh_keys`) and create the host keys with `ssh-keygen -m PEM -N "" -b 2048 -t rsa -f ssh_host_rsa_key`. After restarting, you should be able to connect to your Pleroma instance with `ssh username@server -p $PORT`
+This feature has been removed from Pleroma core.
+However, a client has been made and is available at https://git.pleroma.social/Duponin/sshocial.
 
 ### :gopher
 * `enabled`: Enables the gopher interface

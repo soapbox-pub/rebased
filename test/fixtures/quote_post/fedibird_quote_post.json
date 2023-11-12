@@ -1,0 +1,52 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "ostatus": "http://ostatus.org#",
+      "atomUri": "ostatus:atomUri",
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "conversation": "ostatus:conversation",
+      "sensitive": "as:sensitive",
+      "toot": "http://joinmastodon.org/ns#",
+      "votersCount": "toot:votersCount",
+      "expiry": "toot:expiry"
+    }
+  ],
+  "id": "https://fedibird.com/users/noellabo/statuses/107663670404015196",
+  "type": "Note",
+  "summary": null,
+  "inReplyTo": null,
+  "published": "2022-01-22T02:07:16Z",
+  "url": "https://fedibird.com/@noellabo/107663670404015196",
+  "attributedTo": "https://fedibird.com/users/noellabo",
+  "to": [
+    "https://www.w3.org/ns/activitystreams#Public"
+  ],
+  "cc": [
+    "https://fedibird.com/users/noellabo/followers"
+  ],
+  "sensitive": false,
+  "atomUri": "https://fedibird.com/users/noellabo/statuses/107663670404015196",
+  "inReplyToAtomUri": null,
+  "conversation": "tag:fedibird.com,2022-01-22:objectId=107663670404038002:objectType=Conversation",
+  "context": "https://fedibird.com/contexts/107663670404038002",
+  "quoteURL": "https://misskey.io/notes/8vsn2izjwh",
+  "_misskey_quote": "https://misskey.io/notes/8vsn2izjwh",
+  "_misskey_content": "いつの生まれだシトリン",
+  "content": "<p>いつの生まれだシトリン<span class=\"quote-inline\"><br/>QT: <a class=\"status-url-link\" data-status-account-acct=\"Citrine@misskey.io\" data-status-id=\"107663207194225003\" href=\"https://misskey.io/notes/8vsn2izjwh\" rel=\"nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"\">misskey.io/notes/8vsn2izjwh</span><span class=\"invisible\"></span></a></span></p>",
+  "contentMap": {
+    "ja": "<p>いつの生まれだシトリン<span class=\"quote-inline\"><br/>QT: <a class=\"status-url-link\" data-status-account-acct=\"Citrine@misskey.io\" data-status-id=\"107663207194225003\" href=\"https://misskey.io/notes/8vsn2izjwh\" rel=\"nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"\">misskey.io/notes/8vsn2izjwh</span><span class=\"invisible\"></span></a></span></p>"
+  },
+  "attachment": [],
+  "tag": [],
+  "replies": {
+    "id": "https://fedibird.com/users/noellabo/statuses/107663670404015196/replies",
+    "type": "Collection",
+    "first": {
+      "type": "CollectionPage",
+      "next": "https://fedibird.com/users/noellabo/statuses/107663670404015196/replies?only_other_accounts=true&page=true",
+      "partOf": "https://fedibird.com/users/noellabo/statuses/107663670404015196/replies",
+      "items": []
+    }
+  }
+}

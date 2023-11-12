@@ -256,4 +256,55 @@ defmodule Pleroma.Web.ActivityPub.MRF.ForceMentionsInContentTest do
               }
             }} = MRF.filter_one(ForceMentionsInContent, activity)
   end
+
+  test "don't add duplicate mentions for mastodon or misskey posts" do
+    [zero, rogerick, greg] = [
+      insert(:user,
+        ap_id: "https://pleroma.example.com/users/zero",
+        uri: "https://pleroma.example.com/users/zero",
+        nickname: "zero@pleroma.example.com",
+        local: false
+      ),
+      insert(:user,
+        ap_id: "https://misskey.example.com/users/104ab42f11",
+        uri: "https://misskey.example.com/@rogerick",
+        nickname: "rogerick@misskey.example.com",
+        local: false
+      ),
+      insert(:user,
+        ap_id: "https://mastodon.example.com/users/greg",
+        uri: "https://mastodon.example.com/@greg",
+        nickname: "greg@mastodon.example.com",
+        local: false
+      )
+    ]
+
+    {:ok, post} = CommonAPI.post(rogerick, %{status: "eugh"})
+
+    inline_mentions = [
+      "<span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{rogerick.id}\" href=\"#{rogerick.ap_id}\" rel=\"ugc\">@<span>rogerick</span></a></span>",
+      "<span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{greg.id}\" href=\"#{greg.uri}\" rel=\"ugc\">@<span>greg</span></a></span>"
+    ]
+
+    activity = %{
+      "type" => "Create",
+      "actor" => zero.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "actor" => zero.ap_id,
+        "content" => "#{Enum.at(inline_mentions, 0)} #{Enum.at(inline_mentions, 1)} erm",
+        "to" => [
+          rogerick.ap_id,
+          greg.ap_id,
+          Constants.as_public()
+        ],
+        "inReplyTo" => Object.normalize(post).data["id"]
+      }
+    }
+
+    {:ok, %{"object" => %{"content" => filtered}}} = ForceMentionsInContent.filter(activity)
+
+    assert filtered ==
+             "#{Enum.at(inline_mentions, 0)} #{Enum.at(inline_mentions, 1)} erm"
+  end
 end

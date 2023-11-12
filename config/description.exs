@@ -998,10 +998,48 @@ config :pleroma, :config_description, [
         description: "Enable profile directory."
       },
       %{
-        key: :privileged_staff,
-        type: :boolean,
+        key: :admin_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
         description:
-          "Let moderators access sensitive data (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+          "What extra privileges to allow admins (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
+      },
+      %{
+        key: :moderator_privileges,
+        type: {:list, :atom},
+        suggestions: [
+          :users_read,
+          :users_manage_invites,
+          :users_manage_activation_state,
+          :users_manage_tags,
+          :users_manage_credentials,
+          :users_delete,
+          :messages_read,
+          :messages_delete,
+          :instances_delete,
+          :reports_manage_reports,
+          :moderation_log_read,
+          :announcements_manage_announcements,
+          :emoji_manage_emoji,
+          :statistics_read
+        ],
+        description:
+          "What extra privileges to allow moderators (e.g. updating user credentials, get password reset token, delete users, index and read private statuses and chats)"
       },
       %{
         key: :birthday_required,
@@ -1014,6 +1052,15 @@ config :pleroma, :config_description, [
         description:
           "Minimum required age (in days) for users to create account. Only used if birthday is required.",
         suggestions: [6570]
+      },
+      %{
+        key: :languages,
+        type: {:list, :string},
+        description:
+          "Languages to be exposed in /api/v1/instance. Should be in the format of BCP47 language codes.",
+        suggestions: [
+          "en"
+        ]
       }
     ]
   },
@@ -2582,45 +2629,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :esshd,
-    label: "ESSHD",
-    type: :group,
-    description:
-      "Before enabling this you must add :esshd to mix.exs as one of the extra_applications " <>
-        "and generate host keys in your priv dir with ssh-keygen -m PEM -N \"\" -b 2048 -t rsa -f ssh_host_rsa_key",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables SSH"
-      },
-      %{
-        key: :priv_dir,
-        type: :string,
-        description: "Dir with SSH keys",
-        suggestions: ["/some/path/ssh_keys"]
-      },
-      %{
-        key: :handler,
-        type: :string,
-        description: "Handler module",
-        suggestions: ["Pleroma.BBS.Handler"]
-      },
-      %{
-        key: :port,
-        type: :integer,
-        description: "Port to connect",
-        suggestions: [10_022]
-      },
-      %{
-        key: :password_authenticator,
-        type: :string,
-        description: "Authenticator module",
-        suggestions: ["Pleroma.BBS.Authenticator"]
-      }
-    ]
-  },
-  %{
     group: :mime,
     label: "Mime Types",
     type: :group,
@@ -3356,6 +3364,21 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Limit user to export not more often than once per N days",
         suggestions: [7]
+      },
+      %{
+        key: :process_wait_time,
+        type: :integer,
+        label: "Process Wait Time",
+        description:
+          "The amount of time to wait for backup to report progress, in milliseconds. If no progress is received from the backup job for that much time, terminate it and deem it failed.",
+        suggestions: [30_000]
+      },
+      %{
+        key: :process_chunk_size,
+        type: :integer,
+        label: "Process Chunk Size",
+        description: "The number of activities to fetch in the backup job for each chunk.",
+        suggestions: [100]
       }
     ]
   },

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: false
 
   alias Pleroma.Activity
   alias Pleroma.Chat
@@ -190,7 +190,47 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       emoji: "☕",
       account: AccountView.render("show.json", %{user: other_user, for: user}),
       status: StatusView.render("show.json", %{activity: activity, for: user}),
-      created_at: Utils.to_masto_date(notification.inserted_at)
+      created_at: Utils.to_masto_date(notification.inserted_at),
+      emoji_url: nil
+    }
+
+    test_notifications_rendering([notification], user, [expected])
+  end
+
+  test "EmojiReact custom emoji notification" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    note =
+      insert(:note,
+        user: user,
+        data: %{
+          "reactions" => [
+            ["👍", [user.ap_id], nil],
+            ["dinosaur", [user.ap_id], "http://localhost:4001/emoji/dino walking.gif"]
+          ]
+        }
+      )
+
+    activity = insert(:note_activity, note: note, user: user)
+
+    {:ok, _activity} = CommonAPI.react_with_emoji(activity.id, other_user, "dinosaur")
+
+    activity = Repo.get(Activity, activity.id)
+
+    [notification] = Notification.for_user(user)
+
+    assert notification
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: false},
+      type: "pleroma:emoji_reaction",
+      emoji: ":dinosaur:",
+      account: AccountView.render("show.json", %{user: other_user, for: user}),
+      status: StatusView.render("show.json", %{activity: activity, for: user}),
+      created_at: Utils.to_masto_date(notification.inserted_at),
+      emoji_url: "http://localhost:4001/emoji/dino walking.gif"
     }
 
     test_notifications_rendering([notification], user, [expected])
@@ -218,9 +258,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   end
 
   test "Report notification" do
+    clear_config([:instance, :moderator_privileges], [:reports_manage_reports])
+
     reporting_user = insert(:user)
     reported_user = insert(:user)
-    {:ok, moderator_user} = insert(:user) |> User.admin_api_update(%{is_moderator: true})
+    moderator_user = insert(:user, is_moderator: true)
 
     {:ok, activity} = CommonAPI.report(reporting_user, %{account_id: reported_user.id})
     {:ok, [notification]} = Notification.create_notifications(activity)

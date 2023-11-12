@@ -1,0 +1,1 @@
+{"version":"2.1","software":{"name":"wildebeest","version":"0.0.1","repository":"https://github.com/cloudflare/wildebeest"},"protocols":["activitypub"],"usage":{"users":{"total":1,"activeMonth":1,"activeHalfyear":1}},"openRegistrations":false,"metadata":{"upstream":{"name":"mastodon","version":"3.5.1"}}}

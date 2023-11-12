@@ -3,12 +3,6 @@ Note: Additional clients may be working but theses are officially supporting Ple
 Feel free to contact us to be added to this list!
 
 ## Desktop
-### Roma for Desktop
-- Homepage: <https://www.pleroma.com/#desktopApp>
-- Source Code: <https://github.com/roma-apps/roma-desktop>
-- Platforms: Windows, Mac, Linux
-- Features: MastoAPI, Streaming Ready
-
 ### Social
 - Source Code: <https://gitlab.gnome.org/World/Social>
 - Contact: [@brainblasted@social.libre.fi](https://social.libre.fi/users/brainblasted)
@@ -19,7 +13,14 @@ Feel free to contact us to be added to this list!
 ### Whalebird
 - Homepage: <https://whalebird.social/>
 - Source Code: <https://github.com/h3poteto/whalebird-desktop>
-- Contact: [@h3poteto@pleroma.io](https://pleroma.io/users/h3poteto)
+- Contact: [@whalebird@pleroma.io](https://pleroma.io/users/whalebird)
+- Platforms: Windows, Mac, Linux
+- Features: MastoAPI, Streaming Ready
+
+### Fedistar
+- Homepage: <https://fedistar.net>
+- Source Code: <https://github.com/h3poteto/fedistar>
+- Contact: [@fedistar@pleroma.io](https://pleroma.io/users/fedistar)
 - Platforms: Windows, Mac, Linux
 - Features: MastoAPI, Streaming Ready
 

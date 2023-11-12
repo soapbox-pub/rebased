@@ -178,6 +178,7 @@ defmodule Pleroma.Notification do
         from([_n, a, o] in query,
           where:
             fragment("not(?->>'content' ~* ?)", o.data, ^regex) or
+              fragment("?->>'content' is null", o.data) or
               fragment("?->>'actor' = ?", o.data, ^user.ap_id)
         )
     end
@@ -334,14 +335,6 @@ defmodule Pleroma.Notification do
     from(n in Notification,
       where: n.id in ^ids,
       where: n.user_id == ^user_id
-    )
-    |> Repo.delete_all()
-  end
-
-  def destroy_multiple_from_types(%{id: user_id}, types) do
-    from(n in Notification,
-      where: n.user_id == ^user_id,
-      where: n.type in ^types
     )
     |> Repo.delete_all()
   end
@@ -559,7 +552,9 @@ defmodule Pleroma.Notification do
   end
 
   def get_potential_receiver_ap_ids(%{data: %{"type" => "Flag", "actor" => actor}}) do
-    (User.all_superusers() |> Enum.map(fn user -> user.ap_id end)) -- [actor]
+    (User.all_users_with_privilege(:reports_manage_reports)
+     |> Enum.map(fn user -> user.ap_id end)) --
+      [actor]
   end
 
   # Update activity: notify all who repeated this
@@ -685,7 +680,7 @@ defmodule Pleroma.Notification do
     cond do
       opts[:type] == "poll" -> false
       user.ap_id == actor -> false
-      !User.following?(follower, user) -> true
+      !User.following?(user, follower) -> true
       true -> false
     end
   end

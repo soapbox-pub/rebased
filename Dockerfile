@@ -1,4 +1,9 @@
-FROM elixir:1.11.4-alpine as build
+ARG ELIXIR_IMG=hexpm/elixir
+ARG ELIXIR_VER=1.11.4
+ARG ERLANG_VER=24.2.1
+ARG ALPINE_VER=3.17.0
+
+FROM ${ELIXIR_IMG}:${ELIXIR_VER}-erlang-${ERLANG_VER}-alpine-${ALPINE_VER} as build
 
 COPY . .
 
@@ -12,7 +17,7 @@ RUN apk add git gcc g++ musl-dev make cmake file-dev &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine
+FROM alpine:${ALPINE_VER}
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -44,7 +49,7 @@ USER pleroma
 
 COPY --from=build --chown=pleroma:0 /release ${HOME}
 
-COPY ./config/docker.exs /etc/pleroma/config.exs
+COPY --chown=pleroma --chmod=640 ./config/docker.exs /etc/pleroma/config.exs
 COPY ./docker-entrypoint.sh ${HOME}
 
 EXPOSE 4000

@@ -33,6 +33,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+         :ok <- validate_chat_attachment_attribution(maybe_attachment, user),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
@@ -69,6 +70,17 @@ defmodule Pleroma.Web.CommonAPI do
           end).()
 
     text
+  end
+
+  defp validate_chat_attachment_attribution(nil, _), do: :ok
+
+  defp validate_chat_attachment_attribution(attachment, user) do
+    with :ok <- Object.authorize_access(attachment, user) do
+      :ok
+    else
+      e ->
+        e
+    end
   end
 
   defp validate_chat_content_length(_, true), do: :ok
@@ -142,13 +154,13 @@ defmodule Pleroma.Web.CommonAPI do
 
   def delete(activity_id, user) do
     with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(activity_id)},
+           {:find_activity, Activity.get_by_id(activity_id, filter: [])},
          {_, %Object{} = object, _} <-
            {:find_object, Object.normalize(activity, fetch: false), activity},
-         true <- User.superuser?(user) || user.ap_id == object.data["actor"],
+         true <- User.privileged?(user, :messages_delete) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
-      if User.superuser?(user) and user.ap_id != object.data["actor"] do
+      if User.privileged?(user, :messages_delete) and user.ap_id != object.data["actor"] do
         action =
           if object.data["type"] == "ChatMessage" do
             "chat_message_delete"
@@ -583,7 +595,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update_report_state(activity_id, state) do
-    with %Activity{} = activity <- Activity.get_by_id(activity_id) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id, filter: []) do
       Utils.update_report_state(activity, state)
     else
       nil -> {:error, :not_found}
