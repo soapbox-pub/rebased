@@ -76,7 +76,7 @@ defmodule Pleroma.Search.Meilisearch do
            ) do
       :ok
     else
-      _ -> :error
+      _ -> {:error, "Could not remove from index"}
     end
   end
 
@@ -159,8 +159,7 @@ defmodule Pleroma.Search.Meilisearch do
           [maybe_search_data]
         )
 
-      with {:ok, res} <- result,
-           true <- Map.has_key?(res, "updateId") do
+      with {:ok, %{"status" => "enqueued"}} <- result do
         # Added successfully
         :ok
       else

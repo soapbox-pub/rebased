@@ -34,7 +34,15 @@ defmodule Pleroma.Search.MeilisearchTest do
 
           # To make sure that the worker is called
           send(self(), "posted_to_meilisearch")
-          json(%{updateId: 1})
+
+          %{
+            "enqueuedAt" => "2023-11-12T12:36:46.927517Z",
+            "indexUid" => "objects",
+            "status" => "enqueued",
+            "taskUid" => 6,
+            "type" => "documentAdditionOrUpdate"
+          }
+          |> json()
       end)
 
       Config
@@ -103,12 +111,19 @@ defmodule Pleroma.Search.MeilisearchTest do
                    Jason.decode!(body)
                  )
 
-          json(%{updateId: 1})
+          %{
+            "enqueuedAt" => "2023-11-12T12:36:46.927517Z",
+            "indexUid" => "objects",
+            "status" => "enqueued",
+            "taskUid" => 6,
+            "type" => "documentAdditionOrUpdate"
+          }
+          |> json()
 
         %{method: :delete, url: "http://127.0.0.1:7700/indexes/objects/documents/" <> id} ->
           send(self(), "called_delete")
           assert String.length(id) > 1
-          json(%{updateId: 2})
+          json(%{})
       end)
 
       Config
