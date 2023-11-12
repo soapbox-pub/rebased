@@ -3,6 +3,7 @@ defmodule Pleroma.Search.Meilisearch do
   require Pleroma.Constants
 
   alias Pleroma.Activity
+  alias Pleroma.Config.Getting, as: Config
 
   import Pleroma.Search.DatabaseSearch
   import Ecto.Query
@@ -10,14 +11,14 @@ defmodule Pleroma.Search.Meilisearch do
   @behaviour Pleroma.Search.SearchBackend
 
   defp meili_headers do
-    private_key = Pleroma.Config.get([Pleroma.Search.Meilisearch, :private_key])
+    private_key = Config.get([Pleroma.Search.Meilisearch, :private_key])
 
     [{"Content-Type", "application/json"}] ++
       if is_nil(private_key), do: [], else: [{"Authorization", "Bearer #{private_key}"}]
   end
 
   def meili_get(path) do
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+    endpoint = Config.get([Pleroma.Search.Meilisearch, :url])
 
     result =
       Pleroma.HTTP.get(
@@ -31,7 +32,7 @@ defmodule Pleroma.Search.Meilisearch do
   end
 
   def meili_post(path, params) do
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+    endpoint = Config.get([Pleroma.Search.Meilisearch, :url])
 
     result =
       Pleroma.HTTP.post(
@@ -46,7 +47,7 @@ defmodule Pleroma.Search.Meilisearch do
   end
 
   def meili_put(path, params) do
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+    endpoint = Config.get([Pleroma.Search.Meilisearch, :url])
 
     result =
       Pleroma.HTTP.request(
@@ -63,15 +64,20 @@ defmodule Pleroma.Search.Meilisearch do
   end
 
   def meili_delete(path) do
-    endpoint = Pleroma.Config.get([Pleroma.Search.Meilisearch, :url])
+    endpoint = Config.get([Pleroma.Search.Meilisearch, :url])
 
-    Pleroma.HTTP.request(
-      :delete,
-      Path.join(endpoint, path),
-      "",
-      meili_headers(),
-      []
-    )
+    with {:ok, _} <-
+           Pleroma.HTTP.request(
+             :delete,
+             Path.join(endpoint, path),
+             "",
+             meili_headers(),
+             []
+           ) do
+      :ok
+    else
+      _ -> :error
+    end
   end
 
   @impl true
