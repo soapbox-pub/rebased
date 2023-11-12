@@ -2,8 +2,8 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Activity.SearchTest do
-  alias Pleroma.Activity.Search
+defmodule Pleroma.Search.DatabaseSearchTest do
+  alias Pleroma.Search.DatabaseSearch, as: Search
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 

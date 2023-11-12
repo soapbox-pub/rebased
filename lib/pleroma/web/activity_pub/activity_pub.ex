@@ -140,6 +140,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
 
+      # Add local posts to search index
+      if local, do: Pleroma.Search.add_to_index(activity)
+
       {:ok, activity}
     else
       %Activity{} = activity ->

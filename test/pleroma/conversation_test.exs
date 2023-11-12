@@ -13,6 +13,11 @@ defmodule Pleroma.ConversationTest do
 
   setup_all do: clear_config([:instance, :federating], true)
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   test "it goes through old direct conversations" do
     user = insert(:user)
     other_user = insert(:user)

@@ -1,9 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2021 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Activity.Search do
+defmodule Pleroma.Search.DatabaseSearch do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.User
@@ -13,8 +14,11 @@ defmodule Pleroma.Activity.Search do
 
   import Ecto.Query
 
+  @behaviour Pleroma.Search.SearchBackend
+
+  @impl true
   def search(user, search_query, options \\ []) do
-    index_type = if Pleroma.Config.get([:database, :rum_enabled]), do: :rum, else: :gin
+    index_type = if Config.get([:database, :rum_enabled]), do: :rum, else: :gin
     limit = Enum.min([Keyword.get(options, :limit), 40])
     offset = Keyword.get(options, :offset, 0)
     author = Keyword.get(options, :author)
@@ -44,6 +48,12 @@ defmodule Pleroma.Activity.Search do
       _ -> maybe_fetch([], user, search_query)
     end
   end
+
+  @impl true
+  def add_to_index(_activity), do: :ok
+
+  @impl true
+  def remove_from_index(_object), do: :ok
 
   def maybe_restrict_author(query, %User{} = author) do
     Activity.Queries.by_author(query, author)
@@ -136,8 +146,8 @@ defmodule Pleroma.Activity.Search do
     )
   end
 
-  defp maybe_restrict_local(q, user) do
-    limit = Pleroma.Config.get([:instance, :limit_to_local_content], :unauthenticated)
+  def maybe_restrict_local(q, user) do
+    limit = Config.get([:instance, :limit_to_local_content], :unauthenticated)
 
     case {limit, user} do
       {:all, _} -> restrict_local(q)
@@ -149,7 +159,7 @@ defmodule Pleroma.Activity.Search do
 
   defp restrict_local(q), do: where(q, local: true)
 
-  defp maybe_fetch(activities, user, search_query) do
+  def maybe_fetch(activities, user, search_query) do
     with true <- Regex.match?(~r/https?:/, search_query),
          {:ok, object} <- Fetcher.fetch_object_from_id(search_query),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),

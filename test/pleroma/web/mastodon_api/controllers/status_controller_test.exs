@@ -27,6 +27,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   setup do: clear_config([:mrf, :policies])
   setup do: clear_config([:mrf_keyword, :reject])
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
 

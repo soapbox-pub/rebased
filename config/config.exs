@@ -590,7 +590,9 @@ config :pleroma, Oban,
     background: 5,
     remote_fetcher: 2,
     attachments_cleanup: 1,
-    mute_expire: 5
+    new_users_digest: 1,
+    mute_expire: 5,
+    search_indexing: 10
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -601,7 +603,8 @@ config :pleroma, Oban,
 config :pleroma, :workers,
   retries: [
     federator_incoming: 5,
-    federator_outgoing: 5
+    federator_outgoing: 5,
+    search_indexing: 2
   ]
 
 config :pleroma, Pleroma.Formatter,
@@ -888,10 +891,18 @@ config :pleroma, Pleroma.User.Backup,
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
-  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
+  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Search, [max_running: 30, max_waiting: 50]}
 ]
 
 config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
+
+config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
+
+config :pleroma, Pleroma.Search.Meilisearch,
+  url: "http://127.0.0.1:7700/",
+  private_key: nil,
+  initial_indexing_chunk_size: 100_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
