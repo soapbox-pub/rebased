@@ -5,6 +5,8 @@ defmodule Pleroma.Repo.Migrations.CreateDomains do
     create_if_not_exists table(:domains) do
       add(:domain, :citext)
       add(:public, :boolean)
+      add(:resolves, :boolean)
+      add(:last_checked_at, :naive_datetime)
 
       timestamps()
     end

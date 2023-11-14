@@ -591,10 +591,12 @@ config :pleroma, Oban,
     remote_fetcher: 2,
     attachments_cleanup: 1,
     new_users_digest: 1,
-    mute_expire: 5
+    mute_expire: 5,
+    check_domain_resolve: 1
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
+    {"0 0 * * 0", Pleroma.Workers.Cron.CheckDomainsResolveWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]

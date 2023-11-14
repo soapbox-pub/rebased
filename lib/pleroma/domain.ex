@@ -12,6 +12,8 @@ defmodule Pleroma.Domain do
   schema "domains" do
     field(:domain, :string, default: "")
     field(:public, :boolean, default: false)
+    field(:resolves, :boolean, default: false)
+    field(:last_checked_at, :naive_datetime)
 
     timestamps()
   end
@@ -27,6 +29,17 @@ defmodule Pleroma.Domain do
   def update_changeset(%__MODULE__{} = domain, params \\ %{}) do
     domain
     |> cast(params, [:public])
+  end
+
+  def update_state_changeset(%__MODULE__{} = domain, resolves) do
+    domain
+    |> cast(
+      %{
+        resolves: resolves,
+        last_checked_at: NaiveDateTime.utc_now()
+      },
+      [:resolves, :last_checked_at]
+    )
   end
 
   def list do

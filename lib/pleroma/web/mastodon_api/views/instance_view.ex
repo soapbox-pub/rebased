@@ -156,7 +156,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
       %{
         enabled: true,
-        domains: DomainView.render("index.json", domains: domains)
+        domains: DomainView.render("index.json", domains: domains, admin: false)
       }
     else
       nil

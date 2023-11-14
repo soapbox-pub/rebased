@@ -38,6 +38,10 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
     with {:domain_not_used, true} <-
            {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.domain()},
          {:ok, domain} <- Domain.create(params) do
+      Pleroma.Workers.CheckDomainResolveWorker.enqueue("check_domain_resolve", %{
+        "id" => domain.id
+      })
+
       render(conn, "show.json", domain: domain)
     else
       {:domain_not_used, false} ->
