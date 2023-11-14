@@ -15,7 +15,7 @@ defmodule Pleroma.Domain do
     field(:resolves, :boolean, default: false)
     field(:last_checked_at, :naive_datetime)
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   def changeset(%__MODULE__{} = domain, params \\ %{}) do

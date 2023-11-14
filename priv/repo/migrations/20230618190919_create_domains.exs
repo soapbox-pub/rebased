@@ -8,7 +8,7 @@ defmodule Pleroma.Repo.Migrations.CreateDomains do
       add(:resolves, :boolean)
       add(:last_checked_at, :naive_datetime)
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create_if_not_exists(unique_index(:domains, [:domain]))
