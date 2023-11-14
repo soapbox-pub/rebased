@@ -110,17 +110,6 @@ config :pleroma, :uri_schemes,
     "xmpp"
   ]
 
-websocket_config = [
-  path: "/websocket",
-  serializer: [
-    {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
-    {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}
-  ],
-  timeout: 60_000,
-  transport_log: false,
-  compress: false
-]
-
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
@@ -130,10 +119,7 @@ config :pleroma, Pleroma.Web.Endpoint,
       {:_,
        [
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
-          {Phoenix.Transports.WebSocket,
-           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
-         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+         {:_, Plug.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
   ],
@@ -592,6 +578,7 @@ config :pleroma, Oban,
     attachments_cleanup: 1,
     new_users_digest: 1,
     mute_expire: 5,
+    search_indexing: 10,
     check_domain_resolve: 1
   ],
   plugins: [Oban.Plugins.Pruner],
@@ -604,7 +591,8 @@ config :pleroma, Oban,
 config :pleroma, :workers,
   retries: [
     federator_incoming: 5,
-    federator_outgoing: 5
+    federator_outgoing: 5,
+    search_indexing: 2
   ]
 
 config :pleroma, Pleroma.Formatter,
@@ -891,10 +879,18 @@ config :pleroma, Pleroma.User.Backup,
 
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
-  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]}
+  {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Search, [max_running: 30, max_waiting: 50]}
 ]
 
 config :pleroma, Pleroma.Web.WebFinger, domain: nil, update_nickname_on_user_fetch: true
+
+config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
+
+config :pleroma, Pleroma.Search.Meilisearch,
+  url: "http://127.0.0.1:7700/",
+  private_key: nil,
+  initial_indexing_chunk_size: 100_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

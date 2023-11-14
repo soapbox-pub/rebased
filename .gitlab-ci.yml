@@ -1,6 +1,7 @@
 image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
+  ELIXIR_VER: 1.12.3
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
@@ -294,7 +295,7 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:1.11.4
+  image: elixir:$ELIXIR_VER
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -334,7 +335,7 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.11.4-alpine
+  image: elixir:$ELIXIR_VER-alpine
   tags:
     - amd64
   cache: *release-cache
@@ -352,7 +353,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.11.4
+  image: arm32v7/elixir:$ELIXIR_VER
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -364,7 +365,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.11.4-alpine
+  image: arm32v7/elixir:$ELIXIR_VER-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -376,7 +377,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.11.4
+  image: arm64v8/elixir:$ELIXIR_VER
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -388,7 +389,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.11.4-alpine
+  image: arm64v8/elixir:$ELIXIR_VER-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
