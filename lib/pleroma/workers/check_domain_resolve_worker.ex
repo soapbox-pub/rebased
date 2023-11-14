@@ -12,7 +12,7 @@ defmodule Pleroma.Workers.CheckDomainResolveWorker do
   alias Pleroma.Web.WebFinger
 
   @impl Oban.Worker
-  def perform(%Job{args: %{"op" => "check_domain_resolve", "id" => domain_id}}) do
+  def perform(%Job{args: %{"id" => domain_id}}) do
     domain = Domain.get(domain_id)
 
     resolves =
@@ -28,9 +28,7 @@ defmodule Pleroma.Workers.CheckDomainResolveWorker do
 
     domain
     |> Domain.update_state_changeset(resolves)
-    |> Repo.update!()
-
-    :ok
+    |> Repo.update()
   end
 
   @impl Oban.Worker
