@@ -190,11 +190,11 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
-      {:eblurhash, "~> 1.2.2"},
       {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
-      {:vix, "~> 0.23.1"},
+      {:vix, "~> 0.25.0"},
       {:elixir_make, "~> 0.7.7", override: true},
+      {:blurhash, git: "https://git.feld.me/feld/blurhash.git", ref: "master"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
