@@ -16,5 +16,7 @@ defmodule Pleroma.Repo.Migrations.CreateDomains do
     alter table(:users) do
       add(:domain_id, references(:domains))
     end
+
+    create_if_not_exists(index(:users, [:domain_id]))
   end
 end

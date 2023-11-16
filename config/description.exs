@@ -1071,6 +1071,11 @@ config :pleroma, :config_description, [
             key: :enabled,
             type: :boolean,
             description: "Enables allowing multiple Webfinger domains"
+          },
+          %{
+            key: :separate_timelines,
+            type: :boolean,
+            description: "Only display posts from own domain on local timeline"
           }
         ]
       }
