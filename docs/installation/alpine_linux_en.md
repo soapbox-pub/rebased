@@ -28,7 +28,7 @@ sudo apk upgrade
 * Install some tools, which are needed later:
 
 ```shell
-sudo apk add git build-base cmake file-dev
+sudo apk add git build-base cmake file-dev rust
 ```
 
 ### Install Elixir and Erlang
