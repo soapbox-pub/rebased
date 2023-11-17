@@ -83,7 +83,7 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
   end
 
   defp vips_blurhash(image = %Vix.Vips.Image{}) do
-    {:ok, resized_image} = Operation.thumbnail_image(image, 20)
+    {:ok, resized_image} = Operation.thumbnail_image(image, 100)
     {height, width} = {Image.height(resized_image), Image.width(resized_image)}
     max = max(height, width)
     {x, y} = {max(round(width * 5 / max), 1), max(round(height * 5 / max), 1)}
