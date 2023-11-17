@@ -1,0 +1,27 @@
+#!/bin/sh
+
+collectType() {
+    local suffix="$1"
+    local header="$2"
+    local printed=0
+    for file in changelog.d/*."$suffix"; do
+        if [ '!' -f "$file" ]; then
+            continue
+        fi
+        if [ "$printed" = 0 ]; then
+            echo
+            echo "### $header"
+            printed=1
+        fi
+        # Normalize any trailing newlines/spaces, etc.
+        echo "- $(cat "$file")"
+    done
+}
+
+collectType security Security
+collectType change Changed
+collectType add Added
+collectType fix Fixed
+collectType remove Removed
+
+rm changelog.d/*

@@ -187,6 +187,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Increase replies count
   # - Set up ActivityExpiration
   # - Set up notifications
+  # - Index incoming posts for search (if needed)
   @impl true
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], activity, meta),
@@ -219,6 +220,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       ConcurrentLimiter.limit(Pleroma.Web.RichMedia.Helpers, fn ->
         Task.start(fn -> Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity) end)
       end)
+
+      Pleroma.Search.add_to_index(Map.put(activity, :object, object))
 
       meta =
         meta
@@ -283,6 +286,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Reduce the user note count
   # - Reduce the reply count
   # - Stream out the activity
+  # - Removes posts from search index (if needed)
   @impl true
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
@@ -325,6 +329,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
     if result == :ok do
+      # Only remove from index when deleting actual objects, not users or anything else
+      with %Pleroma.Object{} <- deleted_object do
+        Pleroma.Search.remove_from_index(deleted_object)
+      end
+
       {:ok, object, meta}
     else
       {:error, result}

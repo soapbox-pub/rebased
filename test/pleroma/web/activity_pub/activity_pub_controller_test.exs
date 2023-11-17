@@ -25,6 +25,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   require Pleroma.Constants
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok

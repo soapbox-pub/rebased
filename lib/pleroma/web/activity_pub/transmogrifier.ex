@@ -186,7 +186,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         object
 
       e ->
-        Logger.warn("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
+        Logger.warning("Couldn't fetch #{inspect(quote_url)}, error: #{inspect(e)}")
         object
     end
   end

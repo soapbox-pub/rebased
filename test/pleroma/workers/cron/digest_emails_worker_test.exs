@@ -14,6 +14,11 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   setup do: clear_config([:email_notifications, :digest])
 
   setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
+  setup do
     clear_config([:email_notifications, :digest], %{
       active: true,
       inactivity_threshold: 7,
