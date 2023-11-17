@@ -194,7 +194,9 @@ defmodule Pleroma.Mixfile do
       {:ecto_psql_extras, "~> 0.6"},
       {:vix, "~> 0.25.0"},
       {:elixir_make, "~> 0.7.7", override: true},
-      {:blurhash, git: "https://git.feld.me/feld/blurhash.git", ref: "master"},
+      {:blurhash,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/blurhash.git",
+       ref: "61cfc428df3f266bdd20f181d188c6f59da34814"},
 
       ## dev & test
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
