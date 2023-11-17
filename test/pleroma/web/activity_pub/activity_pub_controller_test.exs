@@ -141,9 +141,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it returns a json representation of a local user domain different from host", %{
       conn: conn
     } do
-      user = insert(:user, %{
-        nickname: "nick@example.org"
-      })
+      user =
+        insert(:user, %{
+          nickname: "nick@example.org"
+        })
 
       conn =
         conn
