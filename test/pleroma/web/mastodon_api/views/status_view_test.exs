@@ -444,7 +444,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.pleroma.quote_url == Object.normalize(quote_post).data["id"]
     assert status.pleroma.quote_visible
 
-    # Quotes don't go more than one level deep
+    # Quotes don't go more than one level deep\
+    IO.inspect(status.pleroma.quote.pleroma)
     refute status.pleroma.quote.pleroma.quote
     assert status.pleroma.quote.pleroma.quote_id == to_string(post.id)
     assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]
@@ -718,7 +719,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
                name: "Cour du Château des Ducs de Bretagne",
                postal_code: nil,
                region: "Pays de la Loire",
-               street: " ",
+               street: nil,
                url: nil
              },
              join_state: nil,

@@ -611,7 +611,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(_, _), do: :error
+  def handle_incoming(_, _) do
+    IO.inspect(:error)
+  end
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do

@@ -702,8 +702,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def get_quote(_activity, %{show_quote: false}), do: nil
-
   def get_quote(activity, %{quoted_activities: quoted_activities}) do
     object = Object.normalize(activity, fetch: false)
 
