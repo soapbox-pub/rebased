@@ -55,6 +55,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
+      IO.inspect(app)
+      IO.puts(conn.resp_body)
       assert response = html_response(conn, 200)
       assert response =~ "Sign in with Twitter"
       assert response =~ o_auth_path(conn, :prepare_request)
@@ -519,7 +521,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                "https://redirect.url?access_token=#{token.token}&state=specific_client_state"
     end
 
-    test "with existing authentication and unlisted non-OOB `redirect_uri`, redirects without credentials",
+    test "with existing authentication and unlisted non-OOB `redirect_uri`, rejects without credentials",
          %{
            app: app,
            conn: conn
@@ -541,7 +543,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           }
         )
 
-      assert redirected_to(conn) == unlisted_redirect_uri
+      assert json_response(conn, 403)
     end
 
     test "with existing authentication and OOB `redirect_uri`, redirects to app with `token` and `state` params",
