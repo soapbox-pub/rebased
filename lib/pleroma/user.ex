@@ -873,20 +873,21 @@ defmodule Pleroma.User do
   defp remove_email_subaddress(changeset, field) do
     email = get_change(changeset, field)
 
-    new_email = if Config.get([User, :remove_email_subaddress], false) and email do
-      [name, domain] = Enum.map(String.split(email, "@"), fn x -> String.downcase(x) end)
+    new_email =
+      if Config.get([User, :remove_email_subaddress], false) and email do
+        [name, domain] = Enum.map(String.split(email, "@"), fn x -> String.downcase(x) end)
 
-      # Only gmail currently supported
-      if domain == "gmail.com" do
-        # Remove plus-addressing and dots
-        new_name = List.first(String.split(name, "+")) |> String.replace(".", "")
-        "#{new_name}@#{domain}"
+        # Only gmail currently supported
+        if domain == "gmail.com" do
+          # Remove plus-addressing and dots
+          new_name = List.first(String.split(name, "+")) |> String.replace(".", "")
+          "#{new_name}@#{domain}"
+        else
+          email
+        end
       else
         email
       end
-    else
-      email
-    end
 
     put_change(changeset, field, new_email) |> validate_format(:email, @email_regex)
   end
