@@ -823,6 +823,7 @@ defmodule Pleroma.User do
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
     |> validate_email_not_in_blacklisted_domain(:email)
+    |> remove_email_subaddress(:email)
     |> unique_constraint(:nickname)
     |> validate_not_restricted_nickname(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
@@ -866,6 +867,28 @@ defmodule Pleroma.User do
 
       if valid?, do: [], else: [email: "Invalid email"]
     end)
+  end
+
+  # Remove subaddressing from emails if configured
+  defp remove_email_subaddress(changeset, field) do
+    email = get_change(changeset, field)
+
+    new_email = if Config.get([User, :remove_email_subaddress], false) and email do
+      [name, domain] = Enum.map(String.split(email, "@"), fn x -> String.downcase(x) end)
+
+       # Only gmail currently supported
+      if domain == "gmail.com" do
+        # Remove plus-addressing and dots
+        new_name = List.first(String.split(name, "+")) |> String.replace(".", "")
+        "#{new_name}@#{domain}"
+      else
+        email
+      end
+    else
+      email
+    end
+
+    put_change(changeset, field, new_email) |> validate_format(:email, @email_regex)
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
