@@ -133,8 +133,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       redirect(conn, external: url)
     else
       conn
-      |> put_flash(:error, dgettext("errors", "Unlisted redirect_uri."))
-      |> redirect(external: redirect_uri(conn, redirect_uri))
+      |> put_status(:forbidden)
+      |> json(%{"error" => dgettext("errors", "Unlisted redirect_uri.")})
     end
   end
 
@@ -177,8 +177,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       redirect(conn, external: url)
     else
       conn
-      |> put_flash(:error, dgettext("errors", "Unlisted redirect_uri."))
-      |> redirect(external: redirect_uri(conn, redirect_uri))
+      |> put_status(:forbidden)
+      |> json(%{"error" => dgettext("errors", "Unlisted redirect_uri.")})
     end
   end
 
@@ -402,29 +402,38 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     render_error(conn, :internal_server_error, "Bad request")
   end
 
+  # Checks if any providers are configured
+  defp providers_enabled?, do: not Enum.empty?(Pleroma.Config.get([:auth, :oauth_consumer_strategies], []))
+
   @doc "Prepares OAuth request to provider for Ueberauth"
   def prepare_request(%Plug.Conn{} = conn, %{
         "provider" => provider,
         "authorization" => auth_attrs
       }) do
-    scope =
-      auth_attrs
-      |> Scopes.fetch_scopes([])
-      |> Scopes.to_string()
+    if providers_enabled?() do
+      scope =
+        auth_attrs
+        |> Scopes.fetch_scopes([])
+        |> Scopes.to_string()
 
-    state =
-      auth_attrs
-      |> Map.delete("scopes")
-      |> Map.put("scope", scope)
-      |> Jason.encode!()
+      state =
+        auth_attrs
+        |> Map.delete("scopes")
+        |> Map.put("scope", scope)
+        |> Jason.encode!()
 
-    params =
-      auth_attrs
-      |> Map.drop(~w(scope scopes client_id redirect_uri))
-      |> Map.put("state", state)
+      params =
+        auth_attrs
+        |> Map.drop(~w(scope scopes client_id redirect_uri))
+        |> Map.put("state", state)
 
-    # Handing the request to Ueberauth
-    redirect(conn, to: Routes.o_auth_path(conn, :request, provider, params))
+      # Handing the request to Ueberauth
+      redirect(conn, to: Routes.o_auth_path(conn, :request, provider, params))
+    else
+      conn
+      |> put_status(:not_found)
+      |> json(%{error: dgettext("errors", "Not found")})
+    end
   end
 
   def request(%Plug.Conn{} = conn, params) do
@@ -443,46 +452,58 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def callback(%Plug.Conn{assigns: %{ueberauth_failure: failure}} = conn, params) do
-    params = callback_params(params)
-    messages = for e <- Map.get(failure, :errors, []), do: e.message
-    message = Enum.join(messages, "; ")
+    if providers_enabled?() do
+      params = callback_params(params)
+      messages = for e <- Map.get(failure, :errors, []), do: e.message
+      message = Enum.join(messages, "; ")
 
-    conn
-    |> put_flash(
-      :error,
-      dgettext("errors", "Failed to authenticate: %{message}.", message: message)
-    )
-    |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
+      conn
+      |> put_flash(
+        :error,
+        dgettext("errors", "Failed to authenticate: %{message}.", message: message)
+      )
+      |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
+    else
+      conn
+      |> put_status(:not_found)
+      |> json(%{error: dgettext("errors", "Not found")})
+    end
   end
 
   def callback(%Plug.Conn{} = conn, params) do
-    params = callback_params(params)
+    if providers_enabled?() do
+      params = callback_params(params)
 
-    with {:ok, registration} <- Authenticator.get_registration(conn) do
-      auth_attrs = Map.take(params, ~w(client_id redirect_uri scope scopes state))
+      with {:ok, registration} <- Authenticator.get_registration(conn) do
+        auth_attrs = Map.take(params, ~w(client_id redirect_uri scope scopes state))
 
-      case Repo.get_assoc(registration, :user) do
-        {:ok, user} ->
-          create_authorization(conn, %{"authorization" => auth_attrs}, user: user)
+        case Repo.get_assoc(registration, :user) do
+          {:ok, user} ->
+            create_authorization(conn, %{"authorization" => auth_attrs}, user: user)
 
-        _ ->
-          registration_params =
-            Map.merge(auth_attrs, %{
-              "nickname" => Registration.nickname(registration),
-              "email" => Registration.email(registration)
-            })
+          _ ->
+            registration_params =
+              Map.merge(auth_attrs, %{
+                "nickname" => Registration.nickname(registration),
+                "email" => Registration.email(registration)
+              })
+
+            conn
+            |> put_session_registration_id(registration.id)
+            |> registration_details(%{"authorization" => registration_params})
+        end
+      else
+        error ->
+          Logger.debug(inspect(["OAUTH_ERROR", error, conn.assigns]))
 
           conn
-          |> put_session_registration_id(registration.id)
-          |> registration_details(%{"authorization" => registration_params})
+          |> put_flash(:error, dgettext("errors", "Failed to set up user account."))
+          |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
       end
     else
-      error ->
-        Logger.debug(inspect(["OAUTH_ERROR", error, conn.assigns]))
-
-        conn
-        |> put_flash(:error, dgettext("errors", "Failed to set up user account."))
-        |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
+      conn
+      |> put_status(:not_found)
+      |> json(%{error: dgettext("errors", "Not found")})
     end
   end
 
@@ -502,56 +523,68 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "connect"} = params) do
-    with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
-         %Registration{} = registration <- Repo.get(Registration, registration_id),
-         {_, {:ok, auth, _user}} <-
-           {:create_authorization, do_create_authorization(conn, params)},
-         %User{} = user <- Repo.preload(auth, :user).user,
-         {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
-      conn
-      |> put_session_registration_id(nil)
-      |> after_create_authorization(auth, params)
-    else
-      {:create_authorization, error} ->
-        {:register, handle_create_authorization_error(conn, error, params)}
+    if providers_enabled?() do
+      with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
+          %Registration{} = registration <- Repo.get(Registration, registration_id),
+          {_, {:ok, auth, _user}} <-
+            {:create_authorization, do_create_authorization(conn, params)},
+          %User{} = user <- Repo.preload(auth, :user).user,
+          {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
+        conn
+        |> put_session_registration_id(nil)
+        |> after_create_authorization(auth, params)
+      else
+        {:create_authorization, error} ->
+          {:register, handle_create_authorization_error(conn, error, params)}
 
-      _ ->
-        {:register, :generic_error}
+        _ ->
+          {:register, :generic_error}
+      end
+    else
+      conn
+      |> put_status(:not_found)
+      |> json(%{error: dgettext("errors", "Not found")})
     end
   end
 
   def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "register"} = params) do
-    with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
-         %Registration{} = registration <- Repo.get(Registration, registration_id),
-         {:ok, user} <- Authenticator.create_from_registration(conn, registration) do
-      conn
-      |> put_session_registration_id(nil)
-      |> create_authorization(
-        params,
-        user: user
-      )
-    else
-      {:error, changeset} ->
-        message =
-          Enum.map(changeset.errors, fn {field, {error, _}} ->
-            "#{field} #{error}"
-          end)
-          |> Enum.join("; ")
-
-        message =
-          String.replace(
-            message,
-            "ap_id has already been taken",
-            "nickname has already been taken"
-          )
-
+    if providers_enabled?() do
+      with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
+          %Registration{} = registration <- Repo.get(Registration, registration_id),
+          {:ok, user} <- Authenticator.create_from_registration(conn, registration) do
         conn
-        |> put_status(:forbidden)
-        |> put_flash(:error, "Error: #{message}.")
-        |> registration_details(params)
+        |> put_session_registration_id(nil)
+        |> create_authorization(
+          params,
+          user: user
+        )
+      else
+        {:error, changeset} ->
+          message =
+            Enum.map(changeset.errors, fn {field, {error, _}} ->
+              "#{field} #{error}"
+            end)
+            |> Enum.join("; ")
 
-      _ ->
-        {:register, :generic_error}
+          message =
+            String.replace(
+              message,
+              "ap_id has already been taken",
+              "nickname has already been taken"
+            )
+
+          conn
+          |> put_status(:forbidden)
+          |> put_flash(:error, "Error: #{message}.")
+          |> registration_details(params)
+
+        _ ->
+          {:register, :generic_error}
+      end
+    else
+      conn
+      |> put_status(:not_found)
+      |> json(%{error: dgettext("errors", "Not found")})
     end
   end
 
