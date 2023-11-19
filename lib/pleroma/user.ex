@@ -876,7 +876,7 @@ defmodule Pleroma.User do
     new_email = if Config.get([User, :remove_email_subaddress], false) and email do
       [name, domain] = Enum.map(String.split(email, "@"), fn x -> String.downcase(x) end)
 
-       # Only gmail currently supported
+      # Only gmail currently supported
       if domain == "gmail.com" do
         # Remove plus-addressing and dots
         new_name = List.first(String.split(name, "+")) |> String.replace(".", "")
