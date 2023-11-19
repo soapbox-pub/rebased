@@ -171,6 +171,7 @@ config :pleroma, :instance,
   short_description: "",
   background_image: "/images/city.jpg",
   instance_thumbnail: "/instance/thumbnail.jpeg",
+  favicon: "/favicon.png",
   limit: 5_000,
   description_limit: 5_000,
   remote_limit: 100_000,
@@ -346,6 +347,8 @@ config :pleroma, :manifest,
   icons: [
     %{
       src: "/static/logo.svg",
+      sizes: "144x144",
+      purpose: "any",
       type: "image/svg+xml"
     }
   ],
