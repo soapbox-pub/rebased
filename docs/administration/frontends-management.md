@@ -19,13 +19,12 @@ Currently, there is no backup system, i.e. when installing `master` version it _
 
 ## Managing front-ends through Admin Dashboard
 
-Open up Admin Dashboard (gauge icon in top bar, same as where link to AdminFE was), switch to "Front-ends" tab.  
-IMAGE HERE  
+Open up Admin Dashboard (gauge icon in top bar, same as where link to AdminFE was),__
+![location of Admin Dashboard icon](../assets/admin_dash_location.png)
+switch to "Front-ends" tab.  
+![screenshot of Front-ends tab](../assets/frontends_tab.png)
 This page is designed to be self-explanatory and easy to use, while avoiding issues and pitfalls of AdminFE, but it's also early in development, everything is subject to change.
 
-!!! bug
-    As of PleromaFE 2.6.0 there is no feedback on whether frontend is installing, installed or failed to install, this will be fixed in PleromaFE 2.6.1.
-    
 !!! warning
     This goes without saying, but if you set default frontend to anything except >2.6.0 version of PleromaFE you'll lose the access to Admin Dashboard and will have to use AdminFE to get it back. See below on how to use AdminFE.
 
@@ -37,8 +36,9 @@ There is also no way to tell if there is an update available or not, for now you
 
 ## Using AdminFE to manage frontends
 
-Access AdminFE either directly by going to `/pleroma/admin` of your instance or by opening Admin Dashboard and clicking the link below  
-IMAGE HERE
+Access AdminFE either directly by going to `/pleroma/admin` of your instance or by opening Admin Dashboard and clicking the link at the bottom of the window  
+![link to open old AdminFE](../assets/old_adminfe_link.png)
+
 
 Go to Settings -> Frontend.
 
@@ -53,7 +53,7 @@ At the very top of the page there's a list of available frontends and button to 
     **Available Frontends** section lets you _install_ frontends but **NOT** update/reinstall them. It's only useful for installing a frontend once.
     
 Due to aforementioned bug, preferred way of installing frontends in AdminFE is by clicking the "Install another frontend"  
-IMAGE HERE  
+![screenshot of admin-fe with instructions on how to install a frontend](../assets/way_to_install_frontends.png)
 and filling in the fields. Unfortunately AdminFE does not provide the raw data necessary for you to fill those fields, so your best bet is to see what backend returns in browser's devtools or refer to the [source code](https://git.pleroma.social/pleroma/pleroma/-/blob/develop/config/config.exs?ref_type=heads#L742-791). For the most part, only **Name**, **Ref** (i.e. version) and **Build URL** fields are required, although some frontends might also require **Build Directory** to work. 
 
 For pleroma-fe you can use either `master` or `develop` refs, or potentially any ref in GitLab that has artifacts for `build` job, but that's outside scope of this document.
@@ -61,7 +61,7 @@ For pleroma-fe you can use either `master` or `develop` refs, or potentially any
 ### Selecting default frontend
 
 Scroll page waaaaay down, search for "Frontends" section, subtitled "Installed frontends management", change the name and reference of the "Primary" frontend.  
-IMAGE HERE
+![screenshot of admin-fe with instructions on how to install a frontend](../assets/primary_frontend_section.png)
 
 
 !!! danger
