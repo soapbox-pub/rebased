@@ -403,7 +403,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   # Checks if any providers are configured
-  defp providers_enabled?, do: not Enum.empty?(Pleroma.Config.get([:auth, :oauth_consumer_strategies], []))
+  defp providers_enabled?,
+    do: not Enum.empty?(Pleroma.Config.get([:auth, :oauth_consumer_strategies], []))
 
   @doc "Prepares OAuth request to provider for Ueberauth"
   def prepare_request(%Plug.Conn{} = conn, %{
@@ -525,11 +526,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "connect"} = params) do
     if providers_enabled?() do
       with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
-          %Registration{} = registration <- Repo.get(Registration, registration_id),
-          {_, {:ok, auth, _user}} <-
-            {:create_authorization, do_create_authorization(conn, params)},
-          %User{} = user <- Repo.preload(auth, :user).user,
-          {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
+           %Registration{} = registration <- Repo.get(Registration, registration_id),
+           {_, {:ok, auth, _user}} <-
+             {:create_authorization, do_create_authorization(conn, params)},
+           %User{} = user <- Repo.preload(auth, :user).user,
+           {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
         conn
         |> put_session_registration_id(nil)
         |> after_create_authorization(auth, params)
@@ -550,8 +551,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "register"} = params) do
     if providers_enabled?() do
       with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
-          %Registration{} = registration <- Repo.get(Registration, registration_id),
-          {:ok, user} <- Authenticator.create_from_registration(conn, registration) do
+           %Registration{} = registration <- Repo.get(Registration, registration_id),
+           {:ok, user} <- Authenticator.create_from_registration(conn, registration) do
         conn
         |> put_session_registration_id(nil)
         |> create_authorization(
