@@ -18,7 +18,8 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
           "title" => "lain radio episode 1",
           "artist" => "lain",
           "album" => "lain radio",
-          "length" => "180000"
+          "length" => "180000",
+          "url" => "https://www.last.fm/music/lain/lain+radio/lain+radio+episode+1"
         })
 
       assert %{"title" => "lain radio episode 1"} = json_response_and_validate_schema(conn, 200)
@@ -33,21 +34,24 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
         CommonAPI.listen(user, %{
           title: "lain radio episode 1",
           artist: "lain",
-          album: "lain radio"
+          album: "lain radio",
+          url: "https://www.last.fm/music/lain/lain+radio/lain+radio+episode+1"
         })
 
       {:ok, _activity} =
         CommonAPI.listen(user, %{
           title: "lain radio episode 2",
           artist: "lain",
-          album: "lain radio"
+          album: "lain radio",
+          url: "https://www.last.fm/music/lain/lain+radio/lain+radio+episode+2"
         })
 
       {:ok, _activity} =
         CommonAPI.listen(user, %{
           title: "lain radio episode 3",
           artist: "lain",
-          album: "lain radio"
+          album: "lain radio",
+          url: "https://www.last.fm/music/lain/lain+radio/lain+radio+episode+3"
         })
 
       conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/scrobbles")
