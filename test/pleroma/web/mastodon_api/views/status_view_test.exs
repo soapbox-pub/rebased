@@ -445,7 +445,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.pleroma.quote_visible
 
     # Quotes don't go more than one level deep\
-    IO.inspect(status.pleroma.quote.pleroma)
     refute status.pleroma.quote.pleroma.quote
     assert status.pleroma.quote.pleroma.quote_id == to_string(post.id)
     assert status.pleroma.quote.pleroma.quote_url == Object.normalize(post).data["id"]

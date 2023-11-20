@@ -29,8 +29,10 @@ defmodule Pleroma.Web.CommonAPITest do
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+  end
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
     :ok
   end
 

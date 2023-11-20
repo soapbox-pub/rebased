@@ -10,6 +10,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   import Pleroma.Factory
 
   alias Pleroma.Integration.WebsocketClient
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth
 
@@ -20,6 +21,11 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
         |> Map.put(:scheme, "ws")
         |> Map.put(:path, "/api/v1/streaming")
         |> URI.to_string()
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
 
   def start_socket(qs \\ nil, headers \\ []) do
     path =
@@ -479,6 +485,8 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
           status: "nice echo chamber @#{reading_user.nickname}",
           visibility: "private"
         })
+
+      ObanHelpers.perform_all()
 
       assert_receive {:text, raw_json}, 1_000
 
