@@ -24,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   import Tesla.Mock
 
   setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end

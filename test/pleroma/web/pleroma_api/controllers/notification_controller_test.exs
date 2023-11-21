@@ -11,6 +11,11 @@ defmodule Pleroma.Web.PleromaAPI.NotificationControllerTest do
 
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "POST /api/v1/pleroma/notifications/read" do
     setup do: oauth_access(["write:notifications"])
 

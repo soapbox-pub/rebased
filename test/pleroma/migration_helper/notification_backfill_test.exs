@@ -13,6 +13,11 @@ defmodule Pleroma.MigrationHelper.NotificationBackfillTest do
 
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "fill_in_notification_types" do
     test "it fills in missing notification types" do
       user = insert(:user)

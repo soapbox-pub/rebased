@@ -22,7 +22,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicyTest do
     {:ok, %{"object" => %{"content" => filtered}}} = InlineQuotePolicy.filter(activity)
 
     assert filtered ==
-             "Nice post<span class=\"quote-inline\"><br/><br/>RT: <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span>"
+             "Nice post<span class=\"quote-inline\"><br/><br/><bdi>RT:</bdi> <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span>"
+  end
+
+  test "adds quote URL to post content, custom template" do
+    clear_config([:mrf_inline_quote, :template], "{url}'s quoting")
+    quote_url = "https://gleasonator.com/objects/1234"
+
+    activity = %{
+      "type" => "Create",
+      "actor" => "https://gleasonator.com/users/alex",
+      "object" => %{
+        "type" => "Note",
+        "content" => "Nice post",
+        "quoteUrl" => quote_url
+      }
+    }
+
+    {:ok, %{"object" => %{"content" => filtered}}} = InlineQuotePolicy.filter(activity)
+
+    assert filtered ==
+             "Nice post<span class=\"quote-inline\"><br/><br/><a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a>'s quoting</span>"
   end
 
   test "doesn't add line breaks to markdown posts" do
@@ -41,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.InlineQuotePolicyTest do
     {:ok, %{"object" => %{"content" => filtered}}} = InlineQuotePolicy.filter(activity)
 
     assert filtered ==
-             "<p>Nice post<span class=\"quote-inline\"><br/><br/>RT: <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span></p>"
+             "<p>Nice post<span class=\"quote-inline\"><br/><br/><bdi>RT:</bdi> <a href=\"https://gleasonator.com/objects/1234\">https://gleasonator.com/objects/1234</a></span></p>"
   end
 
   test "ignores Misskey quote posts" do

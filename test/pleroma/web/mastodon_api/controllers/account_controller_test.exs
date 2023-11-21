@@ -18,6 +18,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "account fetching" do
     test "works by id" do
       %User{id: user_id} = insert(:user)

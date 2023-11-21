@@ -4,19 +4,65 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
-
-### Changed
+## 2.6.0
+### Security
+- Preload: Make generated JSON html-safe. It already was html safe because it only consists of config data that is base64 encoded, but this will keep it safe it that ever changes.
+- CommonAPI: Prevent users from accessing media of other users by creating a status with reused attachment ID
+- Disable XML entity resolution completely to fix a dos vulnerability
 
 ### Added
 - Support for Image activities, namely from Hubzilla
+- Add OAuth scope descriptions
+- Allow lang attribute in status text
+- OnlyMedia Upload Filter
+- Implement MRF policy to reject or delist according to emojis
+- (hardening) Add no_new_privs=yes to OpenRC service files
+- Implement quotes
+- Add unified streaming endpoint
 
 ### Fixed
-
 - rel="me" was missing its cache
+- MediaProxy responses now return a sandbox CSP header
+- Filter context activities using Visibility.visible_for_user?
+- UploadedMedia: Add missing disposition_type to Content-Disposition
+- fix not being able to fetch flash file from remote instance
+- Fix abnormal behaviour when refetching a poll
+- Allow non-HTTP(s) URIs in "url" fields for compatibility with "FEP-fffd: Proxy Objects"
+- Fix opengraph and twitter card meta tags
+- ForceMentionsInContent: fix double mentions for Mastodon/Misskey posts
+- OEmbed HTML tags are now filtered
+- Restrict attachments to only uploaded files only
+- Fix error 404 when deleting status of a banned user
+- Fix config ownership in dockerfile to pass restriction test
+- Fix user fetch completely broken if featured collection is not in a supported form
+- Correctly handle the situation when a poll has both "anyOf" and "oneOf" but one of them being empty
+- Fix handling report from a deactivated user
+- Prevent using the .json format to bypass authorized fetch mode
+- Fix mentioning punycode domains when using Markdown
+- Show more informative errors when profile exceeds char limits
 
 ### Removed
 - BREAKING: Support for passwords generated with `crypt(3)` (Gnu Social migration artifact)
+- remove BBS/SSH feature, replaced by an external bridge.
+- Remove a few unused indexes.
+- Cleanup OStatus-era user upgrades and ap_enabled indicator
+- Deprecate Pleroma's audio scrobbling
+
+## 2.5.4
+
+## Security
+- Fix XML External Entity (XXE) loading vulnerability allowing to fetch arbitary files from the server's filesystem
+
+## 2.5.3
+
+### Security
+- Emoji pack loader sanitizes pack names
+- Reduced permissions of config files and directories, distros requiring greater permissions like group-read need to pre-create the directories
+
+## 2.5.5
+
+## Security
+- Prevent users from accessing media of other users by creating a status with reused attachment ID
 
 ## 2.5.4
 

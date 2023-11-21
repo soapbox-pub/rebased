@@ -1,6 +1,6 @@
 ### Release checklist
 * [ ] Bump version in `mix.exs`
-* [ ] Compile a changelog
+* [ ] Compile a changelog with the `tools/collect-changelog` script
 * [ ] Create an MR with an announcement to pleroma.social
 #### post-merge
 * [ ] Tag the release on the merge commit
