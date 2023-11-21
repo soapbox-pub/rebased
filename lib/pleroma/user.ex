@@ -928,7 +928,7 @@ defmodule Pleroma.User do
     ap_id = ap_id(%User{nickname: nickname})
 
     ap_id =
-      if String.contains?(nickname, ".") do
+      if nickname && String.contains?(nickname, ".") do
         ap_id <> ".json"
       else
         ap_id

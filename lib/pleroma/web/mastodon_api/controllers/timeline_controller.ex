@@ -50,7 +50,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:user, user)
       |> Map.put(:local_only, params[:local])
       |> Map.delete(:local)
-      |> ActivityPub.fetch_public_activities()
 
     activities =
       [user.ap_id | User.following(user)]
@@ -186,7 +185,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:user, user)
         |> Map.put(:muting_user, user)
         |> Map.put(:local_only, params[:local])
-        |> ActivityPub.fetch_public_activities()
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).

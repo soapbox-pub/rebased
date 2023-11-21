@@ -41,8 +41,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "works for fqns with domains other than host" do
       user = insert(:user, %{nickname: "nick@example.org"})
 
-      {:ok, result} =
-        WebFinger.webfinger("#{user.nickname})}", "XML")
+      {:ok, result} = WebFinger.webfinger("#{user.nickname})}", "XML")
 
       assert is_binary(result)
     end
@@ -50,8 +49,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "doesn't work for remote users" do
       user = insert(:user, %{local: false})
 
-      assert {:error, _} =
-               WebFinger.webfinger("#{user.nickname})}", "XML")
+      assert {:error, _} = WebFinger.webfinger("#{user.nickname})}", "XML")
     end
   end
 
