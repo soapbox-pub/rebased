@@ -106,7 +106,8 @@ defmodule Pleroma.Web.ApiSpec do
               "User administration",
               "Announcement management",
               "Instance rule managment",
-              "Webhooks"
+              "Webhooks",
+              "Domain managment"
             ]
           },
           %{

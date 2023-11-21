@@ -310,6 +310,11 @@ defmodule Pleroma.Web.Router do
     post("/webhooks/:id/enable", WebhookController, :enable)
     post("/webhooks/:id/disable", WebhookController, :disable)
     post("/webhooks/:id/rotate_secret", WebhookController, :rotate_secret)
+
+    get("/domains", DomainController, :index)
+    post("/domains", DomainController, :create)
+    patch("/domains/:id", DomainController, :update)
+    delete("/domains/:id", DomainController, :delete)
   end
 
   # AdminAPI: admins and mods (staff) can perform these actions (if privileged by role)

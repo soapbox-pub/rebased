@@ -50,6 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:user, user)
       |> Map.put(:local_only, params[:local])
       |> Map.delete(:local)
+      |> ActivityPub.fetch_public_activities()
 
     activities =
       [user.ap_id | User.following(user)]
@@ -114,6 +115,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:instance, params[:instance])
         # Restricts unfederated content to authenticated users
         |> Map.put(:includes_local_public, not is_nil(user))
+        |> maybe_put_domain_id(user)
         |> ActivityPub.fetch_public_activities()
 
       conn
@@ -150,6 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> Map.put(:tag, tags_any)
     |> Map.put(:tag_all, tag_all)
     |> Map.put(:tag_reject, tag_reject)
+    |> maybe_put_domain_id(user)
     |> ActivityPub.fetch_public_activities()
   end
 
@@ -183,6 +186,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put(:user, user)
         |> Map.put(:muting_user, user)
         |> Map.put(:local_only, params[:local])
+        |> ActivityPub.fetch_public_activities()
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).
@@ -207,4 +211,18 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       _e -> render_error(conn, :forbidden, "Error.")
     end
   end
+
+  defp maybe_put_domain_id(%{local_only: true} = params, user) do
+    separate_timelines = Config.get([:instance, :multitenancy, :separate_timelines])
+    domain_id = if(user, do: user.domain_id || 0, else: 0)
+
+    if separate_timelines do
+      params
+      |> Map.put(:domain_id, domain_id)
+    else
+      params
+    end
+  end
+
+  defp maybe_put_domain_id(params, _user), do: params
 end

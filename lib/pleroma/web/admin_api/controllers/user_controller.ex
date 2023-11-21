@@ -8,6 +8,7 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   import Pleroma.Web.ControllerHelper,
     only: [fetch_integer_param: 3]
 
+  alias Pleroma.Domain
   alias Pleroma.ModerationLog
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Builder
@@ -142,17 +143,20 @@ defmodule Pleroma.Web.AdminAPI.UserController do
   def create(%{assigns: %{user: admin}, body_params: %{users: users}} = conn, _) do
     changesets =
       users
-      |> Enum.map(fn %{nickname: nickname, email: email, password: password} ->
+      |> Enum.map(fn %{nickname: nickname, email: email, password: password, domain: domain} ->
+        domain = Domain.get(domain)
+
         user_data = %{
           nickname: nickname,
           name: nickname,
           email: email,
           password: password,
           password_confirmation: password,
-          bio: "."
+          bio: ".",
+          domain: domain
         }
 
-        User.register_changeset(%User{}, user_data, need_confirmation: false)
+        User.register_changeset(%User{}, user_data, need_confirmation: false, from_admin: true)
       end)
       |> Enum.reduce(Ecto.Multi.new(), fn changeset, multi ->
         Ecto.Multi.insert(multi, Ecto.UUID.generate(), changeset)
