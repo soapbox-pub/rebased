@@ -131,6 +131,27 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
     end
   end
 
+  describe "connect-src" do
+    test "adds sentry DSN when available", %{conn: conn} do
+      clear_config([:frontend_configurations, :soapbox_fe], %{
+        "sentryDsn" => "https://glitch.tip/123"
+      })
+
+      conn = get(conn, "/api/v1/instance")
+      [csp] = Conn.get_resp_header(conn, "content-security-policy")
+
+      assert csp =~
+               "connect-src 'self' blob: http://localhost:4001 ws://localhost:4001 https: https://glitch.tip;"
+    end
+
+    test "handles sentry DSN as empty string", %{conn: conn} do
+      clear_config([:frontend_configurations, :soapbox_fe], %{"sentryDsn" => ""})
+      conn = get(conn, "/api/v1/instance")
+      [csp] = Conn.get_resp_header(conn, "content-security-policy")
+      assert csp =~ "connect-src 'self' blob: http://localhost:4001 ws://localhost:4001 https:;"
+    end
+  end
+
   defp assert_media_img_src(conn, url) do
     conn = get(conn, "/api/v1/instance")
     [csp] = Conn.get_resp_header(conn, "content-security-policy")
