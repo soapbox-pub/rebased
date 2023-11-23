@@ -119,7 +119,7 @@ config :pleroma, Pleroma.Web.Endpoint,
       {:_,
        [
          {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+         {:_, Plug.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
   ],
@@ -443,7 +443,7 @@ config :pleroma, :mrf_nsfw_api,
 
 config :pleroma, :mrf_follow_bot, follower_nickname: nil
 
-config :pleroma, :mrf_inline_quote, prefix: "RT"
+config :pleroma, :mrf_inline_quote, template: "<bdi>RT:</bdi> {url}"
 
 config :pleroma, :mrf_remote_report,
   reject_all: false,
@@ -607,7 +607,8 @@ config :pleroma, Oban,
     remote_fetcher: 2,
     attachments_cleanup: 1,
     new_users_digest: 1,
-    mute_expire: 5
+    mute_expire: 5,
+    search_indexing: 10
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
@@ -618,7 +619,8 @@ config :pleroma, Oban,
 config :pleroma, :workers,
   retries: [
     federator_incoming: 5,
-    federator_outgoing: 5
+    federator_outgoing: 5,
+    search_indexing: 2
   ]
 
 config :pleroma, Pleroma.Formatter,
@@ -917,6 +919,7 @@ config :pleroma, Pleroma.User.Backup,
 config :pleroma, ConcurrentLimiter, [
   {Pleroma.Web.RichMedia.Helpers, [max_running: 5, max_waiting: 5]},
   {Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy, [max_running: 5, max_waiting: 5]},
+  {Pleroma.Search, [max_running: 30, max_waiting: 50]},
   {Pleroma.Webhook.Notify, [max_running: 5, max_waiting: 200]}
 ]
 
@@ -941,6 +944,13 @@ config :geospatial, Geospatial.Providers.Pelias,
 config :geospatial, Geospatial.HTTP, user_agent: &Pleroma.Application.user_agent/0
 
 import_config "soapbox.exs"
+
+config :pleroma, Pleroma.Search, module: Pleroma.Search.DatabaseSearch
+
+config :pleroma, Pleroma.Search.Meilisearch,
+  url: "http://127.0.0.1:7700/",
+  private_key: nil,
+  initial_indexing_chunk_size: 100_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

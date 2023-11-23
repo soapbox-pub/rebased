@@ -27,6 +27,8 @@ defmodule Pleroma.Web.Push.ImplTest do
         %Tesla.Env{status: 100}
     end)
 
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+
     :ok
   end
 

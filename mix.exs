@@ -8,10 +8,10 @@ defmodule Pleroma.Mixfile do
       app: :pleroma,
       name: "Rebased",
       compat_name: "Pleroma",
-      version: version("2.5.54"),
+      version: version("2.6.50"),
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix] ++ Mix.compilers(),
+      compilers: Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors()],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
@@ -116,19 +116,19 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.6"},
+      {:phoenix, "~> 1.7.3"},
       {:tzdata, "~> 1.0.3"},
-      {:plug_cowboy, "~> 2.5.1"},
+      {:plug_cowboy, "~> 2.6.1"},
       {:phoenix_pubsub, "~> 2.0"},
       {:phoenix_ecto, "~> 4.4.0"},
       {:ecto_enum, "~> 1.4"},
-      {:ecto_sql, "~> 3.9.0"},
+      {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.15.5"},
-      {:phoenix_html, "~> 3.1"},
+      {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},
-      {:phoenix_live_view, "~> 0.17.1"},
-      {:phoenix_live_dashboard, "~> 0.6.2"},
-      {:telemetry_metrics, "~> 0.6.1"},
+      {:phoenix_live_view, "~> 0.19.0"},
+      {:phoenix_live_dashboard, "~> 0.8.0"},
+      {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       # oban 2.14 requires Elixir 1.12+
       {:oban, "~> 2.13.4"},
@@ -145,7 +145,7 @@ defmodule Pleroma.Mixfile do
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, "~> 2.0.0-rc.1", override: true},
-      {:finch, "~> 0.10.2"},
+      {:finch, "~> 0.15"},
       {:jason, "~> 1.2"},
       {:mogrify, "~> 0.9.1"},
       {:ex_aws, "~> 2.1.6"},
@@ -182,7 +182,6 @@ defmodule Pleroma.Mixfile do
       {:prometheus_ecto, "~> 1.4"},
       {:recon, "~> 2.5"},
       {:joken, "~> 2.0"},
-      {:benchee, "~> 1.0"},
       {:pot, "~> 1.0"},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
@@ -196,13 +195,15 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:restarter, path: "./restarter"},
       {:majic, "~> 1.0"},
-      {:eblurhash, "~> 1.2.2"},
+      {:eblurhash,
+       git: "https://github.com/zotonic/eblurhash.git",
+       ref: "bc37ceb426ef021ee9927fb249bb93f7059194ab"},
       {:oembed_providers, "~> 0.1.0"},
       {:open_api_spex, "~> 3.16"},
       {:ecto_psql_extras, "~> 0.6"},
       {:icalendar, "~> 1.1"},
       {:geospatial, "~> 0.2.0"},
-      {:prom_ex, "~> 1.7.1"},
+      {:prom_ex, "~> 1.8.0"},
       {:unplug, "~> 1.0"},
 
       ## dev & test
@@ -213,7 +214,8 @@ defmodule Pleroma.Mixfile do
       {:covertool, "~> 2.0", only: :test},
       {:hackney, "~> 1.18.0", override: true},
       {:mox, "~> 1.0", only: :test},
-      {:websockex, "~> 0.4.3", only: :test}
+      {:websockex, "~> 0.4.3", only: :test},
+      {:benchee, "~> 1.0", only: :benchmark}
     ] ++ oauth_deps()
   end
 

@@ -13,6 +13,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
 
   import Pleroma.Factory
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   test "PUT /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)

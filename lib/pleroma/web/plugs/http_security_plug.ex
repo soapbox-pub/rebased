@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
   alias Pleroma.Config
   import Plug.Conn
+  import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
 
   require Logger
 
@@ -124,7 +125,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
       end
 
     connect_src =
-      if sentry_dsn do
+      if not_empty_string(sentry_dsn) do
         [connect_src, " ", build_csp_param(sentry_dsn)]
       else
         connect_src
@@ -132,9 +133,9 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
     script_src =
       if Config.get(:env) == :dev do
-        "script-src 'self' 'unsafe-eval'"
+        "script-src 'self' blob: 'unsafe-eval'"
       else
-        "script-src 'self' 'wasm-unsafe-eval'"
+        "script-src 'self' blob: 'wasm-unsafe-eval'"
       end
 
     report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]

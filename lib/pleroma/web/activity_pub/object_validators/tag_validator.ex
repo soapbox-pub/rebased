@@ -9,13 +9,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.TagValidator do
 
   import Ecto.Changeset
 
+  require Pleroma.Constants
+
   @primary_key false
   embedded_schema do
     # Common
     field(:type, :string)
     field(:name, :string)
 
-    # Mention, Hashtag
+    # Mention, Hashtag, Link
     field(:href, ObjectValidators.Uri)
 
     # Emoji
@@ -71,7 +73,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.TagValidator do
 
   def changeset(struct, %{"type" => "Link"} = data) do
     struct
-    |> cast(data, [:type, :name, :href, :mediaType])
+    |> cast(data, [:type, :name, :mediaType, :href])
+    |> validate_inclusion(:mediaType, Pleroma.Constants.activity_json_mime_types())
+    |> validate_required([:type, :href, :mediaType])
   end
 
   def changeset(struct, %{"type" => _} = data) do

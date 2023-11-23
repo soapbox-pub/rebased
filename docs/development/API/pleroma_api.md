@@ -577,9 +577,6 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   404 if the pack does not exist
 
 ## `GET /api/v1/pleroma/accounts/:id/scrobbles`
-
-Audio scrobbling in Pleroma is **deprecated**.
-
 ### Requests a list of current and recent Listen activities for an account
 * Method `GET`
 * Authentication: not required
@@ -601,9 +598,6 @@ Audio scrobbling in Pleroma is **deprecated**.
 ```
 
 ## `POST /api/v1/pleroma/scrobble`
-
-Audio scrobbling in Pleroma is **deprecated**.
-
 ### Creates a new Listen activity for an account
 * Method `POST`
 * Authentication: required

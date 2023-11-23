@@ -321,6 +321,7 @@ defmodule Pleroma.Application do
     [
       Pleroma.Web.RichMedia.Helpers,
       Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy,
+      Pleroma.Search,
       Pleroma.Webhook.Notify
     ]
     |> Enum.each(fn module ->

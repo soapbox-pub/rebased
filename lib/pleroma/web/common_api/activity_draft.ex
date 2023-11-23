@@ -92,7 +92,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp listen_object(draft) do
     object =
       draft.params
-      |> Map.take([:album, :artist, :title, :length])
+      |> Map.take([:album, :artist, :title, :length, :url])
       |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Audio")
       |> Map.put("to", draft.to)
@@ -219,9 +219,21 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     end
   end
 
+  defp can_quote?(_draft, _object, visibility) when visibility in ~w(public unlisted local) do
+    true
+  end
+
+  defp can_quote?(draft, object, "private") do
+    draft.user.ap_id == object.data["actor"]
+  end
+
+  defp can_quote?(_, _, _) do
+    false
+  end
+
   defp quoting_visibility(%{quote_post: %Activity{}} = draft) do
     with %Object{} = object <- Object.normalize(draft.quote_post, fetch: false),
-         visibility when visibility in ~w(public unlisted) <- Visibility.get_visibility(object) do
+         true <- can_quote?(draft, object, Visibility.get_visibility(object)) do
       draft
     else
       _ -> add_error(draft, dgettext("errors", "Cannot quote private message"))

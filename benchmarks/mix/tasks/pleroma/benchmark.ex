@@ -1,0 +1,125 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Mix.Tasks.Pleroma.Benchmark do
+  @shortdoc "Benchmarks"
+  @moduledoc """
+  Benchmark tasks available:
+  
+  adapters 
+  render_timeline
+  search
+  tag
+
+  MIX_ENV=benchmark mix pleroma.benchmark adapters
+  """
+
+  use Mix.Task
+  import Mix.Pleroma
+
+  def run(["search"]) do
+    start_pleroma()
+
+    Benchee.run(%{
+      "search" => fn ->
+        Pleroma.Activity.search(nil, "cofe")
+      end
+    })
+  end
+
+  def run(["tag"]) do
+    start_pleroma()
+
+    Benchee.run(%{
+      "tag" => fn ->
+        %{"type" => "Create", "tag" => "cofe"}
+        |> Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities()
+      end
+    })
+  end
+
+  def run(["render_timeline", nickname | _] = args) do
+    start_pleroma()
+    user = Pleroma.User.get_by_nickname(nickname)
+
+    activities =
+      %{}
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("blocking_user", user)
+      |> Map.put("muting_user", user)
+      |> Map.put("user", user)
+      |> Map.put("limit", 4096)
+      |> Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities()
+      |> Enum.reverse()
+
+    inputs = %{
+      "1 activity" => Enum.take_random(activities, 1),
+      "10 activities" => Enum.take_random(activities, 10),
+      "20 activities" => Enum.take_random(activities, 20),
+      "40 activities" => Enum.take_random(activities, 40),
+      "80 activities" => Enum.take_random(activities, 80)
+    }
+
+    inputs =
+      if Enum.at(args, 2) == "extended" do
+        Map.merge(inputs, %{
+          "200 activities" => Enum.take_random(activities, 200),
+          "500 activities" => Enum.take_random(activities, 500),
+          "2000 activities" => Enum.take_random(activities, 2000),
+          "4096 activities" => Enum.take_random(activities, 4096)
+        })
+      else
+        inputs
+      end
+
+    Benchee.run(
+      %{
+        "Standard rendering" => fn activities ->
+          Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+            activities: activities,
+            for: user,
+            as: :activity
+          })
+        end
+      },
+      inputs: inputs
+    )
+  end
+
+  def run(["adapters"]) do
+    start_pleroma()
+
+    :ok =
+      Pleroma.Gun.Conn.open(
+        "https://httpbin.org/stream-bytes/1500",
+        :gun_connections
+      )
+
+    Process.sleep(1_500)
+
+    Benchee.run(
+      %{
+        "Without conn and without pool" => fn ->
+          {:ok, %Tesla.Env{}} =
+            Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500", [],
+              pool: :no_pool,
+              receive_conn: false
+            )
+        end,
+        "Without conn and with pool" => fn ->
+          {:ok, %Tesla.Env{}} =
+            Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500", [], receive_conn: false)
+        end,
+        "With reused conn and without pool" => fn ->
+          {:ok, %Tesla.Env{}} =
+            Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500", [], pool: :no_pool)
+        end,
+        "With reused conn and with pool" => fn ->
+          {:ok, %Tesla.Env{}} = Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500")
+        end
+      },
+      parallel: 10
+    )
+  end
+end

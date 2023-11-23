@@ -10,6 +10,11 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.Cron.NewUsersDigestWorker
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   test "it sends new users digest emails" do
     yesterday = NaiveDateTime.utc_now() |> Timex.shift(days: -1)
     admin = insert(:user, %{is_admin: true})
