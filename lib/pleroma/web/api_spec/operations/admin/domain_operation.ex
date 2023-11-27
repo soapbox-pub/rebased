@@ -84,6 +84,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
       required: [:domain],
       properties: %{
         domain: %Schema{type: :string},
+        service_domain: %Schema{type: :string, nullable: true},
         public: %Schema{type: :boolean, nullable: true}
       }
     }
@@ -104,7 +105,10 @@ defmodule Pleroma.Web.ApiSpec.Admin.DomainOperation do
       properties: %{
         id: %Schema{type: :integer},
         domain: %Schema{type: :string},
-        public: %Schema{type: :boolean}
+        service_domain: %Schema{type: :string},
+        public: %Schema{type: :boolean},
+        resolves: %Schema{type: :boolean},
+        last_checked_at: %Schema{type: :string, format: "date-time", nullable: true}
       }
     }
   end

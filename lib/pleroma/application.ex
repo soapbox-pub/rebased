@@ -210,7 +210,8 @@ defmodule Pleroma.Application do
         expiration: chat_message_id_idempotency_key_expiration(),
         limit: 500_000
       ),
-      build_cachex("rel_me", limit: 2500)
+      build_cachex("rel_me", limit: 2500),
+      build_cachex("domain", limit: 2500)
     ]
   end
 
