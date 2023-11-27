@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       {:ok, activity} = CommonAPI.post(target_account, %{status: "foobar"})
       context = Utils.generate_context_id()
       content = "foobar"
+      post_id = activity.data["id"]
 
       res =
         Utils.make_flag_data(
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
             actor: reporter,
             context: context,
             account: target_account,
-            statuses: [%{"id" => activity.data["id"]}],
+            statuses: [%{"id" => post_id}],
             content: content
           },
           %{}
@@ -42,8 +43,11 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} = Pleroma.Web.ActivityPub.ActivityPub.insert(res)
 
-      Utils.strip_report_status_data(activity)
-      |> IO.inspect()
+      [user_id, object | _] = activity.data["object"]
+
+      {:ok, stripped} = Utils.strip_report_status_data(activity)
+
+      assert stripped.data["object"] == [user_id, object["id"]]
     end
   end
 
