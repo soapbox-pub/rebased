@@ -70,7 +70,7 @@ defmodule Pleroma.Telemetry.Logger do
         %{key: key},
         _
       ) do
-    Logger.warn(fn ->
+    Logger.warning(fn ->
       "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{inspect(reason)}"
     end)
   end
