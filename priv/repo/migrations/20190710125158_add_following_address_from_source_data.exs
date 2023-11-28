@@ -26,7 +26,7 @@ defmodule Pleroma.Repo.Migrations.AddFollowingAddressFromSourceData do
         |> Pleroma.Repo.update()
 
       user ->
-        Logger.warn("User #{user.id} / #{user.nickname} does not seem to have source_data")
+        Logger.warning("User #{user.id} / #{user.nickname} does not seem to have source_data")
     end)
   end
 end
