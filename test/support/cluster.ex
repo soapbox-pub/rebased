@@ -127,7 +127,7 @@ defmodule Pleroma.Cluster do
 
   defp start_slave({node_host, override_configs}) do
     log(node_host, "booting federated VM")
-    {:ok, node} = :slave.start(~c"127.0.0.1", node_name(node_host), vm_args())
+    {:ok, node} = :peer.start(%{host: "127.0.0.1", name: node_name(node_host), args: vm_args()})
     add_code_paths(node)
     load_apps_and_transfer_configuration(node, override_configs)
     ensure_apps_started(node)
