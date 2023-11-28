@@ -156,7 +156,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_swoosh, "~> 1.1"},
       {:gen_smtp, "~> 0.13"},
       {:ex_syslogger, "~> 1.4"},
-      {:floki, "~> 0.27"},
+      {:floki, "~> 0.35"},
       {:timex, "~> 3.6"},
       {:ueberauth, "~> 0.4"},
       {:linkify, "~> 0.5.3"},

@@ -23,8 +23,15 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
 
     assert response.status == 200
 
-    assert response.resp_body ==
-             ~s(<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" template="#{Pleroma.Web.Endpoint.url()}/.well-known/webfinger?resource={uri}" type="application/xrd+xml" /></XRD>)
+    response_xml =
+      response.resp_body
+      |> Floki.parse_document!(html_parser: Floki.HTMLParser.Mochiweb, attributes_as_maps: true)
+
+    expected_xml =
+      ~s(<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" template="#{Pleroma.Web.Endpoint.url()}/.well-known/webfinger?resource={uri}" type="application/xrd+xml" /></XRD>)
+      |> Floki.parse_document!(html_parser: Floki.HTMLParser.Mochiweb, attributes_as_maps: true)
+
+    assert match?(^response_xml, expected_xml)
   end
 
   test "Webfinger JRD" do
