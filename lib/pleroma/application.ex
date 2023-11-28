@@ -54,7 +54,6 @@ defmodule Pleroma.Application do
     Config.DeprecationWarnings.warn()
     Pleroma.Web.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
-    setup_instrumenters()
     load_custom_modules()
     Pleroma.Docs.JSON.compile()
     limiters_setup()
@@ -91,6 +90,7 @@ defmodule Pleroma.Application do
     # Define workers and child supervisors to be supervised
     children =
       [
+        Pleroma.PromEx,
         Pleroma.Repo,
         Config.TransferTask,
         Pleroma.Emoji,
@@ -168,29 +168,6 @@ defmodule Pleroma.Application do
           :ok
       end
     end
-  end
-
-  defp setup_instrumenters do
-    require Prometheus.Registry
-
-    if Application.get_env(:prometheus, Pleroma.Repo.Instrumenter) do
-      :ok =
-        :telemetry.attach(
-          "prometheus-ecto",
-          [:pleroma, :repo, :query],
-          &Pleroma.Repo.Instrumenter.handle_event/4,
-          %{}
-        )
-
-      Pleroma.Repo.Instrumenter.setup()
-    end
-
-    Pleroma.Web.Endpoint.MetricsExporter.setup()
-    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-
-    # Note: disabled until prometheus-phx is integrated into prometheus-phoenix:
-    # Pleroma.Web.Endpoint.Instrumenter.setup()
-    PrometheusPhx.setup()
   end
 
   defp cachex_children do

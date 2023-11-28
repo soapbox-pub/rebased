@@ -224,6 +224,12 @@ defmodule Pleroma.Web.Router do
     post("/remote_interaction", UtilController, :remote_interaction)
   end
 
+  scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:pleroma_api)
+
+    get("/federation_status", InstancesController, :show)
+  end
+
   scope "/api/v1/pleroma", Pleroma.Web do
     pipe_through(:pleroma_api)
     post("/uploader_callback/:upload_path", UploaderController, :callback)
@@ -609,7 +615,6 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
     get("/accounts/:id/scrobbles", ScrobbleController, :index)
-    get("/federation_status", InstancesController, :show)
   end
 
   scope "/api/v2/pleroma", Pleroma.Web.PleromaAPI do
