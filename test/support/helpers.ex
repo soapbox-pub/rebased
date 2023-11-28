@@ -10,6 +10,22 @@ defmodule Pleroma.Tests.Helpers do
 
   require Logger
 
+  @doc "Accepts two URLs/URIs and sorts the query parameters before comparing"
+  def uri_equal?(a, b) do
+    a_parsed = URI.parse(a)
+    b_parsed = URI.parse(b)
+
+    query_sort = fn query -> String.split(query, "&") |> Enum.sort() |> Enum.join("&") end
+
+    a_sorted_query = query_sort.(a_parsed.query)
+    b_sorted_query = query_sort.(b_parsed.query)
+
+    a_sorted = Map.put(a_parsed, :query, a_sorted_query)
+    b_sorted = Map.put(b_parsed, :query, b_sorted_query)
+
+    match?(^a_sorted, b_sorted)
+  end
+
   defmacro clear_config(config_path) do
     quote do
       clear_config(unquote(config_path)) do
