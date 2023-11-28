@@ -87,17 +87,17 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
          {height, width} <- {Image.height(resized_image), Image.width(resized_image)},
          max <- max(height, width),
          {x, y} <- {max(round(width * 5 / max), 1), max(round(height * 5 / max), 1)} do
-      {:ok, rgba} =
+      {:ok, rgb} =
         if Image.has_alpha?(resized_image) do
-          Image.to_list(resized_image)
+          # remove alpha channel
+          resized_image
+          |> Operation.extract_band!(0, n: 3)
+          |> Image.write_to_binary()
         else
-          Operation.bandjoin_const!(resized_image, [255])
-          |> Image.to_list()
+          Image.write_to_binary(resized_image)
         end
 
-      rgba = List.flatten(rgba)
-
-      Blurhash.encode(x, y, width, height, rgba)
+      Blurhash.encode(rgb, width, height, x, y)
     else
       _ -> nil
     end
