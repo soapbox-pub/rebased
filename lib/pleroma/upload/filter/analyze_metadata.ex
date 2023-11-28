@@ -82,7 +82,7 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
     end
   end
 
-  defp vips_blurhash(image = %Vix.Vips.Image{}) do
+  defp vips_blurhash(%Vix.Vips.Image{} = image) do
     with {:ok, resized_image} <- Operation.thumbnail_image(image, 100),
          {height, width} <- {Image.height(resized_image), Image.width(resized_image)},
          max <- max(height, width),
