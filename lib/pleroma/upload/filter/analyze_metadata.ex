@@ -78,7 +78,7 @@ defmodule Pleroma.Upload.Filter.AnalyzeMetadata do
       %{width: width, height: height}
     else
       nil -> {:error, {:ffprobe, :command_not_found}}
-      {:error, _} = error -> error
+      error -> {:error, error}
     end
   end
 
