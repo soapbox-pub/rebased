@@ -12,6 +12,7 @@ defmodule Pleroma.Web.Feed.UserController do
   alias Pleroma.Web.Feed.FeedView
 
   plug(Pleroma.Web.Plugs.SetFormatPlug when action in [:feed_redirect])
+  plug(Pleroma.Web.Plugs.AssignNicknameWithDomainPlug when action in [:feed_redirect, :feed])
 
   action_fallback(:errors)
 

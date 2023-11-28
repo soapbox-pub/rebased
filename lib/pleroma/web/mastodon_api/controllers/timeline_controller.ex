@@ -50,7 +50,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:user, user)
       |> Map.put(:local_only, params[:local])
       |> Map.delete(:local)
-      |> ActivityPub.fetch_public_activities()
 
     activities =
       [user.ap_id | User.following(user)]

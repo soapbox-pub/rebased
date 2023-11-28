@@ -899,13 +899,6 @@ defmodule Pleroma.User do
     nickname = get_field(changeset, :nickname)
     ap_id = ap_id(%User{nickname: nickname})
 
-    ap_id =
-      if String.contains?(nickname, ".") do
-        ap_id <> ".json"
-      else
-        ap_id
-      end
-
     put_change(changeset, :ap_id, ap_id)
   end
 

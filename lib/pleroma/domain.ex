@@ -61,6 +61,12 @@ defmodule Pleroma.Domain do
 
   def get(id), do: Repo.get(__MODULE__, id)
 
+  def get_by_service_domain(domain) do
+    __MODULE__
+    |> where(service_domain: ^domain)
+    |> Repo.one()
+  end
+
   def create(params) do
     %__MODULE__{}
     |> changeset(params)
