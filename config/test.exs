@@ -16,7 +16,7 @@ config :pleroma, Pleroma.Captcha,
 
 # Print only warnings and errors during test
 config :logger, :console,
-  level: :warn,
+  level: :warning,
   format: "\n[$level] $message\n"
 
 config :pleroma, :auth, oauth_consumer_strategies: []
