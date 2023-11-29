@@ -21,7 +21,6 @@ Note: This article is potentially outdated because at this time we may not have 
 - `build-essential`
 - `cmake`
 - `libmagic-dev`
-- `rust`
 
 #### このガイドで利用している追加パッケージ
 

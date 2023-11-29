@@ -14,7 +14,6 @@ This guide will assume that you have administrative rights, either as root or a 
 * `base-devel`
 * `cmake`
 * `file`
-* `rust`
 
 #### Optional packages used in this guide
 
