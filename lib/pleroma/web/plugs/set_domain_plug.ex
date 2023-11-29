@@ -10,13 +10,10 @@ defmodule Pleroma.Web.Plugs.SetDomainPlug do
   def init(opts), do: opts
 
   @impl true
-  def perform(%{host: domain} = conn, opts) do
+  def perform(%{host: domain} = conn, _opts) do
     with true <- Pleroma.Config.get([:instance, :multitenancy, :enabled], false),
          false <-
-           domain in [
-             Pleroma.Config.get([__MODULE__, :domain]),
-             Pleroma.Web.Endpoint.host()
-           ],
+           domain in [Pleroma.Config.get([__MODULE__, :domain]), Pleroma.Web.Endpoint.host()],
          %Domain{domain: domain} <- Domain.get_by_service_domain(domain) do
       Map.put(conn, :domain, domain)
     else

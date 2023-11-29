@@ -420,6 +420,10 @@ defmodule Pleroma.User do
 
   # Should probably be renamed or removed
   @spec ap_id(User.t()) :: String.t()
+  def ap_id(%User{nickname: nickname, domain: %Domain{service_domain: domain}}) do
+    "https://#{domain}/users/#{nickname}"
+  end
+
   def ap_id(%User{nickname: nickname}), do: "#{Endpoint.url()}/users/#{nickname}"
 
   @spec ap_followers(User.t()) :: String.t()
@@ -817,7 +821,7 @@ defmodule Pleroma.User do
   end
 
   defp fix_nickname(changeset, domain_id, from_admin) when not is_nil(domain_id) do
-    with {:domain, domain} <- {:domain, Pleroma.Domain.get(domain_id)},
+    with {:domain, domain} <- {:domain, Domain.get(domain_id)},
          {:domain_allowed, true} <- {:domain_allowed, from_admin || domain.public} do
       nickname = get_field(changeset, :nickname)
 
@@ -897,13 +901,20 @@ defmodule Pleroma.User do
 
   defp put_ap_id(changeset) do
     nickname = get_field(changeset, :nickname)
-    ap_id = ap_id(%User{nickname: nickname})
+    domain_id = get_field(changeset, :domain_id)
+
+    ap_id =
+      %User{nickname: nickname, domain_id: domain_id}
+      |> Repo.preload(:domain)
+      |> ap_id()
 
     put_change(changeset, :ap_id, ap_id)
   end
 
   defp put_following_and_follower_and_featured_address(changeset) do
-    user = %User{nickname: get_field(changeset, :nickname)}
+    nickname = get_field(changeset, :nickname)
+    domain_id = get_field(changeset, :domain_id)
+    user = %User{nickname: nickname, domain_id: domain_id} |> Repo.preload(:domain)
     followers = ap_followers(user)
     following = ap_following(user)
     featured = ap_featured_collection(user)
