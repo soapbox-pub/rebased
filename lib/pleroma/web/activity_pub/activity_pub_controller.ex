@@ -53,7 +53,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   )
 
   plug(
-    Pleroma.Web.Plugs.AssignNicknameWithDomainPlug
+    Pleroma.Web.Plugs.SetDomainPlug
+    when action in [:following, :followers, :pinned, :inbox, :outbox, :update_outbox]
+  )
+
+  plug(
+    Pleroma.Web.Plugs.SetNicknameWithDomainPlug
     when action in [:following, :followers, :pinned, :inbox, :outbox, :update_outbox]
   )
 
@@ -71,10 +76,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def user(conn, %{"nickname" => nickname}) do
-    with nickname(
-           %User{local: true} = user <-
-             nickname |> URI.decode() |> User.get_cached_by_nickname_or_id()
-         ) do
+    with %User{local: true} = user <-
+           nickname |> URI.decode() |> User.get_cached_by_nickname_or_id() do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
