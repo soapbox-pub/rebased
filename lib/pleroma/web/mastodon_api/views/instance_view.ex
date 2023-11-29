@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   alias Pleroma.Config
   alias Pleroma.Domain
-  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.AdminAPI.DomainView
 

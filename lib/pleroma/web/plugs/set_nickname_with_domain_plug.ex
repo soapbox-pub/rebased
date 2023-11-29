@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.SetNicknameWithDomainPlug do
-  alias Pleroma.Domain
-
   use Pleroma.Web, :plug
 
   def init(opts), do: opts

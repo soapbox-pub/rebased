@@ -36,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     when action in [:public, :hashtag]
   )
 
-  plug (Pleroma.Web.Plugs.SetDomainPlug when action == )
+  plug(Pleroma.Web.Plugs.SetDomainPlug when action in [:public, :hashtag])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.TimelineOperation
 

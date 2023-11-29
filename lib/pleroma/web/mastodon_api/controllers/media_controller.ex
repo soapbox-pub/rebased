@@ -6,7 +6,6 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Object
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Plugs.OAuthScopesPlug
 

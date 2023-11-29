@@ -2,7 +2,7 @@
 # Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
+defmodule Pleroma.Workers.CheckDomainResolveWorkerTest do
   use Pleroma.DataCase
 
   alias Pleroma.Domain

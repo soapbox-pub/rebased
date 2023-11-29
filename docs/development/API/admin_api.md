@@ -1763,6 +1763,7 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
   {
     "id": "1",
     "domain": "example.org",
+    "service_domain": "example.org",
     "public": false,
     "resolves": true,
     "last_checked_at": "2023-11-17T12:13:05"
@@ -1776,6 +1777,7 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 
 - Params:
   - `domain`: string, required, domain name
+  - `service_domain`: string, optional, defaults to domain name, domain used for ActivityPub URLs
   - `public`: boolean, optional, defaults to false, whether it is possible to register an account under the domain by everyone
 
 - Response: JSON, created announcement
@@ -1803,6 +1805,7 @@ Note that this differs from the Mastodon API variant: Mastodon API only returns 
 {
   "id": "1",
   "domain": "example.org",
+  "service_domain": "example.org",
   "public": false,
   "resolves": true,
   "last_checked_at": "2023-11-17T12:13:05"
