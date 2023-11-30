@@ -191,6 +191,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def config_descriptions(policies) do
     Enum.reduce(policies, @mrf_config_descriptions, fn policy, acc ->
       Code.ensure_loaded(policy)
+
       if function_exported?(policy, :config_description, 0) do
         description =
           @default_description
