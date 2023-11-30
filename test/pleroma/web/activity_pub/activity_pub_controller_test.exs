@@ -141,15 +141,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it returns a json representation of a local user domain different from host", %{
       conn: conn
     } do
+      clear_config([:instance, :multitenancy, :enabled], true)
+
+      {:ok, domain} = Pleroma.Domain.create(%{domain: "example.org"})
+
       user =
         insert(:user, %{
-          nickname: "nick@example.org"
+          nickname: "nick@example.org",
+          domain_id: domain.id
         })
 
       conn =
         conn
         |> put_req_header("accept", "application/json")
-        |> get("/users/#{user.nickname}.json")
+        |> get("http://example.org/users/nick")
 
       user = User.get_cached_by_id(user.id)
 

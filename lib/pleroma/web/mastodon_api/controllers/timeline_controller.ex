@@ -212,12 +212,14 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     end
   end
 
-  defp maybe_put_domain_id(%{local_only: true} = params, %{domain: %{id: domain_id}}) do
+  defp maybe_put_domain_id(%{local_only: true} = params, conn) do
     separate_timelines = Config.get([:instance, :multitenancy, :separate_timelines])
 
     if separate_timelines do
+      domain = Map.get(conn, :domain, %{id: 0})
+
       params
-      |> Map.put(:domain_id, domain_id)
+      |> Map.put(:domain_id, domain.id)
     else
       params
     end
