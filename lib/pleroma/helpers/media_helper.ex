@@ -8,11 +8,12 @@ defmodule Pleroma.Helpers.MediaHelper do
   """
 
   alias Pleroma.HTTP
+  alias Vix.Vips.Operation
 
   require Logger
 
   def missing_dependencies do
-    Enum.reduce([imagemagick: "convert", ffmpeg: "ffmpeg"], [], fn {sym, executable}, acc ->
+    Enum.reduce([ffmpeg: "ffmpeg"], [], fn {sym, executable}, acc ->
       if Pleroma.Utils.command_available?(executable) do
         acc
       else
@@ -22,53 +23,21 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   def image_resize(url, options) do
-    with executable when is_binary(executable) <- System.find_executable("convert"),
-         {:ok, args} <- prepare_image_resize_args(options),
-         {:ok, env} <- HTTP.get(url, [], pool: :media),
-         {:ok, fifo_path} <- mkfifo() do
-      args = List.flatten([fifo_path, args])
-      run_fifo(fifo_path, env, executable, args)
+    with {:ok, env} <- HTTP.get(url, [], pool: :media),
+         {:ok, resized} <-
+           Operation.thumbnail_buffer(env.body, options.max_width,
+             height: options.max_height,
+             size: :VIPS_SIZE_DOWN
+           ) do
+      if options[:format] == "png" do
+        Operation.pngsave_buffer(resized, Q: options[:quality])
+      else
+        Operation.jpegsave_buffer(resized, Q: options[:quality], interlace: true)
+      end
     else
-      nil -> {:error, {:convert, :command_not_found}}
       {:error, _} = error -> error
     end
   end
-
-  defp prepare_image_resize_args(
-         %{max_width: max_width, max_height: max_height, format: "png"} = options
-       ) do
-    quality = options[:quality] || 85
-    resize = Enum.join([max_width, "x", max_height, ">"])
-
-    args = [
-      "-resize",
-      resize,
-      "-quality",
-      to_string(quality),
-      "png:-"
-    ]
-
-    {:ok, args}
-  end
-
-  defp prepare_image_resize_args(%{max_width: max_width, max_height: max_height} = options) do
-    quality = options[:quality] || 85
-    resize = Enum.join([max_width, "x", max_height, ">"])
-
-    args = [
-      "-interlace",
-      "Plane",
-      "-resize",
-      resize,
-      "-quality",
-      to_string(quality),
-      "jpg:-"
-    ]
-
-    {:ok, args}
-  end
-
-  defp prepare_image_resize_args(_), do: {:error, :missing_options}
 
   # Note: video thumbnail is intentionally not resized (always has original dimensions)
   def video_framegrab(url) do
