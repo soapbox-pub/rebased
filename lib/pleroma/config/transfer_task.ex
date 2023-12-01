@@ -54,8 +54,7 @@ defmodule Pleroma.Config.TransferTask do
 
       started_applications = Application.started_applications()
 
-      # TODO: some problem with prometheus after restart!
-      reject = [nil, :prometheus, :postgrex]
+      reject = [nil, :postgrex]
 
       reject =
         if restart_pleroma? do

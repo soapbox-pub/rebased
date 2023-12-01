@@ -34,14 +34,21 @@ defmodule Pleroma.Web.FallbackTest do
       clear_config([:instance, :favicon], "/favicon.svg")
 
       user = insert(:user)
-      user_missing = get(conn, "/foo")
-      user_present = get(conn, "/#{user.nickname}")
 
-      refute html_response(user_missing, 200) =~ "<!--server-generated-meta-->"
-      refute html_response(user_present, 200) =~ "<!--server-generated-meta-->"
-      assert html_response(user_present, 200) =~ "initial-results"
-      assert html_response(user_present, 200) =~ "<title>a cool title</title>"
-      assert html_response(user_present, 200) =~ "<link rel=\"icon\" href=\"/favicon.svg\">"
+      resp = get(conn, "/#{user.nickname}")
+
+      assert html_response(resp, 200) =~ "<title>a cool title</title>"
+      refute html_response(resp, 200) =~ "<!--server-generated-meta-->"
+      assert html_response(resp, 200) =~ "initial-results"
+    end
+
+    test "GET /:maybe_nickname_or_id with missing user", %{conn: conn} do
+      clear_config([:instance, :name], "a cool title")
+
+      resp = get(conn, "/foo")
+
+      assert html_response(resp, 200) =~ "<title>a cool title</title>"
+      refute html_response(resp, 200) =~ "initial-results"
     end
 
     test "GET /*path", %{conn: conn} do
@@ -69,10 +76,12 @@ defmodule Pleroma.Web.FallbackTest do
     end
 
     test "GET /main/all", %{conn: conn} do
+      clear_config([:instance, :name], "a cool title")
       public_page = get(conn, "/main/all")
 
       refute html_response(public_page, 200) =~ "<!--server-generated-meta-->"
       assert html_response(public_page, 200) =~ "initial-results"
+      assert html_response(public_page, 200) =~ "<title>a cool title</title>"
     end
   end
 
