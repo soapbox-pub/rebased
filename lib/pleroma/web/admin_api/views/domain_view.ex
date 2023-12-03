@@ -28,6 +28,7 @@ defmodule Pleroma.Web.AdminAPI.DomainView do
   defp maybe_put_resolve_information(map, domain, _assigns) do
     map
     |> Map.merge(%{
+      service_domain: domain.service_domain,
       resolves: domain.resolves,
       last_checked_at: Utils.to_masto_date(domain.last_checked_at)
     })

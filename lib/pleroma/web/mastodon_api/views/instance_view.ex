@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   alias Pleroma.Config
   alias Pleroma.Domain
-  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.AdminAPI.DomainView
@@ -364,7 +363,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     if enabled do
       domains =
         [%Domain{id: "", domain: Pleroma.Web.WebFinger.domain(), public: true}] ++
-          Repo.all(Domain)
+          Domain.cached_list()
 
       %{
         enabled: true,

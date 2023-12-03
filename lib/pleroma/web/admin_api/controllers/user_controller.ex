@@ -149,8 +149,6 @@ defmodule Pleroma.Web.AdminAPI.UserController do
         domain =
           if domain_id do
             Domain.get(domain_id)
-          else
-            nil
           end
 
         user_data = %{

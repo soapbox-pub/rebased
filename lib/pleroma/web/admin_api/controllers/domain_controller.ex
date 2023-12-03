@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.DomainController do
+  @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+
   use Pleroma.Web, :controller
 
   alias Pleroma.Domain
@@ -37,7 +39,8 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
   def create(%{body_params: params} = conn, _) do
     with {:domain_not_used, true} <-
            {:domain_not_used, params[:domain] !== Pleroma.Web.WebFinger.domain()},
-         {:ok, domain} <- Domain.create(params) do
+         {:ok, domain} <- Domain.create(params),
+         _ <- @cachex.del(:domain, :domains_list) do
       Pleroma.Workers.CheckDomainResolveWorker.enqueue("check_domain_resolve", %{
         "id" => domain.id
       })
@@ -59,11 +62,14 @@ defmodule Pleroma.Web.AdminAPI.DomainController do
       params
       |> Domain.update(id)
 
+    @cachex.del(:domain, :domains_list)
+
     render(conn, "show.json", domain: domain)
   end
 
   def delete(conn, %{id: id}) do
-    with {:ok, _} <- Domain.delete(id) do
+    with {:ok, _} <- Domain.delete(id),
+         _ <- @cachex.del(:domain, :domains_list) do
       json(conn, %{})
     else
       _ -> json_response(conn, :bad_request, "")
