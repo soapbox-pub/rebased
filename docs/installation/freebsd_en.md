@@ -9,7 +9,7 @@ This document was written for FreeBSD 12.1, but should be work on future release
 This assumes the target system has `pkg(8)`.
 
 ```
-# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake
+# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh cmake vips
 ```
 
 Copy the rc.d scripts to the right directory:
@@ -41,6 +41,7 @@ Create a user for Pleroma:
 ```
 # pw add user pleroma -m
 # echo 'export LC_ALL="en_US.UTF-8"' >> /home/pleroma/.profile
+# echo 'export VIX_COMPILATION_MODE=PLATFORM_PROVIDED_LIBVIPS' >> /home/pleroma/.profile
 # su -l pleroma
 ```
 

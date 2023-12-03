@@ -196,7 +196,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> get("/notice/#{like_activity.id}")
         |> response(200)
 
-      refute resp =~ "initial-results"
+      refute resp =~ ~r(<meta content="[^"]*" property="og:url")
     end
 
     test "404s a private notice", %{conn: conn} do

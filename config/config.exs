@@ -362,6 +362,8 @@ config :pleroma, :manifest,
   icons: [
     %{
       src: "/static/logo.svg",
+      sizes: "144x144",
+      purpose: "any",
       type: "image/svg+xml"
     }
   ],
@@ -691,12 +693,26 @@ config :pleroma, Pleroma.Emails.UserEmail,
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
-config :prometheus, Pleroma.Web.Endpoint.MetricsExporter,
-  enabled: false,
-  auth: false,
-  ip_whitelist: [],
-  path: "/api/pleroma/app_metrics",
-  format: :text
+config :pleroma, Pleroma.PromEx,
+  disabled: false,
+  manual_metrics_start_delay: :no_delay,
+  drop_metrics_groups: [],
+  grafana: [
+    host: System.get_env("GRAFANA_HOST", "http://localhost:3000"),
+    auth_token: System.get_env("GRAFANA_TOKEN"),
+    upload_dashboards_on_start: false,
+    folder_name: "BEAM",
+    annotate_app_lifecycle: true
+  ],
+  metrics_server: [
+    port: 4021,
+    path: "/metrics",
+    protocol: :http,
+    pool_size: 5,
+    cowboy_opts: [],
+    auth_strategy: :none
+  ],
+  datasource: "Prometheus"
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
