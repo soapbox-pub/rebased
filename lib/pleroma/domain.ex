@@ -23,7 +23,7 @@ defmodule Pleroma.Domain do
 
   def changeset(%__MODULE__{} = domain, params \\ %{}) do
     domain
-    |> cast(params, [:domain, :public])
+    |> cast(params, [:domain, :service_domain, :public])
     |> validate_required([:domain])
     |> maybe_add_service_domain()
     |> update_change(:domain, &String.downcase/1)

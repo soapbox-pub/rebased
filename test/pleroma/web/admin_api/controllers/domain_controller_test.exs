@@ -59,6 +59,24 @@ defmodule Pleroma.Web.AdminAPI.DomainControllerTest do
         conn
         |> put_req_header("content-type", "application/json")
         |> post("/api/pleroma/admin/domains", %{
+          domain: "mkljczk.pl",
+          service_domain: "pleroma.mkljczk.pl",
+          public: true
+        })
+
+      %{
+        "id" => _id,
+        "domain" => "mkljczk.pl",
+        "service_domain" => "pleroma.mkljczk.pl",
+        "public" => true
+      } = json_response_and_validate_schema(conn, 200)
+    end
+
+    test "create a domain without service domain", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/domains", %{
           domain: "pleroma.mkljczk.pl",
           public: true
         })
@@ -66,6 +84,7 @@ defmodule Pleroma.Web.AdminAPI.DomainControllerTest do
       %{
         "id" => _id,
         "domain" => "pleroma.mkljczk.pl",
+        "service_domain" => "pleroma.mkljczk.pl",
         "public" => true
       } = json_response_and_validate_schema(conn, 200)
     end
