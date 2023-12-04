@@ -12,8 +12,9 @@ defmodule Pleroma.Web.Plugs.SetNicknameWithDomainPlug do
     with key <- Keyword.get(opts, :key, "nickname"),
          nickname <- Map.get(params, key),
          false <- String.contains?(nickname, "@"),
-         nickname <- nickname <> "@" <> domain.domain do
-      Map.put(conn, :params, %{"nickname" => nickname})
+         nickname <- nickname <> "@" <> domain.domain,
+         params <- Map.put(params, "nickname", nickname) do
+      Map.put(conn, :params, params)
     else
       _ -> conn
     end
