@@ -133,11 +133,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def generate_activity_id(ap_id \\ nil) do
-    generate_id("activities")
+    generate_id("activities", ap_id)
   end
 
   def generate_context_id(ap_id \\ nil) do
-    generate_id("contexts")
+    generate_id("contexts", ap_id)
   end
 
   def generate_object_id do
