@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AddRemoveValidator do
   defp maybe_fix_data_for_mastodon(data, actor) do
     # Mastodon sends pin/unpin objects without id, to, cc fields
     data
-    |> Map.put_new("id", Pleroma.Web.ActivityPub.Utils.generate_activity_id())
+    |> Map.put_new("id", Pleroma.Web.ActivityPub.Utils.generate_activity_id(actor.ap_id))
     |> Map.put_new("to", [Pleroma.Constants.as_public()])
     |> Map.put_new("cc", [actor.follower_address])
   end

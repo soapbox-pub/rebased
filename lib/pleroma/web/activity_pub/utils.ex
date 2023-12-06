@@ -125,20 +125,28 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     DateTime.utc_now() |> DateTime.to_iso8601()
   end
 
-  def generate_activity_id do
-    generate_id("activities")
+  def generate_activity_id(ap_id \\ nil) do
+    generate_id("activities", ap_id)
   end
 
-  def generate_context_id do
-    generate_id("contexts")
+  def generate_context_id(ap_id \\ nil) do
+    generate_id("contexts", ap_id)
   end
 
-  def generate_object_id do
-    Helpers.o_status_url(Endpoint, :object, UUID.generate())
+  def generate_object_id(ap_id \\ nil) do
+    generate_id("objects", ap_id)
   end
 
-  def generate_id(type) do
+  def generate_id(type, ap_id \\ nil)
+
+  def generate_id(type, nil) do
     "#{Endpoint.url()}/#{type}/#{UUID.generate()}"
+  end
+
+  def generate_id(type, ap_id) do
+    %{host: host} = URI.parse(ap_id)
+
+    "https://#{host}/#{type}/#{UUID.generate()}"
   end
 
   def get_notified_from_object(%{"type" => type} = object) when type in @supported_object_types do
