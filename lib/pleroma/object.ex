@@ -411,8 +411,8 @@ defmodule Pleroma.Object do
     |> Repo.update()
   end
 
-  def local?(%Object{data: %{"id" => id}}) do
-    String.starts_with?(id, Pleroma.Web.Endpoint.url() <> "/")
+  def local?(%Object{data: %{"actor" => actor}}) do
+    User.get_by_ap_id(actor).local
   end
 
   def replies(object, opts \\ []) do

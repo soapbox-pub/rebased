@@ -17,7 +17,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Router.Helpers
 
   import Ecto.Query
   import Pleroma.Web.Utils.Guards, only: [not_empty_string: 1]
@@ -140,7 +139,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     generate_id("contexts", ap_id)
   end
 
-  def generate_object_id do
+  def generate_object_id(ap_id \\ nil) do
     generate_id("objects", ap_id)
   end
 
@@ -210,7 +209,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     context = maybe_create_context(map["context"])
 
     map
-    |> Map.put_new_lazy("id", &generate_activity_id/0)
+    |> Map.put_new("id", generate_activity_id(map["actor"]))
     |> Map.put_new_lazy("published", &make_date/0)
     |> Map.put_new("context", context)
     |> lazy_put_object_defaults(false)
@@ -235,7 +234,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
        when is_map(map) do
     object =
       map
-      |> Map.put_new_lazy("id", &generate_object_id/0)
+      |> Map.put_new("id", generate_object_id(map["actor"]))
       |> Map.put_new_lazy("published", &make_date/0)
       |> Map.put_new("context", activity["context"])
 

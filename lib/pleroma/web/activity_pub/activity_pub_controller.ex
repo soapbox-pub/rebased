@@ -89,7 +89,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def object(%{assigns: assigns} = conn, _) do
     with ap_id <- Endpoint.url() <> conn.request_path,
-         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
+         %Object{} = object <-
+           Object.get_cached_by_ap_id(ap_id) ||
+             Object.get_cached_by_ap_id("https://#{conn.host}/#{conn.request_path}"),
          user <- Map.get(assigns, :user, nil),
          {_, true} <- {:visible?, Visibility.visible_for_user?(object, user)} do
       conn

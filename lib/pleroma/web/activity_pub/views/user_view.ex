@@ -95,6 +95,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         do: Date.to_iso8601(user.birthday),
         else: nil
 
+    nickname = User.local_nickname(user.nickname)
+
     %{
       "id" => user.ap_id,
       "type" => user.actor_type,
@@ -103,7 +105,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "inbox" => "#{user.ap_id}/inbox",
       "outbox" => "#{user.ap_id}/outbox",
       "featured" => "#{user.ap_id}/collections/featured",
-      "preferredUsername" => user.nickname,
+      "preferredUsername" => nickname,
       "name" => user.name,
       "summary" => user.bio,
       "url" => user.ap_id,
