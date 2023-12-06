@@ -423,7 +423,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> Transmogrifier.strip_internal_fields()
         |> Map.put("attributedTo", actor)
         |> Map.put("actor", actor)
-        |> Map.put("id", Utils.generate_object_id())
+        |> Map.put("id", Utils.generate_object_id(actor))
 
       {:ok, Map.put(activity, "object", object)}
     else
