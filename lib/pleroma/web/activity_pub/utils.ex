@@ -141,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def generate_object_id do
-    Helpers.o_status_url(Endpoint, :object, UUID.generate())
+    generate_id("objects", ap_id)
   end
 
   def generate_id(type, ap_id \\ nil)
