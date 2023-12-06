@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   def accept_or_reject(%User{ap_id: ap_id}, activity, type) do
     data = %{
-      "id" => Utils.generate_activity_id(),
+      "id" => Utils.generate_activity_id(ap_id),
       "actor" => ap_id,
       "type" => type,
       "object" => activity.data["id"],
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   def accept_or_reject(%Object{data: %{"actor" => actor}}, activity, type) do
     data = %{
-      "id" => Utils.generate_activity_id(),
+      "id" => Utils.generate_activity_id(actor),
       "actor" => actor,
       "type" => type,
       "object" => activity.data["id"],
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
   def follow(follower, followed) do
     data = %{
-      "id" => Utils.generate_activity_id(),
+      "id" => Utils.generate_activity_id(follower.ap_id),
       "actor" => follower.ap_id,
       "type" => "Follow",
       "object" => followed.ap_id,
@@ -157,7 +157,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def undo(actor, object) do
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(actor.ap_id),
        "actor" => actor.ap_id,
        "type" => "Undo",
        "object" => object.data["id"],
@@ -185,7 +185,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(actor.ap_id),
        "actor" => actor.ap_id,
        "object" => object_id,
        "to" => to,
@@ -203,7 +203,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(actor.ap_id),
        "actor" => actor.ap_id,
        "to" => recipients,
        "object" => object,
@@ -257,7 +257,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   def chat_message(actor, recipient, content, opts \\ []) do
     basic = %{
-      "id" => Utils.generate_object_id(),
+      "id" => Utils.generate_object_id(actor.ap_id),
       "actor" => actor.ap_id,
       "type" => "ChatMessage",
       "to" => [recipient],
@@ -291,7 +291,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "inReplyTo" => object.data["id"],
        "context" => object.data["context"],
        "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
-       "id" => Utils.generate_object_id()
+       "id" => Utils.generate_object_id(user.ap_id)
      }, []}
   end
 
@@ -329,7 +329,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(actor.ap_id),
        "type" => "Update",
        "actor" => actor.ap_id,
        "object" => object,
@@ -343,7 +343,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def block(blocker, blocked) do
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(blocked.ap_id),
        "type" => "Block",
        "actor" => blocker.ap_id,
        "object" => blocked.ap_id,
@@ -372,7 +372,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(actor.ap_id),
        "actor" => actor.ap_id,
        "object" => object.data["id"],
        "to" => to,
@@ -403,7 +403,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(actor.ap_id),
        "actor" => actor.ap_id,
        "object" => object.data["id"],
        "to" => to,
@@ -416,7 +416,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def pin(%User{} = user, object) do
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(user.ap_id),
        "target" => pinned_url(user.nickname),
        "object" => object.data["id"],
        "actor" => user.ap_id,
@@ -430,7 +430,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   def unpin(%User{} = user, object) do
     {:ok,
      %{
-       "id" => Utils.generate_activity_id(),
+       "id" => Utils.generate_activity_id(user.ap_id),
        "target" => pinned_url(user.nickname),
        "object" => object.data["id"],
        "actor" => user.ap_id,

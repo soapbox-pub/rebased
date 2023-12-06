@@ -832,6 +832,7 @@ defmodule Pleroma.User do
     |> validate_format(:email, @email_regex)
     |> validate_email_not_in_blacklisted_domain(:email)
     |> validate_format(:nickname, local_nickname_regex())
+    |> put_ap_id()
     |> fix_nickname(Map.get(params, :domain_id), opts[:from_admin])
     |> validate_not_restricted_nickname(:nickname)
     |> unique_constraint(:nickname)
@@ -842,7 +843,6 @@ defmodule Pleroma.User do
     |> maybe_validate_required_birthday
     |> validate_min_age()
     |> put_password_hash
-    |> put_ap_id()
     |> unique_constraint(:ap_id)
     |> put_following_and_follower_and_featured_address()
     |> put_private_key()
