@@ -151,47 +151,6 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Pleroma.Web.Plugs.RemoteIp)
 
-  defmodule Instrumenter do
-    use Prometheus.PhoenixInstrumenter
-  end
-
-  defmodule PipelineInstrumenter do
-    use Prometheus.PlugPipelineInstrumenter
-  end
-
-  defmodule MetricsExporter do
-    use Prometheus.PlugExporter
-  end
-
-  defmodule MetricsExporterCaller do
-    @behaviour Plug
-
-    def init(opts), do: opts
-
-    def call(conn, opts) do
-      prometheus_config = Application.get_env(:prometheus, MetricsExporter, [])
-      ip_whitelist = List.wrap(prometheus_config[:ip_whitelist])
-
-      cond do
-        !prometheus_config[:enabled] ->
-          conn
-
-        ip_whitelist != [] and
-            !Enum.find(ip_whitelist, fn ip ->
-              Pleroma.Helpers.InetHelper.parse_address(ip) == {:ok, conn.remote_ip}
-            end) ->
-          conn
-
-        true ->
-          MetricsExporter.call(conn, opts)
-      end
-    end
-  end
-
-  plug(PipelineInstrumenter)
-
-  plug(MetricsExporterCaller)
-
   plug(Pleroma.Web.Router)
 
   @doc """

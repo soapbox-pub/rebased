@@ -988,6 +988,12 @@ config :pleroma, :config_description, [
         suggestions: ["/instance/thumbnail.jpeg"]
       },
       %{
+        key: :favicon,
+        type: {:string, :image},
+        description: "Favicon of the instance",
+        suggestions: ["/favicon.png"]
+      },
+      %{
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
