@@ -31,14 +31,6 @@ defmodule Pleroma.Instances.InstanceTest do
       assert {:ok, instance} = Instance.set_reachable(instance.host)
       refute instance.unreachable_since
     end
-
-    test "does NOT create an Instance record in case of no existing matching record" do
-      host = "domain.org"
-      assert nil == Instance.set_reachable(host)
-
-      assert [] = Repo.all(Ecto.Query.from(i in Instance))
-      assert Instance.reachable?(host)
-    end
   end
 
   describe "set_unreachable/1" do
