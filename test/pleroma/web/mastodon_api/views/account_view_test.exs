@@ -35,7 +35,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         inserted_at: ~N[2017-08-15 15:47:06.597036],
         emoji: %{"karjalanpiirakka" => "/file.png"},
         raw_bio: "valid html. a\nb\nc\nd\nf '&<>\"",
-        also_known_as: ["https://shitposter.zone/users/shp"]
+        also_known_as: ["https://shitposter.zone/users/shp"],
+        last_status_at: NaiveDateTime.utc_now()
       })
 
     expected = %{
@@ -74,7 +75,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       fqn: "shp@shitposter.club",
-      last_status_at: nil,
+      last_status_at: user.last_status_at |> NaiveDateTime.to_date() |> Date.to_iso8601(),
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],

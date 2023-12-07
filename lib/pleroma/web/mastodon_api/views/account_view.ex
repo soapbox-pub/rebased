@@ -250,11 +250,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       end
 
     last_status_at =
-      if not is_nil(user.last_status_at) do
+      user.last_status_at &&
         user.last_status_at |> NaiveDateTime.to_date() |> Date.to_iso8601()
-      else
-        nil
-      end
 
     %{
       id: to_string(user.id),
