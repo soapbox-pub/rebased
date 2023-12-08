@@ -58,7 +58,7 @@ defmodule Pleroma.Signature do
     with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
          {:ok, actor_id} <- key_id_to_actor_id(kid),
          {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
-         {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
+         {:ok, public_key} <- User.get_or_fetch_public_key_for_ap_id(actor_id) do
       {:ok, public_key}
     else
       e ->

@@ -287,10 +287,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  def inbox(%{assigns: %{valid_signature: false}} = conn, _params) do
-    conn
-    |> put_status(:bad_request)
-    |> json("Invalid HTTP Signature")
+  def inbox(%{assigns: %{valid_signature: false}, req_headers: req_headers} = conn, params) do
+    Federator.incoming_ap_doc(%{req_headers: req_headers, params: params})
+    json(conn, "ok")
   end
 
   # POST /relay/inbox -or- POST /internal/fetch/inbox
