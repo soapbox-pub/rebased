@@ -2145,7 +2145,7 @@ defmodule Pleroma.User do
   end
 
   def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_cached_by_ap_id(ap_id),
+    with %User{} = user <- get_cached_by_ap_id(ap_id),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
