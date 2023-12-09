@@ -14,6 +14,10 @@ defmodule Pleroma.Workers.ReceiverWorker do
   def perform(%Job{
         args: %{"op" => "incoming_ap_doc", "req_headers" => req_headers, "params" => params}
       }) do
+    # Oban's serialization converts our tuple headers to lists.
+    # Revert it for the signature validation.
+    req_headers = Enum.into(req_headers, [], &List.to_tuple(&1))
+
     conn_data = %{params: params, req_headers: req_headers}
 
     with {:ok, %User{} = _actor} <- User.get_or_fetch_by_ap_id(conn_data.params["actor"]),
