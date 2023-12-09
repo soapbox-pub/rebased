@@ -1037,6 +1037,16 @@ defmodule Pleroma.User do
 
   defp maybe_send_registration_email(_), do: {:ok, :noop}
 
+  def needs_update?(%User{local: true}), do: false
+
+  def needs_update?(%User{local: false, last_refreshed_at: nil}), do: true
+
+  def needs_update?(%User{local: false} = user) do
+    NaiveDateTime.diff(NaiveDateTime.utc_now(), user.last_refreshed_at) >= 86_400
+  end
+
+  def needs_update?(_), do: true
+
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
 
   # "Locked" (self-locked) users demand explicit authorization of follow requests
@@ -2049,13 +2059,15 @@ defmodule Pleroma.User do
   def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
   def get_or_fetch_by_ap_id(ap_id) do
-    user = get_cached_by_ap_id(ap_id) || fetch_by_ap_id(ap_id)
+    cached_user = get_cached_by_ap_id(ap_id)
 
-    case user do
-      %User{} = user ->
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+
+    case {cached_user, maybe_fetched_user} do
+      {_, {:ok, %User{} = user}} ->
         {:ok, user}
 
-      {:ok, %User{} = user} ->
+      {%User{} = user, _} ->
         {:ok, user}
 
       _ ->
