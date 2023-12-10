@@ -8,9 +8,9 @@ defmodule Pleroma.User.BackupAsyncTest do
   import Pleroma.Factory
   import Mox
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User.Backup
   alias Pleroma.User.Backup.ProcessorMock
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   setup do
     user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})

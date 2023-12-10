@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User.Backup
   alias Pleroma.Web.PleromaAPI.BackupView
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   setup do
     clear_config([Pleroma.Upload, :uploader])
