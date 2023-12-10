@@ -143,6 +143,8 @@ config :phoenix, :plug_init_mode, :runtime
 
 config :pleroma, :config_impl, Pleroma.UnstubbedConfigMock
 
+config :pleroma, Pleroma.PromEx, disabled: true
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
