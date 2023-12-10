@@ -146,7 +146,7 @@ config :pleroma, :config_impl, Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.PromEx, disabled: true
 
 # Mox definitions. Only read during compile time.
-Application.put_env(Pleroma.User.Backup, :config_impl, Pleroma.UnstubbedConfigMock)
+config :pleroma, Pleroma.User.Backup, config_impl: Pleroma.UnstubbedConfigMock
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

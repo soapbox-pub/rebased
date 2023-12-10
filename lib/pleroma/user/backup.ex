@@ -35,7 +35,7 @@ defmodule Pleroma.User.Backup do
     timestamps()
   end
 
-  @config_impl Application.compile_env(__MODULE__, :config_impl, Pleroma.Config)
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   def create(user, admin_id \\ nil) do
     with :ok <- validate_limit(user, admin_id),
