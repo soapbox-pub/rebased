@@ -12,7 +12,9 @@ defmodule Pleroma.User.BackupTest do
 
   alias Pleroma.Bookmark
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User.Backup
+  alias Pleroma.User.Backup.ProcessorMock
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Workers.BackupWorker
 
@@ -20,6 +22,14 @@ defmodule Pleroma.User.BackupTest do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
     clear_config([Pleroma.Emails.Mailer, :enabled], true)
+
+    ConfigMock
+    |> Mox.stub_with(Pleroma.Config)
+
+    ProcessorMock
+    |> Mox.stub_with(Pleroma.User.Backup.Processor)
+
+    :ok
   end
 
   test "it does not requrie enabled email" do
@@ -299,24 +309,6 @@ defmodule Pleroma.User.BackupTest do
       assert backup.processed_number == 1 + 119
 
       Backup.delete(backup)
-    end
-  end
-
-  test "it handles unrecoverable exceptions" do
-    user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
-
-    assert {:ok, backup} = user |> Backup.new() |> Repo.insert()
-
-    with_mock Backup, [:passthrough], do_process: fn _, _ -> raise "mock exception" end do
-      {:error, %{backup: backup, reason: :exit}} = Backup.process(backup)
-
-      assert backup.state == :failed
-    end
-
-    with_mock Backup, [:passthrough], do_process: fn _, _ -> Process.sleep(:timer.seconds(32)) end do
-      {:error, %{backup: backup, reason: :timeout}} = Backup.process(backup)
-
-      assert backup.state == :failed
     end
   end
 

@@ -7,10 +7,15 @@ defmodule Pleroma.Web.PleromaAPI.BackupControllerTest do
 
   alias Pleroma.User.Backup
   alias Pleroma.Web.PleromaAPI.BackupView
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   setup do
     clear_config([Pleroma.Upload, :uploader])
     clear_config([Backup, :limit_days])
+
+    ConfigMock
+    |> Mox.stub_with(Pleroma.Config)
+
     oauth_access(["read:backups"])
   end
 
