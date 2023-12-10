@@ -29,3 +29,5 @@ Mox.defmock(Pleroma.ConfigMock, for: Pleroma.Config.Getting)
 Mox.defmock(Pleroma.UnstubbedConfigMock, for: Pleroma.Config.Getting)
 
 Mox.defmock(Pleroma.LoggerMock, for: Pleroma.Logging)
+
+Mox.defmock(Pleroma.User.Backup.ProcessorMock, for: Pleroma.User.Backup.ProcessorAPI)
