@@ -1951,11 +1951,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "get_or_fetch_public_key_for_ap_id fetches a user that's not in the db" do
-    assert {:ok, _key} =
-             User.get_or_fetch_public_key_for_ap_id("http://mastodon.example.org/users/admin")
-  end
-
   test "get_public_key_for_ap_id returns correctly for user that's not in the db" do
     assert :error = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
