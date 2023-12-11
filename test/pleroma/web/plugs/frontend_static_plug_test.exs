@@ -82,6 +82,7 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
       "api",
       "main",
       "ostatus_subscribe",
+      "authorize_interaction",
       "oauth",
       "objects",
       "activities",
