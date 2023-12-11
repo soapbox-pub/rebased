@@ -8,15 +8,20 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
+  import Mox
   import Pleroma.Factory
 
   test "it displays a chat message" do
     user = insert(:user)
     recipient = insert(:user)
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     file = %Plug.Upload{
       content_type: "image/jpeg",
