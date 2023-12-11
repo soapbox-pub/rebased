@@ -20,6 +20,10 @@ ExUnit.after_suite(fn _results ->
 end)
 
 defmodule Pleroma.Test.StaticConfig do
+  @moduledoc """
+  This module provides a Config that is completely static, built at startup time from the environment. It's safe to use in testing as it will not modify any state.
+  """
+
   @behaviour Pleroma.Config.Getting
   @config Application.get_all_env(:pleroma)
 
