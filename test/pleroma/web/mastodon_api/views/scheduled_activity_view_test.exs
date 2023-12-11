@@ -4,12 +4,16 @@
 
 defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
   use Pleroma.DataCase, async: true
+
   alias Pleroma.ScheduledActivity
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  import Mox
   import Pleroma.Factory
 
   test "A scheduled activity with a media attachment" do
@@ -26,6 +30,9 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
 
