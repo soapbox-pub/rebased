@@ -5,11 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase, async: false
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
 
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -753,6 +755,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     clear_config([:media_proxy, :enabled], true)
     clear_config([:media_preview_proxy, :enabled])
 
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     user =
       insert(:user,
         avatar: %{"url" => [%{"href" => "https://evil.website/avatar.png"}]},
@@ -760,7 +765,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         emoji: %{"joker_smile" => "https://evil.website/society.png"}
       )
 
-    with media_preview_enabled <- [false, true] do
+    Enum.each([true, false], fn media_preview_enabled ->
       clear_config([:media_preview_proxy, :enabled], media_preview_enabled)
 
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
@@ -778,7 +783,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           true
       end)
       |> assert()
-    end
+    end)
   end
 
   test "renders mute expiration date" do
