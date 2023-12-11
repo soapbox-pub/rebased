@@ -9,10 +9,12 @@ defmodule Pleroma.User.BackupTest do
   import Mock
   import Pleroma.Factory
   import Swoosh.TestAssertions
+  import Mox
 
   alias Pleroma.Bookmark
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+  alias Pleroma.Uploaders.S3.ExAwsMock
   alias Pleroma.User.Backup
   alias Pleroma.User.Backup.ProcessorMock
   alias Pleroma.Web.CommonAPI
@@ -24,10 +26,10 @@ defmodule Pleroma.User.BackupTest do
     clear_config([Pleroma.Emails.Mailer, :enabled], true)
 
     ConfigMock
-    |> Mox.stub_with(Pleroma.Config)
+    |> stub_with(Pleroma.Config)
 
     ProcessorMock
-    |> Mox.stub_with(Pleroma.User.Backup.Processor)
+    |> stub_with(Pleroma.User.Backup.Processor)
 
     :ok
   end
@@ -337,14 +339,14 @@ defmodule Pleroma.User.BackupTest do
       clear_config([Pleroma.Upload, :uploader], Pleroma.Uploaders.S3)
       clear_config([Pleroma.Uploaders.S3, :streaming_enabled], false)
 
-      with_mock ExAws,
-        request: fn
-          %{http_method: :put} -> {:ok, :ok}
-          %{http_method: :delete} -> {:ok, %{status_code: 204}}
-        end do
-        assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
-        assert {:ok, _backup} = Backup.delete(backup)
-      end
+      ExAwsMock
+      |> expect(:request, 2, fn
+        %{http_method: :put} -> {:ok, :ok}
+        %{http_method: :delete} -> {:ok, %{status_code: 204}}
+      end)
+
+      assert {:ok, %Pleroma.Upload{}} = Backup.upload(backup, path)
+      assert {:ok, _backup} = Backup.delete(backup)
     end
 
     test "Local", %{path: path, backup: backup} do
