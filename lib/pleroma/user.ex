@@ -2136,7 +2136,7 @@ defmodule Pleroma.User do
   def public_key(_), do: {:error, "key not found"}
 
   def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
+    with %User{} = user <- get_cached_by_ap_id(ap_id),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
