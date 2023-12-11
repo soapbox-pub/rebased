@@ -5,9 +5,9 @@
 defmodule Pleroma.Uploaders.S3Test do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Uploaders.S3
   alias Pleroma.Uploaders.S3.ExAwsMock
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   import Mox
   import ExUnit.CaptureLog

@@ -8,9 +8,9 @@ defmodule Pleroma.UploadTest do
   import ExUnit.CaptureLog
   import Mox
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Upload
   alias Pleroma.Uploaders.Uploader
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   setup do
     ConfigMock
