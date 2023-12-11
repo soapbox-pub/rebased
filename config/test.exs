@@ -147,6 +147,9 @@ config :pleroma, Pleroma.PromEx, disabled: true
 
 # Mox definitions. Only read during compile time.
 config :pleroma, Pleroma.User.Backup, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Uploaders.S3, ex_aws_impl: Pleroma.Uploaders.S3.ExAwsMock
+config :pleroma, Pleroma.Uploaders.S3, config_impl: Pleroma.UnstubbedConfigMock
+config :pleroma, Pleroma.Upload, config_impl: Pleroma.UnstubbedConfigMock
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
