@@ -1,6 +1,7 @@
 image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
+  # Only used for the release
   ELIXIR_VER: 1.12.3
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
@@ -319,8 +320,9 @@ amd64:
           - deps
   variables: &release-variables
     MIX_ENV: prod
+    VIX_COMPILATION_MODE: PLATFORM_PROVIDED_LIBVIPS
   before_script: &before-release
-  - apt-get update && apt-get install -y cmake libmagic-dev
+  - apt-get update && apt-get install -y cmake libmagic-dev libvips-dev erlang-dev
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -341,7 +343,7 @@ amd64-musl:
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git build-base cmake file-dev openssl
+  - apk add git build-base cmake file-dev openssl vips-dev
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
