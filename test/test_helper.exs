@@ -18,3 +18,12 @@ ExUnit.after_suite(fn _results ->
   uploads = Pleroma.Config.get([Pleroma.Uploaders.Local, :uploads], "test/uploads")
   File.rm_rf!(uploads)
 end)
+
+defmodule Pleroma.Test.StaticConfig do
+  @behaviour Pleroma.Config.Getting
+  @config Application.get_all_env(:pleroma)
+
+  def get(path, default \\ nil) do
+    get_in(@config, path) || default
+  end
+end
