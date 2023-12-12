@@ -4,8 +4,7 @@
 
 Code.put_compiler_option(:warnings_as_errors, true)
 
-os_exclude = if :os.type() == {:unix, :darwin}, do: [skip_on_mac: true], else: []
-ExUnit.start(exclude: [:federated, :erratic] ++ os_exclude)
+ExUnit.start(exclude: [:federated, :erratic])
 
 Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, :manual)
 
