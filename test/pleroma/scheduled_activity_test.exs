@@ -6,8 +6,8 @@ defmodule Pleroma.ScheduledActivityTest do
   use Pleroma.DataCase, async: true
 
   alias Pleroma.ScheduledActivity
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Test.StaticConfig
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   import Mox
   import Pleroma.Factory
