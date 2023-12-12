@@ -15,6 +15,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -1077,6 +1078,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "/api/pleroma/backups" do
     test "it creates a backup", %{conn: conn} do
+      ConfigMock
+      |> Mox.stub_with(Pleroma.Config)
+
       admin = %{id: admin_id, nickname: admin_nickname} = insert(:user, is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
       user = %{id: user_id, nickname: user_nickname} = insert(:user)

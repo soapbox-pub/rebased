@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -19,11 +20,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   import ExUnit.CaptureLog
   import Mock
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     :ok
   end
 
@@ -2681,6 +2687,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert user.name == " "
   end
 
+  @tag capture_log: true
   test "pin_data_from_featured_collection will ignore unsupported values" do
     assert %{} ==
              ActivityPub.pin_data_from_featured_collection(%{

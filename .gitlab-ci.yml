@@ -191,7 +191,7 @@ unit-testing-rum:
 
 lint:
   extends: .build_changes_policy
-  image: &current_elixir elixir:1.12-alpine
+  image: &current_elixir elixir:1.13-alpine
   stage: test
   cache: *testing_cache_policy
   before_script: &current_bfr_script

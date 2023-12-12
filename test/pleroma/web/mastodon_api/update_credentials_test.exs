@@ -4,12 +4,21 @@
 
 defmodule Pleroma.Web.MastodonAPI.UpdateCredentialsTest do
   alias Pleroma.Repo
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
 
   use Pleroma.Web.ConnCase
 
   import Mock
+  import Mox
   import Pleroma.Factory
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])

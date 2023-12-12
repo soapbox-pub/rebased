@@ -4,7 +4,11 @@
 
 defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
   use Pleroma.Web.ConnCase
+
   import Mock
+  import Mox
+
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   @dir "test/tmp/instance_static"
 
@@ -65,6 +69,9 @@ defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
 
     File.mkdir_p!("#{path}/proxy/rr/ss")
     File.write!("#{path}/proxy/rr/ss/Ek7w8WPVcAApOvN.jpg:large", "FB image")
+
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
 
     url =
       Pleroma.Web.MediaProxy.encode_url("https://pbs.twimg.com/media/Ek7w8WPVcAApOvN.jpg:large")
