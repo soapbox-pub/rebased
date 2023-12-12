@@ -778,6 +778,36 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       %{provider_name: "example.com"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
+
+    test "a rich media card has all media proxied" do
+      clear_config([:media_proxy, :enabled], true)
+      clear_config([:media_preview_proxy, :enabled])
+
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website",
+        image: page_url <> "/example.jpg",
+        audio: page_url <> "/example.ogg",
+        video: page_url <> "/example.mp4",
+        description: "Example description"
+      }
+
+      strcard = for {k, v} <- card, into: %{}, do: {to_string(k), v}
+
+      %{
+        provider_name: "example.com",
+        image: image,
+        pleroma: %{opengraph: og}
+      } = StatusView.render("card.json", %{page_url: page_url, rich_media: strcard})
+
+      assert String.match?(image, ~r/\/proxy\//)
+      assert String.match?(og["image"], ~r/\/proxy\//)
+      assert String.match?(og["audio"], ~r/\/proxy\//)
+      assert String.match?(og["video"], ~r/\/proxy\//)
+    end
   end
 
   test "does not embed a relationship in the account" do
