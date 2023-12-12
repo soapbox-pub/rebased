@@ -8,8 +8,9 @@ FROM ${ELIXIR_IMG}:${ELIXIR_VER}-erlang-${ERLANG_VER}-alpine-${ALPINE_VER} as bu
 COPY . .
 
 ENV MIX_ENV=prod
+ENV VIX_COMPILATION_MODE=PLATFORM_PROVIDED_LIBVIPS
 
-RUN apk add git gcc g++ musl-dev make cmake file-dev rust &&\
+RUN apk add git gcc g++ musl-dev make cmake file-dev vips &&\
 	echo "import Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
