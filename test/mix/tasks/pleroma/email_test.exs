@@ -3,15 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.EmailTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
 
   import Swoosh.TestAssertions
 
-  alias Pleroma.Test.StaticConfig, as: Config
+  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
-  import Mox
   import Pleroma.Factory
 
   setup_all do
@@ -24,15 +22,8 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
     :ok
   end
 
-  setup do
-    ConfigMock
-    |> stub(:get, fn
-      [Pleroma.Emails.Mailer, :enabled] -> true
-      [:instance, :account_activation_required] -> true
-    end)
-
-    :ok
-  end
+  setup do: clear_config([Pleroma.Emails.Mailer, :enabled], true)
+  setup do: clear_config([:instance, :account_activation_required], true)
 
   describe "pleroma.email test" do
     test "Sends test email with no given address" do

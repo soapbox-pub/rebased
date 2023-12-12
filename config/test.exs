@@ -152,8 +152,6 @@ config :pleroma, Pleroma.Uploaders.S3, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.Upload, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.ScheduledActivity, config_impl: Pleroma.UnstubbedConfigMock
 config :pleroma, Pleroma.Web.RichMedia.Helpers, config_impl: Pleroma.StaticStubbedConfigMock
-config :pleroma, Pleroma.Emails.Mailer, config_impl: Pleroma.UnstubbedConfigMock
-config :pleroma, Pleroma.User, config_impl: Pleroma.UnstubbedConfigMock
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
