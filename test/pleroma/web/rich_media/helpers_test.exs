@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.HelpersTest do
-  use Pleroma.DataCase
+  use Pleroma.DataCase, async: true
 
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+  alias Pleroma.StaticStubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.RichMedia.Helpers
 
