@@ -11,8 +11,14 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
+
   import Pleroma.Factory
   import Swoosh.TestAssertions
+
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
+    :ok
+  end
 
   describe "GET /api/pleroma/password_reset/token" do
     test "it returns error when token invalid", %{conn: conn} do

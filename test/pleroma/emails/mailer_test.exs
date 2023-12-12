@@ -3,9 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.MailerTest do
-  use Pleroma.DataCase
-  alias Pleroma.Emails.Mailer
+  use Pleroma.DataCase, async: true
 
+  alias Pleroma.Emails.Mailer
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
+
+  import Mox
   import Swoosh.TestAssertions
 
   @email %Swoosh.Email{
@@ -14,10 +17,22 @@ defmodule Pleroma.Emails.MailerTest do
     subject: "Pleroma test email",
     to: [{"Test User", "user1@example.com"}]
   }
-  setup do: clear_config([Pleroma.Emails.Mailer, :enabled], true)
+
+  setup do
+    ConfigMock
+    |> stub(:get, fn
+      [Mailer, :enabled] -> true
+    end)
+
+    :ok
+  end
 
   test "not send email when mailer is disabled" do
-    clear_config([Pleroma.Emails.Mailer, :enabled], false)
+    ConfigMock
+    |> stub(:get, fn
+      [Mailer, :enabled] -> false
+    end)
+
     Mailer.deliver(@email)
     :timer.sleep(100)
 

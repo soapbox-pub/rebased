@@ -5,11 +5,13 @@
 defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
+  alias Pleroma.Test.StaticConfig, as: Config
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
+  import Mox
   import Pleroma.Factory
   import Swoosh.TestAssertions
 
@@ -25,7 +27,15 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       [user: user]
     end
 
-    setup do: clear_config([:instance, :account_activation_required], true)
+    setup do
+      ConfigMock
+      |> stub(:get, fn
+        [:instance, :account_activation_required] -> true
+        path -> Config.get(path)
+      end)
+
+      :ok
+    end
 
     test "resend account confirmation email", %{conn: conn, user: user} do
       conn

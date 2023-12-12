@@ -14,6 +14,11 @@ defmodule Pleroma.User.WelcomeEmailTest do
 
   setup do: clear_config([:welcome])
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
+    :ok
+  end
+
   describe "send_email/1" do
     test "send a welcome email" do
       user = insert(:user, name: "Jimm")

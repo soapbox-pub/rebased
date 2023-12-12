@@ -991,7 +991,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "PATCH /resend_confirmation_email" do
     test "it resend emails for two users", %{conn: conn, admin: admin} do
+      ConfigMock
+      |> Mox.stub_with(Pleroma.Test.StaticConfig)
+
       clear_config([:instance, :admin_privileges], [:users_manage_credentials])
+
       [first_user, second_user] = insert_pair(:user, is_confirmed: false)
 
       ret_conn =
@@ -1079,7 +1083,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "/api/pleroma/backups" do
     test "it creates a backup", %{conn: conn} do
       ConfigMock
-      |> Mox.stub_with(Pleroma.Config)
+      |> Mox.stub_with(Pleroma.Test.StaticConfig)
 
       admin = %{id: admin_id, nickname: admin_nickname} = insert(:user, is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
