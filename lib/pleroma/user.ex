@@ -86,6 +86,7 @@ defmodule Pleroma.User do
   ]
 
   @cachex Pleroma.Config.get([:cachex, :provider], Cachex)
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   schema "users" do
     field(:bio, :string, default: "")
@@ -1000,7 +1001,7 @@ defmodule Pleroma.User do
   @spec maybe_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
   def maybe_send_confirmation_email(%User{is_confirmed: false, email: email} = user)
       when is_binary(email) do
-    if Config.get([:instance, :account_activation_required]) do
+    if @config_impl.get([:instance, :account_activation_required]) do
       send_confirmation_email(user)
       {:ok, :enqueued}
     else
