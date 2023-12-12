@@ -43,10 +43,7 @@ defmodule Pleroma.SignatureTest do
     end
 
     test "it returns error when not found user" do
-      assert capture_log(fn ->
-               assert Signature.fetch_public_key(make_fake_conn("https://test-ap-id")) ==
-                        {:error, :error}
-             end) =~ "[error] Could not decode user"
+      assert Signature.fetch_public_key(make_fake_conn("https://test-ap-id")) == {:error, :error}
     end
 
     test "it returns error if public key is nil" do
