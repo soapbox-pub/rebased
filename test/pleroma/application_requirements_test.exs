@@ -7,11 +7,9 @@ defmodule Pleroma.ApplicationRequirementsTest do
 
   import ExUnit.CaptureLog
   import Mock
-  import Mox
 
   alias Pleroma.ApplicationRequirements
   alias Pleroma.Repo
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
 
   describe "check_repo_pool_size!/1" do
     test "raises if the pool size is unexpected" do
@@ -39,11 +37,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
 
     test "warns if welcome email enabled but mail disabled" do
       clear_config([:welcome, :email, :enabled], true)
-
-      ConfigMock
-      |> stub(:get, fn
-        [Pleroma.Emails.Mailer, :enabled] -> false
-      end)
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
 
       assert capture_log(fn ->
                assert Pleroma.ApplicationRequirements.verify!() == :ok
@@ -65,11 +59,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
 
     test "warns if account confirmation is required but mailer isn't enabled" do
       clear_config([:instance, :account_activation_required], true)
-
-      ConfigMock
-      |> stub(:get, fn
-        [Pleroma.Emails.Mailer, :enabled] -> false
-      end)
+      clear_config([Pleroma.Emails.Mailer, :enabled], false)
 
       assert capture_log(fn ->
                assert Pleroma.ApplicationRequirements.verify!() == :ok
@@ -84,12 +74,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
 
     test "doesn't do anything if account confirmation is required and mailer is enabled" do
       clear_config([:instance, :account_activation_required], true)
-
-      ConfigMock
-      |> stub(:get, fn
-        [Pleroma.Emails.Mailer, :enabled] -> true
-      end)
-
+      clear_config([Pleroma.Emails.Mailer, :enabled], true)
       assert Pleroma.ApplicationRequirements.verify!() == :ok
     end
   end

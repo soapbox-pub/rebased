@@ -5,11 +5,9 @@
 defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
   use Pleroma.Web.ConnCase, async: false
 
-  import Mox
   import Pleroma.Factory
 
   alias Pleroma.Repo
-  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.UserInviteToken
 
   setup do
@@ -20,9 +18,6 @@ defmodule Pleroma.Web.AdminAPI.InviteControllerTest do
       build_conn()
       |> assign(:user, admin)
       |> assign(:token, token)
-
-    ConfigMock
-    |> stub_with(Pleroma.Test.StaticConfig)
 
     {:ok, %{admin: admin, token: token, conn: conn}}
   end

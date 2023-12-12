@@ -16,11 +16,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     :ok
   end
 
-  setup do
-    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Test.StaticConfig)
-    :ok
-  end
-
   test "it registers a new user and returns the user." do
     data = %{
       :username => "lain",
@@ -53,10 +48,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "it sends confirmation email if :account_activation_required is specified in instance config" do
     clear_config([:instance, :account_activation_required], true)
 
-    Pleroma.UnstubbedConfigMock
-    |> Mox.expect(:get, fn [:instance, :account_activation_required] -> true end)
-    |> Mox.expect(:get, fn [Pleroma.Emails.Mailer, :enabled] -> true end)
-
     data = %{
       :username => "lain",
       :email => "lain@wired.jp",
@@ -73,8 +64,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
 
-    notify_email = Pleroma.Test.StaticConfig.get([:instance, :notify_email])
-    instance_name = Pleroma.Test.StaticConfig.get([:instance, :name])
+    notify_email = Pleroma.Config.get([:instance, :notify_email])
+    instance_name = Pleroma.Config.get([:instance, :name])
 
     Swoosh.TestAssertions.assert_email_sent(
       from: {instance_name, notify_email},
