@@ -10,7 +10,7 @@ COPY . .
 ENV MIX_ENV=prod
 ENV VIX_COMPILATION_MODE=PLATFORM_PROVIDED_LIBVIPS
 
-RUN apk add git gcc g++ musl-dev make cmake file-dev vips &&\
+RUN apk add git gcc g++ musl-dev make cmake file-dev vips-dev &&\
 	echo "import Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\
