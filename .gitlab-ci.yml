@@ -154,22 +154,6 @@ unit-testing-erratic:
     - mix ecto.migrate
     - mix test --only=erratic
 
-# Removed to fix CI issue. In this early state it wasn't adding much value anyway.
-# TODO Fix and reinstate federated testing
-# federated-testing:
-#   stage: test
-#   cache: *testing_cache_policy
-#   services:
-#   - name: minibikini/postgres-with-rum:12
-#     alias: postgres
-#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-#   script:
-#     - mix deps.get
-#     - mix ecto.create
-#     - mix ecto.migrate
-#     - epmd -daemon
-#     - mix test --trace --only federated
-
 unit-testing-rum:
   extends:
   - .build_changes_policy
@@ -177,7 +161,7 @@ unit-testing-rum:
   stage: test
   cache: *testing_cache_policy
   services:
-  - name: minibikini/postgres-with-rum:12
+  - name: git.pleroma.social:5050/pleroma/pleroma/postgres-with-rum-13
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:

@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -19,9 +20,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   require Bitwise
 
+  import Mox
+  import OpenApiSpex.TestAssertions
   import Pleroma.Factory
   import Tesla.Mock
-  import OpenApiSpex.TestAssertions
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -198,6 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
+  @tag capture_log: true
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -783,6 +786,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     test "a rich media card has all media proxied" do
       clear_config([:media_proxy, :enabled], true)
       clear_config([:media_preview_proxy, :enabled])
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       page_url = "http://example.com"
 
