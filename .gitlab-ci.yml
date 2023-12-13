@@ -161,7 +161,7 @@ unit-testing-rum:
   stage: test
   cache: *testing_cache_policy
   services:
-  - name: lainsoykaf/postgres-with-rum:13
+  - name: git.pleroma.social:5050/pleroma/pleroma/postgres-with-rum-13
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:
