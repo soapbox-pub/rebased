@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - TwitterAPI: Return proper error when healthcheck is disabled
-- - Fix eblurhash and elixir-captcha not using system cflags
+- Fix eblurhash and elixir-captcha not using system cflags
 
 ## 2.6.0
 ### Security
