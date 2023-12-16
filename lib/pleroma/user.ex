@@ -2681,6 +2681,8 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  def update_last_active_at(user), do: user
+
   def active_user_count(days \\ 30) do
     active_after = Timex.shift(NaiveDateTime.utc_now(), days: -days)
 
