@@ -1772,6 +1772,12 @@ config :pleroma, :config_description, [
         description: "Require HTTP signatures for AP fetches"
       },
       %{
+        key: :authorized_fetch_mode_exceptions,
+        type: {:list, :string},
+        description:
+          "List of IPs (CIDR format accepted) to exempt from HTTP Signatures requirement (for example to allow debugging, you shouldn't otherwise need this)"
+      },
+      %{
         key: :note_replies_output_limit,
         type: :integer,
         description:

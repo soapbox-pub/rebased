@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
+  alias Pleroma.Helpers.InetHelper
+
   import Plug.Conn
   import Phoenix.Controller, only: [get_format: 1, text: 2]
   require Logger
@@ -89,12 +91,20 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
 
   defp maybe_require_signature(%{assigns: %{valid_signature: true}} = conn), do: conn
 
-  defp maybe_require_signature(conn) do
+  defp maybe_require_signature(%{remote_ip: remote_ip} = conn) do
     if Pleroma.Config.get([:activitypub, :authorized_fetch_mode], false) do
-      conn
-      |> put_status(:unauthorized)
-      |> text("Request not signed")
-      |> halt()
+      exceptions =
+        Pleroma.Config.get([:activitypub, :authorized_fetch_mode_exceptions], [])
+        |> Enum.map(&InetHelper.parse_cidr/1)
+
+      if Enum.any?(exceptions, fn x -> InetCidr.contains?(x, remote_ip) end) do
+        conn
+      else
+        conn
+        |> put_status(:unauthorized)
+        |> text("Request not signed")
+        |> halt()
+      end
     else
       conn
     end
