@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     end
   end
 
-  @spec recipients(User.t(), Activity.t()) :: {[User.t()], [User.t()]}
+  @spec recipients(User.t(), Activity.t()) :: [[User.t()]]
   defp recipients(actor, activity) do
     followers =
       if actor.follower_address in activity.recipients do
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     mentioned = Pleroma.Web.Federator.Publisher.remote_users(actor, activity)
     non_mentioned = (followers ++ fetchers) -- mentioned
 
-    {mentioned, non_mentioned}
+    [mentioned, non_mentioned]
   end
 
   defp get_cc_ap_ids(ap_id, recipients) do
@@ -198,7 +198,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     public = is_public?(activity)
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
-    {priority_recipients, recipients} = recipients(actor, activity)
+    [priority_recipients, recipients] = recipients(actor, activity)
 
     inboxes =
       [priority_recipients, recipients]
@@ -247,16 +247,19 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
 
-    {priority_recipients, recipients} = recipients(actor, activity)
-
-    [{priority_recipients, 0}, {recipients, 1}]
-    |> Enum.map(fn {recipients, priority} ->
-      recipients
-      |> Enum.map(fn %User{} = user ->
-        determine_inbox(activity, user)
+    [priority_inboxes, inboxes] =
+      recipients(actor, activity)
+      |> Enum.map(fn recipients ->
+        recipients
+        |> Enum.map(fn actor -> actor.inbox end)
+        |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
       end)
-      |> Enum.uniq()
-      |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+
+    inboxes = inboxes -- priority_inboxes
+
+    [{priority_inboxes, 0}, {inboxes, 1}]
+    |> Enum.each(fn {inboxes, priority} ->
+      inboxes
       |> Instances.filter_reachable()
       |> Enum.each(fn {inbox, unreachable_since} ->
         Pleroma.Web.Federator.Publisher.enqueue_one(
