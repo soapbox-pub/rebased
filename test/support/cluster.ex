@@ -127,7 +127,10 @@ defmodule Pleroma.Cluster do
 
   defp start_slave({node_host, override_configs}) do
     log(node_host, "booting federated VM")
-    {:ok, node} = :slave.start(~c"127.0.0.1", node_name(node_host), vm_args())
+
+    {:ok, node} =
+      do_start_slave(%{host: "127.0.0.1", name: node_name(node_host), args: vm_args()})
+
     add_code_paths(node)
     load_apps_and_transfer_configuration(node, override_configs)
     ensure_apps_started(node)
@@ -218,5 +221,19 @@ defmodule Pleroma.Cluster do
     |> String.split("@")
     |> Enum.at(0)
     |> String.to_atom()
+  end
+
+  if System.otp_release() >= "25" do
+    @peer :peer
+  else
+    @peer :slave
+  end
+
+  defp do_start_slave(%{host: host, name: name, args: args} = opts) do
+    if System.otp_release() >= "25" do
+      @peer.start(opts)
+    else
+      @peer.start(host, name, args)
+    end
   end
 end

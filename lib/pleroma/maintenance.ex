@@ -20,7 +20,7 @@ defmodule Pleroma.Maintenance do
       "full" ->
         Logger.info("Running VACUUM FULL.")
 
-        Logger.warn(
+        Logger.warning(
           "Re-packing your entire database may take a while and will consume extra disk space during the process."
         )
 

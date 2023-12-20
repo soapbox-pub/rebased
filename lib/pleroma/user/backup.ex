@@ -293,7 +293,7 @@ defmodule Pleroma.User.Backup do
             acc + 1
           else
             {:error, e} ->
-              Logger.warn(
+              Logger.warning(
                 "Error processing backup item: #{inspect(e)}\n The item is: #{inspect(i)}"
               )
 
