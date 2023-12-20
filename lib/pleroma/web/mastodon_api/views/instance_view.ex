@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
     common_information(instance)
     |> Map.merge(%{
-      uri: Pleroma.Web.WebFinger.domain(),
+      uri: Pleroma.Web.WebFinger.host(),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),
       email: Keyword.get(instance, :email),
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
     common_information(instance)
     |> Map.merge(%{
-      domain: Pleroma.Web.WebFinger.domain(),
+      domain: Pleroma.Web.WebFinger.host(),
       source_url: Pleroma.Application.repository(),
       description: Keyword.get(instance, :short_description),
       usage: %{users: %{active_month: Pleroma.User.active_user_count()}},
