@@ -223,17 +223,13 @@ defmodule Pleroma.Cluster do
     |> String.to_atom()
   end
 
-  if System.otp_release() >= "25" do
-    @peer :peer
-  else
-    @peer :slave
-  end
-
   defp do_start_slave(%{host: host, name: name, args: args} = opts) do
-    if System.otp_release() >= "25" do
-      @peer.start(opts)
+    peer_module = Application.get_env(__MODULE__, :peer_module)
+
+    if peer_module == :peer do
+      peer_module.start(opts)
     else
-      @peer.start(host, name, args)
+      peer_module.start(host, name, args)
     end
   end
 end
