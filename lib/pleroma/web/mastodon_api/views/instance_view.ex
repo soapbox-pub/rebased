@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
     instance = Config.get(:instance)
 
     %{
-      uri: Pleroma.Web.WebFinger.domain(),
+      uri: Pleroma.Web.WebFinger.host(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
       short_description: Keyword.get(instance, :short_description),

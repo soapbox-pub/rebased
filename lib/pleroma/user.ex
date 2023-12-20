@@ -2252,7 +2252,7 @@ defmodule Pleroma.User do
     if String.contains?(user.nickname, "@") do
       user.nickname
     else
-      host = Pleroma.Web.WebFinger.domain()
+      host = Pleroma.Web.WebFinger.host()
       user.nickname <> "@" <> host
     end
   end
