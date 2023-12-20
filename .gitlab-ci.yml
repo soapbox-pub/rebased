@@ -2,7 +2,7 @@ image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
   # Only used for the release
-  ELIXIR_VER: 1.12.3
+  ELIXIR_VER: 1.13.4
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
