@@ -783,11 +783,14 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
+
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
 
     get("/suggestions", SuggestionController, :index2)
+
+    get("/instance", InstanceController, :show2)
   end
 
   scope "/api", Pleroma.Web do
