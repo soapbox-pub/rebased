@@ -216,30 +216,30 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert String.match?(
                next,
-               ~r(#{api_endpoint}.*/messages\?limit=\d+&max_id=.*; rel=\"next\"$)
+               ~r(#{api_endpoint}.*/messages\?offset=\d+&limit=\d+&max_id=.*; rel=\"next\"$)
              )
 
       assert String.match?(
                prev,
-               ~r(#{api_endpoint}.*/messages\?limit=\d+&min_id=.*; rel=\"prev\"$)
+               ~r(#{api_endpoint}.*/messages\?offset=\d+&limit=\d+&min_id=.*; rel=\"prev\"$)
              )
 
       assert length(result) == 20
 
       response =
-        get(conn, "/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
+        get(conn, "#{api_endpoint}#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
 
       result = json_response_and_validate_schema(response, 200)
       [next, prev] = get_resp_header(response, "link") |> hd() |> String.split(", ")
 
       assert String.match?(
                next,
-               ~r(#{api_endpoint}.*/messages\?limit=\d+&max_id=.*; rel=\"next\"$)
+               ~r(#{api_endpoint}.*/messages\?offset=\d+&limit=\d+&max_id=.*; rel=\"next\"$)
              )
 
       assert String.match?(
                prev,
-               ~r(#{api_endpoint}.*/messages\?limit=\d+&max_id=.*&min_id=.*; rel=\"prev\"$)
+               ~r(#{api_endpoint}.*/messages\?offset=\d+&limit=\d+&max_id=.*&min_id=.*; rel=\"prev\"$)
              )
 
       assert length(result) == 10
