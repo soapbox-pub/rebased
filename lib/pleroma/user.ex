@@ -1562,7 +1562,7 @@ defmodule Pleroma.User do
       unmute(muter, mutee)
     else
       {who, result} = error ->
-        Logger.warn(
+        Logger.warning(
           "User.unmute/2 failed. #{who}: #{result}, muter_id: #{muter_id}, mutee_id: #{mutee_id}"
         )
 
@@ -2138,7 +2138,7 @@ defmodule Pleroma.User do
   def public_key(_), do: {:error, "key not found"}
 
   def get_public_key_for_ap_id(ap_id) do
-    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
+    with %User{} = user <- get_cached_by_ap_id(ap_id),
          {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
@@ -2682,6 +2682,8 @@ defmodule Pleroma.User do
     |> cast(%{last_active_at: NaiveDateTime.utc_now()}, [:last_active_at])
     |> update_and_set_cache()
   end
+
+  def update_last_active_at(user), do: user
 
   def active_user_count(days \\ 30) do
     active_after = Timex.shift(NaiveDateTime.utc_now(), days: -days)

@@ -23,7 +23,7 @@ defmodule Pleroma.Config.Oban do
           You are using old workers in Oban crontab settings, which were removed.
           Please, remove setting from crontab in your config file (prod.secret.exs): #{inspect(setting)}
           """
-          |> Logger.warn()
+          |> Logger.warning()
 
           List.delete(acc, setting)
         else

@@ -3,16 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  import ExUnit.CaptureLog
-  import Pleroma.Factory
   import Ecto.Query
+  import ExUnit.CaptureLog
+  import Mox
+  import Pleroma.Factory
 
   setup_all do: clear_config([:instance, :federating], true)
   setup do: clear_config([:user, :deny_follow_blocked])
@@ -429,6 +431,9 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     test "with media proxy" do
       clear_config([:media_proxy, :enabled], true)
 
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       user =
         insert(:user, %{
           local: false,
@@ -453,6 +458,40 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       avatar_url = Pleroma.Web.TwitterAPI.RemoteFollowView.avatar_url(user)
 
       assert avatar_url == "#{Pleroma.Web.Endpoint.url()}/localuser/avatar.png"
+    end
+  end
+
+  describe "GET /authorize_interaction - authorize_interaction/2" do
+    test "redirects to /ostatus_subscribe", %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://mastodon.social/users/emelie"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body: File.read!("test/fixtures/tesla_mock/emelie.json")
+          }
+
+        %{method: :get, url: "https://mastodon.social/users/emelie/collections/featured"} ->
+          %Tesla.Env{
+            status: 200,
+            headers: [{"content-type", "application/activity+json"}],
+            body:
+              File.read!("test/fixtures/users_mock/masto_featured.json")
+              |> String.replace("{{domain}}", "mastodon.social")
+              |> String.replace("{{nickname}}", "emelie")
+          }
+      end)
+
+      conn =
+        conn
+        |> get(
+          remote_follow_path(conn, :authorize_interaction, %{
+            uri: "https://mastodon.social/users/emelie"
+          })
+        )
+
+      assert redirected_to(conn) ==
+               remote_follow_path(conn, :follow, %{acct: "https://mastodon.social/users/emelie"})
     end
   end
 end

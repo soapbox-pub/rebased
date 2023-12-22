@@ -7,7 +7,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
   The worker to send digest emails.
   """
 
-  use Oban.Worker, queue: "digest_emails"
+  use Oban.Worker, queue: "mailer"
 
   alias Pleroma.Config
   alias Pleroma.Emails

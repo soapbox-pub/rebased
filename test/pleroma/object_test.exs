@@ -7,6 +7,7 @@ defmodule Pleroma.ObjectTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   import ExUnit.CaptureLog
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -15,10 +16,12 @@ defmodule Pleroma.ObjectTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.CommonAPI
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    ConfigMock |> stub_with(Pleroma.Test.StaticConfig)
     :ok
   end
 

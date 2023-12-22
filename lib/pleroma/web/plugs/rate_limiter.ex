@@ -89,7 +89,7 @@ defmodule Pleroma.Web.Plugs.RateLimiter do
   end
 
   defp handle_disabled(conn) do
-    Logger.warn(
+    Logger.warning(
       "Rate limiter disabled due to forwarded IP not being found. Please ensure your reverse proxy is providing the X-Forwarded-For header or disable the RemoteIP plug/rate limiter."
     )
 

@@ -83,4 +83,19 @@ defmodule Pleroma.Constants do
   )
 
   const(upload_object_types, do: ["Document", "Image"])
+
+  const(activity_json_canonical_mime_type,
+    do: "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+  )
+
+  const(activity_json_mime_types,
+    do: [
+      "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+      "application/activity+json"
+    ]
+  )
+
+  const(public_streams,
+    do: ["public", "public:local", "public:media", "public:local:media"]
+  )
 end

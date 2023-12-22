@@ -38,7 +38,7 @@ config :logger, :console,
 
 ## Testing
 
-1. Create a `test.secret.exs` file with the content as shown below
+1. Create a `config/test.secret.exs` file with the content as shown below
 2. Create the database user and test database.
     1. You can use the `config/setup_db.psql` as a template. Copy the file if you want and change the database name, user and password to the values for the test-database (e.g. 'pleroma_local_test' for database and user). Then run this file like you did during installation.
     2. The tests will try to create the Database, so we'll have to allow our test-database user to create databases, `sudo -Hu postgres psql -c "ALTER USER pleroma_local_test WITH CREATEDB;"`

@@ -8,7 +8,7 @@ defmodule Pleroma.Repo.Migrations.ApIdNotNull do
   require Logger
 
   def up do
-    Logger.warn(
+    Logger.warning(
       "If this migration fails please open an issue at https://git.pleroma.social/pleroma/pleroma/-/issues/new \n"
     )
 
