@@ -75,7 +75,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end
 
     defp log_error(url, reason) do
-      Logger.warn(fn -> "Rich media error for #{url}: #{inspect(reason)}" end)
+      Logger.warning(fn -> "Rich media error for #{url}: #{inspect(reason)}" end)
     end
   end
 

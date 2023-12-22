@@ -7,11 +7,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
 
   alias Pleroma.Notification
   alias Pleroma.ScheduledActivity
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.MastodonAPI
 
   import Pleroma.Factory
+  import Mox
 
   describe "follow/3" do
     test "returns error when followed user is deactivated" do
@@ -88,6 +90,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
 
   describe "get_scheduled_activities/2" do
     test "returns user scheduled activities" do
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
+
       user = insert(:user)
 
       today =

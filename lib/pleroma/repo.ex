@@ -11,8 +11,6 @@ defmodule Pleroma.Repo do
   import Ecto.Query
   require Logger
 
-  defmodule Instrumenter, do: use(Prometheus.EctoInstrumenter)
-
   @doc """
   Dynamically loads the repository url from the
   DATABASE_URL environment variable.

@@ -1,11 +1,13 @@
 image: git.pleroma.social:5050/pleroma/pleroma/ci-base
 
 variables: &global_variables
+  # Only used for the release
+  ELIXIR_VER: 1.12.3
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
-  DB_PORT: 5432
+  DB_PORT: "5432"
   MIX_ENV: test
 
 workflow:
@@ -152,22 +154,6 @@ unit-testing-erratic:
     - mix ecto.migrate
     - mix test --only=erratic
 
-# Removed to fix CI issue. In this early state it wasn't adding much value anyway.
-# TODO Fix and reinstate federated testing
-# federated-testing:
-#   stage: test
-#   cache: *testing_cache_policy
-#   services:
-#   - name: minibikini/postgres-with-rum:12
-#     alias: postgres
-#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-#   script:
-#     - mix deps.get
-#     - mix ecto.create
-#     - mix ecto.migrate
-#     - epmd -daemon
-#     - mix test --trace --only federated
-
 unit-testing-rum:
   extends:
   - .build_changes_policy
@@ -175,7 +161,7 @@ unit-testing-rum:
   stage: test
   cache: *testing_cache_policy
   services:
-  - name: minibikini/postgres-with-rum:12
+  - name: git.pleroma.social:5050/pleroma/pleroma/postgres-with-rum-13
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:
@@ -189,7 +175,7 @@ unit-testing-rum:
 
 lint:
   extends: .build_changes_policy
-  image: &current_elixir elixir:1.12-alpine
+  image: &current_elixir elixir:1.13-alpine
   stage: test
   cache: *testing_cache_policy
   before_script: &current_bfr_script
@@ -294,7 +280,7 @@ stop_review_app:
 
 amd64:
   stage: release
-  image: elixir:1.11.4
+  image: elixir:$ELIXIR_VER
   only: &release-only
   - stable@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -318,8 +304,9 @@ amd64:
           - deps
   variables: &release-variables
     MIX_ENV: prod
+    VIX_COMPILATION_MODE: PLATFORM_PROVIDED_LIBVIPS
   before_script: &before-release
-  - apt-get update && apt-get install -y cmake libmagic-dev
+  - apt-get update && apt-get install -y cmake libmagic-dev libvips-dev erlang-dev
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -334,13 +321,13 @@ amd64-musl:
   stage: release
   artifacts: *release-artifacts
   only: *release-only
-  image: elixir:1.11.4-alpine
+  image: elixir:$ELIXIR_VER-alpine
   tags:
     - amd64
   cache: *release-cache
   variables: *release-variables
   before_script: &before-release-musl
-  - apk add git build-base cmake file-dev openssl
+  - apk add git build-base cmake file-dev openssl vips-dev
   - echo "import Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
@@ -352,7 +339,7 @@ arm:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.11.4
+  image: arm32v7/elixir:$ELIXIR_VER
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -364,7 +351,7 @@ arm-musl:
   only: *release-only
   tags:
     - arm32-specified
-  image: arm32v7/elixir:1.11.4-alpine
+  image: arm32v7/elixir:$ELIXIR_VER-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl
@@ -376,7 +363,7 @@ arm64:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.11.4
+  image: arm64v8/elixir:$ELIXIR_VER
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release
@@ -388,7 +375,7 @@ arm64-musl:
   only: *release-only
   tags:
     - arm
-  image: arm64v8/elixir:1.11.4-alpine
+  image: arm64v8/elixir:$ELIXIR_VER-alpine
   cache: *release-cache
   variables: *release-variables
   before_script: *before-release-musl

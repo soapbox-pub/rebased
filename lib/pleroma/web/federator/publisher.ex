@@ -29,11 +29,12 @@ defmodule Pleroma.Web.Federator.Publisher do
   @doc """
   Enqueue publishing a single activity.
   """
-  @spec enqueue_one(module(), Map.t()) :: :ok
-  def enqueue_one(module, %{} = params) do
+  @spec enqueue_one(module(), Map.t(), Keyword.t()) :: {:ok, %Oban.Job{}}
+  def enqueue_one(module, %{} = params, worker_args \\ []) do
     PublisherWorker.enqueue(
       "publish_one",
-      %{"module" => to_string(module), "params" => params}
+      %{"module" => to_string(module), "params" => params},
+      worker_args
     )
   end
 

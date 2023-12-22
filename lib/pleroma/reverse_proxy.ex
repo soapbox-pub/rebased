@@ -192,7 +192,7 @@ defmodule Pleroma.ReverseProxy do
         halt(conn)
 
       {:error, error, conn} ->
-        Logger.warn(
+        Logger.warning(
           "#{__MODULE__} request to #{url} failed while reading/chunking: #{inspect(error)}"
         )
 

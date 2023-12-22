@@ -7,8 +7,18 @@ defmodule Pleroma.Web.MediaProxyTest do
   use Pleroma.Tests.Helpers
 
   alias Pleroma.Config
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
+
+  import Mox
+
+  setup do
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
+    :ok
+  end
 
   defp decode_result(encoded) do
     {:ok, decoded} = MediaProxy.decode_url(encoded)
@@ -222,7 +232,12 @@ defmodule Pleroma.Web.MediaProxyTest do
 
     test "ensure Pleroma.Upload base_url is always whitelisted" do
       media_url = "https://media.pleroma.social"
-      clear_config([Pleroma.Upload, :base_url], media_url)
+
+      ConfigMock
+      |> stub(:get, fn
+        [Pleroma.Upload, :base_url] -> media_url
+        path -> Pleroma.Test.StaticConfig.get(path)
+      end)
 
       url = "#{media_url}/static/logo.png"
       encoded = MediaProxy.url(url)

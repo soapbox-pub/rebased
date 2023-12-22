@@ -331,11 +331,40 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert res == :ok
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
-                 inbox: "https://domain.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: note_activity.data["id"]
-               })
+               Pleroma.Web.Federator.Publisher.enqueue_one(
+                 Publisher,
+                 %{
+                   inbox: "https://domain.com/users/nick1/inbox",
+                   actor_id: actor.id,
+                   id: note_activity.data["id"]
+                 },
+                 priority: 1
+               )
+             )
+    end
+
+    test_with_mock "Publishes to directly addressed actors with higher priority.",
+                   Pleroma.Web.Federator.Publisher,
+                   [:passthrough],
+                   [] do
+      note_activity = insert(:direct_note_activity)
+
+      actor = Pleroma.User.get_by_ap_id(note_activity.data["actor"])
+
+      res = Publisher.publish(actor, note_activity)
+
+      assert res == :ok
+
+      assert called(
+               Pleroma.Web.Federator.Publisher.enqueue_one(
+                 Publisher,
+                 %{
+                   inbox: :_,
+                   actor_id: actor.id,
+                   id: note_activity.data["id"]
+                 },
+                 priority: 0
+               )
              )
     end
 
@@ -414,19 +443,27 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert res == :ok
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
-                 inbox: "https://domain.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: delete.data["id"]
-               })
+               Pleroma.Web.Federator.Publisher.enqueue_one(
+                 Publisher,
+                 %{
+                   inbox: "https://domain.com/users/nick1/inbox",
+                   actor_id: actor.id,
+                   id: delete.data["id"]
+                 },
+                 priority: 1
+               )
              )
 
       assert called(
-               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
-                 inbox: "https://domain2.com/users/nick1/inbox",
-                 actor_id: actor.id,
-                 id: delete.data["id"]
-               })
+               Pleroma.Web.Federator.Publisher.enqueue_one(
+                 Publisher,
+                 %{
+                   inbox: "https://domain2.com/users/nick1/inbox",
+                   actor_id: actor.id,
+                   id: delete.data["id"]
+                 },
+                 priority: 1
+               )
              )
     end
   end

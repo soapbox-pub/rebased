@@ -5,9 +5,11 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
   use Pleroma.DataCase, async: true
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
 
+  import Mox
   import Pleroma.Factory
 
   describe "attachments" do
@@ -115,6 +117,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidatorTest do
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
+
+      ConfigMock
+      |> stub_with(Pleroma.Test.StaticConfig)
 
       {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
 

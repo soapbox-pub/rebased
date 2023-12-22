@@ -106,7 +106,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> get("/api/pleroma/healthcheck")
         |> json_response_and_validate_schema(503)
 
-      assert response == %{}
+      assert response == %{"error" => "Healthcheck disabled"}
     end
 
     test "returns 200 when healthcheck enabled and all ok", %{conn: conn} do

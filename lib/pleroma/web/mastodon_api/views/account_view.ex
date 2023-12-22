@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2022 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2023 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
@@ -249,6 +249,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         nil
       end
 
+    last_status_at =
+      user.last_status_at &&
+        user.last_status_at |> NaiveDateTime.to_date() |> Date.to_iso8601()
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -277,7 +281,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           actor_type: user.actor_type
         }
       },
-      last_status_at: user.last_status_at,
+      last_status_at: last_status_at,
 
       # Pleroma extensions
       # Note: it's insecure to output :email but fully-qualified nickname may serve as safe stub
