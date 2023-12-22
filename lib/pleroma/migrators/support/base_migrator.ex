@@ -73,7 +73,7 @@ defmodule Pleroma.Migrators.Support.BaseMigrator do
           data_migration.state == :manual or data_migration.name in manual_migrations ->
             message = "Data migration is in manual execution or manual fix mode."
             update_status(:manual, message)
-            Logger.warn("#{__MODULE__}: #{message}")
+            Logger.warning("#{__MODULE__}: #{message}")
 
           data_migration.state == :complete ->
             on_complete(data_migration)
@@ -109,7 +109,7 @@ defmodule Pleroma.Migrators.Support.BaseMigrator do
             Putting data migration to manual fix mode. Try running `#{__MODULE__}.retry_failed/0`.
             """
 
-            Logger.warn("#{__MODULE__}: #{message}")
+            Logger.warning("#{__MODULE__}: #{message}")
             update_status(:manual, message)
             on_complete(data_migration())
 
@@ -125,7 +125,7 @@ defmodule Pleroma.Migrators.Support.BaseMigrator do
 
       defp on_complete(data_migration) do
         if data_migration.feature_lock || feature_state() == :disabled do
-          Logger.warn(
+          Logger.warning(
             "#{__MODULE__}: migration complete but feature is locked; consider enabling."
           )
 

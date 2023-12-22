@@ -17,6 +17,8 @@ defmodule Pleroma.Docs.Generator do
       # This shouldn't be needed as all modules are expected to have module_info/1,
       # but in test enviroments some transient modules `:elixir_compiler_XX`
       # are loaded for some reason (where XX is a random integer).
+      Code.ensure_loaded(module)
+
       if function_exported?(module, :module_info, 1) do
         module.module_info(:attributes)
         |> Keyword.get_values(:behaviour)

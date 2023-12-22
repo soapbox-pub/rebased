@@ -5,11 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase, async: false
 
+  alias Pleroma.UnstubbedConfigMock, as: ConfigMock
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
 
+  import Mox
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -35,7 +37,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         inserted_at: ~N[2017-08-15 15:47:06.597036],
         emoji: %{"karjalanpiirakka" => "/file.png"},
         raw_bio: "valid html. a\nb\nc\nd\nf '&<>\"",
-        also_known_as: ["https://shitposter.zone/users/shp"]
+        also_known_as: ["https://shitposter.zone/users/shp"],
+        last_status_at: NaiveDateTime.utc_now()
       })
 
     expected = %{
@@ -74,7 +77,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       fqn: "shp@shitposter.club",
-      last_status_at: nil,
+      last_status_at: user.last_status_at |> NaiveDateTime.to_date() |> Date.to_iso8601(),
       pleroma: %{
         ap_id: user.ap_id,
         also_known_as: ["https://shitposter.zone/users/shp"],
@@ -752,6 +755,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     clear_config([:media_proxy, :enabled], true)
     clear_config([:media_preview_proxy, :enabled])
 
+    ConfigMock
+    |> stub_with(Pleroma.Test.StaticConfig)
+
     user =
       insert(:user,
         avatar: %{"url" => [%{"href" => "https://evil.website/avatar.png"}]},
@@ -759,7 +765,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         emoji: %{"joker_smile" => "https://evil.website/society.png"}
       )
 
-    with media_preview_enabled <- [false, true] do
+    Enum.each([true, false], fn media_preview_enabled ->
       clear_config([:media_preview_proxy, :enabled], media_preview_enabled)
 
       AccountView.render("show.json", %{user: user, skip_visibility_check: true})
@@ -777,7 +783,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           true
       end)
       |> assert()
-    end
+    end)
   end
 
   test "renders mute expiration date" do

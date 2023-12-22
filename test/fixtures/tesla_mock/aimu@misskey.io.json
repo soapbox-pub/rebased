@@ -1,0 +1,64 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "quoteUrl": "as:quoteUrl",
+      "toot": "http://joinmastodon.org/ns#",
+      "Emoji": "toot:Emoji",
+      "featured": "toot:featured",
+      "discoverable": "toot:discoverable",
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "misskey": "https://misskey.io/ns#",
+      "_misskey_content": "misskey:_misskey_content",
+      "_misskey_quote": "misskey:_misskey_quote",
+      "_misskey_reaction": "misskey:_misskey_reaction",
+      "_misskey_votes": "misskey:_misskey_votes",
+      "_misskey_talk": "misskey:_misskey_talk",
+      "isCat": "misskey:isCat",
+      "vcard": "http://www.w3.org/2006/vcard/ns#"
+    }
+  ],
+  "type": "Person",
+  "id": "https://misskey.io/users/83ssedkv53",
+  "inbox": "https://misskey.io/users/83ssedkv53/inbox",
+  "outbox": "https://misskey.io/users/83ssedkv53/outbox",
+  "followers": "https://misskey.io/users/83ssedkv53/followers",
+  "following": "https://misskey.io/users/83ssedkv53/following",
+  "sharedInbox": "https://misskey.io/inbox",
+  "endpoints": {
+    "sharedInbox": "https://misskey.io/inbox"
+  },
+  "url": "https://misskey.io/@aimu",
+  "preferredUsername": "aimu",
+  "name": "あいむ",
+  "summary": "<p><span>わずかな作曲要素 巣穴で独り言<br>Twitter </span><a href=\"https://twitter.com/aimu_53\">https://twitter.com/aimu_53</a><span><br>Soundcloud </span><a href=\"https://soundcloud.com/aimu-53\">https://soundcloud.com/aimu-53</a></p>",
+  "icon": {
+    "type": "Image",
+    "url": "https://s3.arkjp.net/misskey/webpublic-3f7e93c0-34f5-443c-acc0-f415cb2342b4.jpg",
+    "sensitive": false,
+    "name": null
+  },
+  "image": {
+    "type": "Image",
+    "url": "https://s3.arkjp.net/misskey/webpublic-2db63d1d-490b-488b-ab62-c93c285f26b6.png",
+    "sensitive": false,
+    "name": null
+  },
+  "tag": [],
+  "manuallyApprovesFollowers": false,
+  "discoverable": true,
+  "publicKey": {
+    "id": "https://misskey.io/users/83ssedkv53#main-key",
+    "type": "Key",
+    "owner": "https://misskey.io/users/83ssedkv53",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1ylhePJ6qGHmwHSBP17b\nIosxGaiFKvgDBgZdm8vzvKeRSqJV9uLHfZL3pO/Zt02EwaZd2GohZAtBZEF8DbMA\n3s93WAesvyGF9mjGrYYKlhp/glwyrrrbf+RdD0DLtyDwRRlrxp3pS2lLmv5Tp1Zl\npH+UKpOnNrpQqjHI5P+lEc9bnflzbRrX+UiyLNsVAP80v4wt7SZfT/telrU6mDru\n998UdfhUo7bDKeDsHG1PfLpyhhtfdoZub4kBpkyacHiwAd+CdCjR54Eu7FDwVK3p\nY3JcrT2q5stgMqN1m4QgSL4XAADIotWwDYttTJejM1n9dr+6VWv5bs0F2Q/6gxOp\nu5DQZLk4Q+64U4LWNox6jCMOq3fYe0g7QalJIHnanYQQo+XjoH6S1Aw64gQ3Ip2Y\nZBmZREAOR7GMFVDPFnVnsbCHnIAv16TdgtLgQBAihkWEUuPqITLi8PMu6kMr3uyq\nYkObEfH0TNTcqaiVpoXv791GZLEUV5ROl0FSUANLNkHZZv29xZ5JDOBOR1rNBLyH\ngVtW8rpszYqOXwzX23hh4WsVXfB7YgNvIijwjiaWbzsecleaENGEnLNMiVKVumTj\nmtyTeFJpH0+OaSrUYpemRRJizmqIjklKsNwUEwUb2WcUUg92o56T2obrBkooabZe\nwgSXSKTOcjsR/ju7+AuIyvkCAwEAAQ==\n-----END PUBLIC KEY-----\n"
+  },
+  "isCat": true,
+  "vcard:bday": "5353-05-03"
+}

@@ -16,6 +16,41 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   require Pleroma.Constants
 
+  describe "strip_report_status_data/1" do
+    test "does not break on issues with the reported activites" do
+      reporter = insert(:user)
+      target_account = insert(:user)
+      {:ok, activity} = CommonAPI.post(target_account, %{status: "foobar"})
+      context = Utils.generate_context_id()
+      content = "foobar"
+      post_id = activity.data["id"]
+
+      res =
+        Utils.make_flag_data(
+          %{
+            actor: reporter,
+            context: context,
+            account: target_account,
+            statuses: [%{"id" => post_id}],
+            content: content
+          },
+          %{}
+        )
+
+      res =
+        res
+        |> Map.put("object", res["object"] ++ [nil, 1, 5, "123"])
+
+      {:ok, activity} = Pleroma.Web.ActivityPub.ActivityPub.insert(res)
+
+      [user_id, object | _] = activity.data["object"]
+
+      {:ok, stripped} = Utils.strip_report_status_data(activity)
+
+      assert stripped.data["object"] == [user_id, object["id"]]
+    end
+  end
+
   describe "fetch the latest Follow" do
     test "fetches the latest Follow activity" do
       %Activity{data: %{"type" => "Follow"}} = activity = insert(:follow_activity)

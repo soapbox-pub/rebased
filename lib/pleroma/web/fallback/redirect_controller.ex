@@ -17,10 +17,28 @@ defmodule Pleroma.Web.Fallback.RedirectController do
     |> json(%{error: "Not implemented"})
   end
 
+  def add_generated_metadata(page_content, extra \\ "") do
+    title = "<title>#{Pleroma.Config.get([:instance, :name])}</title>"
+    favicon = "<link rel='icon' href='#{Pleroma.Config.get([:instance, :favicon])}'>"
+    manifest = "<link rel='manifest' href='/manifest.json'>"
+
+    page_content
+    |> String.replace(
+      "<!--server-generated-meta-->",
+      title <> favicon <> manifest <> extra
+    )
+  end
+
   def redirector(conn, _params, code \\ 200) do
+    {:ok, index_content} = File.read(index_file_path())
+
+    response =
+      index_content
+      |> add_generated_metadata()
+
     conn
     |> put_resp_content_type("text/html")
-    |> send_file(code, index_file_path())
+    |> send_resp(code, response)
   end
 
   def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do
@@ -34,14 +52,12 @@ defmodule Pleroma.Web.Fallback.RedirectController do
 
   def redirector_with_meta(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
-
     tags = build_tags(conn, params)
     preloads = preload_data(conn, params)
-    title = "<title>#{Pleroma.Config.get([:instance, :name])}</title>"
 
     response =
       index_content
-      |> String.replace("<!--server-generated-meta-->", tags <> preloads <> title)
+      |> add_generated_metadata(tags <> preloads)
 
     conn
     |> put_resp_content_type("text/html")
@@ -55,11 +71,10 @@ defmodule Pleroma.Web.Fallback.RedirectController do
   def redirector_with_preload(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
     preloads = preload_data(conn, params)
-    title = "<title>#{Pleroma.Config.get([:instance, :name])}</title>"
 
     response =
       index_content
-      |> String.replace("<!--server-generated-meta-->", preloads <> title)
+      |> add_generated_metadata(preloads)
 
     conn
     |> put_resp_content_type("text/html")

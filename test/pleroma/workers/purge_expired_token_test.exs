@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.PurgeExpiredTokenTest do
-  use Pleroma.DataCase, async: true
+  use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory

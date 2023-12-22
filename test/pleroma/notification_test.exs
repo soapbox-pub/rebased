@@ -21,6 +21,11 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   describe "create_notifications" do
     test "never returns nil" do
       user = insert(:user)
@@ -252,7 +257,7 @@ defmodule Pleroma.NotificationTest do
       task =
         Task.async(fn ->
           {:ok, _topic} = Streamer.get_topic_and_add_socket("user", user, oauth_token)
-          assert_receive {:render_with_user, _, _, _}, 4_000
+          assert_receive {:render_with_user, _, _, _, _}, 4_000
         end)
 
       task_user_notification =
@@ -260,7 +265,7 @@ defmodule Pleroma.NotificationTest do
           {:ok, _topic} =
             Streamer.get_topic_and_add_socket("user:notification", user, oauth_token)
 
-          assert_receive {:render_with_user, _, _, _}, 4_000
+          assert_receive {:render_with_user, _, _, _, _}, 4_000
         end)
 
       activity = insert(:note_activity)

@@ -57,6 +57,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
+  defp get_quoted_activities([]), do: %{}
+
+  defp get_quoted_activities(activities) do
+    activities
+    |> Enum.map(fn
+      %{data: %{"type" => "Create"}} = activity ->
+        object = Object.normalize(activity, fetch: false)
+        object && object.data["quoteUrl"] != "" && object.data["quoteUrl"]
+
+      _ ->
+        nil
+    end)
+    |> Enum.filter(& &1)
+    |> Activity.create_by_object_ap_id_with_object()
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn activity, acc ->
+      object = Object.normalize(activity, fetch: false)
+      if object, do: Map.put(acc, object.data["id"], activity), else: acc
+    end)
+  end
+
   # DEPRECATED This field seems to be a left-over from the StatusNet era.
   # If your application uses `pleroma.conversation_id`: this field is deprecated.
   # It is currently stubbed instead by doing a CRC32 of the context, and
@@ -97,6 +118,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # length(activities_with_links) * timeout
     fetch_rich_media_for_activities(activities)
     replied_to_activities = get_replied_to_activities(activities)
+    quoted_activities = get_quoted_activities(activities)
 
     parent_activities =
       activities
@@ -129,6 +151,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
+      |> Map.put(:quoted_activities, quoted_activities)
       |> Map.put(:parent_activities, parent_activities)
       |> Map.put(:relationships, relationships_opt)
 
@@ -277,7 +300,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     reply_to = get_reply_to(activity, opts)
-
     reply_to_user = reply_to && CommonAPI.get_user(reply_to.data["actor"])
 
     history_len =
@@ -289,6 +311,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     # See render("history.json", ...) for more details
     # Here the implicit index of the current content is 0
     chrono_order = history_len - 1
+
+    quote_activity = get_quote(activity, opts)
+
+    quote_id =
+      case quote_activity do
+        %Activity{id: id} -> id
+        _ -> nil
+      end
+
+    quote_post =
+      if visible_for_user?(quote_activity, opts[:for]) and opts[:show_quote] != false do
+        quote_rendering_opts = Map.merge(opts, %{activity: quote_activity, show_quote: false})
+        render("show.json", quote_rendering_opts)
+      else
+        nil
+      end
 
     content =
       object
@@ -398,6 +436,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         conversation_id: get_context_id(activity),
         context: object.data["context"],
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
+        quote: quote_post,
+        quote_id: quote_id,
+        quote_url: object.data["quoteUrl"],
+        quote_visible: visible_for_user?(quote_activity, opts[:for]),
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary},
         expires_at: expires_at,
@@ -405,7 +447,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         thread_muted: thread_muted?,
         emoji_reactions: emoji_reactions,
         parent_visible: visible_for_user?(reply_to, opts[:for]),
-        pinned_at: pinned_at
+        pinned_at: pinned_at,
+        quotes_count: object.data["quotesCount"] || 0
       }
     }
   end
@@ -520,25 +563,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     page_url = page_url_data |> to_string
 
-    image_url_data =
-      if is_binary(rich_media["image"]) do
-        URI.parse(rich_media["image"])
-      else
-        nil
-      end
-
-    image_url = build_image_url(image_url_data, page_url_data)
+    image_url = proxied_url(rich_media["image"], page_url_data)
+    audio_url = proxied_url(rich_media["audio"], page_url_data)
+    video_url = proxied_url(rich_media["video"], page_url_data)
 
     %{
       type: "link",
       provider_name: page_url_data.host,
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
-      image: image_url |> MediaProxy.url(),
+      image: image_url,
       title: rich_media["title"] || "",
       description: rich_media["description"] || "",
       pleroma: %{
-        opengraph: rich_media
+        opengraph:
+          rich_media
+          |> Maps.put_if_present("image", image_url)
+          |> Maps.put_if_present("audio", audio_url)
+          |> Maps.put_if_present("video", video_url)
       }
     }
   end
@@ -628,6 +670,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
+    else
+      nil
+    end
+  end
+
+  def get_quote(activity, %{quoted_activities: quoted_activities}) do
+    object = Object.normalize(activity, fetch: false)
+
+    with nil <- quoted_activities[object.data["quoteUrl"]] do
+      # For when a quote post is inside an Announce
+      Activity.get_create_by_object_ap_id_with_object(object.data["quoteUrl"])
+    end
+  end
+
+  def get_quote(%{data: %{"object" => _object}} = activity, _) do
+    object = Object.normalize(activity, fetch: false)
+
+    if object.data["quoteUrl"] && object.data["quoteUrl"] != "" do
+      Activity.get_create_by_object_ap_id(object.data["quoteUrl"])
     else
       nil
     end
@@ -760,4 +821,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_language(%{data: %{"language" => "und"}}), do: nil
 
   defp get_language(object), do: object.data["language"]
+
+  defp proxied_url(url, page_url_data) do
+    if is_binary(url) do
+      build_image_url(URI.parse(url), page_url_data) |> MediaProxy.url()
+    else
+      nil
+    end
+  end
 end

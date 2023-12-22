@@ -13,6 +13,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
   import Tesla.Mock
   import Mock
 
+  setup do
+    Mox.stub_with(Pleroma.UnstubbedConfigMock, Pleroma.Config)
+    :ok
+  end
+
   setup_all do
     mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -37,7 +42,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       end
     end
 
-    @tag :skip_on_mac
     test "search", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})

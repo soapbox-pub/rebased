@@ -224,6 +224,12 @@ defmodule Pleroma.Web.Router do
     post("/remote_interaction", UtilController, :remote_interaction)
   end
 
+  scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:pleroma_api)
+
+    get("/federation_status", InstancesController, :show)
+  end
+
   scope "/api/v1/pleroma", Pleroma.Web do
     pipe_through(:pleroma_api)
     post("/uploader_callback/:upload_path", UploaderController, :callback)
@@ -465,6 +471,8 @@ defmodule Pleroma.Web.Router do
     get("/main/ostatus", UtilController, :show_subscribe_form)
     get("/ostatus_subscribe", RemoteFollowController, :follow)
     post("/ostatus_subscribe", RemoteFollowController, :do_follow)
+
+    get("/authorize_interaction", RemoteFollowController, :authorize_interaction)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -578,6 +586,8 @@ defmodule Pleroma.Web.Router do
       pipe_through(:api)
       get("/accounts/:id/favourites", AccountController, :favourites)
       get("/accounts/:id/endorsements", AccountController, :endorsements)
+
+      get("/statuses/:id/quotes", StatusController, :quotes)
     end
 
     scope [] do
@@ -602,7 +612,6 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
     get("/accounts/:id/scrobbles", ScrobbleController, :index)
-    get("/federation_status", InstancesController, :show)
   end
 
   scope "/api/v2/pleroma", Pleroma.Web.PleromaAPI do
@@ -774,11 +783,14 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
+
     get("/search", SearchController, :search2)
 
     post("/media", MediaController, :create2)
 
     get("/suggestions", SuggestionController, :index2)
+
+    get("/instance", InstanceController, :show2)
   end
 
   scope "/api", Pleroma.Web do
@@ -1003,9 +1015,8 @@ defmodule Pleroma.Web.Router do
     options("/*path", RedirectController, :empty)
   end
 
-  # TODO: Change to Phoenix.Router.routes/1 for Phoenix 1.6.0+
   def get_api_routes do
-    __MODULE__.__routes__()
+    Phoenix.Router.routes(__MODULE__)
     |> Enum.reject(fn r -> r.plug == Pleroma.Web.Fallback.RedirectController end)
     |> Enum.map(fn r ->
       r.path

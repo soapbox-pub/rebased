@@ -4,10 +4,11 @@
 
 defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Activity
-  alias Pleroma.Config
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
+
+  @config_impl Application.compile_env(:pleroma, [__MODULE__, :config_impl], Pleroma.Config)
 
   @options [
     pool: :media,
@@ -17,7 +18,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Config.get([Pleroma.Formatter, :validate_tld])
+    validate_tld = @config_impl.get([Pleroma.Formatter, :validate_tld])
 
     page_url
     |> Linkify.Parser.url?(validate_tld: validate_tld)
@@ -27,10 +28,10 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   defp validate_page_url(%URI{host: host, scheme: "https", authority: authority})
        when is_binary(authority) do
     cond do
-      host in Config.get([:rich_media, :ignore_hosts], []) ->
+      host in @config_impl.get([:rich_media, :ignore_hosts], []) ->
         :error
 
-      get_tld(host) in Config.get([:rich_media, :ignore_tld], []) ->
+      get_tld(host) in @config_impl.get([:rich_media, :ignore_tld], []) ->
         :error
 
       true ->
@@ -56,7 +57,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   end
 
   def fetch_data_for_object(object) do
-    with true <- Config.get([:rich_media, :enabled]),
+    with true <- @config_impl.get([:rich_media, :enabled]),
          {:ok, page_url} <-
            HTML.extract_first_external_url_from_object(object),
          :ok <- validate_page_url(page_url),
@@ -68,7 +69,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   end
 
   def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
-    with true <- Config.get([:rich_media, :enabled]),
+    with true <- @config_impl.get([:rich_media, :enabled]),
          %Object{} = object <- Object.normalize(activity, fetch: false) do
       fetch_data_for_object(object)
     else
