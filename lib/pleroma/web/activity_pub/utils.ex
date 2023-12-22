@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.UUID
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectID
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -852,9 +853,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     [actor | reported_activities] = activity.data["object"]
 
     stripped_activities =
-      Enum.map(reported_activities, fn
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+      Enum.reduce(reported_activities, [], fn act, acc ->
+        case ObjectID.cast(act) do
+          {:ok, act} -> [act | acc]
+          _ -> acc
+        end
       end)
 
     new_data = put_in(activity.data, ["object"], [actor | stripped_activities])

@@ -201,7 +201,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlug do
 
   def warn_if_disabled do
     unless Config.get([:http_security, :enabled]) do
-      Logger.warn("
+      Logger.warning("
                                  .i;;;;i.
                                iYcviii;vXY:
                              .YXi       .i1c.

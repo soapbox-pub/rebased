@@ -1,0 +1,1 @@
+Reduce the reachability timestamp update to a single upsert query

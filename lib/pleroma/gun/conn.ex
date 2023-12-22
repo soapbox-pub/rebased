@@ -56,7 +56,7 @@ defmodule Pleroma.Gun.Conn do
       {:ok, conn, protocol}
     else
       error ->
-        Logger.warn(
+        Logger.warning(
           "Opening proxied connection to #{compose_uri_log(uri)} failed with error #{inspect(error)}"
         )
 
@@ -90,7 +90,7 @@ defmodule Pleroma.Gun.Conn do
       {:ok, conn, protocol}
     else
       error ->
-        Logger.warn(
+        Logger.warning(
           "Opening socks proxied connection to #{compose_uri_log(uri)} failed with error #{inspect(error)}"
         )
 
@@ -106,7 +106,7 @@ defmodule Pleroma.Gun.Conn do
       {:ok, conn, protocol}
     else
       error ->
-        Logger.warn(
+        Logger.warning(
           "Opening connection to #{compose_uri_log(uri)} failed with error #{inspect(error)}"
         )
 

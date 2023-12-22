@@ -59,7 +59,7 @@ defmodule Pleroma.Emoji.Loader do
           Logger.info("Found emoji packs: #{Enum.join(packs, ", ")}")
 
           if not Enum.empty?(files) do
-            Logger.warn(
+            Logger.warning(
               "Found files in the emoji folder. These will be ignored, please move them to a subdirectory\nFound files: #{Enum.join(files, ", ")}"
             )
           end

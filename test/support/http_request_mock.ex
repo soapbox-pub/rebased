@@ -21,7 +21,7 @@ defmodule HttpRequestMock do
     else
       error ->
         with {:error, message} <- error do
-          Logger.warn(to_string(message))
+          Logger.warning(to_string(message))
         end
 
         {_, _r} = error

@@ -83,7 +83,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   defp listen_object(draft) do
     object =
       draft.params
-      |> Map.take([:album, :artist, :title, :length])
+      |> Map.take([:album, :artist, :title, :length, :externalLink])
       |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Audio")
       |> Map.put("to", draft.to)

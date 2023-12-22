@@ -988,6 +988,12 @@ config :pleroma, :config_description, [
         suggestions: ["/instance/thumbnail.jpeg"]
       },
       %{
+        key: :favicon,
+        type: {:string, :image},
+        description: "Favicon of the instance",
+        suggestions: ["/favicon.png"]
+      },
+      %{
         key: :show_reactions,
         type: :boolean,
         description: "Let favourites and emoji reactions be viewed through the API."
@@ -1181,7 +1187,7 @@ config :pleroma, :config_description, [
         type: [:atom, :tuple, :module],
         description:
           "Where logs will be sent, :console - send logs to stdout, { ExSyslogger, :ex_syslogger } - to syslog, Quack.Logger - to Slack.",
-        suggestions: [:console, {ExSyslogger, :ex_syslogger}, Quack.Logger]
+        suggestions: [:console, {ExSyslogger, :ex_syslogger}]
       }
     ]
   },
@@ -1196,7 +1202,7 @@ config :pleroma, :config_description, [
         key: :level,
         type: {:dropdown, :atom},
         description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
+        suggestions: [:debug, :info, :warning, :error]
       },
       %{
         key: :ident,
@@ -1229,7 +1235,7 @@ config :pleroma, :config_description, [
         key: :level,
         type: {:dropdown, :atom},
         description: "Log level",
-        suggestions: [:debug, :info, :warn, :error]
+        suggestions: [:debug, :info, :warning, :error]
       },
       %{
         key: :format,
@@ -1931,7 +1937,7 @@ config :pleroma, :config_description, [
         key: :log,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
-        suggestions: [false, :error, :warn, :info, :debug]
+        suggestions: [false, :error, :warning, :info, :debug]
       },
       %{
         key: :queues,
@@ -3464,6 +3470,49 @@ config :pleroma, :config_description, [
             suggestion: [5]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search,
+    type: :group,
+    description: "General search settings.",
+    children: [
+      %{
+        key: :module,
+        type: :keyword,
+        description: "Selected search module.",
+        suggestion: [Pleroma.Search.DatabaseSearch, Pleroma.Search.Meilisearch]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Search.Meilisearch,
+    type: :group,
+    description: "Meilisearch settings.",
+    children: [
+      %{
+        key: :url,
+        type: :string,
+        description: "Meilisearch URL.",
+        suggestion: ["http://127.0.0.1:7700/"]
+      },
+      %{
+        key: :private_key,
+        type: :string,
+        description:
+          "Private key for meilisearch authentication, or `nil` to disable private key authentication.",
+        suggestion: [nil]
+      },
+      %{
+        key: :initial_indexing_chunk_size,
+        type: :int,
+        description:
+          "Amount of posts in a batch when running the initial indexing operation. Should probably not be more than 100000" <>
+            " since there's a limit on maximum insert size",
+        suggestion: [100_000]
       }
     ]
   }
